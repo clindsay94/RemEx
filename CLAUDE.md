@@ -66,9 +66,9 @@ Only intervene via `Edit`/`Write` if the diff reveals hallucinations or logic fl
 
 ## Project Overview
 
-Remote Execution (RemEx) is a cross-platform PC remote management tool. **Architecture: Android (Client) → PC (Host). The connection is always non-loopback Android-to-PC.** `remex.agent` is the **entire PC side** — Windows Service/daemon plus all PC-side functionality, combining what were formerly separate host and desktop projects. `remex.android` is the Android mobile client and the **only** network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+Remote Execution (RemEx) is a cross-platform PC remote management tool. **Architecture: Android (Client) → PC (Host). The connection is always non-loopback Android-to-PC.** `remex.agent` is the host execution entry point, while `remex.desktop` houses the PC-side UI and Localization. `remex.android` is the Android mobile client and the **only** network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
 
-> **There is no desktop client.** `remex.desktop/` and `remex.desktop/` are legacy folders being phased out — do not add new code there. If you encounter references to a PC-side client connecting to a PC-side host, those are outdated. The PC runs `remex.agent` only. The Android app is the only client.
+> **There is no desktop client.** `remex.desktop/` contains the live PC-side UI (Avalonia Views, ViewModels, and 812 fully-translated Localization keys). If you encounter references to a PC-side client connecting to a PC-side host, those are outdated. The PC runs `remex.agent` only. The Android app is the only client.
 
 ## Build & Run
 
@@ -76,7 +76,7 @@ Remote Execution (RemEx) is a cross-platform PC remote management tool. **Archit
 # Run PC host service (Android connects to this — this IS the entire PC side)
 dotnet run --project remex.agent
 
-# NOTE: remex.desktop is a legacy entry point merged into remex.agent. Do not use for new work.
+# NOTE: remex.desktop contains the PC-side UI components and localization.
 
 # Run all tests
 dotnet test Remex.sln
@@ -268,7 +268,7 @@ Read the relevant sub-project `AGENTS.md` before touching files in that director
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (11500 symbols, 24534 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (11595 symbols, 24750 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

@@ -60,6 +60,7 @@ fun ConnectionScreen(
         val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
         val status by viewModel.connectionStatus.collectAsStateWithLifecycle()
         val connectionError by viewModel.connectionError.collectAsStateWithLifecycle()
+        val isCertMismatch by viewModel.isCertMismatch.collectAsStateWithLifecycle()
         val capabilitySummary by viewModel.capabilitySummary.collectAsStateWithLifecycle()
         val isDiscovering by viewModel.isDiscovering.collectAsStateWithLifecycle()
         val discoveredHost by viewModel.discoveredHost.collectAsStateWithLifecycle()
@@ -71,6 +72,7 @@ fun ConnectionScreen(
                 isConnected = isConnected,
                 status = status,
                 connectionError = connectionError,
+                isCertMismatch = isCertMismatch,
                 capabilitySummary = capabilitySummary,
                 isDiscovering = isDiscovering,
                 discoveredHost = discoveredHost,
@@ -89,7 +91,9 @@ fun ConnectionScreen(
                         )
                 },
                 onClearError = { viewModel.clearError() },
-                onDiscoverHost = { viewModel.discoverHost() }
+                onDiscoverHost = { viewModel.discoverHost() },
+                onRepair = { context, host -> viewModel.clearPinForHost(context, host) },
+                onConsumeDiscoveredHost = { viewModel.consumeDiscoveredHost() }
         )
 }
 
@@ -102,13 +106,16 @@ fun ConnectionScreenContent(
         isConnected: Boolean,
         status: String,
         connectionError: String?,
+        isCertMismatch: Boolean,
         capabilitySummary: String,
         isDiscovering: Boolean,
         discoveredHost: DiscoveredHost?,
         onNavigateToQrScanner: () -> Unit,
         onConnect: (String, Int, String, String, String, String, Int, Int, Float) -> Unit,
         onClearError: () -> Unit,
-        onDiscoverHost: () -> Unit
+        onDiscoverHost: () -> Unit,
+        onRepair: (android.content.Context, String) -> Unit,
+        onConsumeDiscoveredHost: () -> Unit
 ) {
         val view = LocalView.current
         val context = LocalContext.current
@@ -255,25 +262,22 @@ fun ConnectionScreenContent(
                 }
         }
 
-        // Autofill host/port when a host is discovered
+        // Autofill host/port and show snackbar when a host is discovered
         LaunchedEffect(discoveredHost) {
                 discoveredHost?.let {
                         hostInput = it.host
                         portInput = it.port.toString()
+                        snackbarHostState.showSnackbar(
+                                context.getString(
+                                        R.string.host_discovered_snackbar,
+                                        it.host
+                                )
+                        )
+                        onConsumeDiscoveredHost()
                 }
         }
 
         val scrollBehavior = rememberRemexTopBarScrollBehavior()
-        LaunchedEffect(discoveredHost) {
-                if (discoveredHost != null) {
-                        snackbarHostState.showSnackbar(
-                                context.getString(
-                                        R.string.host_discovered_snackbar,
-                                        discoveredHost.host
-                                )
-                        )
-                }
-        }
         Scaffold(
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 topBar = {
@@ -347,16 +351,25 @@ fun ConnectionScreenContent(
                                                                         MaterialTheme.colorScheme
                                                                                 .onErrorContainer
                                                         )
-                                                        Text(
-                                                                text = connectionError ?: "",
-                                                                style =
-                                                                        MaterialTheme.typography
-                                                                                .bodyMedium,
-                                                                color =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onErrorContainer,
-                                                                modifier = Modifier.weight(1f)
-                                                        )
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                        text = if (isCertMismatch) stringResource(R.string.connection_error_cert_changed) else (connectionError ?: ""),
+                                                                        style =
+                                                                                MaterialTheme.typography
+                                                                                        .bodyMedium,
+                                                                        color =
+                                                                                MaterialTheme.colorScheme
+                                                                                        .onErrorContainer
+                                                                )
+                                                                if (isCertMismatch) {
+                                                                        TextButton(
+                                                                                onClick = { onRepair(context, hostInput) },
+                                                                                modifier = Modifier.align(Alignment.End)
+                                                                        ) {
+                                                                                Text(stringResource(R.string.connection_action_repair), color = MaterialTheme.colorScheme.onErrorContainer)
+                                                                        }
+                                                                }
+                                                        }
                                                         IconButton(
                                                                 onClick = {
                                                                         view.performHapticFeedback(
@@ -1195,9 +1208,7 @@ fun ConnectionScreenContent(
                                                         Icon(
                                                                 Icons.Default.CheckCircle,
                                                                 contentDescription = null,
-                                                                tint =
-                                                                        androidx.compose.ui.graphics
-                                                                                .Color(0xFF4CAF50),
+                                                                tint = com.clindsay94.remex.ui.theme.LocalCustomColors.current.success,
                                                                 modifier = Modifier.size(16.dp)
                                                         )
                                                         Text(
@@ -1209,9 +1220,7 @@ fun ConnectionScreenContent(
                                                                 style =
                                                                         MaterialTheme.typography
                                                                                 .bodySmall,
-                                                                color =
-                                                                        androidx.compose.ui.graphics
-                                                                                .Color(0xFF4CAF50)
+                                                                color = com.clindsay94.remex.ui.theme.LocalCustomColors.current.success
                                                         )
                                                         TextButton(
                                                                 onClick = {
@@ -1278,10 +1287,13 @@ private fun ConnectionScreenPreview() {
             capabilitySummary = "Desktop, Shell, TaskManager",
             isDiscovering = false,
             discoveredHost = null,
+            isCertMismatch = false,
             onNavigateToQrScanner = {},
             onConnect = { _, _, _, _, _, _, _, _, _ -> },
             onClearError = {},
-            onDiscoverHost = {}
+            onDiscoverHost = {},
+            onRepair = { _, _ -> },
+            onConsumeDiscoveredHost = {}
         )
     }
 }

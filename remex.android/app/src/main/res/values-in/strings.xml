@@ -6,12 +6,8 @@
     <string name="widget_remote_label">RemEx Remote</string>
     <string name="widget_hardware_label">RemEx Hardware</string>
     <string name="widget_launcher_label">RemEx Launcher</string>
-
-    <!-- ═══ Splash Screen ═══ -->
     <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">Eksekusi Jarak Jauh</string>
-
-    <!-- ═══ Navigation ═══ -->
     <string name="snackbar_no_pc_connected">Tidak ada PC terhubung</string>
     <string name="snackbar_setup_connection">Siapkan koneksi</string>
     <string name="connection_required_context">Connection required to access this feature.</string>
@@ -20,15 +16,11 @@
     <string name="exit_dialog_title">Exit RemEx?</string>
     <string name="exit_dialog_message">Are you sure you want to exit?</string>
     <string name="button_exit">Exit</string>
-
-    <!-- ═══ Common Components ═══ -->
     <string name="banner_no_pc_connected">Tidak ada PC terhubung — fitur tidak tersedia</string>
     <string name="button_connect">Hubungkan</string>
     <string name="disconnected_requires_connection">%1$s memerlukan PC yang terhubung.</string>
     <string name="disconnected_connect_wifi">Hubungkan ke PC Anda melalui Wi-Fi untuk menggunakan fitur ini.</string>
     <string name="button_setup_connection">Siapkan koneksi</string>
-
-    <!-- ═══ Shared Buttons ═══ -->
     <string name="button_cancel">Batal</string>
     <string name="button_confirm">Konfirmasi</string>
     <string name="button_dismiss">Tutup</string>
@@ -53,61 +45,43 @@
     <string name="cd_expand_icon">Expand</string>
     <string name="cd_category_icon">Category</string>
     <string name="cd_resize_cards">Resize cards</string>
-
-    <!-- ═══ Tutorial Screen ═══ -->
     <string name="tutorial_skip">Lewati</string>
     <string name="tutorial_get_started">Mulai</string>
     <string name="tutorial_next">Berikutnya</string>
-
     <string name="tutorial_page1_title">Selamat Datang di RemEx</string>
     <string name="tutorial_page1_body">RemEx adalah pusat komando manajemen PC jarak jauh Anda. Kendalikan komputer, luncurkan aplikasi, pantau performa, dan bahkan lihat desktop Anda — semuanya dari ponsel Anda.\n\nMari hubungkan Anda dalam beberapa langkah cepat.</string>
-
-    <string name="tutorial_page2_title">Instal Host Terlebih Dahulu</string>
-    <string name="tutorial_page2_body">Sebelum terhubung, PC Anda memerlukan host RemEx yang berjalan.\n\n• Opsi 1: Klien Desktop (Direkomendasikan) — Membundel host dan berjalan di baki sistem.\n• Opsi 2: Host Mandiri — Layanan latar belakang saja, ideal untuk server.\n\nUnduh rilis terbaru dari GitHub dan jalankan sebelum menyandingkan.</string>
+    <string name="tutorial_page2_title">Instal PC Terlebih Dahulu</string>
+    <string name="tutorial_page2_body">Sebelum terhubung, PC Anda memerlukan PC RemEx yang berjalan.\n\n• Opsi 1: Klien Desktop (Direkomendasikan) — Membundel PC dan berjalan di baki sistem.\n• Opsi 2: PC Mandiri — Layanan latar belakang saja, ideal untuk PC.\n\nUnduh rilis terbaru dari GitHub dan jalankan sebelum menyandingkan.</string>
     <string name="tutorial_page2_link_label">Unduh dari Rilis GitHub</string>
-
     <string name="tutorial_page3_title">Penemuan Otomatis</string>
-    <string name="tutorial_page3_body">Cara termudah untuk terhubung adalah penemuan otomatis.\n\n1. Pastikan Remex.Client.Desktop atau Remex.Host berjalan di PC Anda\n2. Pastikan ponsel dan PC berada di jaringan Wi-Fi yang sama\n3. Ketuk \'Temukan Otomatis\' pada layar Koneksi\n\nRemEx menggunakan mDNS untuk mendeteksi host yang berjalan di jaringan lokal Anda. IP dan port PC Anda akan terisi secara otomatis.</string>
-
+    <string name="tutorial_page3_body">Cara termudah untuk terhubung adalah penemuan otomatis.\n\n1. Pastikan Remex.Client.Desktop atau Remex.PC berjalan di PC Anda\n2. Pastikan ponsel dan PC berada di jaringan Wi-Fi yang sama\n3. Ketuk \'Temukan Otomatis\' pada layar Koneksi\n\nRemEx menggunakan mDNS untuk mendeteksi PC yang berjalan di jaringan lokal Anda. IP dan port PC Anda akan terisi secara otomatis.</string>
     <string name="tutorial_page4_title">Mencari Alamat IP Anda</string>
     <string name="tutorial_page4_body">Jika penemuan otomatis tidak berhasil, Anda dapat terhubung secara manual. Pertama, temukan alamat IP lokal PC Anda:\n\nWindows:\n  Buka Command Prompt → ketik ipconfig\n  Cari \'IPv4 Address\' (misal 192.168.1.42)\n\nmacOS:\n  Pengaturan Sistem → Jaringan, atau jalankan:\n  ipconfig getifaddr en0\n\nLinux:\n  Jalankan ip addr atau hostname -I\n\nAnda juga dapat melihat alamat IP di jendela Remex.Client.Desktop di bawah bagian status koneksi.</string>
-
     <string name="tutorial_page5_title">Koneksi Manual</string>
-    <string name="tutorial_page5_body">Setelah Anda memiliki alamat IP:\n\n1. Buka layar Koneksi (Pengaturan → Koneksi)\n2. Masukkan alamat IP PC Anda\n3. Masukkan port (default adalah 5005)\n4. Ketuk \'Simpan &amp; Hubungkan\'\n\nRemEx akan menjalin koneksi dan Anda akan melihat status PC Anda muncul di dasbor.\n\nIngat: Remex.Client.Desktop atau Remex.Host harus berjalan di PC target agar koneksi berhasil.</string>
-
+    <string name="tutorial_page5_body">Setelah Anda memiliki alamat IP:\n\n1. Buka layar Koneksi (Pengaturan → Koneksi)\n2. Masukkan alamat IP PC Anda\n3. Masukkan port (default adalah 5005)\n4. Ketuk \'Simpan &amp; Hubungkan\'\n\nRemEx akan menjalin koneksi dan Anda akan melihat status PC Anda muncul di dasbor.\n\nIngat: Remex.Client.Desktop atau Remex.PC harus berjalan di PC target agar koneksi berhasil.</string>
     <string name="tutorial_page6_title">Semua Siap!</string>
     <string name="tutorial_page6_body">Anda siap untuk memegang kendali.\n\nDari dasbor Anda dapat memantau statistik sistem, meluncurkan aplikasi, mengelola tugas, dan melakukan streaming desktop dari jarak jauh.\n\nBuka Personalisasi untuk menyesuaikan tema, bentuk kartu, font, dan warna.\n\nLihat FAQ di Pengaturan jika Anda menemui masalah. Selamat menikmati RemEx!</string>
-
-    <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
     <string name="tutorial_page_qr_title">Pasangkan Cepat dengan Kode QR</string>
     <string name="tutorial_page_qr_body">Cara tercepat untuk terhubung adalah dengan memindai kode QR.\n\n1. Buka Remex.Client.Desktop di PC Anda\n2. Buka Koneksi → Tampilkan Kode QR\n3. Di ponsel Anda, ketuk ikon QR pada layar Koneksi\n4. Arahkan kamera Anda ke kode tersebut\n\nPonsel Anda akan secara otomatis menyimpan dan terhubung — tidak perlu mengetik manual!</string>
-
-    <!-- ═══ Connection Status Strings ═══ -->
     <string name="status_disconnected">Terputus</string>
     <string name="status_connected">Terhubung</string>
     <string name="status_connecting">Menghubungkan ke %1$s:%2$d…</string>
-    <string name="status_error">Kesalahan: %1$s</string>
+    <string name="status_error">Couldn\'t reach your PC</string>
     <string name="status_awaiting_metadata">Menunggu detail PC</string>
     <string name="status_metadata_unavailable">Detail PC tidak tersedia</string>
     <string name="status_native_lib_not_loaded">Pustaka asli tidak dimuat</string>
     <string name="error_no_host_found">Tidak ada PC RemEx yang ditemukan di jaringan</string>
     <string name="error_discovery_failed">Penemuan gagal: %1$s</string>
-    <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
-         to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
     <string name="permission_local_network_rationale">RemEx memerlukan izin Jaringan Lokal untuk menemukan dan terhubung ke PC Anda melalui Wi-Fi. Tanpa izin ini, penemuan dan koneksi tidak akan berfungsi pada Android 17 dan yang lebih baru. Berikan izin ini di Pengaturan untuk melanjutkan.</string>
     <string name="error_local_network_permission_denied">Akses Jaringan Lokal ditolak. RemEx tidak dapat terhubung ke PC Anda tanpa izin ini di Android 17+. Berikan izin ini di Pengaturan Aplikasi.</string>
     <string name="capability_desktop_available">desktop tersedia</string>
     <string name="capability_desktop_unavailable">desktop tidak tersedia</string>
-
-    <!-- ═══ Foreground Service Strings ═══ -->
     <string name="notification_channel_name">RemEx Connection</string>
     <string name="notification_channel_description">Keeps the connection to your PC alive</string>
     <string name="notification_title_connected">Connected to PC</string>
     <string name="notification_title_connecting">Connecting…</string>
     <string name="notification_text_connected">RemEx is running in the background</string>
     <string name="notification_text_connecting">Maintaining connection</string>
-
-    <!-- ═══ Task Manager Screen ═══ -->
     <string name="screen_task_manager_title">Manajer Tugas</string>
     <string name="task_manager_search_hint">Cari nama proses atau PID</string>
     <string name="sort_by">Sort by:</string>
@@ -124,8 +98,6 @@
     <string name="button_kill">Hentikan</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
     <string name="cd_kill_process">Hentikan</string>
-
-    <!-- ═══ Remote Mouse Screen ═══ -->
     <string name="screen_remote_mouse_title">Mouse Jarak Jauh</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Klik Kiri</string>
@@ -133,8 +105,6 @@
     <string name="cd_scroll_up">Gulir ke Atas</string>
     <string name="cd_scroll_down">Gulir ke Bawah</string>
     <string name="cd_keyboard">Keyboard</string>
-
-    <!-- ═══ Settings Screen ═══ -->
     <string name="screen_settings_title">Pengaturan</string>
     <string name="settings_tab_connection">Koneksi</string>
     <string name="settings_tab_personalization">Personalisasi</string>
@@ -146,13 +116,9 @@
     <string name="settings_replay_tutorial">📖  Putar Ulang Tutorial</string>
     <string name="settings_replay_tutorial_body">Tonton kembali panduan memulai yang mencakup pengaturan, penemuan otomatis, mencari IP, dan menghubungkan ke PC Anda.</string>
     <string name="settings_faq_hint">Punya pertanyaan? Cek FAQ yang tersedia dari menu (⋮ → FAQ).</string>
-
-    <!-- ═══ App Launcher Screen ═══ -->
     <string name="screen_app_launcher_title">Peluncur Aplikasi</string>
     <string name="app_launcher_no_apps">Aplikasi tidak ditemukan</string>
-    <string name="button_fetch_from_host">Ambil dari Host</string>
-
-    <!-- ═══ Remote Control Screen ═══ -->
+    <string name="button_fetch_from_host">Ambil dari PC</string>
     <string name="screen_remote_control_title">Kontrol Jarak Jauh</string>
     <string name="remote_control_section_header">Perintah Sistem</string>
     <string name="remote_control_description">Tindakan kritis memerlukan konfirmasi. Penundaan opsional mengatur detik shutdown -t.</string>
@@ -174,8 +140,6 @@
     <string name="rc_category_session">Sesi</string>
     <string name="rc_category_power">Daya</string>
     <string name="rc_category_energy">Energi</string>
-
-    <!-- ═══ Remote Desktop Screen ═══ -->
     <string name="screen_remote_desktop_title">Desktop Jarak Jauh</string>
     <string name="cd_show_keyboard">Tampilkan Keyboard</string>
     <string name="cd_key_escape">Escape</string>
@@ -225,8 +189,6 @@
     <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Ketuk = Klik • Tekan lama = Klik kanan • 2 jari = Gulir • Pena = Absolut</string>
-
-    <!-- ═══ Dashboard Screen ═══ -->
     <string name="screen_dashboard_title">Pusat RemEx</string>
     <string name="cd_reset_zoom">Reset zoom</string>
     <string name="cd_customize_cards">Kustomisasi kartu</string>
@@ -245,29 +207,27 @@
     <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Mengumpulkan data…</string>
     <string name="cd_change_display_mode">Ganti mode tampilan</string>
-
-    <!-- ═══ Connection Screen ═══ -->
     <string name="screen_connection_title">Koneksi</string>
     <string name="screen_splash_title">Loading</string>
     <string name="screen_tutorial_title">Tutorial</string>
     <string name="screen_qr_scanner_title">Scan QR Code</string>
-    <string name="connection_host_settings">Pengaturan Host</string>
+    <string name="connection_host_settings">Pengaturan PC</string>
     <string name="cd_dismiss_error">Tutup</string>
     <string name="connection_auto_discover_title">Temukan Otomatis di LAN</string>
-    <string name="connection_auto_discover_hint">Pastikan PC menjalankan aplikasi Host RemEx dan kedua perangkat berada di jaringan Wi-Fi yang sama.</string>
+    <string name="connection_auto_discover_hint">Pastikan PC menjalankan aplikasi PC RemEx dan kedua perangkat berada di jaringan Wi-Fi yang sama.</string>
     <string name="connection_searching">Mencari PC Anda…</string>
     <string name="connection_found_host">Ditemukan: %1$s — Cari Lagi</string>
     <string name="connection_discover_button">Temukan Otomatis</string>
     <string name="connection_host_found">PC ditemukan dan kolom di bawah telah terisi.</string>
     <string name="connection_scan_qr_code">Pindai Kode QR</string>
     <string name="connection_help_title">Cara menghubungkan secara manual</string>
-    <string name="connection_help_step1_title">Instal Host RemEx di PC Anda</string>
-    <string name="connection_help_step1_body">Unduh dan jalankan penginstal Host RemEx di PC yang ingin Anda kendalikan. Ini akan muncul di system tray saat berjalan.</string>
+    <string name="connection_help_step1_title">Instal PC RemEx di PC Anda</string>
+    <string name="connection_help_step1_body">Unduh dan jalankan penginstal PC RemEx di PC yang ingin Anda kendalikan. Ini akan muncul di system tray saat berjalan.</string>
     <string name="connection_help_step2_title">Hubungkan ke Wi-Fi yang sama</string>
     <string name="connection_help_step2_body">Ponsel dan PC harus berada di jaringan lokal yang sama. Data seluler tidak akan berfungsi.</string>
     <string name="connection_help_step3_title">Temukan alamat IP PC Anda</string>
     <string name="connection_help_step4_title">Masukkan IP di bawah dan ketuk Simpan &amp; Hubungkan</string>
-    <string name="connection_help_step4_body">Port default adalah 5005. Jika Anda mengatur kunci akses di aplikasi host, masukkan juga di sini.</string>
+    <string name="connection_help_step4_body">Port default adalah 5005. Jika Anda mengatur kunci akses di aplikasi PC, masukkan juga di sini.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Buka Command Prompt dan ketik: ipconfig\nCari "IPv4 Address" di bawah adaptor Wi-Fi Anda.</string>
     <string name="connection_platform_macos">macOS</string>
@@ -275,7 +235,7 @@
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">Buka terminal dan ketik: ip addr\nCari alamat inet pada antarmuka jaringan Anda (misal wlan0 atau eth0).</string>
     <string name="connection_or_enter_manually">Atau masukkan manual</string>
-    <string name="connection_label_host">Alamat IP Host</string>
+    <string name="connection_label_host">Alamat IP PC</string>
     <string name="connection_hint_host">IP lokal PC Anda — temukan via ipconfig (Win) atau ip addr (Linux)</string>
     <string name="connection_label_port">Port</string>
     <string name="connection_hint_port">Default: 5005</string>
@@ -296,25 +256,19 @@
     <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Paired</string>
     <string name="connection_unpair">Unpair</string>
-
-    <!-- ═══ Pairing Screen ═══ -->
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
     <string name="pairing_error_cert_mismatch">Certificate mismatch</string>
-
-    <!-- ═══ QR Scanner Screen ═══ -->
     <string name="qr_scanner_title">Pindai Kode QR</string>
     <string name="cd_back">Kembali</string>
     <string name="qr_scanner_hint">Arahkan kamera ke kode QR yang ditampilkan di PC Anda</string>
     <string name="qr_scanner_permission_required">Izin kamera diperlukan untuk memindai kode QR</string>
     <string name="qr_scanner_grant_permission">Berikan Izin</string>
-    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx Host to 2.0.</string>
+    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx PC to 2.0.</string>
     <string name="qr_error_invalid">Invalid RemEx QR code</string>
-
-    <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
@@ -327,38 +281,26 @@
     <string name="cd_collapse">Ciutkan</string>
     <string name="cd_expand">Expand</string>
     <string name="faq_github_button">Buka Rilis GitHub</string>
-
     <string name="faq_q1">Apa yang perlu saya jalankan di PC?</string>
-    <string name="faq_a1">Anda perlu menjalankan Remex.Client.Desktop atau Remex.Host di PC Anda.\n\n• Remex.Client.Desktop — Aplikasi desktop lengkap yang menyertakan host secara otomatis. Cukup jalankan dan host dimulai di latar belakang pada port 5005.\n\n• Remex.Host — Layanan headless mandiri, ideal untuk server atau penggunaan latar belakang saja.\n\nKeduanya bersifat mandiri (semua runtime disertakan) — cukup ekstrak folder publikasi dan jalankan. Unduh dari halaman rilis GitHub.</string>
-
+    <string name="faq_a1">Anda perlu menjalankan Remex.Client.Desktop atau Remex.PC di PC Anda.\n\n• Remex.Client.Desktop — Aplikasi desktop lengkap yang menyertakan PC secara otomatis. Cukup jalankan dan PC dimulai di latar belakang pada port 5005.\n\n• Remex.PC — Layanan headless mandiri, ideal untuk PC atau penggunaan latar belakang saja.\n\nKeduanya bersifat mandiri (semua runtime disertakan) — cukup ekstrak folder publikasi dan jalankan. Unduh dari halaman rilis GitHub.</string>
     <string name="faq_q2">Bagaimana cara menemukan alamat IP PC saya?</string>
     <string name="faq_a2">Windows:\nBuka Command Prompt dan ketik \'ipconfig\'. Cari baris \'IPv4 Address\' di bawah adaptor jaringan aktif Anda (misal 192.168.1.42).\n\nmacOS:\nBuka Pengaturan Sistem → Jaringan dan lihat antarmuka yang terhubung, atau buka Terminal dan jalankan: ipconfig getifaddr en0\n\nLinux:\nBuka terminal dan jalankan: ip addr atau hostname -I\n\nAnda juga dapat melihat IP secara langsung di jendela Remex.Client.Desktop.</string>
-
     <string name="faq_q3">Penemuan otomatis tidak menemukan PC saya. Apa yang harus saya periksa?</string>
-    <string name="faq_a3">1. Pastikan Remex.Client.Desktop atau Remex.Host benar-benar berjalan di PC Anda.\n2. Kedua perangkat harus berada di jaringan Wi-Fi / LAN yang sama.\n3. Di Android 13+, izin NEARBY_WIFI_DEVICES harus diberikan. RemEx akan meminta ini saat Anda mengetuk \'Temukan Otomatis\'.\n4. Beberapa router memiliki fitur \'AP Isolation\' atau \'Client Isolation\' yang aktif, yang memblokir komunikasi antar perangkat. Cek pengaturan router Anda.\n5. Jaringan Wi-Fi korporat atau tamu sering memblokir lalu lintas mDNS. Coba gunakan jaringan pribadi atau rumah.</string>
-
+    <string name="faq_a3">1. Pastikan Remex.Client.Desktop atau Remex.PC benar-benar berjalan di PC Anda.\n2. Kedua perangkat harus berada di jaringan Wi-Fi / LAN yang sama.\n3. Di Android 13+, izin NEARBY_WIFI_DEVICES harus diberikan. RemEx akan meminta ini saat Anda mengetuk \'Temukan Otomatis\'.\n4. Beberapa router memiliki fitur \'AP Isolation\' atau \'Client Isolation\' yang aktif, yang memblokir komunikasi antar perangkat. Cek pengaturan router Anda.\n5. Jaringan Wi-Fi korporat atau tamu sering memblokir lalu lintas mDNS. Coba gunakan jaringan pribadi atau rumah.</string>
     <string name="faq_q4">Berapa port defaultnya?</string>
-    <string name="faq_a4">Port default adalah 5005. Jika Remex.Client.Desktop menemukan port 5005 sedang digunakan, ia akan beralih ke 5006. Anda dapat melihat port yang aktif di jendela klien desktop.\n\nJika Anda mengubah port di sisi host, pastikan untuk memasukkan port yang sama di layar Koneksi pada aplikasi ini.</string>
-
+    <string name="faq_a4">Port default adalah 5005. Jika Remex.Client.Desktop menemukan port 5005 sedang digunakan, ia akan beralih ke 5006. Anda dapat melihat port yang aktif di jendela klien desktop.\n\nJika Anda mengubah port di sisi PC, pastikan untuk memasukkan port yang sama di layar Koneksi pada aplikasi ini.</string>
     <string name="faq_q5">Bagaimana cara memasangkan dengan PC saya?</string>
     <string name="faq_a5">Saat Anda terhubung ke PC untuk pertama kalinya, Anda harus memasukkan PIN 6 digit yang ditampilkan di PC. Ini menciptakan ikatan yang aman dan terenkripsi antar perangkat. Anda tidak perlu memasukkan PIN lagi kecuali Anda mengatur ulang koneksi atau menginstal ulang aplikasi.</string>
-
     <string name="faq_q6">Bisakah saya terhubung melalui internet (bukan hanya LAN)?</string>
     <string name="faq_a6">RemEx dirancang untuk penggunaan jaringan lokal (LAN). Untuk terhubung melalui internet, Anda perlu mengatur port forwarding di router untuk port 5005 (atau port mana pun yang Anda gunakan) dan menggunakan alamat IP publik Anda.\n\nPenting: Mengekspos port ke internet adalah risiko keamanan. VPN adalah pendekatan yang direkomendasikan untuk akses jarak jauh.</string>
-
     <string name="faq_q7">Desktop Jarak Jauh lambat atau tidak berfungsi. Apa yang bisa saya lakukan?</string>
     <string name="faq_a7">• Turunkan slider Kualitas di Koneksi → Default Desktop Jarak Jauh.\n• Kurangi Target FPS (15–20 FPS cukup untuk sebagian besar penggunaan).\n• Turunkan Skala untuk mengurangi resolusi yang dialirkan.\n• Pastikan PC mendukung backend tangkapan layar: DXGI di Windows, X11/Wayland di Linux.\n• Pastikan Anda berada di jaringan Wi-Fi lokal yang cepat (5 GHz lebih disukai).</string>
-
     <string name="faq_q8">Apa itu Wake-on-LAN (WOL)?</string>
     <string name="faq_a8">Wake-on-LAN memungkinkan Anda menyalakan PC dari jarak jauh dengan mengirimkan "paket ajaib" melalui jaringan.\n\nCara menggunakannya:\n1. Aktifkan WOL di pengaturan BIOS/UEFI PC Anda.\n2. Aktifkan WOL di properti adaptor jaringan (Windows: Manajer Perangkat → Adaptor Jaringan → Manajemen Daya).\n3. Masukkan alamat MAC PC Anda di layar Koneksi.\n4. Gunakan kartu \'Bangunkan PC\' di dasbor atau layar Kontrol Jarak Jauh.</string>
-
     <string name="faq_q9">Bagaimana cara menyesuaikan tampilan aplikasi?</string>
     <string name="faq_a9">Buka layar Personalisasi (ketuk FAB gir di dasbor atau navigasikan via menu → Pengaturan).\n\nAnda dapat mengubah:\n• Palet tema dan color seed\n• Radius sudut kartu dan preset bentuk\n• Keluarga font dan skala\n• Opasitas kartu\n• Mode tema gelap/terang/sistem</string>
-
     <string name="faq_q10">Bisakah saya menonton kembali tutorialnya?</string>
     <string name="faq_a10">Ya! Buka Pengaturan dari menu (⋮ → Pengaturan). Di sana Anda akan menemukan opsi untuk memutar ulang tutorial kapan saja.</string>
-
-    <!-- ═══ Personalization Screen ═══ -->
     <string name="screen_personalization_title">Personalisasi</string>
     <string name="personalization_appearance_studio">Studio Tampilan</string>
     <string name="personalization_section_language">Bahasa</string>
@@ -385,8 +327,6 @@
     <string name="personalization_shape_task_manager">Manajer Tugas</string>
     <string name="personalization_shape_pc_orb">Orb Koneksi PC</string>
     <string name="personalization_preview">PRATINJAU</string>
-
-    <!-- ═══ Widget Configuration Activities ═══ -->
     <string name="widget_config_app_launcher_title">Konfigurasi Peluncur Aplikasi</string>
     <string name="widget_config_app_launcher_hint">Pilih aplikasi untuk ditampilkan di widget Anda:</string>
     <string name="widget_config_no_apps">Belum ada aplikasi yang tersedia.</string>
@@ -408,8 +348,6 @@
     <string name="tile_hibernate_label">Hibernasi PC</string>
     <string name="tile_monitor_off_label">Matikan Monitor</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
-
-    <!-- ═══ File Transfer Screen ═══ -->
     <string name="screen_file_transfer_title">Transfer File</string>
     <string name="file_transfer_local">Lokal (Ponsel)</string>
     <string name="file_transfer_remote">Jarak Jauh (PC)</string>
@@ -417,11 +355,11 @@
     <string name="file_transfer_upload">Unggah ↑</string>
     <string name="file_transfer_download">Unduh ↓</string>
     <string name="file_transfer_cancel">Batal</string>
-    <string name="file_transfer_not_connected">Hubungkan ke host untuk menelusuri file jarak jauh.</string>
+    <string name="file_transfer_not_connected">Hubungkan ke PC untuk menelusuri file jarak jauh.</string>
     <string name="file_transfer_loading">Memuat…</string>
     <string name="file_transfer_empty">Tidak ada file yang ditemukan.</string>
     <string name="file_transfer_shared_folder">Folder bersama</string>
-    <string name="file_transfer_no_shared_folders">Host ini belum mengekspos folder bersama apa pun.</string>
+    <string name="file_transfer_no_shared_folders">PC ini belum mengekspos folder bersama apa pun.</string>
     <string name="file_transfer_select_root">Pilih folder jarak jauh</string>
     <string name="file_transfer_read_only_root">Baca-saja</string>
     <string name="file_transfer_notification_channel_name">Transfer file</string>
@@ -434,8 +372,6 @@
     <string name="file_transfer_notification_upload_complete">Berhasil mengunggah %1$s</string>
     <string name="file_transfer_notification_download_complete">Berhasil mengunduh %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer gagal</string>
-
-    <!-- File transfer — actions -->
     <string name="file_transfer_rename">Ubah Nama</string>
     <string name="file_transfer_delete">Hapus</string>
     <string name="file_transfer_pin_folder">Sematkan sebagai pintasan</string>
@@ -443,23 +379,17 @@
     <string name="file_transfer_selected">dipilih</string>
     <string name="file_transfer_delete_selected">Hapus yang dipilih</string>
     <string name="file_transfer_cancel_selection">Batal pilihan</string>
-    <!-- File transfer — rename dialog -->
     <string name="file_transfer_rename_title">Ubah Nama</string>
     <string name="file_transfer_rename_hint">Nama baru</string>
     <string name="file_transfer_rename_confirm">Ubah Nama</string>
-    <!-- Generic dialog -->
     <string name="dialog_cancel">Batal</string>
-    <!-- Content descriptions -->
     <string name="cd_more_options">Opsi lainnya</string>
-    <!-- File transfer settings tab -->
     <string name="settings_ft_shared_folders_title">Folder Bersama Android</string>
     <string name="settings_ft_shared_folders_desc">Tambahkan folder dari perangkat ini untuk dibagikan saat hosting Android diaktifkan. Pilihan Anda akan disimpan dan digunakan secara otomatis setelah fitur tersedia.</string>
-    <string name="settings_ft_coming_soon">Hosting Android akan hadir di pembaruan mendatang</string>
+    <string name="settings_ft_active">Hosting Android akan hadir di pembaruan mendatang</string>
     <string name="settings_ft_no_folders">Belum ada folder yang ditambahkan.</string>
     <string name="settings_ft_add_folder">Tambah folder…</string>
     <string name="settings_ft_remove_folder">Hapus folder</string>
-
-    <!-- ═══ Material Shapes ═══ -->
     <string name="shape_circle">Lingkaran</string>
     <string name="shape_square">Kotak</string>
     <string name="shape_triangle">Segitiga</string>
@@ -484,12 +414,12 @@
     <string name="shape_soft_burst">Soft Burst</string>
     <string name="shape_soft_boom">Soft Boom</string>
     <string name="shape_pixel_circle">Pixel Circle</string>
-    <string name="pairing_error_malformed_response">Penyandingan berhasil tetapi respons asli tidak formatnya salah.</string>
-    <string name="pairing_error_empty_response">Penyandingan gagal (respons asli kosong)</string>
-    <string name="pairing_error_reach_failed">Tidak dapat menjangkau host (respons asli kosong)</string>
-    <string name="pairing_error_start_failed">Tidak dapat memulai penyandingan: %1$s</string>
-    <string name="pairing_error_save_failed">Gagal menyimpan host yang dipinkan dengan aman.</string>
-    <string name="qr_error_missing_hash">Kode QR tidak memiliki hash sertifikat host</string>
+    <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
+    <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
+    <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_start_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_save_failed">Gagal menyimpan PC yang dipinkan dengan aman.</string>
+    <string name="qr_error_missing_hash">Kode QR tidak memiliki hash sertifikat PC</string>
     <string name="qr_error_setup_failed">Penyusunan QR gagal</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
@@ -543,15 +473,15 @@
     <string name="sensor_gpu_temp">Suhu GPU</string>
     <string name="sensor_fallback_label">Sensor %1$d</string>
     <string name="about_android_client_label">Klien Android</string>
-    <string name="about_pc_host_label">Host PC</string>
+    <string name="about_pc_host_label">Your PC</string>
     <string name="about_status_unknown">Tidak Diketahui</string>
     <string name="about_view_github">Lihat Kode Sumber di GitHub</string>
     <string name="about_whats_new_1_label">Video Perangkat Keras H.264</string>
-    <string name="about_whats_new_1_body">Desktop jarak jauh dengan akselerasi perangkat keras via NVENC, QSV, AMF, atau VAAPI di host. Didekode dengan MediaCodec untuk pengiriman GPU tanpa penyalinan. Secara otomatis beralih ke MJPEG ketika enkoder perangkat keras tidak tersedia.</string>
+    <string name="about_whats_new_1_body">Desktop jarak jauh dengan akselerasi perangkat keras via NVENC, QSV, AMF, atau VAAPI di PC. Didekode dengan MediaCodec untuk pengiriman GPU tanpa penyalinan. Secara otomatis beralih ke MJPEG ketika enkoder perangkat keras tidak tersedia.</string>
     <string name="about_whats_new_2_label">Keamanan &amp; Penyandingan Perangkat</string>
-    <string name="about_whats_new_2_body">Semua lalu lintas dienkripsi dengan TLS 1.3. Penyandingan pertama kali menggunakan pertukaran kunci ECDH P-256 dengan PIN 6 digit — tidak ada kunci teks biasa yang dikirimkan. Klien menyematkan sidik jari sertifikat SHA-256 milik host untuk koneksi di masa mendatang.</string>
+    <string name="about_whats_new_2_body">Your connection is safe and private. Semua lalu lintas dienkripsi dengan TLS 1.3. Penyandingan pertama kali menggunakan pertukaran kunci ECDH P-256 dengan PIN 6 digit — tidak ada kunci teks biasa yang dikirimkan. Klien menyematkan sidik jari sertifikat SHA-256 milik PC untuk koneksi di masa mendatang.</string>
     <string name="about_whats_new_3_label">Transfer File Jarak Jauh</string>
-    <string name="about_whats_new_3_body">Telusuri folder bersama milik host dan transfer file ke kedua arah dengan verifikasi integritas SHA-256. Bagikan folder Android Anda ke host. Kemajuan langsung dengan dukungan pembatalan.</string>
+    <string name="about_whats_new_3_body">Telusuri folder bersama milik PC dan transfer file ke kedua arah dengan verifikasi integritas SHA-256. Bagikan folder Android Anda ke PC. Kemajuan langsung dengan dukungan pembatalan.</string>
     <string name="about_whats_new_4_label">Pembaruan Android</string>
     <string name="about_whats_new_4_body">Material 3 Ekspresif dengan fisika pegas di seluruh sistem. 8 ubin Pengaturan Cepat untuk perintah daya sekali ketuk. Widget layar beranda yang dapat diubah ukurannya. Umpan balik haptik dua tahap. Target SDK 37 (Android 17).</string>
     <string name="about_whats_new_5_label">Linux &amp; Identitas Baru</string>
@@ -568,7 +498,7 @@
     <string name="dashboard_pin_card">Sematkan kartu</string>
     <string name="dashboard_unpin_card">Lepas sematan kartu</string>
     <string name="faq_q11">Bagaimana cara mengatur Tailscale untuk akses jarak jauh?</string>
-    <string name="faq_a11">Tailscale memungkinkan Anda menjangkau PC dari mana saja secara aman, tanpa penerusan port dan tidak ada yang diekspos ke internet publik. Ini gratis untuk penggunaan pribadi.\n\n1. Di PC Anda (host):\n• Windows: instal Tailscale dari tailscale.com/download/windows, lalu masuk.\n• Linux: penginstal host RemEx dapat mengaturnya untuk Anda, atau jalankan:\n   curl -fsSL https://tailscale.com/install.sh | sh\n   sudo tailscale up\n\n2. Di ponsel ini:\n• Instal Tailscale dari Google Play Store.\n• Masuk dengan akun yang SAMA yang Anda gunakan di PC Anda.\n• Aktifkan sakelar VPN Tailscale.\n\n3. Temukan IP Tailscale PC Anda:\n• Di aplikasi Tailscale (atau konsol admin di login.tailscale.com), temukan PC Anda dan salin IP-nya. Ini dimulai dengan 100. — misalnya 100.101.102.103.\n\n4. Hubungkan di RemEx:\n• Buka layar Koneksi dan hubungkan secara manual ke alamat 100.x.y.z tersebut menggunakan port RemEx (bawaan 5005).\n• Pasangkan dengan PIN pada kali pertama, persis seperti di jaringan rumah Anda.\n\nItu saja — RemEx sekarang berfungsi dari mana saja, terenkripsi sepenuhnya.\n\nTip: penemuan otomatis hanya berfungsi di jaringan lokal Anda, jadi melalui Tailscale selalu hubungkan dengan memasukkan IP 100.x.y.z secara manual.</string>
+    <string name="faq_a11">Tailscale memungkinkan Anda menjangkau PC dari mana saja secara aman, tanpa penerusan port dan tidak ada yang diekspos ke internet publik. Ini gratis untuk penggunaan pribadi.\n\n1. Di PC Anda (PC):\n• Windows: instal Tailscale dari tailscale.com/download/windows, lalu masuk.\n• Linux: penginstal PC RemEx dapat mengaturnya untuk Anda, atau jalankan:\n   curl -fsSL https://tailscale.com/install.sh | sh\n   sudo tailscale up\n\n2. Di ponsel ini:\n• Instal Tailscale dari Google Play Store.\n• Masuk dengan akun yang SAMA yang Anda gunakan di PC Anda.\n• Aktifkan sakelar VPN Tailscale.\n\n3. Temukan IP Tailscale PC Anda:\n• Di aplikasi Tailscale (atau konsol admin di login.tailscale.com), temukan PC Anda dan salin IP-nya. Ini dimulai dengan 100. — misalnya 100.101.102.103.\n\n4. Hubungkan di RemEx:\n• Buka layar Koneksi dan hubungkan secara manual ke alamat 100.x.y.z tersebut menggunakan port RemEx (bawaan 5005).\n• Pasangkan dengan PIN pada kali pertama, persis seperti di jaringan rumah Anda.\n\nItu saja — RemEx sekarang berfungsi dari mana saja, terenkripsi sepenuhnya.\n\nTip: penemuan otomatis hanya berfungsi di jaringan lokal Anda, jadi melalui Tailscale selalu hubungkan dengan memasukkan IP 100.x.y.z secara manual.</string>
     <string name="file_transfer_action_downloading">Mengunduh</string>
     <string name="file_transfer_action_uploading">Mengunggah</string>
     <string name="file_transfer_adding_shortcut">Menambahkan pintasan…</string>
@@ -629,26 +559,25 @@
     <string name="rc_failed_mac_not_configured">Gagal: Alamat MAC tidak dikonfigurasi di pengaturan</string>
     <string name="rc_success_format">Sukses: %1$s</string>
     <string name="remote_desktop_action_failed">Tindakan jendela desktop gagal</string>
-    <string name="remote_desktop_advanced_window_control_unavailable">Kontrol jendela lanjutan tidak tersedia di host ini</string>
+    <string name="remote_desktop_advanced_window_control_unavailable">Kontrol jendela lanjutan tidak tersedia di PC ini</string>
     <string name="remote_desktop_connection_lost">Koneksi terputus. Ketuk Mulai untuk menghubungkan kembali.</string>
     <string name="remote_desktop_cursor_size_label">Ukuran Kursor: %.1fx</string>
     <string name="remote_desktop_h_scroll_short">Gulir H: %.1fx</string>
     <string name="remote_desktop_metadata_unavailable">Metadata jendela desktop tidak tersedia</string>
     <string name="remote_desktop_section_input">Input &amp; Kontrol</string>
     <string name="remote_desktop_section_stream">Aliran</string>
-    <string name="remote_desktop_unavailable_fallback">Desktop jarak jauh tidak tersedia di host ini</string>
+    <string name="remote_desktop_unavailable_fallback">Desktop jarak jauh tidak tersedia di PC ini</string>
     <string name="remote_desktop_untitled_window">(tanpa judul)</string>
     <string name="remote_desktop_v_scroll_short">Gulir V: %.1fx</string>
     <string name="task_manager_dismiss">Tutup</string>
-    <string name="task_manager_host_unresponsive">Host tidak merespons permintaan daftar proses. Periksa apakah penyandingan selesai dan host memiliki izin untuk membaca info proses.</string>
+    <string name="task_manager_host_unresponsive">PC tidak merespons permintaan daftar proses. Periksa apakah penyandingan selesai dan PC memiliki izin untuk membaca info proses.</string>
     <string name="task_manager_kill_failed_format">Gagal menghentikan proses %1$d</string>
     <string name="task_manager_retry">Coba lagi</string>
-    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
-    <string name="rd_err_capture_unavailable">Pengambilan layar tidak berfungsi di PC host.</string>
-    <string name="rd_err_capture_stopped">Pengambilan layar berhenti setelah %1$d bingkai. PC host mungkin terkunci atau keluar.</string>
+    <string name="rd_err_capture_unavailable">Pengambilan layar tidak berfungsi di Your PC.</string>
+    <string name="rd_err_capture_stopped">Pengambilan layar berhenti setelah %1$d bingkai. Your PC mungkin terkunci atau keluar.</string>
     <string name="rd_err_target_unavailable">Layar yang dipilih tidak lagi tersedia.</string>
     <string name="rd_err_target_switch_unsupported">Sesi ini tidak dapat mengganti layar saat streaming.</string>
-    <string name="rd_err_runtime_unavailable">Desktop jarak jauh tidak tersedia di PC host saat ini.</string>
+    <string name="rd_err_runtime_unavailable">Desktop jarak jauh tidak tersedia di Your PC saat ini.</string>
     <string name="cd_clear_search">Hapus pencarian</string>
     <string name="pairing_error_timeout">PC tidak merespons. Pastikan PC menyala dan terhubung ke jaringan yang sama, lalu coba lagi.</string>
     <string name="host_discovered_snackbar">PC ditemukan: %1$s</string>
@@ -663,4 +592,15 @@
     <string name="remote_desktop_display_numbered">Layar %1$d</string>
     <string name="remote_desktop_display_both">Kedua layar</string>
     <string name="cd_display_picker_icon">Pilih layar yang ingin ditampilkan</string>
+    <string name="connection_error_cert_changed">Identitas keamanan PC ini telah berubah. Jika Anda menginstal ulang RemEx, hapus penyandingan dan sandingkan lagi.</string>
+    <string name="connection_action_repair">Sandingkan Ulang</string>
+    <string name="wake_pc_sent">Sinyal bangun dikirim</string>
+    <string name="wake_pc_failed">Gagal mengirim sinyal bangun</string>
+    <string name="wake_pc_mac_not_configured">Alamat MAC belum dikonfigurasi — atur di Pengaturan</string>
+    <string name="wake_pc_lib_not_loaded">Tidak dapat mengirim sinyal bangun</string>
+    <string name="pairing_error_generic">Penyandingan gagal — silakan coba lagi</string>
+    <string name="splash_command_your">KENDALIKAN </string>
+    <string name="splash_pc">PC ANDA</string>
+    <string name="splash_command_center">⚡ PUSAT KENDALI</string>
+    <string name="splash_tap_to_skip">Ketuk di mana saja untuk melewati</string>
 </resources>

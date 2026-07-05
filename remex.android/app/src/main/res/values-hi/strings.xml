@@ -6,12 +6,8 @@
     <string name="widget_remote_label">RemEx रिमोट</string>
     <string name="widget_hardware_label">RemEx हार्डवेयर</string>
     <string name="widget_launcher_label">RemEx लॉन्चर</string>
-
-    <!-- ═══ Splash Screen ═══ -->
     <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">रिमोट एक्जीक्यूशन</string>
-
-    <!-- ═══ Navigation ═══ -->
     <string name="snackbar_no_pc_connected">कोई पीसी कनेक्ट नहीं है</string>
     <string name="snackbar_setup_connection">कनेक्शन सेट करें</string>
     <string name="connection_required_context">Connection required to access this feature.</string>
@@ -20,15 +16,11 @@
     <string name="exit_dialog_title">Exit RemEx?</string>
     <string name="exit_dialog_message">Are you sure you want to exit?</string>
     <string name="button_exit">Exit</string>
-
-    <!-- ═══ Common Components ═══ -->
     <string name="banner_no_pc_connected">कोई पीसी कनेक्ट नहीं है — सुविधाएं अनुपलब्ध हैं</string>
     <string name="button_connect">कनेक्ट करें</string>
     <string name="disconnected_requires_connection">%1$s के लिए एक कनेक्टेड पीसी की आवश्यकता है।</string>
     <string name="disconnected_connect_wifi">इस सुविधा का उपयोग करने के लिए अपने पीसी से वाई-फाई पर कनेक्ट करें।</string>
     <string name="button_setup_connection">कनेक्शन सेट करें</string>
-
-    <!-- ═══ Shared Buttons ═══ -->
     <string name="button_cancel">रद्द करें</string>
     <string name="button_confirm">पुष्टि करें</string>
     <string name="button_dismiss">हटाएं</string>
@@ -53,61 +45,43 @@
     <string name="cd_expand_icon">Expand</string>
     <string name="cd_category_icon">Category</string>
     <string name="cd_resize_cards">Resize cards</string>
-
-    <!-- ═══ Tutorial Screen ═══ -->
     <string name="tutorial_skip">छोड़ें</string>
     <string name="tutorial_get_started">शुरू करें</string>
     <string name="tutorial_next">आगे</string>
-
     <string name="tutorial_page1_title">RemEx में आपका स्वागत है</string>
     <string name="tutorial_page1_body">RemEx आपका रिमोट पीसी प्रबंधन कमांड सेंटर है। अपने फोन से कंप्यूटर को नियंत्रित करें, ऐप्स लॉन्च करें, प्रदर्शन की निगरानी करें और अपना डेस्कटॉप भी देखें।\n\nआइए आपको कुछ त्वरित चरणों में कनेक्ट करते हैं।</string>
-
     <string name="tutorial_page2_title">पहले होस्ट इंस्टॉल करें</string>
     <string name="tutorial_page2_body">कनेक्ट करने से पहले, आपके पीसी पर RemEx होस्ट चलना चाहिए।\n\n• विकल्प 1: डेस्कटॉप क्लाइंट (अनुशंसित) — होस्ट को बंडल करता है और सिस्टम ट्रे में चलता है।\n• विकल्प 2: स्टैंडअलोन होस्ट — केवल बैकग्राउंड सेवा, सर्वर के लिए आदर्श।\n\nGitHub से नवीनतम रिलीज़ डाउनलोड करें और पेयर करने से पहले इसे चलाएं।</string>
     <string name="tutorial_page2_link_label">GitHub रिलीज़ से डाउनलोड करें</string>
-
     <string name="tutorial_page3_title">ऑटो-डिस्कवरी</string>
-    <string name="tutorial_page3_body">कनेक्ट करने का सबसे आसान तरीका स्वचालित खोज है।\n\n1. सुनिश्चित करें कि आपके पीसी पर Remex.Client.Desktop या Remex.Host चल रहा है\n2. सुनिश्चित करें कि आपका फोन और पीसी दोनों एक ही वाई-फाई नेटवर्क पर हैं\n3. कनेक्शन स्क्रीन पर \'स्वचालित रूप से खोजें\' पर टैप करें\n\nRemEx आपके स्थानीय नेटवर्क पर चल रहे होस्ट का पता लगाने के लिए mDNS का उपयोग करता है। आपके पीसी का आईपी और पोर्ट स्वचालित रूप से भर दिया जाएगा।</string>
-
+    <string name="tutorial_page3_body">कनेक्ट करने का सबसे आसान तरीका स्वचालित खोज है।\n\n1. सुनिश्चित करें कि आपके पीसी पर Remex.Client.Desktop या Remex.PC चल रहा है\n2. सुनिश्चित करें कि आपका फोन और पीसी दोनों एक ही वाई-फाई नेटवर्क पर हैं\n3. कनेक्शन स्क्रीन पर \'स्वचालित रूप से खोजें\' पर टैप करें\n\nRemEx आपके स्थानीय नेटवर्क पर चल रहे होस्ट का पता लगाने के लिए mDNS का उपयोग करता है। आपके पीसी का आईपी और पोर्ट स्वचालित रूप से भर दिया जाएगा।</string>
     <string name="tutorial_page4_title">अपना आईपी पता ढूँढना</string>
     <string name="tutorial_page4_body">यदि ऑटो-डिस्कवरी काम नहीं करती है, तो आप मैन्युअल रूप से कनेक्ट कर सकते हैं। सबसे पहले, अपने पीसी का स्थानीय आईपी पता ढूँढें:\n\nWindows:\n  कमांड प्रॉम्प्ट खोलें → ipconfig टाइप करें\n  \'IPv4 Address\' देखें (जैसे 192.168.1.42)\n\nmacOS:\n  सिस्टम सेटिंग्स → नेटवर्क, या चलाएं:\n  ipconfig getifaddr en0\n\nLinux:\n  ip addr या hostname -I चलाएं\n\nआप कनेक्शन स्थिति अनुभाग के तहत Remex.Client.Desktop विंडो में आईपी पता भी देख सकते हैं।</string>
-
     <string name="tutorial_page5_title">मैन्युअल कनेक्शन</string>
-    <string name="tutorial_page5_body">एक बार जब आपके पास आईपी पता हो जाए:\n\n1. कनेक्शन स्क्रीन पर जाएं (सेटिंग्स → कनेक्शन)\n2. अपने पीसी का आईपी पता दर्ज करें\n3. पोर्ट दर्ज करें (डिफ़ॉल्ट 5005 है)\n4. \'सेव और कनेक्ट\' पर टैप करें\n\nRemEx कनेक्शन स्थापित करेगा और आप डैशबोर्ड पर अपने पीसी की स्थिति देखेंगे।\n\nयाद रखें: कनेक्शन सफल होने के लिए लक्षित पीसी पर Remex.Client.Desktop या Remex.Host चल रहा होना चाहिए।</string>
-
+    <string name="tutorial_page5_body">एक बार जब आपके पास आईपी पता हो जाए:\n\n1. कनेक्शन स्क्रीन पर जाएं (सेटिंग्स → कनेक्शन)\n2. अपने पीसी का आईपी पता दर्ज करें\n3. पोर्ट दर्ज करें (डिफ़ॉल्ट 5005 है)\n4. \'सेव और कनेक्ट\' पर टैप करें\n\nRemEx कनेक्शन स्थापित करेगा और आप डैशबोर्ड पर अपने पीसी की स्थिति देखेंगे।\n\nयाद रखें: कनेक्शन सफल होने के लिए लक्षित पीसी पर Remex.Client.Desktop या Remex.PC चल रहा होना चाहिए।</string>
     <string name="tutorial_page6_title">आप पूरी तरह तैयार हैं!</string>
     <string name="tutorial_page6_body">अब आप नियंत्रण लेने के लिए तैयार हैं।\n\nडैशबोर्ड से आप सिस्टम आंकड़ों की निगरानी कर सकते हैं, ऐप्स लॉन्च कर सकते हैं, कार्यों का प्रबंधन कर सकते हैं और अपने डेस्कटॉप को रिमोट स्ट्रीम कर सकते हैं।\n\nअपने थीम, कार्ड आकार, फोंट और रंगों को कस्टमाइज़ करने के लिए पर्सनलाइजेशन पर जाएं।\n\nयदि आपको कोई समस्या आती है तो सेटिंग्स में एफएक्यू देखें। RemEx का आनंद लें!</string>
-
-    <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
     <string name="tutorial_page_qr_title">QR कोड से तुरंत पेयर करें</string>
     <string name="tutorial_page_qr_body">कनेक्ट करने का सबसे तेज़ तरीका QR कोड स्कैन करना है।\n\n1. अपने PC पर Remex.Client.Desktop खोलें\n2. कनेक्शन → QR कोड दिखाएं पर जाएं\n3. अपने फ़ोन पर, कनेक्शन स्क्रीन पर QR आइकन पर टैप करें\n4. अपने कैमरे को कोड की ओर ले जाएं\n\nआपका फ़ोन स्वचालित रूप से सेव और कनेक्ट हो जाएगा — किसी मैन्युअल टाइपिंग की आवश्यकता नहीं है!</string>
-
-    <!-- ═══ Connection Status Strings ═══ -->
     <string name="status_disconnected">डिस्कनेक्ट हो गया</string>
     <string name="status_connected">कनेक्ट हो गया</string>
     <string name="status_connecting">%1$s:%2$d से कनेक्ट हो रहा है…</string>
-    <string name="status_error">त्रुटि: %1$s</string>
+    <string name="status_error">Couldn\'t reach your PC</string>
     <string name="status_awaiting_metadata">पीसी के विवरण की प्रतीक्षा है</string>
     <string name="status_metadata_unavailable">पीसी के विवरण उपलब्ध नहीं हैं</string>
     <string name="status_native_lib_not_loaded">नेटिव लाइब्रेरी लोड नहीं हुई</string>
     <string name="error_no_host_found">नेटवर्क पर कोई RemEx पीसी नहीं मिला</string>
     <string name="error_discovery_failed">खोज विफल रही: %1$s</string>
-    <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
-         to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
     <string name="permission_local_network_rationale">RemEx को वाई-फाई पर आपके पीसी को खोजने और उससे कनेक्ट करने के लिए लोकल नेटवर्क अनुमति की आवश्यकता है। इसके बिना, Android 17 और उसके बाद के वर्ज़न पर खोज और कनेक्शन काम नहीं करेगा। जारी रखने के लिए सेटिंग्स में यह अनुमति दें।</string>
     <string name="error_local_network_permission_denied">लोकल नेटवर्क एक्सेस से इनकार कर दिया गया था। RemEx Android 17+ पर इस अनुमति के बिना आपके पीसी से कनेक्ट नहीं हो सकता है। कृपया इसे ऐप सेटिंग्स में दें।</string>
     <string name="capability_desktop_available">डेस्कटॉप उपलब्ध</string>
     <string name="capability_desktop_unavailable">डेस्कटॉप अनुपलब्ध</string>
-
-    <!-- ═══ Foreground Service Strings ═══ -->
     <string name="notification_channel_name">RemEx Connection</string>
     <string name="notification_channel_description">Keeps the connection to your PC alive</string>
     <string name="notification_title_connected">Connected to PC</string>
     <string name="notification_title_connecting">Connecting…</string>
     <string name="notification_text_connected">RemEx is running in the background</string>
     <string name="notification_text_connecting">Maintaining connection</string>
-
-    <!-- ═══ Task Manager Screen ═══ -->
     <string name="screen_task_manager_title">टास्क मैनेजर</string>
     <string name="task_manager_search_hint">प्रोसेस नाम या PID खोजें</string>
     <string name="sort_by">Sort by:</string>
@@ -124,8 +98,6 @@
     <string name="button_kill">बंद करें</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
     <string name="cd_kill_process">बंद करें</string>
-
-    <!-- ═══ Remote Mouse Screen ═══ -->
     <string name="screen_remote_mouse_title">रिमोट माउस</string>
     <string name="remote_mouse_trackpad_label">ट्रैकपैड</string>
     <string name="remote_mouse_left_click">लेफ्ट क्लिक</string>
@@ -133,8 +105,6 @@
     <string name="cd_scroll_up">ऊपर स्क्रॉल करें</string>
     <string name="cd_scroll_down">नीचे स्क्रॉल करें</string>
     <string name="cd_keyboard">कीबोर्ड</string>
-
-    <!-- ═══ Settings Screen ═══ -->
     <string name="screen_settings_title">सेटिंग्स</string>
     <string name="settings_tab_connection">कनेक्शन</string>
     <string name="settings_tab_personalization">पर्सनलाइजेशन</string>
@@ -146,13 +116,9 @@
     <string name="settings_replay_tutorial">📖 ट्यूटोरियल फिर से देखें</string>
     <string name="settings_replay_tutorial_body">शुरुआती गाइड को फिर से देखें जिसमें सेटअप, ऑटो-डिस्कवरी, आईपी ढूँढना और पीसी से कनेक्ट करना शामिल है।</string>
     <string name="settings_faq_hint">कोई सवाल है? ओवरफ्लो मेनू (⋮ → FAQ) से उपलब्ध FAQ देखें।</string>
-
-    <!-- ═══ App Launcher Screen ═══ -->
     <string name="screen_app_launcher_title">ऐप लॉन्चर</string>
     <string name="app_launcher_no_apps">कोई ऐप नहीं मिला</string>
     <string name="button_fetch_from_host">होस्ट से प्राप्त करें</string>
-
-    <!-- ═══ Remote Control Screen ═══ -->
     <string name="screen_remote_control_title">रिमोट कंट्रोल</string>
     <string name="remote_control_section_header">सिस्टम कमांड</string>
     <string name="remote_control_description">महत्वपूर्ण कार्यों के लिए पुष्टि की आवश्यकता होती है। वैकल्पिक देरी shutdown -t सेकंड सेट करती है।</string>
@@ -174,8 +140,6 @@
     <string name="rc_category_session">सत्र</string>
     <string name="rc_category_power">पावर</string>
     <string name="rc_category_energy">ऊर्जा</string>
-
-    <!-- ═══ Remote Desktop Screen ═══ -->
     <string name="screen_remote_desktop_title">रिमोट डेस्कटॉप</string>
     <string name="cd_show_keyboard">कीबोर्ड दिखाएं</string>
     <string name="cd_key_escape">Escape</string>
@@ -225,8 +189,6 @@
     <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">टैप = क्लिक • लॉन्ग प्रेस = राइट क्लिक • 2 उंगलियाँ = स्क्रॉल • पेन = एब्सोल्यूट</string>
-
-    <!-- ═══ Dashboard Screen ═══ -->
     <string name="screen_dashboard_title">RemEx होम बेस</string>
     <string name="cd_reset_zoom">ज़ूम रीसेट करें</string>
     <string name="cd_customize_cards">कार्ड्स कस्टमाइज़ करें</string>
@@ -245,8 +207,6 @@
     <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">डेटा एकत्र किया जा रहा है…</string>
     <string name="cd_change_display_mode">डिस्प्ले मोड बदलें</string>
-
-    <!-- ═══ Connection Screen ═══ -->
     <string name="screen_connection_title">कनेक्शन</string>
     <string name="screen_splash_title">Loading</string>
     <string name="screen_tutorial_title">Tutorial</string>
@@ -296,25 +256,19 @@
     <string name="connection_status_label">स्थिति: %1$s</string>
     <string name="connection_paired">Paired</string>
     <string name="connection_unpair">Unpair</string>
-
-    <!-- ═══ Pairing Screen ═══ -->
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
     <string name="pairing_error_cert_mismatch">Certificate mismatch</string>
-
-    <!-- ═══ QR Scanner Screen ═══ -->
     <string name="qr_scanner_title">QR कोड स्कैन करें</string>
     <string name="cd_back">वापस</string>
     <string name="qr_scanner_hint">अपने PC पर दिखाए गए QR कोड पर कैमरा पॉइंट करें</string>
     <string name="qr_scanner_permission_required">QR कोड स्कैन करने के लिए कैमरा अनुमति आवश्यक है</string>
     <string name="qr_scanner_grant_permission">अनुमति दें</string>
-    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx Host to 2.0.</string>
+    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx PC to 2.0.</string>
     <string name="qr_error_invalid">Invalid RemEx QR code</string>
-
-    <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
@@ -327,38 +281,26 @@
     <string name="cd_collapse">छोटा करें</string>
     <string name="cd_expand">विस्तार करें</string>
     <string name="faq_github_button">GitHub रिलीज़ खोलें</string>
-
     <string name="faq_q1">मुझे अपने पीसी पर क्या चलाने की ज़रूरत है?</string>
-    <string name="faq_a1">आपको अपने पीसी पर Remex.Client.Desktop या Remex.Host चलाने की आवश्यकता है।\n\n• Remex.Client.Desktop — पूर्ण डेस्कटॉप ऐप जो होस्ट को स्वचालित रूप से बंडल करता है। बस इसे लॉन्च करें और होस्ट पोर्ट 5005 पर बैकग्राउंड में शुरू हो जाता है।\n\n• Remex.Host — एक स्टैंडअलोन हेडलेस सेवा, सर्वर या केवल बैकग्राउंड उपयोग के लिए आदर्श।\n\nदोनों आत्मनिर्भर हैं (सभी रनटाइम शामिल हैं) — बस पब्लिश फ़ोल्डर निकालें और चलाएं। GitHub रिलीज़ पेज से डाउनलोड करें।</string>
-
+    <string name="faq_a1">आपको अपने पीसी पर Remex.Client.Desktop या Remex.PC चलाने की आवश्यकता है।\n\n• Remex.Client.Desktop — पूर्ण डेस्कटॉप ऐप जो होस्ट को स्वचालित रूप से बंडल करता है। बस इसे लॉन्च करें और होस्ट पोर्ट 5005 पर बैकग्राउंड में शुरू हो जाता है।\n\n• Remex.PC — एक स्टैंडअलोन हेडलेस सेवा, सर्वर या केवल बैकग्राउंड उपयोग के लिए आदर्श।\n\nदोनों आत्मनिर्भर हैं (सभी रनटाइम शामिल हैं) — बस पब्लिश फ़ोल्डर निकालें और चलाएं। GitHub रिलीज़ पेज से डाउनलोड करें।</string>
     <string name="faq_q2">मैं अपने पीसी का आईपी पता कैसे ढूँढूँ?</string>
     <string name="faq_a2">Windows:\nकमांड प्रॉम्प्ट खोलें और \'ipconfig\' टाइप करें। अपने सक्रिय नेटवर्क एडॉप्टर के तहत \'IPv4 Address\' लाइन देखें (जैसे 192.168.1.42)।\n\nmacOS:\nसिस्टम सेटिंग्स → नेटवर्क पर जाएं और कनेक्टेड इंटरफ़ेस देखें, या टर्मिनल खोलें और चलाएं: ipconfig getifaddr en0\n\nLinux:\nटर्मिनल खोलें और चलाएं: ip addr या hostname -I\n\nआप आईपी सीधे Remex.Client.Desktop विंडो में भी देख सकते हैं।</string>
-
     <string name="faq_q3">ऑटो-डिस्कवरी को मेरा पीसी नहीं मिल रहा है। मुझे क्या जांचना चाहिए?</string>
-    <string name="faq_a3">1. सुनिश्चित करें कि आपके पीसी पर Remex.Client.Desktop या Remex.Host वास्तव में चल रहा है।\n2. दोनों डिवाइस एक ही वाई-फाई / LAN नेटवर्क पर होने चाहिए।\n3. Android 13+ पर, NEARBY_WIFI_DEVICES अनुमति दी जानी चाहिए। जब आप \'स्वचालित रूप से खोजें\' पर टैप करेंगे तो RemEx इसके लिए संकेत देगा।\n4. कुछ राउटर में \'AP Isolation\' या \'Client Isolation\' सक्षम होता है, जो डिवाइस-टू-डिवाइस संचार को रोकता है। अपनी राउटर सेटिंग्स जांचें।\n5. कॉर्पोरेट या गेस्ट वाई-फाई नेटवर्क अक्सर mDNS ट्रैफ़िक को ब्लॉक कर देते हैं। इसके बजाय व्यक्तिगत या घरेलू नेटवर्क का उपयोग करने का प्रयास करें।</string>
-
+    <string name="faq_a3">1. सुनिश्चित करें कि आपके पीसी पर Remex.Client.Desktop या Remex.PC वास्तव में चल रहा है।\n2. दोनों डिवाइस एक ही वाई-फाई / LAN नेटवर्क पर होने चाहिए।\n3. Android 13+ पर, NEARBY_WIFI_DEVICES अनुमति दी जानी चाहिए। जब आप \'स्वचालित रूप से खोजें\' पर टैप करेंगे तो RemEx इसके लिए संकेत देगा।\n4. कुछ राउटर में \'AP Isolation\' या \'Client Isolation\' सक्षम होता है, जो डिवाइस-टू-डिवाइस संचार को रोकता है। अपनी राउटर सेटिंग्स जांचें।\n5. कॉर्पोरेट या गेस्ट वाई-फाई नेटवर्क अक्सर mDNS ट्रैफ़िक को ब्लॉक कर देते हैं। इसके बजाय व्यक्तिगत या घरेलू नेटवर्क का उपयोग करने का प्रयास करें।</string>
     <string name="faq_q4">डिफ़ॉल्ट पोर्ट क्या है?</string>
     <string name="faq_a4">डिफ़ॉल्ट पोर्ट 5005 है। यदि Remex.Client.Desktop को पोर्ट 5005 उपयोग में मिलता है, तो यह 5006 पर वापस आ जाएगा। आप डेस्कटॉप क्लाइंट की विंडो में सक्रिय पोर्ट देख सकते हैं।\n\nयदि आपने होस्ट की ओर से पोर्ट बदल दिया है, तो इस ऐप की कनेक्शन स्क्रीन में मिलान वाला पोर्ट दर्ज करना सुनिश्चित करें।</string>
-
     <string name="faq_q5">मैं अपने पीसी के साथ पेयर कैसे करूँ?</string>
     <string name="faq_a5">जब आप पहली बार किसी पीसी से कनेक्ट होते हैं, तो आपको पीसी पर प्रदर्शित 6-अंकीय पिन दर्ज करना होगा। यह उपकरणों के बीच एक सुरक्षित, एन्क्रिप्टेड संबंध बनाता है। जब तक आप कनेक्शन रीसेट नहीं करते या ऐप को फिर से इंस्टॉल नहीं करते, तब तक आपको दोबारा पिन दर्ज करने की आवश्यकता नहीं होगी।</string>
-
     <string name="faq_q6">क्या मैं इंटरनेट पर कनेक्ट कर सकता हूँ (केवल LAN पर नहीं)?</string>
     <string name="faq_a6">RemEx स्थानीय नेटवर्क (LAN) उपयोग के लिए डिज़ाइन किया गया है। इंटरनेट पर कनेक्ट करने के लिए आपको पोर्ट 5005 (या जो भी पोर्ट आप उपयोग करते हैं) के लिए अपने राउटर पर पोर्ट फॉरवर्डिंग सेट करना होगा और अपने सार्वजनिक आईपी पते का उपयोग करना होगा।\n\nमहत्वपूर्ण: पोर्ट को इंटरनेट पर एक्सपोज़ करना सुरक्षा जोखिम है। रिमोट एक्सेस के लिए वीपीएन (VPN) अनुशंसित तरीका है।</string>
-
     <string name="faq_q7">रिमोट डेस्कटॉप लैग कर रहा है या काम नहीं कर रहा है। मैं क्या कर सकता हूँ?</string>
     <string name="faq_a7">• कनेक्शन → रिमोट डेस्कटॉप डिफ़ॉल्ट में क्वालिटी स्लाइडर को कम करें।\n• लक्ष्य FPS कम करें (अधिकांश उपयोग के मामलों के लिए 15–20 FPS पर्याप्त है)।\n• स्ट्रीम किए जा रहे रिज़ॉल्यूशन को कम करने के लिए स्केल कम करें।\n• सुनिश्चित करें कि आपका पीसी स्क्रीन कैप्चर बैकएंड का समर्थन करता है: विंडोज पर DXGI, लिनक्स पर X11/Wayland।\n• जांचें कि आप तेज़, स्थानीय वाई-फाई नेटवर्क (5 GHz बेहतर) पर हैं।</string>
-
     <string name="faq_q8">वेक-ऑन-लैन (WOL) क्या है?</string>
     <string name="faq_a8">वेक-ऑन-लैन आपको नेटवर्क पर "मैजिक पैकेट" भेजकर अपने पीसी को रिमोट से पावर ऑन करने देता है।\n\nइसका उपयोग करने के लिए:\n1. अपने पीसी की BIOS/UEFI सेटिंग्स में WOL सक्षम करें।\n2. अपने नेटवर्क एडॉप्टर के गुणों में WOL सक्षम करें (Windows: डिवाइस मैनेजर → नेटवर्क एडॉप्टर → पावर मैनेजमेंट)।\n3. कनेक्शन स्क्रीन में अपने पीसी का MAC पता दर्ज करें।\n4. डैशबोर्ड या रिमोट कंट्रोल स्क्रीन पर \'Wake PC\' कार्ड का उपयोग करें।</string>
-
     <string name="faq_q9">मैं ऐप की उपस्थिति को कैसे कस्टमाइज़ करूँ?</string>
     <string name="faq_a9">पर्सनलाइजेशन स्क्रीन पर जाएं (डैशबोर्ड पर गियर FAB टैप करें या ओवरफ्लो मेनू → सेटिंग्स के माध्यम से नेविगेट करें)।\n\nआप बदल सकते हैं:\n• थीम पैलेट और कलर सीड\n• कार्ड कॉर्नर रेडियस और शेप प्रीसेट\n• फ़ॉन्ट फैमिली और स्केल\n• कार्ड अपारदर्शिता (Opacity)\n• डार्क/लाइट/सिस्टम थीम मोड</string>
-
     <string name="faq_q10">क्या मैं ट्यूटोरियल फिर से देख सकता हूँ?</string>
     <string name="faq_a10">हाँ! ओवरफ्लो मेनू से सेटिंग्स पर जाएं (⋮ → सेटिंग्स)। वहाँ आपको किसी भी समय ट्यूटोरियल को फिर से चलाने का विकल्प मिलेगा।</string>
-
-    <!-- ═══ Personalization Screen ═══ -->
     <string name="screen_personalization_title">पर्सनलाइजेशन</string>
     <string name="personalization_appearance_studio">अपीयरेंस स्टूडियो</string>
     <string name="personalization_section_language">भाषा</string>
@@ -385,8 +327,6 @@
     <string name="personalization_shape_task_manager">टास्क मैनेजर</string>
     <string name="personalization_shape_pc_orb">पीसी कनेक्शन ऑर्ब</string>
     <string name="personalization_preview">पूर्वावलोकन</string>
-
-    <!-- ═══ Widget Configuration Activities ═══ -->
     <string name="widget_config_app_launcher_title">ऐप लॉन्चर कॉन्फ़िगर करें</string>
     <string name="widget_config_app_launcher_hint">अपने विजेट पर दिखाने के लिए ऐप्स चुनें:</string>
     <string name="widget_config_no_apps">अभी तक कोई ऐप उपलब्ध नहीं है।</string>
@@ -408,8 +348,6 @@
     <string name="tile_hibernate_label">पीसी को हाइबरनेट करें</string>
     <string name="tile_monitor_off_label">मॉनिटर बंद करें</string>
     <string name="tile_wol_label">वेक ऑन लैन</string>
-
-    <!-- ═══ File Transfer Screen ═══ -->
     <string name="screen_file_transfer_title">फ़ाइल ट्रांसफर</string>
     <string name="file_transfer_local">लोकल (फ़ोन)</string>
     <string name="file_transfer_remote">रिमोट (पीसी)</string>
@@ -434,8 +372,6 @@
     <string name="file_transfer_notification_upload_complete">%1$s अपलोड हो गया</string>
     <string name="file_transfer_notification_download_complete">%1$s डाउनलोड हो गया</string>
     <string name="file_transfer_notification_failed_title">ट्रांसफर विफल रहा</string>
-
-    <!-- File transfer — actions -->
     <string name="file_transfer_rename">नाम बदलें</string>
     <string name="file_transfer_delete">हटाएं</string>
     <string name="file_transfer_pin_folder">शॉर्टकट के रूप में पिन करें</string>
@@ -443,23 +379,17 @@
     <string name="file_transfer_selected">चयनित</string>
     <string name="file_transfer_delete_selected">चयनित हटाएं</string>
     <string name="file_transfer_cancel_selection">चयन रद्द करें</string>
-    <!-- File transfer — rename dialog -->
     <string name="file_transfer_rename_title">नाम बदलें</string>
     <string name="file_transfer_rename_hint">नया नाम</string>
     <string name="file_transfer_rename_confirm">नाम बदलें</string>
-    <!-- Generic dialog -->
     <string name="dialog_cancel">रद्द करें</string>
-    <!-- Content descriptions -->
     <string name="cd_more_options">अधिक विकल्प</string>
-    <!-- File transfer settings tab -->
     <string name="settings_ft_shared_folders_title">Android शेयर्ड फ़ोल्डर्स</string>
     <string name="settings_ft_shared_folders_desc">जब Android होस्टिंग सक्षम हो, तो साझा करने के लिए इस डिवाइस से फ़ोल्डर जोड़ें। आपके चयन सेव कर लिए जाएंगे और सुविधा उपलब्ध होने पर स्वचालित रूप से उपयोग किए जाएंगे।</string>
-    <string name="settings_ft_coming_soon">Android होस्टिंग भविष्य के अपडेट में आ रही है</string>
+    <string name="settings_ft_active">Android होस्टिंग भविष्य के अपडेट में आ रही है</string>
     <string name="settings_ft_no_folders">अभी तक कोई फ़ोल्डर नहीं जोड़ा गया।</string>
     <string name="settings_ft_add_folder">फ़ोल्डर जोड़ें…</string>
     <string name="settings_ft_remove_folder">फ़ोल्डर हटाएं</string>
-
-    <!-- ═══ Material Shapes ═══ -->
     <string name="shape_circle">गोलाकार</string>
     <string name="shape_square">वर्गाकार</string>
     <string name="shape_triangle">त्रिभुज</string>
@@ -484,10 +414,10 @@
     <string name="shape_soft_burst">सॉफ्ट बर्स्ट</string>
     <string name="shape_soft_boom">सॉफ्ट बूम</string>
     <string name="shape_pixel_circle">पिक्सेल सर्कल</string>
-    <string name="pairing_error_malformed_response">पेयरिंग सफल रही लेकिन मूल प्रतिक्रिया विकृत थी।</string>
-    <string name="pairing_error_empty_response">पेयरिंग विफल रही (खाली मूल प्रतिक्रिया)</string>
-    <string name="pairing_error_reach_failed">होस्ट तक नहीं पहुँच सका (खाली मूल प्रतिक्रिया)</string>
-    <string name="pairing_error_start_failed">पेयरिंग प्रारंभ नहीं की जा सकी: %1$s</string>
+    <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
+    <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
+    <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_start_failed">Couldn\'t reach your PC</string>
     <string name="pairing_error_save_failed">पिन किए गए होस्ट को सुरक्षित रूप से सहेजने में विफल।</string>
     <string name="qr_error_missing_hash">क्यूआर कोड में होस्ट प्रमाणपत्र हैश गायब है</string>
     <string name="qr_error_setup_failed">क्यूआर सेटअप विफल रहा</string>
@@ -549,7 +479,7 @@
     <string name="about_whats_new_1_label">H.264 हार्डवेयर वीडियो</string>
     <string name="about_whats_new_1_body">होस्ट पर NVENC, QSV, AMF, या VAAPI के माध्यम से हार्डवेयर-त्वरित रिमोट डेस्कटॉप। शून्य-कॉपी GPU वितरण के लिए MediaCodec के साथ डीकोड किया गया। हार्डवेयर एनकोडर अनुपलब्ध होने पर स्वचालित रूप से MJPEG पर वापस आ जाता है।</string>
     <string name="about_whats_new_2_label">सुरक्षा और डिवाइस पेयरिंग</string>
-    <string name="about_whats_new_2_body">सभी ट्रैफ़िक TLS 1.3 के साथ एन्क्रिप्टेड हैं। पहली बार पेयरिंग 6-अंकीय पिन के साथ ECDH P-256 कुंजी विनिमय का उपयोग करती है — नेटवर्क पर कभी भी सादा पाठ कुंजियाँ नहीं जातीं। क्लाइंट भविष्य के कनेक्शन के लिए होस्ट के SHA-256 प्रमाणपत्र फ़िंगरप्रिंट को पिन करता है।</string>
+    <string name="about_whats_new_2_body">Your connection is safe and private. सभी ट्रैफ़िक TLS 1.3 के साथ एन्क्रिप्टेड हैं। पहली बार पेयरिंग 6-अंकीय पिन के साथ ECDH P-256 कुंजी विनिमय का उपयोग करती है — नेटवर्क पर कभी भी सादा पाठ कुंजियाँ नहीं जातीं। क्लाइंट भविष्य के कनेक्शन के लिए होस्ट के SHA-256 प्रमाणपत्र फ़िंगरप्रिंट को पिन करता है।</string>
     <string name="about_whats_new_3_label">रिमोट फ़ाइल ट्रांसफर</string>
     <string name="about_whats_new_3_body">होस्ट के साझा किए गए फ़ोल्डरों को ब्राउज़ करें और SHA-256 अखंडता सत्यापन के साथ किसी भी दिशा में फ़ाइलें ट्रांसफर करें। अपने एंड्रॉइड फ़ोल्डर को होस्ट के साथ साझा करें। रद्दीकरण समर्थन के साथ लाइव प्रगति।</string>
     <string name="about_whats_new_4_label">एंड्रॉइड ओवरहॉल</string>
@@ -643,7 +573,6 @@
     <string name="task_manager_host_unresponsive">होस्ट प्रक्रिया सूची अनुरोधों का उत्तर नहीं दे रहा है। जांचें कि पेयरिंग पूर्ण है और होस्ट को प्रक्रिया जानकारी पढ़ने की अनुमति है।</string>
     <string name="task_manager_kill_failed_format">प्रक्रिया %1$d को समाप्त करने में विफल</string>
     <string name="task_manager_retry">पुनः प्रयास करें</string>
-    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
     <string name="rd_err_capture_unavailable">होस्ट पीसी पर स्क्रीन कैप्चर काम नहीं कर रहा है।</string>
     <string name="rd_err_capture_stopped">%1$d फ़्रेम के बाद स्क्रीन कैप्चर रुक गया। हो सकता है कि होस्ट पीसी लॉक हो गया हो या साइन आउट हो गया हो।</string>
     <string name="rd_err_target_unavailable">चयनित डिस्प्ले अब उपलब्ध नहीं है।</string>
@@ -663,4 +592,15 @@
     <string name="remote_desktop_display_numbered">डिस्प्ले %1$d</string>
     <string name="remote_desktop_display_both">दोनों स्क्रीन</string>
     <string name="cd_display_picker_icon">चुनें कि कौन सा डिस्प्ले देखना है</string>
+    <string name="connection_error_cert_changed">इस PC की सुरक्षा पहचान बदल गई है। यदि आपने RemEx को फिर से इंस्टॉल किया है, तो पेयरिंग हटाएं और फिर से पेयर करें।</string>
+    <string name="connection_action_repair">फिर से पेयर करें</string>
+    <string name="wake_pc_sent">वेक सिग्नल भेजा गया</string>
+    <string name="wake_pc_failed">वेक सिग्नल भेजने में विफल</string>
+    <string name="wake_pc_mac_not_configured">MAC पता कॉन्फ़िगर नहीं है — सेटिंग्स में सेट करें</string>
+    <string name="wake_pc_lib_not_loaded">वेक सिग्नल नहीं भेजा जा सकता</string>
+    <string name="pairing_error_generic">पेयरिंग विफल — कृपया पुनः प्रयास करें</string>
+    <string name="splash_command_your">अपने PC को </string>
+    <string name="splash_pc">नियंत्रित करें</string>
+    <string name="splash_command_center">⚡ नियंत्रण केंद्र</string>
+    <string name="splash_tap_to_skip">छोड़ने के लिए कहीं भी टैप करें</string>
 </resources>

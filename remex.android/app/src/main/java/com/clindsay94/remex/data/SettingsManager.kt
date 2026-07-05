@@ -45,7 +45,6 @@ class SettingsManager(val context: Context) {
                 val HORIZONTAL_SCROLL_SENSITIVITY_KEY =
                         floatPreferencesKey("horizontal_scroll_sensitivity")
                 val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("has_completed_onboarding")
-                val SPLASH_SHOWN_KEY = booleanPreferencesKey("splash_shown")
                 val SPLASH_STYLE_KEY = stringPreferencesKey("splash_style")
                 val CLIENT_ID_KEY = stringPreferencesKey("client_id")
 
@@ -183,10 +182,6 @@ class SettingsManager(val context: Context) {
                 context.dataStore.data.map { preferences ->
                         preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
                 }
-
-        // See hasCompletedOnboardingFlow for the nullable-type rationale.
-        val splashShownFlow: Flow<Boolean?> =
-                context.dataStore.data.map { preferences -> preferences[SPLASH_SHOWN_KEY] ?: false }
 
         val hostFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
@@ -393,10 +388,6 @@ class SettingsManager(val context: Context) {
 
         suspend fun resetOnboarding() {
                 context.dataStore.edit { it[HAS_COMPLETED_ONBOARDING_KEY] = false }
-        }
-
-        suspend fun markSplashShown() {
-                context.dataStore.edit { it[SPLASH_SHOWN_KEY] = true }
         }
 
         suspend fun getOrCreateClientId(): String {

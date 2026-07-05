@@ -106,7 +106,10 @@ class PairingViewModel : ViewModel() {
                 when {
                     result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
                     result.isBlank() -> context.getString(R.string.pairing_error_empty_response)
-                    else -> result
+                    else -> {
+                        android.util.Log.w("PairingViewModel", "Unknown pairing error: $result")
+                        context.getString(R.string.pairing_error_unknown)
+                    }
                 }
         _uiState.value = PairingUiState(isLoading = false, pairingError = message)
         return false
@@ -173,7 +176,10 @@ class PairingViewModel : ViewModel() {
                         when {
                             result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
                             result.isBlank() -> context.getString(R.string.pairing_error_reach_failed)
-                            else -> result
+                            else -> {
+                                android.util.Log.w("PairingViewModel", "Unknown pairing error: $result")
+                                context.getString(R.string.pairing_error_unknown)
+                            }
                         }
                 _uiState.value =
                         PairingUiState(

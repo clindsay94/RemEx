@@ -11,6 +11,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import com.clindsay94.remex.R
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -58,6 +62,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _telemetryState = MutableStateFlow(TelemetryState())
     val telemetryState: StateFlow<TelemetryState> = _telemetryState.asStateFlow()
+
+    private val _wakeStatus = MutableSharedFlow<String>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val wakeStatus = _wakeStatus.asSharedFlow()
 
     private val _telemetrySensors = MutableStateFlow<List<TelemetrySensor>>(emptyList())
     val telemetrySensors: StateFlow<List<TelemetrySensor>> = _telemetrySensors.asStateFlow()
@@ -194,14 +201,18 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     if (mac.isNotEmpty()) {
                         RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull()
                         Log.d("DashboardVM", "Wake-on-LAN packet sent to $mac via $broadcast:9")
+                        _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_sent))
                     } else {
                         Log.w("DashboardVM", "Cannot send Wake-on-LAN: MAC address not configured")
+                        _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_mac_not_configured))
                     }
                 } else {
                     Log.w("DashboardVM", "Cannot send Wake-on-LAN: RemexCoreClient library not loaded")
+                    _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_lib_not_loaded))
                 }
             } catch (e: Throwable) {
                 Log.e("DashboardVM", "Failed to send Wake-on-LAN packet", e)
+                _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_failed))
             }
         }
     }

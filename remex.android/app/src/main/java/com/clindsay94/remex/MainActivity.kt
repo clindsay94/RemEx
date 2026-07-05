@@ -15,9 +15,11 @@ import com.clindsay94.remex.ui.screens.PersonalizationViewModel
 import com.clindsay94.remex.ui.navigation.AppNavigation
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.widget.WidgetDataCache
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         RemexClientManager.initialize(this)
@@ -25,8 +27,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             val personalizationViewModel: PersonalizationViewModel = viewModel()
             val personalization by personalizationViewModel.personalization.collectAsStateWithLifecycle()
-            
-            var splashShown by rememberSaveable { mutableStateOf(false) }
             
             val prefs = personalization
             if (prefs != null) {
@@ -40,18 +40,12 @@ class MainActivity : ComponentActivity() {
                     fontFamilyKey = prefs.fontFamily,
                     fontScale = prefs.fontScale
                 ) {
-                    AppNavigation(
-                        splashShown = splashShown,
-                        onMarkSplashShown = { splashShown = true }
-                    )
+                    AppNavigation()
                 }
             } else {
                 // Fallback to default theme until prefs are loaded
                 RemExTheme {
-                    AppNavigation(
-                        splashShown = splashShown,
-                        onMarkSplashShown = { splashShown = true }
-                    )
+                    AppNavigation()
                 }
             }
         }

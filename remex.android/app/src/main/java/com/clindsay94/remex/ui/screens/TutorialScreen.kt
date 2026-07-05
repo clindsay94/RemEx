@@ -391,7 +391,10 @@ private fun TutorialPageContent(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = page.emoji, fontSize = 64.sp)
+                    Text(
+                        text = page.emoji,
+                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp)
+                    )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }

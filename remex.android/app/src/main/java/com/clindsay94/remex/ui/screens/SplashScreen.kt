@@ -59,6 +59,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
+import com.clindsay94.remex.R
+import com.clindsay94.remex.BuildConfig
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalContext
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.compose.ui.unit.sp
 import androidx.graphics.shapes.Morph
@@ -116,6 +123,16 @@ private class StreamParticle(var t: Float, var speed: Float, var radius: Float, 
  */
 @Composable
 fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
+        val context = LocalContext.current
+        DisposableEffect(Unit) {
+                val activity = context as? Activity ?: return@DisposableEffect onDispose {}
+                val originalOrientation = activity.requestedOrientation
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                onDispose {
+                        activity.requestedOrientation = originalOrientation
+                }
+        }
+
         val scope = rememberCoroutineScope()
         val view = LocalView.current
         var elapsed by remember { mutableStateOf(0f) }
@@ -209,8 +226,17 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
         val oteMeasured = remember(completionStyle) { textMeasurer.measure("ote", completionStyle) }
         val exMeasured = remember(exStyle) { textMeasurer.measure("EX", exStyle) }
         val ecuMeasured = remember(completionStyle) { textMeasurer.measure("ecution", completionStyle) }
-        val commandMeasured = remember(tagStyle) { textMeasurer.measure("COMMAND ", tagStyle) }
-        val yourPcMeasured = remember(tagStyle) { textMeasurer.measure("YOUR PC", tagStyle) }
+        
+        val cmdStr = stringResource(R.string.splash_command_your)
+        val pcStr = stringResource(R.string.splash_pc)
+        val cmdCenterStr = stringResource(R.string.splash_command_center)
+        val skipStr = stringResource(R.string.splash_tap_to_skip)
+        val versionStr = "v${BuildConfig.VERSION_NAME}"
+
+        val commandMeasured = remember(tagStyle, cmdStr) { textMeasurer.measure(cmdStr, tagStyle) }
+        val yourPcMeasured = remember(tagStyle, pcStr) { textMeasurer.measure(pcStr, tagStyle) }
+        val skipMeasured = remember(tagStyle, skipStr) { textMeasurer.measure(skipStr, tagStyle) }
+        val versionMeasured = remember(tagStyle, versionStr) { textMeasurer.measure(versionStr, tagStyle) }
 
         // 38.dp.toSp()
         val cosmicTitleFontSize = with(density) { 38.dp.toSp() }
@@ -241,7 +267,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
 
         val remoteCosmicMeasured = remember(cosmicTitleStyle) { textMeasurer.measure("REMOTE", cosmicTitleStyle) }
         val executionCosmicMeasured = remember(cosmicAccentStyle) { textMeasurer.measure("EXECUTION", cosmicAccentStyle) }
-        val commandCenterCosmicMeasured = remember(cosmicSubStyle) { textMeasurer.measure("⚡ COMMAND CENTER", cosmicSubStyle) }
+        val commandCenterCosmicMeasured = remember(cosmicSubStyle, cmdCenterStr) { textMeasurer.measure(cmdCenterStr, cosmicSubStyle) }
 
         // Random background elements
         val particles = remember {
@@ -478,13 +504,13 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                                         )
                                                 }
                                                 // Let the zoom payoff land before covering it:
-                                                // 450ms of the 700ms pull-in stays visible, then
-                                                // a quick 300ms fade — same total as before.
-                                                delay(450)
+                                                // 350ms of the 700ms pull-in stays visible, then
+                                                // a quick 400ms fade — same total as before.
+                                                delay(350)
                                                 if (!isSkipping) {
                                                         fadeOverlay.animateTo(
                                                                 1f,
-                                                                tween(300, easing = LinearEasing)
+                                                                tween(400, easing = LinearEasing)
                                                         )
                                                         finishOnce()
                                                 }
@@ -728,8 +754,8 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                                 }
 
                                 // Fade overlay
-                                val fadeOverlayVal = if (elapsed > 2.5f) {
-                                        ((elapsed - 2.5f) / 0.5f).coerceIn(0f, 1f)
+                                val fadeOverlayVal = if (elapsed > 2.6f) {
+                                        ((elapsed - 2.6f) / 0.4f).coerceIn(0f, 1f)
                                 } else {
                                         0f
                                 }
@@ -1813,6 +1839,28 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
                         }
                         }
 
+                        // ═════════════════════════════════════════════════════════════
+                        // Text Hints (Version, Tap to Skip)
+                        // ═════════════════════════════════════════════════════════════
+                        // Version label at bottom center
+                        val versionT = ((elapsed - 0.2f) / 0.5f).coerceIn(0f, 1f)
+                        if (versionT > 0f) {
+                                drawText(
+                                        versionMeasured,
+                                        color = onBackground.copy(alpha = versionT * 0.4f),
+                                        topLeft = Offset((width - versionMeasured.size.width) / 2f, height - 32.dp.toPx() - versionMeasured.size.height)
+                                )
+                        }
+
+                        // Tap to skip hint at 0.8s
+                        val skipT = ((elapsed - 0.8f) / 0.5f).coerceIn(0f, 1f)
+                        if (skipT > 0f && !isSkipping) {
+                                drawText(
+                                        skipMeasured,
+                                        color = onBackground.copy(alpha = skipT * 0.5f),
+                                        topLeft = Offset((width - skipMeasured.size.width) / 2f, height - 56.dp.toPx() - skipMeasured.size.height)
+                                )
+                        }
                         // ═════════════════════════════════════════════════════════════
                         // PHASE 4: Fade overlay (drawn on top of everything)
                         // ═════════════════════════════════════════════════════════════

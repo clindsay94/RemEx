@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -13,7 +13,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 
-  <!-- Navigation -->
+  
   <data name="App_Name" xml:space="preserve">
     <value>RemEx</value>
   </data>
@@ -42,7 +42,7 @@
     <value>Dosyalar</value>
   </data>
 
-  <!-- Common Buttons -->
+  
   <data name="Btn_Connect" xml:space="preserve">
     <value>Bağlan</value>
   </data>
@@ -80,7 +80,7 @@
     <value>Ping</value>
   </data>
 
-  <!-- Remote View -->
+  
   <data name="Remote_Header" xml:space="preserve">
     <value>⏻ PC UZAKTAN</value>
   </data>
@@ -130,7 +130,7 @@
     <value>🔌 Wake-on-LAN Paketi Gönder</value>
   </data>
 
-  <!-- Settings -->
+  
   <data name="Settings_Header" xml:space="preserve">
     <value>AYARLAR</value>
   </data>
@@ -147,7 +147,7 @@
     <value>BAĞLANTI</value>
   </data>
   <data name="Settings_HostAddress" xml:space="preserve">
-    <value>Host Adresi</value>
+    <value>PC Adresi</value>
   </data>
   <data name="Settings_AccessKey" xml:space="preserve">
     <value>Erişim Anahtarı</value>
@@ -210,7 +210,7 @@
     <value>Dil</value>
   </data>
 
-  <!-- Home -->
+  
   <data name="Home_Subtitle" xml:space="preserve">
     <value>UZAKTAN YÜRÜTME KOMUTA MERKEZİ</value>
   </data>
@@ -242,7 +242,7 @@
     <value>Sensör Çalışma Alanını açın, bir kartı sağ tıklayın ve Ana Sayfaya sabitleyin.</value>
   </data>
 
-  <!-- Task Manager -->
+  
   <data name="TaskMgr_Header" xml:space="preserve">
     <value>▤ GÖREV YÖNETİCİSİ</value>
   </data>
@@ -265,7 +265,7 @@
     <value>RAM</value>
   </data>
 
-  <!-- App Launcher -->
+  
   <data name="AppLauncher_Header" xml:space="preserve">
     <value>◈ UYGULAMA BAŞLATICISI</value>
   </data>
@@ -288,7 +288,7 @@
     <value>Kaldır</value>
   </data>
 
-  <!-- Add Program -->
+  
   <data name="AddProgram_Title" xml:space="preserve">
     <value>Program Ekle</value>
   </data>
@@ -317,7 +317,7 @@
     <value>#RRGGBB</value>
   </data>
 
-  <!-- Tray Flyout -->
+  
   <data name="TrayFlyout_Header" xml:space="preserve">
     <value>CANLI BAKIŞ</value>
   </data>
@@ -331,7 +331,7 @@
     <value>Canlı Bakış</value>
   </data>
 
-  <!-- Canvas / Dashboard -->
+  
   <data name="Canvas_Header" xml:space="preserve">
     <value>SENSÖR ÇALIŞMA ALANI</value>
   </data>
@@ -402,7 +402,7 @@
     <value>✕ Bağlantıyı Kes</value>
   </data>
   <data name="Dashboard_HostWatermark" xml:space="preserve">
-    <value>ws://host:port/ws</value>
+    <value>ws://PC:port/ws</value>
   </data>
   <data name="Dashboard_MenuSize" xml:space="preserve">
     <value>📐 Boyut</value>
@@ -414,7 +414,7 @@
     <value>📊 Grafik</value>
   </data>
 
-  <!-- Remote Desktop -->
+  
   <data name="RemoteDesktop_Header" xml:space="preserve">
     <value>UZAK MASAÜSTÜ</value>
   </data>
@@ -461,7 +461,7 @@
     <value>Q: {0}</value>
   </data>
 
-  <!-- Customization -->
+  
   <data name="Custom_Header" xml:space="preserve">
     <value>🎨 ÖZELLEŞTIRME</value>
   </data>
@@ -520,21 +520,7 @@
     <value>Dynamic</value>
   </data>
 
-  <!-- Status Messages -->
-  <data name="Main_Title" xml:space="preserve">
-    <value>Remex — Ping / Pong</value>
-  </data>
-  <data name="Main_HostWatermark" xml:space="preserve">
-    <value>ws://host:5005/ws</value>
-  </data>
-  <data name="Main_Status" xml:space="preserve">
-    <value>Durum:</value>
-  </data>
-  <data name="Main_Latency" xml:space="preserve">
-    <value>Gecikme:</value>
-  </data>
-
-  <!-- Status Messages -->
+  
   <data name="Status_Disconnected" xml:space="preserve">
     <value>Bağlantı Kesildi</value>
   </data>
@@ -551,10 +537,10 @@
     <value>Bağlantı Kesildi (sunucu kapandı)</value>
   </data>
   <data name="Status_NoHostsFound" xml:space="preserve">
-    <value>mDNS aracılığıyla host bulunamadı.</value>
+    <value>mDNS aracılığıyla PC bulunamadı.</value>
   </data>
   <data name="Status_SearchingHosts" xml:space="preserve">
-    <value>Host aranıyor…</value>
+    <value>PC aranıyor…</value>
   </data>
   <data name="Status_DiscoveryUnavailable" xml:space="preserve">
     <value>Keşif hizmeti kullanılamıyor.</value>
@@ -593,7 +579,7 @@
     <value>Tam boyutlu imleç pad etkinleştirildi</value>
   </data>
   <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
-    <value>Connect to a host to check remote desktop availability.</value>
+    <value>Connect to a PC to check remote desktop availability.</value>
   </data>
   <data name="Status_StreamConnecting" xml:space="preserve">
     <value>Connecting...</value>
@@ -608,7 +594,7 @@
     <value>Frame decode error ({0} bytes): {1}: {2}</value>
   </data>
 
-  <!-- Service Status -->
+  
   <data name="Service_NotInstalled" xml:space="preserve">
     <value>Yüklü Değil</value>
   </data>
@@ -637,7 +623,7 @@
     <value>Şifre gereklidir.</value>
   </data>
   <data name="Service_Publishing" xml:space="preserve">
-    <value>Remex.Host yayımlanıyor…</value>
+    <value>Remex.PC yayımlanıyor…</value>
   </data>
   <data name="Service_PublishFailed" xml:space="preserve">
     <value>Yayımlama başarısız — log'a bakın.</value>
@@ -658,7 +644,7 @@
     <value>Oturum açma hakları veriliyor…</value>
   </data>
   <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Gömülü host durduruluyor…</value>
+    <value>Gömülü PC durduruluyor…</value>
   </data>
   <data name="Service_StartingService" xml:space="preserve">
     <value>Hizmet başlatılıyor…</value>
@@ -688,19 +674,19 @@
     <value>Kimlik bilgileri uygulanıyor…</value>
   </data>
   <data name="Service_HostUnavailable" xml:space="preserve">
-    <value>Host özellikleri kullanılamıyor</value>
+    <value>PC özellikleri kullanılamıyor</value>
   </data>
   <data name="Service_HostUnavailableHint" xml:space="preserve">
-    <value>Çalışma zamanı özelliklerini incelemek için bir host'a bağlanın.</value>
+    <value>Çalışma zamanı özelliklerini incelemek için bir PC'a bağlanın.</value>
   </data>
   <data name="Service_Checking" xml:space="preserve">
     <value>Kontrol ediliyor…</value>
   </data>
   <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Remex.Host bulunuyor…</value>
+    <value>Remex.PC bulunuyor…</value>
   </data>
   <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.Host.exe bulunamadı.</value>
+    <value>Remex.PC.exe bulunamadı.</value>
   </data>
   <data name="Service_StartedMsg" xml:space="preserve">
     <value>Başlatıldı.</value>
@@ -730,7 +716,7 @@
     <value>Bağlantı zaman aşımına uğradı</value>
   </data>
   <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Host bulundu: {0}</value>
+    <value>PC bulundu: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
     <value>Ağınızda {0} RemEx PC bulundu.</value>
@@ -739,22 +725,22 @@
     <value>PC adresi gereklidir.</value>
   </data>
   <data name="Status_ConnectedToHost" xml:space="preserve">
-    <value>Host'a bağlandı</value>
+    <value>PC'a bağlandı</value>
   </data>
   <data name="Status_HostNotConnected" xml:space="preserve">
-    <value>Host bağlı değil</value>
+    <value>PC bağlı değil</value>
   </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
-    <value>Etkileşimli host</value>
+    <value>Etkileşimli PC</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
     <value>Hizmet hostu</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
-    <value>Arayüzsüz host</value>
+    <value>Arayüzsüz PC</value>
   </data>
   <data name="Status_Host" xml:space="preserve">
-    <value>Host</value>
+    <value>PC</value>
   </data>
   <data name="Status_RemoteDesktopAvailable" xml:space="preserve">
     <value>Uzak masaüstü mevcut</value>
@@ -796,18 +782,18 @@
     <value>{0} için bağlı bir RemEx hostu gerekir. Bağlantınızı yapılandırmak için Ayarlar'ı açın.</value>
   </data>
   <data name="Status_Pairing" xml:space="preserve">
-    <value>Host ile eşleştiriliyor...</value>
+    <value>PC ile eşleştiriliyor...</value>
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>PIN tam olarak 6 haneli olmalıdır.</value>
   </data>
 
-  <!-- WoL Status -->
+  
   <data name="Wol_EnterMac" xml:space="preserve">
     <value>⚠ Önce bir MAC adresi girin.</value>
   </data>
   <data name="Wol_SendingViaHost" xml:space="preserve">
-    <value>Host aracılığıyla sihirli paket gönderiliyor…</value>
+    <value>PC aracılığıyla sihirli paket gönderiliyor…</value>
   </data>
   <data name="Wol_SendingLocal" xml:space="preserve">
     <value>Sihirli paket yerel olarak gönderiliyor…</value>
@@ -848,7 +834,7 @@
   <data name="Wol_SignOutSent" xml:space="preserve">
     <value>Oturum kapatma gönderildi</value>
   </data>
-  <!-- Tutorial -->
+  
   <data name="Tutorial_Header" xml:space="preserve">
     <value>BAŞLARKEN</value>
   </data>
@@ -874,17 +860,17 @@
   <data name="Tutorial_P0_Body" xml:space="preserve">
     <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
 
-Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-based pairing.</value>
+Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
     <value>Nasıl Çalışır</value>
   </data>
   <data name="Tutorial_P1_Body1" xml:space="preserve">
-    <value>Bu masaüstü uygulaması, otomatik olarak başlayan gömülü bir RemEx Host içerir. Android telefonunuz ona bağlanır — tersi değil.</value>
+    <value>Bu masaüstü uygulaması, otomatik olarak başlayan gömülü bir RemEx PC içerir. Android telefonunuz ona bağlanır — tersi değil.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Sürekli erişim için (oturum açmadığınızda bile), host'u bir Windows hizmeti veya Linux daemon'ı olarak yükleyebilirsiniz. Bu, telefonunuzun istediği zaman bağlanmasına olanak tanır.</value>
+    <value>Sürekli erişim için (oturum açmadığınızda bile), PC'u bir Windows hizmeti veya Linux PC'ı olarak yükleyebilirsiniz. Bu, telefonunuzun istediği zaman bağlanmasına olanak tanır.</value>
   </data>
 
   <data name="Tutorial_P2_Title" xml:space="preserve">
@@ -907,13 +893,13 @@ Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-bas
     <value>Linux Hizmet Kurulumu</value>
   </data>
   <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>Linux'ta RemEx Host, otomatik başlatma için bir systemd hizmeti olarak çalışabilir.</value>
+    <value>Linux'ta RemEx PC, otomatik başlatma için bir systemd hizmeti olarak çalışabilir.</value>
   </data>
   <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux host archive from GitHub Releases.
+    <value>1. Download the latest Linux PC archive from GitHub Releases.
 2. Extract it.
-3. Run ./install.sh install inside the remex-host folder.
-4. Use systemctl --user status remex-host to verify it is running.</value>
+3. Run ./install.sh install inside the remex-PC folder.
+4. Use systemctl --user status remex-PC to verify it is running.</value>
   </data>
   <data name="Tutorial_P3_Link" xml:space="preserve">
     <value>Ayrıntılı talimatlar için GitHub'daki docs/linux-service-setup.md dosyasına bakın.</value>
@@ -964,7 +950,7 @@ Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-bas
 4. Launch from your Android app!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
-    <value>Bu, bağımsız Remex.Host hizmetiyle bile çalışır — uygulamaları en az bir kez masaüstü istemcisinde yapılandırın.</value>
+    <value>Bu, bağımsız Remex.PC hizmetiyle bile çalışır — uygulamaları en az bir kez masaüstü istemcisinde yapılandırın.</value>
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">
@@ -988,10 +974,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>QR Code Pairing</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
-    <value>The fastest way to connect your phone is by scanning a QR code. The host generates a pairing code that contains everything your mobile app needs.</value>
+    <value>The fastest way to connect your phone is by scanning a QR code. The PC generates a pairing code that contains everything your mobile app needs.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the host
+    <value>1. Open Settings → Connection on the PC
 2. Click "Show QR Code"
 3. Open the RemEx mobile app
 4. Tap the QR scanner icon on the connection screen
@@ -1004,10 +990,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Dosya Aktarımı &amp; Paylaşılan Klasörler</value>
   </data>
   <data name="Tutorial_P9_Body1" xml:space="preserve">
-    <value>Dosya Aktarımı yalnızca PC hostunuzun paylaştığı klasörleri gösterir. Telefonunuzun doğru konumları görmesi için masaüstü hosttaki Ayarlar'dan yapılandırın.</value>
+    <value>Dosya Aktarımı yalnızca Your PCunuzun paylaştığı klasörleri gösterir. Telefonunuzun doğru konumları görmesi için masaüstü hosttaki Ayarlar'dan yapılandırın.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the PC host.
+    <value>1. Open Settings → Shared Folders on the Your PC.
 2. Keep RemEx Transfers writable for quick phone → PC uploads.
 3. Leave other folders read-only unless you want mobile devices to modify them.</value>
   </data>
@@ -1027,9 +1013,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bu öğreticiyi Ayarlar'dan istediğiniz zaman tekrar izleyebilirsiniz.</value>
   </data>
 
-  <!-- Phase 4: Live Localization - New Keys -->
+  
 
-  <!-- Shell (Phase 4) -->
+  
   <data name="Shell_AccessKeyWatermark" xml:space="preserve">
     <value>Devre dışı bırakmak için boş bırakın</value>
   </data>
@@ -1046,19 +1032,19 @@ Linux: ip addr  or  hostname -I</value>
     <value>İNCE AYAR</value>
   </data>
   <data name="Shell_HostBinaryPath" xml:space="preserve">
-    <value>Host Binary Yolu</value>
+    <value>PC Binary Yolu</value>
   </data>
   <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Remex.Host.exe konumu (otomatik algılama için boş bırakın)</value>
+    <value>Remex.PC.exe konumu (otomatik algılama için boş bırakın)</value>
   </data>
   <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Remex.Host.exe konumu. Otomatik algılama için boş bırakın (aynı klasör, kardeş klasörler vb.)</value>
+    <value>Remex.PC.exe konumu. Otomatik algılama için boş bırakın (aynı klasör, kardeş klasörler vb.)</value>
   </data>
   <data name="Shell_HostPathWatermark" xml:space="preserve">
     <value>Otomatik algıla (veya özel yol belirle)</value>
   </data>
   <data name="Shell_HostWatermark" xml:space="preserve">
-    <value>ws://host:port/ws</value>
+    <value>ws://PC:port/ws</value>
   </data>
   <data name="Shell_Initializing" xml:space="preserve">
     <value>Kontrol paneli başlatılıyor...</value>
@@ -1082,7 +1068,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>YAYIN AYARLARI</value>
   </data>
   <data name="Shell_StreamSettingsDesc" xml:space="preserve">
-    <value>Host'un bağlı istemcilere (telefon, tablet) yayınladığı ekran yayınının kalitesini yapılandırın.</value>
+    <value>PC'un bağlı istemcilere (telefon, tablet) yayınladığı ekran yayınının kalitesini yapılandırın.</value>
   </data>
   <data name="Shell_Subtitle" xml:space="preserve">
     <value>Uzaktan Yürütme Komuta Merkezi</value>
@@ -1100,7 +1086,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>HOŞ GELDİNİZ</value>
   </data>
 
-  <!-- Nav (Phase 4) -->
+  
   <data name="Nav_DesktopTooltip" xml:space="preserve">
     <value>Uzak Masaüstü — Bilgisayarınızın ekranını gerçek zamanlı olarak yayınlayın</value>
   </data>
@@ -1114,7 +1100,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Uygulama Başlatıcı — Bilgisayarınızdaki programları uzaktan başlatın</value>
   </data>
   <data name="Nav_FilesTooltip" xml:space="preserve">
-    <value>Dosya Aktarımı — Paylaşılan PC klasörlerine göz atın ve telefon ile host arasında dosya taşıyın</value>
+    <value>Dosya Aktarımı — Paylaşılan PC klasörlerine göz atın ve telefon ile PC arasında dosya taşıyın</value>
   </data>
   <data name="Nav_RemoteTooltip" xml:space="preserve">
     <value>Uzaktan Kumanda — Güç, ses seviyesi ve Wake-on-LAN</value>
@@ -1129,12 +1115,12 @@ Linux: ip addr  or  hostname -I</value>
     <value>Görev Yöneticisi — Çalışan süreçleri görüntüleyin ve sonlandırın</value>
   </data>
 
-  <!-- Home (Phase 4) -->
+  
   <data name="Home_CancelTooltip" xml:space="preserve">
     <value>Bağlantı girişimini iptal et</value>
   </data>
   <data name="Home_ConnectTooltip" xml:space="preserve">
-    <value>RemEx host'a bağlanın — bilgisayarınızda çalıştığından emin olun</value>
+    <value>RemEx PC'a bağlanın — bilgisayarınızda çalıştığından emin olun</value>
   </data>
   <data name="Home_DesktopTooltip" xml:space="preserve">
     <value>Bilgisayarınızın masaüstünü bu cihaza gerçek zamanlı yayınlayın</value>
@@ -1179,9 +1165,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Close</value>
   </data>
 
-  <!-- Settings (Phase 4) -->
+  
   <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>İsteğe bağlı kimlik doğrulama anahtarı — host üzerinde ayarlanan anahtarla eşleşmelidir. Yapılandırılmamışsa boş bırakın.</value>
+    <value>İsteğe bağlı kimlik doğrulama anahtarı — PC üzerinde ayarlanan anahtarla eşleşmelidir. Yapılandırılmamışsa boş bırakın.</value>
   </data>
   <data name="Settings_AccessKeyWatermark" xml:space="preserve">
     <value>Devre dışı bırakmak için boş bırakın</value>
@@ -1193,7 +1179,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>⚙ Girişi Yapılandır</value>
   </data>
   <data name="Settings_DiscoverTooltip" xml:space="preserve">
-    <value>mDNS kullanarak yerel ağınızdaki RemEx host'ları otomatik olarak keşfedin</value>
+    <value>mDNS kullanarak yerel ağınızdaki RemEx PC'ları otomatik olarak keşfedin</value>
   </data>
   <data name="Settings_General" xml:space="preserve">
     <value>GENEL</value>
@@ -1229,7 +1215,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>YARDIM</value>
   </data>
   <data name="Settings_HostAddressTooltip" xml:space="preserve">
-    <value>RemEx host'un WebSocket adresi (ör. ws://192.168.1.42:5005/ws). IP'nizi ipconfig (Windows) veya ip addr (Linux) ile bulun.</value>
+    <value>RemEx PC'un WebSocket adresi (ör. ws://192.168.1.42:5005/ws). IP'nizi ipconfig (Windows) veya ip addr (Linux) ile bulun.</value>
   </data>
   <data name="Settings_HwInfoTooltip" xml:space="preserve">
     <value>HWInfo (isteğe bağlı, önerilir) çekirdek başına CPU sıcaklıkları, GPU istatistikleri, fan hızları ve voltajlar dahil 300+ donanım sensörünü izler. HWInfo olmadan RemEx yerleşik Windows Performans Sayaçlarını (temel CPU/RAM/Disk/Ağ) kullanır. hwinfo.com adresinden HWInfo'yu indirin → Settings → 'Shared Memory Support' özelliğini etkinleştirin. Not: HWInfo'nun paylaşılan belleği 12 saat sonra otomatik olarak devre dışı kalır — HWInfo ayarlarından yeniden etkinleştirin.</value>
@@ -1256,7 +1242,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Başlangıç öğreticisini yeniden izleyin</value>
   </data>
   <data name="Settings_SaveReconnectTooltip" xml:space="preserve">
-    <value>Bağlantı ayarlarını kaydedin ve host'a yeniden bağlanın</value>
+    <value>Bağlantı ayarlarını kaydedin ve PC'a yeniden bağlanın</value>
   </data>
   <data name="Settings_SnapToGridTooltip" xml:space="preserve">
     <value>Etkinleştirildiğinde, sensör kartları yeniden konumlandırıldığında en yakın kılavuz çizgisine yapışır</value>
@@ -1327,7 +1313,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Paylaşılan klasörler güncellendi.</value>
   </data>
 
-  <!-- File Transfer View -->
+  
   <data name="FileTransfer_Header" xml:space="preserve">
     <value>DOSYA AKTARIMI</value>
   </data>
@@ -1376,9 +1362,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_Loading" xml:space="preserve">
     <value>Yükleniyor…</value>
   </data>
-  <!-- File Transfer Status / VM strings -->
+  
   <data name="FileTransfer_NoSharedFolders" xml:space="preserve">
-    <value>Host henüz paylaşılan klasör sunmamış.</value>
+    <value>PC henüz paylaşılan klasör sunmamış.</value>
   </data>
   <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
     <value>Paylaşılan klasörler kullanılamıyor: {0}</value>
@@ -1443,12 +1429,12 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve">
     <value>{0} salt okunur. Yükleme yapmak için yazılabilir bir klasör seçin.</value>
   </data>
-  <!-- File management -->
+  
   <data name="FileTransfer_DeleteBtn" xml:space="preserve">
     <value>Delete</value>
   </data>
   <data name="FileTransfer_DeleteTooltip" xml:space="preserve">
-    <value>Delete the selected file or folder on the host</value>
+    <value>Delete the selected file or folder on the PC</value>
   </data>
   <data name="FileTransfer_DeletingFormat" xml:space="preserve">
     <value>Deleting {0}…</value>
@@ -1475,7 +1461,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Rename</value>
   </data>
   <data name="FileTransfer_RenameTooltip" xml:space="preserve">
-    <value>Rename the selected file or folder on the host</value>
+    <value>Rename the selected file or folder on the PC</value>
   </data>
   <data name="FileTransfer_RenamingFormat" xml:space="preserve">
     <value>Renaming {0} to {1}…</value>
@@ -1495,12 +1481,12 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_RenameInputPlaceholder" xml:space="preserve">
     <value>New name…</value>
   </data>
-  <!-- SHA-256 verification -->
+  
   <data name="FileTransfer_VerifyHashBtn" xml:space="preserve">
     <value>Verify SHA-256</value>
   </data>
   <data name="FileTransfer_VerifyHashTooltip" xml:space="preserve">
-    <value>Compute and display the SHA-256 hash of the selected file on the host</value>
+    <value>Compute and display the SHA-256 hash of the selected file on the PC</value>
   </data>
   <data name="FileTransfer_HashComputingFormat" xml:space="preserve">
     <value>Computing SHA-256 of {0}…</value>
@@ -1514,7 +1500,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
   </data>
-  <!-- Root management -->
+  
   <data name="FileTransfer_PinFolderTooltip" xml:space="preserve">
     <value>Pin the current folder as a new shared root in the dropdown</value>
   </data>
@@ -1540,7 +1526,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Could not remove folder: {0}</value>
   </data>
 
-  <!-- Service (Phase 4) -->
+  
   <data name="Service_BtnInstall" xml:space="preserve">
     <value>📦 Yükle</value>
   </data>
@@ -1551,7 +1537,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>🗑 Kaldır</value>
   </data>
 
-  <!-- Remote (Phase 4) -->
+  
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
     <value>Yayın IP'si (255.255.255.255)</value>
   </data>
@@ -1562,15 +1548,15 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bağlantı Noktası</value>
   </data>
 
-  <!-- RemoteDesktop (Phase 4) -->
+  
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
     <value>Tam Ekrandan Çık</value>
   </data>
   <data name="RemoteDesktop_Host" xml:space="preserve">
-    <value>Host:</value>
+    <value>PC:</value>
   </data>
   <data name="RemoteDesktop_HostWatermark" xml:space="preserve">
-    <value>ws://host:port/ws</value>
+    <value>ws://PC:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
     <value>Pad</value>
@@ -1609,7 +1595,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Dokunmatik: dokun = tıkla, sürükle = taşı, uzun bas = sağ tıkla, çimdikle = yakınlaştır</value>
   </data>
 
-  <!-- Canvas (Phase 4) -->
+  
   <data name="Canvas_GraphType" xml:space="preserve">
     <value>📊 Grafik Türü</value>
   </data>
@@ -1623,7 +1609,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>📌 Ana Sayfaya Sabitlemeyi Aç/Kapat</value>
   </data>
 
-  <!-- AppLauncher (Phase 4) -->
+  
   <data name="AppLauncher_AddNewApp" xml:space="preserve">
     <value>YENİ UYGULAMA EKLE</value>
   </data>
@@ -1634,7 +1620,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Hedef Yol (ör. C:\Program Files...)</value>
   </data>
 
-  <!-- TaskMgr (Phase 4) -->
+  
   <data name="TaskMgr_CpuLabel" xml:space="preserve">
     <value>CPU</value>
   </data>
@@ -1642,9 +1628,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>BELLEK</value>
   </data>
 
-  <!-- Tutorial (Phase 4) -->
+  
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
-    <value>📱 Android Uygulaması → bağlanır → 🖥️ PC Host'a (bu makine)</value>
+    <value>📱 Android Uygulaması → bağlanır → 🖥️ Your PC'a (bu makine)</value>
   </data>
   <data name="Tutorial_P3_Body2" xml:space="preserve">
     <value>Ayrıntılı talimatlar, yapılandırma seçenekleri ve sorun giderme için tam kılavuza bakın:</value>
@@ -1662,13 +1648,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: App Launcher</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Launch curated apps and scripts on the host. Configure entries once on the PC, then start them remotely from RemEx.</value>
+    <value>Launch curated apps and scripts on the PC. Configure entries once on the PC, then start them remotely from RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Glossary: Task Manager</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
-    <value>Inspect running host processes, sort by usage, and end stuck tasks without leaving your chair.</value>
+    <value>Inspect running PC processes, sort by usage, and end stuck tasks without leaving your chair.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
     <value>Glossary: Sensor Canvas</value>
@@ -1680,13 +1666,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: File Transfer</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the host has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+    <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
     <value>Glossary: Remote Desktop</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Stream your host screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+    <value>Stream your PC screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Glossary: Quick Settings</value>
@@ -1701,7 +1687,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
   </data>
 
-  <!-- App Launcher -->
+  
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
     <value>Unnamed App</value>
   </data>
@@ -1718,7 +1704,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Unknown</value>
   </data>
 
-  <!-- About Screen -->
+  
   <data name="About_Header" xml:space="preserve">
     <value>About</value>
   </data>
@@ -1729,7 +1715,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Desktop Client</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>PC Host</value>
+    <value>Your PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ GitHub'da bir yıldız vermeyi düşünün!</value>
@@ -1744,7 +1730,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Denver, Colorado'da ❤️ ile yapıldı</value>
   </data>
 
-  <!-- Confirmation dialogs -->
+  
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
     <value>Shut Down — Are you sure?</value>
   </data>
@@ -1791,16 +1777,16 @@ Linux: ip addr  or  hostname -I</value>
     <value>Reboot to UEFI</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with Host</value>
+    <value>Pair with PC</value>
   </data>
   <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the host machine:</value>
+    <value>Enter the 6-digit PIN displayed on the PC machine:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Pair</value>
   </data>
 
-  <!-- About and FAQ -->
+  
   <data name="About_KeyboardShortcuts" xml:space="preserve">
     <value>Keyboard Shortcuts</value>
   </data>
@@ -1857,13 +1843,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>What do I need to run on my PC?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
-    <value>You need either Remex.Client.Desktop or Remex.Host running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
+    <value>You need either Remex.Client.Desktop or Remex.PC running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
     <value>How do I pair my phone or second PC?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the host.</value>
+    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>How do I find my PC's IP address?</value>
@@ -1875,7 +1861,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Ensure Remex.Host is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Ensure Remex.PC is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -2025,7 +2011,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Geçersiz QR kod verisi</value>
   </data>
   <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Remex.Host.exe Seç</value>
+    <value>Remex.PC.exe Seç</value>
   </data>
   <data name="Settings_ExecutableFileFilter" xml:space="preserve">
     <value>Çalıştırılabilir</value>
@@ -2355,7 +2341,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bağlantı URL'sini girin, örn: wss://192.168.1.100:8443/ws</value>
   </data>
   <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>mDNS/NSD kullanarak ağınızdaki yerel aktif RemEx sunucularını otomatik olarak bul</value>
+    <value>automatic network discovery kullanarak ağınızdaki yerel aktif RemEx sunucularını otomatik olarak bul</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
     <value>Sunucu bilgisayarı ile olan aktif oturum bağlantısını sonlandır</value>

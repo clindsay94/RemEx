@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -13,7 +13,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 
-  <!-- Navigation -->
+  
   <data name="App_Name" xml:space="preserve">
     <value>RemEx</value>
   </data>
@@ -42,7 +42,7 @@
     <value>फ़ाइलें</value>
   </data>
 
-  <!-- Common Buttons -->
+  
   <data name="Btn_Connect" xml:space="preserve">
     <value>कनेक्ट</value>
   </data>
@@ -80,7 +80,7 @@
     <value>पिंग</value>
   </data>
 
-  <!-- Remote View -->
+  
   <data name="Remote_Header" xml:space="preserve">
     <value>⏻ पीसी रिमोट</value>
   </data>
@@ -130,7 +130,7 @@
     <value>🔌 वेक-ऑन-लैन पैकेट भेजें</value>
   </data>
 
-  <!-- Settings -->
+  
   <data name="Settings_Header" xml:space="preserve">
     <value>सेटिंग्स</value>
   </data>
@@ -210,7 +210,7 @@
     <value>भाषा</value>
   </data>
 
-  <!-- Home -->
+  
   <data name="Home_Subtitle" xml:space="preserve">
     <value>REMOTE EXECUTION COMMAND CENTER</value>
   </data>
@@ -242,7 +242,7 @@
     <value>सेंसर वर्कस्पेस खोलें, कार्ड पर राइट-क्लिक करें, और होम पर पिन करें।</value>
   </data>
 
-  <!-- Task Manager -->
+  
   <data name="TaskMgr_Header" xml:space="preserve">
     <value>▤ टास्क मैनेजर</value>
   </data>
@@ -265,7 +265,7 @@
     <value>RAM</value>
   </data>
 
-  <!-- App Launcher -->
+  
   <data name="AppLauncher_Header" xml:space="preserve">
     <value>◈ ऐप लॉन्चर</value>
   </data>
@@ -288,7 +288,7 @@
     <value>हटाएं</value>
   </data>
 
-  <!-- Add Program -->
+  
   <data name="AddProgram_Title" xml:space="preserve">
     <value>प्रोग्राम जोड़ें</value>
   </data>
@@ -317,7 +317,7 @@
     <value>#RRGGBB</value>
   </data>
 
-  <!-- Tray Flyout -->
+  
   <data name="TrayFlyout_Header" xml:space="preserve">
     <value>लाइव ग्लेंस</value>
   </data>
@@ -331,7 +331,7 @@
     <value>लाइव ग्लेंस</value>
   </data>
 
-  <!-- Canvas / Dashboard -->
+  
   <data name="Canvas_Header" xml:space="preserve">
     <value>सेंसर वर्कस्पेस</value>
   </data>
@@ -402,7 +402,7 @@
     <value>✕ डिसकनेक्ट</value>
   </data>
   <data name="Dashboard_HostWatermark" xml:space="preserve">
-    <value>ws://host:port/ws</value>
+    <value>ws://PC:port/ws</value>
   </data>
   <data name="Dashboard_MenuSize" xml:space="preserve">
     <value>📐 आकार</value>
@@ -414,7 +414,7 @@
     <value>📊 ग्राफ़</value>
   </data>
 
-  <!-- Remote Desktop -->
+  
   <data name="RemoteDesktop_Header" xml:space="preserve">
     <value>रिमोट डेस्कटॉप</value>
   </data>
@@ -461,7 +461,7 @@
     <value>Q: {0}</value>
   </data>
 
-  <!-- Customization -->
+  
   <data name="Custom_Header" xml:space="preserve">
     <value>🎨 कस्टमाइज़ेशन</value>
   </data>
@@ -520,21 +520,7 @@
     <value>Dynamic</value>
   </data>
 
-  <!-- Status Messages -->
-  <data name="Main_Title" xml:space="preserve">
-    <value>Remex — पिंग / पोंग</value>
-  </data>
-  <data name="Main_HostWatermark" xml:space="preserve">
-    <value>ws://host:5005/ws</value>
-  </data>
-  <data name="Main_Status" xml:space="preserve">
-    <value>स्थिति:</value>
-  </data>
-  <data name="Main_Latency" xml:space="preserve">
-    <value>विलंबता:</value>
-  </data>
-
-  <!-- Status Messages -->
+  
   <data name="Status_Disconnected" xml:space="preserve">
     <value>डिसकनेक्ट</value>
   </data>
@@ -593,7 +579,7 @@
     <value>पूर्ण-आकार कर्सर पैड सक्षम</value>
   </data>
   <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
-    <value>Connect to a host to check remote desktop availability.</value>
+    <value>Connect to a PC to check remote desktop availability.</value>
   </data>
   <data name="Status_StreamConnecting" xml:space="preserve">
     <value>Connecting...</value>
@@ -608,7 +594,7 @@
     <value>Frame decode error ({0} bytes): {1}: {2}</value>
   </data>
 
-  <!-- Service Status -->
+  
   <data name="Service_NotInstalled" xml:space="preserve">
     <value>इंस्टॉल नहीं है</value>
   </data>
@@ -637,7 +623,7 @@
     <value>पासवर्ड आवश्यक है।</value>
   </data>
   <data name="Service_Publishing" xml:space="preserve">
-    <value>Remex.Host प्रकाशित हो रहा है…</value>
+    <value>Remex.PC प्रकाशित हो रहा है…</value>
   </data>
   <data name="Service_PublishFailed" xml:space="preserve">
     <value>प्रकाशन विफल — लॉग देखें।</value>
@@ -697,10 +683,10 @@
     <value>जांच की जा रही है…</value>
   </data>
   <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Remex.Host खोजा जा रहा है…</value>
+    <value>Remex.PC खोजा जा रहा है…</value>
   </data>
   <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.Host.exe नहीं मिला।</value>
+    <value>Remex.PC.exe नहीं मिला।</value>
   </data>
   <data name="Service_StartedMsg" xml:space="preserve">
     <value>शुरू हो गया।</value>
@@ -802,7 +788,7 @@
     <value>पिन ठीक 6 अंकों का होना चाहिए।</value>
   </data>
 
-  <!-- WoL Status -->
+  
   <data name="Wol_EnterMac" xml:space="preserve">
     <value>⚠ पहले MAC पता दर्ज करें।</value>
   </data>
@@ -848,7 +834,7 @@
   <data name="Wol_SignOutSent" xml:space="preserve">
     <value>साइन आउट भेजा गया</value>
   </data>
-  <!-- Tutorial -->
+  
   <data name="Tutorial_Header" xml:space="preserve">
     <value>शुरू करें</value>
   </data>
@@ -874,7 +860,7 @@
   <data name="Tutorial_P0_Body" xml:space="preserve">
     <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
 
-Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-based pairing.</value>
+Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -910,10 +896,10 @@ Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-bas
     <value>लिनक्स पर, स्वचालित स्टार्टअप के लिए RemEx होस्ट सिस्टमडी सेवा के रूप में चल सकता है。</value>
   </data>
   <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux host archive from GitHub Releases.
+    <value>1. Download the latest Linux PC archive from GitHub Releases.
 2. Extract it.
-3. Run ./install.sh install inside the remex-host folder.
-4. Use systemctl --user status remex-host to verify it is running.</value>
+3. Run ./install.sh install inside the remex-PC folder.
+4. Use systemctl --user status remex-PC to verify it is running.</value>
   </data>
   <data name="Tutorial_P3_Link" xml:space="preserve">
     <value>विस्तृत निर्देशों के लिए, GitHub पर docs/linux-service-setup.md देखें</value>
@@ -964,7 +950,7 @@ Your PC runs RemEx Host, and every connection is protected with TLS plus PIN-bas
 4. Launch from your Android app!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
-    <value>यह स्टैंडअलोन Remex.Host सेवा के साथ भी काम करता है — कम से कम एक बार डेस्कटॉप क्लाइंट में ऐप्स को कॉन्फ़िगर करें。</value>
+    <value>यह स्टैंडअलोन Remex.PC सेवा के साथ भी काम करता है — कम से कम एक बार डेस्कटॉप क्लाइंट में ऐप्स को कॉन्फ़िगर करें。</value>
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">
@@ -988,10 +974,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>QR Code Pairing</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
-    <value>The fastest way to connect your phone is by scanning a QR code. The host generates a pairing code that contains everything your mobile app needs.</value>
+    <value>The fastest way to connect your phone is by scanning a QR code. The PC generates a pairing code that contains everything your mobile app needs.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the host
+    <value>1. Open Settings → Connection on the PC
 2. Click "Show QR Code"
 3. Open the RemEx mobile app
 4. Tap the QR scanner icon on the connection screen
@@ -1007,7 +993,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>फ़ाइल स्थानांतरण केवल वे फ़ोल्डर दिखाता है जो आपके PC होस्ट ने साझा किए हैं। डेस्कटॉप होस्ट पर सेटिंग्स से इन्हें कॉन्फ़िगर करें ताकि आपका फ़ोन सही स्थान देख सके।</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the PC host.
+    <value>1. Open Settings → Shared Folders on the Your PC.
 2. Keep RemEx Transfers writable for quick phone → PC uploads.
 3. Leave other folders read-only unless you want mobile devices to modify them.</value>
   </data>
@@ -1027,9 +1013,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>आप सेटिंग्स से कभी भी इस ट्यूटोरियल को फिर से चला सकते हैं।</value>
   </data>
 
-  <!-- Phase 4: Live Localization - New Keys -->
+  
 
-  <!-- Shell (Phase 4) -->
+  
   <data name="Shell_AccessKeyWatermark" xml:space="preserve">
     <value>अक्षम करने के लिए खाली छोड़ दें</value>
   </data>
@@ -1049,16 +1035,16 @@ Linux: ip addr  or  hostname -I</value>
     <value>होस्ट बाइनरी पथ</value>
   </data>
   <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Remex.Host.exe का पथ (स्वतः पहचान के लिए खाली छोड़ दें)</value>
+    <value>Remex.PC.exe का पथ (स्वतः पहचान के लिए खाली छोड़ दें)</value>
   </data>
   <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Remex.Host.exe का पथ। स्वतः पहचान (समान फ़ोल्डर, सिबलिंग फ़ोल्डर, आदि) के लिए खाली छोड़ दें।</value>
+    <value>Remex.PC.exe का पथ। स्वतः पहचान (समान फ़ोल्डर, सिबलिंग फ़ोल्डर, आदि) के लिए खाली छोड़ दें।</value>
   </data>
   <data name="Shell_HostPathWatermark" xml:space="preserve">
     <value>स्वतः पहचानें (या कस्टम पथ सेट करें)</value>
   </data>
   <data name="Shell_HostWatermark" xml:space="preserve">
-    <value>ws://host:port/ws</value>
+    <value>ws://PC:port/ws</value>
   </data>
   <data name="Shell_Initializing" xml:space="preserve">
     <value>डैशबोर्ड इनिशियलाइज़ हो रहा है...</value>
@@ -1100,7 +1086,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>स्वागत है</value>
   </data>
 
-  <!-- Nav (Phase 4) -->
+  
   <data name="Nav_DesktopTooltip" xml:space="preserve">
     <value>रिमोट डेस्कटॉप — वास्तविक समय में अपनी पीसी स्क्रीन स्ट्रीम करें</value>
   </data>
@@ -1129,7 +1115,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>टास्क मैनेजर — चल रहे प्रोसेस देखें और बंद करें</value>
   </data>
 
-  <!-- Home (Phase 4) -->
+  
   <data name="Home_CancelTooltip" xml:space="preserve">
     <value>कनेक्शन प्रयास रद्द करें</value>
   </data>
@@ -1179,7 +1165,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Close</value>
   </data>
 
-  <!-- Settings (Phase 4) -->
+  
   <data name="Settings_AccessKeyTooltip" xml:space="preserve">
     <value>वैकल्पिक प्रमाणीकरण कुंजी — होस्ट पर सेट की गई कुंजी से मेल खानी चाहिए। कॉन्फ़िगर नहीं होने पर खाली छोड़ दें।</value>
   </data>
@@ -1327,7 +1313,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>साझा फ़ोल्डर अपडेट किए गए।</value>
   </data>
 
-  <!-- File Transfer View -->
+  
   <data name="FileTransfer_Header" xml:space="preserve">
     <value>फ़ाइल स्थानांतरण</value>
   </data>
@@ -1376,7 +1362,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_Loading" xml:space="preserve">
     <value>लोड हो रहा है…</value>
   </data>
-  <!-- File Transfer Status / VM strings -->
+  
   <data name="FileTransfer_NoSharedFolders" xml:space="preserve">
     <value>होस्ट ने अभी तक कोई साझा फ़ोल्डर नहीं दिखाया है।</value>
   </data>
@@ -1443,12 +1429,12 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_HintReadOnlyFormat" xml:space="preserve">
     <value>{0} केवल पढ़ने योग्य है। फ़ाइलें अपलोड करने के लिए एक लिखने योग्य फ़ोल्डर चुनें।</value>
   </data>
-  <!-- File management -->
+  
   <data name="FileTransfer_DeleteBtn" xml:space="preserve">
     <value>Delete</value>
   </data>
   <data name="FileTransfer_DeleteTooltip" xml:space="preserve">
-    <value>Delete the selected file or folder on the host</value>
+    <value>Delete the selected file or folder on the PC</value>
   </data>
   <data name="FileTransfer_DeletingFormat" xml:space="preserve">
     <value>Deleting {0}…</value>
@@ -1475,7 +1461,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Rename</value>
   </data>
   <data name="FileTransfer_RenameTooltip" xml:space="preserve">
-    <value>Rename the selected file or folder on the host</value>
+    <value>Rename the selected file or folder on the PC</value>
   </data>
   <data name="FileTransfer_RenamingFormat" xml:space="preserve">
     <value>Renaming {0} to {1}…</value>
@@ -1495,12 +1481,12 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_RenameInputPlaceholder" xml:space="preserve">
     <value>New name…</value>
   </data>
-  <!-- SHA-256 verification -->
+  
   <data name="FileTransfer_VerifyHashBtn" xml:space="preserve">
     <value>Verify SHA-256</value>
   </data>
   <data name="FileTransfer_VerifyHashTooltip" xml:space="preserve">
-    <value>Compute and display the SHA-256 hash of the selected file on the host</value>
+    <value>Compute and display the SHA-256 hash of the selected file on the PC</value>
   </data>
   <data name="FileTransfer_HashComputingFormat" xml:space="preserve">
     <value>Computing SHA-256 of {0}…</value>
@@ -1514,7 +1500,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
   </data>
-  <!-- Root management -->
+  
   <data name="FileTransfer_PinFolderTooltip" xml:space="preserve">
     <value>Pin the current folder as a new shared root in the dropdown</value>
   </data>
@@ -1540,7 +1526,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Could not remove folder: {0}</value>
   </data>
 
-  <!-- Service (Phase 4) -->
+  
   <data name="Service_BtnInstall" xml:space="preserve">
     <value>📦 इंस्टॉल करें</value>
   </data>
@@ -1551,7 +1537,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>🗑 हटाएं</value>
   </data>
 
-  <!-- Remote (Phase 4) -->
+  
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
     <value>प्रसारण IP (255.255.255.255)</value>
   </data>
@@ -1562,7 +1548,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>पोर्ट</value>
   </data>
 
-  <!-- RemoteDesktop (Phase 4) -->
+  
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
     <value>पूर्ण स्क्रीन से बाहर निकलें</value>
   </data>
@@ -1570,7 +1556,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>होस्ट:</value>
   </data>
   <data name="RemoteDesktop_HostWatermark" xml:space="preserve">
-    <value>ws://host:port/ws</value>
+    <value>ws://PC:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
     <value>पैड</value>
@@ -1609,7 +1595,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>टच: टैप = क्लिक, ड्रैग = मूव, लॉन्ग-प्रेस = राइट-क्लिक, पिंच = ज़ूम</value>
   </data>
 
-  <!-- Canvas (Phase 4) -->
+  
   <data name="Canvas_GraphType" xml:space="preserve">
     <value>📊 ग्राफ़ प्रकार</value>
   </data>
@@ -1623,7 +1609,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>📌 होम पर पिन टॉगल करें</value>
   </data>
 
-  <!-- AppLauncher (Phase 4) -->
+  
   <data name="AppLauncher_AddNewApp" xml:space="preserve">
     <value>नया एप्लिकेशन जोड़ें</value>
   </data>
@@ -1634,7 +1620,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>लक्ष्य पथ (जैसे C:\Program Files...)</value>
   </data>
 
-  <!-- TaskMgr (Phase 4) -->
+  
   <data name="TaskMgr_CpuLabel" xml:space="preserve">
     <value>CPU</value>
   </data>
@@ -1642,7 +1628,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>MEM</value>
   </data>
 
-  <!-- Tutorial (Phase 4) -->
+  
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
     <value>📱 Android ऐप → कनेक्ट होता है → 🖥️ पीसी होस्ट (यह मशीन) से</value>
   </data>
@@ -1662,13 +1648,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: App Launcher</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Launch curated apps and scripts on the host. Configure entries once on the PC, then start them remotely from RemEx.</value>
+    <value>Launch curated apps and scripts on the PC. Configure entries once on the PC, then start them remotely from RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
     <value>Glossary: Task Manager</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
-    <value>Inspect running host processes, sort by usage, and end stuck tasks without leaving your chair.</value>
+    <value>Inspect running PC processes, sort by usage, and end stuck tasks without leaving your chair.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
     <value>Glossary: Sensor Canvas</value>
@@ -1680,13 +1666,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: File Transfer</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the host has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+    <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
     <value>Glossary: Remote Desktop</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Stream your host screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+    <value>Stream your PC screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
     <value>Glossary: Quick Settings</value>
@@ -1701,7 +1687,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
   </data>
 
-  <!-- App Launcher -->
+  
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
     <value>Unnamed App</value>
   </data>
@@ -1718,7 +1704,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Unknown</value>
   </data>
 
-  <!-- About Screen -->
+  
   <data name="About_Header" xml:space="preserve">
     <value>About</value>
   </data>
@@ -1729,7 +1715,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Desktop Client</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>PC Host</value>
+    <value>Your PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ GitHub पर स्टार देने पर विचार करें!</value>
@@ -1744,7 +1730,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>डेन्वर, कोलोराडो में ❤️ के साथ बनाया गया</value>
   </data>
 
-  <!-- Confirmation dialogs -->
+  
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
     <value>Shut Down — Are you sure?</value>
   </data>
@@ -1791,16 +1777,16 @@ Linux: ip addr  or  hostname -I</value>
     <value>Reboot to UEFI</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with Host</value>
+    <value>Pair with PC</value>
   </data>
   <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the host machine:</value>
+    <value>Enter the 6-digit PIN displayed on the PC machine:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Pair</value>
   </data>
 
-  <!-- About and FAQ -->
+  
   <data name="About_KeyboardShortcuts" xml:space="preserve">
     <value>Keyboard Shortcuts</value>
   </data>
@@ -1857,13 +1843,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>What do I need to run on my PC?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
-    <value>You need either Remex.Client.Desktop or Remex.Host running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
+    <value>You need either Remex.Client.Desktop or Remex.PC running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
     <value>How do I pair my phone or second PC?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the host.</value>
+    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>How do I find my PC's IP address?</value>
@@ -1875,7 +1861,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Ensure Remex.Host is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Ensure Remex.PC is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -2025,7 +2011,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>अमान्य क्यूआर कोड डेटा</value>
   </data>
   <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Remex.Host.exe चुनें</value>
+    <value>Remex.PC.exe चुनें</value>
   </data>
   <data name="Settings_ExecutableFileFilter" xml:space="preserve">
     <value>निष्पादन योग्य</value>
@@ -2355,7 +2341,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>कनेक्शन URL इनपुट करें, जैसे wss://192.168.1.100:8443/ws</value>
   </data>
   <data name="Settings_DiscoverHostsTooltip" xml:space="preserve">
-    <value>mDNS/NSD का उपयोग करके अपने नेटवर्क पर स्थानीय सक्रिय रेमेक्स होस्ट को स्वचालित रूप से खोजें</value>
+    <value>automatic network discovery का उपयोग करके अपने नेटवर्क पर स्थानीय सक्रिय रेमेक्स होस्ट को स्वचालित रूप से खोजें</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
     <value>होस्ट पीसी के लिए सक्रिय सत्र कनेक्शन समाप्त करें</value>

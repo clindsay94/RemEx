@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -117,7 +118,7 @@ private val noNavRoutes =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
+fun AppNavigation() {
         val context = LocalContext.current
         val settingsManager = remember { SettingsManager(context) }
         val connectionViewModel: ConnectionViewModel = viewModel()
@@ -130,9 +131,7 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
 
         AppNavigationContent(
                 hasCompletedOnboarding = hasCompletedOnboarding,
-                splashShown = splashShown,
                 isConnected = isConnected,
-                onMarkSplashShown = onMarkSplashShown,
                 splashStyle = personalization.splashStyle,
                 onQrScanned = { host, port, pin ->
                         connectionViewModel.applyQrResultAndConnect(host, port, pin)
@@ -171,9 +170,7 @@ fun AppNavigation(splashShown: Boolean, onMarkSplashShown: () -> Unit) {
 @Composable
 private fun AppNavigationContent(
         hasCompletedOnboarding: Boolean?,
-        splashShown: Boolean,
         isConnected: Boolean,
-        onMarkSplashShown: () -> Unit,
         splashStyle: String,
         onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable (onNavigateToConnection: () -> Unit) -> Unit,
@@ -338,7 +335,6 @@ private fun AppNavigationContent(
                                         navController = navController,
                                         startDestination = startDestination,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
-                                        onMarkSplashShown = onMarkSplashShown,
                                         splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
                                         dashboardScreenContent = dashboardScreenContent,
@@ -581,7 +577,6 @@ private fun AppNavigationContent(
                                         navController = navController,
                                         startDestination = startDestination,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
-                                        onMarkSplashShown = onMarkSplashShown,
                                         splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
                                         dashboardScreenContent = dashboardScreenContent,
@@ -682,7 +677,6 @@ private fun RemexNavHost(
         navController: androidx.navigation.NavHostController,
         startDestination: String,
         hasCompletedOnboarding: Boolean,
-        onMarkSplashShown: () -> Unit,
         splashStyle: String,
         onQrScanned: (String, Int, String) -> Unit,
         dashboardScreenContent: @Composable (() -> Unit) -> Unit,
@@ -728,13 +722,12 @@ private fun RemexNavHost(
         ) {
                 composable(
                         Screen.Splash.route,
-                        enterTransition = { fadeIn(tween(500)) },
-                        exitTransition = { fadeOut(tween(500)) },
+                        enterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
+                        exitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
                 ) {
                         SplashScreen(
                                 splashStyle = splashStyle,
                                 onFinished = {
-                                        onMarkSplashShown()
                                         onSelectPrimaryPage(0)
                                         navController.navigate(
                                                 if (hasCompletedOnboarding) PrimaryNavRoute
@@ -749,8 +742,8 @@ private fun RemexNavHost(
 
                 composable(
                         Screen.Tutorial.route,
-                        enterTransition = { fadeIn(tween(400)) },
-                        exitTransition = { fadeOut(tween(400)) },
+                        enterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
+                        exitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
                 ) {
                         TutorialScreen(
                                 onFinished = {
@@ -846,10 +839,10 @@ private fun RemexNavHost(
                 composable(
                         Screen.RemoteDesktop.route,
                         // Full-screen immersive — pure crossfade, no spatial motion
-                        enterTransition = { fadeIn(tween(300)) },
-                        exitTransition = { fadeOut(tween(300)) },
-                        popEnterTransition = { fadeIn(tween(300)) },
-                        popExitTransition = { fadeOut(tween(300)) },
+                        enterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
+                        exitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
+                        popEnterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
+                        popExitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
                 ) { RemoteDesktopScreen() }
 
                 composable(Screen.Personalization.route) { PersonalizationScreen() }
@@ -926,9 +919,7 @@ private fun AppNavigationPreview() {
         RemExTheme {
                 AppNavigationContent(
                         hasCompletedOnboarding = true,
-                        splashShown = true,
                         isConnected = true,
-                        onMarkSplashShown = {},
                         splashStyle = "RemexCommand",
                         onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { Box(Modifier.fillMaxSize()) },
@@ -948,9 +939,7 @@ private fun AppNavigationDisconnectedPreview() {
         RemExTheme {
                 AppNavigationContent(
                         hasCompletedOnboarding = true,
-                        splashShown = true,
                         isConnected = false,
-                        onMarkSplashShown = {},
                         splashStyle = "RemexCommand",
                         onQrScanned = { _, _, _ -> },
                         dashboardScreenContent = { Box(Modifier.fillMaxSize()) },

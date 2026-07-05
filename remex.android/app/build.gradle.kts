@@ -776,6 +776,7 @@ dependencies {
     implementation(libs.androidx.graphics.path)
     implementation(libs.androidx.graphics.shapes)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.tink.android)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

@@ -503,7 +503,7 @@ private fun FileTransferSettingsTab() {
                                 modifier = Modifier.size(16.dp)
                         )
                         Text(
-                                text = stringResource(R.string.settings_ft_coming_soon),
+                                text = stringResource(R.string.settings_ft_active),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.tertiary
                         )

@@ -149,36 +149,50 @@ fun DashboardScreen(
         val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
         val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
 
-        DashboardScreenContent(
-                isConnected = isConnected,
-                isConnecting = isConnecting,
-                telemetrySensors = telemetrySensors,
-                telemetryHistory = telemetryHistory,
-                cards = cards,
-                enabledCards = enabledCards,
-                cornerRadius = cornerRadius,
-                cardOpacity = cardOpacity,
-                pcCardShapePreset = pcCardShapePreset,
-                telemetryCardShapePreset = telemetryCardShapePreset,
-                onNavigateToConnection = onNavigateToConnection,
-                onMoveCard = { cardId, dx, dy -> viewModel.moveCard(cardId, dx, dy) },
-                onResizeCard = { cardId, dw, dh -> viewModel.resizeCard(cardId, dw, dh) },
-                onSaveCardLayout = { viewModel.saveCardLayout() },
-                onToggleConnection = { viewModel.toggleConnection() },
-                onWakePc = { viewModel.wakePc() },
-                onCycleTelemetryDisplayMode = { cardId ->
-                        viewModel.cycleTelemetryDisplayMode(cardId)
-                },
-                onPlaceCardAt = { cardId, x, y -> viewModel.placeCardAt(cardId, x, y) },
-                onSetCardEnabled = { cardId, enabled -> viewModel.setCardEnabled(cardId, enabled) },
-                canUndo = canUndo,
-                canRedo = canRedo,
-                onUndo = { viewModel.undo() },
-                onRedo = { viewModel.redo() },
-                onBeginInteraction = { viewModel.beginInteraction() },
-                onTogglePin = { cardId -> viewModel.togglePin(cardId) },
-                onClearAllCards = { viewModel.clearAllCards() }
-        )
+        val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+
+        LaunchedEffect(Unit) {
+                viewModel.wakeStatus.collect { message ->
+                        snackbarHostState.showSnackbar(message, duration = androidx.compose.material3.SnackbarDuration.Short)
+                }
+        }
+
+        Box(modifier = Modifier.fillMaxSize()) {
+                DashboardScreenContent(
+                        isConnected = isConnected,
+                        isConnecting = isConnecting,
+                        telemetrySensors = telemetrySensors,
+                        telemetryHistory = telemetryHistory,
+                        cards = cards,
+                        enabledCards = enabledCards,
+                        cornerRadius = cornerRadius,
+                        cardOpacity = cardOpacity,
+                        pcCardShapePreset = pcCardShapePreset,
+                        telemetryCardShapePreset = telemetryCardShapePreset,
+                        onNavigateToConnection = onNavigateToConnection,
+                        onMoveCard = { cardId, dx, dy -> viewModel.moveCard(cardId, dx, dy) },
+                        onResizeCard = { cardId, dw, dh -> viewModel.resizeCard(cardId, dw, dh) },
+                        onSaveCardLayout = { viewModel.saveCardLayout() },
+                        onToggleConnection = { viewModel.toggleConnection() },
+                        onWakePc = { viewModel.wakePc() },
+                        onCycleTelemetryDisplayMode = { cardId ->
+                                viewModel.cycleTelemetryDisplayMode(cardId)
+                        },
+                        onPlaceCardAt = { cardId, x, y -> viewModel.placeCardAt(cardId, x, y) },
+                        onSetCardEnabled = { cardId, enabled -> viewModel.setCardEnabled(cardId, enabled) },
+                        canUndo = canUndo,
+                        canRedo = canRedo,
+                        onUndo = { viewModel.undo() },
+                        onRedo = { viewModel.redo() },
+                        onBeginInteraction = { viewModel.beginInteraction() },
+                        onTogglePin = { cardId -> viewModel.togglePin(cardId) },
+                        onClearAllCards = { viewModel.clearAllCards() }
+                )
+                androidx.compose.material3.SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+                )
+        }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)

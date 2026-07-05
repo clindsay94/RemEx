@@ -13,6 +13,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import android.content.Context
+import com.clindsay94.remex.security.PinnedHostStore
 
 class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsManager = SettingsManager(application)
@@ -42,6 +44,9 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     private val _connectionError = MutableStateFlow<String?>(null)
     val connectionError: StateFlow<String?> = _connectionError.asStateFlow()
 
+    private val _isCertMismatch = MutableStateFlow(false)
+    val isCertMismatch: StateFlow<Boolean> = _isCertMismatch.asStateFlow()
+
     private val _capabilitySummary =
             MutableStateFlow(res.getString(R.string.status_awaiting_metadata))
     val capabilitySummary: StateFlow<String> = _capabilitySummary.asStateFlow()
@@ -70,6 +75,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     // Clear any stale error once a (re)connection succeeds, otherwise the UI
                     // shows "Connected" alongside an outdated error card after auto-reconnect.
                     _connectionError.value = null
+                    _isCertMismatch.value = false
                     _connectionStatus.value = res.getString(R.string.status_connected)
                 } else if (!_isConnecting.value) {
                     _connectionStatus.value = res.getString(R.string.status_disconnected)
@@ -86,6 +92,9 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             RemexClientManager.connectionError.collect { error ->
                 _connectionError.value = error
+                _isCertMismatch.value = error.contains("SPKI", ignoreCase = true) ||
+                                         error.contains("certificate", ignoreCase = true) ||
+                                         error.contains("SSL", ignoreCase = true)
                 _connectionStatus.value = res.getString(R.string.status_disconnected)
             }
         }
@@ -104,6 +113,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     ) {
         viewModelScope.launch {
             _connectionError.value = null
+            _isCertMismatch.value = false
             _isConnecting.value = true
             settingsManager.saveConnectionSettings(
                     host = newHost,
@@ -138,6 +148,19 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun clearError() {
         _connectionError.value = null
+        _isCertMismatch.value = false
+    }
+
+    fun clearPinForHost(context: Context, hostId: String) {
+        viewModelScope.launch {
+            PinnedHostStore.removePin(context, hostId)
+            _isCertMismatch.value = false
+            _connectionError.value = null
+        }
+    }
+
+    fun consumeDiscoveredHost() {
+        _discoveredHost.value = null
     }
 
     fun discoverHost() {

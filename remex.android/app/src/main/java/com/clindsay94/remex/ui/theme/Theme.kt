@@ -15,6 +15,9 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -68,6 +71,37 @@ private val LightColorScheme = lightColorScheme(
     surfaceContainer = Color(0xFFF3EDF1),
     surfaceContainerLow = Color(0xFFF7F2F7),
     surfaceContainerLowest = Color(0xFFFFFFFF)
+)
+
+@Immutable
+data class CustomColors(
+    val success: Color,
+    val onSuccess: Color,
+    val successContainer: Color,
+    val onSuccessContainer: Color
+)
+
+val LocalCustomColors = staticCompositionLocalOf {
+    CustomColors(
+        success = Color.Unspecified,
+        onSuccess = Color.Unspecified,
+        successContainer = Color.Unspecified,
+        onSuccessContainer = Color.Unspecified
+    )
+}
+
+private val DarkCustomColors = CustomColors(
+    success = Color(0xFF9CD67D),
+    onSuccess = Color(0xFF0C3900),
+    successContainer = Color(0xFF1F5107),
+    onSuccessContainer = Color(0xFFB8F397)
+)
+
+private val LightCustomColors = CustomColors(
+    success = Color(0xFF386A20),
+    onSuccess = Color(0xFFFFFFFF),
+    successContainer = Color(0xFFB8F397),
+    onSuccessContainer = Color(0xFF042100)
 )
 
 val remexShapes = Shapes(
@@ -399,13 +433,19 @@ fun RemExTheme(
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = typography,
-        shapes = remexShapes,
-        motionScheme = MotionScheme.expressive(),
-        content = content
-    )
+    val customColors = if (darkTheme) DarkCustomColors else LightCustomColors
+
+    CompositionLocalProvider(
+        LocalCustomColors provides customColors
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = typography,
+            shapes = remexShapes,
+            motionScheme = MotionScheme.expressive(),
+            content = content
+        )
+    }
 }
 
 @Preview(showBackground = true)

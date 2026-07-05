@@ -6,12 +6,8 @@
     <string name="widget_remote_label">RemEx Remoto</string>
     <string name="widget_hardware_label">RemEx Hardware</string>
     <string name="widget_launcher_label">RemEx Launcher</string>
-
-    <!-- ═══ Splash Screen ═══ -->
     <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">Execução Remota</string>
-
-    <!-- ═══ Navigation ═══ -->
     <string name="snackbar_no_pc_connected">Nenhum PC conectado</string>
     <string name="snackbar_setup_connection">Configurar conexão</string>
     <string name="connection_required_context">Connection required to access this feature.</string>
@@ -20,15 +16,11 @@
     <string name="exit_dialog_title">Exit RemEx?</string>
     <string name="exit_dialog_message">Are you sure you want to exit?</string>
     <string name="button_exit">Exit</string>
-
-    <!-- ═══ Common Components ═══ -->
     <string name="banner_no_pc_connected">Nenhum PC conectado — os recursos estão indisponíveis</string>
     <string name="button_connect">Conectar</string>
     <string name="disconnected_requires_connection">%1$s requer um PC conectado.</string>
     <string name="disconnected_connect_wifi">Conecte-se ao seu PC via Wi-Fi para usar este recurso.</string>
     <string name="button_setup_connection">Configurar conexão</string>
-
-    <!-- ═══ Shared Buttons ═══ -->
     <string name="button_cancel">Cancelar</string>
     <string name="button_confirm">Confirmar</string>
     <string name="button_dismiss">Descartar</string>
@@ -53,61 +45,43 @@
     <string name="cd_expand_icon">Expand</string>
     <string name="cd_category_icon">Category</string>
     <string name="cd_resize_cards">Resize cards</string>
-
-    <!-- ═══ Tutorial Screen ═══ -->
     <string name="tutorial_skip">Pular</string>
     <string name="tutorial_get_started">Começar</string>
     <string name="tutorial_next">Próximo</string>
-
     <string name="tutorial_page1_title">Bem-vindo ao RemEx</string>
     <string name="tutorial_page1_body">O RemEx é o seu centro de comando para gerenciamento remoto de PC. Controle seu computador, inicie aplicativos, monitore o desempenho e até visualize sua área de trabalho — tudo pelo celular.\n\nVamos conectá-lo em alguns passos rápidos.</string>
-
-    <string name="tutorial_page2_title">Instale o Host Primeiro</string>
-    <string name="tutorial_page2_body">Antes de se conectar, seu PC precisa do host do RemEx rodando.\n\n• Opção 1: Cliente Desktop (Recomendado) — Inclui o host e roda na bandeja do sistema.\n• Opção 2: Host Autônomo — Serviço apenas em segundo plano, ideal para servidores.\n\nBaixe a versão mais recente do GitHub e execute-a antes de parear.</string>
+    <string name="tutorial_page2_title">Instale o PC Primeiro</string>
+    <string name="tutorial_page2_body">Antes de se conectar, seu PC precisa do PC do RemEx rodando.\n\n• Opção 1: Cliente Desktop (Recomendado) — Inclui o PC e roda na bandeja do sistema.\n• Opção 2: PC Autônomo — Serviço apenas em segundo plano, ideal para servidores.\n\nBaixe a versão mais recente do GitHub e execute-a antes de parear.</string>
     <string name="tutorial_page2_link_label">Baixar dos Lançamentos do GitHub</string>
-
     <string name="tutorial_page3_title">Descoberta Automática</string>
-    <string name="tutorial_page3_body">A maneira mais fácil de conectar é pela descoberta automática.\n\n1. Certifique-se de que o Remex.Client.Desktop ou o Remex.Host esteja rodando no seu PC\n2. Verifique se o seu celular e o PC estão na mesma rede Wi-Fi\n3. Toque em \'Descobrir Automaticamente\' na tela de Conexão\n\nO RemEx usa mDNS para detectar hosts ativos na sua rede local. O IP e a porta do seu PC serão preenchidos automaticamente.</string>
-
+    <string name="tutorial_page3_body">A maneira mais fácil de conectar é pela descoberta automática.\n\n1. Certifique-se de que o Remex.Client.Desktop ou o Remex.PC esteja rodando no seu PC\n2. Verifique se o seu celular e o PC estão na mesma rede Wi-Fi\n3. Toque em \'Descobrir Automaticamente\' na tela de Conexão\n\nO RemEx usa mDNS para detectar hosts ativos na sua rede local. O IP e a porta do seu PC serão preenchidos automaticamente.</string>
     <string name="tutorial_page4_title">Encontrando seu Endereço IP</string>
     <string name="tutorial_page4_body">Se a descoberta automática não funcionar, você pode conectar manualmente. Primeiro, encontre o endereço IP local do seu PC:\n\nWindows:\n  Abra o Prompt de Comando → digite ipconfig\n  Procure por \'Endereço IPv4\' (ex: 192.168.1.42)\n\nmacOS:\n  Ajustes do Sistema → Rede, ou execute:\n  ipconfig getifaddr en0\n\nLinux:\n  Execute ip addr ou hostname -I\n\nVocê também pode ver o endereço IP na janela do Remex.Client.Desktop na seção de status da conexão.</string>
-
     <string name="tutorial_page5_title">Conexão Manual</string>
-    <string name="tutorial_page5_body">Assim que tiver o seu endereço IP:\n\n1. Vá para a tela de Conexão (Configurações → Conexão)\n2. Insira o endereço IP do seu PC\n3. Insira a porta (o padrão é 5005)\n4. Toque em \'Salvar e Conectar\'\n\nO RemEx estabelecerá uma conexão e você verá o status do seu PC aparecer no painel.\n\nLembre-se: O Remex.Client.Desktop ou o Remex.Host deve estar rodando no PC de destino para que a conexão funcione.</string>
-
+    <string name="tutorial_page5_body">Assim que tiver o seu endereço IP:\n\n1. Vá para a tela de Conexão (Configurações → Conexão)\n2. Insira o endereço IP do seu PC\n3. Insira a porta (o padrão é 5005)\n4. Toque em \'Salvar e Conectar\'\n\nO RemEx estabelecerá uma conexão e você verá o status do seu PC aparecer no painel.\n\nLembre-se: O Remex.Client.Desktop ou o Remex.PC deve estar rodando no PC de destino para que a conexão funcione.</string>
     <string name="tutorial_page6_title">Está Tudo Pronto!</string>
     <string name="tutorial_page6_body">Você está pronto para assumir o controle.\n\nNo painel, você pode monitorar estatísticas do sistema, iniciar apps, gerenciar tarefas e transmitir sua área de trabalho remotamente.\n\nVá em Personalização para customizar seu tema, formatos de cards, fontes e cores.\n\nConfira as Perguntas Frequentes (FAQ) nas Configurações se tiver qualquer problema. Aproveite o RemEx!</string>
-
-    <!-- New tutorial page: QR Code Pairing (inserted as page 3) -->
     <string name="tutorial_page_qr_title">Pareamento Rápido com Código QR</string>
     <string name="tutorial_page_qr_body">A maneira mais rápida de se conectar é digitalizando um código QR.\n\n1. Abra o Remex.Client.Desktop no seu PC\n2. Vá em Conexão → Mostrar Código QR\n3. No seu celular, toque no ícone QR na tela de Conexão\n4. Aponte sua câmera para o código\n\nSeu celular salvará e conectará automaticamente — sem necessidade de digitação manual!</string>
-
-    <!-- ═══ Connection Status Strings ═══ -->
     <string name="status_disconnected">Desconectado</string>
     <string name="status_connected">Conectado</string>
     <string name="status_connecting">Conectando a %1$s:%2$d…</string>
-    <string name="status_error">Erro: %1$s</string>
+    <string name="status_error">Couldn\'t reach your PC</string>
     <string name="status_awaiting_metadata">Aguardando detalhes do PC</string>
     <string name="status_metadata_unavailable">Detalhes do PC indisponíveis</string>
     <string name="status_native_lib_not_loaded">Biblioteca nativa não carregada</string>
     <string name="error_no_host_found">Nenhum PC com RemEx encontrado na rede</string>
     <string name="error_discovery_failed">Falha na descoberta: %1$s</string>
-    <!-- Android 17 (API 37): ACCESS_LOCAL_NETWORK is a runtime permission required to connect
-         to hosts on your local Wi-Fi network.  Without it, RemEx cannot reach your PC. -->
     <string name="permission_local_network_rationale">O RemEx precisa da permissão de Rede Local para encontrar e se conectar ao seu PC via Wi-Fi. Sem ela, a descoberta e a conexão não funcionarão no Android 17 e versões posteriores. Conceda esta permissão nas Configurações para continuar.</string>
     <string name="error_local_network_permission_denied">O acesso à Rede Local foi negado. O RemEx não pode se conectar ao seu PC sem esta permissão no Android 17+. Por favor, conceda-a nas Configurações do App.</string>
     <string name="capability_desktop_available">área de trabalho disponível</string>
     <string name="capability_desktop_unavailable">área de trabalho indisponível</string>
-
-    <!-- ═══ Foreground Service Strings ═══ -->
     <string name="notification_channel_name">RemEx Connection</string>
     <string name="notification_channel_description">Keeps the connection to your PC alive</string>
     <string name="notification_title_connected">Connected to PC</string>
     <string name="notification_title_connecting">Connecting…</string>
     <string name="notification_text_connected">RemEx is running in the background</string>
     <string name="notification_text_connecting">Maintaining connection</string>
-
-    <!-- ═══ Task Manager Screen ═══ -->
     <string name="screen_task_manager_title">Gerenciador de Tarefas</string>
     <string name="task_manager_search_hint">Buscar nome do processo ou PID</string>
     <string name="sort_by">Sort by:</string>
@@ -124,8 +98,6 @@
     <string name="button_kill">Finalizar</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
     <string name="cd_kill_process">Finalizar</string>
-
-    <!-- ═══ Remote Mouse Screen ═══ -->
     <string name="screen_remote_mouse_title">Mouse Remoto</string>
     <string name="remote_mouse_trackpad_label">Trackpad</string>
     <string name="remote_mouse_left_click">Clique Esquerdo</string>
@@ -133,8 +105,6 @@
     <string name="cd_scroll_up">Rolar para Cima</string>
     <string name="cd_scroll_down">Rolar para Baixo</string>
     <string name="cd_keyboard">Teclado</string>
-
-    <!-- ═══ Settings Screen ═══ -->
     <string name="screen_settings_title">Configurações</string>
     <string name="settings_tab_connection">Conexão</string>
     <string name="settings_tab_personalization">Personalização</string>
@@ -146,13 +116,9 @@
     <string name="settings_replay_tutorial">📖  Repetir Tutorial</string>
     <string name="settings_replay_tutorial_body">Assista novamente ao guia de introdução que cobre a configuração, descoberta automática, como encontrar seu IP e conectar ao PC.</string>
     <string name="settings_faq_hint">Tem uma dúvida? Verifique as Perguntas Frequentes (FAQ) disponíveis no menu (⋮ → FAQ).</string>
-
-    <!-- ═══ App Launcher Screen ═══ -->
     <string name="screen_app_launcher_title">Lançador de Apps</string>
     <string name="app_launcher_no_apps">Nenhum app encontrado</string>
-    <string name="button_fetch_from_host">Buscar do Host</string>
-
-    <!-- ═══ Remote Control Screen ═══ -->
+    <string name="button_fetch_from_host">Buscar do PC</string>
     <string name="screen_remote_control_title">Controle Remoto</string>
     <string name="remote_control_section_header">Comandos do Sistema</string>
     <string name="remote_control_description">Ações críticas exigem confirmação. O atraso opcional define os segundos de shutdown -t.</string>
@@ -174,8 +140,6 @@
     <string name="rc_category_session">Sessão</string>
     <string name="rc_category_power">Energia</string>
     <string name="rc_category_energy">Economia</string>
-
-    <!-- ═══ Remote Desktop Screen ═══ -->
     <string name="screen_remote_desktop_title">Área de Trabalho Remota</string>
     <string name="cd_show_keyboard">Mostrar Teclado</string>
     <string name="cd_key_escape">Escape</string>
@@ -225,8 +189,6 @@
     <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Toque = Clique • Pressionar = Clique direito • 2 dedos = Rolar • Caneta = Absoluto</string>
-
-    <!-- ═══ Dashboard Screen ═══ -->
     <string name="screen_dashboard_title">Base RemEx</string>
     <string name="cd_reset_zoom">Resetar zoom</string>
     <string name="cd_customize_cards">Customizar cards</string>
@@ -245,29 +207,27 @@
     <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Coletando dados…</string>
     <string name="cd_change_display_mode">Alterar modo de exibição</string>
-
-    <!-- ═══ Connection Screen ═══ -->
     <string name="screen_connection_title">Conexão</string>
     <string name="screen_splash_title">Loading</string>
     <string name="screen_tutorial_title">Tutorial</string>
     <string name="screen_qr_scanner_title">Scan QR Code</string>
-    <string name="connection_host_settings">Configurações do Host</string>
+    <string name="connection_host_settings">Configurações do PC</string>
     <string name="cd_dismiss_error">Descartar</string>
     <string name="connection_auto_discover_title">Autodescoberta na LAN</string>
-    <string name="connection_auto_discover_hint">Certifique-se de que o seu PC esteja rodando o app RemEx Host e ambos os dispositivos estejam na mesma rede Wi-Fi.</string>
+    <string name="connection_auto_discover_hint">Certifique-se de que o seu PC esteja rodando o app RemEx PC e ambos os dispositivos estejam na mesma rede Wi-Fi.</string>
     <string name="connection_searching">Buscando seu PC…</string>
     <string name="connection_found_host">Encontrado: %1$s — Buscar Novamente</string>
     <string name="connection_discover_button">Descobrir Automaticamente</string>
     <string name="connection_host_found">PC encontrado e campos preenchidos abaixo.</string>
     <string name="connection_scan_qr_code">Escanear código QR</string>
     <string name="connection_help_title">Como conectar manualmente</string>
-    <string name="connection_help_step1_title">Instale o RemEx Host no seu PC</string>
-    <string name="connection_help_step1_body">Baixe e execute o instalador do RemEx Host no PC que você deseja controlar. Ele aparecerá na sua bandeja do sistema (perto do relógio) quando estiver rodando.</string>
+    <string name="connection_help_step1_title">Instale o RemEx PC no seu PC</string>
+    <string name="connection_help_step1_body">Baixe e execute o instalador do RemEx PC no PC que você deseja controlar. Ele aparecerá na sua bandeja do sistema (perto do relógio) quando estiver rodando.</string>
     <string name="connection_help_step2_title">Conecte ao mesmo Wi-Fi</string>
     <string name="connection_help_step2_body">Seu celular e o PC devem estar na mesma rede local. Dados móveis (4G/5G) não funcionarão.</string>
     <string name="connection_help_step3_title">Encontre o endereço IP do seu PC</string>
     <string name="connection_help_step4_title">Insira o IP abaixo e toque em Salvar e Conectar</string>
-    <string name="connection_help_step4_body">A porta padrão é 5005. Se você definiu uma chave de acesso no app do host, insira-a aqui também.</string>
+    <string name="connection_help_step4_body">A porta padrão é 5005. Se você definiu uma chave de acesso no app do PC, insira-a aqui também.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Abra o Prompt de Comando e digite: ipconfig\nProcure por \"Endereço IPv4\" sob o seu adaptador Wi-Fi.</string>
     <string name="connection_platform_macos">macOS</string>
@@ -275,7 +235,7 @@
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">Abra um terminal e digite: ip addr\nProcure pelo endereço inet na sua interface de rede (ex: wlan0 ou eth0).</string>
     <string name="connection_or_enter_manually">Ou insira manualmente</string>
-    <string name="connection_label_host">Endereço IP do Host</string>
+    <string name="connection_label_host">Endereço IP do PC</string>
     <string name="connection_hint_host">IP local do seu PC — encontre via ipconfig (Win) ou ip addr (Linux)</string>
     <string name="connection_label_port">Porta</string>
     <string name="connection_hint_port">Padrão: 5005</string>
@@ -296,25 +256,19 @@
     <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Paired</string>
     <string name="connection_unpair">Unpair</string>
-
-    <!-- ═══ Pairing Screen ═══ -->
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
     <string name="pairing_error_cert_mismatch">Certificate mismatch</string>
-
-    <!-- ═══ QR Scanner Screen ═══ -->
     <string name="qr_scanner_title">Escanear código QR</string>
     <string name="cd_back">Voltar</string>
     <string name="qr_scanner_hint">Aponte a câmera para o código QR exibido no seu PC</string>
     <string name="qr_scanner_permission_required">É necessária permissão da câmera para escanear códigos QR</string>
     <string name="qr_scanner_grant_permission">Conceder permissão</string>
-    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx Host to 2.0.</string>
+    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx PC to 2.0.</string>
     <string name="qr_error_invalid">Invalid RemEx QR code</string>
-
-    <!-- ═══ FAQ Screen ═══ -->
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
@@ -327,38 +281,26 @@
     <string name="cd_collapse">Recolher</string>
     <string name="cd_expand">Expandir</string>
     <string name="faq_github_button">Abrir Lançamentos no GitHub</string>
-
     <string name="faq_q1">O que eu preciso rodar no meu PC?</string>
-    <string name="faq_a1">Você precisa rodar ou o Remex.Client.Desktop ou o Remex.Host no seu PC.\n\n• Remex.Client.Desktop — O app desktop completo que inclui o host automaticamente. Basta iniciá-lo e o host começa a rodar em segundo plano na porta 5005.\n\n• Remex.Host — Um serviço autônomo sem interface, ideal para servidores ou uso apenas em segundo plano.\n\nAmbos são independentes (todos os runtimes incluídos) — basta extrair a pasta de publicação e rodar. Baixe na página de lançamentos do GitHub.</string>
-
+    <string name="faq_a1">Você precisa rodar ou o Remex.Client.Desktop ou o Remex.PC no seu PC.\n\n• Remex.Client.Desktop — O app desktop completo que inclui o PC automaticamente. Basta iniciá-lo e o PC começa a rodar em segundo plano na porta 5005.\n\n• Remex.PC — Um serviço autônomo sem interface, ideal para servidores ou uso apenas em segundo plano.\n\nAmbos são independentes (todos os runtimes incluídos) — basta extrair a pasta de publicação e rodar. Baixe na página de lançamentos do GitHub.</string>
     <string name="faq_q2">Como encontro o endereço IP do meu PC?</string>
     <string name="faq_a2">Windows:\nAbra o Prompt de Comando e digite \'ipconfig\'. Procure pela linha \'Endereço IPv4\' sob o seu adaptador de rede ativo (ex: 192.168.1.42).\n\nmacOS:\nVá em Ajustes do Sistema → Rede e veja a interface conectada, ou abra o Terminal e execute: ipconfig getifaddr en0\n\nLinux:\nAbra um terminal e execute: ip addr ou hostname -I\n\nVocê também pode ver o IP diretamente na janela do Remex.Client.Desktop.</string>
-
     <string name="faq_q3">A autodescoberta não encontra meu PC. O que devo verificar?</string>
-    <string name="faq_a3">1. Certifique-se de que o Remex.Client.Desktop ou o Remex.Host está realmente rodando no seu PC.\n2. Ambos os dispositivos devem estar na mesma rede Wi-Fi / LAN.\n3. No Android 13+, a permissão NEARBY_WIFI_DEVICES deve ser concedida. O RemEx solicitará isso quando você tocar em \'Descobrir Automaticamente\'.\n4. Alguns roteadores têm o \'Isolamento de AP\' ou \'Isolamento de Cliente\' ativado, o que bloqueia a comunicação entre dispositivos. Verifique as configurações do seu roteador.\n5. Redes Wi-Fi corporativas ou de visitantes geralmente bloqueiam o tráfego mDNS. Tente usar uma rede pessoal ou doméstica.</string>
-
+    <string name="faq_a3">1. Certifique-se de que o Remex.Client.Desktop ou o Remex.PC está realmente rodando no seu PC.\n2. Ambos os dispositivos devem estar na mesma rede Wi-Fi / LAN.\n3. No Android 13+, a permissão NEARBY_WIFI_DEVICES deve ser concedida. O RemEx solicitará isso quando você tocar em \'Descobrir Automaticamente\'.\n4. Alguns roteadores têm o \'Isolamento de AP\' ou \'Isolamento de Cliente\' ativado, o que bloqueia a comunicação entre dispositivos. Verifique as configurações do seu roteador.\n5. Redes Wi-Fi corporativas ou de visitantes geralmente bloqueiam o tráfego mDNS. Tente usar uma rede pessoal ou doméstica.</string>
     <string name="faq_q4">Qual é a porta padrão?</string>
-    <string name="faq_a4">A porta padrão é 5005. Se o Remex.Client.Desktop encontrar a porta 5005 em uso, ele usará a 5006 como alternativa. Você pode ver a porta ativa na janela do cliente desktop.\n\nSe você alterou a porta no lado do host, certifique-se de inserir a porta correspondente na tela de Conexão deste app.</string>
-
+    <string name="faq_a4">A porta padrão é 5005. Se o Remex.Client.Desktop encontrar a porta 5005 em uso, ele usará a 5006 como alternativa. Você pode ver a porta ativa na janela do cliente desktop.\n\nSe você alterou a porta no lado do PC, certifique-se de inserir a porta correspondente na tela de Conexão deste app.</string>
     <string name="faq_q5">Como faço o pareamento com meu PC?</string>
     <string name="faq_a5">Ao se conectar a um PC pela primeira vez, você deve inserir o PIN de 6 dígitos exibido no PC. Isso cria um vínculo seguro e criptografado entre os dispositivos. Você não precisará inserir o PIN novamente, a menos que redefina a conexão ou reinstale o aplicativo.</string>
-
     <string name="faq_q6">Posso conectar pela internet (fora da rede local)?</string>
     <string name="faq_a6">O RemEx foi projetado para uso em rede local (LAN). Para conectar pela internet, você precisaria configurar o redirecionamento de portas (port forwarding) no seu roteador para a porta 5005 (ou a porta que você usar) e utilizar seu endereço IP público.\n\nImportante: Expor a porta para a internet é um risco de segurança. Se fizer isso, sempre ative a Chave de Acesso para autenticação. Uma VPN é a abordagem recomendada para acesso remoto.</string>
-
     <string name="faq_q7">A Área de Trabalho Remota está lenta ou não funciona. O que posso fazer?</string>
     <string name="faq_a7">• Diminua o controle deslizante de Qualidade em Conexão → Padrões da Área de Trabalho Remota.\n• Reduza o FPS Alvo (15–20 FPS é suficiente para a maioria dos usos).\n• Diminua a Escala para reduzir a resolução transmitida.\n• Certifique-se de que seu PC suporta o backend de captura de tela: DXGI no Windows, X11/Wayland no Linux.\n• Verifique se você está em uma rede Wi-Fi local rápida (preferencialmente 5 GHz).</string>
-
     <string name="faq_q8">O que é Wake-on-LAN (WOL)?</string>
     <string name="faq_a8">O Wake-on-LAN permite que você ligue seu PC remotamente enviando um \"pacote mágico\" pela rede.\n\nPara usar:\n1. Ative o WOL nas configurações de BIOS/UEFI do seu PC.\n2. Ative o WOL nas propriedades do seu adaptador de rede (Windows: Gerenciador de Dispositivos → Adaptadores de Rede → Gerenciamento de Energia).\n3. Insira o endereço MAC do seu PC na tela de Conexão.\n4. Use o card \'Ligar PC\' no painel ou na tela de Controle Remoto.</string>
-
     <string name="faq_q9">Como eu customizo a aparência do app?</string>
     <string name="faq_a9">Vá para a tela de Personalização (toque no botão flutuante de engrenagem no painel ou navegue via menu → Configurações).\n\nVocê pode alterar:\n• Paleta do tema e cor base\n• Arredondamento dos cantos dos cards e formas predefinidas\n• Família da fonte e escala\n• Opacidade dos cards\n• Modo de tema escuro/claro/sistema</string>
-
     <string name="faq_q10">Posso assistir ao tutorial novamente?</string>
     <string name="faq_a10">Sim! Vá em Configurações no menu (⋮ → Configurações). Lá você encontrará uma opção para repetir o tutorial a qualquer momento.</string>
-
-    <!-- ═══ Personalization Screen ═══ -->
     <string name="screen_personalization_title">Personalização</string>
     <string name="personalization_appearance_studio">Estúdio de Aparência</string>
     <string name="personalization_section_language">Idioma</string>
@@ -385,8 +327,6 @@
     <string name="personalization_shape_task_manager">Gerenciador de Tarefas</string>
     <string name="personalization_shape_pc_orb">Orbe de Conexão do PC</string>
     <string name="personalization_preview">PRÉVIA</string>
-
-    <!-- ═══ Widget Configuration Activities ═══ -->
     <string name="widget_config_app_launcher_title">Configurar Lançador de Apps</string>
     <string name="widget_config_app_launcher_hint">Selecione os apps para mostrar no seu widget:</string>
     <string name="widget_config_no_apps">Nenhum app disponível ainda.</string>
@@ -408,8 +348,6 @@
     <string name="tile_hibernate_label">Hibernar PC</string>
     <string name="tile_monitor_off_label">Desligar Monitor</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
-
-    <!-- ═══ File Transfer Screen ═══ -->
     <string name="screen_file_transfer_title">Transferência de Arquivos</string>
     <string name="file_transfer_local">Local (Celular)</string>
     <string name="file_transfer_remote">Remoto (PC)</string>
@@ -417,11 +355,11 @@
     <string name="file_transfer_upload">Enviar ↑</string>
     <string name="file_transfer_download">Baixar ↓</string>
     <string name="file_transfer_cancel">Cancelar</string>
-    <string name="file_transfer_not_connected">Conecte-se a um host para navegar pelos arquivos remotos.</string>
+    <string name="file_transfer_not_connected">Conecte-se a um PC para navegar pelos arquivos remotos.</string>
     <string name="file_transfer_loading">Carregando…</string>
     <string name="file_transfer_empty">Nenhum arquivo encontrado.</string>
     <string name="file_transfer_shared_folder">Pasta compartilhada</string>
-    <string name="file_transfer_no_shared_folders">Este host ainda não está expondo nenhuma pasta compartilhada.</string>
+    <string name="file_transfer_no_shared_folders">Este PC ainda não está expondo nenhuma pasta compartilhada.</string>
     <string name="file_transfer_select_root">Selecione uma pasta remota</string>
     <string name="file_transfer_read_only_root">Somente leitura</string>
     <string name="file_transfer_notification_channel_name">Transferências de arquivos</string>
@@ -434,8 +372,6 @@
     <string name="file_transfer_notification_upload_complete">%1$s enviado com sucesso</string>
     <string name="file_transfer_notification_download_complete">%1$s baixado com sucesso</string>
     <string name="file_transfer_notification_failed_title">Falha na transferência</string>
-
-    <!-- File transfer — actions -->
     <string name="file_transfer_rename">Renomear</string>
     <string name="file_transfer_delete">Excluir</string>
     <string name="file_transfer_pin_folder">Fixar como atalho</string>
@@ -443,23 +379,17 @@
     <string name="file_transfer_selected">selecionado(s)</string>
     <string name="file_transfer_delete_selected">Excluir selecionados</string>
     <string name="file_transfer_cancel_selection">Cancelar seleção</string>
-    <!-- File transfer — rename dialog -->
     <string name="file_transfer_rename_title">Renomear</string>
     <string name="file_transfer_rename_hint">Novo nome</string>
     <string name="file_transfer_rename_confirm">Renomear</string>
-    <!-- Generic dialog -->
     <string name="dialog_cancel">Cancelar</string>
-    <!-- Content descriptions -->
     <string name="cd_more_options">Mais opções</string>
-    <!-- File transfer settings tab -->
     <string name="settings_ft_shared_folders_title">Pastas Compartilhadas do Android</string>
-    <string name="settings_ft_shared_folders_desc">Adicione pastas deste dispositivo para compartilhar quando o modo host do Android estiver ativado. Suas seleções serão salvas e usadas automaticamente assim que o recurso estiver disponível.</string>
-    <string name="settings_ft_coming_soon">Modo host do Android em breve em uma atualização futura</string>
+    <string name="settings_ft_shared_folders_desc">Adicione pastas deste dispositivo para compartilhar quando o modo PC do Android estiver ativado. Suas seleções serão salvas e usadas automaticamente assim que o recurso estiver disponível.</string>
+    <string name="settings_ft_active">Modo PC do Android em breve em uma atualização futura</string>
     <string name="settings_ft_no_folders">Nenhuma pasta adicionada ainda.</string>
     <string name="settings_ft_add_folder">Adicionar pasta…</string>
     <string name="settings_ft_remove_folder">Remover pasta</string>
-
-    <!-- ═══ Material Shapes ═══ -->
     <string name="shape_circle">Círculo</string>
     <string name="shape_square">Quadrado</string>
     <string name="shape_triangle">Triângulo</string>
@@ -484,12 +414,12 @@
     <string name="shape_soft_burst">Explosão suave</string>
     <string name="shape_soft_boom">Estrondo suave</string>
     <string name="shape_pixel_circle">Círculo de pixel</string>
-    <string name="pairing_error_malformed_response">O emparelhamento foi bem-sucedido, mas a resposta nativa estava malformada.</string>
-    <string name="pairing_error_empty_response">Falha no emparelhamento (resposta nativa vazia)</string>
-    <string name="pairing_error_reach_failed">Não foi possível alcançar o host (resposta nativa vazia)</string>
-    <string name="pairing_error_start_failed">Não foi possível iniciar o emparelhamento: %1$s</string>
-    <string name="pairing_error_save_failed">Falha ao salvar o host fixado com segurança.</string>
-    <string name="qr_error_missing_hash">O código QR não contém o hash do certificado do host</string>
+    <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
+    <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
+    <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_start_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_save_failed">Falha ao salvar o PC fixado com segurança.</string>
+    <string name="qr_error_missing_hash">O código QR não contém o hash do certificado do PC</string>
     <string name="qr_error_setup_failed">Falha na configuração do QR</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
@@ -543,15 +473,15 @@
     <string name="sensor_gpu_temp">Temperatura do GPU</string>
     <string name="sensor_fallback_label">Sensor %1$d</string>
     <string name="about_android_client_label">Cliente Android</string>
-    <string name="about_pc_host_label">Host do PC</string>
+    <string name="about_pc_host_label">PC do PC</string>
     <string name="about_status_unknown">Desconhecido</string>
     <string name="about_view_github">Ver código-fonte no GitHub</string>
     <string name="about_whats_new_1_label">Vídeo de hardware H.264</string>
-    <string name="about_whats_new_1_body">Área de trabalho remota acelerada por hardware via NVENC, QSV, AMF ou VAAPI no host. Decodificado com MediaCodec para entrega direta de GPU sem cópia. Retorna para MJPEG automaticamente quando os codificadores de hardware não estão disponíveis.</string>
+    <string name="about_whats_new_1_body">Área de trabalho remota acelerada por hardware via NVENC, QSV, AMF ou VAAPI no PC. Decodificado com MediaCodec para entrega direta de GPU sem cópia. Retorna para MJPEG automaticamente quando os codificadores de hardware não estão disponíveis.</string>
     <string name="about_whats_new_2_label">Segurança e emparelhamento de dispositivos</string>
-    <string name="about_whats_new_2_body">Todo o tráfego é criptografado com TLS 1.3. O primeiro emparelhamento usa troca de chaves ECDH P-256 com um PIN de 6 dígitos — sem chaves em texto simples na rede. O cliente fixa a impressão digital do certificado SHA-256 do host para conexões futuras.</string>
+    <string name="about_whats_new_2_body">Your connection is safe and private. Todo o tráfego é criptografado com TLS 1.3. O primeiro emparelhamento usa troca de chaves ECDH P-256 com um PIN de 6 dígitos — sem chaves em texto simples na rede. O cliente fixa a impressão digital do certificado SHA-256 do PC para conexões futuras.</string>
     <string name="about_whats_new_3_label">Transferência de arquivos remota</string>
-    <string name="about_whats_new_3_body">Navegue pelas pastas compartilhadas do host e transfira arquivos em qualquer direção com verificação de integridade SHA-256. Compartilhe suas pastas do Android com o host. Progresso em tempo real com suporte a cancelamento.</string>
+    <string name="about_whats_new_3_body">Navegue pelas pastas compartilhadas do PC e transfira arquivos em qualquer direção com verificação de integridade SHA-256. Compartilhe suas pastas do Android com o PC. Progresso em tempo real com suporte a cancelamento.</string>
     <string name="about_whats_new_4_label">Reformulação do Android</string>
     <string name="about_whats_new_4_body">Material 3 Expressive com física de mola em todo o sistema. 8 blocos de Configurações Rápidas para comandos de energia com um toque. Widgets redimensionáveis na tela inicial. Feedback háptico de dois estágios. SDK alvo 37 (Android 17).</string>
     <string name="about_whats_new_5_label">Linux &amp; Nova Identidade</string>
@@ -568,7 +498,7 @@
     <string name="dashboard_pin_card">Fixar cartão</string>
     <string name="dashboard_unpin_card">Desafixar cartão</string>
     <string name="faq_q11">Como configurar o Tailscale para acesso remoto?</string>
-    <string name="faq_a11">O Tailscale permite que você acesse seu PC de qualquer lugar de forma segura, sem encaminhamento de portas e sem expor nada à internet pública. É grátis para uso pessoal.\n\n1. No seu PC (o host):\n• Windows: instale o Tailscale a partir de tailscale.com/download/windows e faça login.\n• Linux: o instalador do host RemEx pode configurá-lo para você, ou execute:\n   curl -fsSL https://tailscale.com/install.sh | sh\n   sudo tailscale up\n\n2. Neste celular:\n• Instale o Tailscale a partir da Google Play Store.\n• Faça login com a MESMA conta que usou no PC.\n• Ative a chave da VPN do Tailscale.\n\n3. Encontre o IP do Tailscale do seu PC:\n• No aplicativo Tailscale (ou no console de administração em login.tailscale.com), encontre seu PC e copie o IP dele. Começa com 100. — por exemplo, 100.101.102.103.\n\n4. Conecte-se no RemEx:\n• Abra a tela de Conexão e conecte-se manualmente a esse endereço 100.x.y.z usando a porta do RemEx (padrão 5005).\n• Emparelhe com o PIN na primeira vez, exatamente como na sua rede doméstica.\n\nIsso é tudo — o RemEx agora funciona de qualquer lugar, totalmente criptografado.\n\nDica: a autodescoberta só funciona na rede local, por isso, via Tailscale, conecte-se sempre inserindo o IP 100.x.y.z manualmente.</string>
+    <string name="faq_a11">O Tailscale permite que você acesse seu PC de qualquer lugar de forma segura, sem encaminhamento de portas e sem expor nada à internet pública. É grátis para uso pessoal.\n\n1. No seu PC (o PC):\n• Windows: instale o Tailscale a partir de tailscale.com/download/windows e faça login.\n• Linux: o instalador do PC RemEx pode configurá-lo para você, ou execute:\n   curl -fsSL https://tailscale.com/install.sh | sh\n   sudo tailscale up\n\n2. Neste celular:\n• Instale o Tailscale a partir da Google Play Store.\n• Faça login com a MESMA conta que usou no PC.\n• Ative a chave da VPN do Tailscale.\n\n3. Encontre o IP do Tailscale do seu PC:\n• No aplicativo Tailscale (ou no console de administração em login.tailscale.com), encontre seu PC e copie o IP dele. Começa com 100. — por exemplo, 100.101.102.103.\n\n4. Conecte-se no RemEx:\n• Abra a tela de Conexão e conecte-se manualmente a esse endereço 100.x.y.z usando a porta do RemEx (padrão 5005).\n• Emparelhe com o PIN na primeira vez, exatamente como na sua rede doméstica.\n\nIsso é tudo — o RemEx agora funciona de qualquer lugar, totalmente criptografado.\n\nDica: a autodescoberta só funciona na rede local, por isso, via Tailscale, conecte-se sempre inserindo o IP 100.x.y.z manualmente.</string>
     <string name="file_transfer_action_downloading">Baixando</string>
     <string name="file_transfer_action_uploading">Enviando</string>
     <string name="file_transfer_adding_shortcut">Adicionando atalho…</string>
@@ -629,26 +559,25 @@
     <string name="rc_failed_mac_not_configured">Falha: endereço MAC não configurado nas configurações</string>
     <string name="rc_success_format">Sucesso: %1$s</string>
     <string name="remote_desktop_action_failed">Falha na ação da janela da área de trabalho</string>
-    <string name="remote_desktop_advanced_window_control_unavailable">O controle de janela avançado está indisponível neste host</string>
+    <string name="remote_desktop_advanced_window_control_unavailable">O controle de janela avançado está indisponível neste PC</string>
     <string name="remote_desktop_connection_lost">Conexão perdida. Toque em Iniciar para reconectar.</string>
     <string name="remote_desktop_cursor_size_label">Tamanho do Cursor: %.1fx</string>
     <string name="remote_desktop_h_scroll_short">Rolagem H: %.1fx</string>
     <string name="remote_desktop_metadata_unavailable">Metadados da janela da área de trabalho indisponíveis</string>
     <string name="remote_desktop_section_input">Entrada &amp; Controles</string>
     <string name="remote_desktop_section_stream">Transmissão</string>
-    <string name="remote_desktop_unavailable_fallback">A área de trabalho remota está indisponível neste host</string>
+    <string name="remote_desktop_unavailable_fallback">A área de trabalho remota está indisponível neste PC</string>
     <string name="remote_desktop_untitled_window">(sem título)</string>
     <string name="remote_desktop_v_scroll_short">Rolagem V: %.1fx</string>
     <string name="task_manager_dismiss">Descartar</string>
-    <string name="task_manager_host_unresponsive">O host não está respondendo às solicitações da lista de processos. Verifique se o emparelhamento foi concluído e se o host tem permissão para ler informações de processos.</string>
+    <string name="task_manager_host_unresponsive">O PC não está respondendo às solicitações da lista de processos. Verifique se o emparelhamento foi concluído e se o PC tem permissão para ler informações de processos.</string>
     <string name="task_manager_kill_failed_format">Falha ao finalizar o processo %1$d</string>
     <string name="task_manager_retry">Tentar novamente</string>
-    <!-- Remote-desktop error messages localized from host error codes (RemEx-728) -->
-    <string name="rd_err_capture_unavailable">A captura de tela não está funcionando no PC host.</string>
-    <string name="rd_err_capture_stopped">A captura de tela parou após %1$d quadros. O PC host pode ter sido bloqueado ou desconectado.</string>
+    <string name="rd_err_capture_unavailable">A captura de tela não está funcionando no Your PC.</string>
+    <string name="rd_err_capture_stopped">A captura de tela parou após %1$d quadros. O Your PC pode ter sido bloqueado ou desconectado.</string>
     <string name="rd_err_target_unavailable">A tela selecionada não está mais disponível.</string>
     <string name="rd_err_target_switch_unsupported">Esta sessão não pode trocar de tela durante a transmissão.</string>
-    <string name="rd_err_runtime_unavailable">A área de trabalho remota não está disponível no PC host no momento.</string>
+    <string name="rd_err_runtime_unavailable">A área de trabalho remota não está disponível no Your PC no momento.</string>
     <string name="cd_clear_search">Limpar pesquisa</string>
     <string name="pairing_error_timeout">O PC não respondeu. Verifique se ele está ligado e conectado à mesma rede e tente novamente.</string>
     <string name="host_discovered_snackbar">PC encontrado: %1$s</string>
@@ -663,4 +592,15 @@
     <string name="remote_desktop_display_numbered">Tela %1$d</string>
     <string name="remote_desktop_display_both">Ambas as telas</string>
     <string name="cd_display_picker_icon">Escolha qual tela visualizar</string>
+    <string name="connection_error_cert_changed">A identidade de segurança deste PC mudou. Se você reinstalou o RemEx, remova o pareamento e pareie novamente.</string>
+    <string name="connection_action_repair">Reparear</string>
+    <string name="wake_pc_sent">Sinal de despertar enviado</string>
+    <string name="wake_pc_failed">Falha ao enviar sinal de despertar</string>
+    <string name="wake_pc_mac_not_configured">Endereço MAC não configurado — defina nas Configurações</string>
+    <string name="wake_pc_lib_not_loaded">Não é possível enviar o sinal de despertar</string>
+    <string name="pairing_error_generic">Falha no pareamento — tente novamente</string>
+    <string name="splash_command_your">CONTROLE </string>
+    <string name="splash_pc">SEU PC</string>
+    <string name="splash_command_center">⚡ CENTRO DE COMANDO</string>
+    <string name="splash_tap_to_skip">Toque em qualquer lugar para pular</string>
 </resources>
