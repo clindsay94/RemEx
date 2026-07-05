@@ -182,6 +182,7 @@
     <string name="remote_desktop_config_title">Konfigurasi Streaming</string>
     <string name="remote_desktop_quality_label">Kualitas: %1$d%%</string>
     <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
+    <string name="remote_desktop_fps_unlimited_label">Target FPS: Tak Terbatas</string>
     <string name="remote_desktop_controls_hint">Pena = Absolut • 2 Jari = Gulir • Tekan Lama = Klik Kanan</string>
     <string name="remote_desktop_direct_touch_label">Mode sentuhan langsung</string>
     <string name="remote_desktop_direct_touch_desc">Posisi sentuhan dipetakan langsung ke koordinat layar</string>

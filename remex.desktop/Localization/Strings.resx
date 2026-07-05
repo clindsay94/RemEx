@@ -460,6 +460,12 @@
   <data name="RemoteDesktop_QualityFormat" xml:space="preserve">
     <value>Q: {0}</value>
   </data>
+  <data name="RemoteDesktop_FpsUnlimited" xml:space="preserve">
+    <value>Unlimited</value>
+  </data>
+  <data name="RemoteDesktop_FpsValue" xml:space="preserve">
+    <value>{0} FPS</value>
+  </data>
 
   
   <data name="Custom_Header" xml:space="preserve">

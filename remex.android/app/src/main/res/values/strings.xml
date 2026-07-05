@@ -234,6 +234,7 @@
     <string name="remote_desktop_config_title">Stream Configuration</string>
     <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
     <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
+    <string name="remote_desktop_fps_unlimited_label">Target FPS: Unlimited</string>
     <string name="remote_desktop_controls_hint">Pen = Absolute • 2 Fingers = Scroll • Long Press = Right Click</string>
     <string name="remote_desktop_direct_touch_label">Direct Touch Mode</string>
     <string name="remote_desktop_direct_touch_desc">Touch positions map directly to screen coordinates instead of trackpad movement</string>
@@ -320,7 +321,7 @@
     <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
     <string name="connection_desktop_defaults_title">Remote Desktop Defaults</string>
     <string name="connection_quality_label">Quality: %1$d%%</string>
-    <string name="connection_fps_label">Target FPS: %1$d (max 120)</string>
+    <string name="connection_fps_label">Target FPS: %1$d</string>
     <string name="connection_scale_label">Scale: %1$s</string>
     <string name="button_save_connect">Save &amp; Connect</string>
     <string name="connection_status_label">Status: %1$s</string>

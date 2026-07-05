@@ -182,6 +182,7 @@
     <string name="remote_desktop_config_title">Configuration du Flux</string>
     <string name="remote_desktop_quality_label">Qualité : %1$d%%</string>
     <string name="remote_desktop_fps_label">FPS Cible : %1$d</string>
+    <string name="remote_desktop_fps_unlimited_label">FPS Cible : Illimité</string>
     <string name="remote_desktop_controls_hint">Stylet = Absolu • 2 Doigts = Défilement • Appui Long = Clic Droit</string>
     <string name="remote_desktop_direct_touch_label">Mode tactile direct</string>
     <string name="remote_desktop_direct_touch_desc">Les positions tactiles correspondent directement aux coordonnées de l\u0027écran</string>

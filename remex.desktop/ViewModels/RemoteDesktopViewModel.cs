@@ -45,14 +45,13 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private Bitmap? _currentFrame;
 
     [ObservableProperty]
-    private int _quality = 50;
+    private int _quality = 100;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedScaleIndex))]
     private double _scale = 1.0;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SelectedFpsIndex))]
     private int _targetFps = 120;
 
     [ObservableProperty]
@@ -270,36 +269,6 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             2 => 0.75,
             3 => 1.0,
             _ => 0.5,
-        };
-    }
-
-    /// <summary>Zero-based index of the current TargetFps value in the FPS ComboBox (5/10/15/20/30/60/120/240/360).</summary>
-    public int SelectedFpsIndex
-    {
-        get => TargetFps switch
-        {
-            <= 5 => 0,
-            <= 10 => 1,
-            <= 15 => 2,
-            <= 20 => 3,
-            <= 30 => 4,
-            <= 60 => 5,
-            <= 120 => 6,
-            <= 240 => 7,
-            _ => 8,
-        };
-        set => TargetFps = value switch
-        {
-            0 => 5,
-            1 => 10,
-            2 => 15,
-            3 => 20,
-            4 => 30,
-            5 => 60,
-            6 => 120,
-            7 => 240,
-            8 => 360,
-            _ => 10,
         };
     }
 

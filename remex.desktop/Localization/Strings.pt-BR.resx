@@ -427,6 +427,9 @@
   <data name="RemoteDesktop_Fps" xml:space="preserve">
     <value>FPS:</value>
   </data>
+  <data name="RemoteDesktop_FpsUnlimited" xml:space="preserve">
+    <value>Ilimitado</value>
+  </data>
   <data name="RemoteDesktop_StreamError" xml:space="preserve">
     <value>⚠ Erro de Stream</value>
   </data>

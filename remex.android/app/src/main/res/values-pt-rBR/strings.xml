@@ -182,6 +182,7 @@
     <string name="remote_desktop_config_title">Configuração da Transmissão</string>
     <string name="remote_desktop_quality_label">Qualidade: %1$d%%</string>
     <string name="remote_desktop_fps_label">FPS Alvo: %1$d</string>
+    <string name="remote_desktop_fps_unlimited_label">FPS Alvo: Ilimitado</string>
     <string name="remote_desktop_controls_hint">Caneta = Absoluto • 2 Dedos = Rolar • Pressão Longa = Clique Direito</string>
     <string name="remote_desktop_direct_touch_label">Modo toque direto</string>
     <string name="remote_desktop_direct_touch_desc">Posições de toque mapeiam diretamente para coordenadas da tela</string>

@@ -34,9 +34,12 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private static readonly TimeSpan FrameSendTimeout = TimeSpan.FromSeconds(5);
 
-    // Upper bound on the target frame rate. Capped at 120 — higher is pointless (client displays top
-    // out at ~120 Hz) and just wastes capture/encode/bandwidth.
-    private const int MaxTargetFps = 120;
+    // Upper bound on the target frame rate, shared with clients via DesktopConfig.MaxTargetFps so the
+    // UI's "Unlimited" option and this host clamp agree on one number. 360 sits at or above the highest
+    // consumer display refresh, and the encoder is throughput-bound below it at real resolutions, so it
+    // is effectively uncapped — while the frame pacer stays safe (1000/360 ≈ 2.78 ms per tick, so a
+    // static screen can never busy-spin the capture loop).
+    private const int MaxTargetFps = DesktopConfig.MaxTargetFps;
 
     private int _quality = 50;
     private double _scale = 0.6;

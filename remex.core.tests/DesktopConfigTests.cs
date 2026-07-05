@@ -45,9 +45,10 @@ public class DesktopConfigTests
     [InlineData(1, 1)]      // at minimum
     [InlineData(30, 30)]    // normal
     [InlineData(60, 60)]    // common value
-    [InlineData(120, 120)]  // at maximum
-    [InlineData(360, 120)]  // above maximum
-    [InlineData(400, 120)]  // above maximum
+    [InlineData(120, 120)]  // common value
+    [InlineData(240, 240)]  // highest paced value shown as a number
+    [InlineData(360, 360)]  // at maximum (the "Unlimited" ceiling)
+    [InlineData(400, 360)]  // above maximum clamped to 360
     public void TargetFps_Is_Clamped(int input, int expected)
     {
         var config = new DesktopConfig { TargetFps = input };
@@ -100,6 +101,6 @@ public class DesktopConfigTests
         Assert.NotNull(config);
         Assert.Equal(100, config.Quality);
         Assert.Equal(1.0, config.Scale, precision: 5);
-        Assert.Equal(120, config.TargetFps);
+        Assert.Equal(360, config.TargetFps);
     }
 }

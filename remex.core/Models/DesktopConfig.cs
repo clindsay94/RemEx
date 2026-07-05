@@ -4,6 +4,23 @@ namespace Remex.Core.Models;
 
 public record DesktopConfig
 {
+    /// <summary>
+    /// Maximum target frame rate. The UI's "Unlimited" option maps to this value. It sits at or above
+    /// the highest consumer display refresh rate, and the H.264 encoder is throughput-bound well below
+    /// it at real resolutions, so it is effectively uncapped — while keeping the host frame pacer safe
+    /// (1000/360 ≈ 2.78 ms per tick, so a static screen can never busy-spin). Hosts that predate this
+    /// bump clamp it straight back to 120 on deserialization, so raising it is backward-compatible.
+    /// </summary>
+    public const int MaxTargetFps = 360;
+
+    /// <summary>
+    /// Highest frame rate the UI presents as a concrete number. Above this, the FPS control shows
+    /// "Unlimited" instead — the band up to <see cref="MaxTargetFps"/> is treated as effectively
+    /// uncapped (the encoder is throughput-bound below it, so the exact value there is immaterial).
+    /// Mirrors the Android client's <c>DESKTOP_FPS_PACED_MAX</c>.
+    /// </summary>
+    public const int PacedMaxFps = 240;
+
     private int _quality = 50;
     private double _scale = 0.5;
     private int _targetFps = 120;
@@ -34,7 +51,7 @@ public record DesktopConfig
     public int TargetFps
     {
         get => _targetFps;
-        init => _targetFps = Math.Clamp(value, 1, 120);
+        init => _targetFps = Math.Clamp(value, 1, MaxTargetFps);
     }
 
     private bool _drawCursor = true;

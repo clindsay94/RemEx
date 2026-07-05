@@ -238,21 +238,16 @@
                                 <Slider Minimum="10" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding StreamQuality}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                             </StackPanel>
  
-                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_TargetFrameRateTooltip}">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize RemoteDesktop_Fps}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_StreamFpsDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
-                                </StackPanel>
-                                <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedStreamFpsIndex}" MinWidth="80" CornerRadius="8" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Settings_ChooseTargetFpsTooltip}">
-                                    <ComboBoxItem Content="5"/>
-                                    <ComboBoxItem Content="10"/>
-                                    <ComboBoxItem Content="15"/>
-                                    <ComboBoxItem Content="20"/>
-                                    <ComboBoxItem Content="30"/>
-                                    <ComboBoxItem Content="60"/>
-                                    <ComboBoxItem Content="120"/>
-                                </ComboBox>
-                            </Grid>
+                            <StackPanel Spacing="8" ToolTip.Tip="{local:Localize Settings_TargetFrameRateTooltip}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{local:Localize RemoteDesktop_Fps}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{local:Localize Settings_StreamFpsDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" FontSize="14" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Text="{Binding StreamFps, Converter={x:Static conv:FpsDisplayConverter.Instance}}"/>
+                                </Grid>
+                                <Slider Minimum="1" Maximum="360" Value="{Binding StreamFps}" Foreground="{DynamicResource AccentPrimaryBrush}" ToolTip.Tip="{local:Localize Settings_ChooseTargetFpsTooltip}"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

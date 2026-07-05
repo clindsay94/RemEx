@@ -182,6 +182,7 @@
     <string name="remote_desktop_config_title">स्ट्रीम कॉन्फ़िगरेशन</string>
     <string name="remote_desktop_quality_label">गुणवत्ता: %1$d%%</string>
     <string name="remote_desktop_fps_label">लक्ष्य FPS: %1$d</string>
+    <string name="remote_desktop_fps_unlimited_label">लक्ष्य FPS: असीमित</string>
     <string name="remote_desktop_controls_hint">पेन = एब्सोल्यूट • 2 उंगलियां = स्क्रॉल • लॉन्ग प्रेस = राइट क्लिक</string>
     <string name="remote_desktop_direct_touch_label">डायरेक्ट टच मोड</string>
     <string name="remote_desktop_direct_touch_desc">टच पोजीशन सीधे स्क्रीन कोऑर्डिनेट्स पर मैप होती हैं</string>

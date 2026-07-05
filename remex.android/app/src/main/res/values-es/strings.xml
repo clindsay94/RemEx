@@ -182,6 +182,7 @@
     <string name="remote_desktop_config_title">Configuración de Stream</string>
     <string name="remote_desktop_quality_label">Calidad: %1$d%%</string>
     <string name="remote_desktop_fps_label">FPS Objetivo: %1$d</string>
+    <string name="remote_desktop_fps_unlimited_label">FPS Objetivo: Ilimitado</string>
     <string name="remote_desktop_controls_hint">Lápiz = Absoluto • 2 Dedos = Scroll • Pulsación Larga = Click Derecho</string>
     <string name="remote_desktop_direct_touch_label">Modo toque directo</string>
     <string name="remote_desktop_direct_touch_desc">Las posiciones táctiles se mapean directamente a las coordenadas de la pantalla</string>

@@ -2686,11 +2686,19 @@ fun RemoteDesktopScreenContent(
                                                                         second = { m ->
                                                                                 SettingSlider(
                                                                                         label =
-                                                                                                stringResource(
-                                                                                                        R.string
-                                                                                                                .remote_desktop_fps_label,
-                                                                                                        config.targetFps
-                                                                                                ),
+                                                                                                if (config.targetFps >
+                                                                                                                DESKTOP_FPS_PACED_MAX
+                                                                                                )
+                                                                                                        stringResource(
+                                                                                                                R.string
+                                                                                                                        .remote_desktop_fps_unlimited_label
+                                                                                                        )
+                                                                                                else
+                                                                                                        stringResource(
+                                                                                                                R.string
+                                                                                                                        .remote_desktop_fps_label,
+                                                                                                                config.targetFps
+                                                                                                        ),
                                                                                         value =
                                                                                                 config.targetFps
                                                                                                         .toFloat(),
@@ -2700,7 +2708,8 @@ fun RemoteDesktopScreenContent(
                                                                                                 )
                                                                                         },
                                                                                         valueRange =
-                                                                                                1f..120f,
+                                                                                                1f..DESKTOP_MAX_FPS
+                                                                                                        .toFloat(),
                                                                                         modifier = m
                                                                                 )
                                                                         }

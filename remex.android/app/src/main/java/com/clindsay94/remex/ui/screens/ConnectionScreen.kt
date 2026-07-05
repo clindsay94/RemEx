@@ -1071,10 +1071,18 @@ fun ConnectionScreenContent(
                                                 Spacer(modifier = Modifier.height(16.dp))
 
                                                 Text(
-                                                        stringResource(
-                                                                R.string.connection_fps_label,
-                                                                targetFpsInput.toInt()
+                                                        if (targetFpsInput.toInt() >
+                                                                        DESKTOP_FPS_PACED_MAX
                                                         )
+                                                                stringResource(
+                                                                        R.string
+                                                                                .remote_desktop_fps_unlimited_label
+                                                                )
+                                                        else
+                                                                stringResource(
+                                                                        R.string.connection_fps_label,
+                                                                        targetFpsInput.toInt()
+                                                                )
                                                 )
                                                 Slider(
                                                         value = targetFpsInput,

@@ -56,6 +56,17 @@ data class RemoteDesktopCapabilityState(
         val windowBackend: String? = null
 )
 
+/**
+ * Frame-rate ceiling shared with the host via DesktopConfig.MaxTargetFps. The FPS slider's top stop
+ * ("Unlimited") maps to this value: it exceeds every consumer display's refresh and the host encoder
+ * is throughput-bound below it at real resolutions, so it is effectively uncapped while the host frame
+ * pacer stays safe. Hosts predating this bump clamp it straight back to 120, so sending it is safe.
+ */
+const val DESKTOP_MAX_FPS = 360
+
+/** Highest frame rate the FPS slider shows as a concrete number; one stop above it selects "Unlimited". */
+const val DESKTOP_FPS_PACED_MAX = 240
+
 data class RemoteDesktopConfigState(
         val quality: Int = 95,
         val targetFps: Int = 120,
@@ -95,7 +106,7 @@ data class DesktopPresetBundle(
  */
 val DESKTOP_PRESET_BUNDLES =
         listOf(
-                DesktopPresetBundle(DesktopPreset.UNLIMITED, quality = 100, targetFps = 120, scale = 1.0f),
+                DesktopPresetBundle(DesktopPreset.UNLIMITED, quality = 100, targetFps = DESKTOP_MAX_FPS, scale = 1.0f),
                 DesktopPresetBundle(DesktopPreset.SMOOTH_SHARP, quality = 95, targetFps = 120, scale = 0.5f),
                 DesktopPresetBundle(DesktopPreset.BALANCED, quality = 85, targetFps = 60, scale = 0.75f),
                 DesktopPresetBundle(DesktopPreset.DATA_SAVER, quality = 60, targetFps = 30, scale = 0.65f)
@@ -419,7 +430,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 _configState.value =
                         RemoteDesktopConfigState(
                                 quality = prefs.quality.coerceIn(1, 100),
-                                targetFps = prefs.targetFps.coerceIn(1, 120),
+                                targetFps = prefs.targetFps.coerceIn(1, DESKTOP_MAX_FPS),
                                 scale = prefs.scale.coerceIn(0.25f, 1.0f),
                                 preset = DesktopPreset.fromId(prefs.preset)
                         )
@@ -740,7 +751,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun updateTargetFps(value: Int) {
-        _configState.update { it.copy(targetFps = value.coerceIn(1, 120)) }
+        _configState.update { it.copy(targetFps = value.coerceIn(1, DESKTOP_MAX_FPS)) }
         persistDesktopDefaults()
         pushConfigIfStreaming()
     }
@@ -762,7 +773,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         _configState.update {
             it.copy(
                 quality = quality.coerceIn(1, 100),
-                targetFps = fps.coerceIn(1, 120),
+                targetFps = fps.coerceIn(1, DESKTOP_MAX_FPS),
                 scale = scale.coerceIn(0.25f, 1.0f),
                 preset = preset
             )

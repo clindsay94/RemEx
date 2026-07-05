@@ -182,6 +182,7 @@
     <string name="remote_desktop_config_title">Konfiguracja strumienia</string>
     <string name="remote_desktop_quality_label">Jakość: %1$d%%</string>
     <string name="remote_desktop_fps_label">Docelowe FPS: %1$d</string>
+    <string name="remote_desktop_fps_unlimited_label">Docelowe FPS: Bez ograniczeń</string>
     <string name="remote_desktop_controls_hint">Rysik = Bezwzględne • 2 palce = Przewijanie • Przytrzymanie = Prawy klik</string>
     <string name="remote_desktop_direct_touch_label">Tryb bezpośredniego dotyku</string>
     <string name="remote_desktop_direct_touch_desc">Pozycje dotyku mapują się bezpośrednio na współrzędne ekranu</string>
