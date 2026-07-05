@@ -18,12 +18,15 @@ Thanks for your interest in contributing! This document covers how to set up the
 Remex.sln                    .NET solution
 ├── remex.core/              Shared models, messages, and validation logic
 │                            ↳ Also compiled as libRemexCore.so (NativeAOT) for Android JNI
-├── remex.agent/              ASP.NET headless service (Minimal APIs + WebSocket + mDNS)
-├── remex.desktop/            Shared Avalonia UI — views, viewmodels, controls, services, themes
-├── remex.desktop/    Desktop entry point (Windows / Linux)
-├── remex.android/           Native Android app — Kotlin + Jetpack Compose + JNI → libRemexCore.so
-├── docs/                    Architectural guidelines (Async, Null Safety, Validation)
-├── scripts/                 Utility scripts (Windows Service installer, android-fresh pipeline)
+├── remex.agent/             ★ THE PC SIDE — one always-elevated, in-session Avalonia app
+│                            (in-process ASP.NET host: Minimal APIs + WebSocket + mDNS;
+│                            dashboard UI; screen capture; input injection; telemetry)
+├── remex.desktop/           Legacy folder — shared Avalonia views/viewmodels, compiled INTO
+│                            remex.agent as a library. It has NO runnable entry point of its own.
+├── remex.agent.windows/     Windows-only WGC screen-capture backend (net10.0-windows)
+├── remex.android/           ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
+├── docs/                    Architecture, security, changelog, and engineering guidelines
+├── scripts/                 Utility scripts (autostart logon-task installer, android-fresh pipeline)
 └── installer/               Build scripts for Windows (Inno Setup) and Linux (bash)
 ```
 
@@ -31,13 +34,15 @@ Remex.sln                    .NET solution
 
 ## Build & Run
 
-### Host Service & Desktop Client
+There is **one PC-side app** (`remex.agent`) and **one client** (the Android app). There is no
+separate desktop client to run — `remex.desktop` is a library folded into `remex.agent`.
+
 ```bash
-# Run Host
+# Run the PC side (in-process host + dashboard UI) from source
 dotnet run --project remex.agent
 
-# Run Client
-dotnet run --project remex.desktop
+# Linux only — check screen-capture prerequisites first
+dotnet run --project remex.agent -- --doctor
 ```
 
 ### Tests
@@ -50,14 +55,14 @@ dotnet test Remex.sln
 ## Publish
 
 ### Linux Packages
-The Linux build produces `.tar.gz` archives for both the client and host, including automated `install.sh` scripts.
+The Linux build produces a single `remex-agent` `.tar.gz` archive with an automated `install.sh` script.
 ```bash
 # From repo root
 ./installer/build-linux.sh
 ```
 
 ### Windows Installer (Inno Setup)
-Requires [Inno Setup 6+](https://jrsoftware.org/isinfo.php). The script publishes the desktop binary, then compiles the installer:
+Requires [Inno Setup 6+](https://jrsoftware.org/isinfo.php). The script publishes `remex.agent`, then compiles the installer (`RemEx-v<version>-Setup.exe`):
 ```powershell
 # From repo root
 pwsh ./installer/build-installer.ps1
