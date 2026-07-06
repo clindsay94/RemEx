@@ -76,6 +76,19 @@ function Join-Paths {
     return $result
 }
 
+# Reads sdk.dir out of a Gradle local.properties file without ConvertFrom-StringData, which
+# treats Windows paths (e.g. "E:\Utilities\AndroidSDK") as escape sequences and throws on
+# unrecognized ones like "\U". Also unescapes Java Properties' own backslash-escaped form
+# (e.g. "E\:\\Utilities\\AndroidSDK"), which Gradle/AGP rewrite the file into on Windows.
+function Get-LocalPropertiesSdkDir {
+    param([Parameter(Mandatory=$true)][string]$LocalPropertiesPath)
+    if (-not (Test-Path $LocalPropertiesPath)) { return $null }
+    $line = Get-Content $LocalPropertiesPath | Where-Object { $_ -match '^\s*sdk\.dir\s*=' } | Select-Object -Last 1
+    if (-not $line) { return $null }
+    $value = ($line -split '=', 2)[1]
+    return $value -replace '\\:', ':' -replace '\\\\', '\'
+}
+
 # Force output to support emojis/colored text on Windows PowerShell
 if ($IsWin) {
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -393,19 +406,39 @@ if ($Target -eq "android" -or $Target -eq "all") {
         exit 1
     }
 
+    # Auto-sync local.properties sdk.dir for the current OS. This repo lives on a drive shared
+    # between Windows and Linux, so a path written by one OS is wrong on the other. Rather than
+    # requiring a manual edit every time you switch platforms, resolve the SDK dir from
+    # ANDROID_HOME/ANDROID_SDK_ROOT (which every dev sets per-OS per docs/ANDROID_SETUP.md) and
+    # keep local.properties in sync with whichever OS is currently building.
+    $envSdkDir = $env:ANDROID_HOME
+    if ([string]::IsNullOrEmpty($envSdkDir)) { $envSdkDir = $env:ANDROID_SDK_ROOT }
+    if (-not [string]::IsNullOrEmpty($envSdkDir) -and (Test-Path $envSdkDir)) {
+        # Forward slashes only: Gradle/AGP accept them fine on Windows too, and this script's own
+        # ConvertFrom-StringData reads of local.properties (below) choke on backslash escapes
+        # (e.g. "\U" in "E:\Utilities\..." is not a recognized escape sequence).
+        $normalizedSdkDir = $envSdkDir -replace '\\', '/'
+        $localPropsPath = Join-Paths $gradlePath "local.properties"
+        $desiredLine = "sdk.dir=$normalizedSdkDir"
+        $existingLines = if (Test-Path $localPropsPath) { @(Get-Content $localPropsPath) } else { @() }
+        $currentSdkLine = $existingLines | Where-Object { $_ -match '^\s*sdk\.dir\s*=' } | Select-Object -First 1
+        if ($currentSdkLine -ne $desiredLine) {
+            $osLabel = if ($IsWin) { "Windows" } else { "Linux" }
+            Write-Host "Syncing local.properties sdk.dir for $osLabel build: $normalizedSdkDir" -ForegroundColor DarkCyan
+            $keptLines = $existingLines | Where-Object { $_ -notmatch '^\s*sdk\.dir\s*=' }
+            Set-Content -Path $localPropsPath -Value ($keptLines + $desiredLine)
+        }
+    }
+
     # Proactive Android SDK and NDK dependency resolution
     Write-Host "Verifying Android SDK & NDK build dependencies..." -ForegroundColor DarkGray
-    $sdkDir = $null
     $localPropsPath = Join-Paths $gradlePath "local.properties"
-    if (Test-Path $localPropsPath) {
-        $localProps = Get-Content $localPropsPath -Raw | ConvertFrom-StringData
-        $sdkDir = $localProps["sdk.dir"]
-        if ($sdkDir) {
-            if ($IsWin) {
-                $sdkDir = $sdkDir -replace '\\+', '\' -replace '/', '\'
-            } else {
-                $sdkDir = $sdkDir -replace '\\+', '/' -replace '/+', '/'
-            }
+    $sdkDir = Get-LocalPropertiesSdkDir -LocalPropertiesPath $localPropsPath
+    if ($sdkDir) {
+        if ($IsWin) {
+            $sdkDir = $sdkDir -replace '\\+', '\' -replace '/', '\'
+        } else {
+            $sdkDir = $sdkDir -replace '\\+', '/' -replace '/+', '/'
         }
     }
     if ([string]::IsNullOrEmpty($sdkDir)) {
@@ -478,16 +511,12 @@ if ($Target -eq "android" -or $Target -eq "all") {
             
             # Read SDK Directory from local.properties
             $localPropsPath = Join-Paths $gradlePath "local.properties"
-            $sdkDir = $null
-            if (Test-Path $localPropsPath) {
-                $localProps = Get-Content $localPropsPath -Raw | ConvertFrom-StringData
-                $sdkDir = $localProps["sdk.dir"]
-                if ($sdkDir) {
-                    if ($IsWin) {
-                        $sdkDir = $sdkDir -replace '\\+', '\' -replace '/', '\'
-                    } else {
-                        $sdkDir = $sdkDir -replace '\\+', '/' -replace '/+', '/'
-                    }
+            $sdkDir = Get-LocalPropertiesSdkDir -LocalPropertiesPath $localPropsPath
+            if ($sdkDir) {
+                if ($IsWin) {
+                    $sdkDir = $sdkDir -replace '\\+', '\' -replace '/', '\'
+                } else {
+                    $sdkDir = $sdkDir -replace '\\+', '/' -replace '/+', '/'
                 }
             }
 

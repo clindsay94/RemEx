@@ -74,6 +74,14 @@ android {
         }
     }
     signingConfigs {
+        getByName("debug") {
+            // Use a local copy of the debug keystore to avoid 'other has different root' error on Windows
+            // when the project is on a different drive than the default C:\Users\...\.android\debug.keystore.
+            val localDebugKeystore = file("debug.keystore")
+            if (localDebugKeystore.exists()) {
+                storeFile = localDebugKeystore
+            }
+        }
         create("release") {
             storeFile =
                 androidLocalProperties.getProperty("remex.signing.storeFile")?.let { file(it) }
@@ -142,15 +150,11 @@ android {
         }
         getByName("debug") {
             jniLibs.directories.clear()
-            jniLibs.directories.add(
-                layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/debug").absolutePath
-            )
+            jniLibs.directories.add(layout.buildDirectory.dir("generated/remexJniLibs/debug").get().asFile.absolutePath)
         }
         getByName("release") {
             jniLibs.directories.clear()
-            jniLibs.directories.add(
-                layout.buildDirectory.get().asFile.resolve("generated/remexJniLibs/release").absolutePath
-            )
+            jniLibs.directories.add(layout.buildDirectory.dir("generated/remexJniLibs/release").get().asFile.absolutePath)
         }
     }
     dependenciesInfo {
@@ -814,5 +818,5 @@ dependencies {
 
 android.buildTypes.getByName("release").configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
     nativeSymbolUploadEnabled = true
-    unstrippedNativeLibsDir = "build/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib"
+    unstrippedNativeLibsDir = layout.buildDirectory.dir("intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib").get().asFile.path
 }
