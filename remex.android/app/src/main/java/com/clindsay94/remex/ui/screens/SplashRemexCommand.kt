@@ -281,8 +281,8 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                 // 3 fast top-to-bottom sweep passes stage the reveal (was 2-stage circular radar).
                 for (pass in 1..3) {
                         if (isSkipping) break
-                        sweep.animateTo(pass.toFloat(), tween(420, easing = FastOutSlowInEasing))
-                        if (pass < 3) delay(70)
+                        sweep.animateTo(pass.toFloat(), tween(480, easing = FastOutSlowInEasing))
+                        if (pass < 3) delay(80)
                 }
 
                 // Brief settle so the terminal + wordmark register before the pull-in.
@@ -376,13 +376,14 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         val p1 = sweep.value.coerceIn(0f, 1f)        // pass 1: device outlines
                         val p2 = (sweep.value - 1f).coerceIn(0f, 1f) // pass 2: solid fills + stream
                         val p3 = (sweep.value - 2f).coerceIn(0f, 1f) // pass 3: terminal + wordmark
-                        val glowIntensity = p2                       // stream ramps with pass 2 (folds in old connectionGlow)
+                        val glowIntensity = p2 * (1f - 0.8f * p3)    // stream ramps in on pass 2, then dims behind the wordmark on pass 3
 
                         // Feature glyphs: icon 1 (pass 1), icons 2 & 3 (pass 2); they park + stay.
-                        val featCy = height * 0.40f
-                        val featSpread = width * 0.24f
-                        val featSize = width * 0.085f
+                        // Center glyph raised into a peak so it clears the centered wordmark below it.
+                        val featSpread = width * 0.27f
+                        val featSize = width * 0.115f
                         val featCxs = floatArrayOf(width * 0.5f - featSpread, width * 0.5f, width * 0.5f + featSpread)
+                        val featCys = floatArrayOf(height * 0.40f, height * 0.33f, height * 0.40f)
                         val featAlphas = floatArrayOf(sstep(0.55f, 1f, p1), sstep(0.15f, 0.6f, p2), sstep(0.55f, 1f, p2))
 
                         // Wordmark lockup (pass 3): icon above "RemEx", fades + rises in.
@@ -677,7 +678,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 if (fa > 0.01f) {
                                         drawFeatureGlyph(
                                                 FeatureGlyph.values()[i],
-                                                Offset(featCxs[i], featCy),
+                                                Offset(featCxs[i], featCys[i]),
                                                 featSize * (0.7f + fa * 0.3f),
                                                 alpha = fa
                                         )

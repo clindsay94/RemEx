@@ -278,7 +278,7 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                         val flashOverlayVal: Float
 
                         // Resting size of the hero "R" — bumped up for real presence.
-                        val restScale = 3.4f
+                        val restScale = 4.0f
                         if (elapsed < 1.8f) {
                                 val t = elapsed / 1.8f
                                 // Ease-in zoom toward just under rest; the strike pops it the rest of the way.
@@ -309,32 +309,18 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                         // camera shake and elastic pop carry over unchanged. pixelDensity keeps the
                         // px-space mark proportional to the dp-sized wordmark below it.
                         val heroScale = zoomScaleVal * pixelDensity
-                        val lightningFade =
-                                if (elapsed > 1.8f) ((elapsed - 1.8f) / 0.5f).coerceIn(0f, 1f) else 0f
-                        // The old R transform mapped its 108-unit center (54,54) to
-                        // (cx + shudderX, cy + yOffset*scale + shudderY) with yOffset = -30; reuse that
-                        // exact point so the icon lands where the R did, including impact shudder.
+                        // The 108-unit icon center (54,54) maps to (cx + shudderX,
+                        // cy + yOffset*scale + shudderY) with yOffset = -30, so the mark lands
+                        // centered with the impact shudder. The terminal icon stays the hero the
+                        // whole time — no lightning bolt.
                         val heroCenter = Offset(cx + shudderX, cy - 30f * heroScale + shudderY)
                         with(SplashBrand) {
                                 drawRemexIcon(
                                         center = heroCenter,
                                         sizePx = 108f * heroScale,
-                                        opacity = 1f - lightningFade
+                                        opacity = 1f
                                 )
                         }
-                        // Lightning-strike bolt cross-fades in on top — identical bolt geometry, gold
-                        // gradient, glow, white outline, and opacity ramp as the former R→bolt fade.
-                        drawLightningStrike(
-                                w = width,
-                                h = height,
-                                scale = heroScale,
-                                opacity = 1f,
-                                lightningFade = lightningFade,
-                                elapsed = elapsed,
-                                shudderX = shudderX,
-                                shudderY = shudderY,
-                                yOffset = -30f
-                        )
 
                         // Icon-above-wordmark lockup: the terminal icon (hero, above) settles, then the
                         // two-color "RemEx" wordmark and its tagline fade + rise in below it — reusing
@@ -374,10 +360,10 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                                 )
                         }
 
-                        // Full-screen White Screen Flash overlay during lightning strike
+                        // Softened full-screen white arrival flash on impact (no longer a lightning strike).
                         if (flashOverlayVal > 0f) {
                                 drawRect(
-                                        color = Color(0xFFE6F8FF).copy(alpha = flashOverlayVal),
+                                        color = Color.White.copy(alpha = flashOverlayVal * 0.4f),
                                         size = size
                                 )
                         }
