@@ -5,17 +5,14 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,10 +34,8 @@ import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -55,9 +50,7 @@ import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.theme.materialShapesList
 import androidx.graphics.shapes.Morph
-import kotlin.math.abs
 import kotlin.math.hypot
-import kotlin.math.min
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -69,9 +62,9 @@ private class StreamParticle(var t: Float, var speed: Float, var radius: Float, 
  *
  * Visual Stages:
  * 1. Substrate reveals: Circuit board traces and radial grids appear in the background.
- * 2. The Phone (source) emits a "Scan" radar (primary color).
+ * 2. The Phone (source) emits a "Scan" radar (amber).
  * 3. The Scan reveals the "Wireframe" of the system (Monitor, Phone, and partial text).
- * 4. The Monitor (target) emits a "Wave" radar (secondary color).
+ * 4. The Monitor (target) emits a "Wave" radar (off-white).
  * 5. The Wave reveals the "Solid" surfaces, the connection stream, and the full "RemEx" brand.
  * 6. Connection Established: Energy flows from Phone to Monitor.
  * 7. Final Transition: The camera pulls into the Monitor screen to enter the app.
@@ -87,18 +80,14 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
         var elapsed by remember { mutableStateOf(0f) }
         var completed by remember { mutableStateOf(false) }
 
-        // Colors from theme
-        val background = MaterialTheme.colorScheme.background
-        val substrateColor = background.copy(alpha = 1f)
-        val onBackground = MaterialTheme.colorScheme.onBackground
-        val primary = MaterialTheme.colorScheme.primary
-        val primaryContainer = MaterialTheme.colorScheme.primaryContainer
-        val secondary = MaterialTheme.colorScheme.secondary
-        val secondaryContainer = MaterialTheme.colorScheme.secondaryContainer
-        val tertiary = MaterialTheme.colorScheme.tertiary
-        val onPrimary = MaterialTheme.colorScheme.onPrimary
-        val surface = MaterialTheme.colorScheme.surface
-        val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+        // ── Fixed brand palette — the splash is a brand moment, never theme-adaptive.
+        // Ported 1:1 from the launcher icon via SplashBrand; ZERO MaterialTheme reads. ──
+        val substrateColor = SplashBrand.WindowFill   // darkest base: device screens, box bg, fade target
+        val onBackground = SplashBrand.OffWhite       // primary text
+        val deviceLight = SplashBrand.SlateLo         // device outlines, stand, ambient embers
+        val deviceDark = SplashBrand.SlateHi          // darker slate — ambient floating shapes
+        val accent = SplashBrand.Amber                // scan reveal, connection energy, "Ex"/completion text
+        val waveAccent = SplashBrand.OffWhite         // wave reveal glow (paired with its kept white edge)
 
         // Animation States
         val scanProgress = remember { Animatable(0f) }
@@ -139,14 +128,14 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         letterSpacing = remTracking
                 )
         }
-        val exStyle = remember(remStyle, primary) { remStyle.copy(color = primary) }
+        val exStyle = remember(remStyle, accent) { remStyle.copy(color = accent) }
 
         // 24.dp.toSp()
         val completionFontSize = with(density) { 24.dp.toSp() }
         val completionTracking = with(density) { 1.dp.toSp() }
-        val completionStyle = remember(completionFontSize, completionTracking, primary) {
+        val completionStyle = remember(completionFontSize, completionTracking, accent) {
                 TextStyle(
-                        color = primary.copy(alpha = 0.8f),
+                        color = accent.copy(alpha = 0.8f),
                         fontSize = completionFontSize,
                         fontWeight = FontWeight.Medium,
                         fontFamily = FontFamily.Monospace,
@@ -199,10 +188,10 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                 }
         }
 
-        val floatingShapes = remember(primary, secondary, tertiary) {
+        val floatingShapes = remember {
                 val rng = java.util.Random(77L)
                 val shapes = materialShapesList
-                val colors = listOf(primary, secondary, tertiary)
+                val colors = listOf(deviceLight, deviceDark, SplashBrand.WindowStroke)
                 List(18) {
                         val startIdx = rng.nextInt(shapes.size)
                         var endIdx = rng.nextInt(shapes.size)
@@ -237,8 +226,6 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         )
                 }
         }
-
-        val scanLineAnimatables = remember { List(5) { Animatable(0f) } }
 
         var particleFrame by remember { mutableStateOf(0) }
         var isSkipping by remember { mutableStateOf(false) }
@@ -326,22 +313,6 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                 // Phase 1: Scan radar from phone (bottom-right)
                 scope.launch {
                         scanProgress.animateTo(1.2f, tween(2000, easing = FastOutLinearInEasing))
-                }
-
-                // Scan line spring animations — stagger each line with bouncy spring physics
-                scanLineAnimatables.forEachIndexed { index, anim ->
-                        scope.launch {
-                                delay(200L + index * 180L) // stagger each line
-                                anim.animateTo(
-                                        targetValue = 1f,
-                                        animationSpec =
-                                                spring(
-                                                        dampingRatio =
-                                                                Spring.DampingRatioMediumBouncy,
-                                                        stiffness = Spring.StiffnessLow
-                                                )
-                                )
-                        }
                 }
 
                 // Phase 2: Wave radar from monitor (top-left), delayed 800ms
@@ -498,353 +469,20 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         // ═════════════════════════════════════════════════════════════
                         // BACKGROUND LAYER (always visible, subtle)
                         // ═════════════════════════════════════════════════════════════
+                        // Fixed brand backdrop — full-bleed diagonal gradient (the first draw).
+                        drawRect(brush = SplashBrand.backdropBrush(size))
                         // particleFrame read here subscribes the draw to the frame clock so
                         // the floating morph-shapes (drawn inside the helper) animate.
                         @Suppress("UNUSED_EXPRESSION") particleFrame
-                        drawRemexCommandAmbientFx(floatingShapes, surface, surfaceVariant)
+                        drawRemexCommandAmbientFx(floatingShapes, SplashBrand.WindowStroke, SplashBrand.SlateLo)
 
-                        // ─── Platform Logos ──────────────────────────────────────────
-                        val baseLogoAlpha = 0.08f // Lowered for better reveal contrast
-
-                        fun getLogoEffect(pos: Offset): Float {
-                                val sDist =
-                                        hypot(pos.x - phoneScanCenter.x, pos.y - phoneScanCenter.y)
-                                val wDist =
-                                        hypot(
-                                                pos.x - monitorWaveCenter.x,
-                                                pos.y - monitorWaveCenter.y
-                                        )
-                                val thickness = kotlin.math.min(width, height) * 0.24f
-
-                                // Scan impact: peak as scan line passes, then settle into
-                                // persistent glow
-                                val sDiff = abs(sDist - scanRadius)
-                                val sImpact =
-                                        if (sDiff < thickness) (1f - sDiff / thickness) else 0f
-                                val sPersistent = if (scanRadius > sDist) 0.30f else 0f
-                                val sEffect = maxOf(sImpact, sPersistent)
-
-                                // Wave impact: stronger peak and higher persistent glow
-                                val wDiff = abs(wDist - waveRadius)
-                                val wImpact =
-                                        if (wDiff < thickness) (1f - wDiff / thickness) * 1.6f
-                                        else 0f
-                                val wPersistent = if (waveRadius > wDist) 0.75f else 0f
-                                val wEffect = maxOf(wImpact, wPersistent)
-
-                                // Total effect is the strongest of either, allowing wave to
-                                // overtake scan
-                                return maxOf(sEffect, wEffect).coerceIn(0f, 2f)
-                        }
-
-                        // 1. Windows Logo (Top-Right)
-                        val winSize = kotlin.math.min(width, height) * 0.17f
-                        val winTop = Offset(width - winSize - 40.dp.toPx(), 40.dp.toPx())
-                        val winCenter = Offset(winTop.x + winSize / 2f, winTop.y + winSize / 2f)
-                        val winEffect = getLogoEffect(winCenter)
-                        val winAlpha = (baseLogoAlpha + winEffect * 0.55f).coerceAtMost(1f)
-                        val winStrokeWidth = 2.0.dp.toPx() + winEffect * 2.2.dp.toPx()
-                        val winColor = primary.copy(alpha = winAlpha)
-
-                        scale(1f + winEffect * 0.12f, 1f + winEffect * 0.12f, winCenter) {
-                                val winGap = winSize * 0.08f
-                                val winHalf = winSize / 2f
-                                listOf(
-                                                Rect(
-                                                        winTop.x,
-                                                        winTop.y,
-                                                        winTop.x + winHalf - winGap,
-                                                        winTop.y + winHalf - winGap
-                                                ),
-                                                Rect(
-                                                        winTop.x + winHalf + winGap,
-                                                        winTop.y - 2.dp.toPx(),
-                                                        winTop.x + winSize,
-                                                        winTop.y + winHalf - winGap
-                                                ),
-                                                Rect(
-                                                        winTop.x,
-                                                        winTop.y + winHalf + winGap,
-                                                        winTop.x + winHalf - winGap,
-                                                        winTop.y + winSize
-                                                ),
-                                                Rect(
-                                                        winTop.x + winHalf + winGap,
-                                                        winTop.y + winHalf + winGap,
-                                                        winTop.x + winSize,
-                                                        winTop.y + winSize + 2.dp.toPx()
-                                                )
-                                        )
-                                        .forEach { r ->
-                                                drawRect(
-                                                        winColor,
-                                                        r.topLeft,
-                                                        r.size,
-                                                        style = Stroke(winStrokeWidth)
-                                                )
-                                                if (winEffect > 0.1f) {
-                                                        drawRect(
-                                                                winColor.copy(
-                                                                        alpha =
-                                                                                (winEffect * 0.25f)
-                                                                                        .coerceAtMost(
-                                                                                                1f
-                                                                                        )
-                                                                ),
-                                                                r.topLeft,
-                                                                r.size,
-                                                                style =
-                                                                        Stroke(
-                                                                                winStrokeWidth *
-                                                                                        3.5f
-                                                                        )
-                                                        )
-                                                        if (winEffect > 0.8f
-                                                        ) { // Extra glow layer for wave phase
-                                                                drawRect(
-                                                                        winColor.copy(
-                                                                                alpha =
-                                                                                        (winEffect *
-                                                                                                        0.1f)
-                                                                                                .coerceAtMost(
-                                                                                                        1f
-                                                                                                )
-                                                                        ),
-                                                                        r.topLeft,
-                                                                        r.size,
-                                                                        style =
-                                                                                Stroke(
-                                                                                        winStrokeWidth *
-                                                                                                7f
-                                                                                )
-                                                                )
-                                                        }
-                                                }
-                                        }
-                        }
-
-                        // 2. Linux Penguin Silhouette (Top-Right, next to Windows)
-                        val tuxSize = kotlin.math.min(width, height) * 0.15f
-                        val tuxTop = Offset(winTop.x - tuxSize - 35.dp.toPx(), 50.dp.toPx())
-                        val tuxCenter = Offset(tuxTop.x + tuxSize / 2f, tuxTop.y + tuxSize / 2f)
-                        val tuxEffect = getLogoEffect(tuxCenter)
-                        val tuxAlpha = (baseLogoAlpha + tuxEffect * 0.55f).coerceAtMost(1f)
-                        val tuxStrokeWidth = 2.0.dp.toPx() + tuxEffect * 2.2.dp.toPx()
-                        val tuxColor = primary.copy(alpha = tuxAlpha)
-
-                        scale(1f + tuxEffect * 0.12f, 1f + tuxEffect * 0.12f, tuxCenter) {
-                                val tuxPath =
-                                        Path().apply {
-                                                addOval(
-                                                        Rect(
-                                                                tuxTop.x + tuxSize * 0.3f,
-                                                                tuxTop.y,
-                                                                tuxTop.x + tuxSize * 0.7f,
-                                                                tuxTop.y + tuxSize * 0.35f
-                                                        )
-                                                )
-                                                addOval(
-                                                        Rect(
-                                                                tuxTop.x + tuxSize * 0.15f,
-                                                                tuxTop.y + tuxSize * 0.3f,
-                                                                tuxTop.x + tuxSize * 0.85f,
-                                                                tuxTop.y + tuxSize * 0.9f
-                                                        )
-                                                )
-                                                moveTo(
-                                                        tuxTop.x + tuxSize * 0.15f,
-                                                        tuxTop.y + tuxSize * 0.5f
-                                                )
-                                                lineTo(tuxTop.x, tuxTop.y + tuxSize * 0.7f)
-                                                moveTo(
-                                                        tuxTop.x + tuxSize * 0.85f,
-                                                        tuxTop.y + tuxSize * 0.5f
-                                                )
-                                                lineTo(
-                                                        tuxTop.x + tuxSize,
-                                                        tuxTop.y + tuxSize * 0.7f
-                                                )
-                                        }
-                                drawPath(
-                                        tuxPath,
-                                        tuxColor,
-                                        style =
-                                                Stroke(
-                                                        tuxStrokeWidth,
-                                                        cap = StrokeCap.Round,
-                                                        join = StrokeJoin.Round
-                                                )
-                                )
-                                if (tuxEffect > 0.1f) {
-                                        drawPath(
-                                                tuxPath,
-                                                tuxColor.copy(
-                                                        alpha = (tuxEffect * 0.25f).coerceAtMost(1f)
-                                                ),
-                                                style = Stroke(tuxStrokeWidth * 3.5f)
-                                        )
-                                        if (tuxEffect > 0.8f) {
-                                                drawPath(
-                                                        tuxPath,
-                                                        tuxColor.copy(
-                                                                alpha =
-                                                                        (tuxEffect * 0.1f)
-                                                                                .coerceAtMost(1f)
-                                                        ),
-                                                        style = Stroke(tuxStrokeWidth * 7f)
-                                                )
-                                        }
-                                }
-                        }
-
-                        // 3. Android Logo (Bottom-Left)
-                        val andSize = kotlin.math.min(width, height) * 0.19f
-                        val andTop = Offset(40.dp.toPx(), height - andSize - 120.dp.toPx())
-                        val andCenter = Offset(andTop.x + andSize / 2f, andTop.y + andSize / 2f)
-                        val andEffect = getLogoEffect(andCenter)
-                        val andAlpha = (baseLogoAlpha + andEffect * 0.55f).coerceAtMost(1f)
-                        val andStrokeWidth = 2.0.dp.toPx() + andEffect * 2.2.dp.toPx()
-                        val andColor = secondary.copy(alpha = andAlpha)
-
-                        scale(1f + andEffect * 0.12f, 1f + andEffect * 0.12f, andCenter) {
-                                val andPath =
-                                        Path().apply {
-                                                addArc(
-                                                        Rect(
-                                                                andTop.x,
-                                                                andTop.y,
-                                                                andTop.x + andSize,
-                                                                andTop.y + andSize
-                                                        ),
-                                                        180f,
-                                                        180f
-                                                )
-                                                moveTo(
-                                                        andTop.x + andSize * 0.25f,
-                                                        andTop.y + andSize * 0.1f
-                                                )
-                                                lineTo(
-                                                        andTop.x + andSize * 0.1f,
-                                                        andTop.y - andSize * 0.15f
-                                                )
-                                                moveTo(
-                                                        andTop.x + andSize * 0.75f,
-                                                        andTop.y + andSize * 0.1f
-                                                )
-                                                lineTo(
-                                                        andTop.x + andSize * 0.9f,
-                                                        andTop.y - andSize * 0.15f
-                                                )
-                                        }
-                                drawPath(
-                                        andPath,
-                                        andColor,
-                                        style = Stroke(andStrokeWidth, cap = StrokeCap.Round)
-                                )
-                                if (andEffect > 0.1f) {
-                                        drawPath(
-                                                andPath,
-                                                andColor.copy(
-                                                        alpha = (andEffect * 0.25f).coerceAtMost(1f)
-                                                ),
-                                                style = Stroke(andStrokeWidth * 3.5f)
-                                        )
-                                        if (andEffect > 0.8f) {
-                                                drawPath(
-                                                        andPath,
-                                                        andColor.copy(
-                                                                alpha =
-                                                                        (andEffect * 0.1f)
-                                                                                .coerceAtMost(1f)
-                                                        ),
-                                                        style = Stroke(andStrokeWidth * 7f)
-                                                )
-                                        }
-                                }
-                        }
-
-                        // 4. RemEx App Logo (Bottom-Left, under Android)
-                        val rxSize = 54.dp.toPx()
-                        val rxTop = Offset(45.dp.toPx(), height - rxSize - 40.dp.toPx())
-                        val rxCenter = Offset(rxTop.x + rxSize * 0.75f, rxTop.y + rxSize / 2f)
-                        val rxEffect = getLogoEffect(rxCenter)
-                        val rxAlpha = (baseLogoAlpha + rxEffect * 0.55f).coerceAtMost(1f)
-                        val rxStrokeWidth = 2.0.dp.toPx() + rxEffect * 2.2.dp.toPx()
-                        val rxColor = secondary.copy(alpha = rxAlpha)
-
-                        scale(1f + rxEffect * 0.12f, 1f + rxEffect * 0.12f, rxCenter) {
-                                val rxPath =
-                                        Path().apply {
-                                                moveTo(rxTop.x, rxTop.y + rxSize)
-                                                lineTo(rxTop.x, rxTop.y)
-                                                arcTo(
-                                                        Rect(
-                                                                rxTop.x,
-                                                                rxTop.y,
-                                                                rxTop.x + rxSize * 0.7f,
-                                                                rxTop.y + rxSize * 0.5f
-                                                        ),
-                                                        270f,
-                                                        180f,
-                                                        false
-                                                )
-                                                lineTo(rxTop.x + rxSize * 0.6f, rxTop.y + rxSize)
-
-                                                // Stylized 'X'
-                                                moveTo(rxTop.x + rxSize * 0.9f, rxTop.y)
-                                                lineTo(rxTop.x + rxSize * 1.5f, rxTop.y + rxSize)
-                                                moveTo(rxTop.x + rxSize * 1.5f, rxTop.y)
-                                                lineTo(rxTop.x + rxSize * 0.9f, rxTop.y + rxSize)
-
-                                                // Terminal cursor underscore
-                                                moveTo(
-                                                        rxTop.x + rxSize * 0.9f,
-                                                        rxTop.y + rxSize + 3.dp.toPx()
-                                                )
-                                                lineTo(
-                                                        rxTop.x + rxSize * 1.3f,
-                                                        rxTop.y + rxSize + 3.dp.toPx()
-                                                )
-                                        }
-                                drawPath(
-                                        rxPath,
-                                        rxColor,
-                                        style =
-                                                Stroke(
-                                                        rxStrokeWidth,
-                                                        cap = StrokeCap.Round,
-                                                        join = StrokeJoin.Round
-                                                )
-                                )
-                                if (rxEffect > 0.1f) {
-                                        drawPath(
-                                                rxPath,
-                                                rxColor.copy(
-                                                        alpha = (rxEffect * 0.25f).coerceAtMost(1f)
-                                                ),
-                                                style = Stroke(rxStrokeWidth * 3.5f)
-                                        )
-                                        if (rxEffect > 0.8f) {
-                                                drawPath(
-                                                        rxPath,
-                                                        rxColor.copy(
-                                                                alpha =
-                                                                        (rxEffect * 0.1f)
-                                                                                .coerceAtMost(1f)
-                                                        ),
-                                                        style = Stroke(rxStrokeWidth * 7f)
-                                                )
-                                        }
-                                }
-                        }
-
-                        // Particle embers — tertiary
+                        // Particle embers
                         if (waveProgress.value < 0.5f) {
                                 @Suppress("UNUSED_EXPRESSION") particleFrame
                                 for (p in particles) {
                                         if (p.alpha > 0.02f)
                                                 drawCircle(
-                                                        tertiary.copy(alpha = p.alpha),
+                                                        deviceLight.copy(alpha = p.alpha),
                                                         1.5.dp.toPx(),
                                                         Offset(p.x * width, p.y * height)
                                                 )
@@ -857,7 +495,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         val drawWireframe = {
                                 // Monitor frame
                                 drawRoundRect(
-                                        color = primary,
+                                        color = deviceLight,
                                         topLeft = Offset(monitorX, monitorY),
                                         size = Size(monitorW, monitorH),
                                         cornerRadius = monitorCorner,
@@ -865,7 +503,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 )
                                 // Monitor stand
                                 drawLine(
-                                        primary,
+                                        deviceLight,
                                         Offset(monitorCx, monitorY + monitorH),
                                         Offset(monitorCx, monitorY + monitorH + monitorH * 0.18f),
                                         5.dp.toPx()
@@ -873,94 +511,20 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 val baseW = monitorW * 0.35f
                                 val baseY = monitorY + monitorH + monitorH * 0.18f
                                 drawLine(
-                                        primary,
+                                        deviceLight,
                                         Offset(monitorCx - baseW / 2f, baseY),
                                         Offset(monitorCx + baseW / 2f, baseY),
                                         4.dp.toPx()
                                 )
 
-                                // Terminal scan lines inside monitor — curved paths with spring
-                                // motion
-                                val lFracs = listOf(0.35f, 0.80f, 0.55f, 0.70f, 0.40f)
-                                val curveMagnitudes = listOf(0.12f, -0.08f, 0.10f, -0.06f, 0.09f)
-                                for (i in lFracs.indices) {
-                                        val progress = scanLineAnimatables[i].value
-                                        val ly = monScreenY + (i + 1) * monScreenH / 6f
-                                        val lineStartX = monScreenX + 8.dp.toPx()
-                                        val lineEndX =
-                                                lineStartX + monScreenW * lFracs[i] * progress
-                                        val curvePeak = monScreenH * curveMagnitudes[i] * progress
-
-                                        val scanLinePath =
-                                                Path().apply {
-                                                        moveTo(lineStartX, ly)
-                                                        val midX = (lineStartX + lineEndX) / 2f
-                                                        quadraticTo(
-                                                                midX,
-                                                                ly + curvePeak,
-                                                                lineEndX,
-                                                                ly
-                                                        )
-                                                }
-                                        drawPath(
-                                                scanLinePath,
-                                                primary.copy(alpha = 0.25f * progress),
-                                                style =
-                                                        Stroke(
-                                                                width = 2.dp.toPx(),
-                                                                cap = StrokeCap.Round
-                                                        )
-                                        )
-                                }
-
-                                // Shield + check on monitor screen
-                                val shX = monitorCx
-                                val shY = monScreenY + monScreenH / 2f
-                                val shR = min(monScreenW, monScreenH) * 0.18f
-                                val shield =
-                                        Path().apply {
-                                                moveTo(shX - shR, shY - shR * 0.8f)
-                                                lineTo(shX + shR, shY - shR * 0.8f)
-                                                lineTo(shX + shR, shY + shR * 0.2f)
-                                                lineTo(shX, shY + shR)
-                                                lineTo(shX - shR, shY + shR * 0.2f)
-                                                close()
-                                        }
-                                drawPath(shield, primary, style = Stroke(2.dp.toPx()))
-                                val check =
-                                        Path().apply {
-                                                moveTo(shX - shR * 0.4f, shY)
-                                                lineTo(shX - shR * 0.1f, shY + shR * 0.3f)
-                                                lineTo(shX + shR * 0.4f, shY - shR * 0.3f)
-                                        }
-                                drawPath(check, primary, style = Stroke(2.dp.toPx()))
-
                                 // Phone frame
                                 drawRoundRect(
-                                        color = secondary,
+                                        color = deviceLight,
                                         topLeft = Offset(phoneX, phoneY),
                                         size = Size(phoneW, phoneH),
                                         cornerRadius = phoneCorner,
                                         style = Stroke(2.dp.toPx())
                                 )
-
-                                // Checkmark on phone screen
-                                val pChkCx = phoneCx
-                                val pChkCy = phoneCy
-                                val pChkR = min(pScreenW, pScreenH) * 0.18f
-                                drawCircle(
-                                        secondary,
-                                        pChkR * 1.3f,
-                                        Offset(pChkCx, pChkCy),
-                                        style = Stroke(1.5.dp.toPx())
-                                )
-                                val pCheck =
-                                        Path().apply {
-                                                moveTo(pChkCx - pChkR * 0.5f, pChkCy)
-                                                lineTo(pChkCx - pChkR * 0.1f, pChkCy + pChkR * 0.4f)
-                                                lineTo(pChkCx + pChkR * 0.5f, pChkCy - pChkR * 0.4f)
-                                        }
-                                drawPath(pCheck, secondary, style = Stroke(2.dp.toPx()))
                         }
 
                         // ═════════════════════════════════════════════════════════════
@@ -979,8 +543,8 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                         brush =
                                                 Brush.linearGradient(
                                                         listOf(
-                                                                primaryContainer,
-                                                                secondaryContainer
+                                                                SplashBrand.SlateLo,
+                                                                SplashBrand.WindowStroke
                                                         ),
                                                         Offset(monitorX, monitorY),
                                                         Offset(
@@ -1001,7 +565,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 )
                                 // Monitor stand (solid)
                                 drawLine(
-                                        secondaryContainer,
+                                        deviceLight,
                                         Offset(monitorCx, monitorY + monitorH),
                                         Offset(monitorCx, monitorY + monitorH + monitorH * 0.18f),
                                         5.dp.toPx()
@@ -1009,7 +573,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 val stBaseY = monitorY + monitorH + monitorH * 0.18f
                                 val stBaseW = monitorW * 0.35f
                                 drawLine(
-                                        secondaryContainer,
+                                        deviceLight,
                                         Offset(monitorCx - stBaseW / 2f, stBaseY),
                                         Offset(monitorCx + stBaseW / 2f, stBaseY),
                                         4.dp.toPx()
@@ -1024,14 +588,14 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 )
                                 // Phone body
                                 drawRoundRect(
-                                        onPrimary,
+                                        SplashBrand.WindowStroke,
                                         Offset(phoneX, phoneY),
                                         Size(phoneW, phoneH),
                                         phoneCorner
                                 )
                                 // Phone screen
                                 drawRoundRect(
-                                        background,
+                                        substrateColor,
                                         Offset(pScreenX, pScreenY),
                                         Size(pScreenW, pScreenH),
                                         CornerRadius(phoneW * 0.08f)
@@ -1063,7 +627,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 val glowWidth = 6.dp.toPx() + glowIntensity * 18.dp.toPx()
                                 drawPath(
                                         connPath,
-                                        secondary.copy(alpha = glowAlpha),
+                                        accent.copy(alpha = glowAlpha),
                                         style = Stroke(glowWidth, cap = StrokeCap.Round)
                                 )
 
@@ -1072,7 +636,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 val coreAlpha = 0.25f + glowIntensity * 0.6f
                                 val corePaint =
                                         Paint().apply {
-                                                color = secondary.copy(alpha = coreAlpha)
+                                                color = accent.copy(alpha = coreAlpha)
                                                 style = PaintingStyle.Stroke
                                                 strokeWidth =
                                                         1.5.dp.toPx() + glowIntensity * 2.dp.toPx()
@@ -1098,12 +662,12 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                                 )
                                         val a = sp.alpha * (0.5f + glowIntensity * 0.5f)
                                         drawCircle(
-                                                secondary.copy(alpha = a),
+                                                accent.copy(alpha = a),
                                                 sp.radius.dp.toPx(),
                                                 pos
                                         )
                                         drawCircle(
-                                                secondary.copy(alpha = a * 0.3f),
+                                                accent.copy(alpha = a * 0.3f),
                                                 sp.radius.dp.toPx() * 2.5f,
                                                 pos
                                         )
@@ -1117,7 +681,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                                 (0.15f - arcIdx * 0.04f) + glowIntensity * 0.2f
                                         drawArc(
                                                 color =
-                                                        tertiary.copy(
+                                                        accent.copy(
                                                                 alpha = arcAlpha.coerceIn(0f, 1f)
                                                         ),
                                                 startAngle = 210f,
@@ -1137,7 +701,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 val tracePaint2 =
                                         Paint().apply {
                                                 color =
-                                                        secondary.copy(
+                                                        accent.copy(
                                                                 alpha =
                                                                         0.12f +
                                                                                 glowIntensity *
@@ -1182,7 +746,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                                 Brush.radialGradient(
                                                         listOf(
                                                                 Color.Transparent,
-                                                                primary.copy(alpha = 0.07f)
+                                                                accent.copy(alpha = 0.07f)
                                                         ),
                                                         phoneScanCenter,
                                                         scanRadius.coerceAtLeast(1f)
@@ -1206,16 +770,6 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         if (scanRadius > 0f) {
                                 clipPath(scanClip) {
                                         drawWireframe()
-                                        drawStylizedRLogo(
-                                                w = width,
-                                                h = height,
-                                                scale = 0.8f * pixelDensity,
-                                                accentColor = primary,
-                                                opacity = 1.0f,
-                                                lightningFade = 1.0f,
-                                                elapsed = elapsed,
-                                                customPos = Offset(remXPos, remYPos)
-                                        )
                                         drawText(
                                                 emMeasured,
                                                 color = onBackground,
@@ -1237,13 +791,13 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         // Scan circle stroke
                         if (scanRadius > 0f && scanRadius < maxRadiusPx * 1.2f) {
                                 drawCircle(
-                                        primary.copy(alpha = 0.22f),
+                                        accent.copy(alpha = 0.22f),
                                         scanRadius,
                                         phoneScanCenter,
                                         style = Stroke(18.dp.toPx())
                                 )
                                 drawCircle(
-                                        primary,
+                                        accent,
                                         scanRadius,
                                         phoneScanCenter,
                                         style = Stroke(2.5.dp.toPx())
@@ -1259,7 +813,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                                 Brush.radialGradient(
                                                         listOf(
                                                                 Color.Transparent,
-                                                                secondary.copy(alpha = 0.10f)
+                                                                waveAccent.copy(alpha = 0.10f)
                                                         ),
                                                         monitorWaveCenter,
                                                         waveRadius.coerceAtLeast(1f)
@@ -1284,17 +838,6 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                 clipPath(waveClip) {
                                         drawSolid()
                                         drawConnectionStream()
-                                        // Overwrite R logo + EM / EX with bright white + add completions
-                                        drawStylizedRLogo(
-                                                w = width,
-                                                h = height,
-                                                scale = 0.8f * pixelDensity,
-                                                accentColor = primary,
-                                                opacity = 1.0f,
-                                                lightningFade = 1.0f,
-                                                elapsed = elapsed,
-                                                customPos = Offset(remXPos, remYPos)
-                                        )
                                         drawText(
                                                 emMeasured,
                                                 color = onBackground,
@@ -1308,7 +851,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                         // Baseline-align completions with their bold counterparts
                                         drawText(
                                                 oteMeasured,
-                                                color = primary.copy(alpha = 0.95f),
+                                                color = accent.copy(alpha = 0.95f),
                                                 topLeft =
                                                         Offset(
                                                                 oteXPos,
@@ -1321,7 +864,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                         )
                                         drawText(
                                                 ecuMeasured,
-                                                color = primary.copy(alpha = 0.95f),
+                                                color = accent.copy(alpha = 0.95f),
                                                 topLeft =
                                                         Offset(
                                                                 ecuXPos,
@@ -1348,7 +891,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         // Wave circle stroke
                         if (waveRadius > 0f && waveRadius < maxRadiusPx * 1.2f) {
                                 drawCircle(
-                                        secondary.copy(alpha = 0.18f),
+                                        waveAccent.copy(alpha = 0.18f),
                                         waveRadius,
                                         monitorWaveCenter,
                                         style = Stroke(14.dp.toPx())
@@ -1388,7 +931,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         // ═════════════════════════════════════════════════════════════
                         if (fadeOverlay.value > 0f) {
                                 drawRect(
-                                        color = background.copy(alpha = fadeOverlay.value),
+                                        color = substrateColor.copy(alpha = fadeOverlay.value),
                                         size = size
                                 )
                         }
