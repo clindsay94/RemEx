@@ -109,7 +109,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
         val textMeasurer = rememberTextMeasurer(cacheSize = 16)
 
         // Wordmark lockup — "Rem"(off-white)+"Ex"(amber) in Victor Mono, matching CosmicZoom.
-        val wordmarkStyle = TextStyle(fontFamily = SplashBrand.VictorMonoBold, fontSize = 40.sp)
+        val wordmarkStyle = TextStyle(fontFamily = SplashBrand.VictorMonoBold, fontSize = 46.sp)
         val wordmarkMeasured = remember { textMeasurer.measure(SplashBrand.remExAnnotated(), wordmarkStyle) }
 
         // Tagline + bottom chrome — Victor Mono (all splash text uses the brand mono face).
@@ -281,8 +281,8 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                 // 3 fast top-to-bottom sweep passes stage the reveal (was 2-stage circular radar).
                 for (pass in 1..3) {
                         if (isSkipping) break
-                        sweep.animateTo(pass.toFloat(), tween(480, easing = FastOutSlowInEasing))
-                        if (pass < 3) delay(80)
+                        sweep.animateTo(pass.toFloat(), tween(540, easing = FastOutSlowInEasing))
+                        if (pass < 3) delay(95)
                 }
 
                 // Brief settle so the terminal + wordmark register before the pull-in.
@@ -321,8 +321,8 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                                         // center
                                         val w = size.width
                                         val h = size.height
-                                        val monCx = w * 0.22f
-                                        val monCy = h * 0.20f
+                                        val monCx = w * 0.26f
+                                        val monCy = h * 0.24f
                                         val targetDx = (w / 2f - monCx) * (s - 1f)
                                         val targetDy = (h / 2f - monCy) * (s - 1f)
                                         translationX = targetDx * zoomProgress.value
@@ -336,8 +336,8 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         // Monitor: upper-left quadrant, large
                         val monitorW = width * 0.52f
                         val monitorH = monitorW * 0.62f
-                        val monitorX = width * 0.22f - monitorW / 2f
-                        val monitorY = height * 0.20f - monitorH / 2f
+                        val monitorX = width * 0.26f - monitorW / 2f
+                        val monitorY = height * 0.24f - monitorH / 2f
                         val monitorCx = monitorX + monitorW / 2f
                         val monitorCy = monitorY + monitorH / 2f
                         val monitorCorner = CornerRadius(monitorW * 0.06f)
@@ -383,14 +383,14 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         val featSpread = width * 0.27f
                         val featSize = width * 0.115f
                         val featCxs = floatArrayOf(width * 0.5f - featSpread, width * 0.5f, width * 0.5f + featSpread)
-                        val featCys = floatArrayOf(height * 0.40f, height * 0.33f, height * 0.40f)
+                        val featCys = floatArrayOf(height * 0.44f, height * 0.37f, height * 0.44f)
                         val featAlphas = floatArrayOf(sstep(0.55f, 1f, p1), sstep(0.15f, 0.6f, p2), sstep(0.55f, 1f, p2))
 
                         // Wordmark lockup (pass 3): icon above "RemEx", fades + rises in.
                         val wmAlpha = sstep(0.25f, 1f, p3)
                         val wmRise = (1f - wmAlpha) * 14.dp.toPx()
-                        val wmCy = height * 0.56f
-                        val wmIconSize = width * 0.15f
+                        val wmCy = height * 0.54f
+                        val wmIconSize = width * 0.18f
 
                         // ═════════════════════════════════════════════════════════════
                         // BACKGROUND LAYER (always visible, subtle)
