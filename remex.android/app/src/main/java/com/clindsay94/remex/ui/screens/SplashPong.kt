@@ -84,6 +84,10 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
     val glyph2 = remember { Animatable(0f) }
     val glyph3 = remember { Animatable(0f) }
 
+    // Randomized rally trajectory — regenerated each launch so the bounce path varies.
+    val rallyYFracs = remember { val rng = java.util.Random(); FloatArray(4) { if (it == 0) 0.42f else 0.30f + rng.nextFloat() * 0.28f } }
+    val arcPeaks = remember { val rng = java.util.Random(); FloatArray(3) { (if (rng.nextBoolean()) 1f else -1f) * (0.06f + rng.nextFloat() * 0.11f) } }
+
     // Morph shapes (normalized to height 2, y in [-1,1]); built once.
     val paddlePoly = remember {
         RoundedPolygon(floatArrayOf(-0.2f, -1f, 0.2f, -1f, 0.2f, 1f, -0.2f, 1f), rounding = CornerRounding(0.2f))
@@ -206,7 +210,7 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
 
             // Assembled-mark layout + the icon-space -> screen transform (matches drawRemexIcon).
             val markCenter = Offset(w * 0.5f, h * 0.40f)
-            val markSize = w * 0.42f
+            val markSize = w * 0.50f
             val s108 = markSize / 108f
             fun iconPt(px: Float, py: Float) = Offset(
                 markCenter.x - markSize / 2f + s108 * (54f + 0.8f * (px - 54f)),
@@ -217,21 +221,30 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
             val rSpot = iconPt(58f, 60f)
 
             // Signal position as a pure function of time (so the trailing comet needs no history state).
+            val y0 = rallyYFracs[0] * h
+            val y1 = rallyYFracs[1] * h
+            val y2 = rallyYFracs[2] * h
+            val y3 = rallyYFracs[3] * h
             fun signalAt(t: Float): Offset = when {
-                t < 0.30f -> Offset(cxMid, midY)
-                t < 0.75f -> { val u = ease((t - 0.30f) / 0.45f); Offset(lerpF(cxMid, rightX, u), midY + sin(u * PI.toFloat()) * -h * 0.09f) }
-                t < 1.20f -> { val u = ease((t - 0.75f) / 0.45f); Offset(lerpF(rightX, leftX, u), midY + sin(u * PI.toFloat()) * h * 0.11f) }
-                t < 1.65f -> { val u = ease((t - 1.20f) / 0.45f); Offset(lerpF(leftX, rightX, u), midY + sin(u * PI.toFloat()) * -h * 0.07f) }
-                else -> Offset(rightX, midY)
+                t < 0.30f -> Offset(cxMid, y0)
+                t < 0.75f -> { val u = ease((t - 0.30f) / 0.45f); Offset(lerpF(cxMid, rightX, u), lerpF(y0, y1, u) + sin(u * PI.toFloat()) * arcPeaks[0] * h) }
+                t < 1.20f -> { val u = ease((t - 0.75f) / 0.45f); Offset(lerpF(rightX, leftX, u), lerpF(y1, y2, u) + sin(u * PI.toFloat()) * arcPeaks[1] * h) }
+                t < 1.65f -> { val u = ease((t - 1.20f) / 0.45f); Offset(lerpF(leftX, rightX, u), lerpF(y2, y3, u) + sin(u * PI.toFloat()) * arcPeaks[2] * h) }
+                else -> Offset(rightX, y3)
             }
 
-            val sigY = signalAt(elapsed).y
+            // Paddles chase the signal on their own side of the court (recenter when it's away).
+            val sig0 = signalAt(elapsed)
+            val wR = ((sig0.x - cxMid) / (rightX - cxMid)).coerceIn(0f, 1f)
+            val wL = ((cxMid - sig0.x) / (cxMid - leftX)).coerceIn(0f, 1f)
+            val leftPaddleY = lerpF(midY, sig0.y, wL * 0.9f)
+            val rightPaddleY = lerpF(midY, sig0.y, wR * 0.9f)
             val paddleCourtScale = 0.06f * h
             val glyphIconScale = markSize * 0.088f
 
             // ── Paddles: morph rounded-bar -> icon chevron/cursor while moving to the icon layout ──
-            val leftPos = lerpO(Offset(leftX, lerpF(midY, sigY, 0.25f)), chevronSpot, fin)
-            val rightPos = lerpO(Offset(rightX, lerpF(midY, sigY, 0.25f)), cursorSpot, fin)
+            val leftPos = lerpO(Offset(leftX, leftPaddleY), chevronSpot, fin)
+            val rightPos = lerpO(Offset(rightX, rightPaddleY), cursorSpot, fin)
             val paddleScale = lerpF(paddleCourtScale, glyphIconScale, fin)
             val paddleAlpha = introA * (1f - comp)
             drawMorphGlyph(morphLeft, fin, leftPos, paddleScale, leftRecoil.value, paddleAlpha)
@@ -251,7 +264,7 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
                 }
             } else {
                 // signal streaks to the R spot and fades as the R resolves in
-                val sp = lerpO(Offset(rightX, midY), rSpot, fin)
+                val sp = lerpO(Offset(rightX, y3), rSpot, fin)
                 val sigA = (1f - fin)
                 if (sigA > 0.01f) {
                     drawCircle(SplashBrand.Amber.copy(alpha = sigA * 0.35f), 14f, sp)
@@ -276,9 +289,9 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
             // ── Feature glyphs — eject from the contact point, park in the top region, stay ──
             val contactRight = Offset(rightX, midY)
             val contactLeft = Offset(leftX, midY)
-            drawParkedGlyph(FeatureGlyph.RemoteDesktop, glyph1.value, contactRight, Offset(w * 0.28f, h * 0.24f), glyphIconScale * 1.35f)
-            drawParkedGlyph(FeatureGlyph.Telemetry, glyph2.value, contactLeft, Offset(w * 0.50f, h * 0.19f), glyphIconScale * 1.35f)
-            drawParkedGlyph(FeatureGlyph.FileTransfer, glyph3.value, contactRight, Offset(w * 0.72f, h * 0.24f), glyphIconScale * 1.35f)
+            drawParkedGlyph(FeatureGlyph.RemoteDesktop, glyph1.value, contactRight, Offset(w * 0.28f, h * 0.24f), w * 0.13f)
+            drawParkedGlyph(FeatureGlyph.Telemetry, glyph2.value, contactLeft, Offset(w * 0.50f, h * 0.19f), w * 0.13f)
+            drawParkedGlyph(FeatureGlyph.FileTransfer, glyph3.value, contactRight, Offset(w * 0.72f, h * 0.24f), w * 0.13f)
 
             // ── Wordmark lockup below the completed mark ──
             val wmA = wordmarkP.value
