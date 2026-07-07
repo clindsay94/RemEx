@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -128,6 +129,74 @@ object SplashBrand {
         drawPath(RBowlPath, OffWhite, alpha = opacity)
         drawPath(RLegPath, OffWhite, alpha = opacity)
         drawPath(RHolePath, holeColor, alpha = opacity)
+    }
+}
+
+/** The three RemEx capability glyphs surfaced during the splash reveal (and Pong bounces). */
+enum class FeatureGlyph { RemoteDesktop, Telemetry, FileTransfer }
+
+/**
+ * Draw an unlabeled amber line-glyph for [kind], centered at [center], spanning ~[sizePx].
+ * Consistent with the app's own iconography; shared by RemexCommand and Pong.
+ */
+fun DrawScope.drawFeatureGlyph(kind: FeatureGlyph, center: Offset, sizePx: Float, alpha: Float = 1f) {
+    val c = SplashBrand.Amber.copy(alpha = alpha)
+    val sw = sizePx * 0.09f
+    val st = Stroke(width = sw, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    when (kind) {
+        FeatureGlyph.RemoteDesktop -> {
+            val mw = sizePx * 0.9f
+            val mh = sizePx * 0.6f
+            val top = center.y - mh / 2f - sizePx * 0.08f
+            drawRoundRect(
+                color = c,
+                topLeft = Offset(center.x - mw / 2f, top),
+                size = Size(mw, mh),
+                cornerRadius = CornerRadius(sizePx * 0.08f),
+                style = st,
+            )
+            // centered play triangle
+            val tw = sizePx * 0.16f
+            val tcy = top + mh / 2f
+            val tri = Path().apply {
+                moveTo(center.x - tw * 0.5f, tcy - tw)
+                lineTo(center.x - tw * 0.5f, tcy + tw)
+                lineTo(center.x + tw, tcy)
+                close()
+            }
+            drawPath(tri, c)
+            // stand
+            drawLine(c, Offset(center.x, top + mh), Offset(center.x, top + mh + sizePx * 0.12f), sw, StrokeCap.Round)
+            drawLine(c, Offset(center.x - sizePx * 0.2f, top + mh + sizePx * 0.14f), Offset(center.x + sizePx * 0.2f, top + mh + sizePx * 0.14f), sw, StrokeCap.Round)
+        }
+        FeatureGlyph.Telemetry -> {
+            // power symbol: ~300° ring + top bar
+            val r = sizePx * 0.4f
+            drawArc(
+                color = c,
+                startAngle = -60f,
+                sweepAngle = 300f,
+                useCenter = false,
+                topLeft = Offset(center.x - r, center.y - r),
+                size = Size(r * 2f, r * 2f),
+                style = st,
+            )
+            drawLine(c, Offset(center.x, center.y - r - sizePx * 0.1f), Offset(center.x, center.y - sizePx * 0.02f), sw, StrokeCap.Round)
+        }
+        FeatureGlyph.FileTransfer -> {
+            // up arrow (left) + down arrow (right)
+            val ax = sizePx * 0.24f
+            val ah = sizePx * 0.34f
+            val head = sizePx * 0.14f
+            val ux = center.x - ax
+            drawLine(c, Offset(ux, center.y + ah), Offset(ux, center.y - ah), sw, StrokeCap.Round)
+            drawLine(c, Offset(ux - head, center.y - ah + head), Offset(ux, center.y - ah), sw, StrokeCap.Round)
+            drawLine(c, Offset(ux + head, center.y - ah + head), Offset(ux, center.y - ah), sw, StrokeCap.Round)
+            val dx = center.x + ax
+            drawLine(c, Offset(dx, center.y - ah), Offset(dx, center.y + ah), sw, StrokeCap.Round)
+            drawLine(c, Offset(dx - head, center.y + ah - head), Offset(dx, center.y + ah), sw, StrokeCap.Round)
+            drawLine(c, Offset(dx + head, center.y + ah - head), Offset(dx, center.y + ah), sw, StrokeCap.Round)
+        }
     }
 }
 

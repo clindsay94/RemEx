@@ -2,7 +2,6 @@ package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
@@ -25,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -34,8 +32,9 @@ import androidx.compose.ui.graphics.PaintingStyle
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -45,12 +44,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.theme.materialShapesList
 import androidx.graphics.shapes.Morph
-import kotlin.math.hypot
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -87,12 +86,9 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
         val deviceLight = SplashBrand.SlateLo         // device outlines, stand, ambient embers
         val deviceDark = SplashBrand.SlateHi          // darker slate — ambient floating shapes
         val accent = SplashBrand.Amber                // scan reveal, connection energy, "Ex"/completion text
-        val waveAccent = SplashBrand.OffWhite         // wave reveal glow (paired with its kept white edge)
 
-        // Animation States
-        val scanProgress = remember { Animatable(0f) }
-        val waveProgress = remember { Animatable(0f) }
-        val connectionGlow = remember { Animatable(0f) }
+        // Animation States — 3-pass sweep reveal (replaces the old scan/wave/connectionGlow radar)
+        val sweep = remember { Animatable(0f) } // 0→3 across the three top-to-bottom sweep passes
         val zoomScale = remember { Animatable(1f) }
         val zoomProgress = remember { Animatable(0f) }
         val fadeOverlay = remember { Animatable(0f) }
@@ -111,56 +107,28 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
         // Text Measurement
         val density = LocalDensity.current
         val textMeasurer = rememberTextMeasurer(cacheSize = 16)
-        // Raw px-per-dp for canvas art drawn in fixed unit space (the R-logo path and its
-        // companion offsets): dp-sized text scales with density but raw px paths don't, so
-        // without this factor the logo renders ~3x too small next to its text on real phones.
-        val pixelDensity = density.density
 
-        // 54.dp.toSp()
-        val remFontSize = with(density) { 54.dp.toSp() }
-        val remTracking = with(density) { 4.dp.toSp() }
-        val remStyle = remember(remFontSize, remTracking, onBackground) {
-                TextStyle(
-                        color = onBackground,
-                        fontSize = remFontSize,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = remTracking
-                )
-        }
-        val exStyle = remember(remStyle, accent) { remStyle.copy(color = accent) }
+        // Wordmark lockup — "Rem"(off-white)+"Ex"(amber) in Victor Mono, matching CosmicZoom.
+        val wordmarkStyle = TextStyle(fontFamily = SplashBrand.VictorMonoBold, fontSize = 40.sp)
+        val wordmarkMeasured = remember { textMeasurer.measure(SplashBrand.remExAnnotated(), wordmarkStyle) }
 
-        // 24.dp.toSp()
-        val completionFontSize = with(density) { 24.dp.toSp() }
-        val completionTracking = with(density) { 1.dp.toSp() }
-        val completionStyle = remember(completionFontSize, completionTracking, accent) {
+        // Tagline + bottom chrome — Victor Mono (all splash text uses the brand mono face).
+        val tagFontSize = with(density) { 13.dp.toSp() }
+        val tagTracking = with(density) { 2.dp.toSp() }
+        val tagStyle = remember(tagFontSize, tagTracking) {
                 TextStyle(
-                        color = accent.copy(alpha = 0.8f),
-                        fontSize = completionFontSize,
-                        fontWeight = FontWeight.Medium,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = completionTracking
-                )
-        }
-
-        // 14.dp.toSp()
-        val tagFontSize = with(density) { 14.dp.toSp() }
-        val tagTracking = with(density) { 3.dp.toSp() }
-        val tagStyle = remember(tagFontSize, tagTracking, onBackground) {
-                TextStyle(
-                        color = onBackground.copy(alpha = 0.7f),
+                        color = SplashBrand.OffWhite,
                         fontSize = tagFontSize,
-                        fontWeight = FontWeight.Light,
-                        fontFamily = FontFamily.SansSerif,
+                        fontWeight = FontWeight.Normal,
+                        fontFamily = SplashBrand.VictorMonoBold,
                         letterSpacing = tagTracking
                 )
         }
 
-        val remMeasured = remember(remStyle) { textMeasurer.measure("REM", remStyle) }
-        val emMeasured = remember(remStyle) { textMeasurer.measure("EM", remStyle) }
-        val oteMeasured = remember(completionStyle) { textMeasurer.measure("ote", completionStyle) }
-        val exMeasured = remember(exStyle) { textMeasurer.measure("EX", exStyle) }
-        val ecuMeasured = remember(completionStyle) { textMeasurer.measure("ecution", completionStyle) }
+        // In-monitor terminal reveal lines — literal command syntax, localized descriptive words.
+        val termLine1 = "> ${stringResource(R.string.splash_term_connect)} --host pc"
+        val termLine2 = "> ${stringResource(R.string.splash_term_pairing)}... ok"
+        val termLine3 = "> ${stringResource(R.string.splash_term_session_ready)}"
 
         val cmdStr = stringResource(R.string.splash_command_your)
         val pcStr = stringResource(R.string.splash_pc)
@@ -310,49 +278,24 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         }
                 }
 
-                // Phase 1: Scan radar from phone (bottom-right)
-                scope.launch {
-                        scanProgress.animateTo(1.2f, tween(2000, easing = FastOutLinearInEasing))
+                // 3 fast top-to-bottom sweep passes stage the reveal (was 2-stage circular radar).
+                for (pass in 1..3) {
+                        if (isSkipping) break
+                        sweep.animateTo(pass.toFloat(), tween(420, easing = FastOutSlowInEasing))
+                        if (pass < 3) delay(70)
                 }
 
-                // Phase 2: Wave radar from monitor (top-left), delayed 800ms
-                delay(800)
+                // Brief settle so the terminal + wordmark register before the pull-in.
+                if (!isSkipping) delay(350)
+
                 if (!isSkipping) {
-                        waveProgress.animateTo(1.2f, tween(2000, easing = FastOutLinearInEasing))
-
+                        // Monitor pull-in + fade (kept from the original exit).
+                        scope.launch { zoomScale.animateTo(6f, tween(700, easing = FastOutSlowInEasing)) }
+                        scope.launch { zoomProgress.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
+                        delay(400)
                         if (!isSkipping) {
-                                // Phase 3: Connection flash/glow
-                                connectionGlow.animateTo(
-                                        1f,
-                                        tween(400, easing = FastOutSlowInEasing)
-                                )
-
-                                if (!isSkipping) {
-                                        // Phase 4: Monitor Pull-In
-                                        scope.launch {
-                                                zoomScale.animateTo(
-                                                        6f,
-                                                        tween(700, easing = FastOutSlowInEasing)
-                                                )
-                                        }
-                                        scope.launch {
-                                                zoomProgress.animateTo(
-                                                        1f,
-                                                        tween(700, easing = FastOutSlowInEasing)
-                                                )
-                                        }
-                                        // Let the zoom payoff land before covering it:
-                                        // 350ms of the 700ms pull-in stays visible, then
-                                        // a quick 400ms fade — same total as before.
-                                        delay(350)
-                                        if (!isSkipping) {
-                                                fadeOverlay.animateTo(
-                                                        1f,
-                                                        tween(400, easing = LinearEasing)
-                                                )
-                                                finishOnce()
-                                        }
-                                }
+                                fadeOverlay.animateTo(1f, tween(400, easing = LinearEasing))
+                                finishOnce()
                         }
                 }
         }
@@ -429,42 +372,24 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         val connCtrl1 = Offset(phoneCx - width * 0.15f, phoneCy - height * 0.25f)
                         val connCtrl2 = Offset(monitorCx + width * 0.2f, monitorCy + height * 0.15f)
 
-                        // ─── Text positioning (centered between devices, stacked) ────
-                        val textBlockCy = height * 0.48f
-                        val textBlockCx = width * 0.50f
+                        // ─── 3-pass sweep progress (replaces circular scan/wave radii) ─
+                        val p1 = sweep.value.coerceIn(0f, 1f)        // pass 1: device outlines
+                        val p2 = (sweep.value - 1f).coerceIn(0f, 1f) // pass 2: solid fills + stream
+                        val p3 = (sweep.value - 2f).coerceIn(0f, 1f) // pass 3: terminal + wordmark
+                        val glowIntensity = p2                       // stream ramps with pass 2 (folds in old connectionGlow)
 
-                        // Line 1: [R Logo] + "EM" + "(ote)"
-                        // Offsets are design-space px (1x) — scaled by pixelDensity to track the
-                        // density-scaled R logo and text on every screen.
-                        val emXOffset = 88f * pixelDensity // clears the R logo loop
-                        val rBarOffset = 22f * pixelDensity // aligns with the R logo vertical bar
+                        // Feature glyphs: icon 1 (pass 1), icons 2 & 3 (pass 2); they park + stay.
+                        val featCy = height * 0.40f
+                        val featSpread = width * 0.24f
+                        val featSize = width * 0.085f
+                        val featCxs = floatArrayOf(width * 0.5f - featSpread, width * 0.5f, width * 0.5f + featSpread)
+                        val featAlphas = floatArrayOf(sstep(0.55f, 1f, p1), sstep(0.15f, 0.6f, p2), sstep(0.55f, 1f, p2))
 
-                        val line1W = emXOffset + emMeasured.size.width.toFloat() + oteMeasured.size.width.toFloat()
-                        val remXPos = textBlockCx - line1W / 2f
-                        val remYPos = textBlockCy - remMeasured.size.height * 1.1f
-                        val emXPos = remXPos + emXOffset
-                        val oteXPos = emXPos + emMeasured.size.width.toFloat()
-
-                        // Line 2: "EX" + "(ecution)" — aligned under R vertical bar
-                        val exXPos = remXPos + rBarOffset
-                        val exYPos = remYPos + remMeasured.size.height * 0.95f
-                        val ecuXPos = exXPos + exMeasured.size.width.toFloat()
-
-                        // Line 3: "Command Your PC" — centered relative to the text block
-                        val tagFullW = commandMeasured.size.width + yourPcMeasured.size.width
-                        val tagXCmd = textBlockCx - tagFullW / 2f
-                        val tagXYpc = tagXCmd + commandMeasured.size.width
-                        val tagY = exYPos + exMeasured.size.height + 12.dp.toPx()
-
-                        // ═════════════════════════════════════════════════════════════
-                        // RADAR PARAMETERS
-                        // ═════════════════════════════════════════════════════════════
-                        val phoneScanCenter = Offset(phoneCx, phoneCy)
-                        val monitorWaveCenter = Offset(monitorCx, monitorCy)
-
-                        val maxRadiusPx = hypot(width, height)
-                        val scanRadius = maxRadiusPx * scanProgress.value.coerceAtLeast(0f)
-                        val waveRadius = maxRadiusPx * waveProgress.value.coerceAtLeast(0f)
+                        // Wordmark lockup (pass 3): icon above "RemEx", fades + rises in.
+                        val wmAlpha = sstep(0.25f, 1f, p3)
+                        val wmRise = (1f - wmAlpha) * 14.dp.toPx()
+                        val wmCy = height * 0.56f
+                        val wmIconSize = width * 0.15f
 
                         // ═════════════════════════════════════════════════════════════
                         // BACKGROUND LAYER (always visible, subtle)
@@ -477,7 +402,7 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         drawRemexCommandAmbientFx(floatingShapes, SplashBrand.WindowStroke, SplashBrand.SlateLo)
 
                         // Particle embers
-                        if (waveProgress.value < 0.5f) {
+                        if (p2 < 0.5f) {
                                 @Suppress("UNUSED_EXPRESSION") particleFrame
                                 for (p in particles) {
                                         if (p.alpha > 0.02f)
@@ -605,8 +530,6 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         // ═════════════════════════════════════════════════════════════
                         // CONNECTION STREAM (energy flow phone -> monitor)
                         // ═════════════════════════════════════════════════════════════
-                        val glowIntensity = connectionGlow.value
-
                         val drawConnectionStream = {
                                 // Bezier curve path
                                 val connPath =
@@ -738,169 +661,122 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         }
 
                         // ═════════════════════════════════════════════════════════════
-                        // PHASE 1: SCAN RADAR + WIREFRAME (from phone)
+                        // SWEEP REVEAL — 3 top-to-bottom passes stage the scene
                         // ═════════════════════════════════════════════════════════════
-                        if (scanRadius > 0f) {
-                                drawCircle(
-                                        brush =
-                                                Brush.radialGradient(
-                                                        listOf(
-                                                                Color.Transparent,
-                                                                accent.copy(alpha = 0.07f)
-                                                        ),
-                                                        phoneScanCenter,
-                                                        scanRadius.coerceAtLeast(1f)
-                                                ),
-                                        radius = scanRadius,
-                                        center = phoneScanCenter
-                                )
+                        // Pass 1: device outlines.
+                        sweepReveal(p1) { drawWireframe() }
+                        // Pass 2: solid devices + connection stream (drawn over the outlines).
+                        sweepReveal(p2) {
+                                drawSolid()
+                                if (glowIntensity > 0f) drawConnectionStream()
                         }
 
-                        val scanClip =
-                                Path().apply {
-                                        addOval(
-                                                Rect(
-                                                        phoneScanCenter.x - scanRadius,
-                                                        phoneScanCenter.y - scanRadius,
-                                                        phoneScanCenter.x + scanRadius,
-                                                        phoneScanCenter.y + scanRadius
+                        // Feature glyphs — icon 1 (pass 1), icons 2 & 3 (pass 2); park + stay.
+                        for (i in 0 until 3) {
+                                val fa = featAlphas[i]
+                                if (fa > 0.01f) {
+                                        drawFeatureGlyph(
+                                                FeatureGlyph.values()[i],
+                                                Offset(featCxs[i], featCy),
+                                                featSize * (0.7f + fa * 0.3f),
+                                                alpha = fa
+                                        )
+                                }
+                        }
+
+                        // ═════════════════════════════════════════════════════════════
+                        // PASS 3: terminal typing (in the monitor) + wordmark lockup
+                        // ═════════════════════════════════════════════════════════════
+                        if (p3 > 0f) {
+                                val termSp = with(density) { (monScreenW / 15f).toSp() }
+                                val termStyleR = TextStyle(
+                                        color = SplashBrand.OffWhite,
+                                        fontFamily = SplashBrand.VictorMonoBold,
+                                        fontSize = termSp
+                                )
+                                val tl = listOf(
+                                        textMeasurer.measure(termLine1, termStyleR),
+                                        textMeasurer.measure(termLine2, termStyleR),
+                                        textMeasurer.measure(termLine3, termStyleR)
+                                )
+                                val lineLens = intArrayOf(termLine1.length, termLine2.length, termLine3.length)
+                                val totalChars = lineLens.sum()
+                                val shownChars = p3 * totalChars
+                                val pad = monScreenW * 0.06f
+                                val lineH = tl[0].size.height.toFloat() * 1.25f
+                                var cursorX = monScreenX + pad
+                                var cursorY = monScreenY + pad
+                                clipRect(monScreenX, monScreenY, monScreenX + monScreenW, monScreenY + monScreenH) {
+                                        var consumed = 0
+                                        for (idx in 0 until 3) {
+                                                val ly = monScreenY + pad + idx * lineH
+                                                val revealed = ((shownChars - consumed) / lineLens[idx]).coerceIn(0f, 1f)
+                                                if (revealed > 0f) {
+                                                        val lw = tl[idx].size.width.toFloat()
+                                                        clipRect(monScreenX, ly, monScreenX + pad + lw * revealed, ly + lineH) {
+                                                                drawText(tl[idx], topLeft = Offset(monScreenX + pad, ly))
+                                                        }
+                                                        cursorX = monScreenX + pad + lw * revealed
+                                                        cursorY = ly
+                                                }
+                                                consumed += lineLens[idx]
+                                        }
+                                        // blinking block cursor at the typing head
+                                        if ((elapsed * 2f).toInt() % 2 == 0) {
+                                                drawRect(
+                                                        SplashBrand.Amber,
+                                                        topLeft = Offset(cursorX + 2f, cursorY),
+                                                        size = Size(monScreenW * 0.03f, lineH * 0.7f)
                                                 )
-                                        )
-                                }
-                        if (scanRadius > 0f) {
-                                clipPath(scanClip) {
-                                        drawWireframe()
-                                        drawText(
-                                                emMeasured,
-                                                color = onBackground,
-                                                topLeft = Offset(emXPos, remYPos)
-                                        )
-                                        drawText(
-                                                exMeasured,
-                                                color = onBackground,
-                                                topLeft = Offset(exXPos, exYPos)
-                                        )
-                                        drawText(
-                                                commandMeasured,
-                                                color = onBackground.copy(alpha = 0.85f),
-                                                topLeft = Offset(tagXCmd, tagY)
-                                        )
+                                        }
                                 }
                         }
 
-                        // Scan circle stroke
-                        if (scanRadius > 0f && scanRadius < maxRadiusPx * 1.2f) {
-                                drawCircle(
-                                        accent.copy(alpha = 0.22f),
-                                        scanRadius,
-                                        phoneScanCenter,
-                                        style = Stroke(18.dp.toPx())
-                                )
-                                drawCircle(
-                                        accent,
-                                        scanRadius,
-                                        phoneScanCenter,
-                                        style = Stroke(2.5.dp.toPx())
-                                )
-                        }
-
-                        // ═════════════════════════════════════════════════════════════
-                        // PHASE 2: WAVE RADAR + SOLID + COMPLETION (from monitor)
-                        // ═════════════════════════════════════════════════════════════
-                        if (waveRadius > 0f) {
-                                drawCircle(
-                                        brush =
-                                                Brush.radialGradient(
-                                                        listOf(
-                                                                Color.Transparent,
-                                                                waveAccent.copy(alpha = 0.10f)
-                                                        ),
-                                                        monitorWaveCenter,
-                                                        waveRadius.coerceAtLeast(1f)
-                                                ),
-                                        radius = waveRadius,
-                                        center = monitorWaveCenter
-                                )
-                        }
-
-                        val waveClip =
-                                Path().apply {
-                                        addOval(
-                                                Rect(
-                                                        monitorWaveCenter.x - waveRadius,
-                                                        monitorWaveCenter.y - waveRadius,
-                                                        monitorWaveCenter.x + waveRadius,
-                                                        monitorWaveCenter.y + waveRadius
-                                                )
+                        // Wordmark lockup: brand icon above "RemEx" + kept "Command Your PC" tagline.
+                        if (wmAlpha > 0.01f) {
+                                with(SplashBrand) {
+                                        drawRemexIcon(
+                                                Offset(width / 2f, wmCy - wmIconSize * 0.62f + wmRise),
+                                                wmIconSize,
+                                                opacity = wmAlpha
                                         )
                                 }
-                        if (waveRadius > 0f) {
-                                clipPath(waveClip) {
-                                        drawSolid()
-                                        drawConnectionStream()
-                                        drawText(
-                                                emMeasured,
-                                                color = onBackground,
-                                                topLeft = Offset(emXPos, remYPos)
-                                        )
-                                        drawText(
-                                                exMeasured,
-                                                color = onBackground,
-                                                topLeft = Offset(exXPos, exYPos)
-                                        )
-                                        // Baseline-align completions with their bold counterparts
-                                        drawText(
-                                                oteMeasured,
-                                                color = accent.copy(alpha = 0.95f),
-                                                topLeft =
-                                                        Offset(
-                                                                oteXPos,
-                                                        remYPos +
-                                                                        (remMeasured.size.height -
-                                                                                oteMeasured
-                                                                                        .size
-                                                                                        .height)
-                                                        )
-                                        )
-                                        drawText(
-                                                ecuMeasured,
-                                                color = accent.copy(alpha = 0.95f),
-                                                topLeft =
-                                                        Offset(
-                                                                ecuXPos,
-                                                                exYPos +
-                                                                        (exMeasured.size.height -
-                                                                                ecuMeasured
-                                                                                        .size
-                                                                                        .height)
-                                                        )
-                                        )
-                                        drawText(
-                                                commandMeasured,
-                                                color = onBackground.copy(alpha = 0.85f),
-                                                topLeft = Offset(tagXCmd, tagY)
-                                        )
-                                        drawText(
-                                                yourPcMeasured,
-                                                color = onBackground.copy(alpha = 0.85f),
-                                                topLeft = Offset(tagXYpc, tagY)
-                                        )
-                                }
+                                drawText(
+                                        wordmarkMeasured,
+                                        topLeft = Offset(width / 2f - wordmarkMeasured.size.width / 2f, wmCy + wmRise),
+                                        alpha = wmAlpha
+                                )
+                                val tagFullW = commandMeasured.size.width + yourPcMeasured.size.width
+                                val tagY = wmCy + wordmarkMeasured.size.height + 10.dp.toPx() + wmRise
+                                val tagX = width / 2f - tagFullW / 2f
+                                drawText(commandMeasured, color = SplashBrand.SlateLo, topLeft = Offset(tagX, tagY), alpha = wmAlpha)
+                                drawText(yourPcMeasured, color = SplashBrand.Amber, topLeft = Offset(tagX + commandMeasured.size.width, tagY), alpha = wmAlpha)
                         }
 
-                        // Wave circle stroke
-                        if (waveRadius > 0f && waveRadius < maxRadiusPx * 1.2f) {
-                                drawCircle(
-                                        waveAccent.copy(alpha = 0.18f),
-                                        waveRadius,
-                                        monitorWaveCenter,
-                                        style = Stroke(14.dp.toPx())
+                        // Leading amber edge + glow for the active sweep pass.
+                        val activeFrac = when {
+                                sweep.value <= 0f -> -1f
+                                sweep.value < 1f -> p1
+                                sweep.value < 2f -> p2
+                                sweep.value < 3f -> p3
+                                else -> -1f
+                        }
+                        if (activeFrac in 0.001f..0.999f) {
+                                val edgeY = height * activeFrac
+                                val trail = 44.dp.toPx()
+                                drawRect(
+                                        Brush.verticalGradient(
+                                                listOf(Color.Transparent, SplashBrand.Amber.copy(alpha = 0.22f)),
+                                                startY = edgeY - trail,
+                                                endY = edgeY
+                                        ),
+                                        topLeft = Offset(0f, edgeY - trail),
+                                        size = Size(width, trail)
                                 )
-                                drawCircle(
-                                        Color.White.copy(alpha = 0.75f),
-                                        waveRadius,
-                                        monitorWaveCenter,
-                                        style = Stroke(2.dp.toPx())
+                                drawRect(
+                                        SplashBrand.Amber.copy(alpha = 0.9f),
+                                        topLeft = Offset(0f, edgeY - 1.5.dp.toPx()),
+                                        size = Size(width, 3.dp.toPx())
                                 )
                         }
 
@@ -937,6 +813,20 @@ fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipCon
                         }
                 }
         }
+}
+
+/** Clamp: 0 at/below [edge0], 1 at/above [edge1], linear between — for staged fade-ins. */
+private fun sstep(edge0: Float, edge1: Float, x: Float): Float =
+        ((x - edge0) / (edge1 - edge0)).coerceIn(0f, 1f)
+
+/** Reveal [block] under a top-to-bottom band covering [frac] of the height (1 = full). */
+private inline fun DrawScope.sweepReveal(frac: Float, block: DrawScope.() -> Unit) {
+        if (frac <= 0f) return
+        if (frac >= 1f) {
+                block()
+                return
+        }
+        clipRect(top = 0f, bottom = size.height * frac, block = block)
 }
 
 /** Cubic Bezier point calculation */

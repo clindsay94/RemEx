@@ -14,6 +14,10 @@
     <string name="splash_pc">YOUR PC</string>
     <string name="splash_command_center">⚡ COMMAND CENTER</string>
     <string name="splash_tap_to_skip">Tap anywhere to skip</string>
+    <!-- RemexCommand splash terminal reveal: descriptive words only; command flags/prompt stay literal and untranslated -->
+    <string name="splash_term_connect">connect</string>
+    <string name="splash_term_pairing">pairing</string>
+    <string name="splash_term_session_ready">session ready</string>
     <string name="pairing_error_generic">Pairing failed — please try again</string>
 
     
