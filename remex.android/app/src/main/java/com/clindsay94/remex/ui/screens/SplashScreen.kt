@@ -55,6 +55,7 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
     ) {
         when (splashStyle) {
             "CosmicZoom" -> SplashCosmicZoom(onFinished, skipRequested) { skipRequested = false }
+            "Pong" -> SplashPong(onFinished, skipRequested) { skipRequested = false }
             else -> SplashRemexCommand(onFinished, skipRequested) { skipRequested = false }
         }
     }

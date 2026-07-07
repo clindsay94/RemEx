@@ -491,7 +491,7 @@ fun PersonalizationScreenContent(
                             stringResource(R.string.personalization_splash_style),
                             style = MaterialTheme.typography.labelMedium
                     )
-                    val splashStyleOptions = listOf("RemexCommand", "CosmicZoom")
+                    val splashStyleOptions = listOf("RemexCommand", "CosmicZoom", "Pong")
                     Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -503,10 +503,11 @@ fun PersonalizationScreenContent(
                                     modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    if (option == "RemexCommand")
-                                        stringResource(R.string.personalization_splash_original)
-                                    else
-                                        stringResource(R.string.personalization_splash_cosmic),
+                                    when (option) {
+                                        "RemexCommand" -> stringResource(R.string.personalization_splash_original)
+                                        "CosmicZoom" -> stringResource(R.string.personalization_splash_cosmic)
+                                        else -> stringResource(R.string.personalization_splash_pong)
+                                    },
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )

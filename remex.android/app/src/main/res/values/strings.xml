@@ -449,6 +449,7 @@
     <string name="personalization_splash_style">Splash Screen Animation</string>
     <string name="personalization_splash_original">Original Scan</string>
     <string name="personalization_splash_cosmic">Cosmic Zoom</string>
+    <string name="personalization_splash_pong">Signal Pong</string>
 
     
     <string name="widget_config_app_launcher_title">Configure App Launcher</string>
