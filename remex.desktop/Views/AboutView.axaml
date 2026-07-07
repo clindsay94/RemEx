@@ -1,7 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Desktop.ViewModels"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.AboutView" x:DataType="vm:AboutViewModel">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:controls="clr-namespace:Remex.Desktop.Controls" x:Class="Remex.Desktop.Views.AboutView" x:DataType="vm:AboutViewModel">
 
     <UserControl.Styles>
         <Style Selector="Button.about-back">
@@ -50,8 +51,8 @@
 
             <!-- App Logo and Name -->
             <StackPanel Spacing="12" HorizontalAlignment="Center">
-                <Border Width="100" Height="100" CornerRadius="50" ClipToBounds="True" HorizontalAlignment="Center">
-                    <Image Source="avares://Remex.Desktop/Assets/New-REMEX.png" Height="200" Stretch="UniformToFill"/>
+                <Border Width="100" Height="100" CornerRadius="22" ClipToBounds="True" HorizontalAlignment="Center">
+                    <controls:BrandMark Width="100" Height="100"/>
                 </Border>
 
                 <TextBlock Text="{local:Localize About_Tagline}" FontSize="14" FontFamily="{StaticResource Sixtyfour}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" LetterSpacing="2"/>

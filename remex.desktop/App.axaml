@@ -41,6 +41,7 @@
             <FontFamily x:Key="Bungee_Shade">avares://Remex.Desktop/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade</FontFamily>
             <FontFamily x:Key="Nabla">avares://Remex.Desktop/Assets/Fonts/Nabla-Regular.ttf#Nabla</FontFamily>
             <FontFamily x:Key="Sixtyfour">avares://Remex.Desktop/Assets/Fonts/Sixtyfour-Regular.ttf#Sixtyfour</FontFamily>
+            <FontFamily x:Key="VictorMono">avares://Remex.Desktop/Assets/Fonts/victor_mono_bold.ttf#Victor Mono</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 
