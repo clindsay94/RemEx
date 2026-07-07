@@ -8,7 +8,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,14 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
@@ -42,13 +39,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
- * CosmicZoom splash variant. Starfield convergence → cinematic zoom into the hero "R" →
- * lightning-strike impact (with camera shake, elastic punch, chromatic bloom, white flash)
- * → "REMOTE EXECUTION / Command Center" title reveal → exit fade.
+ * CosmicZoom splash variant. Starfield convergence → cinematic zoom into the hero terminal-window
+ * brand mark → lightning-strike impact (with camera shake, elastic punch, chromatic bloom, white
+ * flash) → "RemEx" wordmark + Command Center tagline reveal → exit fade.
  *
- * Extracted verbatim from the former monolithic SplashScreen.kt (behavior-identical).
- * Owns only the state its code path used. The orchestrator hands down [skipRequested];
- * this variant runs the original skip fade then [onFinished], calling [onSkipConsumed] last.
+ * Colors are the fixed [SplashBrand] palette (no `MaterialTheme` reads) — the splash is a brand
+ * moment rendered identically regardless of the active app theme. Motion/timing/easings are
+ * unchanged from the original CosmicZoom; only the hero art, wordmark, and colors were rebranded.
+ * The orchestrator hands down [skipRequested]; this variant runs the original skip fade then
+ * [onFinished], calling [onSkipConsumed] last.
  */
 @Composable
 fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: () -> Unit) {
@@ -56,46 +55,37 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
         var elapsed by remember { mutableStateOf(0f) }
         var completed by remember { mutableStateOf(false) }
 
-        // Colors from theme
-        val background = MaterialTheme.colorScheme.background
-        val substrateColor = background.copy(alpha = 1f)
-        val onBackground = MaterialTheme.colorScheme.onBackground
-        val primary = MaterialTheme.colorScheme.primary
-        // Icy accent reads well on dark backgrounds; on light themes fall back to onBackground
-        // so the CosmicZoom subtitle stays legible (the splash renders in both themes).
-        val cosmicSubColor = if (background.luminance() < 0.5f) Color(0xFFDCF0FF) else onBackground
+        // Fixed brand palette comes from SplashBrand (no MaterialTheme reads) — the splash renders
+        // identically regardless of the active app theme. Roles: backdrop = diagonal gradient,
+        // HUD rings/crosshair/accents = Amber, primary text = OffWhite, muted text = SlateLo.
 
         // Text Measurement
         val density = LocalDensity.current
         val textMeasurer = rememberTextMeasurer(cacheSize = 16)
-        // Raw px-per-dp for canvas art drawn in fixed unit space (the R-logo path and its
+        // Raw px-per-dp for canvas art drawn in fixed unit space (the hero brand mark and its
         // companion offsets): dp-sized text scales with density but raw px paths don't, so
-        // without this factor the logo renders ~3x too small next to its text on real phones.
+        // without this factor the mark renders ~3x too small next to its text on real phones.
         val pixelDensity = density.density
 
-        // 38.dp.toSp()
-        val cosmicTitleFontSize = with(density) { 38.dp.toSp() }
-        val cosmicTitleTracking = with(density) { 4.dp.toSp() }
-        val cosmicTitleStyle = remember(cosmicTitleFontSize, cosmicTitleTracking, onBackground) {
-                TextStyle(
-                        color = onBackground,
-                        fontSize = cosmicTitleFontSize,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = cosmicTitleTracking
-                )
+        // Wordmark lockup: two-color "RemEx" in Victor Mono Bold, drawn below the settled hero.
+        // Measured once (opacity 1f) purely for geometry; the per-frame draw bakes the fade opacity
+        // into the annotated colors via SplashBrand.remExAnnotated(opacity).
+        val remExWordmarkStyle = remember {
+                TextStyle(fontFamily = SplashBrand.VictorMonoBold, fontSize = 40.sp)
         }
-        val cosmicAccentStyle = remember(cosmicTitleStyle, primary) { cosmicTitleStyle.copy(color = primary) }
+        val remExMeasured = remember(remExWordmarkStyle) {
+                textMeasurer.measure(SplashBrand.remExAnnotated(), remExWordmarkStyle)
+        }
 
-        // 11.dp.toSp()
+        // Tagline beneath the wordmark — Victor Mono Bold + muted slate, wording unchanged.
         val cosmicSubFontSize = with(density) { 11.dp.toSp() }
         val cosmicSubTracking = with(density) { 1.dp.toSp() }
-        val cosmicSubStyle = remember(cosmicSubFontSize, cosmicSubTracking, cosmicSubColor) {
+        val cosmicSubStyle = remember(cosmicSubFontSize, cosmicSubTracking) {
                 TextStyle(
-                        color = cosmicSubColor,
+                        color = SplashBrand.SlateLo,
                         fontSize = cosmicSubFontSize,
                         fontWeight = FontWeight.Medium,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = SplashBrand.VictorMonoBold,
                         letterSpacing = cosmicSubTracking
                 )
         }
@@ -103,12 +93,12 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
         // 14.dp.toSp() — shared chrome (version + skip hint)
         val tagFontSize = with(density) { 14.dp.toSp() }
         val tagTracking = with(density) { 3.dp.toSp() }
-        val tagStyle = remember(tagFontSize, tagTracking, onBackground) {
+        val tagStyle = remember(tagFontSize, tagTracking) {
                 TextStyle(
-                        color = onBackground.copy(alpha = 0.7f),
+                        color = SplashBrand.OffWhite.copy(alpha = 0.7f),
                         fontSize = tagFontSize,
                         fontWeight = FontWeight.Light,
-                        fontFamily = FontFamily.SansSerif,
+                        fontFamily = SplashBrand.VictorMonoBold,
                         letterSpacing = tagTracking
                 )
         }
@@ -117,8 +107,6 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
         val skipStr = stringResource(R.string.splash_tap_to_skip)
         val versionStr = "v${BuildConfig.VERSION_NAME}"
 
-        val remoteCosmicMeasured = remember(cosmicTitleStyle) { textMeasurer.measure("REMOTE", cosmicTitleStyle) }
-        val executionCosmicMeasured = remember(cosmicAccentStyle) { textMeasurer.measure("EXECUTION", cosmicAccentStyle) }
         val commandCenterCosmicMeasured = remember(cosmicSubStyle, cmdCenterStr) { textMeasurer.measure(cmdCenterStr, cosmicSubStyle) }
         val skipMeasured = remember(tagStyle, skipStr) { textMeasurer.measure(skipStr, tagStyle) }
         val versionMeasured = remember(tagStyle, versionStr) { textMeasurer.measure(versionStr, tagStyle) }
@@ -219,7 +207,7 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
         Box(
                 modifier =
                         Modifier.fillMaxSize()
-                                .background(substrateColor)
+                                .background(SplashBrand.BackdropStart)
                                 .graphicsLayer { alpha = skipAlpha.value },
                 contentAlignment = Alignment.Center
         ) {
@@ -231,11 +219,14 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
 
                         // ── COSMIC ZOOM ANIMATION ──
 
+                        // Fixed brand backdrop: full-bleed diagonal gradient (replaces the themed fill).
+                        drawRect(brush = SplashBrand.backdropBrush(size))
+
                         // Draw Cosmic Starfield
                         drawCosmicZoomStarfield(particles)
 
                         // Target rings / circular HUD lines in background
-                        val radColor = primary.copy(alpha = 0.05f)
+                        val radColor = SplashBrand.Amber.copy(alpha = 0.05f)
                         val maxRad = kotlin.math.min(width, height) * 0.45f
                         for (rf in listOf(0.25f, 0.45f, 0.65f, 0.85f)) {
                                 drawCircle(
@@ -267,7 +258,7 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                                 val shockOpacity = 1f - waveT
 
                                 drawCircle(
-                                        color = primary.copy(alpha = shockOpacity * 0.6f),
+                                        color = SplashBrand.Amber.copy(alpha = shockOpacity * 0.6f),
                                         radius = shockRadius,
                                         center = Offset(cx, cy),
                                         style = Stroke(width = (3f + (1f - waveT) * 8f).dp.toPx())
@@ -313,61 +304,73 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                                 zoomScaleVal = restScale + punch + kotlin.math.sin((elapsed - 1.8f) * 3f) * 0.05f
                         }
 
-                        // Draw Zoomed Brand Logo in center (Applying global scale & shudder displacement)
-                        // pixelDensity keeps the px-space logo proportional to dp-sized text.
-                        drawStylizedRLogo(
+                        // Draw the terminal-window brand mark as the hero, using the SAME transform
+                        // (scale / shudder / punch / position) the old "R" logo used, so the strike's
+                        // camera shake and elastic pop carry over unchanged. pixelDensity keeps the
+                        // px-space mark proportional to the dp-sized wordmark below it.
+                        val heroScale = zoomScaleVal * pixelDensity
+                        val lightningFade =
+                                if (elapsed > 1.8f) ((elapsed - 1.8f) / 0.5f).coerceIn(0f, 1f) else 0f
+                        // The old R transform mapped its 108-unit center (54,54) to
+                        // (cx + shudderX, cy + yOffset*scale + shudderY) with yOffset = -30; reuse that
+                        // exact point so the icon lands where the R did, including impact shudder.
+                        val heroCenter = Offset(cx + shudderX, cy - 30f * heroScale + shudderY)
+                        with(SplashBrand) {
+                                drawRemexIcon(
+                                        center = heroCenter,
+                                        sizePx = 108f * heroScale,
+                                        opacity = 1f - lightningFade
+                                )
+                        }
+                        // Lightning-strike bolt cross-fades in on top — identical bolt geometry, gold
+                        // gradient, glow, white outline, and opacity ramp as the former R→bolt fade.
+                        drawLightningStrike(
                                 w = width,
                                 h = height,
-                                scale = zoomScaleVal * pixelDensity,
-                                accentColor = primary,
-                                opacity = 1.0f,
-                                lightningFade = if (elapsed > 1.8f) ((elapsed - 1.8f) / 0.5f).coerceIn(0f, 1f) else 0f,
+                                scale = heroScale,
+                                opacity = 1f,
+                                lightningFade = lightningFade,
                                 elapsed = elapsed,
                                 shudderX = shudderX,
                                 shudderY = shudderY,
                                 yOffset = -30f
                         )
 
-                        // Fading title text "REMOTE EXECUTION" — staggered line entrance
-                        // (fade + 12dp rise per line, 150ms apart; the last line settles at
-                        // 2.5s, exactly when the exit fade begins).
+                        // Icon-above-wordmark lockup: the terminal icon (hero, above) settles, then the
+                        // two-color "RemEx" wordmark and its tagline fade + rise in below it — reusing
+                        // the exact fade+rise stagger the old 3-line REMOTE / EXECUTION / Command Center
+                        // reveal used (FastOutSlowIn over 0.35s, 12dp rise; wordmark at 1.85s, tagline
+                        // at 2.15s, so the last element still settles right as the exit fade begins).
                         if (elapsed > 1.8f) {
                                 fun lineIn(start: Float) =
                                         FastOutSlowInEasing.transform(
                                                 ((elapsed - start) / 0.35f).coerceIn(0f, 1f)
                                         )
-                                val remoteIn = lineIn(1.85f)
-                                val executionIn = lineIn(2.0f)
-                                val subIn = lineIn(2.15f)
+                                val wordmarkIn = lineIn(1.85f)
+                                val taglineIn = lineIn(2.15f)
                                 val rise = 12.dp.toPx()
 
-                                val remoteW = remoteCosmicMeasured.size.width.toFloat()
-                                val remoteH = remoteCosmicMeasured.size.height.toFloat()
-                                val executionW = executionCosmicMeasured.size.width.toFloat()
-                                val executionH = executionCosmicMeasured.size.height.toFloat()
-                                val subW = commandCenterCosmicMeasured.size.width.toFloat()
+                                val wordmarkW = remExMeasured.size.width.toFloat()
+                                val wordmarkH = remExMeasured.size.height.toFloat()
+                                val taglineW = commandCenterCosmicMeasured.size.width.toFloat()
 
-                                val remoteX = cx - remoteW / 2f
-                                val remoteY = cy + 50.dp.toPx()
-                                val executionX = cx - executionW / 2f
-                                val executionY = remoteY + remoteH * 1.05f
-                                val subX = cx - subW / 2f
-                                val subY = executionY + executionH * 1.1f
+                                val wordmarkX = cx - wordmarkW / 2f
+                                val wordmarkY = cy + 50.dp.toPx()
+                                val taglineX = cx - taglineW / 2f
+                                val taglineY = wordmarkY + wordmarkH * 1.15f
 
+                                // Wordmark: bake the fade opacity into the two brand colors so both
+                                // "Rem" (off-white) and "Ex" (amber) dim together and stay on-brand.
                                 drawText(
-                                        remoteCosmicMeasured,
-                                        color = onBackground.copy(alpha = remoteIn),
-                                        topLeft = Offset(remoteX, remoteY + (1f - remoteIn) * rise)
-                                )
-                                drawText(
-                                        executionCosmicMeasured,
-                                        color = primary.copy(alpha = executionIn),
-                                        topLeft = Offset(executionX, executionY + (1f - executionIn) * rise)
+                                        textMeasurer,
+                                        SplashBrand.remExAnnotated(opacity = wordmarkIn),
+                                        topLeft = Offset(wordmarkX, wordmarkY + (1f - wordmarkIn) * rise),
+                                        style = remExWordmarkStyle
                                 )
                                 drawText(
                                         commandCenterCosmicMeasured,
-                                        color = cosmicSubColor.copy(alpha = subIn * 0.6f),
-                                        topLeft = Offset(subX, subY + (1f - subIn) * rise)
+                                        color = SplashBrand.SlateLo.copy(alpha = taglineIn),
+                                        topLeft = Offset(taglineX, taglineY + (1f - taglineIn) * rise)
                                 )
                         }
 
@@ -416,7 +419,7 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                         }
                         if (fadeOverlayVal > 0f) {
                                 drawRect(
-                                        color = background.copy(alpha = fadeOverlayVal),
+                                        color = SplashBrand.BackdropStart.copy(alpha = fadeOverlayVal),
                                         size = size
                                 )
                         }
@@ -429,7 +432,7 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                         if (versionT > 0f) {
                                 drawText(
                                         versionMeasured,
-                                        color = onBackground.copy(alpha = versionT * 0.4f),
+                                        color = SplashBrand.OffWhite.copy(alpha = versionT * 0.4f),
                                         topLeft = Offset((width - versionMeasured.size.width) / 2f, height - 32.dp.toPx() - versionMeasured.size.height)
                                 )
                         }
@@ -439,7 +442,7 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                         if (skipT > 0f && !isSkipping) {
                                 drawText(
                                         skipMeasured,
-                                        color = onBackground.copy(alpha = skipT * 0.5f),
+                                        color = SplashBrand.OffWhite.copy(alpha = skipT * 0.5f),
                                         topLeft = Offset((width - skipMeasured.size.width) / 2f, height - 56.dp.toPx() - skipMeasured.size.height)
                                 )
                         }

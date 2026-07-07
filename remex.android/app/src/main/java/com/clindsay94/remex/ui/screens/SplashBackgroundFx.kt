@@ -330,3 +330,83 @@ internal fun DrawScope.drawStylizedRLogo(
 
         drawContext.canvas.restore()
 }
+
+/**
+ * Draws ONLY the gradient lightning-bolt strike (glow backing + gold-gradient fill + white
+ * outline) at the hero's 108-unit transform — the same bolt [drawStylizedRLogo] paints, isolated
+ * so a caller can render its own hero art underneath and cross-fade to this identical bolt.
+ *
+ * The CosmicZoom hero (Task 3) draws the terminal-window brand mark instead of the old "R" but must
+ * keep the strike pixel-identical. The few draw lines here are deliberately duplicated from
+ * [drawStylizedRLogo] rather than shared back into it: that function must stay byte-for-byte
+ * unchanged for its remaining `SplashRemexCommand` callers, and it is deleted in a later task — at
+ * which point this becomes the single home for the bolt. The tx/ty/scale math mirrors
+ * [drawStylizedRLogo] exactly so the bolt lands in the same place, including impact shudder.
+ */
+internal fun DrawScope.drawLightningStrike(
+        w: Float,
+        h: Float,
+        scale: Float,
+        opacity: Float,
+        lightningFade: Float,
+        elapsed: Float,
+        shudderX: Float = 0f,
+        shudderY: Float = 0f,
+        yOffset: Float = -30f,
+        customPos: Offset? = null
+) {
+        if (lightningFade <= 0f) return
+
+        val tx = if (customPos != null) customPos.x + shudderX else w / 2f - 54f * scale + shudderX
+        val ty = if (customPos != null) customPos.y + yOffset * scale + shudderY else h / 2f - 54f * scale + yOffset * scale + shudderY
+
+        drawContext.canvas.save()
+        drawContext.canvas.translate(tx, ty)
+        drawContext.canvas.scale(scale, scale)
+
+        val lightningPath = Path().apply {
+                moveTo(31.5f + 24f, 9f)
+                lineTo(31.5f + 24f, 58.5f)
+                lineTo(45f + 24f, 58.5f)
+                lineTo(45f + 24f, 99f)
+                lineTo(76.5f + 24f, 45f)
+                lineTo(58.5f + 24f, 45f)
+                lineTo(76.5f + 24f, 9f)
+                close()
+        }
+
+        val goldBrush = Brush.linearGradient(
+                colors = listOf(Color(0xFFFFD700), Color(0xFFFF8C00), Color(0xFFFF4500)),
+                start = Offset(69f, 18f),
+                end = Offset(87f, 90f)
+        )
+
+        // Glow backing for lightning
+        drawPath(
+                path = lightningPath,
+                color = Color(0xFFFF8C00).copy(alpha = opacity * lightningFade * (120f / 255f)),
+                style = Stroke(
+                        width = 6f + kotlin.math.sin(elapsed * 15f) * 2f,
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round
+                )
+        )
+        // Fill gold gradient
+        drawPath(
+                path = lightningPath,
+                brush = goldBrush,
+                alpha = opacity * lightningFade
+        )
+        // White outline stroke
+        drawPath(
+                path = lightningPath,
+                color = Color.White.copy(alpha = opacity * lightningFade * (180f / 255f)),
+                style = Stroke(
+                        width = 1.5f,
+                        cap = StrokeCap.Round,
+                        join = StrokeJoin.Round
+                )
+        )
+
+        drawContext.canvas.restore()
+}
