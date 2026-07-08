@@ -146,7 +146,7 @@
                                     <StackPanel Spacing="4" Margin="0,8">
                                         <!-- Home Dashboard -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Command="{Binding NavigateToHomeCommand}" ToolTip.Tip="{conv:Localize Nav_Home}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconHome}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -154,7 +154,7 @@
 
                                         <!-- Live Sensors -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}" Command="{Binding NavigateToCanvasCommand}" ToolTip.Tip="{conv:Localize Nav_Sensors}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconSensors}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -162,7 +162,7 @@
 
                                         <!-- Commands (remote power/control commands) -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}" Command="{Binding NavigateToRemoteCommand}" ToolTip.Tip="{conv:Localize Nav_Commands}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconCommands}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -170,7 +170,7 @@
 
                                         <!-- App Launcher -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}" Command="{Binding NavigateToAppLauncherCommand}" ToolTip.Tip="{conv:Localize Nav_Launcher}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconLauncher}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -178,7 +178,7 @@
 
                                         <!-- Processes (running programs / task manager) -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}" Command="{Binding NavigateToTaskManagerCommand}" ToolTip.Tip="{conv:Localize Nav_Processes}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconProcesses}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Processes}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -186,7 +186,7 @@
 
                                         <!-- File Explorer -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7}" Command="{Binding NavigateToFileTransferCommand}" ToolTip.Tip="{conv:Localize Nav_Files}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconFiles}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -194,7 +194,7 @@
 
                                         <!-- Logs & Diagnostics -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8}" Command="{Binding NavigateToDiagnosticLogsCommand}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconLogs}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -205,7 +205,7 @@
                                         <!-- ═══ Settings family ═══ -->
                                         <!-- Settings -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9}" Command="{Binding NavigateToSettingsCommand}" ToolTip.Tip="{conv:Localize Nav_Settings}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconSettings}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -213,7 +213,7 @@
 
                                         <!-- Connection -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=10}" Command="{Binding NavigateToConnectionCommand}" ToolTip.Tip="{conv:Localize Nav_Connection}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconConnection}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Connection}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -221,7 +221,7 @@
 
                                         <!-- About (moved into settings cluster) -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6}" Command="{Binding NavigateToAboutCommand}" ToolTip.Tip="{conv:Localize Shell_About}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconAbout}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Shell_About}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -229,7 +229,7 @@
 
                                         <!-- FAQ -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=11}" Command="{Binding NavigateToFaqCommand}" ToolTip.Tip="{conv:Localize Nav_Faq}">
-                                            <Grid ColumnDefinitions="48,*">
+                                            <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconFaq}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Faq}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
@@ -239,7 +239,7 @@
 
                                 <!-- ═══ Bottom: Connection Status ═══ -->
                                 <Border Grid.Row="2" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                    <Grid ColumnDefinitions="48,*">
+                                    <Grid ColumnDefinitions="64,*">
                                         <Ellipse Grid.Column="0" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
                                             <Ellipse.Fill>
                                                 <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>

@@ -131,6 +131,29 @@ public class ThemeService : IDisposable
                     },
                     new BoxShadow[] { new BoxShadow { Blur = 15, Spread = 2,
                                     Color = Color.FromArgb(0x50, p.R, p.G, p.B) } }));
+
+                // Base card drop shadow + a neon accent glow whose intensity follows the
+                // GlowStrength slider (0 = no glow). Every Border.glass-card consumes CardShadow,
+                // so the glow previews live across whatever screen is open.
+                double glow = Math.Clamp(settings.GlowStrength, 0, 30);
+                var baseCardShadow = new BoxShadow
+                {
+                    Blur = 24, Spread = 0, OffsetY = 6,
+                    Color = Color.FromArgb(0x40, 0, 0, 0)
+                };
+                var cardShadow = glow > 0.5
+                    ? new BoxShadows(baseCardShadow, new BoxShadow[]
+                        {
+                            new BoxShadow
+                            {
+                                Blur = glow * 1.6,
+                                Spread = glow * 0.15,
+                                OffsetX = 0, OffsetY = 0,
+                                Color = Color.FromArgb((byte)Math.Clamp(0x30 + glow * 6, 0, 255), p.R, p.G, p.B)
+                            }
+                        })
+                    : new BoxShadows(baseCardShadow);
+                SetResourceOverrideInternal("CardShadow", cardShadow);
             }
 
             SetResourceOverrideInternal("CanvasBackgroundType", settings.BackgroundMaterial);

@@ -88,14 +88,6 @@
                     </StackPanel>
                 </Grid>
 
-                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_CornerRadiusRemoteTooltip}">
-                    <TextBlock Text="{local:Localize Custom_RemoteCardShape}" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <Slider Minimum="0" Maximum="48" Value="{Binding RemoteCardCornerRadius}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusRemotePixelsTooltip}"/>
-                        <TextBlock Text="{Binding RemoteCardCornerRadius, StringFormat={}{0:F0}px}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                    </StackPanel>
-                </Grid>
-
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_GlassOpacityTooltip}">
                     <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">

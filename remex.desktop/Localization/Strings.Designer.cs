@@ -385,10 +385,6 @@ namespace Remex.Desktop.Localization {
         public static string Dashboard_Samples => ResourceManager.GetString("Dashboard_Samples", resourceCulture)!;
         public static string Dashboard_SystemTelemetry => ResourceManager.GetString("Dashboard_SystemTelemetry", resourceCulture)!;
         public static string Dashboard_Uptime => ResourceManager.GetString("Dashboard_Uptime", resourceCulture)!;
-        public static string Main_HostWatermark => ResourceManager.GetString("Main_HostWatermark", resourceCulture)!;
-        public static string Main_Latency => ResourceManager.GetString("Main_Latency", resourceCulture)!;
-        public static string Main_Status => ResourceManager.GetString("Main_Status", resourceCulture)!;
-        public static string Main_Title => ResourceManager.GetString("Main_Title", resourceCulture)!;
         public static string TrayFlyout_Title => ResourceManager.GetString("TrayFlyout_Title", resourceCulture)!;
     }
 }
