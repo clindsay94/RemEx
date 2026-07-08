@@ -2532,6 +2532,18 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Boot_Ecution" xml:space="preserve">
     <value>ecution</value>
   </data>
+  <data name="Splash_Style_RemexCommand" xml:space="preserve">
+    <value>Original Scan</value>
+  </data>
+  <data name="Splash_Style_CosmicZoom" xml:space="preserve">
+    <value>Cosmic Zoom</value>
+  </data>
+  <data name="Splash_Style_Pong" xml:space="preserve">
+    <value>Signal Pong</value>
+  </data>
+  <data name="Splash_SkipHint" xml:space="preserve">
+    <value>Click anywhere to skip</value>
+  </data>
   <data name="Dialog_ConfirmTitle" xml:space="preserve">
     <value>Confirm</value>
   </data>
