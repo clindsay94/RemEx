@@ -1,4 +1,9 @@
 using Remex.Branding;
+using Remex.Tools.BrandAssetGen;
+
+// `splash <style> <timeMs> <out.png> [w] [h]` renders one variant frame for visual verification.
+if (args.Length >= 1 && args[0] == "splash")
+    return SplashPreview.Run(args);
 
 // Regenerates every PC brand raster from the shared geometry in remex.branding.
 // Cross-platform (SkiaSharp only). Idempotent: same input => byte-stable output.

@@ -3,7 +3,7 @@ using SkiaSharp;
 namespace Remex.Branding;
 
 /// <summary>SkiaSharp realization of the brand mark. Paths parse once; drawing is in 108-unit space.</summary>
-public static class SplashBrand
+public static partial class SplashBrand
 {
     public static readonly SKColor BackdropStart = new(RemexBrandData.BackdropStartArgb);
     public static readonly SKColor BackdropEnd   = new(RemexBrandData.BackdropEndArgb);
