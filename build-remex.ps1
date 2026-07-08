@@ -45,7 +45,10 @@ param(
     [switch]$NonInteractive,
 
     [Parameter(Mandatory=$false)]
-    [switch]$NoClean
+    [switch]$NoClean,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$BrandAssets
 )
 
 Set-StrictMode -Version Latest
@@ -97,6 +100,20 @@ if ($IsWin) {
 Write-Host "==========================================================" -ForegroundColor Green
 Write-Host "                 ⚡ RemEx Build System ⚡                 " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
+
+# Regenerate PC brand icon assets from remex.branding and exit (does not build the app).
+if ($BrandAssets) {
+    Write-Host "`nRegenerating RemEx brand icon assets..." -ForegroundColor Cyan
+    Write-Host "This redraws icon.png, icon.ico, and the MSIX tiles from the shared brand geometry." -ForegroundColor Gray
+    dotnet run --project (Join-Paths $PSScriptRoot "tools" "BrandAssetGen") -c Release
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "`nBrand asset generation failed (exit $LASTEXITCODE). See the messages above." -ForegroundColor Red
+        Write-Host "What to do next: re-run './build-remex.ps1 -BrandAssets'. If a file was 'SKIP (unknown)', a new packaging asset needs a size rule in remex.branding/MsixAssetPlan.cs." -ForegroundColor Yellow
+        exit $LASTEXITCODE
+    }
+    Write-Host "`nDone. Review changes with 'git status' and commit the updated assets." -ForegroundColor Green
+    exit 0
+}
 
 # 1. Parameter Parsing and Interactive Flow
 $interactive = -not $NonInteractive -and [string]::IsNullOrEmpty($Config) -and [string]::IsNullOrEmpty($Target)
