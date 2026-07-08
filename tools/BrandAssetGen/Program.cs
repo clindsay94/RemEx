@@ -15,12 +15,15 @@ try
     // Window/tray icon.
     WritePng(Path.Combine(assets, "icon.png"), 512, 512, ref written);
 
-    // Exe icon (multi-res).
+    // Exe/installer icon (multi-res). Written to remex.desktop (app exe icon) AND
+    // remex.agent/icon.ico (Inno Setup SetupIconFile + Linux packager fallback).
     int[] icoSizes = { 16, 24, 32, 48, 64, 128, 256 };
     var frames = icoSizes.Select(n => (n, BrandRasterizer.RenderPng(n, n))).ToList();
-    AtomicWrite(Path.Combine(assets, "icon.ico"), IcoWriter.Build(frames));
-    written++;
-    Console.WriteLine($"  wrote icon.ico ({icoSizes.Length} frames)");
+    byte[] icoBytes = IcoWriter.Build(frames);
+    AtomicWrite(Path.Combine(assets, "icon.ico"), icoBytes);
+    AtomicWrite(Path.Combine(repoRoot, "remex.agent", "icon.ico"), icoBytes);
+    written += 2;
+    Console.WriteLine($"  wrote icon.ico ({icoSizes.Length} frames) [remex.desktop + remex.agent]");
 
     // MSIX packaging set — reproduce every existing file at its correct size.
     int skipped = 0;

@@ -56,7 +56,9 @@
 
                 <Grid Margin="0,24,0,0">
                     <StackPanel Spacing="4" HorizontalAlignment="Center">
-                        <Image Source="avares://Remex.Desktop/Assets/New-REMEX.png" Height="300" HorizontalAlignment="Center" Stretch="Uniform" Margin="0,4,0,0" ToolTip.Tip="{local:Localize Home_LogoTooltip}"/>
+                        <Border Width="240" Height="240" CornerRadius="52" ClipToBounds="True" HorizontalAlignment="Center" Margin="0,4,0,0" ToolTip.Tip="{local:Localize Home_LogoTooltip}">
+                            <ctrl:BrandMark Width="240" Height="240"/>
+                        </Border>
                     </StackPanel>
 
 
