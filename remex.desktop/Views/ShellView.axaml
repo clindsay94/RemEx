@@ -294,6 +294,12 @@
                                 <DataTemplate DataType="vm:AboutViewModel">
                                     <views:AboutView />
                                 </DataTemplate>
+                                <DataTemplate DataType="vm:FaqViewModel">
+                                    <views:FaqView />
+                                </DataTemplate>
+                                <DataTemplate DataType="vm:ConnectionViewModel">
+                                    <views:ConnectionView />
+                                </DataTemplate>
                                 <DataTemplate DataType="vm:FileTransferViewModel">
                                     <views:FileTransferView />
                                 </DataTemplate>

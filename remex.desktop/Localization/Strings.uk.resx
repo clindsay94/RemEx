@@ -2544,4 +2544,46 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
     <value>Попередження безпеки: коли це ввімкнено, будь-хто зі сполученим пристроєм може бачити та керувати цим ПК, не розблоковуючи його з клавіатури. Вмикайте лише на ПК, якому довіряєте.</value>
   </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>Команди</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>Процеси</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>Підключення</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>Часті запитання</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>Персоналізувати</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>ЖИВИЙ ВИГЛЯД</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>Персоналізувати вигляд</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>Підключення</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>ЗВ'ЯЗОК ІЗ ХОСТОМ</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>Адреса хоста</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>Знайти хости в моїй мережі</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>Спарювання</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>Хост</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>Затримка</value>
+  </data>
 </root>

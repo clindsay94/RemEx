@@ -128,23 +128,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- FAQ Section -->
-            <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="{local:Localize About_Faq}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <ItemsControl ItemsSource="{Binding FaqItems}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Spacing="4" Margin="0,0,0,16">
-                                    <TextBlock Text="{Binding Question}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding Answer}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
             <!-- GitHub Section -->
             <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
                 <StackPanel Spacing="16" HorizontalAlignment="Stretch">

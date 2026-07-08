@@ -2544,4 +2544,46 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
     <value>सुरक्षा चेतावनी: जब यह चालू है, युग्मित डिवाइस वाला कोई भी व्यक्ति इस पीसी को कीबोर्ड से अनलॉक किए बिना देख और नियंत्रित कर सकता है। केवल विश्वसनीय पीसी पर ही इसे चालू करें।</value>
   </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>कमांड</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>प्रक्रियाएँ</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>कनेक्शन</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>सामान्य प्रश्न</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>वैयक्तिकृत करें</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>लाइव रूप-रंग</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>दिखावट वैयक्तिकृत करें</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>कनेक्शन</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>होस्ट लिंक</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>होस्ट पता</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>मेरे नेटवर्क पर होस्ट खोजें</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>पेयरिंग</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>होस्ट</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>विलंबता</value>
+  </data>
 </root>

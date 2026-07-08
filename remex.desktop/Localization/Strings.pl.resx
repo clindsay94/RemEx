@@ -2544,4 +2544,46 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
     <value>Ostrzeżenie bezpieczeństwa: gdy ta opcja jest włączona, każdy ze sparowanym urządzeniem może oglądać i sterować tym komputerem bez odblokowywania go na klawiaturze. Włączaj tylko na zaufanym komputerze.</value>
   </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>Polecenia</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>Procesy</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>Połączenie</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>FAQ</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>Personalizuj</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>WYGLĄD NA ŻYWO</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>Personalizuj wygląd</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>Połączenie</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>ŁĄCZE Z HOSTEM</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>Adres hosta</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>Znajdź hosty w mojej sieci</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>Parowanie</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>Opóźnienie</value>
+  </data>
 </root>

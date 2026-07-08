@@ -27,7 +27,6 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     private bool _isShowShortcutsOpen;
 
     public ObservableCollection<WhatsNewItem> WhatsNewItems { get; } = new();
-    public ObservableCollection<FaqItem> FaqItems { get; } = new();
 
     public AboutViewModel(ConnectionViewModel connection, ShellViewModel shell)
     {
@@ -44,7 +43,6 @@ public partial class AboutViewModel : ObservableObject, IDisposable
 
         UpdateHostVersion();
         LoadWhatsNew();
-        LoadFaq();
     }
 
     private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
@@ -53,9 +51,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         if (!string.IsNullOrEmpty(e.PropertyName)) return;
 
         WhatsNewItems.Clear();
-        FaqItems.Clear();
         LoadWhatsNew();
-        LoadFaq();
         UpdateHostVersion();
     }
     
@@ -80,43 +76,6 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_Issues"],
             LocalizationService.Instance["About_WhatsNew_Issues_Body"]));
-    }
-
-    private void LoadFaq()
-    {
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q1_Question"],
-            LocalizationService.Instance["Faq_Q1_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q2_Question"],
-            LocalizationService.Instance["Faq_Q2_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q3_Question"],
-            LocalizationService.Instance["Faq_Q3_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q4_Question"],
-            LocalizationService.Instance["Faq_Q4_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q5_Question"],
-            LocalizationService.Instance["Faq_Q5_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q6_Question"],
-            LocalizationService.Instance["Faq_Q6_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q7_Question"],
-            LocalizationService.Instance["Faq_Q7_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q8_Question"],
-            LocalizationService.Instance["Faq_Q8_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q9_Question"],
-            LocalizationService.Instance["Faq_Q9_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q10_Question"],
-            LocalizationService.Instance["Faq_Q10_Answer"]));
-        FaqItems.Add(new FaqItem(
-            LocalizationService.Instance["Faq_Q11_Question"],
-            LocalizationService.Instance["Faq_Q11_Answer"]));
     }
 
     [RelayCommand]

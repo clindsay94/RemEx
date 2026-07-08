@@ -1,0 +1,87 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:conv="using:Remex.Desktop.Converters"
+    x:Class="Remex.Desktop.Views.ConnectionView" x:DataType="vm:ConnectionViewModel">
+    <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32" Spacing="24" MaxWidth="760" HorizontalAlignment="Left">
+
+            <!-- Header -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="{conv:Localize Conn_Header}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Text="{conv:Localize Conn_Subheader}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+            </StackPanel>
+
+            <!-- Status + host address + connect/disconnect -->
+            <Border Classes="glass-card" Padding="24">
+                <StackPanel Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Ellipse Width="12" Height="12" VerticalAlignment="Center">
+                            <Ellipse.Fill>
+                                <SolidColorBrush Color="{Binding IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                        <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{conv:Localize Conn_HostAddress}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Text="{Binding HostAddress}" Watermark="wss://host:port/ws" FontFamily="Consolas" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="10,8" VerticalContentAlignment="Center"/>
+                            <Button Grid.Column="1" Content="{conv:Localize Conn_DiscoverHosts}" Command="{Binding DiscoverHostsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="{conv:Localize Btn_Connect}" Command="{Binding ConnectCommand}" IsVisible="{Binding !IsConnected}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                        <Button Content="{conv:Localize Btn_Disconnect}" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                        <Button Content="{conv:Localize Home_QrCodeButton}" Command="{Binding GenerateQrCodeCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                        <Button Content="{conv:Localize Settings_ShowPairingPin}" Command="{Binding RevealPairingPinCommand}" IsVisible="{Binding !IsConnected}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Host info + latency -->
+            <Border Classes="glass-card" Padding="24" IsVisible="{Binding IsConnected}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{conv:Localize Conn_HostInfo}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                    <TextBlock Text="{Binding HostRuntimeSummary}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <TextBlock Grid.Column="0" Text="{conv:Localize Conn_Latency}" Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1" Text="{Binding LatencyText}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- QR Code Display Panel -->
+            <Border Classes="glass-card" Padding="20" IsVisible="{Binding ShowQrCode}">
+                <StackPanel Spacing="16">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{conv:Localize Home_QrCodeButton}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="✕" Command="{Binding CloseQrCodeCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand"/>
+                    </Grid>
+                    <Border Background="White" Padding="12" CornerRadius="8" HorizontalAlignment="Center">
+                        <Image Source="{Binding QrCodeImage}" Width="180" Height="180"/>
+                    </Border>
+                    <TextBlock Text="{conv:Localize Home_QrCodeScanHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Pairing PIN Display Panel -->
+            <Border Classes="glass-card" Padding="20" IsVisible="{Binding ShowPairingPin}">
+                <StackPanel Spacing="16">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{conv:Localize Settings_PairingPinTitle}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="✕" Command="{Binding ClosePairingPinCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand"/>
+                    </Grid>
+                    <Border Background="{DynamicResource CardBackgroundBrush}" Padding="20,16" CornerRadius="8" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding ActivePairingPin}" FontFamily="Consolas" FontSize="42" FontWeight="Bold" LetterSpacing="8" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="{conv:Localize Settings_PairingPinHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding PairingPinExpiresInText}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextAlignment="Center" IsVisible="{Binding HasActivePairingPin}"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

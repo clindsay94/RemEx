@@ -2563,4 +2563,46 @@ Chrome)</value>
   <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
     <value>Advertencia de seguridad: mientras esté activado, cualquier persona con un dispositivo emparejado puede ver y controlar este PC sin desbloquearlo con el teclado. Actívalo solo en un PC de confianza.</value>
   </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>Comandos</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>Procesos</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>Conexión</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>Preguntas frecuentes</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>Personalizar</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>APARIENCIA EN VIVO</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>Personalizar apariencia</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>Conexión</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>ENLACE AL HOST</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>Dirección del host</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>Buscar hosts en mi red</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>Emparejamiento</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>Latencia</value>
+  </data>
 </root>

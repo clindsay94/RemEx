@@ -246,6 +246,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
     private TaskManagerViewModel? _taskManagerViewModel;
     private AboutViewModel? _aboutViewModel;
+    private FaqViewModel? _faqViewModel;
     private FileTransferViewModel? _fileTransferViewModel;
     private DiagnosticLogsViewModel? _diagnosticLogsViewModel;
 
@@ -317,6 +318,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _remoteDesktopViewModel?.Dispose();
         _taskManagerViewModel?.Dispose();
         _aboutViewModel?.Dispose();
+        _faqViewModel?.Dispose();
         _fileTransferViewModel?.Dispose();
 
         // Dispose shared connection ViewModel
@@ -534,6 +536,20 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         _aboutViewModel ??= new AboutViewModel(Connection, this);
         SetTransitionAndNavigate(6, _aboutViewModel);
+    }
+
+    [RelayCommand]
+    public void NavigateToFaq()
+    {
+        _faqViewModel ??= new FaqViewModel();
+        SetTransitionAndNavigate(11, _faqViewModel);
+    }
+
+    [RelayCommand]
+    public void NavigateToConnection()
+    {
+        // The Connection screen binds directly to the shared ConnectionViewModel instance.
+        SetTransitionAndNavigate(10, Connection);
     }
 
     [RelayCommand]

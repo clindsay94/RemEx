@@ -2544,4 +2544,46 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
     <value>Güvenlik uyarısı: bu açıkken, eşleştirilmiş cihazı olan herkes bu bilgisayarı klavyeden kilidini açmadan görüntüleyebilir ve kontrol edebilir. Yalnızca güvendiğiniz bir bilgisayarda açın.</value>
   </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>Komutlar</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>İşlemler</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>Bağlantı</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>SSS</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>Kişiselleştir</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>CANLI GÖRÜNÜM</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>Görünümü kişiselleştir</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>Bağlantı</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>HOST BAĞLANTISI</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>Host adresi</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>Ağımdaki hostları bul</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>Eşleştirme</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>Gecikme</value>
+  </data>
 </root>
