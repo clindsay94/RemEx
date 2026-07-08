@@ -6,9 +6,9 @@ These rules apply to ALL agents working in this repository. They are not overrid
 
 - `remex.agent` is the **entire PC side** — a single interactive elevated user-session app (always elevated via `requireAdministrator` manifest; auto-started by an elevated Task Scheduler logon task) that provides all PC functionality. Android connects TO this.
 - `remex.android` is the **only** network client. Nothing else is a client.
-- `remex.desktop/` and `remex.desktop/` are legacy folders being phased out. Do NOT add new code there.
+- `remex.desktop/` holds PC-side UI code only (Views/ViewModels/Localization) and is compiled directly into `remex.agent` via a real `<ProjectReference>` — it is NOT a standalone app and NOT being removed. "Legacy" refers only to the leftover pre-rename folder/namespace name. A prior removal effort (`RemEx-d8s`) was closed without deleting it; do not add new *standalone-client* code there, but the existing UI code is live and required.
 - Connection is always Android → PC, always non-loopback.
-- If you find old references to a "desktop client" connecting to a "desktop host", update them to reflect the current architecture.
+- If you find old references to a "desktop client" connecting to a "desktop host" (i.e. a *separate* headless host process), update them — that separate-process architecture doesn't exist. `remex.desktop`'s UI code itself is current, not one of these stale references.
 
 <!-- AUTO-MANAGED: build-commands -->
 ### Build & Run
@@ -240,7 +240,7 @@ Use `bd` for ALL task tracking. Create an issue before writing code. Claim it. C
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (11633 symbols, 24798 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (11582 symbols, 22538 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -404,7 +404,7 @@ Remote Execution (RemEx) is a cross-platform PC remote management tool. Architec
   - `ui/screens/RemoteDesktopViewModel` — stream config, display-target selection, cursor shape overlay, frame-arrival watchdog. `desktopMetaReady` signal gates the orientation-aware initial fit until the host's real stream metadata (dimensions, origin, backend) arrives; prevents the initial zoom computing against a placeholder resolution.
   - `ui/screens/RemoteDesktopScreen` — Jetpack Compose UI, gesture handling (tap/scroll/pinch), immersive full-screen.
   - `ui/screens/ConnectionViewModel` — NSD discovery lifecycle; `discoveryJob: Job?` ensures one in-flight discovery at a time.
-- `remex.desktop/`, `remex.desktop/` — legacy, being phased out; do not add new code.
+- `remex.desktop/` — PC-side UI code only, compiled directly into `remex.agent` via a real `<ProjectReference>`; permanent, not being removed (see "Host = PC, Client = Android" above).
 
 Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/ws/desktop` (port 5005, H.264/MJPEG remote desktop), TCP+TLS 8338 (external script ingress — requires paired `clientId` via `PairedClientChannelAuthenticator`; `CommandRequest` JSON must include `ClientId` field). The former `RemExLocalIPC` / `RemExHostControl` named pipes are gone (single process; UI↔host is in-process DI). Messages use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN, then SPKI certificate pinning. Wire message types include `MessageTypes.DesktopKeyframeRequest` (`"desktop_keyframe_request"`) for client-to-host on-demand IDR keyframe requests.
 
@@ -478,7 +478,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 ## Git Insights
 
 - Active development branch: `2.0` (main branch for PRs: `main`).
-- Hottest areas by recent history: `remex.agent` (PC side), `remex.android`, `remex.agent.native.linux`, with `remex.desktop` being phased out.
+- Hottest areas by recent history: `remex.agent` (PC side), `remex.android`, `remex.agent.native.linux`. `remex.desktop` sees little independent change but is not being removed — it's the permanent PC-side UI project.
 - Gitignored (do not commit): AI tool dirs (`.gemini/`, `.superpowers/`, `.antigravitycli/`), `.claude/auto-memory/dirty-files*`, `.claude/settings.local.json`, `.beads/proxieddb/`, `.beads-credential-key`, `.dolt/`, `*.db`. Only `.beads/issues.jsonl` is tracked (passive Beads export).
 
 <!-- END AUTO-MANAGED -->
@@ -506,7 +506,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 | All P1 beads closed | PASSED (12/12) |
 | Linux runtime parity | PASSED (RemEx-lr9 — runtime-validated on CachyOS, closed 2026-07-01) |
 | Deferred perf (RD-6/RD-7) | DEFERRED — measurement-gated, logged on bead |
-| remex.desktop removal | DEFERRED (RemEx-d8s, P2) |
+| remex.desktop removal | DECIDED AGAINST (RemEx-d8s closed 2026-07-03 without deleting the folder — it's the permanent PC-side UI project) |
 
 ### P0 Beads — ALL CLOSED
 
@@ -599,7 +599,7 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 
 | Bead | Priority | Description |
 |------|----------|-------------|
-| `RemEx-d8s` | P2 — open | Remove `remex.desktop` entirely — migrate Host-used services into Host/Core, delete legacy UI. Sequence after all P0/P1 fixes. |
+| `RemEx-d8s` | P2 — **CLOSED** (verify with `bd show RemEx-d8s` before citing) | Was "remove remex.desktop entirely." Closed without deleting the folder — `remex.desktop` remains a live `<ProjectReference>` of `remex.agent`. Do not describe removal as pending. |
 | `RemEx-5i9` | P3 — open | Android RD: investigate >60fps ceiling (DXGI capture / display-refresh bound, not codec). |
 | `RemEx-87vl` (docs) | P1–P3 — open | Post-2.0 polish backlog deferred from the ship-day audit (see "Post-2.0 Ship-Day UI Polish Pass" above for what already landed). Full itemized list in `docs/PRD-2.1-polish-backlog.md` (gitignored, local file — not in git history): guided re-pair flow on cert change, Wake PC failure feedback, splash skip/rotation/Android-12 SplashScreen API, M3 success-color token, nav fade-duration consistency, host/server/daemon→"PC" terminology sweep, jargon rewrites, dead desktop resx strings. |
 
@@ -625,7 +625,7 @@ Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileS
 ### Design Decisions — Resolved 2026-06-22 (user-confirmed)
 
 - **8338 channel (PROTO-1): AUTHENTICATED-REMOTE.** Keep `IPAddress.Any`; do NOT bind loopback. The Android client connects from a SEPARATE device over the network, so loopback-binding would break all remote access — the product's core purpose. (Historical note: this decision predated RemEx-aep, which made the host an elevated in-session app; pre-login operation is no longer a goal, but the not-loopback conclusion stands because the client is always remote.) Fix: require a paired-client identity (`PairedClientRegistry` token) before `ExecuteCommandAsync` dispatch. **`PairedClientChannelAuthenticator` implements this — CLOSED.**
-- **`remex.desktop` removal (bead `RemEx-d8s`): NOT a clean delete.** `remex.agent` still references `remex.desktop.Services` in `Program.cs`, `StartupRegistrationService.cs`, `SessionKeepUnlockedService.cs`, `DesktopIconExtractionService.cs`. Migrate all still-used types into `remex.agent`/`Remex.Core` first, then delete the legacy UI and remove `remex.desktop` + `remex.desktop.tests` from `Remex.sln`. Sequence AFTER all P0/P1 security fixes (which are now done).
+- **`remex.desktop` removal (bead `RemEx-d8s`): CLOSED without deleting the folder.** `remex.agent` still references `remex.desktop.Services` in `Program.cs`, `StartupRegistrationService.cs`, `SessionKeepUnlockedService.cs`, `DesktopIconExtractionService.cs`, and has a real `<ProjectReference>` to `remex.desktop.csproj`. Current, intended end state: `remex.desktop` stays as the permanent PC-side UI project, compiled into `remex.agent`. Do not treat this as a still-pending removal.
 
 ### Definition of Done (release)
 

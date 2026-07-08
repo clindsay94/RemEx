@@ -70,6 +70,15 @@ Remote Execution (RemEx) is a cross-platform PC remote management tool. **Archit
 
 > **There is no desktop client.** `remex.desktop/` contains the live PC-side UI (Avalonia Views, ViewModels, and 812 fully-translated Localization keys). If you encounter references to a PC-side client connecting to a PC-side host, those are outdated. The PC runs `remex.agent` only. The Android app is the only client.
 
+### 🔒 Hard Rules — repeat mistakes, do not re-litigate these
+
+These exist because the same corrections have had to be made multiple times across sessions. If any other doc (including AGENTS.md, old commit messages, or a stale bead status) disagrees with these, **this file wins**.
+
+1. **There is no headless host process and never has one separate from the UI.** `remex.agent` is a single process that IS both the former host service and the UI. Never describe or design around a "PC-side client connecting to a PC-side host" — that pair doesn't exist.
+2. **`remex.desktop/` is permanent, not being removed.** It holds only UI code (Views/ViewModels/Localization) and is a real, current `<ProjectReference>` of `remex.agent`. "Legacy" describes the leftover folder name from a pre-rename layout, not its lifecycle status — do not treat it as dead code, do not suggest deleting it, do not say it's "being phased out." A prior removal effort (bead `RemEx-d8s`) was closed without deleting it; the current, intended end state IS "UI code lives in remex.desktop, gets compiled into remex.agent."
+3. **Before citing a bead's status from AGENTS.md (or any doc) as a fact, verify it with `bd show <id>` first.** AGENTS.md's status tables have gone stale relative to the real bead tracker more than once — treat `bd` as the source of truth for issue status, docs as a cache that can lag.
+4. **Never construct a `git add`/file path (or any case-sensitive path comparison) from memory — copy exact case from `git status`/`ls` output.** This repo is Windows-authored but must build on case-sensitive Linux; a case mismatch in a git pathspec silently stages nothing (Windows git is case-insensitive by default), which has previously left real fixes stranded uncommitted. Never use PowerShell `-eq`/`-ne` to compare paths/namespaces that must be case-sensitive — use `-ceq`/`-cne`.
+
 ## Build & Run
 
 ```powershell
@@ -103,7 +112,12 @@ remex.agent/         ★ THE PC SIDE — single elevated interactive-session app
                     ↳ ASP.NET Minimal APIs, WebSocket, mDNS. Android connects TO this.
 remex.android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
                     ↳ Android phone app. Connects to remex.agent on the PC. Nothing else is a client.
-remex.desktop/       LEGACY — remnant folder being phased out. Do not add new code here.
+remex.desktop/       PC-SIDE UI CODE — NOT a separate app, NOT "legacy" in the sense of dead/removable.
+                    ↳ Compiled directly into remex.agent via a real <ProjectReference>. "Legacy" here
+                      refers ONLY to the leftover pre-rename folder/namespace name, not the code's
+                      status. remex.agent.Program.cs does `using Remex.Desktop.Services;` — this is a
+                      live, load-bearing dependency, not dead weight. Do not describe it as "being
+                      phased out," "removed," or "optional" — that removal was decided against.
 ```
 
 ### Communication Protocols
@@ -268,7 +282,7 @@ Read the relevant sub-project `AGENTS.md` before touching files in that director
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (11633 symbols, 24798 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (11582 symbols, 22538 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -310,7 +324,7 @@ This project is indexed by GitNexus as **RemEx** (11633 symbols, 24798 relations
 <!-- gitnexus:end -->
 
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ccf33ec3 -->
+<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker
 
 This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
@@ -332,29 +346,35 @@ bd close <id>         # Complete work
 
 **Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 
+## Agent Context Profiles
+
+The managed Beads block is task-tracking guidance, not permission to override repository, user, or orchestrator instructions.
+
+- **Conservative (default)**: Use `bd` for task tracking. Do not run git commits, git pushes, or Dolt remote sync unless explicitly asked. At handoff, report changed files, validation, and suggested next commands.
+- **Minimal**: Keep tool instruction files as pointers to `bd prime`; use the same conservative git policy unless active instructions say otherwise.
+- **Team-maintainer**: Only when the repository explicitly opts in, agents may close beads, run quality gates, commit, and push as part of session close. A current "do not commit" or "do not push" instruction still wins.
+
 ## Session Completion
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+This protocol applies when ending a Beads implementation workflow. It is subordinate to explicit user, repository, and orchestrator instructions.
 
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
+1. **File issues for remaining work** - Create beads for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+4. **Handle git/sync by active profile**:
    ```bash
-   git pull --rebase
-   bd dolt push
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+   # Conservative/minimal/default: report status and proposed commands; wait for approval.
+   git status
 
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+   # Team-maintainer opt-in only, unless current instructions forbid it:
+   git pull --rebase
+   git push
+   git status
+   ```
+5. **Hand off** - Summarize changes, validation, issue status, and any blocked sync/commit/push step
+
+**Critical rules:**
+- Explicit user or orchestrator instructions override this Beads block.
+- Do not commit or push without clear authority from the active profile or the current user request.
+- If a required sync or push is blocked, stop and report the exact command and error.
 <!-- END BEADS INTEGRATION -->
