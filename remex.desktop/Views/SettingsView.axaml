@@ -168,16 +168,6 @@
                     <Border Classes="glass-card" Padding="24">
                         <StackPanel Spacing="16">
                             <TextBlock Text="{local:Localize Settings_General}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_ChangeLanguageTooltip}">
-                                <TextBlock Text="{local:Localize Settings_Language}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableLanguages}" SelectedValue="{Binding Language}" SelectedValueBinding="{Binding Code}" MinWidth="180" CornerRadius="8" ToolTip.Tip="{local:Localize Settings_SelectPreferredLanguageTooltip}">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding DisplayName}"/>
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
-                            </Grid>
 
                             <!-- Close behavior: minimize to tray vs. exit on window close -->
                             <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_CloseToTrayTooltip}">

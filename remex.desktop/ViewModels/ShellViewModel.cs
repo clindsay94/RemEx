@@ -627,15 +627,20 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         IsSettingsPanelOpen = false;
         EnsureSettingsVm();
-        CurrentView = _settingsViewModel;
+        SetTransitionAndNavigate(9, _settingsViewModel!);
     }
 
+    /// <summary>
+    /// Opens the live Personalization popup. Kept for the command palette / Home shortcut that
+    /// previously navigated to the full-screen Customization page (now retired — its content
+    /// lives in the FAB popup so changes preview live against the current screen).
+    /// </summary>
     [RelayCommand]
     public void NavigateToCustomization()
     {
-        IsSettingsPanelOpen = false;
+        EnsureSettingsVm();
         EnsureCustomizationVm();
-        CurrentView = _customizationViewModel;
+        IsSettingsPanelOpen = true;
     }
 
     private void EnsureSettingsVm()
