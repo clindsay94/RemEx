@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Desktop UI: dedicated Connection and FAQ screens in the left nav rail (RemEx-uqpd).** Connection (`ConnectionView`) is a proper destination bound to the shared `ConnectionViewModel` — live status, host address, discover-hosts, connect/disconnect, host-runtime summary + latency, and the QR-code / pairing-PIN panels. FAQ (`FaqView` + new `FaqViewModel`) is extracted from the About page into its own destination; its Q/A list rebuilds live on language change. Both sit in a new "settings-family" cluster in the nav rail beneath Settings (Settings · Connection · About · FAQ), each with its own glyph. (`ConnectionView`, `FaqView`, `FaqViewModel`, `ShellViewModel.NavigateToConnection`/`NavigateToFaq`, `ShellView.axaml`.)
+- **Desktop UI: live Personalization popup on the FAB (RemEx-uqpd).** The bottom-right floating button now opens a right-side slide-in Personalization panel (`PersonalizationPanelView`) holding **every** visual/customizable option — theme presets, accent color, corner-radius / glass-opacity / glow sliders, atmosphere (background / window-opacity / scheme / splash / hardware-sync), **and the language selector** — as glass-cards, live-applied through the existing `CustomizationViewModel` so changes preview against whatever screen is open (no more navigate-tweak-return). The FAB icon changed from the gear to a palette. New localization keys (`Nav_Commands`, `Nav_Processes`, `Nav_Connection`, `Nav_Faq`, `Personalize_*`, `Conn_*`) across all 8 languages. (`PersonalizationPanelView`, `ShellView.axaml`, `ShellViewModel.ToggleSettingsPanel`/`NavigateToCustomization`.)
+
+### Changed
+- **Desktop UI: nav rail relabel + bold gradient treatment (RemEx-uqpd).** "Remote" → **Commands** (the remote power/control panel — shutdown/restart/reboot-to-UEFI) and "Tasks" → **Processes** (running-process list), both with clearer glyphs, disambiguating them from unrelated concepts. The rail gains a theme-accent vertical gradient, larger (22px) accent-tinted glyphs, and a stronger active-item pill (Direction C "bold"). Language moved out of Settings → General into the Personalization popup. (`ShellView.axaml`, `App.axaml`, `SettingsView.axaml`.)
+
+### Removed
+- **Desktop UI: full-screen Customization page (RemEx-uqpd).** Its controls now live in the live Personalization popup; `CustomizationViewModel` is retained and re-hosted there, so no functionality was lost. (`CustomizationView.axaml` deleted.)
+
+---
+
 ## [2.0.0] — 2026-07-04
 
 ### Added
