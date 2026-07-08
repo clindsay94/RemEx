@@ -3,6 +3,7 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:ctrl="using:Remex.Desktop.Controls"
+    xmlns:splash="using:Remex.Desktop.Controls.Splash"
     xmlns:views="using:Remex.Desktop.Views" x:Class="Remex.Desktop.Views.ShellView" x:DataType="vm:ShellViewModel">
 
     <UserControl.Styles>
@@ -431,7 +432,7 @@
             </Button>
 
             <!-- ═══ WELCOME SPLASH — BOOT SEQUENCE ═══ -->
-            <ctrl:BootSequenceControl x:Name="BootSplash" Grid.RowSpan="2" IsVisible="{Binding ShowWelcomeSplash}" AccentColor="{DynamicResource AccentPrimary}" SplashStyle="{Binding Customization.SplashStyle}" ZIndex="999"/>
+            <splash:SkiaSplashControl x:Name="BootSplash" Grid.RowSpan="2" IsVisible="{Binding ShowWelcomeSplash}" SplashStyle="{Binding Customization.SplashStyle}" ZIndex="999"/>
 
             <!-- ═══ TUTORIAL OVERLAY (first-run or replay) ═══ -->
             <Border Grid.RowSpan="2" IsVisible="{Binding ShowTutorialOverlay}" Background="{DynamicResource OverlayBackdropBrush}" ZIndex="998">
