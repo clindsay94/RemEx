@@ -163,6 +163,7 @@
     <string name="cd_key_insert">Insert</string>
     <string name="cd_more_keys">Tombol lainnya</string>
     <string name="cd_show_pc_keys">Tampilkan tombol PC</string>
+    <string name="cd_move_pc_keys">Pindahkan bilah tombol PC</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Pengaturan</string>
     <string name="cd_toggle_fullscreen">Toggle layar penuh</string>

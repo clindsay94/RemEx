@@ -163,6 +163,7 @@
     <string name="cd_key_insert">Insert</string>
     <string name="cd_more_keys">Більше клавіш</string>
     <string name="cd_show_pc_keys">Показати клавіші ПК</string>
+    <string name="cd_move_pc_keys">Перемістити панель клавіш ПК</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Settings</string>
     <string name="cd_toggle_fullscreen">Toggle fullscreen</string>

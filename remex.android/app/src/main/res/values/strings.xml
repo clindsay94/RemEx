@@ -219,6 +219,7 @@
     <string name="cd_key_insert">Insert</string>
     <string name="cd_more_keys">More keys</string>
     <string name="cd_show_pc_keys">Show PC keys</string>
+    <string name="cd_move_pc_keys">Move PC keys bar</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Settings</string>
     <string name="cd_toggle_fullscreen">Toggle fullscreen</string>

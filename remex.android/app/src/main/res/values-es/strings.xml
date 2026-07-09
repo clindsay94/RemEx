@@ -163,6 +163,7 @@
     <string name="cd_key_insert">Insertar</string>
     <string name="cd_more_keys">Más teclas</string>
     <string name="cd_show_pc_keys">Mostrar teclas de PC</string>
+    <string name="cd_move_pc_keys">Mover la barra de teclas de PC</string>
     <string name="cd_reset_input">Restablecer Entrada</string>
     <string name="cd_settings">Ajustes</string>
     <string name="cd_toggle_fullscreen">Pantalla Completa</string>

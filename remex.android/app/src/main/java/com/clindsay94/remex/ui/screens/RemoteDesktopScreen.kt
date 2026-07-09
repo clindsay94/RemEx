@@ -25,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -477,6 +478,14 @@ fun RemoteDesktopScreenContent(
         // (RemEx-bct remnant): F1-F12, Home/End/PgUp/PgDn, Insert.
         var extraKeysExpanded by rememberSaveable { mutableStateOf(false) }
 
+        // Floating PC-keys pill drag offset, relative to its bottom-center anchor (RemEx-2y31).
+        // Persisted across rotation/recreation; re-clamped to the current overlay-lane bounds at
+        // apply time, so a position dragged in landscape self-heals after rotating to portrait.
+        var pcKeysOffsetX by rememberSaveable { mutableFloatStateOf(0f) }
+        var pcKeysOffsetY by rememberSaveable { mutableFloatStateOf(0f) }
+        var pcKeysLaneSize by remember { mutableStateOf(IntSize.Zero) }
+        var pcKeysPillSize by remember { mutableStateOf(IntSize.Zero) }
+
         // Robust keyboard toggle reused by every keyboard button. The hidden BasicTextField keeps
         // Compose focus after a back-gesture IME dismiss, so a bare requestFocus()/show() no-ops and
         // the keyboard never reopens (the RemEx-46q symptom: "loses the ability to come up"). Force
@@ -517,7 +526,14 @@ fun RemoteDesktopScreenContent(
                 } else {
                         val window = activity.window
                         val controller = WindowInsetsControllerCompat(window, window.decorView)
-                        WindowCompat.setDecorFitsSystemWindows(window, !uiState.isFullscreen)
+                        // Always edge-to-edge, matching MainActivity.enableEdgeToEdge(). With
+                        // decor-fits TRUE (the old non-fullscreen path) the window itself resizes
+                        // when the IME opens (pre-API-35 behavior), shrinking the video box —
+                        // imageSize keys the H.264 SurfaceView, so that tore down the decoder and
+                        // blacked the stream until the next keyframe (RemEx-2y31). With decor-fits
+                        // FALSE the window never resizes: IME insets flow to Compose, where only
+                        // the floating PC-keys pill's overlay lane consumes them.
+                        WindowCompat.setDecorFitsSystemWindows(window, false)
                         if (uiState.isFullscreen) {
                                 controller.hide(WindowInsetsCompat.Type.systemBars())
                                 controller.systemBarsBehavior =
@@ -532,7 +548,10 @@ fun RemoteDesktopScreenContent(
                         // no longer locks orientation.
                         activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                         onDispose {
-                                WindowCompat.setDecorFitsSystemWindows(window, true)
+                                // Restore the app-wide edge-to-edge state (MainActivity calls
+                                // enableEdgeToEdge()); the old restore-to-TRUE silently disabled
+                                // edge-to-edge for every other screen after visiting RD.
+                                WindowCompat.setDecorFitsSystemWindows(window, false)
                                 controller.show(WindowInsetsCompat.Type.systemBars())
                                 activity.requestedOrientation =
                                         ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -2426,6 +2445,81 @@ fun RemoteDesktopScreenContent(
                                                 }
                                         }
                                 }
+
+                                // Floating PC-keys pill — an OVERLAY inside the video box rather
+                                // than a Column sibling below it. As a sibling it stole layout
+                                // height whenever it appeared (and, via imePadding, whenever the
+                                // IME opened), shrinking the weight(1f) video box; imageSize keys
+                                // the H.264 SurfaceView above, so every open/close/IME toggle tore
+                                // down the decoder and blacked the stream until the next keyframe
+                                // (RemEx-2y31). The inset-aware lane below consumes the nav-bar and
+                                // IME insets INSTEAD of the video box: padding a child never
+                                // resizes the box, so imageSize — and the SurfaceView — stay
+                                // untouched while the pill rides above the IME.
+                                Box(
+                                        modifier =
+                                                Modifier.matchParentSize()
+                                                        .navigationBarsPadding()
+                                                        .imePadding()
+                                                        .onGloballyPositioned {
+                                                                pcKeysLaneSize = it.size
+                                                        }
+                                ) {
+                                        // PlainAnimatedVisibility: Box-in-Column overload
+                                        // workaround, see its doc comment.
+                                        PlainAnimatedVisibility(
+                                                visible =
+                                                        pcKeysBarVisible || isRemoteKeyboardOpen,
+                                                modifier =
+                                                        Modifier.align(Alignment.BottomCenter)
+                                                                .offset {
+                                                                        clampedPcKeysOffset(
+                                                                                pcKeysOffsetX,
+                                                                                pcKeysOffsetY,
+                                                                                pcKeysLaneSize,
+                                                                                pcKeysPillSize
+                                                                        )
+                                                                },
+                                                enter =
+                                                        slideInVertically(
+                                                                initialOffsetY = { it }
+                                                        ) + fadeIn(),
+                                                exit =
+                                                        slideOutVertically(
+                                                                targetOffsetY = { it }
+                                                        ) + fadeOut()
+                                        ) {
+                                                PcKeysBar(
+                                                        modifierStates = modifierStates,
+                                                        onCycleModifier = onCycleModifier,
+                                                        onSendKeyPress = onSendKeyPress,
+                                                        view = view,
+                                                        extraKeysExpanded = extraKeysExpanded,
+                                                        onToggleExtraKeys = {
+                                                                extraKeysExpanded =
+                                                                        !extraKeysExpanded
+                                                        },
+                                                        onDrag = { drag ->
+                                                                val clamped =
+                                                                        clampedPcKeysOffset(
+                                                                                pcKeysOffsetX +
+                                                                                        drag.x,
+                                                                                pcKeysOffsetY +
+                                                                                        drag.y,
+                                                                                pcKeysLaneSize,
+                                                                                pcKeysPillSize
+                                                                        )
+                                                                pcKeysOffsetX =
+                                                                        clamped.x.toFloat()
+                                                                pcKeysOffsetY =
+                                                                        clamped.y.toFloat()
+                                                        },
+                                                        onPillSizeChanged = {
+                                                                pcKeysPillSize = it
+                                                        }
+                                                )
+                                        }
+                                }
                         }
 
                         if (showSettings) {
@@ -3218,269 +3312,259 @@ fun RemoteDesktopScreenContent(
                                 }
                         }
 
-                        // PC-keys bar — modifier chips (Ctrl/Alt/Shift/Win, latching) plus utility
-                        // keys. Independent of the soft keyboard: visible when explicitly toggled
-                        // via the toolbar (pcKeysBarVisible) OR while the IME is open, and it no
-                        // longer disappears just because the IME does (RemEx-yi8o).
-                        AnimatedVisibility(
-                                visible = pcKeysBarVisible || isRemoteKeyboardOpen,
-                                enter =
-                                        slideInVertically(initialOffsetY = { it }) +
-                                                fadeIn(),
-                                exit =
-                                        slideOutVertically(targetOffsetY = { it }) +
-                                                fadeOut()
-                        ) {
-                            Column {
-                                // vk -> (label, contentDescription). Latching: tapping cycles
-                                // OFF -> ARMED -> LOCKED -> OFF via onCycleModifier; sendKeyPress
-                                // applies ARMED/LOCKED modifiers to the next non-modifier key.
-                                val modifierKeys =
-                                        listOf(
-                                                Triple(
-                                                        17,
-                                                        "Ctrl",
-                                                        stringResource(R.string.cd_key_ctrl)
-                                                ),
-                                                Triple(
-                                                        18,
-                                                        "Alt",
-                                                        stringResource(R.string.cd_key_alt)
-                                                ),
-                                                Triple(
-                                                        16,
-                                                        "Shift",
-                                                        stringResource(R.string.cd_key_shift)
-                                                ),
-                                                Triple(
-                                                        91,
-                                                        "⊞",
-                                                        stringResource(R.string.cd_key_windows)
-                                                ),
-                                                Triple(
-                                                        165,
-                                                        "AltGr",
-                                                        stringResource(R.string.cd_key_altgr)
-                                                ),
-                                        )
-                                val utilKeys =
-                                        listOf(
-                                                Triple(
-                                                        "Esc",
-                                                        stringResource(R.string.cd_key_escape),
-                                                        27
-                                                ),
-                                                Triple(
-                                                        "Tab",
-                                                        stringResource(R.string.cd_key_tab),
-                                                        9
-                                                ),
-                                                Triple(
-                                                        "⌫",
-                                                        stringResource(R.string.cd_key_backspace),
-                                                        8
-                                                ),
-                                                Triple(
-                                                        "↵",
-                                                        stringResource(R.string.cd_key_enter),
-                                                        13
-                                                ),
-                                                Triple(
-                                                        "←",
-                                                        stringResource(
-                                                                R.string.cd_key_arrow_left
-                                                        ),
-                                                        37
-                                                ),
-                                                Triple(
-                                                        "↑",
-                                                        stringResource(R.string.cd_key_arrow_up),
-                                                        38
-                                                ),
-                                                Triple(
-                                                        "↓",
-                                                        stringResource(
-                                                                R.string.cd_key_arrow_down
-                                                        ),
-                                                        40
-                                                ),
-                                                Triple(
-                                                        "→",
-                                                        stringResource(
-                                                                R.string.cd_key_arrow_right
-                                                        ),
-                                                        39
-                                                ),
-                                                Triple(
-                                                        "Del",
-                                                        stringResource(R.string.cd_key_delete),
-                                                        46
-                                                ),
-                                        )
-                                Row(
-                                        modifier =
-                                                Modifier.fillMaxWidth()
-                                                        .background(
-                                                                MaterialTheme.colorScheme
-                                                                        .surfaceVariant
-                                                                        .copy(alpha = 0.95f)
-                                                        )
-                                                        .horizontalScroll(rememberScrollState())
-                                                        .navigationBarsPadding()
-                                                        .imePadding()
-                                                        .padding(
-                                                                vertical = 6.dp,
-                                                                horizontal = 12.dp
-                                                        ),
-                                        horizontalArrangement =
-                                                Arrangement.spacedBy(8.dp)
-                                ) {
-                                        modifierKeys.forEach { (vk, label, cd) ->
-                                                val state =
-                                                        modifierStates[vk] ?: ModifierState.OFF
-                                                AssistChip(
-                                                        onClick = {
-                                                                view.performHapticFeedback(
-                                                                        HapticFeedbackConstants
-                                                                                .VIRTUAL_KEY
-                                                                )
-                                                                onCycleModifier(vk)
-                                                        },
-                                                        label = {
-                                                                Text(
-                                                                        label,
-                                                                        fontWeight =
-                                                                                if (state ==
-                                                                                                ModifierState
-                                                                                                        .LOCKED
-                                                                                )
-                                                                                        FontWeight
-                                                                                                .Bold
-                                                                                else null
-                                                                )
-                                                        },
-                                                        leadingIcon =
-                                                                if (state ==
-                                                                                ModifierState.LOCKED
-                                                                ) {
-                                                                        {
-                                                                                Icon(
-                                                                                        Icons.Default
-                                                                                                .Lock,
-                                                                                        contentDescription =
-                                                                                                null,
-                                                                                        modifier =
-                                                                                                Modifier.size(
-                                                                                                        14.dp
-                                                                                                )
-                                                                                )
-                                                                        }
-                                                                } else null,
-                                                        modifier =
-                                                                Modifier.semantics {
-                                                                        contentDescription = cd
-                                                                },
-                                                        colors =
-                                                                when (state) {
-                                                                        ModifierState.OFF ->
-                                                                                AssistChipDefaults
-                                                                                        .assistChipColors(
-                                                                                                containerColor =
-                                                                                                        MaterialTheme
-                                                                                                                .colorScheme
-                                                                                                                .secondaryContainer,
-                                                                                                labelColor =
-                                                                                                        MaterialTheme
-                                                                                                                .colorScheme
-                                                                                                                .onSecondaryContainer
-                                                                                        )
-                                                                        ModifierState.ARMED ->
-                                                                                AssistChipDefaults
-                                                                                        .assistChipColors(
-                                                                                                containerColor =
-                                                                                                        MaterialTheme
-                                                                                                                .colorScheme
-                                                                                                                .primaryContainer,
-                                                                                                labelColor =
-                                                                                                        MaterialTheme
-                                                                                                                .colorScheme
-                                                                                                                .onPrimaryContainer,
-                                                                                                leadingIconContentColor =
-                                                                                                        MaterialTheme
-                                                                                                                .colorScheme
-                                                                                                                .onPrimaryContainer
-                                                                                        )
-                                                                        ModifierState.LOCKED ->
-                                                                                AssistChipDefaults
-                                                                                        .assistChipColors(
-                                                                                                containerColor =
-                                                                                                        MaterialTheme
-                                                                                                                .colorScheme
-                                                                                                                .primary,
-                                                                                                labelColor =
-                                                                                                        MaterialTheme
-                                                                                                                .colorScheme
-                                                                                                                .onPrimary,
-                                                                                                leadingIconContentColor =
-                                                                                                        MaterialTheme
-                                                                                                                .colorScheme
-                                                                                                                .onPrimary
-                                                                                        )
-                                                                }
-                                                )
-                                        }
-                                        utilKeys.forEach { (label, cd, vk) ->
-                                                AssistChip(
-                                                        onClick = {
-                                                                view.performHapticFeedback(
-                                                                        HapticFeedbackConstants
-                                                                                .VIRTUAL_KEY
-                                                                )
-                                                                onSendKeyPress(vk)
-                                                        },
-                                                        label = { Text(label) },
-                                                        modifier =
-                                                                Modifier.semantics {
-                                                                        contentDescription = cd
-                                                                },
-                                                        colors =
-                                                                AssistChipDefaults.assistChipColors(
-                                                                        containerColor =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .secondaryContainer,
-                                                                        labelColor =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onSecondaryContainer
-                                                                )
-                                                )
-                                        }
-                                        // Expand chevron — reveals the F-key/nav-key grid below
-                                        // (RemEx-bct remnant).
-                                        IconButton(
-                                                onClick = {
-                                                        extraKeysExpanded = !extraKeysExpanded
+                        // The PC-keys bar used to live here as a Column sibling; it is now the
+                        // floating PcKeysBar pill overlaid inside the video box above, so showing
+                        // it (or the IME) no longer resizes the video and blacks the stream
+                        // (RemEx-2y31).
+                }
+        }
+}
+
+/**
+ * Clamps the floating PC-keys pill's drag offset (relative to its bottom-center anchor) so the
+ * pill always stays fully inside the inset-aware overlay lane, whatever the lane's current size —
+ * a position dragged in landscape self-heals after rotating to portrait, and the pill can never be
+ * stranded off-screen (RemEx-2y31). Y is <= 0 (up from the bottom edge only); X is symmetric
+ * around the horizontal center.
+ */
+private fun clampedPcKeysOffset(
+        offsetX: Float,
+        offsetY: Float,
+        lane: IntSize,
+        pill: IntSize
+): IntOffset {
+        if (lane == IntSize.Zero || pill == IntSize.Zero) {
+                return IntOffset(offsetX.roundToInt(), offsetY.roundToInt())
+        }
+        val maxX = ((lane.width - pill.width) / 2f).coerceAtLeast(0f)
+        val maxUp = (lane.height - pill.height).toFloat().coerceAtLeast(0f)
+        return IntOffset(
+                offsetX.coerceIn(-maxX, maxX).roundToInt(),
+                offsetY.coerceIn(-maxUp, 0f).roundToInt()
+        )
+}
+
+/**
+ * Floating PC-keys pill (RemEx-2y31): the modifier chips (Ctrl/Alt/Shift/Win/AltGr, latching via
+ * onCycleModifier — OFF -> ARMED -> LOCKED -> OFF) plus utility keys and the F-key/nav-key grid,
+ * hosted as a draggable overlay ON TOP of the video box instead of the old docked full-width bar
+ * below it — so showing it (or the IME) never resizes the video box, never rebuilds the H.264
+ * SurfaceView, and never blacks the stream. The grip row at the top is the drag surface; [onDrag]
+ * receives raw pixel deltas and the caller clamps + persists the position.
+ */
+@Composable
+private fun PcKeysBar(
+        modifierStates: Map<Int, ModifierState>,
+        onCycleModifier: (Int) -> Unit,
+        onSendKeyPress: (Int) -> Unit,
+        view: android.view.View,
+        extraKeysExpanded: Boolean,
+        onToggleExtraKeys: () -> Unit,
+        onDrag: (Offset) -> Unit,
+        onPillSizeChanged: (IntSize) -> Unit
+) {
+        Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f),
+                shadowElevation = 6.dp,
+                modifier =
+                        Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                .onGloballyPositioned { onPillSizeChanged(it.size) }
+        ) {
+                Column {
+                        // Grip: the drag surface that moves the pill anywhere over the stream.
+                        Box(
+                                modifier =
+                                        Modifier.fillMaxWidth()
+                                                .pointerInput(Unit) {
+                                                        detectDragGestures { change, dragAmount ->
+                                                                change.consume()
+                                                                onDrag(dragAmount)
+                                                        }
                                                 }
-                                        ) {
-                                                Icon(
-                                                        if (extraKeysExpanded)
-                                                                Icons.Default.KeyboardArrowUp
-                                                        else Icons.Default.KeyboardArrowDown,
-                                                        contentDescription =
-                                                                stringResource(
-                                                                        R.string.cd_more_keys
-                                                                )
-                                                )
-                                        }
-                                }
-                                if (extraKeysExpanded) {
-                                        ExtraKeysGrid(
-                                                onSendKeyPress = onSendKeyPress,
-                                                view = view
+                                                .padding(top = 4.dp),
+                                contentAlignment = Alignment.Center
+                        ) {
+                                Icon(
+                                        Icons.Default.DragIndicator,
+                                        contentDescription =
+                                                stringResource(R.string.cd_move_pc_keys),
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                        }
+                        // vk -> (label, contentDescription). Latching: tapping cycles
+                        // OFF -> ARMED -> LOCKED -> OFF via onCycleModifier; sendKeyPress
+                        // applies ARMED/LOCKED modifiers to the next non-modifier key.
+                        val modifierKeys =
+                                listOf(
+                                        Triple(17, "Ctrl", stringResource(R.string.cd_key_ctrl)),
+                                        Triple(18, "Alt", stringResource(R.string.cd_key_alt)),
+                                        Triple(16, "Shift", stringResource(R.string.cd_key_shift)),
+                                        Triple(91, "⊞", stringResource(R.string.cd_key_windows)),
+                                        Triple(
+                                                165,
+                                                "AltGr",
+                                                stringResource(R.string.cd_key_altgr)
+                                        ),
+                                )
+                        val utilKeys =
+                                listOf(
+                                        Triple("Esc", stringResource(R.string.cd_key_escape), 27),
+                                        Triple("Tab", stringResource(R.string.cd_key_tab), 9),
+                                        Triple("⌫", stringResource(R.string.cd_key_backspace), 8),
+                                        Triple("↵", stringResource(R.string.cd_key_enter), 13),
+                                        Triple(
+                                                "←",
+                                                stringResource(R.string.cd_key_arrow_left),
+                                                37
+                                        ),
+                                        Triple("↑", stringResource(R.string.cd_key_arrow_up), 38),
+                                        Triple(
+                                                "↓",
+                                                stringResource(R.string.cd_key_arrow_down),
+                                                40
+                                        ),
+                                        Triple(
+                                                "→",
+                                                stringResource(R.string.cd_key_arrow_right),
+                                                39
+                                        ),
+                                        Triple("Del", stringResource(R.string.cd_key_delete), 46),
+                                )
+                        Row(
+                                modifier =
+                                        Modifier.horizontalScroll(rememberScrollState())
+                                                .padding(vertical = 2.dp, horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                        ) {
+                                modifierKeys.forEach { (vk, label, cd) ->
+                                        val state = modifierStates[vk] ?: ModifierState.OFF
+                                        AssistChip(
+                                                onClick = {
+                                                        view.performHapticFeedback(
+                                                                HapticFeedbackConstants.VIRTUAL_KEY
+                                                        )
+                                                        onCycleModifier(vk)
+                                                },
+                                                label = {
+                                                        Text(
+                                                                label,
+                                                                fontWeight =
+                                                                        if (state ==
+                                                                                        ModifierState
+                                                                                                .LOCKED
+                                                                        )
+                                                                                FontWeight.Bold
+                                                                        else null
+                                                        )
+                                                },
+                                                leadingIcon =
+                                                        if (state == ModifierState.LOCKED) {
+                                                                {
+                                                                        Icon(
+                                                                                Icons.Default.Lock,
+                                                                                contentDescription =
+                                                                                        null,
+                                                                                modifier =
+                                                                                        Modifier.size(
+                                                                                                14.dp
+                                                                                        )
+                                                                        )
+                                                                }
+                                                        } else null,
+                                                modifier =
+                                                        Modifier.semantics {
+                                                                contentDescription = cd
+                                                        },
+                                                colors =
+                                                        when (state) {
+                                                                ModifierState.OFF ->
+                                                                        AssistChipDefaults
+                                                                                .assistChipColors(
+                                                                                        containerColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .secondaryContainer,
+                                                                                        labelColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onSecondaryContainer
+                                                                                )
+                                                                ModifierState.ARMED ->
+                                                                        AssistChipDefaults
+                                                                                .assistChipColors(
+                                                                                        containerColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .primaryContainer,
+                                                                                        labelColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onPrimaryContainer,
+                                                                                        leadingIconContentColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onPrimaryContainer
+                                                                                )
+                                                                ModifierState.LOCKED ->
+                                                                        AssistChipDefaults
+                                                                                .assistChipColors(
+                                                                                        containerColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .primary,
+                                                                                        labelColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onPrimary,
+                                                                                        leadingIconContentColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onPrimary
+                                                                                )
+                                                        }
                                         )
                                 }
-                            }
+                                utilKeys.forEach { (label, cd, vk) ->
+                                        AssistChip(
+                                                onClick = {
+                                                        view.performHapticFeedback(
+                                                                HapticFeedbackConstants.VIRTUAL_KEY
+                                                        )
+                                                        onSendKeyPress(vk)
+                                                },
+                                                label = { Text(label) },
+                                                modifier =
+                                                        Modifier.semantics {
+                                                                contentDescription = cd
+                                                        },
+                                                colors =
+                                                        AssistChipDefaults.assistChipColors(
+                                                                containerColor =
+                                                                        MaterialTheme.colorScheme
+                                                                                .secondaryContainer,
+                                                                labelColor =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onSecondaryContainer
+                                                        )
+                                        )
+                                }
+                                // Expand chevron — reveals the F-key/nav-key grid below
+                                // (RemEx-bct remnant).
+                                IconButton(onClick = onToggleExtraKeys) {
+                                        Icon(
+                                                if (extraKeysExpanded)
+                                                        Icons.Default.KeyboardArrowUp
+                                                else Icons.Default.KeyboardArrowDown,
+                                                contentDescription =
+                                                        stringResource(R.string.cd_more_keys)
+                                        )
+                                }
+                        }
+                        if (extraKeysExpanded) {
+                                ExtraKeysGrid(onSendKeyPress = onSendKeyPress, view = view)
                         }
                 }
         }
