@@ -51,13 +51,13 @@
     </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="40" Spacing="32" MaxWidth="1100">
+        <StackPanel Margin="40" Spacing="32">
 
             <!-- ═══ Header ═══ -->
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="settings-back" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" VerticalAlignment="Center"/>
 
-                <TextBlock Grid.Column="1" Text="{local:Localize Settings_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Classes="page-title" Text="{local:Localize Settings_Header}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SavedStatus}" FontSize="13" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
@@ -66,10 +66,10 @@
             </Grid>
 
             <!-- ═══ RESPONSIVE TWO-COLUMN CONTENT ═══ -->
-            <WrapPanel Margin="0,10,0,0">
+            <WrapPanel Margin="0,10,0,0" HorizontalAlignment="Center">
 
                 <!-- LEFT COLUMN -->
-                <StackPanel MinWidth="400" MaxWidth="600" Spacing="24" Margin="0,0,16,16">
+                <StackPanel MinWidth="420" MaxWidth="760" Spacing="24" Margin="0,0,16,16">
 
                     <!-- ═══ Connection Section ═══ -->
                     <Border Classes="glass-card" Padding="24">
@@ -223,7 +223,7 @@
                 </StackPanel>
 
                 <!-- RIGHT COLUMN -->
-                <StackPanel MinWidth="400" MaxWidth="600" Spacing="24" Margin="0,0,16,16">
+                <StackPanel MinWidth="420" MaxWidth="760" Spacing="24" Margin="0,0,16,16">
 
                     <!-- ═══ Remote Desktop Section ═══ -->
                     <Border Classes="glass-card" Padding="24">
@@ -291,6 +291,19 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </ScrollViewer>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ═══ Backup &amp; Restore Section ═══ -->
+                    <Border Classes="glass-card" Padding="24">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="{local:Localize Settings_BackupSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                            <TextBlock Text="{local:Localize Settings_BackupDescription}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Opacity="0.85"/>
+
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <Button Content="{local:Localize Settings_ExportButton}" Command="{Binding ExportSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Content="{local:Localize Settings_ImportButton}" Command="{Binding ImportSettingsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -12,7 +13,9 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Remex.Core.Guards;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Backup;
 using Remex.Desktop.Services.FileTransfer;
 using Remex.Core.Models;
 
@@ -29,6 +32,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly ConnectionViewModel _connection;
     private readonly ShellViewModel _shell;
     private readonly FileTransferRootSettingsService _fileTransferRootSettings;
+    private readonly RemexSavefileService _savefileService;
     private DashboardProfile _profile = new();
 
     [ObservableProperty]
@@ -120,6 +124,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public Func<FolderPickerOpenOptions, Task<IReadOnlyList<IStorageFolder>>>? PickSharedFolderAsync { get; set; }
 
+    /// <summary>Wired by the view to a native "Save File" picker. Used by <see cref="ExportSettingsCommand"/>.</summary>
+    public Func<FilePickerSaveOptions, Task<IStorageFile?>>? PickSaveFileAsync { get; set; }
+
+    /// <summary>Wired by the view to a native "Open File" picker. Used by <see cref="ImportSettingsCommand"/>.</summary>
+    public Func<FilePickerOpenOptions, Task<IReadOnlyList<IStorageFile>>>? PickOpenFileAsync { get; set; }
+
     public ObservableCollection<FileTransferSharedRootItem> SharedRoots { get; } = new();
 
     public bool SupportsSharedFolderConfiguration => !OperatingSystem.IsAndroid();
@@ -150,12 +160,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         DashboardLayoutService layoutService,
         ConnectionViewModel connection,
         ShellViewModel shell,
-        FileTransferRootSettingsService fileTransferRootSettings)
+        FileTransferRootSettingsService fileTransferRootSettings,
+        RemexSavefileService savefileService)
     {
         _layoutService = layoutService;
         _connection = connection;
         _shell = shell;
         _fileTransferRootSettings = fileTransferRootSettings;
+        _savefileService = Guard.NotNull(savefileService);
         _connection.PropertyChanged += OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
     }
@@ -473,6 +485,100 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             var roots = await _fileTransferRootSettings.ResetToDefaultsAsync();
             ReplaceSharedRoots(roots);
             ShowTransientStatus(LocalizationService.Instance["Settings_FileTransferDefaultsRestored"]);
+        }
+        catch (Exception ex)
+        {
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
+    // ═══════════════ Backup & Restore (savefile export/import) ═══════════════
+
+    [RelayCommand]
+    private async Task ExportSettingsAsync()
+    {
+        if (PickSaveFileAsync is null)
+        {
+            ShowTransientStatus(LocalizationService.Instance["Settings_FileTransferPickerUnavailable"]);
+            return;
+        }
+
+        try
+        {
+            var file = await PickSaveFileAsync(new FilePickerSaveOptions
+            {
+                Title = LocalizationService.Instance["Settings_ExportButton"],
+                SuggestedFileName = $"RemEx-settings-{DateTime.Now:yyyyMMdd}",
+                DefaultExtension = "remexsave",
+                FileTypeChoices = new[]
+                {
+                    new FilePickerFileType(LocalizationService.Instance["Settings_SavefileType"])
+                    {
+                        Patterns = new[] { "*.remexsave" },
+                    },
+                },
+            });
+
+            if (file is null)
+                return;
+
+            await using var stream = await file.OpenWriteAsync();
+            await _savefileService.ExportAsync(stream);
+
+            ShowTransientStatus(LocalizationService.Instance["Settings_ExportDone"]);
+        }
+        catch (Exception ex)
+        {
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
+    [RelayCommand]
+    private async Task ImportSettingsAsync()
+    {
+        if (PickOpenFileAsync is null)
+        {
+            ShowTransientStatus(LocalizationService.Instance["Settings_FileTransferPickerUnavailable"]);
+            return;
+        }
+
+        try
+        {
+            var files = await PickOpenFileAsync(new FilePickerOpenOptions
+            {
+                Title = LocalizationService.Instance["Settings_ImportButton"],
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType(LocalizationService.Instance["Settings_SavefileType"])
+                    {
+                        Patterns = new[] { "*.remexsave" },
+                    },
+                },
+            });
+
+            if (files.Count == 0)
+                return;
+
+            await using var stream = await files[0].OpenReadAsync();
+            var result = await _savefileService.ImportAsync(stream);
+
+            ShowTransientStatus(string.Format(
+                LocalizationService.Instance["Settings_ImportDone"],
+                result.AppliedSections.Count,
+                result.Warnings.Count));
+        }
+        catch (SavefileNewerVersionException)
+        {
+            ShowTransientStatus(LocalizationService.Instance["Settings_ImportNewerVersion"]);
+        }
+        catch (SavefileFormatException)
+        {
+            ShowTransientStatus(LocalizationService.Instance["Settings_ImportInvalidFile"]);
+        }
+        catch (JsonException)
+        {
+            ShowTransientStatus(LocalizationService.Instance["Settings_ImportInvalidFile"]);
         }
         catch (Exception ex)
         {

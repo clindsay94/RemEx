@@ -1,7 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- Only multi-target net10.0-android when an Android SDK is actually configured. ANDROID_HOME /
+       ANDROID_SDK_ROOT (per docs/ANDROID_SETUP.md) and/or an explicit AndroidSdkDirectory MSBuild
+       property (as build-remex.ps1 passes) all count. This lets `dotnet build`/`dotnet test`
+       succeed on machines that haven't set up Android tooling yet (XA5300 otherwise), while the
+       Android build path — which always has one of these set — keeps producing libRemexCore.so. -->
   <PropertyGroup>
-    <TargetFrameworks>net10.0;net10.0-android</TargetFrameworks>
+    <HasAndroidSdk Condition="'$(ANDROID_HOME)' != '' or '$(ANDROID_SDK_ROOT)' != '' or '$(AndroidSdkDirectory)' != ''">true</HasAndroidSdk>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFrameworks Condition="'$(HasAndroidSdk)' == 'true'">net10.0;net10.0-android</TargetFrameworks>
+    <TargetFrameworks Condition="'$(HasAndroidSdk)' != 'true'">net10.0</TargetFrameworks>
     <RootNamespace>Remex.Core</RootNamespace>
     <AssemblyName>Remex.Core</AssemblyName>
     <ImplicitUsings>enable</ImplicitUsings>

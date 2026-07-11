@@ -47,8 +47,8 @@
 
             <!-- ═══ Header ═══ -->
             <StackPanel Spacing="4">
-                <TextBlock Text="{local:Localize Remote_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                <TextBlock Text="{local:Localize Remote_Subheader}" FontFamily="{StaticResource Sixtyfour}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+                <TextBlock Classes="page-title" Text="{local:Localize Remote_Header}"/>
+                <TextBlock Classes="page-subtitle" Text="{local:Localize Remote_Subheader}"/>
             </StackPanel>
 
             <!-- ═══ Wake on LAN ═══ -->

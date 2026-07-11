@@ -43,8 +43,8 @@
 
         <!-- ═══ HEADER ═══ -->
         <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,16">
-            <TextBlock Text="{local:Localize FileTransfer_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-            <TextBlock Text="{local:Localize FileTransfer_Subheader}" FontFamily="{StaticResource Sixtyfour}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2.0"/>
+            <TextBlock Classes="page-title" Text="{local:Localize FileTransfer_Header}"/>
+            <TextBlock Classes="page-subtitle" Text="{local:Localize FileTransfer_Subheader}"/>
         </StackPanel>
 
         <!-- ═══ REMOTE BROWSER ═══ -->

@@ -40,120 +40,135 @@
     </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32" Spacing="24" MaxWidth="600" HorizontalAlignment="Center">
+        <StackPanel Margin="32" Spacing="24">
 
             <!-- Back Button -->
             <Button Classes="about-back" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" HorizontalAlignment="Left"/>
 
             <!-- Header -->
-            <TextBlock Text="{local:Localize About_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+            <TextBlock Classes="page-title" Text="{local:Localize About_Header}" HorizontalAlignment="Center"/>
 
-            <!-- App Logo and Name -->
-            <StackPanel Spacing="12" HorizontalAlignment="Center">
-                <Border Width="100" Height="100" CornerRadius="50" ClipToBounds="True" HorizontalAlignment="Center">
-                    <Image Source="avares://Remex.Desktop/Assets/New-REMEX.png" Height="200" Stretch="UniformToFill"/>
-                </Border>
+            <!-- ═══ RESPONSIVE TWO-COLUMN CONTENT ═══ -->
+            <WrapPanel HorizontalAlignment="Center">
 
-                <TextBlock Text="{local:Localize About_Tagline}" FontSize="14" FontFamily="{StaticResource Sixtyfour}" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" LetterSpacing="2"/>
-            </StackPanel>
+                <!-- LEFT COLUMN -->
+                <StackPanel MinWidth="400" MaxWidth="640" Spacing="24" Margin="0,0,16,16">
 
-            <!-- Keyboard Shortcuts Button -->
-            <Button Classes="about-back" Content="{local:Localize About_KeyboardShortcuts}" Command="{Binding ToggleShortcutsCommand}" HorizontalAlignment="Center" Margin="0,-8,0,0">
-                <Button.Flyout>
-                    <Flyout Placement="Bottom" IsOpen="{Binding IsShowShortcutsOpen, Mode=TwoWay}">
-                        <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                            <StackPanel Spacing="12">
-                                <TextBlock Text="{local:Localize About_KeyboardShortcuts}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
-                                
-                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4">
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl + Shift + P" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{local:Localize About_CommandPalette}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
-                                    
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl + Z" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{local:Localize About_UndoLayout}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
-                                    
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl + Y" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{local:Localize About_RedoLayout}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
-                                    
-                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Esc" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{local:Localize About_CloseOverlays}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
-                                </Grid>
-                            </StackPanel>
+                    <!-- App Logo and Name -->
+                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                        <Border Width="100" Height="100" CornerRadius="50" ClipToBounds="True" HorizontalAlignment="Center">
+                            <Image Source="avares://Remex.Desktop/Assets/New-REMEX.png" Height="200" Stretch="UniformToFill"/>
                         </Border>
-                    </Flyout>
-                </Button.Flyout>
-            </Button>
 
-            <!-- Version Info Card -->
-            <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
-                <StackPanel Spacing="16">
-                    <!-- Desktop Client Version -->
-                    <StackPanel Spacing="8">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Path Data="{StaticResource IconLaptop}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
-                            <TextBlock Text="{local:Localize About_DesktopClient}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        </StackPanel>
-                        <TextBlock Text="{Binding ClientVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
+                        <TextBlock Classes="page-subtitle" Text="{local:Localize About_Tagline}" HorizontalAlignment="Center"/>
                     </StackPanel>
 
-                    <!-- Divider -->
-                    <Border Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
+                    <!-- Keyboard Shortcuts Button -->
+                    <Button Classes="about-back" Content="{local:Localize About_KeyboardShortcuts}" Command="{Binding ToggleShortcutsCommand}" HorizontalAlignment="Center" Margin="0,-8,0,0">
+                        <Button.Flyout>
+                            <Flyout Placement="Bottom" IsOpen="{Binding IsShowShortcutsOpen, Mode=TwoWay}">
+                                <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="{local:Localize About_KeyboardShortcuts}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
 
-                    <!-- PC Host Version -->
-                    <StackPanel Spacing="8">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Path Data="{StaticResource IconDesktopPC}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
-                            <TextBlock Text="{local:Localize About_PCHost}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4">
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl + Shift + P" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{local:Localize About_CommandPalette}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
+
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl + Z" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{local:Localize About_UndoLayout}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
+
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl + Y" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{local:Localize About_RedoLayout}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
+
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Esc" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{local:Localize About_CloseOverlays}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+
+                    <!-- Version Info Card -->
+                    <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
+                        <StackPanel Spacing="16">
+                            <!-- Desktop Client Version -->
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <Path Data="{StaticResource IconLaptop}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{local:Localize About_DesktopClient}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding ClientVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- Divider -->
+                            <Border Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
+
+                            <!-- PC Host Version -->
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <Path Data="{StaticResource IconDesktopPC}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{local:Localize About_PCHost}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding HostVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
+                            </StackPanel>
                         </StackPanel>
-                        <TextBlock Text="{Binding HostVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
-                    </StackPanel>
+                    </Border>
+
                 </StackPanel>
-            </Border>
 
-            <!-- What's New Section -->
-            <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="{local:Localize About_WhatsNew}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <ItemsControl ItemsSource="{Binding WhatsNewItems}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Spacing="4" Margin="0,0,0,12">
-                                    <TextBlock Text="{Binding Version}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                                    <TextBlock Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                <!-- RIGHT COLUMN -->
+                <StackPanel MinWidth="400" MaxWidth="640" Spacing="24" Margin="0,0,16,16">
+
+                    <!-- What's New Section -->
+                    <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="{local:Localize About_WhatsNew}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <ItemsControl ItemsSource="{Binding WhatsNewItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Spacing="4" Margin="0,0,0,12">
+                                            <TextBlock Text="{Binding Version}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- FAQ Section -->
+                    <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="{local:Localize About_Faq}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <ItemsControl ItemsSource="{Binding FaqItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Spacing="4" Margin="0,0,0,16">
+                                            <TextBlock Text="{Binding Question}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Answer}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- GitHub Section -->
+                    <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
+                        <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+                            <TextBlock Text="{local:Localize About_GitHubStar}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
+
+                            <TextBlock Text="{local:Localize About_GitHubDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
+
+                            <Button Classes="github-btn" Content="{local:Localize About_ViewGitHub}" Command="{Binding OpenGitHubCommand}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                    </Border>
+
                 </StackPanel>
-            </Border>
 
-            <!-- FAQ Section -->
-            <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="{local:Localize About_Faq}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                    <ItemsControl ItemsSource="{Binding FaqItems}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Spacing="4" Margin="0,0,0,16">
-                                    <TextBlock Text="{Binding Question}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding Answer}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <!-- GitHub Section -->
-            <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
-                <StackPanel Spacing="16" HorizontalAlignment="Stretch">
-                    <TextBlock Text="{local:Localize About_GitHubStar}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
-
-                    <TextBlock Text="{local:Localize About_GitHubDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
-
-                    <Button Classes="github-btn" Content="{local:Localize About_ViewGitHub}" Command="{Binding OpenGitHubCommand}" HorizontalAlignment="Stretch"/>
-                </StackPanel>
-            </Border>
+            </WrapPanel>
 
             <!-- Footer -->
             <TextBlock Text="{local:Localize About_MadeWith}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center" Margin="0,16,0,32"/>

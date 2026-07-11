@@ -179,21 +179,6 @@
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Виберіть датчики для відображення на головному екрані</value>
   </data>
-  <data name="Settings_ServiceSection" xml:space="preserve">
-    <value>СЛУЖБА WINDOWS</value>
-  </data>
-  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
-    <value>WINDOWS SERVICE</value>
-  </data>
-  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX BACKGROUND SERVICE</value>
-  </data>
-  <data name="Settings_ServiceLogin" xml:space="preserve">
-    <value>ВХІД СЛУЖБИ</value>
-  </data>
-  <data name="Settings_ServiceDesc" xml:space="preserve">
-    <value>Служба працює у фоновому режимі, щоб RemEx міг приймати віддалені команди без відкритого застосунку.</value>
-  </data>
   <data name="Settings_AccountFormat" xml:space="preserve">
     <value>Обліковий запис: {0}</value>
   </data>
@@ -625,56 +610,8 @@
   <data name="Service_PasswordRequired" xml:space="preserve">
     <value>Потрібен пароль.</value>
   </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Публікація Remex.PC…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Публікація не вдалась — перегляньте журнал.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Створення служби…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Не вдалося створити службу — перегляньте журнал.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Налаштування входу…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Не вдалося налаштувати облікові дані — перегляньте журнал.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Надання прав входу…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Зупинка вбудованого хоста…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Запуск служби…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Встановлено &amp; запущено.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Встановлено — запуск міг не вдатися, перегляньте журнал.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Встановлення служби systemd…</value>
-  </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Помилка встановлення служби.</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Видалення служби systemd…</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Видалення служби…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Застосування облікових даних…</value>
   </data>
   <data name="Service_HostUnavailable" xml:space="preserve">
     <value>Можливості хоста недоступні</value>
@@ -684,18 +621,6 @@
   </data>
   <data name="Service_Checking" xml:space="preserve">
     <value>Перевірка…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Пошук Remex.PC…</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.PC.exe не знайдено.</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Запущено.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Помилка запуску — див. журнал.</value>
   </data>
   <data name="Service_StoppedMsg" xml:space="preserve">
     <value>Зупинено.</value>
@@ -876,38 +801,6 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Для постійного доступу (навіть коли ви не ввійшли в систему) ви можете встановити хост як службу Windows або демон Linux. Це дозволить вашому телефону підключатися в будь-який час.</value>
   </data>
 
-  <data name="Tutorial_P2_Title" xml:space="preserve">
-    <value>Запуск як служби Windows</value>
-  </data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve">
-    <value>Щоб RemEx працював цілодобово без необхідності входу в систему, встановіть його як службу Windows:</value>
-  </data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
-  </data>
-  <data name="Tutorial_P2_Note" xml:space="preserve">
-    <value>Служба працює під вашим обліковим записом, тому вона має доступ до сеансу робочого столу для захоплення екрана та запуску програм.</value>
-  </data>
-
-  <data name="Tutorial_P3_Title" xml:space="preserve">
-    <value>Налаштування служби Linux</value>
-  </data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>У Linux RemEx PC може працювати як служба systemd для автоматичного запуску.</value>
-  </data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux PC archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-PC folder.
-4. Use systemctl --user status remex-PC to verify it is running.</value>
-  </data>
-  <data name="Tutorial_P3_Link" xml:space="preserve">
-    <value>Детальні інструкції див. у файлі docs/linux-service-setup.md на GitHub</value>
-  </data>
-
   <data name="Tutorial_P4_Title" xml:space="preserve">
     <value>Інтеграція з HWInfo (Рекомендовано)</value>
   </data>
@@ -1033,18 +926,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Shell_FineTuning" xml:space="preserve">
     <value>ТОНКЕ НАЛАШТУВАННЯ</value>
-  </data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve">
-    <value>Шлях до виконуваного файлу хоста</value>
-  </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Шлях до Remex.PC.exe (залиште порожнім для автовизначення)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Шлях до Remex.PC.exe. Залиште порожнім для автовизначення (та сама папка, суміжні папки тощо)</value>
-  </data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve">
-    <value>Автовизначення (або вкажіть власний шлях)</value>
   </data>
   <data name="Shell_HostWatermark" xml:space="preserve">
     <value>ws://PC:port/ws</value>
@@ -1635,9 +1516,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
     <value>📱 Android-додаток → підключається до → 🖥️ Хоста ПК (ця машина)</value>
   </data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve">
-    <value>Детальні інструкції, параметри конфігурації та усунення несправностей див. у повному посібнику:</value>
-  </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Пропустити посібник — ви можете переглянути його пізніше в Налаштуваннях</value>
   </data>
@@ -1846,7 +1724,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>What do I need to run on my PC?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
-    <value>You need either Remex.Client.Desktop or Remex.PC running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
+    <value>Вам потрібен запущений RemEx на вашому ПК — це єдиний застосунок (remex.agent), який працює з підвищеними правами у вашому активному сеансі та запускається автоматично при вході в систему. Завантажте останній інсталятор зі сторінки GitHub Releases, запустіть його — і все буде готово ще до з'єднання.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
     <value>How do I pair my phone or second PC?</value>
@@ -1858,19 +1736,19 @@ Linux: ip addr  or  hostname -I</value>
     <value>How do I find my PC's IP address?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. You can also see the IP directly in the Remex.Client.Desktop window.</value>
+    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. Ви також можете побачити IP-адресу безпосередньо у вікні RemEx на вашому ПК.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Ensure Remex.PC is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Переконайтеся, що RemEx запущено на вашому ПК.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. You can see the active port in the desktop client's window.</value>
+    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. Ви можете побачити активний порт у вікні RemEx на вашому ПК.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>Can I connect over the internet?</value>
@@ -2012,9 +1890,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Status_InvalidQrData" xml:space="preserve">
     <value>Недійсні дані QR-коду</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Виберіть Remex.PC.exe</value>
   </data>
   <data name="Settings_ExecutableFileFilter" xml:space="preserve">
     <value>Виконуваний файл</value>
@@ -2373,6 +2248,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
     <value>Відкрити палітру команд (Ctrl+Shift+P)</value>
   </data>
+  <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
+    <value>Перемкнути бічну панель</value>
+  </data>
   <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
     <value>Налаштуйте стандартне заокруглення кутів для загальних карток і панелей панелі приладів</value>
   </data>
@@ -2543,5 +2421,65 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
     <value>Попередження безпеки: коли це ввімкнено, будь-хто зі сполученим пристроєм може бачити та керувати цим ПК, не розблоковуючи його з клавіатури. Вмикайте лише на ПК, якому довіряєте.</value>
+  </data>
+  <data name="Settings_BackupSection" xml:space="preserve">
+    <value>РЕЗЕРВНЕ КОПІЮВАННЯ ТА ВІДНОВЛЕННЯ</value>
+  </data>
+  <data name="Settings_BackupDescription" xml:space="preserve">
+    <value>Експортуйте все, що пам'ятає RemEx — розташування на полотні, застосунки лаунчера, спільні папки та тему — в один файл, або імпортуйте файл, щоб відновити це. Спарювання та сертифікати ніколи не включаються; після відновлення вам потрібно буде повторно спарувати телефон.</value>
+  </data>
+  <data name="Settings_ExportButton" xml:space="preserve">
+    <value>Експортувати налаштування</value>
+  </data>
+  <data name="Settings_ImportButton" xml:space="preserve">
+    <value>Імпортувати налаштування</value>
+  </data>
+  <data name="Settings_ExportDone" xml:space="preserve">
+    <value>Налаштування експортовано.</value>
+  </data>
+  <data name="Settings_ImportDone" xml:space="preserve">
+    <value>Імпорт завершено: відновлено {0} розділів, {1} попереджень.</value>
+  </data>
+  <data name="Settings_ImportNewerVersion" xml:space="preserve">
+    <value>Цей файл збереження створено новішою версією RemEx і його не можна імпортувати тут. Оновіть RemEx і спробуйте ще раз.</value>
+  </data>
+  <data name="Settings_ImportInvalidFile" xml:space="preserve">
+    <value>Цей файл не є дійсним файлом збереження RemEx.</value>
+  </data>
+  <data name="Settings_SavefileType" xml:space="preserve">
+    <value>Файл збереження RemEx</value>
+  </data>
+  <data name="Restore_PromptTitle" xml:space="preserve">
+    <value>Відновити попередні налаштування?</value>
+  </data>
+  <data name="Restore_PromptMessage" xml:space="preserve">
+    <value>Ми знайшли автоматичну резервну копію від {0}. Бажаєте відновити з неї розташування на полотні, застосунки лаунчера та налаштування?</value>
+  </data>
+  <data name="Restore_Accept" xml:space="preserve">
+    <value>Відновити</value>
+  </data>
+  <data name="Restore_Skip" xml:space="preserve">
+    <value>Почати заново</value>
+  </data>
+  <data name="AppLauncher_Sort" xml:space="preserve">
+    <value>Сортувати</value>
+  </data>
+  <data name="AppLauncher_SortNameAsc" xml:space="preserve">
+    <value>Назва (A → Z)</value>
+  </data>
+  <data name="AppLauncher_SortNameDesc" xml:space="preserve">
+    <value>Назва (Z → A)</value>
+  </data>
+  <data name="AppLauncher_Edit" xml:space="preserve">
+    <value>Редагувати</value>
+  </data>
+  <data name="AppLauncher_DragDisabledWhileFiltered" xml:space="preserve">
+    <value>Перетягування для зміни порядку вимкнено під час пошуку. Використовуйте натомість кнопки зі стрілками.</value>
+  </data>
+  <data name="AddProgram_EditTitle" xml:space="preserve">
+    <value>Редагувати програму</value>
+  </data>
+  <data name="AddProgram_RefreshIcon" xml:space="preserve">
+    <value>Оновити значок</value>
   </data>
 </root>

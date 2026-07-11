@@ -63,10 +63,10 @@
                 </Grid>
             </Grid>
 
-            <WrapPanel Margin="0,24,0,0">
+            <WrapPanel Margin="0,24,0,0" HorizontalAlignment="Center">
 
                 <!-- ═══ LEFT COLUMN: LIVE TELEMETRY MATRIX ═══ -->
-                <StackPanel MinWidth="400" MaxWidth="1200" Spacing="24" Margin="0,0,32,32">
+                <StackPanel MinWidth="400" MaxWidth="1400" Spacing="24" Margin="0,0,32,32">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="{local:Localize Home_ActiveSensors}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
                         <Button Grid.Column="1" Classes="action-pill" Command="{Binding NavigateToCanvasCommand}" Padding="16,8">

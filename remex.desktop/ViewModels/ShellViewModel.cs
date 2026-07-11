@@ -38,24 +38,22 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         new TutorialPage(0, "Welcome",          "Welcome to Remex.",                       PlatformFlags.All),
         new TutorialPage(1, "Connect",          "Connect to your host.",                   PlatformFlags.All),
-        new TutorialPage(2, "Windows Service",  "Install the Windows background service.", PlatformFlags.Windows),
-        new TutorialPage(3, "Linux Service",    "Install the Linux systemd service.",      PlatformFlags.Linux),
-        new TutorialPage(4, "HWiNFO",          "Monitor hardware sensors.",               PlatformFlags.Windows),
-        new TutorialPage(5, "Dashboard",        "Customize your dashboard.",               PlatformFlags.All),
-        new TutorialPage(6, "Remote Control",   "Control your remote machine.",            PlatformFlags.All),
-        new TutorialPage(7, "Remote Desktop",   "Stream your remote desktop.",             PlatformFlags.All),
-        new TutorialPage(8, "Customization",    "Personalize the app look and feel.",      PlatformFlags.All),
-        new TutorialPage(9, "File Transfer",    "Share folders between phone and PC.",     PlatformFlags.All),
+        new TutorialPage(2, "HWiNFO",          "Monitor hardware sensors.",               PlatformFlags.Windows),
+        new TutorialPage(3, "Dashboard",        "Customize your dashboard.",               PlatformFlags.All),
+        new TutorialPage(4, "Remote Control",   "Control your remote machine.",            PlatformFlags.All),
+        new TutorialPage(5, "Remote Desktop",   "Stream your remote desktop.",             PlatformFlags.All),
+        new TutorialPage(6, "Customization",    "Personalize the app look and feel.",      PlatformFlags.All),
+        new TutorialPage(7, "File Transfer",    "Share folders between phone and PC.",     PlatformFlags.All),
         // Glossary Pages
-        new TutorialPage(10, "Glossary: Command Palette", "Press Ctrl+Shift+P to search for commands, screens, and quick actions instantly. Use it to quickly disconnect, lock your PC, or jump to Settings.", PlatformFlags.All),
-        new TutorialPage(11, "Glossary: App Launcher", "Launch predefined apps and scripts directly on the host machine. You can configure custom paths and arguments in the Settings menu.", PlatformFlags.All),
-        new TutorialPage(12, "Glossary: Task Manager", "View and terminate running processes on your host PC remotely. Includes CPU and Memory usage statistics to identify resource hogs.", PlatformFlags.All),
-        new TutorialPage(13, "Glossary: Sensor Canvas", "A draggable workspace to monitor your PC's telemetry in real-time. Pin sensors (CPU, RAM, Temps), resize cards, and arrange them to build your ideal dashboard.", PlatformFlags.All),
-        new TutorialPage(14, "Glossary: File Transfer", "Securely browse, upload, and download files between your client and host PC. Host machines control access by defining 'Shared Folders' in their settings.", PlatformFlags.All),
-        new TutorialPage(15, "Glossary: Remote Desktop", "Stream your host PC's screen directly to your client. Adjust the quality, scaling, and FPS in the settings to optimize performance over your network.", PlatformFlags.All),
-        new TutorialPage(16, "Glossary: Quick Settings", "On Android, add RemEx tiles directly to your notification shade's Quick Settings. Easily Lock or Sleep your PC without even opening the app.", PlatformFlags.Android),
-        new TutorialPage(17, "Glossary: Customization", "Personalize RemEx! Change themes, toggle dark/light mode, adjust card border radii, and customize the primary accent color via the Settings menu.", PlatformFlags.All),
-        new TutorialPage(18, "Finish",          "You're all set — let's go!",             PlatformFlags.All),
+        new TutorialPage(8, "Glossary: Command Palette", "Press Ctrl+Shift+P to search for commands, screens, and quick actions instantly. Use it to quickly disconnect, lock your PC, or jump to Settings.", PlatformFlags.All),
+        new TutorialPage(9, "Glossary: App Launcher", "Launch predefined apps and scripts directly on the host machine. You can configure custom paths and arguments in the Settings menu.", PlatformFlags.All),
+        new TutorialPage(10, "Glossary: Task Manager", "View and terminate running processes on your host PC remotely. Includes CPU and Memory usage statistics to identify resource hogs.", PlatformFlags.All),
+        new TutorialPage(11, "Glossary: Sensor Canvas", "A draggable workspace to monitor your PC's telemetry in real-time. Pin sensors (CPU, RAM, Temps), resize cards, and arrange them to build your ideal dashboard.", PlatformFlags.All),
+        new TutorialPage(12, "Glossary: File Transfer", "Securely browse, upload, and download files between your client and host PC. Host machines control access by defining 'Shared Folders' in their settings.", PlatformFlags.All),
+        new TutorialPage(13, "Glossary: Remote Desktop", "Stream your host PC's screen directly to your client. Adjust the quality, scaling, and FPS in the settings to optimize performance over your network.", PlatformFlags.All),
+        new TutorialPage(14, "Glossary: Quick Settings", "On Android, add RemEx tiles directly to your notification shade's Quick Settings. Easily Lock or Sleep your PC without even opening the app.", PlatformFlags.Android),
+        new TutorialPage(15, "Glossary: Customization", "Personalize RemEx! Change themes, toggle dark/light mode, adjust card border radii, and customize the primary accent color via the Settings menu.", PlatformFlags.All),
+        new TutorialPage(16, "Finish",          "You're all set — let's go!",             PlatformFlags.All),
     };
 
     /// <summary>Exposed for child VMs that need to read persisted settings (e.g. stream quality/FPS).</summary>
@@ -626,7 +624,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         if (_settingsViewModel is null)
         {
-            _settingsViewModel = new SettingsViewModel(_layoutService, Connection, this, new FileTransferRootSettingsService());
+            _settingsViewModel = new SettingsViewModel(
+                _layoutService,
+                Connection,
+                this,
+                new FileTransferRootSettingsService(),
+                _services.GetRequiredService<Remex.Desktop.Services.Backup.RemexSavefileService>());
             _ = _settingsViewModel.InitializeAsync(); // InitializeAsync calls RefreshSensors itself
             _lastSensorCardCount = _canvasViewModel?.Cards.Count(c => c.CardType == "Sensor") ?? -1;
             return;

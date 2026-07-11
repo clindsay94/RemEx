@@ -40,6 +40,16 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// </summary>
     public string? LoadFailureWarning { get; private set; }
 
+    /// <summary>
+    /// True when the most recent <see cref="LoadAsync"/> found no <c>dashboard_layout.json</c> on
+    /// disk at all (as opposed to a corrupt file). Used by the first-run restore prompt to decide
+    /// whether to offer restoring from the latest rolling auto-snapshot.
+    /// </summary>
+    public bool ProfileFileMissingOnLoad { get; private set; }
+
+    /// <summary>Raised after a profile is successfully written to disk by <see cref="SaveInternalAsync"/> (i.e. after <see cref="SaveAsync"/> or a flushed <see cref="RequestSave"/>).</summary>
+    public event Action? ProfileSaved;
+
     public DashboardLayoutService(ThemeService themeService)
     {
         _themeService = themeService;
@@ -62,7 +72,8 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         try
         {
             DashboardProfile profile;
-            if (!File.Exists(_filePath))
+            ProfileFileMissingOnLoad = !File.Exists(_filePath);
+            if (ProfileFileMissingOnLoad)
             {
                 profile = new DashboardProfile();
             }
@@ -168,6 +179,8 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             {
                 System.Diagnostics.Debug.WriteLine($"[RemexPersistence] Saved profile to: {_filePath}");
             }
+
+            ProfileSaved?.Invoke();
         }
         catch (Exception ex)
         {

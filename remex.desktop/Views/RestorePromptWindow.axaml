@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Remex.Desktop.Converters"
+        x:Class="Remex.Desktop.Views.RestorePromptWindow"
+        x:CompileBindings="False"
+        Width="460"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlassBaseDarkBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="32">
+
+    <Grid RowDefinitions="Auto,Auto,Auto" Margin="28,40,28,28">
+
+        <!-- Dialog title -->
+        <TextBlock Grid.Row="0"
+                   Text="{local:Localize Restore_PromptTitle}"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12"/>
+
+        <!-- Descriptive message, includes the snapshot date (set in code-behind) -->
+        <TextBlock x:Name="MessageText"
+                   Grid.Row="1"
+                   FontSize="13"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,28"/>
+
+        <!-- Buttons: Skip (left) | Restore (right) -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto">
+            <Button x:Name="SkipBtn"
+                    Grid.Column="1"
+                    Classes="glass-button"
+                    Content="{local:Localize Restore_Skip}"
+                    Foreground="{DynamicResource TextSecondaryBrush}"
+                    MinWidth="110"
+                    Margin="0,0,10,0"
+                    Click="OnSkipClicked"/>
+            <Button x:Name="RestoreBtn"
+                    Grid.Column="2"
+                    Content="{local:Localize Restore_Accept}"
+                    MinWidth="130"
+                    CornerRadius="8"
+                    Padding="16,10"
+                    FontWeight="SemiBold"
+                    FontSize="13"
+                    Background="{DynamicResource AccentPrimaryBrush}"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Click="OnRestoreClicked">
+                <Button.Styles>
+                    <Style Selector="Button:pressed">
+                        <Setter Property="RenderTransform" Value="scale(0.97)"/>
+                    </Style>
+                </Button.Styles>
+            </Button>
+        </Grid>
+
+    </Grid>
+</Window>

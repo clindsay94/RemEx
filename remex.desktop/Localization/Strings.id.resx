@@ -179,21 +179,6 @@
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Pilih sensor untuk ditampilkan di layar beranda</value>
   </data>
-  <data name="Settings_ServiceSection" xml:space="preserve">
-    <value>LAYANAN WINDOWS</value>
-  </data>
-  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
-    <value>WINDOWS SERVICE</value>
-  </data>
-  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX BACKGROUND SERVICE</value>
-  </data>
-  <data name="Settings_ServiceLogin" xml:space="preserve">
-    <value>LOGIN LAYANAN</value>
-  </data>
-  <data name="Settings_ServiceDesc" xml:space="preserve">
-    <value>Layanan berjalan di latar belakang agar RemEx dapat menerima perintah jarak jauh tanpa membuka aplikasi.</value>
-  </data>
   <data name="Settings_AccountFormat" xml:space="preserve">
     <value>Akun: {0}</value>
   </data>
@@ -625,56 +610,8 @@
   <data name="Service_PasswordRequired" xml:space="preserve">
     <value>Kata sandi diperlukan.</value>
   </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Menerbitkan Remex.PC…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Penerbitan gagal — lihat log.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Membuat layanan…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Gagal membuat layanan — lihat log.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Mengonfigurasi login…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Gagal mengonfigurasi kredensial — lihat log.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Memberikan hak masuk…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Menghentikan PC tertanam…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Memulai layanan…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Terinstal &amp; dimulai.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Terinstal — mulai mungkin gagal, lihat log.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Menginstal layanan systemd…</value>
-  </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Instalasi layanan gagal.</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Menghapus layanan systemd…</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Menghapus layanan…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Menerapkan kredensial…</value>
   </data>
   <data name="Service_HostUnavailable" xml:space="preserve">
     <value>Kemampuan PC tidak tersedia</value>
@@ -684,18 +621,6 @@
   </data>
   <data name="Service_Checking" xml:space="preserve">
     <value>Memeriksa…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Menemukan Remex.PC…</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.PC.exe tidak ditemukan.</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Dimulai.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Gagal memulai — lihat log.</value>
   </data>
   <data name="Service_StoppedMsg" xml:space="preserve">
     <value>Dihentikan.</value>
@@ -876,38 +801,6 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Untuk akses selalu aktif (bahkan saat Anda belum login), Anda dapat menginstal PC sebagai layanan Windows atau PC Linux. Ini memungkinkan ponsel Anda terhubung kapan saja.</value>
   </data>
 
-  <data name="Tutorial_P2_Title" xml:space="preserve">
-    <value>Jalankan sebagai Layanan Windows</value>
-  </data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve">
-    <value>Untuk menjaga RemEx berjalan 24/7 tanpa perlu login, instal sebagai layanan Windows:</value>
-  </data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
-  </data>
-  <data name="Tutorial_P2_Note" xml:space="preserve">
-    <value>Layanan berjalan di bawah akun pengguna Anda sehingga dapat mengakses sesi desktop Anda untuk tangkapan layar dan peluncuran aplikasi.</value>
-  </data>
-
-  <data name="Tutorial_P3_Title" xml:space="preserve">
-    <value>Pengaturan Layanan Linux</value>
-  </data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>Di Linux, RemEx PC dapat berjalan sebagai layanan systemd untuk startup otomatis.</value>
-  </data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux PC archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-PC folder.
-4. Use systemctl --user status remex-PC to verify it is running.</value>
-  </data>
-  <data name="Tutorial_P3_Link" xml:space="preserve">
-    <value>Untuk instruksi rinci, lihat docs/linux-service-setup.md di GitHub</value>
-  </data>
-
   <data name="Tutorial_P4_Title" xml:space="preserve">
     <value>Integrasi HWInfo (Disarankan)</value>
   </data>
@@ -1033,18 +926,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Shell_FineTuning" xml:space="preserve">
     <value>PENYETELAN HALUS</value>
-  </data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve">
-    <value>Jalur Biner PC</value>
-  </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Jalur ke Remex.PC.exe (kosongkan untuk deteksi otomatis)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Jalur ke Remex.PC.exe. Kosongkan untuk deteksi otomatis (folder yang sama, folder saudara, dll.)</value>
-  </data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve">
-    <value>Deteksi otomatis (atau tetapkan jalur kustom)</value>
   </data>
   <data name="Shell_HostWatermark" xml:space="preserve">
     <value>ws://PC:port/ws</value>
@@ -1635,9 +1516,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
     <value>📱 Aplikasi Android → terhubung ke → 🖥️ Your PC (mesin ini)</value>
   </data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve">
-    <value>Untuk instruksi rinci, opsi konfigurasi, dan pemecahan masalah, lihat panduan lengkap:</value>
-  </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Lewati panduan — Anda dapat memutar ulangnya dari Pengaturan</value>
   </data>
@@ -1846,7 +1724,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Apa yang perlu saya jalankan di PC?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
-    <value>You need either Remex.Client.Desktop or Remex.PC running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
+    <value>Anda memerlukan RemEx yang berjalan di PC Anda — ini adalah satu aplikasi tunggal (remex.agent) yang berjalan dengan hak istimewa (elevated) di dalam sesi Anda yang sedang masuk dan otomatis dimulai saat Anda masuk. Unduh installer terbaru dari GitHub Releases, jalankan, dan aplikasi sudah siap sebelum Anda melakukan pairing.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
     <value>Bagaimana cara memasangkan ponsel atau PC kedua?</value>
@@ -1858,19 +1736,19 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bagaimana cara menemukan alamat IP PC saya?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' di Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' di terminal. Anda juga dapat melihat IP langsung di jendela Remex.Client.Desktop.</value>
+    <value>Windows: 'ipconfig' di Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' di terminal. Anda juga dapat melihat IP langsung di jendela RemEx di PC Anda.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>Auto-discovery tidak menemukan PC saya. Apa yang harus diperiksa?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Ensure Remex.PC is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Pastikan RemEx berjalan di PC Anda.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>Apa port default-nya?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>Port default adalah 5005. Jika port 5005 sudah digunakan, akan beralih ke 5006. Anda dapat melihat port aktif di jendela klien desktop.</value>
+    <value>Port default adalah 5005. Jika port 5005 sudah digunakan, akan beralih ke 5006. Anda dapat melihat port aktif di jendela RemEx di PC Anda.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>Bisakah saya terhubung melalui internet?</value>
@@ -2012,9 +1890,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Status_InvalidQrData" xml:space="preserve">
     <value>Data kode QR tidak valid</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Pilih Remex.PC.exe</value>
   </data>
   <data name="Settings_ExecutableFileFilter" xml:space="preserve">
     <value>Eksekusi</value>
@@ -2373,6 +2248,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
     <value>Buka Palet Perintah (Ctrl+Shift+P)</value>
   </data>
+  <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
+    <value>Alihkan Bilah Sisi</value>
+  </data>
   <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
     <value>Sesuaikan kebulatan sudut tepi bawaan untuk kartu dan panel dasbor umum</value>
   </data>
@@ -2543,5 +2421,65 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
     <value>Peringatan keamanan: saat aktif, siapa pun dengan perangkat yang dipasangkan dapat melihat dan mengontrol PC ini tanpa membuka kuncinya di keyboard. Aktifkan hanya pada PC yang Anda percaya.</value>
+  </data>
+  <data name="Settings_BackupSection" xml:space="preserve">
+    <value>CADANGAN &amp; PEMULIHAN</value>
+  </data>
+  <data name="Settings_BackupDescription" xml:space="preserve">
+    <value>Ekspor semua yang diingat RemEx — tata letak kanvas, aplikasi peluncur, folder bersama, dan tema Anda — ke satu file, atau impor file untuk memulihkannya. Pemasangan perangkat dan sertifikat tidak pernah disertakan; Anda perlu memasangkan ulang ponsel setelah pemulihan.</value>
+  </data>
+  <data name="Settings_ExportButton" xml:space="preserve">
+    <value>Ekspor Pengaturan</value>
+  </data>
+  <data name="Settings_ImportButton" xml:space="preserve">
+    <value>Impor Pengaturan</value>
+  </data>
+  <data name="Settings_ExportDone" xml:space="preserve">
+    <value>Pengaturan diekspor.</value>
+  </data>
+  <data name="Settings_ImportDone" xml:space="preserve">
+    <value>Impor selesai: {0} bagian dipulihkan, {1} peringatan.</value>
+  </data>
+  <data name="Settings_ImportNewerVersion" xml:space="preserve">
+    <value>File simpanan ini dibuat oleh versi RemEx yang lebih baru dan tidak dapat diimpor di sini. Perbarui RemEx lalu coba lagi.</value>
+  </data>
+  <data name="Settings_ImportInvalidFile" xml:space="preserve">
+    <value>File tersebut bukan file simpanan RemEx yang valid.</value>
+  </data>
+  <data name="Settings_SavefileType" xml:space="preserve">
+    <value>File Simpanan RemEx</value>
+  </data>
+  <data name="Restore_PromptTitle" xml:space="preserve">
+    <value>Pulihkan Pengaturan Sebelumnya?</value>
+  </data>
+  <data name="Restore_PromptMessage" xml:space="preserve">
+    <value>Kami menemukan cadangan otomatis dari {0}. Ingin memulihkan tata letak kanvas, aplikasi peluncur, dan pengaturan Anda darinya?</value>
+  </data>
+  <data name="Restore_Accept" xml:space="preserve">
+    <value>Pulihkan</value>
+  </data>
+  <data name="Restore_Skip" xml:space="preserve">
+    <value>Mulai Baru</value>
+  </data>
+  <data name="AppLauncher_Sort" xml:space="preserve">
+    <value>Urutkan</value>
+  </data>
+  <data name="AppLauncher_SortNameAsc" xml:space="preserve">
+    <value>Nama (A → Z)</value>
+  </data>
+  <data name="AppLauncher_SortNameDesc" xml:space="preserve">
+    <value>Nama (Z → A)</value>
+  </data>
+  <data name="AppLauncher_Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="AppLauncher_DragDisabledWhileFiltered" xml:space="preserve">
+    <value>Seret untuk mengurutkan ulang dinonaktifkan saat pencarian aktif. Gunakan tombol panah sebagai gantinya.</value>
+  </data>
+  <data name="AddProgram_EditTitle" xml:space="preserve">
+    <value>Edit Program</value>
+  </data>
+  <data name="AddProgram_RefreshIcon" xml:space="preserve">
+    <value>Segarkan Ikon</value>
   </data>
 </root>

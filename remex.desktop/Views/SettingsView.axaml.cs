@@ -37,5 +37,20 @@ public partial class SettingsView : UserControl
 
             return await topLevel.StorageProvider.OpenFolderPickerAsync(options);
         };
+
+        vm.PickSaveFileAsync = async options =>
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            return topLevel is null ? null : await topLevel.StorageProvider.SaveFilePickerAsync(options);
+        };
+
+        vm.PickOpenFileAsync = async options =>
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null)
+                return Array.Empty<IStorageFile>();
+
+            return await topLevel.StorageProvider.OpenFilePickerAsync(options);
+        };
     }
 }

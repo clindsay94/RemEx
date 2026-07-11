@@ -36,6 +36,18 @@ public partial class AddProgramViewModel : ObservableObject
     [ObservableProperty]
     private string? _iconBase64;
 
+    [ObservableProperty]
+    private bool _isEditMode;
+
+    /// <summary>The Id of the entry being edited, or null when adding a brand-new entry.</summary>
+    private Guid? _editingId;
+
+    /// <summary>The Order of the entry being edited — preserved across an edit so the card doesn't jump.</summary>
+    private int _editingOrder;
+
+    /// <summary>True while <see cref="LoadForEdit"/> is seeding fields, so it doesn't trigger a re-extract.</summary>
+    private bool _isSeeding;
+
     public Action? OnCloseRequested { get; set; }
     public Func<AppEntry, Task>? OnSaveRequested { get; set; }
     public Func<FilePickerOpenOptions, Task<System.Collections.Generic.IReadOnlyList<IStorageFile>>>? PickFileAsync { get; set; }
@@ -46,6 +58,28 @@ public partial class AddProgramViewModel : ObservableObject
         UpdateValidatedColor();
     }
 
+    /// <summary>
+    /// Seeds this dialog's fields from an existing entry for editing. The entry's Id and Order
+    /// are preserved and re-applied verbatim in <see cref="SaveAsync"/> — the wire protocol
+    /// requires stable Ids across edits. The icon is preserved as-is (not re-extracted) since the
+    /// user didn't change the target path.
+    /// </summary>
+    public void LoadForEdit(AppEntry entry)
+    {
+        _isSeeding = true;
+
+        _editingId = entry.Id;
+        _editingOrder = entry.Order;
+        IsEditMode = true;
+
+        DisplayName = entry.DisplayName;
+        TargetPath = entry.TargetPath;
+        HexColor = entry.HexColor;
+        IconBase64 = entry.IconBase64;
+
+        _isSeeding = false;
+    }
+
     partial void OnHexColorChanged(string value)
     {
         UpdateValidatedColor();
@@ -53,6 +87,8 @@ public partial class AddProgramViewModel : ObservableObject
 
     partial void OnTargetPathChanged(string value)
     {
+        if (_isSeeding) return;
+
         if (!string.IsNullOrWhiteSpace(value) && File.Exists(value))
         {
             if (string.IsNullOrWhiteSpace(DisplayName))
@@ -60,6 +96,16 @@ public partial class AddProgramViewModel : ObservableObject
                 DisplayName = Path.GetFileNameWithoutExtension(value);
             }
             IconBase64 = _iconService.ExtractIconAsBase64(value);
+        }
+    }
+
+    /// <summary>Re-extracts the icon from the current <see cref="TargetPath"/> on demand — available in both add and edit mode.</summary>
+    [RelayCommand]
+    private void RefreshIcon()
+    {
+        if (!string.IsNullOrWhiteSpace(TargetPath) && File.Exists(TargetPath))
+        {
+            IconBase64 = _iconService.ExtractIconAsBase64(TargetPath);
         }
     }
 
@@ -132,17 +178,19 @@ public partial class AddProgramViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(TargetPath) || string.IsNullOrWhiteSpace(DisplayName))
             return;
 
-        var newEntry = new AppEntry(
-            Guid.NewGuid(),
+        // Id + Order are preserved in edit mode — the wire protocol requires stable Ids.
+        var entry = new AppEntry(
+            _editingId ?? Guid.NewGuid(),
             DisplayName,
             TargetPath,
             HexColor,
-            IconBase64 ?? string.Empty
+            IconBase64 ?? string.Empty,
+            _editingOrder
         );
 
         if (OnSaveRequested != null)
         {
-            await OnSaveRequested(newEntry);
+            await OnSaveRequested(entry);
         }
         OnCloseRequested?.Invoke();
     }

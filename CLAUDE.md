@@ -128,10 +128,6 @@ The following areas are **security-critical or tightly coupled between `remex.ag
 - **`RemexMessage` envelope / `protocolVersion`** — Wire format changes must be backward-compatible or require a `protocolVersion` bump AND a coordinated Android + host release. Mismatched versions cause silent deserialization failures.
 - **Elevation + cert ACLs** (`app.manifest`, `CertificateService`, `PairedClientRegistry`) — `remex.agent` MUST start elevated (`requireAdministrator`). An elevated token keeps FullControl over the machine-wide `cert.pfx` / `paired_clients.json` (ACL = LocalSystem + Administrators, inheritance disabled). A non-elevated start gets Administrators as deny-only, fails to read `cert.pfx`, and would brick every SPKI-pinned pairing. Never ship a path that auto-starts non-elevated. `CertificateService` has a brick canary: it logs Critical and refuses to regenerate when an existing `cert.pfx` is unreadable.
 
-### Key Directories in remex.agent
-
-`Views/` and `ViewModels/` follow standard MVVM. `Services/` holds connection, layout, telemetry, and theme services. `Themes/` has the four glassmorphic themes (CyberNOC, Monolith, SolarFlare, BaseDarkGlass). `Localization/` drives live 8-language switching without restart.
-
 ## Versioning
 
 - **.NET projects**: centrally managed in `Directory.Build.props` (`<Version>`)
@@ -238,15 +234,6 @@ Beads is the task tracker for this repo. It replaces TODO lists, markdown task f
 1. `bd create` — file an issue **before** writing any code
 2. `bd update <id> --claim` — claim it when you start
 3. `bd close <id>` — close it when done (before reporting complete)
-
-**Key commands:**
-```bash
-bd ready                           # find unblocked work
-bd show <id>                       # see full issue + dependencies
-bd create --title="..." --description="..." --type=task|bug|feature --priority=0-4
-bd remember "insight"              # persist cross-session knowledge
-bd dolt push                       # sync issues to remote (part of session close)
-```
 
 **Rules:**
 - NEVER use TodoWrite, TaskCreate, or markdown TODO lists.

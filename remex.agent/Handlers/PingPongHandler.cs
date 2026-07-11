@@ -242,6 +242,11 @@ public sealed class PingPongHandler(
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = curRem }, ct);
                         break;
 
+                    case MessageTypes.LauncherSync when message.LauncherEntries is not null:
+                        await launcherStorage.SaveEntriesAsync(message.LauncherEntries);
+                        logger.LogInformation("Launcher list synced from client ({Count} entries).", message.LauncherEntries.Count);
+                        break;
+
                     case MessageTypes.ProcessListRequest:
                         var procs = await processMonitorService.GetProcessesAsync();
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.ProcessListSync, ProcessList = procs }, ct);

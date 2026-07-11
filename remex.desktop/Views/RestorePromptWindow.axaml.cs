@@ -1,0 +1,73 @@
+using System;
+using System.Globalization;
+using System.IO;
+using System.Threading.Tasks;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
+using Remex.Desktop.Services;
+
+namespace Remex.Desktop.Views;
+
+/// <summary>
+/// First-run restore prompt: shown once, on desktop lifetimes only, when
+/// <c>dashboard_layout.json</c> is missing on load but a rolling auto-snapshot exists. Mirrors
+/// <see cref="ConfirmationDialog"/>'s minimal glass-card dialog shape.
+/// </summary>
+public partial class RestorePromptWindow : Window
+{
+    public RestorePromptWindow() : this(DateTime.UtcNow) { }
+
+    public RestorePromptWindow(DateTime snapshotTimestampUtc)
+    {
+        InitializeComponent();
+
+        // OS window title; the Localize markup extension does not apply to Window.Title.
+        Title = LocalizationService.Instance["Restore_PromptTitle"];
+        MessageText.Text = string.Format(
+            CultureInfo.CurrentCulture,
+            LocalizationService.Instance["Restore_PromptMessage"],
+            snapshotTimestampUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture));
+    }
+
+    private void InitializeComponent()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+
+    private void OnSkipClicked(object? sender, RoutedEventArgs e) => Close(false);
+
+    private void OnRestoreClicked(object? sender, RoutedEventArgs e) => Close(true);
+
+    /// <summary>Shows the prompt owned by <paramref name="owner"/>, deriving the displayed date from <paramref name="snapshotPath"/>'s filename (falling back to its last-write time). Returns true if the user chose to restore.</summary>
+    public static async Task<bool> ShowAsync(Window owner, string snapshotPath)
+    {
+        var timestamp = TryParseSnapshotTimestamp(snapshotPath) ?? SafeGetLastWriteTimeUtc(snapshotPath);
+        var dialog = new RestorePromptWindow(timestamp);
+        return await dialog.ShowDialog<bool>(owner);
+    }
+
+    private static DateTime SafeGetLastWriteTimeUtc(string path)
+    {
+        try { return File.GetLastWriteTimeUtc(path); }
+        catch { return DateTime.UtcNow; }
+    }
+
+    private static DateTime? TryParseSnapshotTimestamp(string path)
+    {
+        const string prefix = "autosave-";
+        var name = Path.GetFileNameWithoutExtension(path);
+        if (string.IsNullOrEmpty(name) || !name.StartsWith(prefix, StringComparison.Ordinal))
+            return null;
+
+        var stamp = name[prefix.Length..];
+        return DateTime.TryParseExact(
+            stamp,
+            "yyyyMMdd-HHmmss",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out var parsed)
+            ? parsed
+            : null;
+    }
+}

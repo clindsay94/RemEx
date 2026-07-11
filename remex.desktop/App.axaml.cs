@@ -13,6 +13,8 @@ using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Remex.Desktop.Views;
 using Remex.Desktop.Services.Security;
+using Remex.Desktop.Services.Backup;
+using Remex.Desktop.Services.FileTransfer;
 using Remex.Core.Services;
 using Remex.Core.Services.Network;
 
@@ -53,6 +55,19 @@ public partial class App : Application
         collection.AddSingleton<ILauncherStorageService, LauncherStorageService>();
         collection.AddSingleton<IIconExtractionService, IconExtractionService>();
         collection.AddSingleton<DashboardLayoutService>();
+        collection.AddSingleton<RemexSavefileService>(sp =>
+        {
+            // Host-side dashboard storage resolves the same ProgramData path regardless of
+            // whether it happens to be registered in this container.
+            var hostProfileStorage = sp.GetService<Remex.Core.Services.IDashboardProfileStorageService>()
+                ?? new Remex.Core.Services.DashboardProfileStorageService();
+
+            return new RemexSavefileService(
+                sp.GetRequiredService<DashboardLayoutService>(),
+                sp.GetRequiredService<ILauncherStorageService>(),
+                new FileTransferRootSettingsService(),
+                hostProfileStorage);
+        });
         collection.AddSingleton<ThemeService>();
         collection.AddSingleton<HardwareThemeService>();
         collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
@@ -118,7 +133,17 @@ public partial class App : Application
         try
         {
             var layoutService = Services.GetRequiredService<DashboardLayoutService>();
+            var savefileService = Services.GetRequiredService<RemexSavefileService>();
             var profile = await layoutService.LoadAsync();
+
+            // Silent rolling auto-snapshot: restart the debounce timer every time the dashboard
+            // profile is written to disk (canvas moves, settings changes, theme swaps, etc.).
+            layoutService.ProfileSaved += () => savefileService.NotifyStateChanged();
+
+            // First-run restore: dashboard_layout.json was missing on load (fresh install or a
+            // wiped %LocalAppData%\Remex) but a rolling auto-snapshot exists from a previous
+            // install. Offer to restore from it once the main window exists.
+            var profileFileWasMissing = layoutService.ProfileFileMissingOnLoad;
 
             if (profile != null && !string.IsNullOrWhiteSpace(profile.Language))
             {
@@ -216,6 +241,30 @@ public partial class App : Application
                     singleViewPlatform.MainView = new ShellView { DataContext = viewModel };
                 }
             });
+
+            // First-run restore prompt (desktop lifetimes only): dashboard_layout.json was
+            // missing on load — not merely corrupt — and a rolling auto-snapshot from a previous
+            // install exists. Offer to restore everything from it, no restart required.
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime restoreDesktop
+                && profileFileWasMissing
+                && savefileService.TryGetLatestSnapshotPath() is { } snapshotPath
+                && restoreDesktop.MainWindow is { } mainWindow)
+            {
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    if (!mainWindow.IsVisible)
+                    {
+                        mainWindow.Show();
+                    }
+
+                    var shouldRestore = await RestorePromptWindow.ShowAsync(mainWindow, snapshotPath);
+                    if (shouldRestore)
+                    {
+                        await using var stream = File.OpenRead(snapshotPath);
+                        await savefileService.ImportAsync(stream);
+                    }
+                });
+            }
         }
         catch (Exception ex)
         {

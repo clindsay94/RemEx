@@ -41,6 +41,7 @@
             <FontFamily x:Key="Bungee_Shade">avares://Remex.Desktop/Assets/Fonts/BungeeShade-Regular.ttf#Bungee Shade</FontFamily>
             <FontFamily x:Key="Nabla">avares://Remex.Desktop/Assets/Fonts/Nabla-Regular.ttf#Nabla</FontFamily>
             <FontFamily x:Key="Sixtyfour">avares://Remex.Desktop/Assets/Fonts/Sixtyfour-Regular.ttf#Sixtyfour</FontFamily>
+            <FontFamily x:Key="Orbitron">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 
@@ -170,6 +171,20 @@
         </Style>
         <Style Selector="TextBlock.caption">
             <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        </Style>
+        <Style Selector="TextBlock.page-title">
+            <Setter Property="FontFamily" Value="{StaticResource Orbitron}"/>
+            <Setter Property="FontSize" Value="30"/>
+            <Setter Property="FontWeight" Value="Black"/>
+            <Setter Property="LetterSpacing" Value="2"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+        <Style Selector="TextBlock.page-subtitle">
+            <Setter Property="FontFamily" Value="{StaticResource Orbitron}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="LetterSpacing" Value="4"/>
             <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
         </Style>
 

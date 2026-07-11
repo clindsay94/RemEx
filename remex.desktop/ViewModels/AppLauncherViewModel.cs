@@ -9,6 +9,7 @@ using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Backup;
 using Remex.Core.Messages;
 
 namespace Remex.Desktop.ViewModels;
@@ -19,6 +20,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 
     private readonly ShellViewModel _shell;
     private readonly ILauncherStorageService _storageService;
+    private readonly RemexSavefileService? _savefileService;
     private readonly Action<System.Collections.Generic.List<AppEntry>> _launcherEntriesHandler;
 
     public ConnectionViewModel Connection { get; }
@@ -38,11 +40,14 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
 
     partial void OnLaunchersChanged(ObservableCollection<AppEntry> value) => OnPropertyChanged(nameof(FilteredApps));
 
-    public AppLauncherViewModel(ConnectionViewModel connection, ShellViewModel shell, ILauncherStorageService storageService)
+    public AppLauncherViewModel(ConnectionViewModel connection, ShellViewModel shell, ILauncherStorageService storageService, RemexSavefileService? savefileService = null)
     {
         Connection = connection;
         _shell = shell;
         _storageService = storageService;
+        // Optional: only populated once WP-A's savefile service is registered in DI. Used solely
+        // to nudge the rolling auto-snapshot after a local (unconnected) launcher save.
+        _savefileService = savefileService;
 
         _launcherEntriesHandler = entries =>
         {
@@ -68,6 +73,9 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     public async Task SaveLaunchersAsync()
     {
         await _storageService.SaveEntriesAsync(Launchers);
+        // Single hook point for every local (unconnected) launcher persist path — Remove, Submit
+        // (Android add panel), PersistOrderAsync, and the add/edit dialogs all funnel through here.
+        _savefileService?.NotifyStateChanged();
     }
 
     private static AppEntry NormalizeEntry(AppEntry entry)
@@ -174,6 +182,48 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void NavigateBack() => _shell.NavigateToHome();
 
+    public Action<AppEntry>? OnOpenEditProgramDialogRequested { get; set; }
+
+    [RelayCommand]
+    private void EditApp(AppEntry entry) => OnOpenEditProgramDialogRequested?.Invoke(entry);
+
+    /// <summary>
+    /// Applies an edited entry in place (replace-in-place keeps the card's visual slot), then
+    /// persists — <see cref="PersistOrderAsync"/> sends a <c>LauncherSync</c> when connected, else
+    /// saves to disk.
+    /// </summary>
+    public async Task ApplyEditedEntryAsync(AppEntry updated)
+    {
+        var idx = -1;
+        for (var i = 0; i < Launchers.Count; i++)
+        {
+            if (Launchers[i].Id == updated.Id)
+            {
+                idx = i;
+                break;
+            }
+        }
+
+        if (idx < 0) return;
+
+        Launchers[idx] = updated;
+        OnPropertyChanged(nameof(FilteredApps));
+        await PersistOrderAsync();
+    }
+
+    /// <summary>
+    /// One-shot sort by display name — operates on the full <see cref="Launchers"/> collection
+    /// regardless of any active search filter. No sticky sort mode: a later drag or arrow move
+    /// persists the new manual order on top of this.
+    /// </summary>
+    [RelayCommand]
+    private async Task SortByNameAsync(string direction)
+    {
+        var ordered = LauncherOrdering.SortByName(Launchers, direction);
+        Launchers = new ObservableCollection<AppEntry>(ordered);
+        await PersistOrderAsync();
+    }
+
     [RelayCommand]
     private void OpenAddProgramDialog()
     {
@@ -263,10 +313,10 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     private async Task PersistOrderAsync()
     {
         // Update Order property for all
-        for (int i = 0; i < Launchers.Count; i++)
+        var reindexed = LauncherOrdering.Reindex(Launchers);
+        for (int i = 0; i < reindexed.Count; i++)
         {
-            var old = Launchers[i];
-            Launchers[i] = old with { Order = i };
+            Launchers[i] = reindexed[i];
         }
 
         if (Connection.IsConnected)

@@ -25,9 +25,9 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*" Margin="40" MaxWidth="1100" HorizontalAlignment="Stretch">
+    <Grid RowDefinitions="Auto,*" Margin="40" HorizontalAlignment="Stretch">
         <!-- Header -->
-        <TextBlock Grid.Row="0" Text="{local:Localize Logs_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,24"/>
+        <TextBlock Grid.Row="0" Classes="page-title" Text="{local:Localize Logs_Header}" Margin="0,0,0,24"/>
 
         <!-- Main Card -->
         <Border Grid.Row="1" Classes="glass-card" Padding="24" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">

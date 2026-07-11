@@ -8,17 +8,63 @@
         <converters:Base64ToImageConverter x:Key="Base64ToImageConverter" />
     </UserControl.Resources>
 
+    <UserControl.Styles>
+        <!-- Scoped to this view (via the .launcher-card class) so it doesn't affect glass-card
+             usages elsewhere in the app. The card's BorderBrush is already bound to the entry's
+             HexColor (at 0.3 opacity) in the DataTemplate below; doubling BorderThickness here
+             makes that same tinted border read as brighter/bolder on hover without needing a
+             second per-item color binding declared inside a Style (Style Setters resolve
+             bindings against the UserControl's own x:DataType, not the DataTemplate item, so a
+             HexColor binding here would not resolve). -->
+        <Style Selector="Border.glass-card.launcher-card:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.03)"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+
+        <!-- Bottom action toolbar fades in on card hover. -->
+        <Style Selector="Border.card-actions">
+            <Setter Property="Opacity" Value="0.35"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.glass-card.launcher-card:pointerover Border.card-actions">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+
+        <!-- Drag-to-rearrange visual feedback (classes applied by AppLauncherView.axaml.cs). -->
+        <Style Selector="ContentPresenter.dragging">
+            <Setter Property="RenderTransform" Value="scale(1.05)"/>
+        </Style>
+        <Style Selector="ContentPresenter.drop-target">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CardCornerRadius}"/>
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32" Spacing="24">
 
             <!-- ═══ Header ═══ -->
-            <Grid ColumnDefinitions="*, Auto">
+            <Grid ColumnDefinitions="*, Auto, Auto">
                 <StackPanel Spacing="4" Grid.Column="0">
-                    <TextBlock Text="{local:Localize AppLauncher_Header}" FontFamily="{StaticResource Bungee_Shade}" FontSize="28" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                    <TextBlock Text="{local:Localize AppLauncher_Subheader}" FontFamily="{StaticResource Sixtyfour}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+                    <TextBlock Classes="page-title" Text="{local:Localize AppLauncher_Header}"/>
+                    <TextBlock Classes="page-subtitle" Text="{local:Localize AppLauncher_Subheader}"/>
                 </StackPanel>
 
-                <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="1" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Command="{Binding OpenAddProgramDialogCommand}" />
+                <DropDownButton Grid.Column="1" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Margin="0,0,8,0" Content="{local:Localize AppLauncher_Sort}">
+                    <DropDownButton.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="{local:Localize AppLauncher_SortNameAsc}" Command="{Binding SortByNameCommand}" CommandParameter="asc"/>
+                            <MenuItem Header="{local:Localize AppLauncher_SortNameDesc}" Command="{Binding SortByNameCommand}" CommandParameter="desc"/>
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+
+                <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="2" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Command="{Binding OpenAddProgramDialogCommand}" />
             </Grid>
 
             <!-- ═══ Android Add Panel ═══ -->
@@ -35,7 +81,7 @@
             </Border>
 
             <!-- ═══ Search ═══ -->
-            <TextBox Watermark="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13"/>
+            <TextBox Watermark="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13" ToolTip.Tip="{local:Localize AppLauncher_DragDisabledWhileFiltered}"/>
 
             <!-- ═══ Apps Grid ═══ -->
             <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid">
@@ -46,7 +92,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Classes="glass-card" Margin="8" Padding="0" ClipToBounds="True">
+                        <Border Classes="glass-card launcher-card" Margin="8" Padding="0" ClipToBounds="True">
                             <Border.Background>
                                 <SolidColorBrush Color="{Binding HexColor}" Opacity="0.1" />
                             </Border.Background>
@@ -56,22 +102,24 @@
 
                             <Grid RowDefinitions="*, Auto">
                                 <!-- Main Launch Button (Top Area) -->
-                                <Button Grid.Row="0" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
+                                <Button Grid.Row="0" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
                                     <Grid RowDefinitions="*, Auto" HorizontalAlignment="Center">
-                                        <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="56" Height="56" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="HighQuality" />
 
                                         <TextBlock Grid.Row="1" Text="{Binding DisplayName}" HorizontalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,8,0,0" />
                                     </Grid>
                                 </Button>
 
                                 <!-- Action Toolbar (Bottom Area) -->
-                                <Border Grid.Row="1" Background="{DynamicResource GlassOverlayBrush}" Padding="4,2">
-                                    <Grid ColumnDefinitions="*, *, *">
+                                <Border Grid.Row="1" Classes="card-actions" Background="{DynamicResource GlassOverlayBrush}" Padding="4,2">
+                                    <Grid ColumnDefinitions="*, *, *, *">
                                         <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" CommandParameter="{Binding}" />
 
                                         <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveRight}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" CommandParameter="{Binding}" />
 
-                                        <Button Grid.Column="2" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="2" Content="✎" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="14" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Edit}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).EditAppCommand}" CommandParameter="{Binding}" />
+
+                                        <Button Grid.Column="3" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" />
                                     </Grid>
                                 </Border>
                             </Grid>

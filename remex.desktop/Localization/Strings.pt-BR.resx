@@ -179,21 +179,6 @@
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Selecione sensores para exibir na tela inicial</value>
   </data>
-  <data name="Settings_ServiceSection" xml:space="preserve">
-    <value>SERVIÇO WINDOWS</value>
-  </data>
-  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
-    <value>WINDOWS SERVICE</value>
-  </data>
-  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX BACKGROUND SERVICE</value>
-  </data>
-  <data name="Settings_ServiceLogin" xml:space="preserve">
-    <value>LOGIN DO SERVIÇO</value>
-  </data>
-  <data name="Settings_ServiceDesc" xml:space="preserve">
-    <value>O serviço roda em segundo plano para que o RemEx aceite comandos remotos sem o app aberto.</value>
-  </data>
   <data name="Settings_AccountFormat" xml:space="preserve">
     <value>Conta: {0}</value>
   </data>
@@ -625,56 +610,8 @@
   <data name="Service_PasswordRequired" xml:space="preserve">
     <value>Senha é obrigatória.</value>
   </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Publicando Remex.PC…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Publicação falhou — veja o log.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Criando serviço…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Falha ao criar serviço — veja o log.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Configurando login…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Falha ao configurar credenciais — veja o log.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Concedendo direitos de logon…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Parando PC incorporado…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Iniciando serviço…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Instalado &amp; iniciado.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Instalado — início pode ter falhado, veja o log.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Instalando serviço systemd…</value>
-  </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Falha na instalação do serviço.</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Removendo serviço systemd…</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Excluindo serviço…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Aplicando credenciais…</value>
   </data>
   <data name="Service_HostUnavailable" xml:space="preserve">
     <value>Capacidades do PC indisponíveis</value>
@@ -684,18 +621,6 @@
   </data>
   <data name="Service_Checking" xml:space="preserve">
     <value>Verificando…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Localizando Remex.PC…</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.PC.exe não encontrado.</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Iniciado.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Falha ao iniciar — veja o log.</value>
   </data>
   <data name="Service_StoppedMsg" xml:space="preserve">
     <value>Parado.</value>
@@ -876,38 +801,6 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Para acesso contínuo (mesmo sem estar logado), você pode instalar o PC como um serviço do Windows ou PC do Linux. Isso permite que seu telefone se conecte a qualquer momento.</value>
   </data>
 
-  <data name="Tutorial_P2_Title" xml:space="preserve">
-    <value>Executar como um Serviço do Windows</value>
-  </data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve">
-    <value>Para manter o RemEx funcionando 24/7 sem estar logado, instale-o como um serviço do Windows:</value>
-  </data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
-  </data>
-  <data name="Tutorial_P2_Note" xml:space="preserve">
-    <value>O serviço é executado em sua conta de usuário para que possa acessar sua sessão de desktop para captura de tela e inicialização de aplicativos.</value>
-  </data>
-
-  <data name="Tutorial_P3_Title" xml:space="preserve">
-    <value>Configuração do Serviço Linux</value>
-  </data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>No Linux, o RemEx PC pode ser executado como um serviço systemd para inicialização automática.</value>
-  </data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux PC archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-PC folder.
-4. Use systemctl --user status remex-PC to verify it is running.</value>
-  </data>
-  <data name="Tutorial_P3_Link" xml:space="preserve">
-    <value>Para instruções detalhadas, consulte docs/linux-service-setup.md no GitHub</value>
-  </data>
-
   <data name="Tutorial_P4_Title" xml:space="preserve">
     <value>Integração com HWInfo (Recomendado)</value>
   </data>
@@ -1033,18 +926,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Shell_FineTuning" xml:space="preserve">
     <value>AJUSTE FINO</value>
-  </data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve">
-    <value>Caminho do Binário do PC</value>
-  </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Caminho para Remex.PC.exe (deixe em branco para detecção automática)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Caminho para Remex.PC.exe. Deixe em branco para detecção automática (mesma pasta, pastas irmãs, etc.)</value>
-  </data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve">
-    <value>Detectar automaticamente (ou definir caminho personalizado)</value>
   </data>
   <data name="Shell_HostWatermark" xml:space="preserve">
     <value>ws://PC:port/ws</value>
@@ -1635,9 +1516,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
     <value>📱 App Android → conecta a → 🖥️ PC do PC (esta máquina)</value>
   </data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve">
-    <value>Para instruções detalhadas, opções de configuração e solução de problemas, consulte o guia completo:</value>
-  </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Pular o tutorial — você pode repeti-lo a partir das Configurações</value>
   </data>
@@ -1846,7 +1724,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>What do I need to run on my PC?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
-    <value>You need either Remex.Client.Desktop or Remex.PC running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
+    <value>Você precisa do RemEx em execução no seu PC — é um único aplicativo (remex.agent) que roda elevado na sua sessão conectada e inicia automaticamente ao fazer login. Baixe o instalador mais recente na página de Releases do GitHub, execute-o, e ele estará pronto antes mesmo de você parear.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
     <value>How do I pair my phone or second PC?</value>
@@ -1858,19 +1736,19 @@ Linux: ip addr  or  hostname -I</value>
     <value>How do I find my PC's IP address?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. You can also see the IP directly in the Remex.Client.Desktop window.</value>
+    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. Você também pode ver o IP diretamente na janela do RemEx no seu PC.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Ensure Remex.PC is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Certifique-se de que o RemEx está em execução no seu PC.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. You can see the active port in the desktop client's window.</value>
+    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. Você pode ver a porta ativa na janela do RemEx no seu PC.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>Can I connect over the internet?</value>
@@ -2012,9 +1890,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Status_InvalidQrData" xml:space="preserve">
     <value>Dados do código QR inválidos</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Selecionar Remex.PC.exe</value>
   </data>
   <data name="Settings_ExecutableFileFilter" xml:space="preserve">
     <value>Executável</value>
@@ -2373,6 +2248,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
     <value>Abrir Paleta de Comandos (Ctrl+Shift+P)</value>
   </data>
+  <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
+    <value>Alternar barra lateral</value>
+  </data>
   <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
     <value>Personalizar o arredondamento de canto padrão dos painéis e cartões gerais do painel</value>
   </data>
@@ -2543,5 +2421,65 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
     <value>Aviso de segurança: enquanto isso estiver ativado, qualquer pessoa com um dispositivo pareado pode ver e controlar este PC sem desbloqueá-lo no teclado. Ative somente em um PC confiável.</value>
+  </data>
+  <data name="Settings_BackupSection" xml:space="preserve">
+    <value>BACKUP E RESTAURAÇÃO</value>
+  </data>
+  <data name="Settings_BackupDescription" xml:space="preserve">
+    <value>Exporte tudo que o RemEx lembra — o layout do seu painel, aplicativos do launcher, pastas compartilhadas e tema — em um único arquivo, ou importe um para restaurá-lo. Pareamentos e certificados nunca são incluídos; você precisará parear o telefone novamente após uma restauração.</value>
+  </data>
+  <data name="Settings_ExportButton" xml:space="preserve">
+    <value>Exportar configurações</value>
+  </data>
+  <data name="Settings_ImportButton" xml:space="preserve">
+    <value>Importar configurações</value>
+  </data>
+  <data name="Settings_ExportDone" xml:space="preserve">
+    <value>Configurações exportadas.</value>
+  </data>
+  <data name="Settings_ImportDone" xml:space="preserve">
+    <value>Importação concluída: {0} seção(ões) restaurada(s), {1} aviso(s).</value>
+  </data>
+  <data name="Settings_ImportNewerVersion" xml:space="preserve">
+    <value>Este arquivo de backup foi criado por uma versão mais recente do RemEx e não pode ser importado aqui. Atualize o RemEx e tente novamente.</value>
+  </data>
+  <data name="Settings_ImportInvalidFile" xml:space="preserve">
+    <value>Esse arquivo não é um arquivo de backup válido do RemEx.</value>
+  </data>
+  <data name="Settings_SavefileType" xml:space="preserve">
+    <value>Arquivo de backup do RemEx</value>
+  </data>
+  <data name="Restore_PromptTitle" xml:space="preserve">
+    <value>Restaurar configurações anteriores?</value>
+  </data>
+  <data name="Restore_PromptMessage" xml:space="preserve">
+    <value>Encontramos um backup automático de {0}. Deseja restaurar o layout do painel, os aplicativos do launcher e as configurações a partir dele?</value>
+  </data>
+  <data name="Restore_Accept" xml:space="preserve">
+    <value>Restaurar</value>
+  </data>
+  <data name="Restore_Skip" xml:space="preserve">
+    <value>Começar do zero</value>
+  </data>
+  <data name="AppLauncher_Sort" xml:space="preserve">
+    <value>Ordenar</value>
+  </data>
+  <data name="AppLauncher_SortNameAsc" xml:space="preserve">
+    <value>Nome (A → Z)</value>
+  </data>
+  <data name="AppLauncher_SortNameDesc" xml:space="preserve">
+    <value>Nome (Z → A)</value>
+  </data>
+  <data name="AppLauncher_Edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="AppLauncher_DragDisabledWhileFiltered" xml:space="preserve">
+    <value>Arrastar para reordenar está desativado durante a busca. Use os botões de seta em vez disso.</value>
+  </data>
+  <data name="AddProgram_EditTitle" xml:space="preserve">
+    <value>Editar programa</value>
+  </data>
+  <data name="AddProgram_RefreshIcon" xml:space="preserve">
+    <value>Atualizar ícone</value>
   </data>
 </root>

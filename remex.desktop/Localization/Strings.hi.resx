@@ -179,21 +179,6 @@
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>होम स्क्रीन पर प्रदर्शित करने के लिए सेंसर चुनें</value>
   </data>
-  <data name="Settings_ServiceSection" xml:space="preserve">
-    <value>विंडोज़ सेवा</value>
-  </data>
-  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
-    <value>WINDOWS SERVICE</value>
-  </data>
-  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX BACKGROUND SERVICE</value>
-  </data>
-  <data name="Settings_ServiceLogin" xml:space="preserve">
-    <value>सेवा लॉगिन</value>
-  </data>
-  <data name="Settings_ServiceDesc" xml:space="preserve">
-    <value>सेवा पृष्ठभूमि में चलती है ताकि RemEx ऐप खुले बिना रिमोट कमांड स्वीकार कर सके।</value>
-  </data>
   <data name="Settings_AccountFormat" xml:space="preserve">
     <value>खाता: {0}</value>
   </data>
@@ -625,56 +610,8 @@
   <data name="Service_PasswordRequired" xml:space="preserve">
     <value>पासवर्ड आवश्यक है।</value>
   </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Remex.PC प्रकाशित हो रहा है…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>प्रकाशन विफल — लॉग देखें।</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>सेवा बना रहे हैं…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>सेवा बनाने में विफल — लॉग देखें।</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>लॉगिन कॉन्फ़िगर हो रहा है…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>क्रेडेंशियल कॉन्फ़िगर करने में विफल — लॉग देखें।</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>लॉगऑन अधिकार दे रहे हैं…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>एम्बेडेड होस्ट बंद हो रहा है…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>सेवा शुरू हो रही है…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>इंस्टॉल &amp; शुरू हो गया।</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>इंस्टॉल — शुरू विफल हो सकता है, लॉग देखें।</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Installing systemd service…</value>
-  </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Service installation failed.</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Removing systemd service…</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>सेवा हटा रहे हैं…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>क्रेडेंशियल लागू हो रहे हैं…</value>
   </data>
   <data name="Service_HostUnavailable" xml:space="preserve">
     <value>होस्ट क्षमताएं अनुपलब्ध</value>
@@ -684,18 +621,6 @@
   </data>
   <data name="Service_Checking" xml:space="preserve">
     <value>जांच की जा रही है…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Remex.PC खोजा जा रहा है…</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.PC.exe नहीं मिला।</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>शुरू हो गया।</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>शुरू करना विफल रहा — लॉग देखें。</value>
   </data>
   <data name="Service_StoppedMsg" xml:space="preserve">
     <value>रुक गया।</value>
@@ -876,38 +801,6 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>हमेशा चालू (लॉग इन न होने पर भी) एक्सेस के लिए, आप होस्ट को विंडोज़ सेवा या लिनक्स डेमन के रूप में इंस्टॉल कर सकते हैं। यह आपके फोन को किसी भी समय कनेक्ट करने देता है।</value>
   </data>
 
-  <data name="Tutorial_P2_Title" xml:space="preserve">
-    <value>विंडोज़ सेवा के रूप में चलाएं</value>
-  </data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve">
-    <value>लॉग इन किए बिना RemEx को 24/7 चालू रखने के लिए, इसे विंडोज़ सेवा के रूप में इंस्टॉल करें:</value>
-  </data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
-  </data>
-  <data name="Tutorial_P2_Note" xml:space="preserve">
-    <value>सेवा आपके उपयोगकर्ता खाते के तहत चलती है ताकि यह स्क्रीन कैप्चर और ऐप लॉन्चिंग के लिए आपके डेस्कटॉप सत्र तक पहुंच सके。</value>
-  </data>
-
-  <data name="Tutorial_P3_Title" xml:space="preserve">
-    <value>लिनक्स सेवा सेटअप</value>
-  </data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>लिनक्स पर, स्वचालित स्टार्टअप के लिए RemEx होस्ट सिस्टमडी सेवा के रूप में चल सकता है。</value>
-  </data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux PC archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-PC folder.
-4. Use systemctl --user status remex-PC to verify it is running.</value>
-  </data>
-  <data name="Tutorial_P3_Link" xml:space="preserve">
-    <value>विस्तृत निर्देशों के लिए, GitHub पर docs/linux-service-setup.md देखें</value>
-  </data>
-
   <data name="Tutorial_P4_Title" xml:space="preserve">
     <value>HWInfo एकीकरण (अनुशंसित)</value>
   </data>
@@ -1033,18 +926,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Shell_FineTuning" xml:space="preserve">
     <value>फाइन ट्यूनिंग</value>
-  </data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve">
-    <value>होस्ट बाइनरी पथ</value>
-  </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Remex.PC.exe का पथ (स्वतः पहचान के लिए खाली छोड़ दें)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Remex.PC.exe का पथ। स्वतः पहचान (समान फ़ोल्डर, सिबलिंग फ़ोल्डर, आदि) के लिए खाली छोड़ दें।</value>
-  </data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve">
-    <value>स्वतः पहचानें (या कस्टम पथ सेट करें)</value>
   </data>
   <data name="Shell_HostWatermark" xml:space="preserve">
     <value>ws://PC:port/ws</value>
@@ -1635,9 +1516,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tutorial_P1_Diagram" xml:space="preserve">
     <value>📱 Android ऐप → कनेक्ट होता है → 🖥️ पीसी होस्ट (यह मशीन) से</value>
   </data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve">
-    <value>विस्तृत निर्देशों, कॉन्फ़िगरेशन विकल्पों और समस्या निवारण के लिए, पूरी गाइड देखें:</value>
-  </data>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>ट्यूटोरियल छोड़ें — आप इसे सेटिंग्स से फिर से चला सकते हैं</value>
   </data>
@@ -1846,7 +1724,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>What do I need to run on my PC?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
-    <value>You need either Remex.Client.Desktop or Remex.PC running on your PC. Both are self-contained (all runtimes included) — just extract the publish folder and run. Download from the GitHub releases page.</value>
+    <value>आपके पीसी पर RemEx चलना आवश्यक है — यह एक ही ऐप (remex.agent) है जो आपके साइन-इन सत्र में एलिवेटेड मोड में चलता है और साइन-इन पर स्वतः शुरू हो जाता है। GitHub Releases से नवीनतम इंस्टॉलर डाउनलोड करें, उसे चलाएं, और पेयर करने से पहले यह तैयार हो जाएगा।</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
     <value>How do I pair my phone or second PC?</value>
@@ -1858,19 +1736,19 @@ Linux: ip addr  or  hostname -I</value>
     <value>How do I find my PC's IP address?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. You can also see the IP directly in the Remex.Client.Desktop window.</value>
+    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. आप अपने पीसी पर RemEx विंडो में सीधे IP भी देख सकते हैं।</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Ensure Remex.PC is running.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. सुनिश्चित करें कि RemEx आपके पीसी पर चल रहा है।\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. You can see the active port in the desktop client's window.</value>
+    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. आप अपने पीसी पर RemEx विंडो में सक्रिय पोर्ट देख सकते हैं।</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>Can I connect over the internet?</value>
@@ -2012,9 +1890,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Status_InvalidQrData" xml:space="preserve">
     <value>अमान्य क्यूआर कोड डेटा</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Remex.PC.exe चुनें</value>
   </data>
   <data name="Settings_ExecutableFileFilter" xml:space="preserve">
     <value>निष्पादन योग्य</value>
@@ -2373,6 +2248,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_OpenCommandPaletteTooltip" xml:space="preserve">
     <value>कमांड पैलेट खोलें (Ctrl+Shift+P)</value>
   </data>
+  <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
+    <value>साइडबार टॉगल करें</value>
+  </data>
   <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
     <value>सामान्य डैशबोर्ड कार्ड और पैनल के लिए डिफ़ॉल्ट बॉर्डर कॉर्नर गोलाई कस्टमाइज़ करें</value>
   </data>
@@ -2543,5 +2421,65 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_KeepSessionUnlockedWarning" xml:space="preserve">
     <value>सुरक्षा चेतावनी: जब यह चालू है, युग्मित डिवाइस वाला कोई भी व्यक्ति इस पीसी को कीबोर्ड से अनलॉक किए बिना देख और नियंत्रित कर सकता है। केवल विश्वसनीय पीसी पर ही इसे चालू करें।</value>
+  </data>
+  <data name="Settings_BackupSection" xml:space="preserve">
+    <value>बैकअप और पुनर्स्थापना</value>
+  </data>
+  <data name="Settings_BackupDescription" xml:space="preserve">
+    <value>RemEx जो कुछ भी याद रखता है — आपका कैनवास लेआउट, लॉन्चर ऐप्स, साझा फ़ोल्डर और थीम — उसे एक ही फ़ाइल में निर्यात करें, या उसे पुनर्स्थापित करने के लिए किसी फ़ाइल को आयात करें। पेयरिंग और प्रमाणपत्र कभी शामिल नहीं होते; पुनर्स्थापना के बाद आपको अपने फ़ोन को फिर से पेयर करना होगा।</value>
+  </data>
+  <data name="Settings_ExportButton" xml:space="preserve">
+    <value>सेटिंग्स निर्यात करें</value>
+  </data>
+  <data name="Settings_ImportButton" xml:space="preserve">
+    <value>सेटिंग्स आयात करें</value>
+  </data>
+  <data name="Settings_ExportDone" xml:space="preserve">
+    <value>सेटिंग्स निर्यात की गईं।</value>
+  </data>
+  <data name="Settings_ImportDone" xml:space="preserve">
+    <value>आयात पूर्ण: {0} सेक्शन पुनर्स्थापित, {1} चेतावनी।</value>
+  </data>
+  <data name="Settings_ImportNewerVersion" xml:space="preserve">
+    <value>यह सेवफ़ाइल RemEx के नए संस्करण द्वारा बनाई गई थी और इसे यहाँ आयात नहीं किया जा सकता। RemEx को अपडेट करें और फिर से प्रयास करें।</value>
+  </data>
+  <data name="Settings_ImportInvalidFile" xml:space="preserve">
+    <value>वह फ़ाइल एक मान्य RemEx सेवफ़ाइल नहीं है।</value>
+  </data>
+  <data name="Settings_SavefileType" xml:space="preserve">
+    <value>RemEx सेवफ़ाइल</value>
+  </data>
+  <data name="Restore_PromptTitle" xml:space="preserve">
+    <value>पिछली सेटिंग्स पुनर्स्थापित करें?</value>
+  </data>
+  <data name="Restore_PromptMessage" xml:space="preserve">
+    <value>हमें {0} की एक स्वचालित बैकअप मिली। क्या आप अपना कैनवास लेआउट, लॉन्चर ऐप्स और सेटिंग्स इससे पुनर्स्थापित करना चाहेंगे?</value>
+  </data>
+  <data name="Restore_Accept" xml:space="preserve">
+    <value>पुनर्स्थापित करें</value>
+  </data>
+  <data name="Restore_Skip" xml:space="preserve">
+    <value>नए सिरे से शुरू करें</value>
+  </data>
+  <data name="AppLauncher_Sort" xml:space="preserve">
+    <value>क्रमबद्ध करें</value>
+  </data>
+  <data name="AppLauncher_SortNameAsc" xml:space="preserve">
+    <value>नाम (A → Z)</value>
+  </data>
+  <data name="AppLauncher_SortNameDesc" xml:space="preserve">
+    <value>नाम (Z → A)</value>
+  </data>
+  <data name="AppLauncher_Edit" xml:space="preserve">
+    <value>संपादित करें</value>
+  </data>
+  <data name="AppLauncher_DragDisabledWhileFiltered" xml:space="preserve">
+    <value>खोज सक्रिय होने पर क्रम बदलने के लिए खींचना अक्षम है। इसके बजाय तीर बटनों का उपयोग करें।</value>
+  </data>
+  <data name="AddProgram_EditTitle" xml:space="preserve">
+    <value>प्रोग्राम संपादित करें</value>
+  </data>
+  <data name="AddProgram_RefreshIcon" xml:space="preserve">
+    <value>आइकन रीफ़्रेश करें</value>
   </data>
 </root>
