@@ -126,4 +126,16 @@ public record DesktopMeta
     /// </summary>
     [JsonPropertyName("stylusCapabilities")]
     public DesktopStylusCapabilities StylusCapabilities { get; init; }
+
+    /// <summary>
+    /// Actual encoded frame width after capture scale + even alignment (CaptureScaling.ScaledEven).
+    /// Unlike PixelWidth, this reflects the true output size of the active codec's encoder — use it
+    /// to size the client's decode surface. 0 on hosts predating this field — fall back to PixelWidth.
+    /// </summary>
+    [JsonPropertyName("encodedWidth")]
+    public int EncodedWidth { get; init; }
+
+    /// <summary>Actual encoded frame height after capture scale + even alignment. 0 on hosts predating this field — fall back to PixelHeight.</summary>
+    [JsonPropertyName("encodedHeight")]
+    public int EncodedHeight { get; init; }
 }

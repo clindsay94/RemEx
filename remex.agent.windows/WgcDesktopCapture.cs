@@ -86,6 +86,9 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
     private static readonly Guid IID_IDXGIDevice = new("54ec77fa-1377-44e6-8c32-88fd5f44c84c");
     private static readonly Guid IID_ID3D11Texture2D = new("6f15aaf2-d208-4e89-9ab4-489535d34f9c");
     private static readonly Guid IID_IGraphicsCaptureSession3 = new("f2cdd966-22ae-5ea1-9596-3a289344c3be");
+    // IGraphicsCaptureSession2 carries put_IsCursorCaptureEnabled — used as a COM fallback when the
+    // WinRT projection's IsCursorCaptureEnabled setter throws (older projection versions).
+    private static readonly Guid IID_IGraphicsCaptureSession2 = new("2C39AE40-7D2E-5044-804E-8B6799D4CF9E");
     // IGraphicsCaptureItem interface IID — the riid IGraphicsCaptureItemInterop::CreateForMonitor expects
     // for the returned object. NOT the GraphicsCaptureItem runtimeclass GUID (that yields E_NOINTERFACE). (RemEx-hvqv)
     private static readonly Guid IID_IGraphicsCaptureItem = new("79c3f95b-31f7-4ec2-a464-632ef5d30760");
@@ -391,8 +394,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
             _winrtDevice, DirectXPixelFormat.B8G8R8A8UIntNormalized, 2, size);
         _session = _framePool.CreateCaptureSession(_item);
 
-        try { _session.IsCursorCaptureEnabled = false; }
-        catch (Exception ex) { _logger.LogDebug("WGC: IsCursorCaptureEnabled unsupported ({Msg}).", ex.Message); }
+        bool cursorCaptureDisabled = TrySuppressCursorCapture(_session);
 
         // IsBorderRequired is not in the 19041 projection (it shipped in a later Universal API contract),
         // so set it through the IGraphicsCaptureSession3 COM interface, guarded for older OS where the QI
@@ -409,8 +411,59 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
             return false;
         }
 
-        _logger.LogInformation("WGC capture started for {Device} ({W}x{H}).", deviceName, Width, Height);
+        _logger.LogInformation(
+            "WGC capture started for {Device} ({W}x{H}); cursorCaptureDisabled={Flag}.",
+            deviceName, Width, Height, cursorCaptureDisabled);
         return true;
+    }
+
+    // Disables WGC's own cursor compositing so the client-side rendered cursor (position + shape
+    // streamed separately) doesn't end up doubled under the host's baked-in OS cursor. Tries the
+    // WinRT projection first, then falls back to the IGraphicsCaptureSession2 COM interface for
+    // projection versions where the setter throws NotImplementedException.
+    private bool TrySuppressCursorCapture(GraphicsCaptureSession session)
+    {
+        try
+        {
+            session.IsCursorCaptureEnabled = false;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("WGC: IsCursorCaptureEnabled projection setter failed ({Msg}); trying COM fallback.", ex.Message);
+        }
+
+        IntPtr unknown = IntPtr.Zero;
+        IntPtr session2 = IntPtr.Zero;
+        try
+        {
+            unknown = Marshal.GetIUnknownForObject(session);
+            int hr = QueryInterface(unknown, IID_IGraphicsCaptureSession2, out session2);
+            if (hr != S_OK || session2 == IntPtr.Zero)
+            {
+                _logger.LogWarning(
+                    "WGC: could not disable cursor capture (QueryInterface hr=0x{Hr:X8}); the OS cursor will be baked into captured frames and may appear doubled on the client.",
+                    hr);
+                return false;
+            }
+
+            // IGraphicsCaptureSession2: get_IsCursorCaptureEnabled = 6, put_IsCursorCaptureEnabled = 7
+            // (3 IUnknown + 3 IInspectable slots precede the interface's own members).
+            GetSlot<PutBoolFn>(session2, 7)(session2, 0);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "WGC: could not disable cursor capture ({Msg}); the OS cursor will be baked into captured frames and may appear doubled on the client.",
+                ex.Message);
+            return false;
+        }
+        finally
+        {
+            Release(ref session2);
+            Release(ref unknown);
+        }
     }
 
     // IGraphicsCaptureSession3::put_IsBorderRequired — vtable slot 6 (after 3 IInspectable + 3 IUnknown).

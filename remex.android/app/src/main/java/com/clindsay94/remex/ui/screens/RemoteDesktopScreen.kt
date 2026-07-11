@@ -1961,7 +1961,12 @@ fun RemoteDesktopScreenContent(
                                 val safeFrame = currentBitmap
 
                                 if (activeCodec == "H264" || (safeFrame != null && !safeFrame.isRecycled)) {
-                                        if (activeCodec == "H264") {
+                                        // Gate first surface creation on desktopMetaReady: without this, the surface can be
+                                        // created at the 1920x1080 placeholder (streamPixelWidth/Height defaults) before the
+                                        // host's real desktop_meta arrives, freezing the SurfaceView's buffer->view scale at
+                                        // the wrong geometry (see the freeze note below) until an unrelated key() input
+                                        // (e.g. fullscreen toggle) happens to force a rebuild. (Phase 2, RemEx-bqoe)
+                                        if (activeCodec == "H264" && desktopMetaReady) {
                                                 // Rebuild the SurfaceView when the video box (imageSize) settles, not only on a
                                                 // resolution change. A SurfaceView's content sublayer freezes its buffer->view
                                                 // SCALE at creation: if the surface is first created while imageSize is

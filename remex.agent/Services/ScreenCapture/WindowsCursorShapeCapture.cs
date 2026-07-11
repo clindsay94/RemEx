@@ -69,6 +69,27 @@ internal static class WindowsCursorShapeCapture
         }
     }
 
+    /// <summary>
+    /// Cheap poll of the current cursor's handle, without the bitmap-rendering cost of
+    /// <see cref="TryCaptureCurrentShape"/>. Used to detect shape *changes* fast (every 90Hz
+    /// position tick) without paying the full capture cost on every tick — the caller only
+    /// invokes the real capture when the handle actually differs from the last seen one.
+    /// </summary>
+    public static bool TryGetCursorHandle(out IntPtr handle)
+    {
+        var cursorInfo = new CURSORINFO { cbSize = Marshal.SizeOf<CURSORINFO>() };
+        if (!GetCursorInfo(ref cursorInfo) ||
+            (cursorInfo.flags & CursorShowing) == 0 ||
+            cursorInfo.hCursor == IntPtr.Zero)
+        {
+            handle = IntPtr.Zero;
+            return false;
+        }
+
+        handle = cursorInfo.hCursor;
+        return true;
+    }
+
     private static int GetCursorMetric(IntPtr colorBitmapHandle, int fallbackMetric)
     {
         if (colorBitmapHandle != IntPtr.Zero &&

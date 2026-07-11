@@ -39,4 +39,15 @@ public record DesktopStreamDescriptor
     /// <summary>Actual pixel height of the captured frame.</summary>
     [JsonPropertyName("pixelHeight")]
     public int PixelHeight { get; init; }
+
+    /// <summary>
+    /// Actual encoded frame width after capture scale + even alignment (CaptureScaling.ScaledEven).
+    /// 0 on hosts predating this field — fall back to PixelWidth.
+    /// </summary>
+    [JsonPropertyName("encodedWidth")]
+    public int EncodedWidth { get; init; }
+
+    /// <summary>Actual encoded frame height after capture scale + even alignment. 0 on hosts predating this field — fall back to PixelHeight.</summary>
+    [JsonPropertyName("encodedHeight")]
+    public int EncodedHeight { get; init; }
 }

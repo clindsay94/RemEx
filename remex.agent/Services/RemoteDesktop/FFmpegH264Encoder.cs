@@ -23,11 +23,29 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     private Channel<byte[]>? _inputChannel;
     private Task? _writerTask;
 
-    // Bounded, drop-oldest output of encoded Annex-B access units. Replaces an unbounded queue so a
-    // stalled/slow sender can't grow memory without limit; oldest frames are evicted first because a
-    // newer frame supersedes them for a real-time stream. (RemEx-fs5)
+    // Bounded output of encoded Annex-B access units. Replaces an unbounded queue so a stalled/slow
+    // sender can't grow memory without limit. FullMode is DropWrite (not DropOldest, RemEx-3u6o):
+    // silently evicting an already-queued access unit mid-GOP corrupts the reference chain for every
+    // frame after it — the decoder macroblocks until the next IDR with no way to detect the gap. With
+    // DropWrite the eviction is detectable (TryWrite returns false), so QueueFrame can drain the stale
+    // backlog and enter drop-until-IDR mode instead of forwarding a broken chain. (RemEx-fs5)
     private const int OutputChannelCapacity = 8;
     private Channel<byte[]>? _encodedFrames;
+
+    // Drop-until-IDR state (RemEx-3u6o): once the encoded-output channel overflows, forwarding more
+    // P-frames referencing the frames that got evicted would just macroblock — so QueueFrame drops
+    // everything until the next independently-decodable access unit (IDR) instead.
+    private bool _droppingUntilIdr;
+    private long _droppedAccessUnits;
+    private long _lastDropLogMs;
+
+    // Accepted-input-frame counter for AdaptiveScaleController (Phase 5, RemEx-eo0f): incremented
+    // whenever EncodeFrame's TryWrite onto the (drop-write) input channel actually succeeds, so a
+    // sampled delta over an evaluation window is a direct measure of achieved encode FPS.
+    private long _acceptedInputFrames;
+
+    public long AcceptedInputFrameCount => Interlocked.Read(ref _acceptedInputFrames);
+    public long DroppedAccessUnitCount => Interlocked.Read(ref _droppedAccessUnits);
 
     // Hard cap on the Annex-B reassembly accumulator. A healthy stream cuts an access unit at every
     // AUD (well under this). If we ever buffer this much WITHOUT seeing an AUD start code, the input
@@ -170,7 +188,10 @@ public sealed class FFmpegH264Encoder : IH264Encoder
 
             if (TryStartFFmpeg(codec, width, height, fps, qp))
             {
-                _logger.LogInformation("FFmpeg H.264 encoder successfully initialized using codec: {Codec}", codec);
+                long maxRate = ComputeMaxRateBps(width, height, fps, qp);
+                _logger.LogInformation(
+                    "FFmpeg H.264 encoder successfully initialized using codec: {Codec} (qp/cq={Qp}, maxrate={MaxRate}bps, bufsize={BufSize}bps, gop={Gop}).",
+                    codec, qp, maxRate, ComputeBufSizeBps(maxRate), ComputeGop(fps));
                 ActiveCodecName = codec;
                 _initialized = true;
                 return true;
@@ -180,6 +201,26 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         _logger.LogError("Failed to start FFmpeg with any H.264 encoder codec.");
         return false;
     }
+
+    /// <summary>
+    /// Bits-per-pixel-per-frame budget derived from QP: QP16 (sharpest) ≈ 0.16, scaling linearly
+    /// down to a 0.02 floor at QP38+. Multiplied by resolution × fps to get a bitrate ceiling that
+    /// tracks how much motion/detail the stream can actually carry, instead of the unbounded
+    /// constant-QP bitrate that used to spike with FPS×motion and overflow the output channel.
+    /// </summary>
+    internal static long ComputeMaxRateBps(int width, int height, int fps, int qp)
+    {
+        double bpp = 0.16 - (Math.Clamp(qp, 16, 45) - 16) * (0.11 / 22.0);
+        bpp = Math.Max(bpp, 0.02);
+        return Math.Clamp((long)((double)width * height * fps * bpp), 2_000_000L, 60_000_000L);
+    }
+
+    /// <summary>VBV buffer size: half the max-rate window (~0.5s), the standard low-latency VBV sizing.</summary>
+    internal static long ComputeBufSizeBps(long maxRate) => maxRate / 2;
+
+    /// <summary>GOP length scales with fps so a keyframe-less encoder never leaves a desynced
+    /// decoder waiting more than ~1s to self-heal, while still amortizing IDR cost at high fps.</summary>
+    internal static int ComputeGop(int fps) => Math.Clamp(fps, 30, 120);
 
     /// <summary>
     /// Builds the full ffmpeg argument string for <paramref name="codec"/>. Shared by the real
@@ -194,7 +235,17 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         // Input: Raw BGRA frames from stdin
         argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {width}x{height} -r {fps} -i - -an ");
 
-        // Codec & Quality Optimization. qp drives constant-QP rate control (lower = better quality).
+        // VBV-capped rate control budget, shared across every codec below. Replaces the previous
+        // unbounded constant-QP scheme (no -maxrate/-bufsize anywhere), whose bitrate scaled freely
+        // with FPS×motion and overran the bounded encoded-output channel — the overrun evicted
+        // encoded access units mid-GOP, which the decoder saw as macroblocking until the next IDR.
+        long maxRate = ComputeMaxRateBps(width, height, fps, qp);
+        long bufSize = ComputeBufSizeBps(maxRate);
+        int gop = ComputeGop(fps);
+
+        // Codec & Quality Optimization. qp/cq anchors quality; maxrate/bufsize cap the peak so a
+        // busy frame can't blow the output channel, and gop scales with fps so on-demand recovery
+        // (natural GOP keyframe) never waits more than ~1s.
         switch (codec)
         {
             case "h264_nvenc_bgra":
@@ -209,7 +260,9 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // RGB->NV12 kernel and dies at RUNTIME with CUDA_ERROR_NOT_FOUND ("named symbol not
                 // found" / "Unsupported conversion: rgb0 -> semiplanar8"), killing FFmpeg mid-stream —
                 // 0fps black screen. NVENC native BGRA input avoids the filter entirely. (RemEx-dptu)
-                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1");
+                //
+                // -rc vbr -cq {qp}: quality-anchored VBR (constqp had no bitrate ceiling at all).
+                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {qp} -b:v 0 -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1");
                 break;
             case "h264_nvenc":
                 // NVIDIA NVENC. `-tune ll` = low latency (valid values are hq/ll/ull/lossless;
@@ -219,25 +272,27 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // `-forced-idr 1` makes the forced keyframes emitted by `-force_key_frames` true
                 // IDR frames (with fresh SPS/PPS) instead of plain non-IDR I-frames, so an
                 // on-demand keyframe is independently decodable by a desynced client. (RemEx-bqc)
-                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc constqp -qp {qp} -g 60 -forced-idr 1 -aud 1 -pix_fmt yuv420p");
+                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {qp} -b:v 0 -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1 -pix_fmt yuv420p");
                 break;
             case "h264_vaapi":
-                // VA-API on Linux (Intel/AMD)
-                argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp {qp} -g 60 -aud 1");
+                // VA-API on Linux (Intel/AMD). Rate-control left as CQP — VBR/maxrate behavior varies
+                // per driver and needs separate Linux validation (tested on Windows only for Phase 3).
+                argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp {qp} -g {gop} -aud 1");
                 break;
             case "h264_qsv":
-                // Intel Quick Sync
-                argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -g 60 -forced-idr 1 -aud 1");
+                // Intel Quick Sync. QVBR: -global_quality anchors quality, -maxrate/-bufsize cap peaks.
+                argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1");
                 break;
             case "h264_amf":
-                // AMD AMF
-                argsBuilder.Append($"-c:v h264_amf -quality speed -rc cqp -qp_i {qp} -qp_p {qp} -g 60 -forced-idr 1 -aud 1");
+                // AMD AMF. vbr_peak: -b:v is the target (75% of the ceiling), -maxrate the hard peak.
+                argsBuilder.Append($"-c:v h264_amf -quality speed -rc vbr_peak -b:v {maxRate * 3 / 4} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1");
                 break;
             default:
                 // libx264 software fallback with zero latency. libx264 has no generic
                 // `-aud` AVOption; AUD emission is requested via x264 params instead. x264 always
                 // makes a forced keyframe a true IDR, so no extra flag is needed for it.
-                argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -g 60 -x264-params aud=1");
+                // -crf stays quality-anchored; -maxrate/-bufsize turn it into VBV-constrained CRF.
+                argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -x264-params aud=1");
                 break;
         }
 
@@ -397,10 +452,11 @@ public sealed class FFmpegH264Encoder : IH264Encoder
 
             _encodedFrames = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(OutputChannelCapacity)
             {
-                FullMode = BoundedChannelFullMode.DropOldest,
+                FullMode = BoundedChannelFullMode.DropWrite,
                 SingleReader = false,
                 SingleWriter = true,
             });
+            _droppingUntilIdr = false;
 
             _inputChannel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(InputChannelCapacity)
             {
@@ -552,12 +608,70 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         }
     }
 
+    /// <summary>
+    /// Scans an Annex-B access unit for a NAL unit type 5 (IDR slice), checking both 3- and 4-byte
+    /// start codes. An access unit containing an IDR is independently decodable — it doesn't
+    /// reference any frame that may have been dropped upstream.
+    /// </summary>
+    internal static bool ContainsIdr(byte[] au)
+    {
+        for (int i = 0; i + 2 < au.Length; i++)
+        {
+            if (au[i] != 0x00 || au[i + 1] != 0x00) continue;
+
+            // 4-byte start code: 00 00 00 01 <nal>
+            if (i + 3 < au.Length && au[i + 2] == 0x00 && au[i + 3] == 0x01 && i + 4 < au.Length)
+            {
+                if ((au[i + 4] & 0x1F) == 5) return true;
+                continue;
+            }
+
+            // 3-byte start code: 00 00 01 <nal>
+            if (au[i + 2] == 0x01 && i + 3 < au.Length)
+            {
+                if ((au[i + 3] & 0x1F) == 5) return true;
+            }
+        }
+        return false;
+    }
+
+    // Reader thread only — no locks needed (single writer to _encodedFrames, matching SingleWriter=true).
     private void QueueFrame(byte[] frame)
     {
-        if (frame.Length <= 0) return;
-        // Drop-oldest bounded channel: TryWrite always succeeds, evicting the oldest queued access
-        // unit when full so memory stays bounded under a slow consumer. (RemEx-fs5)
-        _encodedFrames?.Writer.TryWrite(frame);
+        if (frame.Length <= 0 || _encodedFrames is null) return;
+
+        if (_droppingUntilIdr)
+        {
+            if (!ContainsIdr(frame))
+            {
+                _droppedAccessUnits++;
+                return;
+            }
+            _droppingUntilIdr = false; // resume at an independently decodable access unit
+        }
+
+        if (_encodedFrames.Writer.TryWrite(frame))
+            return;
+
+        // Output channel overflowed: a gap opened in the access-unit stream, so anything already
+        // queued after it references frames the decoder will never see — forwarding that backlog
+        // would macroblock rather than recover. Drain it, drop until the next IDR, and request one
+        // so the decoder resyncs as soon as possible (the handler throttles reinits to ≤1/5s).
+        while (_encodedFrames.Reader.TryRead(out _)) _droppedAccessUnits++;
+        _droppedAccessUnits++;
+        _droppingUntilIdr = !ContainsIdr(frame);
+        if (!_droppingUntilIdr)
+            _encodedFrames.Writer.TryWrite(frame);
+        RequestKeyframe();
+
+        var now = Environment.TickCount64;
+        if (now - _lastDropLogMs > 5000)
+        {
+            _lastDropLogMs = now;
+            _logger.LogWarning(
+                "Encoded H.264 output backlog full; dropped {Count} access units total, resuming at next IDR (keyframe requested).",
+                _droppedAccessUnits);
+        }
     }
 
     public byte[]? EncodeFrame(byte[] rawPixelsBGRA, bool forceKeyframe)
@@ -565,7 +679,8 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         // forceKeyframe is honored at the stream-control layer (RemoteDesktopHandler requests a real
         // on-demand IDR by reinitializing the encoder, which emits fresh SPS/PPS + an IDR). Within a
         // running ffmpeg child reading rawvideo from a pipe there is no per-frame keyframe API, so the
-        // flag is intentionally not actioned here; the GOP (-g 60) and on-demand reinit cover recovery.
+        // flag is intentionally not actioned here; the fps-scaled GOP (ComputeGop) and on-demand
+        // reinit cover recovery.
 
         if (!_initialized || _inputChannel is null || _ffmpegProcess is { HasExited: true })
             return null;
@@ -573,7 +688,10 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         // Non-blocking submit. If the bounded input channel is full (encoder busy), DROP this frame
         // rather than blocking the capture thread — the freshest frame supersedes a stale backlog and
         // capture/encode must stay decoupled. (RemEx-ii3)
-        _inputChannel.Writer.TryWrite(rawPixelsBGRA);
+        if (_inputChannel.Writer.TryWrite(rawPixelsBGRA))
+        {
+            Interlocked.Increment(ref _acceptedInputFrames);
+        }
 
         // Decoupled, non-blocking: return an encoded access unit if one is ready. The encoder
         // pipelines (≈0.5–1s warmup before the first output), so returning null here is normal and

@@ -77,4 +77,13 @@ public record DesktopConfig
 
     [JsonPropertyName("displayListVersion")]
     public int? DisplayListVersion { get; init; }
+
+    /// <summary>
+    /// Opts into adaptive capture-scale (Phase 5, RemEx-eo0f): the host holds the sharpest scale
+    /// that sustains <see cref="TargetFps"/> instead of a fixed preset scale. Null means "use the
+    /// host's default rule" (on for H.264 at <c>TargetFps &gt;= 90</c>); an explicit true/false
+    /// always wins over that default.
+    /// </summary>
+    [JsonPropertyName("adaptiveScale")]
+    public bool? AdaptiveScale { get; init; }
 }

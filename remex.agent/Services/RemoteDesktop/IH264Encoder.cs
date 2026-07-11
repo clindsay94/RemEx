@@ -47,4 +47,18 @@ public interface IH264Encoder : IDisposable
     /// Returns true exactly once per request so the stream-control loop can force a keyframe path.
     /// </summary>
     bool ConsumeKeyframeRequest();
+
+    /// <summary>
+    /// Running count of raw frames accepted onto the encoder's input channel (i.e. not dropped by
+    /// the capacity-3 drop-write submit queue). The <see cref="AdaptiveScaleController"/> (Phase 5)
+    /// samples the delta of this counter across an evaluation window as "achieved encode FPS".
+    /// </summary>
+    long AcceptedInputFrameCount { get; }
+
+    /// <summary>
+    /// Running count of encoded access units dropped because the output channel overflowed (RemEx-3u6o).
+    /// The <see cref="AdaptiveScaleController"/> (Phase 5) samples the delta of this counter to decide
+    /// whether the current capture scale is outrunning what the encoder can sustain.
+    /// </summary>
+    long DroppedAccessUnitCount { get; }
 }

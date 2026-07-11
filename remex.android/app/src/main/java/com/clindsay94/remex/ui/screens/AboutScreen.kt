@@ -124,7 +124,7 @@ fun AboutScreenContent(
                     contentAlignment = Alignment.Center
             ) {
                 Image(
-                        painter = painterResource(R.drawable.ic_launcher_foreground),
+                        painter = painterResource(R.drawable.ic_launcher_foreground_vector),
                         contentDescription = null,
                         modifier = Modifier.size(144.dp)
                 )

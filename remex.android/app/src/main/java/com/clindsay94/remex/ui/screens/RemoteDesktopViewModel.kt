@@ -557,15 +557,19 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     if (codecInfo != null) {
                         _activeCodecState.value = codecInfo.optString("codec", "Mjpeg")
                     }
-                    // Parse encoded stream pixel dimensions for H.264 decoder initialization.
+                    // Parse encoded stream pixel dimensions for H.264 decoder initialization. Prefer
+                    // encodedWidth/Height — the true post-scale encoder output size — over pixelWidth/
+                    // Height (the unscaled screen size on hosts predating the encoded-dims fields).
                     // Like codecInfo above, lightweight cursor-position DesktopMeta updates carry no
-                    // resolution — the host serializes PixelWidth/PixelHeight as 0 on those — and must
-                    // NOT clobber the active stream resolution. streamPixelWidth/Height key the H264
-                    // decoder's AndroidView; a 0x0 value rebuilds it with an invalid surface, which
-                    // fails to decode and triggers a teardown/reconnect loop (the landscape<->portrait
-                    // flip). Only adopt a positive, real resolution.
-                    val pixelWidth = json.optInt("pixelWidth", 0)
-                    val pixelHeight = json.optInt("pixelHeight", 0)
+                    // resolution — the host serializes these as 0 on those — and must NOT clobber the
+                    // active stream resolution. streamPixelWidth/Height key the H264 decoder's
+                    // AndroidView; a 0x0 value rebuilds it with an invalid surface, which fails to
+                    // decode and triggers a teardown/reconnect loop (the landscape<->portrait flip).
+                    // Only adopt a positive, real resolution.
+                    val encodedWidth = json.optInt("encodedWidth", 0)
+                    val encodedHeight = json.optInt("encodedHeight", 0)
+                    val pixelWidth = if (encodedWidth > 0) encodedWidth else json.optInt("pixelWidth", 0)
+                    val pixelHeight = if (encodedHeight > 0) encodedHeight else json.optInt("pixelHeight", 0)
                     if (pixelWidth > 0 && pixelHeight > 0) {
                         _streamPixelWidth.value = pixelWidth
                         _streamPixelHeight.value = pixelHeight
@@ -1450,6 +1454,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             put("scale", _configState.value.scale)
             put("targetFps", _configState.value.targetFps)
             put("codec", _configState.value.codec)
+            // Phase 5 (RemEx-eo0f): explicitly opt into the host's adaptive capture-scale controller
+            // for the two presets whose fixed scale is a real tradeoff (SMOOTH_SHARP trades sharpness
+            // for FPS headroom at 0.5; UNLIMITED requests full-res regardless of whether the host can
+            // sustain it). For BALANCED/DATA_SAVER/CUSTOM the field is omitted entirely (NOT sent as
+            // false) so the host's own default rule (targetFps>=90 && H264) decides instead of this
+            // client forcing it off.
+            if (_configState.value.preset == DesktopPreset.SMOOTH_SHARP ||
+                            _configState.value.preset == DesktopPreset.UNLIMITED
+            ) {
+                put("adaptiveScale", true)
+            }
             // The client renders the true native cursor itself from the streamed cursor SHAPE
             // (desktop_cursor_shape, real BGRA pixels) positioned by the live desktop_cursor_state.
             // Host-side compositing is left off so the cursor never freezes on mouse-only frames
@@ -1457,30 +1472,32 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             // supportsCursorShape capability below and falls back to compositing for legacy clients.
             put("drawCursor", false)
 
-            // Advertise display selection and name an explicit capture target only once we have a
-            // resolved option from the catalog. Without a resolved option we stay on the legacy
-            // path (no capabilities) so the host falls back to its default (primary monitor).
-            // Frame envelope / live target-switch are intentionally NOT advertised: display
-            // changes are applied by restarting the stream, keeping the raw frame format intact.
+            // Cursor/frame-envelope capabilities are always advertised — they're independent of
+            // display-target selection. supportsDisplaySelection (and desktopProtocolVersion,
+            // captureMode) stay gated on a resolved catalog option: the host's
+            // TryApplyCaptureTarget rejects stream start with "Select a desktop target" if
+            // SupportsDisplaySelection is advertised without an explicit target, so those three
+            // fields must only appear together.
+            put(
+                    "clientCapabilities",
+                    JSONObject().apply {
+                        val option = selectedDisplayOption()
+                        put("supportsDisplaySelection", option != null)
+                        // The client now parses the host's per-frame codec/serial envelope, so the
+                        // host tags every frame and the client routes by the frame's own codec —
+                        // fixing the mid-codec-switch misroute. Target switch stays off (separate
+                        // capability), so the host never resets the stream serial mid-flight. (RemEx-w5v)
+                        put("supportsFrameEnvelope", true)
+                        put("supportsTargetSwitch", false)
+                        put("supportsCursorState", true)
+                        put("supportsCursorShape", true)
+                        // RD-E: receive cursor position as a binary packet (no JSON/GC at 60–90 Hz).
+                        put("supportsBinaryCursor", true)
+                    }
+            )
             val option = selectedDisplayOption()
             if (option != null) {
                 put("desktopProtocolVersion", 1)
-                put(
-                        "clientCapabilities",
-                        JSONObject().apply {
-                            put("supportsDisplaySelection", true)
-                            // The client now parses the host's per-frame codec/serial envelope, so the
-                            // host tags every frame and the client routes by the frame's own codec —
-                            // fixing the mid-codec-switch misroute. Target switch stays off (separate
-                            // capability), so the host never resets the stream serial mid-flight. (RemEx-w5v)
-                            put("supportsFrameEnvelope", true)
-                            put("supportsTargetSwitch", false)
-                            put("supportsCursorState", true)
-                            put("supportsCursorShape", true)
-                            // RD-E: receive cursor position as a binary packet (no JSON/GC at 60–90 Hz).
-                            put("supportsBinaryCursor", true)
-                        }
-                )
                 put("captureMode", option.captureMode)
                 if (option.displayId != null) {
                     put("displayId", option.displayId)

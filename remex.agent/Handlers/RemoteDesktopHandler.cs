@@ -46,6 +46,11 @@ public sealed class RemoteDesktopHandler : IDisposable
     private int _targetFps = 120;
     private bool _drawCursor = true;
 
+    // Phase 5 (RemEx-eo0f): when true, the capture loop lets AdaptiveScaleController drive _scale
+    // instead of holding it fixed at the client-configured value. Recomputed in ApplyConfig from the
+    // client's explicit DesktopConfig.AdaptiveScale, falling back to a default rule when omitted.
+    private bool _adaptiveScaleEnabled;
+
     private DesktopCodecKind _negotiatedCodec = DesktopCodecKind.Mjpeg;
     private DesktopCodecKind _activeCodec = DesktopCodecKind.Mjpeg;
     private DesktopClientCapabilities _clientCapabilities = new();
@@ -58,6 +63,12 @@ public sealed class RemoteDesktopHandler : IDisposable
     // Bumped whenever an encoder-affecting setting (quality/fps/scale) changes, so the capture loop
     // knows to rebuild the H.264 encoder mid-stream.
     private int _encoderConfigVersion;
+
+    // Encoded dimensions last advertised to the client via DesktopMeta/DesktopStreamDescriptor.
+    // Compared after each encoder rebuild so a scale change (preset switch, Phase 5 adaptive step)
+    // triggers a fresh bootstrap re-send — that's what re-keys the client's decode surface.
+    private int lastAdvertisedEncodedWidth;
+    private int lastAdvertisedEncodedHeight;
 
     // Cached FFmpeg availability — probed once at handler construction, not per-stream-start
     private static bool? _ffmpegAvailableCache;
@@ -317,11 +328,23 @@ public sealed class RemoteDesktopHandler : IDisposable
         long encoderSerial = -1;
         int encoderConfigVersion = -1;
 
+        // Phase 5 adaptive capture scale (RemEx-eo0f): the controller's lifetime is tied to the
+        // active H.264 encoder INSTANCE, not the stream — a rebuild (target switch, config change, or
+        // an adaptive step itself) creates a fresh encoder whose Accepted/DroppedAccessUnit counters
+        // start at 0, so re-seeding the controller and the sampling baselines together on every
+        // instance swap keeps "achieved FPS" measured cleanly within one encoder's lifetime.
+        AdaptiveScaleController? adaptiveController = null;
+        IH264Encoder? adaptiveTrackedEncoder = null;
+        var adaptiveWindowStopwatch = Stopwatch.StartNew();
+        long adaptiveBaselineAccepted = 0;
+        long adaptiveBaselineDropped = 0;
+        const double adaptiveWindowMs = 2000;
+
         // On-demand keyframe reinit throttle — a RARE backstop, not the primary resync path. Honoring a
         // keyframe request means a full ~1s ffmpeg/nvenc restart (a rawvideo stdin pipe has no per-frame
-        // IDR API). The encoder already emits a keyframe every 60 frames (`-g 60`), which at a healthy
-        // 60–120 FPS is every 0.5–1s — so a desynced decoder resyncs on the next natural GOP keyframe
-        // WITHOUT any reinit. A desynced decoder also floods keyframe requests (its 4-frame input backlog
+        // IDR API). The encoder's GOP scales with fps (FFmpegH264Encoder.ComputeGop, clamped 30-120),
+        // so a desynced decoder resyncs on the next natural GOP keyframe (≤~1s) WITHOUT any reinit. A
+        // desynced decoder also floods keyframe requests (its 4-frame input backlog
         // overflows on each post-reinit catch-up burst); honoring them reinitializes the encoder
         // continuously, which is the very stall that keeps the stream from ever smoothing out (a few FPS,
         // black). So we honor at most one keyframe-driven reinit per long cooldown: one fresh IDR plus the
@@ -440,7 +463,68 @@ public sealed class RemoteDesktopHandler : IDisposable
                             _activeH264Encoder = h264Encoder;
                             frameCodec = DesktopCodecKind.H264;
                             frameFlags = DesktopFrameFlags.KeyFrame;
+
+                            // A scale change (preset switch mid-stream, Phase 5 adaptive step) alters the
+                            // encoded output size without a stream-serial bump. Re-advertise so the client
+                            // re-keys its decode surface at the new dimensions (Phase 2 frozen-surface fix).
+                            var (curScreenWidth, curScreenHeight, _, _) = _screenCapture.GetScreenSize();
+                            var (newEncodedWidth, newEncodedHeight) = GetEncodedFrameSize(curScreenWidth, curScreenHeight);
+                            if (newEncodedWidth != lastAdvertisedEncodedWidth || newEncodedHeight != lastAdvertisedEncodedHeight)
+                            {
+                                _logger.LogInformation(
+                                    "Encoded size changed {OldW}x{OldH} -> {NewW}x{NewH}; re-advertising stream bootstrap.",
+                                    lastAdvertisedEncodedWidth, lastAdvertisedEncodedHeight, newEncodedWidth, newEncodedHeight);
+                                await SendCurrentStreamBootstrapAsync(webSocket, sessionState, sendLock, ct);
+                            }
                         }
+                    }
+
+                    // Phase 5 adaptive capture scale (RemEx-eo0f): evaluate roughly every 2s while H.264
+                    // is active. A rung change here bumps _encoderConfigVersion, which the rebuild block
+                    // above picks up on the NEXT iteration (not this one) — same path as a manual
+                    // quality/fps/scale change from the client.
+                    if (_adaptiveScaleEnabled && _activeCodec == DesktopCodecKind.H264 && h264Encoder is not null)
+                    {
+                        if (!ReferenceEquals(h264Encoder, adaptiveTrackedEncoder))
+                        {
+                            // New encoder instance (rebuild for any reason): its counters start at 0, so
+                            // re-seed the controller from the scale that produced this instance and reset
+                            // the sampling baselines to match.
+                            adaptiveTrackedEncoder = h264Encoder;
+                            adaptiveController = new AdaptiveScaleController(_scale);
+                            adaptiveBaselineAccepted = h264Encoder.AcceptedInputFrameCount;
+                            adaptiveBaselineDropped = h264Encoder.DroppedAccessUnitCount;
+                            adaptiveWindowStopwatch.Restart();
+                        }
+                        else if (adaptiveController is not null &&
+                                 adaptiveWindowStopwatch.Elapsed.TotalMilliseconds >= adaptiveWindowMs)
+                        {
+                            var elapsedSec = adaptiveWindowStopwatch.Elapsed.TotalSeconds;
+                            var acceptedNow = h264Encoder.AcceptedInputFrameCount;
+                            var droppedNow = h264Encoder.DroppedAccessUnitCount;
+                            var achievedFps = (acceptedNow - adaptiveBaselineAccepted) / elapsedSec;
+                            var outputOverflowed = droppedNow > adaptiveBaselineDropped;
+                            adaptiveBaselineAccepted = acceptedNow;
+                            adaptiveBaselineDropped = droppedNow;
+                            adaptiveWindowStopwatch.Restart();
+
+                            var decision = adaptiveController.Report(_targetFps, achievedFps, outputOverflowed, DateTime.UtcNow);
+                            if (decision is not null)
+                            {
+                                _logger.LogInformation(
+                                    "Adaptive scale: {Old:F4} -> {New:F4} ({Reason}); achieved {Fps:F0}/{Target} fps.",
+                                    _scale, decision.Scale, decision.Reason, achievedFps, _targetFps);
+                                _scale = decision.Scale;
+                                Interlocked.Increment(ref _encoderConfigVersion);
+                            }
+                        }
+                    }
+                    else if (adaptiveTrackedEncoder is not null)
+                    {
+                        // Adaptive scale turned off or codec left H.264: drop tracking so a later
+                        // re-enable starts a fresh controller instead of resuming stale state.
+                        adaptiveController = null;
+                        adaptiveTrackedEncoder = null;
                     }
 
                     // Tracks whether the SCREEN CAPTURE step produced pixels this iteration. This is
@@ -755,6 +839,7 @@ public sealed class RemoteDesktopHandler : IDisposable
     {
         var (lastX, lastY) = _inputSimulation.GetCursorPosition();
         var lastShapeSerial = sessionState.GetCurrentCursorShape()?.ShapeSerial ?? 0;
+        var lastCursorHandle = IntPtr.Zero;
         var tick = 0;
         // ~90 Hz cursor pacing via the shared precision pacer. Task.Delay(11) rounds up to the
         // ~15.6 ms OS timer floor (~64 Hz, missing the 90 Hz target) — see PrecisionPacer. (RD-A)
@@ -767,9 +852,9 @@ public sealed class RemoteDesktopHandler : IDisposable
             {
                 var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
 
-                // Cursor POSITION streams at ~90 Hz for smooth on-screen tracking; the cursor SHAPE
-                // and the ClipCursor confinement change rarely, so re-poll/re-apply those only at
-                // ~10 Hz (every 9th tick) to avoid hammering the OS at the higher position rate.
+                // Cursor POSITION streams at ~90 Hz for smooth on-screen tracking; the ClipCursor
+                // confinement changes rarely, so re-apply that only at ~10 Hz (every 9th tick) to
+                // avoid hammering the OS at the higher position rate.
                 var slowTick = tick % 9 == 0;
 
                 if (slowTick)
@@ -782,9 +867,22 @@ public sealed class RemoteDesktopHandler : IDisposable
                 }
 
                 var currentShape = sessionState.GetCurrentCursorShape();
-                if (slowTick && sessionState.UseCursorShape && OperatingSystem.IsWindows())
+                if (sessionState.UseCursorShape && OperatingSystem.IsWindows())
                 {
-                    currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: false, ct);
+                    // Cheap hCursor poll on every 90Hz tick: a shape CHANGE (e.g. arrow -> I-beam) is
+                    // detected in <=11ms instead of waiting for the 10Hz slow tick (<=111ms). The full
+                    // capture (SyncCursorShapeAsync — bitmap render + byte-compare dedupe) still only
+                    // runs when the handle actually differs, so this doesn't add per-tick capture cost.
+                    // The slow tick below still runs unconditionally: animated cursors mutate pixels
+                    // without changing hCursor, and UpdateCursorShape's own byte-compare dedupe (not
+                    // this handle check) is what suppresses redundant sends for those. (Phase 4)
+                    var handleChanged = WindowsCursorShapeCapture.TryGetCursorHandle(out var cursorHandle) &&
+                        cursorHandle != lastCursorHandle;
+                    if (handleChanged || slowTick)
+                    {
+                        currentShape = await SyncCursorShapeAsync(webSocket, sessionState, sendLock, forceSend: false, ct);
+                        lastCursorHandle = cursorHandle;
+                    }
                 }
 
                 // Only send update if cursor moved (reduce network traffic)
@@ -1035,6 +1133,10 @@ public sealed class RemoteDesktopHandler : IDisposable
         _drawCursor = config.DrawCursor && !_clientCapabilities.SupportsCursorShape;
         _negotiatedCodec = config.Codec;
 
+        // Explicit client opt-in/out always wins. Otherwise default on for H.264 at high frame rates,
+        // where a fixed preset scale most likely leaves sharpness on the table on capable hardware.
+        _adaptiveScaleEnabled = config.AdaptiveScale ?? (_targetFps >= 90 && _negotiatedCodec == DesktopCodecKind.H264);
+
         // If a setting that affects the H.264 encoder changed mid-stream, bump the config version so
         // the capture loop rebuilds the encoder (the encoder is built once with fixed qp/fps/size and
         // otherwise never picks up slider changes — which is why the quality slider appeared dead).
@@ -1043,7 +1145,7 @@ public sealed class RemoteDesktopHandler : IDisposable
             Interlocked.Increment(ref _encoderConfigVersion);
         }
 
-        _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}, drawCursor={D}, codec={C}", _quality, _scale, _targetFps, _drawCursor, _negotiatedCodec);
+        _logger.LogDebug("Desktop config updated: quality={Q}, scale={S}, fps={F}, drawCursor={D}, codec={C}, adaptiveScale={A}", _quality, _scale, _targetFps, _drawCursor, _negotiatedCodec, _adaptiveScaleEnabled);
     }
 
     private bool TryApplyCaptureTarget(DesktopConfig config, out string? error)
@@ -1146,13 +1248,16 @@ public sealed class RemoteDesktopHandler : IDisposable
     {
         var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
         var (cursorX, cursorY) = _inputSimulation.GetCursorPosition();
+        var (encodedWidth, encodedHeight) = GetEncodedFrameSize(screenWidth, screenHeight);
+        lastAdvertisedEncodedWidth = encodedWidth;
+        lastAdvertisedEncodedHeight = encodedHeight;
 
         // Bootstrap dimensions now come from the backend that actually serves the target, primed
         // before this point (RemEx-4k4). Log them so a mis-framed first connect can be diagnosed
         // from the host log alone (expected: the selected monitor's real size + correct backend).
         _logger.LogInformation(
-            "RD bootstrap: streaming {Width}x{Height} @ ({Left},{Top}) via {Backend}.",
-            screenWidth, screenHeight, desktopLeft, desktopTop, _screenCapture.BackendName);
+            "RD bootstrap: streaming {Width}x{Height} @ ({Left},{Top}) via {Backend}; encoded={EncW}x{EncH}.",
+            screenWidth, screenHeight, desktopLeft, desktopTop, _screenCapture.BackendName, encodedWidth, encodedHeight);
 
         await SendMessageAsync(webSocket, new RemexMessage
         {
@@ -1174,6 +1279,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                 LogicalHeight = screenHeight,
                 PixelWidth = screenWidth,
                 PixelHeight = screenHeight,
+                EncodedWidth = encodedWidth,
+                EncodedHeight = encodedHeight,
                 StreamSerial = sessionState.StreamSerial,
                 CursorMode = "absolute",
                 CodecInfo = new DesktopCodecInfo
@@ -1197,6 +1304,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                 LogicalHeight = screenHeight,
                 PixelWidth = screenWidth,
                 PixelHeight = screenHeight,
+                EncodedWidth = encodedWidth,
+                EncodedHeight = encodedHeight,
             }
         }, sendLock, ct);
 
@@ -1238,6 +1347,7 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
 
         var (screenWidth, screenHeight, desktopLeft, desktopTop) = _screenCapture.GetScreenSize();
+        var (encodedWidth, encodedHeight) = GetEncodedFrameSize(screenWidth, screenHeight);
 
         await SendMessageAsync(webSocket, new RemexMessage
         {
@@ -1259,6 +1369,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                 LogicalHeight = screenHeight,
                 PixelWidth = screenWidth,
                 PixelHeight = screenHeight,
+                EncodedWidth = encodedWidth,
+                EncodedHeight = encodedHeight,
                 StreamSerial = sessionState.StreamSerial,
             }
         }, sendLock, ct);
@@ -1410,6 +1522,21 @@ public sealed class RemoteDesktopHandler : IDisposable
             (double)MaxH264EncodeDimension / screenWidth,
             (double)MaxH264EncodeDimension / screenHeight);
         return cap < requestedScale ? cap : requestedScale;
+    }
+
+    /// <summary>
+    /// Computes the actual encoded frame size for the active codec: H.264 clamps to the hardware
+    /// 4096px limit via <see cref="ClampScaleForH264"/> before even-alignment; MJPEG uses the raw
+    /// configured scale. Used to populate DesktopMeta/DesktopStreamDescriptor.Encoded{Width,Height}
+    /// so the client can size its decode surface at the true output resolution instead of the
+    /// unscaled screen size.
+    /// </summary>
+    private (int Width, int Height) GetEncodedFrameSize(int screenWidth, int screenHeight)
+    {
+        var scale = _activeCodec == DesktopCodecKind.H264
+            ? ClampScaleForH264(screenWidth, screenHeight, _scale)
+            : _scale;
+        return (CaptureScaling.ScaledEven(screenWidth, scale), CaptureScaling.ScaledEven(screenHeight, scale));
     }
 
     private IH264Encoder? TryCreateH264Encoder()
