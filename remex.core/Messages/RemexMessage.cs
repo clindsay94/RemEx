@@ -202,6 +202,60 @@ public sealed record RemexMessage
 
     [JsonPropertyName("fileRootManageResponse")]
     public FileRootManageResponse? FileRootManageResponse { get; init; }
+
+    // ── 2.1 File Sharing Overhaul (protocolVersion 3) ──
+    // All additive and nullable; v2 peers ignore them and keep the legacy base64 path.
+
+    [JsonPropertyName("fileTransferOffer")]
+    public FileTransferOffer? FileTransferOffer { get; init; }
+
+    [JsonPropertyName("fileTransferReady")]
+    public FileTransferReady? FileTransferReady { get; init; }
+
+    [JsonPropertyName("fileTransferComplete")]
+    public FileTransferComplete? FileTransferComplete { get; init; }
+
+    [JsonPropertyName("fileTransferResult")]
+    public FileTransferResult? FileTransferResult { get; init; }
+
+    [JsonPropertyName("fileTransferControl")]
+    public FileTransferControl? FileTransferControl { get; init; }
+
+    [JsonPropertyName("fileVolumesRequest")]
+    public FileVolumesRequest? FileVolumesRequest { get; init; }
+
+    [JsonPropertyName("fileVolumesResponse")]
+    public FileVolumesResponse? FileVolumesResponse { get; init; }
+
+    [JsonPropertyName("fileSearchRequest")]
+    public FileSearchRequest? FileSearchRequest { get; init; }
+
+    [JsonPropertyName("fileSearchResponse")]
+    public FileSearchResponse? FileSearchResponse { get; init; }
+
+    [JsonPropertyName("fileMetadataRequest")]
+    public FileMetadataRequest? FileMetadataRequest { get; init; }
+
+    [JsonPropertyName("fileMetadataResponse")]
+    public FileMetadataResponse? FileMetadataResponse { get; init; }
+
+    [JsonPropertyName("fileThumbnailRequest")]
+    public FileThumbnailRequest? FileThumbnailRequest { get; init; }
+
+    [JsonPropertyName("fileThumbnailResponse")]
+    public FileThumbnailResponse? FileThumbnailResponse { get; init; }
+
+    [JsonPropertyName("fileConsentRequest")]
+    public FileConsentRequest? FileConsentRequest { get; init; }
+
+    [JsonPropertyName("fileConsentResponse")]
+    public FileConsentResponse? FileConsentResponse { get; init; }
+
+    [JsonPropertyName("filePushOffer")]
+    public FilePushOffer? FilePushOffer { get; init; }
+
+    [JsonPropertyName("filePushResponse")]
+    public FilePushResponse? FilePushResponse { get; init; }
 }
 
 /// <summary>
@@ -271,4 +325,26 @@ public static class MessageTypes
     public const string FileHashResponse = "file_hash_response";
     public const string FileRootManageRequest = "file_root_manage_request";
     public const string FileRootManageResponse = "file_root_manage_response";
+
+    // ── 2.1 File Sharing Overhaul (protocolVersion 3) ──
+    // v3 transfer negotiation (replaces base64 start/chunk/end for v3 peers).
+    public const string FileTransferOffer = "file_transfer_offer";
+    public const string FileTransferReady = "file_transfer_ready";
+    public const string FileTransferComplete = "file_transfer_complete";
+    public const string FileTransferResult = "file_transfer_result";
+    public const string FileTransferControl = "file_transfer_control";
+    // Browse / metadata.
+    public const string FileVolumesRequest = "file_volumes_request";
+    public const string FileVolumesResponse = "file_volumes_response";
+    public const string FileSearchRequest = "file_search_request";
+    public const string FileSearchResponse = "file_search_response";
+    public const string FileMetadataRequest = "file_metadata_request";
+    public const string FileMetadataResponse = "file_metadata_response";
+    public const string FileThumbnailRequest = "file_thumbnail_request";
+    public const string FileThumbnailResponse = "file_thumbnail_response";
+    // Consent / push.
+    public const string FileConsentRequest = "file_consent_request";
+    public const string FileConsentResponse = "file_consent_response";
+    public const string FilePushOffer = "file_push_offer";
+    public const string FilePushResponse = "file_push_response";
 }

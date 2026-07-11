@@ -27,9 +27,31 @@ public static class ProtocolVersionPolicy
     public const int Minimum = 2;
 
     /// <summary>
+    /// The protocol version this build implements in full. Raised to 3 by the RemEx 2.1 file-sharing
+    /// overhaul (binary <c>/ws/files</c> channel, resume, consent). <see cref="Minimum"/> deliberately
+    /// stays 2 so v2 peers keep working via the legacy base64 file path for one release.
+    /// </summary>
+    public const int Current = 3;
+
+    /// <summary>
+    /// The first protocol version that supports the binary file-transfer channel (<c>/ws/files</c>),
+    /// offset-based resume, and the v3 negotiation messages. This is a fixed feature-introduction
+    /// version, NOT <see cref="Current"/> — a later <see cref="Current"/> bump must not change the
+    /// answer for v3 peers.
+    /// </summary>
+    public const int BinaryFileTransferMinimum = 3;
+
+    /// <summary>
     /// Returns true when a peer advertising <paramref name="protocolVersion"/> is allowed to connect.
     /// Accept-range semantics: the current minimum and anything newer are accepted; anything older
     /// (including the 0/1 legacy/malformed range) is rejected.
     /// </summary>
     public static bool IsSupported(int protocolVersion) => protocolVersion >= Minimum;
+
+    /// <summary>
+    /// Returns true when a peer advertising <paramref name="protocolVersion"/> supports the v3 binary
+    /// file-transfer channel and resume. v2 peers return false and MUST be served the legacy base64
+    /// path only; they must never be sent v3-only messages or admitted to <c>/ws/files</c>.
+    /// </summary>
+    public static bool SupportsBinaryFileTransfer(int protocolVersion) => protocolVersion >= BinaryFileTransferMinimum;
 }

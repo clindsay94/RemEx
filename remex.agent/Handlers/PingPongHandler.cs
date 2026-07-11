@@ -4,6 +4,7 @@ using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Agent.Services;
+using Remex.Agent.Services.FileTransfer;
 using Remex.Agent.Services.Telemetry;
 using Remex.Agent.Services.Security;
 
@@ -27,6 +28,7 @@ public sealed class PingPongHandler(
     IInputSimulationService inputSimulation,
     PairingHandler pairingHandler,
     FileTransferHandler fileTransferHandler,
+    TransferSessionManager transferSessionManager,
     PairedClientRegistry pairedClientRegistry)
 {
     public async Task HandleAsync(WebSocket webSocket, bool isLoopback, CancellationToken ct)
@@ -44,6 +46,11 @@ public sealed class PingPongHandler(
         // trusting the connection. A bare clientId no longer authenticates.
         byte[]? pendingChallengeNonce = null;
         bool challengeIssued = false;
+
+        // Last clientId seen on this connection, tracked so per-client handlers (e.g. the consent-gated
+        // file_volumes_request) can identify the paired device even on a message that omits it. The
+        // connection is already authenticated via pairing / reconnect proof before any gated handler runs.
+        string? connectionClientId = null;
 
         if (isLoopback)
             logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
@@ -126,6 +133,9 @@ public sealed class PingPongHandler(
 
                 logger.LogDebug("Received: {Type} (ProtocolVersion={ProtocolVersion})",
                     message.Type, message.ProtocolVersion);
+
+                if (!string.IsNullOrWhiteSpace(message.ClientId))
+                    connectionClientId = message.ClientId;
 
                 // PAIR-1: a persisted clientId is NOT a bearer credential. Instead of trusting bare
                 // presence, challenge the reconnecting client to prove possession of the reconnect
@@ -355,6 +365,49 @@ public sealed class PingPongHandler(
 
                     case MessageTypes.FileRootManageRequest:
                         await fileTransferHandler.HandleFileRootManageRequestAsync(message, webSocket, ct);
+                        break;
+
+                    // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP2 ──
+                    case MessageTypes.FileVolumesRequest:
+                        await fileTransferHandler.HandleFileVolumesRequestAsync(message, webSocket, connectionClientId, ct);
+                        break;
+
+                    // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP3 ──
+                    case MessageTypes.FileSearchRequest:
+                        await fileTransferHandler.HandleFileSearchRequestAsync(message, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileMetadataRequest:
+                        await fileTransferHandler.HandleFileMetadataRequestAsync(message, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileThumbnailRequest:
+                        await fileTransferHandler.HandleFileThumbnailRequestAsync(message, webSocket, ct);
+                        break;
+
+                    // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP4: v3 transfer negotiation ──
+                    // Control plane for the binary /ws/files channel. The bulk data itself never touches this
+                    // switch — it flows as FileFrameEnvelope frames on /ws/files (see TransferSessionManager
+                    // .RunChannelAsync). connectionClientId identifies the paired device so the offer can be
+                    // matched to its already-connected binary channel.
+                    case MessageTypes.FileTransferOffer when message.FileTransferOffer is not null:
+                        await transferSessionManager.HandleOfferAsync(connectionClientId, message.FileTransferOffer, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileTransferReady when message.FileTransferReady is not null:
+                        transferSessionManager.HandleReady(message.FileTransferReady);
+                        break;
+
+                    case MessageTypes.FileTransferComplete when message.FileTransferComplete is not null:
+                        await transferSessionManager.HandleCompleteAsync(message.FileTransferComplete, webSocket, ct);
+                        break;
+
+                    case MessageTypes.FileTransferResult when message.FileTransferResult is not null:
+                        transferSessionManager.HandleResult(message.FileTransferResult);
+                        break;
+
+                    case MessageTypes.FileTransferControl when message.FileTransferControl is not null:
+                        transferSessionManager.HandleControl(message.FileTransferControl);
                         break;
 
                     default:

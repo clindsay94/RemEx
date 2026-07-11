@@ -83,6 +83,30 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(FileHashResponse))]
 [JsonSerializable(typeof(FileRootManageRequest))]
 [JsonSerializable(typeof(FileRootManageResponse))]
+// ── 2.1 File Sharing Overhaul (protocolVersion 3) ──
+// Every new serializable payload/nested type MUST be listed here or the NativeAOT Android link breaks.
+[JsonSerializable(typeof(FileCapabilities))]
+[JsonSerializable(typeof(FileFrameEnvelope))]
+[JsonSerializable(typeof(FileTransferOffer))]
+[JsonSerializable(typeof(FileTransferReady))]
+[JsonSerializable(typeof(FileTransferComplete))]
+[JsonSerializable(typeof(FileTransferResult))]
+[JsonSerializable(typeof(FileTransferControl))]
+[JsonSerializable(typeof(FileVolumesRequest))]
+[JsonSerializable(typeof(FileVolumeInfo))]
+[JsonSerializable(typeof(FileVolumesResponse))]
+[JsonSerializable(typeof(FileSearchRequest))]
+[JsonSerializable(typeof(FileSearchEntry))]
+[JsonSerializable(typeof(FileSearchResponse))]
+[JsonSerializable(typeof(FileMetadataRequest))]
+[JsonSerializable(typeof(FileMetadataResponse))]
+[JsonSerializable(typeof(FileThumbnailRequest))]
+[JsonSerializable(typeof(FileThumbnailResponse))]
+[JsonSerializable(typeof(FileConsentRequest))]
+[JsonSerializable(typeof(FileConsentResponse))]
+[JsonSerializable(typeof(FilePushFile))]
+[JsonSerializable(typeof(FilePushOffer))]
+[JsonSerializable(typeof(FilePushResponse))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext
 {
 }

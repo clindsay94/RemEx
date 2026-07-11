@@ -5,12 +5,16 @@ using System.Security.Cryptography;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services.FileTransfer;
+using Remex.Core.Validation;
+using Remex.Agent.Services.FileTransfer;
 
 namespace Remex.Agent.Handlers;
 
 public sealed class FileTransferHandler(
     ILogger<FileTransferHandler> logger,
-    IFileTransferService fileTransferService)
+    IFileTransferService fileTransferService,
+    IFileTrustService fileTrustService,
+    VolumeEnumerator volumeEnumerator)
 {
     private const int ProgressChunkInterval = 10;
 
@@ -35,6 +39,27 @@ public sealed class FileTransferHandler(
 
     private readonly ConcurrentDictionary<string, FileTransferState> _activeTransfers = new();
 
+    /// <summary>
+    /// The host's static v3 file capabilities, advertised in every <see cref="MessageTypes.FileRootsResponse"/>.
+    /// Roots are always fetched first, so this doubles as the capability handshake (plan §1.2): v3 clients read it
+    /// to negotiate the binary <c>/ws/files</c> channel, offset resume, and full-device browse, while v2 peers
+    /// simply ignore the unknown <c>fileCapabilities</c> field. Static because it never varies per connection —
+    /// per-device grants (full browse) are gated separately by <c>FileTrustService</c> at request time.
+    /// </summary>
+    private static readonly FileCapabilities HostFileCapabilities = new()
+    {
+        Protocol = ProtocolVersionPolicy.Current,
+        Binary = true,
+        Resume = true,
+        Ops =
+        [
+            FileManageOperations.Delete, FileManageOperations.Rename, FileManageOperations.Copy,
+            FileManageOperations.Move, FileManageOperations.Mkdir, "search",
+        ],
+        FullBrowse = true,
+        Push = true,
+    };
+
     public async Task HandleFileRootsRequestAsync(WebSocket ws, CancellationToken ct)
     {
         try
@@ -45,7 +70,8 @@ public sealed class FileTransferHandler(
                 Type = MessageTypes.FileRootsResponse,
                 FileRootsResponse = new FileRootsResponse
                 {
-                    Roots = [.. roots]
+                    Roots = [.. roots],
+                    FileCapabilities = HostFileCapabilities
                 }
             }, ct);
         }
@@ -58,7 +84,8 @@ public sealed class FileTransferHandler(
                 FileRootsResponse = new FileRootsResponse
                 {
                     Roots = [],
-                    ErrorMessage = ex.Message
+                    ErrorMessage = ex.Message,
+                    FileCapabilities = HostFileCapabilities
                 }
             }, ct);
         }
@@ -297,13 +324,33 @@ public sealed class FileTransferHandler(
         {
             switch (req.Operation)
             {
-                case "delete":
+                case FileManageOperations.Delete:
                     await fileTransferService.DeleteAsync(req.RootId, req.RelativePath, ct);
                     break;
-                case "rename":
+                case FileManageOperations.Rename:
                     if (string.IsNullOrWhiteSpace(req.NewName))
                         throw new ArgumentException("NewName is required for rename.");
                     await fileTransferService.RenameAsync(req.RootId, req.RelativePath, req.NewName, ct);
+                    break;
+                // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP3 ──
+                case FileManageOperations.Copy:
+                    if (string.IsNullOrWhiteSpace(req.DestinationPath))
+                        throw new ArgumentException("DestinationPath is required for copy.");
+                    await fileTransferService.CopyAsync(req.RootId, req.RelativePath, req.DestinationPath, req.Overwrite, ct);
+                    break;
+                case FileManageOperations.Move:
+                    if (string.IsNullOrWhiteSpace(req.DestinationPath))
+                        throw new ArgumentException("DestinationPath is required for move.");
+                    await fileTransferService.MoveAsync(req.RootId, req.RelativePath, req.DestinationPath, req.Overwrite, ct);
+                    break;
+                case FileManageOperations.Mkdir:
+                    // Wire contract: RelativePath is the parent directory (empty = root) and NewName is the
+                    // new folder's name — parallels "rename" so the Android/PC mirrors stay mechanical. The
+                    // name is validated here (rejects separators / "." / "..") before being combined.
+                    if (!FilePathValidation.IsValidFileName(req.NewName, out var nameError))
+                        throw new ArgumentException(nameError ?? "Invalid folder name.");
+                    var newDirRelativePath = CombineRelative(req.RelativePath, req.NewName!);
+                    await fileTransferService.CreateDirectoryAsync(req.RootId, newDirRelativePath, ct);
                     break;
                 default:
                     throw new ArgumentException($"Unknown operation '{req.Operation}'.");
@@ -399,6 +446,217 @@ public sealed class FileTransferHandler(
 
         await MessageSerializer.SendAsync(ws, response, ct);
     }
+
+    // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP2: full-device volume enumeration ──
+
+    /// <summary>
+    /// Handles a <c>file_volumes_request</c> (plan §1.2). Full-device browse is consent-gated per paired
+    /// device: if <paramref name="clientId"/> does not already hold a full-browse grant, a consent prompt
+    /// is raised on this (serving) host and the response is held until the user decides or the 60-second
+    /// timeout auto-denies. On a grant the mounted volumes are enumerated and returned; on a deny an empty
+    /// list with <c>fullBrowseGranted=false</c> is returned (a deny is not an error).
+    /// </summary>
+    public async Task HandleFileVolumesRequestAsync(
+        RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
+    {
+        var req = message.FileVolumesRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(clientId))
+                throw new UnauthorizedAccessException("A paired client identity is required to browse volumes.");
+
+            var granted = await fileTrustService.IsFullBrowseGrantedAsync(clientId, ct);
+            if (!granted)
+            {
+                var consent = new FileConsentRequest
+                {
+                    ConsentId = Guid.NewGuid().ToString("N"),
+                    Kind = FileConsentKinds.FullBrowse,
+                };
+                var decision = await fileTrustService.RequestConsentAsync(clientId, consent, ct);
+                granted = decision.Granted;
+            }
+
+            var volumes = granted ? volumeEnumerator.Enumerate() : Array.Empty<FileVolumeInfo>();
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileVolumesResponse,
+                FileVolumesResponse = new FileVolumesResponse
+                {
+                    RequestId = req.RequestId,
+                    Volumes = [.. volumes],
+                    FullBrowseGranted = granted,
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "File volumes request failed.");
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileVolumesResponse,
+                FileVolumesResponse = new FileVolumesResponse
+                {
+                    RequestId = req.RequestId,
+                    Volumes = [],
+                    FullBrowseGranted = false,
+                    ErrorMessage = ex.Message,
+                }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <summary>
+    /// Handles a <c>file_search_request</c> (plan §1.2). Runs a bounded recursive name search under the
+    /// requested root subtree; results are capped at <see cref="FileTransferLimits.SearchMaxResults"/> and
+    /// <c>truncated</c> is set when the cap is hit. Search runs against a configured shared root (already
+    /// gated by pairing), the same as browse — it is not consent-gated.
+    /// </summary>
+    public async Task HandleFileSearchRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileSearchRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            var entries = await fileTransferService.SearchAsync(
+                req.RootId, req.RelativePath ?? string.Empty, req.Query, req.MaxResults, ct);
+
+            var effectiveCap = req.MaxResults <= 0
+                ? FileTransferLimits.SearchMaxResults
+                : Math.Min(req.MaxResults, FileTransferLimits.SearchMaxResults);
+
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileSearchResponse,
+                FileSearchResponse = new FileSearchResponse
+                {
+                    RequestId = req.RequestId,
+                    Entries = [.. entries],
+                    Truncated = entries.Count >= effectiveCap,
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "File search failed for root {RootId}, path {Path}", req.RootId, req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileSearchResponse,
+                FileSearchResponse = new FileSearchResponse
+                {
+                    RequestId = req.RequestId,
+                    Entries = [],
+                    Truncated = false,
+                    ErrorMessage = ex.Message,
+                }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <summary>
+    /// Handles a <c>file_metadata_request</c> (plan §1.2): detailed metadata for a single file/directory
+    /// (size, timestamps, item count, MIME type, read-only).
+    /// </summary>
+    public async Task HandleFileMetadataRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileMetadataRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            var meta = await fileTransferService.GetMetadataAsync(req.RootId, req.RelativePath, ct);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileMetadataResponse,
+                FileMetadataResponse = new FileMetadataResponse
+                {
+                    RequestId = req.RequestId,
+                    Size = meta.Size,
+                    CreatedUtc = meta.CreatedUtc,
+                    ModifiedUtc = meta.ModifiedUtc,
+                    IsDirectory = meta.IsDirectory,
+                    ItemCount = meta.ItemCount,
+                    MimeType = meta.MimeType,
+                    ReadOnly = meta.ReadOnly,
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "File metadata failed for root {RootId}, path {Path}", req.RootId, req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileMetadataResponse,
+                FileMetadataResponse = new FileMetadataResponse
+                {
+                    RequestId = req.RequestId,
+                    ErrorMessage = ex.Message,
+                }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <summary>
+    /// Handles a <c>file_thumbnail_request</c> (plan §1.2): a small base64 JPEG for an image (images only in
+    /// v1). A missing thumbnail (unsupported type / undecodable) returns a null <c>jpegBase64</c>, not an error.
+    /// </summary>
+    public async Task HandleFileThumbnailRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    {
+        var req = message.FileThumbnailRequest;
+        if (req is null) return;
+
+        RemexMessage response;
+        try
+        {
+            var maxDim = req.MaxDim > 0 ? req.MaxDim : FileTransferLimits.ThumbnailDefaultMaxDim;
+            var jpegBase64 = await fileTransferService.GetThumbnailBase64Async(req.RootId, req.RelativePath, maxDim, ct);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileThumbnailResponse,
+                FileThumbnailResponse = new FileThumbnailResponse
+                {
+                    RequestId = req.RequestId,
+                    JpegBase64 = jpegBase64,
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "File thumbnail failed for root {RootId}, path {Path}", req.RootId, req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileThumbnailResponse,
+                FileThumbnailResponse = new FileThumbnailResponse
+                {
+                    RequestId = req.RequestId,
+                    ErrorMessage = ex.Message,
+                }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <summary>
+    /// Combines a parent relative path and a (already validated) child name into a single forward-slash
+    /// relative path. An empty/whitespace parent means the child sits directly under the root.
+    /// </summary>
+    private static string CombineRelative(string? parent, string name)
+        => string.IsNullOrWhiteSpace(parent)
+            ? name
+            : $"{parent.TrimEnd('/', '\\')}/{name}";
 
     public async Task CleanupAllTransfersAsync()
     {

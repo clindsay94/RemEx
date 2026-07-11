@@ -6,10 +6,12 @@ using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services.FileTransfer;
 using Remex.Agent.Handlers;
+using Remex.Agent.Services.FileTransfer;
+using SkiaSharp;
 
 namespace Remex.Agent.Tests;
 
-public sealed class FileTransferHandlerTests
+public sealed class FileTransferHandlerTests : IDisposable
 {
     // Minimal WebSocket that captures outbound messages.
     private sealed class FakeWebSocket : WebSocket
@@ -46,7 +48,9 @@ public sealed class FileTransferHandlerTests
     }
 
     private static FileTransferHandler CreateHandler(IFileTransferService svc) =>
-        new(NullLogger<FileTransferHandler>.Instance, svc);
+        new(NullLogger<FileTransferHandler>.Instance, svc,
+            new Mock<IFileTrustService>().Object,
+            new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
 
     // ── Upload happy path ──────────────────────────────────────────────────────
 
@@ -270,5 +274,408 @@ public sealed class FileTransferHandlerTests
         }, ws, ct);
 
         Assert.Equal(messageCountBeforeChunk, ws.ReceivedMessages.Count);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 2.1 File Sharing Overhaul (protocolVersion 3) — WP3: file-manager ops.
+    // These exercise the real FileTransferService against a temp shared root (the
+    // copy/move/mkdir/search/metadata logic lives in the service, not the handler),
+    // driven end-to-end through the handler's message dispatch + error wrapping.
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private readonly List<string> _tempDirs = new();
+
+    private (FileTransferHandler handler, FileTransferService service, string rootDir) CreateRealServiceHandler(
+        bool isWritable = true, bool canRename = true, bool canMove = true, bool canDelete = true)
+    {
+        var baseTemp = Path.Combine(Path.GetTempPath(), "remex-wp3-" + Guid.NewGuid().ToString("N"));
+        var rootDir = Path.Combine(baseTemp, "root");
+        Directory.CreateDirectory(rootDir);
+        _tempDirs.Add(baseTemp);
+
+        var configPath = Path.Combine(baseTemp, "roots.json");
+        var service = new FileTransferService(NullLogger<FileTransferService>.Instance, configPath);
+        service.SeedRootsForTests(("root-1", "Test Root", rootDir, isWritable, canRename, canMove, canDelete, false));
+
+        return (CreateHandler(service), service, rootDir);
+    }
+
+    private static RemexMessage Manage(
+        string op, string rel, string? dest = null, string? newName = null, bool overwrite = false, string rootId = "root-1")
+        => new()
+        {
+            Type = MessageTypes.FileManageRequest,
+            FileManageRequest = new FileManageRequest
+            {
+                RequestId = "req-1",
+                RootId = rootId,
+                RelativePath = rel,
+                Operation = op,
+                NewName = newName,
+                DestinationPath = dest,
+                Overwrite = overwrite,
+            }
+        };
+
+    private static FileManageResponse LastManage(FakeWebSocket ws)
+        => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileManageResponse).FileManageResponse!;
+
+    private static FileSearchResponse LastSearch(FakeWebSocket ws)
+        => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileSearchResponse).FileSearchResponse!;
+
+    private static FileMetadataResponse LastMetadata(FakeWebSocket ws)
+        => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileMetadataResponse).FileMetadataResponse!;
+
+    // ── Copy ──────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Copy_File_HappyPath_CreatesDestinationAndKeepsSource()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        const string content = "hello wp3 copy";
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), content);
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Copy, "a.txt", dest: "b.txt"), ws, CancellationToken.None);
+
+        var resp = LastManage(ws);
+        Assert.True(resp.Success, resp.ErrorMessage);
+        Assert.True(File.Exists(Path.Combine(rootDir, "a.txt")));
+        Assert.True(File.Exists(Path.Combine(rootDir, "b.txt")));
+        Assert.Equal(content, await File.ReadAllTextAsync(Path.Combine(rootDir, "b.txt")));
+    }
+
+    [Fact]
+    public async Task Copy_DestinationEscapesRoot_ReturnsFailure()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "x");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Copy, "a.txt", dest: "../escaped.txt"), ws, CancellationToken.None);
+
+        var resp = LastManage(ws);
+        Assert.False(resp.Success);
+        // The escaped destination must NOT have been written above the root.
+        Assert.False(File.Exists(Path.Combine(rootDir, "..", "escaped.txt")));
+    }
+
+    [Fact]
+    public async Task Copy_OverwriteConflict_RespectsOverwriteFlag()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "source");
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "b.txt"), "existing");
+        var ws = new FakeWebSocket();
+
+        // overwrite = false → conflict, fails, existing content preserved.
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Copy, "a.txt", dest: "b.txt", overwrite: false), ws, CancellationToken.None);
+        Assert.False(LastManage(ws).Success);
+        Assert.Equal("existing", await File.ReadAllTextAsync(Path.Combine(rootDir, "b.txt")));
+
+        // overwrite = true → succeeds, destination replaced.
+        var ws2 = new FakeWebSocket();
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Copy, "a.txt", dest: "b.txt", overwrite: true), ws2, CancellationToken.None);
+        Assert.True(LastManage(ws2).Success);
+        Assert.Equal("source", await File.ReadAllTextAsync(Path.Combine(rootDir, "b.txt")));
+    }
+
+    // ── Move ──────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Move_File_HappyPath_RemovesSource()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "movable");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Move, "a.txt", dest: "sub/b.txt"), ws, CancellationToken.None);
+
+        var resp = LastManage(ws);
+        Assert.True(resp.Success, resp.ErrorMessage);
+        Assert.False(File.Exists(Path.Combine(rootDir, "a.txt")));
+        Assert.True(File.Exists(Path.Combine(rootDir, "sub", "b.txt")));
+        Assert.Equal("movable", await File.ReadAllTextAsync(Path.Combine(rootDir, "sub", "b.txt")));
+    }
+
+    [Fact]
+    public async Task Move_SourceEscapesRoot_ReturnsFailure()
+    {
+        var (handler, _, _) = CreateRealServiceHandler();
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Move, "../secret.txt", dest: "b.txt"), ws, CancellationToken.None);
+
+        Assert.False(LastManage(ws).Success);
+    }
+
+    [Fact]
+    public async Task Move_OnReadOnlyRoot_IsDenied()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler(canMove: false);
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "x");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Move, "a.txt", dest: "b.txt"), ws, CancellationToken.None);
+
+        Assert.False(LastManage(ws).Success);
+        Assert.True(File.Exists(Path.Combine(rootDir, "a.txt")));
+    }
+
+    // ── Mkdir ─────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Mkdir_HappyPath_CreatesFolder()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Mkdir, rel: "", newName: "newfolder"), ws, CancellationToken.None);
+
+        var resp = LastManage(ws);
+        Assert.True(resp.Success, resp.ErrorMessage);
+        Assert.True(Directory.Exists(Path.Combine(rootDir, "newfolder")));
+    }
+
+    [Fact]
+    public async Task Mkdir_NestedUnderParent_CreatesFolder()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        Directory.CreateDirectory(Path.Combine(rootDir, "parent"));
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Mkdir, rel: "parent", newName: "child"), ws, CancellationToken.None);
+
+        Assert.True(LastManage(ws).Success);
+        Assert.True(Directory.Exists(Path.Combine(rootDir, "parent", "child")));
+    }
+
+    [Fact]
+    public async Task Mkdir_NameWithTraversal_ReturnsFailure()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Mkdir, rel: "", newName: "../escaped"), ws, CancellationToken.None);
+
+        Assert.False(LastManage(ws).Success);
+        Assert.False(Directory.Exists(Path.Combine(rootDir, "..", "escaped")));
+    }
+
+    // ── Search ────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Search_MoreThanCap_ReturnsCappedTruncatedResults()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        for (var i = 0; i < 250; i++)
+            await File.WriteAllTextAsync(Path.Combine(rootDir, $"match_{i}.dat"), "x");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileSearchRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileSearchRequest,
+            FileSearchRequest = new FileSearchRequest
+            {
+                RequestId = "s1",
+                RootId = "root-1",
+                RelativePath = "",
+                Query = "match",
+                MaxResults = FileTransferLimits.SearchMaxResults,
+            }
+        }, ws, CancellationToken.None);
+
+        var resp = LastSearch(ws);
+        Assert.Equal(FileTransferLimits.SearchMaxResults, resp.Entries.Length);
+        Assert.True(resp.Truncated);
+    }
+
+    [Fact]
+    public async Task Search_NestedMatch_ReturnsForwardSlashRelativePath()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        Directory.CreateDirectory(Path.Combine(rootDir, "sub"));
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "sub", "deepfile.txt"), "x");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileSearchRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileSearchRequest,
+            FileSearchRequest = new FileSearchRequest
+            {
+                RequestId = "s1",
+                RootId = "root-1",
+                RelativePath = "",
+                Query = "deepfile",
+                MaxResults = 50,
+            }
+        }, ws, CancellationToken.None);
+
+        var resp = LastSearch(ws);
+        Assert.False(resp.Truncated);
+        var hit = Assert.Single(resp.Entries);
+        Assert.Equal("deepfile.txt", hit.Name);
+        Assert.Equal("sub/deepfile.txt", hit.RelativePath);
+        Assert.False(hit.IsDirectory);
+    }
+
+    // ── Metadata ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Metadata_File_ReturnsSizeAndMimeType()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        var bytes = new byte[1234];
+        await File.WriteAllBytesAsync(Path.Combine(rootDir, "doc.txt"), bytes);
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileMetadataRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileMetadataRequest,
+            FileMetadataRequest = new FileMetadataRequest { RequestId = "m1", RootId = "root-1", RelativePath = "doc.txt" }
+        }, ws, CancellationToken.None);
+
+        var resp = LastMetadata(ws);
+        Assert.Null(resp.ErrorMessage);
+        Assert.Equal(1234, resp.Size);
+        Assert.False(resp.IsDirectory);
+        Assert.Null(resp.ItemCount);
+        Assert.Equal("text/plain", resp.MimeType);
+        Assert.False(resp.ReadOnly);
+    }
+
+    [Fact]
+    public async Task Metadata_Directory_ReturnsItemCount()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        var subDir = Path.Combine(rootDir, "folder");
+        Directory.CreateDirectory(subDir);
+        await File.WriteAllTextAsync(Path.Combine(subDir, "one.txt"), "1");
+        await File.WriteAllTextAsync(Path.Combine(subDir, "two.txt"), "2");
+        Directory.CreateDirectory(Path.Combine(subDir, "three"));
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileMetadataRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileMetadataRequest,
+            FileMetadataRequest = new FileMetadataRequest { RequestId = "m1", RootId = "root-1", RelativePath = "folder" }
+        }, ws, CancellationToken.None);
+
+        var resp = LastMetadata(ws);
+        Assert.Null(resp.ErrorMessage);
+        Assert.True(resp.IsDirectory);
+        Assert.Equal(3, resp.ItemCount);
+        Assert.Equal(0, resp.Size);
+    }
+
+    [Fact]
+    public async Task Metadata_MissingFile_ReturnsError()
+    {
+        var (handler, _, _) = CreateRealServiceHandler();
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileMetadataRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileMetadataRequest,
+            FileMetadataRequest = new FileMetadataRequest { RequestId = "m1", RootId = "root-1", RelativePath = "nope.txt" }
+        }, ws, CancellationToken.None);
+
+        Assert.NotNull(LastMetadata(ws).ErrorMessage);
+    }
+
+    // ── Thumbnails (images only in v1) ────────────────────────────────────────
+
+    private static FileThumbnailResponse LastThumbnail(FakeWebSocket ws)
+        => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileThumbnailResponse).FileThumbnailResponse!;
+
+    [Fact]
+    public async Task Thumbnail_ForImage_ReturnsScaledJpegUnderBudget()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        var imagePath = Path.Combine(rootDir, "pic.png");
+        using (var bmp = new SKBitmap(300, 200))
+        {
+            using (var canvas = new SKCanvas(bmp))
+            {
+                canvas.Clear(SKColors.CornflowerBlue);
+                using var paint = new SKPaint { Color = SKColors.Orange };
+                canvas.DrawCircle(150, 100, 60, paint);
+            }
+            using var img = SKImage.FromBitmap(bmp);
+            using var data = img.Encode(SKEncodedImageFormat.Png, 100);
+            await File.WriteAllBytesAsync(imagePath, data.ToArray());
+        }
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileThumbnailRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileThumbnailRequest,
+            FileThumbnailRequest = new FileThumbnailRequest
+            {
+                RequestId = "t1",
+                RootId = "root-1",
+                RelativePath = "pic.png",
+                MaxDim = 128,
+            }
+        }, ws, CancellationToken.None);
+
+        var resp = LastThumbnail(ws);
+        Assert.Null(resp.ErrorMessage);
+        Assert.NotNull(resp.JpegBase64);
+        var jpeg = Convert.FromBase64String(resp.JpegBase64!);
+        Assert.True(jpeg.Length <= FileTransferLimits.ThumbnailMaxBytes);
+        using var thumb = SKBitmap.Decode(jpeg);
+        Assert.NotNull(thumb);
+        Assert.True(Math.Max(thumb!.Width, thumb.Height) <= 128);
+    }
+
+    [Fact]
+    public async Task Thumbnail_ForNonImage_ReturnsNullNotError()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "notes.txt"), "definitely not an image");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileThumbnailRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileThumbnailRequest,
+            FileThumbnailRequest = new FileThumbnailRequest
+            {
+                RequestId = "t1",
+                RootId = "root-1",
+                RelativePath = "notes.txt",
+                MaxDim = 128,
+            }
+        }, ws, CancellationToken.None);
+
+        var resp = LastThumbnail(ws);
+        Assert.Null(resp.ErrorMessage);
+        Assert.Null(resp.JpegBase64);
+    }
+
+    public void Dispose()
+    {
+        foreach (var dir in _tempDirs)
+        {
+            try
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, recursive: true);
+            }
+            catch
+            {
+                // Best-effort cleanup of temp fixtures.
+            }
+        }
     }
 }

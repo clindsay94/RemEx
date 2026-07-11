@@ -165,7 +165,16 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<PairedClientRegistry>();
         builder.Services.AddTransient<PairingHandler>();
         builder.Services.AddSingleton<IFileTransferService, FileTransferService>();
+        // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP2: trust/consent + volume enumeration ──
+        builder.Services.AddSingleton<IFileTrustService, FileTrustService>();
+        builder.Services.AddSingleton<VolumeEnumerator>();
         builder.Services.AddTransient<FileTransferHandler>();
+        // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP4: binary channel, sessions, resume, queue ──
+        // Singletons on purpose: TransferSessionManager holds live per-transfer state that MUST be shared
+        // between the /ws control plane (offer/ready/complete/result/control) and the /ws/files binary data
+        // plane, and TransferQueueService owns the process-death-surviving transfer_queue.json.
+        builder.Services.AddSingleton<TransferSessionManager>();
+        builder.Services.AddSingleton<TransferQueueService>();
         builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.DesktopSessionRegistry>();
 
         // Headless: suppress browser launch and Kestrel HTTPS dev-cert noise.
@@ -426,6 +435,7 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<IInputSimulationService>(),
                 context.RequestServices.GetRequiredService<PairingHandler>(),
                 context.RequestServices.GetRequiredService<FileTransferHandler>(),
+                context.RequestServices.GetRequiredService<TransferSessionManager>(),
                 context.RequestServices.GetRequiredService<PairedClientRegistry>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
@@ -545,6 +555,54 @@ public static class HostBootstrapper
             }
         });
 
+        // File-transfer binary WebSocket endpoint (dedicated binary stream, plan §1.1). Bulk chunk data and
+        // acks flow here; the JSON control plane (offer/ready/complete/result/control, browse, consent) stays
+        // on /ws. Auth mirrors /ws/desktop (loopback bypass + paired-registry presence check) but additionally
+        // demands protocolVersion ≥ 3 — the binary channel is a v3-only feature, so v2 peers keep the legacy
+        // base64 path on /ws and are never admitted here (plan §1.5).
+        app.Map("/ws/files", async (HttpContext context, PairedClientRegistry pairedClientRegistry) =>
+        {
+            var authLogger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger("Remex.Agent.FilesAuth");
+
+            if (!context.WebSockets.IsWebSocketRequest)
+            {
+                authLogger.LogWarning(
+                    "Rejected /ws/files: non-WebSocket request from {RemoteIp}.",
+                    context.Connection.RemoteIpAddress);
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await context.Response.WriteAsync("WebSocket connections only.");
+                return;
+            }
+
+            var remoteIp = context.Connection.RemoteIpAddress;
+            var clientId = context.Request.Query["clientId"].ToString();
+            var protocolVersion = context.Request.Query["protocolVersion"].ToString();
+
+            var evaluation = EvaluateFilesAuth(remoteIp, clientId, protocolVersion, pairedClientRegistry);
+            if (evaluation.StatusCode != StatusCodes.Status200OK)
+            {
+                authLogger.LogWarning(
+                    "Rejected /ws/files from {RemoteIp} (clientIdPrefix={ClientIdPrefix}, protocolVersion={ProtocolVersion}): {Reason}",
+                    remoteIp,
+                    RedactClientId(clientId),
+                    string.IsNullOrEmpty(protocolVersion) ? "<unset>" : protocolVersion,
+                    evaluation.Reason);
+                context.Response.StatusCode = evaluation.StatusCode;
+                await context.Response.WriteAsync(evaluation.Reason ?? "Unauthorized.");
+                return;
+            }
+
+            using var ws = await context.WebSockets.AcceptWebSocketAsync();
+            var sessions = context.RequestServices.GetRequiredService<TransferSessionManager>();
+
+            // RunChannelAsync owns the socket for its lifetime: it services inbound data frames (writing to the
+            // matching receive session with periodic acks) and inbound acks (advancing send-session
+            // backpressure), and on exit suspends this client's receive sessions (partials kept for resume)
+            // and cancels its sends. It never throws out to here.
+            await sessions.RunChannelAsync(clientId, ws, context.RequestAborted);
+        });
+
         return app;
     }
 
@@ -635,6 +693,58 @@ public static class HostBootstrapper
         // is TLS with the host SPKI pinned by the client at pairing time. A bare clientId on /ws
         // no longer authenticates; this gate additionally requires the client to be a known paired
         // identity before any screen-capture/PipeWire session is started.
+        if (!registry.IsClientPaired(clientId))
+        {
+            return (StatusCodes.Status403Forbidden, "Client is not paired.");
+        }
+
+        return (StatusCodes.Status200OK, null);
+    }
+
+    /// <summary>
+    /// Evaluates whether an inbound /ws/files request is allowed. Mirrors <see cref="EvaluateDesktopAuth"/>
+    /// (loopback bypass + paired-client registry presence check) with one deliberate difference: because the
+    /// binary file channel is a v3-only feature, a supplied <paramref name="protocolVersion"/> must satisfy
+    /// <see cref="Remex.Core.Messages.ProtocolVersionPolicy.SupportsBinaryFileTransfer"/> (≥ 3) rather than
+    /// merely <see cref="Remex.Core.Messages.ProtocolVersionPolicy.IsSupported"/> (≥ 2). An explicit v2 is
+    /// rejected here so v2 peers stay on the legacy base64 path on /ws and never reach the binary channel
+    /// (plan §1.5). Extracted so the auth decision can be exercised by unit tests without standing up Kestrel.
+    /// </summary>
+    internal static (int StatusCode, string? Reason) EvaluateFilesAuth(
+        System.Net.IPAddress? remoteIp,
+        string clientId,
+        string protocolVersion,
+        PairedClientRegistry registry)
+    {
+        // v3-only channel. When the client advertises a version it MUST support the binary file transport; an
+        // explicit v2 (or a non-numeric value) is a clear-cut reject. An omitted value is tolerated for the
+        // same forward-compat reason as /ws/desktop — a genuine v2 client never dials this endpoint (it does
+        // not know it exists), so in practice only paired v3 clients ever reach here.
+        if (!string.IsNullOrEmpty(protocolVersion))
+        {
+            if (!int.TryParse(protocolVersion, out var parsedVersion)
+                || !Remex.Core.Messages.ProtocolVersionPolicy.SupportsBinaryFileTransfer(parsedVersion))
+            {
+                return (StatusCodes.Status400BadRequest,
+                    $"Unsupported protocolVersion '{protocolVersion}' for the binary file channel. " +
+                    $"Expected '{Remex.Core.Messages.ProtocolVersionPolicy.BinaryFileTransferMinimum}' or later.");
+            }
+        }
+
+        var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
+        if (isLoopback)
+        {
+            return (StatusCodes.Status200OK, null);
+        }
+
+        if (string.IsNullOrWhiteSpace(clientId))
+        {
+            return (StatusCodes.Status401Unauthorized, "Paired client ID is required.");
+        }
+
+        // Presence check, not authentication: a client must first authenticate on the /ws control channel via
+        // the reconnect proof-of-possession handshake, and the transport is TLS with the host SPKI pinned. This
+        // gate additionally requires the client to be a known paired identity before any bulk data flows.
         if (!registry.IsClientPaired(clientId))
         {
             return (StatusCodes.Status403Forbidden, "Client is not paired.");
