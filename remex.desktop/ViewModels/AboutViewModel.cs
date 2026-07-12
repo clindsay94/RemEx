@@ -28,6 +28,10 @@ public partial class AboutViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<WhatsNewItem> WhatsNewItems { get; } = new();
 
+    /// <summary>The shared connection view-model, surfaced so the About screen can host the connection card
+    /// (the Connection screen was folded into About and removed from the nav rail).</summary>
+    public ConnectionViewModel Connection => _connection;
+
     public AboutViewModel(ConnectionViewModel connection, ShellViewModel shell)
     {
         _connection = connection;

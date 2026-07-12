@@ -218,14 +218,6 @@
                                             </Grid>
                                         </Button>
 
-                                        <!-- Connection -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=10}" Command="{Binding NavigateToConnectionCommand}" ToolTip.Tip="{conv:Localize Nav_Connection}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <Path Grid.Column="0" Data="{StaticResource IconConnection}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Connection}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
-                                            </Grid>
-                                        </Button>
-
                                         <!-- About (moved into settings cluster) -->
                                         <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6}" Command="{Binding NavigateToAboutCommand}" ToolTip.Tip="{conv:Localize Shell_About}">
                                             <Grid ColumnDefinitions="64,*">
