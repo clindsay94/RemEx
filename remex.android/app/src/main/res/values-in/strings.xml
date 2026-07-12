@@ -704,4 +704,10 @@
     <string name="file_consent_deny">Tolak</string>
     <string name="file_consent_remember">Ingat pilihan saya untuk PC ini</string>
     <string name="file_consent_expires_in">Kedaluwarsa dalam %1$d detik</string>
+    <string name="personalization_splash_preview">Pratinjau Animasi</string>
+    <string name="personalization_splash_preview_close">Tutup pratinjau</string>
+    <string name="splash_term_connect">connect</string>
+    <string name="splash_term_pairing">pairing</string>
+    <string name="splash_term_session_ready">session ready</string>
+    <string name="personalization_splash_pong">Signal Pong</string>
 </resources>

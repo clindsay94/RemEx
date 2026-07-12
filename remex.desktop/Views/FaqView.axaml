@@ -8,8 +8,8 @@
 
             <!-- Header -->
             <StackPanel Spacing="4">
-                <TextBlock Text="{conv:Localize Nav_Faq}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                <TextBlock Text="{conv:Localize About_Faq}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+                <TextBlock Classes="page-title" Text="{conv:Localize Nav_Faq}"/>
+                <TextBlock Classes="page-subtitle" Text="{conv:Localize About_Faq}"/>
             </StackPanel>
 
             <!-- FAQ items (one glass-card per Q/A) -->

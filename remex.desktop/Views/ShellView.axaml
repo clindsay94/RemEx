@@ -470,7 +470,7 @@
                                 <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="8" Padding="12" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                     <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Text="{conv:Localize Tutorial_P4_Steps}"/>
                                 </Border>
-                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#FFAA44" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P4_Warning}"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource SystemWarningBrush}" FontStyle="Italic" TextAlignment="Center" Text="{conv:Localize Tutorial_P4_Warning}"/>
                             </StackPanel>
 
                             <!-- Page 3: Sensors Overview -->
@@ -616,9 +616,9 @@
 
                             <!-- Navigation buttons -->
                             <Grid ColumnDefinitions="Auto,*,Auto">
-                                <Button Grid.Column="0" Content="{conv:Localize Tutorial_Back}" Command="{Binding TutorialPreviousCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}" Background="#2A2A4A" Foreground="#C0C0FF" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=16}" Background="#4A3AFF" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}" Background="#4ADE80" Foreground="#1A1A1A" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="0" Content="{conv:Localize Tutorial_Back}" Command="{Binding TutorialPreviousCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=16}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}" Background="{DynamicResource SystemSuccessBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
                             </Grid>
                         </StackPanel>
                     </Border>

@@ -704,4 +704,10 @@
     <string name="file_consent_deny">Reddet</string>
     <string name="file_consent_remember">Bu PC için seçimimi hatırla</string>
     <string name="file_consent_expires_in">%1$d saniye içinde sona erer</string>
+    <string name="personalization_splash_preview">Animasyonu Önizle</string>
+    <string name="personalization_splash_preview_close">Önizlemeyi kapat</string>
+    <string name="splash_term_connect">connect</string>
+    <string name="splash_term_pairing">pairing</string>
+    <string name="splash_term_session_ready">session ready</string>
+    <string name="personalization_splash_pong">Signal Pong</string>
 </resources>

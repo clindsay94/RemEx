@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RESX_DIR = os.path.join(BASE_DIR, "Remex.Client", "Localization")
+RESX_DIR = os.path.join(BASE_DIR, "remex.desktop", "Localization")
 MASTER_PATH = os.path.join(RESX_DIR, "Strings.resx")
 
 LOCALES = [

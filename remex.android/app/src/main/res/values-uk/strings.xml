@@ -704,4 +704,10 @@
     <string name="file_consent_deny">Відхилити</string>
     <string name="file_consent_remember">Запам\'ятати мій вибір для цього ПК</string>
     <string name="file_consent_expires_in">Спливає через %1$d с</string>
+    <string name="personalization_splash_preview">Попередній перегляд анімації</string>
+    <string name="personalization_splash_preview_close">Закрити перегляд</string>
+    <string name="splash_term_connect">connect</string>
+    <string name="splash_term_pairing">pairing</string>
+    <string name="splash_term_session_ready">session ready</string>
+    <string name="personalization_splash_pong">Signal Pong</string>
 </resources>

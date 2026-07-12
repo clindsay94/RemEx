@@ -2900,4 +2900,16 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Conn_Latency" xml:space="preserve">
     <value>Gecikme</value>
   </data>
+  <data name="Splash_SkipHint" xml:space="preserve">
+    <value>Atlamak için herhangi bir yere tıklayın</value>
+  </data>
+  <data name="Splash_Style_RemexCommand" xml:space="preserve">
+    <value>Original Scan</value>
+  </data>
+  <data name="Splash_Style_CosmicZoom" xml:space="preserve">
+    <value>Cosmic Zoom</value>
+  </data>
+  <data name="Splash_Style_Pong" xml:space="preserve">
+    <value>Signal Pong</value>
+  </data>
 </root>

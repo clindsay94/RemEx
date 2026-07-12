@@ -704,4 +704,10 @@
     <string name="file_consent_deny">Negar</string>
     <string name="file_consent_remember">Lembrar minha escolha para este PC</string>
     <string name="file_consent_expires_in">Expira em %1$d segundos</string>
+    <string name="personalization_splash_preview">Visualizar animação</string>
+    <string name="personalization_splash_preview_close">Fechar visualização</string>
+    <string name="splash_term_connect">connect</string>
+    <string name="splash_term_pairing">pairing</string>
+    <string name="splash_term_session_ready">session ready</string>
+    <string name="personalization_splash_pong">Signal Pong</string>
 </resources>
