@@ -62,7 +62,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.service.FilePeerIdentity
 import com.clindsay94.remex.ui.components.RemexScreenHeader
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 
@@ -566,6 +568,135 @@ private fun FileTransferSettingsTab() {
                         Text(stringResource(R.string.settings_ft_add_folder))
                     }
                 }
+            }
+
+            // Per-device access controls (plan §2 / WP9): consent for the PC to see this phone's
+            // whole storage (a SAF root pick = the OS-level consent) and to auto-accept its pushes.
+            FileTransferAccessCard(settingsManager)
+        }
+    }
+}
+
+/**
+ * "Access from this PC" trust controls (plan §2 / WP9). Full-device browse is a single SAF
+ * `ACTION_OPEN_DOCUMENT_TREE` grant of a storage root: the picker is the OS-level consent, mirrored
+ * into the per-device `fileTrust_<deviceId>_fullBrowse` key and set/cleared in lock-step with the SAF
+ * root URI the host mirror exposes as a volume. Auto-accept toggles the per-device
+ * `fileTrust_<deviceId>_autoAccept` grant so incoming pushes skip the prompt.
+ */
+@Composable
+private fun FileTransferAccessCard(settingsManager: SettingsManager) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val host by settingsManager.hostFlow.collectAsStateWithLifecycle(initialValue = "")
+    val deviceId = FilePeerIdentity.deviceId(host)
+    val fullBrowseRoot by settingsManager.fullBrowseRootUriFlow.collectAsStateWithLifecycle(initialValue = null)
+    val autoAcceptFlow = remember(deviceId) { settingsManager.fileTrustAutoAcceptFlow(deviceId) }
+    val autoAccept by autoAcceptFlow.collectAsStateWithLifecycle(initialValue = false)
+
+    val fullBrowseLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            scope.launch {
+                // Re-derive the device id inside the coroutine so a late-loading host is honoured.
+                val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
+                settingsManager.setFullBrowseRootUri(uri.toString())
+                settingsManager.setFileTrustFullBrowse(dev, true)
+            }
+        }
+    }
+
+    Text(
+            text = stringResource(R.string.settings_ft_access_title),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary
+    )
+
+    Card(
+            colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            )
+    ) {
+        Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                    text = stringResource(R.string.settings_ft_access_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            HorizontalDivider()
+
+            // Full-device browse.
+            Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                            text = stringResource(R.string.settings_ft_full_browse_title),
+                            style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                            text = stringResource(R.string.settings_ft_full_browse_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                        checked = fullBrowseRoot != null,
+                        onCheckedChange = { enabled ->
+                            if (enabled) {
+                                fullBrowseLauncher.launch(null)
+                            } else {
+                                scope.launch {
+                                    val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
+                                    settingsManager.clearFullBrowseRootUri()
+                                    settingsManager.setFileTrustFullBrowse(dev, false)
+                                }
+                            }
+                        }
+                )
+            }
+
+            HorizontalDivider()
+
+            // Auto-accept incoming pushes.
+            Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                            text = stringResource(R.string.settings_ft_auto_accept_title),
+                            style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                            text = stringResource(R.string.settings_ft_auto_accept_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                        checked = autoAccept,
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
+                                settingsManager.setFileTrustAutoAccept(dev, enabled)
+                            }
+                        }
+                )
             }
         }
     }

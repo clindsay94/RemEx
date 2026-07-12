@@ -13,11 +13,13 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Threading;
 using Remex.Core.Guards;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.Backup;
 using Remex.Desktop.Services.FileTransfer;
 using Remex.Core.Models;
+using Remex.Core.Services.FileTransfer;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -136,6 +138,39 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public bool HasSharedRoots => SharedRoots.Count > 0;
 
+    // ═══════════════ File-sharing trust management (2.1) ═══════════════
+
+    /// <summary>Per-paired-device file-sharing consent (full-browse + auto-accept), backed by the
+    /// in-process host's <see cref="IFileTrustService"/>. Only meaningful when this PC is running the
+    /// embedded host (it is the serving device); resolved lazily and null in client-only mode.</summary>
+    private IFileTrustService? _fileTrustService;
+    private bool _fileTrustServiceResolved;
+
+    public ObservableCollection<FileTrustDeviceItem> TrustedDevices { get; } = new();
+
+    /// <summary>True when the trust-management UI should be shown (embedded host present, not Android).</summary>
+    public bool SupportsTrustManagement => !OperatingSystem.IsAndroid() && ResolveTrustService() is not null;
+
+    public bool HasTrustedDevices => TrustedDevices.Count > 0;
+
+    private IFileTrustService? ResolveTrustService()
+    {
+        if (_fileTrustServiceResolved)
+            return _fileTrustService;
+
+        _fileTrustServiceResolved = true;
+        try
+        {
+            _fileTrustService = EmbeddedHostServiceLocator.Require<IFileTrustService>();
+        }
+        catch (Exception)
+        {
+            // Client-only mode (no embedded host): trust management is unavailable.
+            _fileTrustService = null;
+        }
+        return _fileTrustService;
+    }
+
     [ObservableProperty]
     private string _hostRuntimeText = LocalizationService.Instance["Service_HostUnavailable"];
 
@@ -237,7 +272,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         });
 
         await LoadSharedRootsAsync();
-
+        await LoadTrustedDevicesAsync();
     }
 
     /// <summary>
@@ -251,6 +286,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             item.PinChanged -= OnSensorPinChanged;
         foreach (var root in SharedRoots)
             UnsubscribeSharedRoot(root);
+        foreach (var device in TrustedDevices)
+            UnsubscribeTrustDevice(device);
     }
 
     public void RefreshSensors()
@@ -485,6 +522,107 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             var roots = await _fileTransferRootSettings.ResetToDefaultsAsync();
             ReplaceSharedRoots(roots);
             ShowTransientStatus(LocalizationService.Instance["Settings_FileTransferDefaultsRestored"]);
+        }
+        catch (Exception ex)
+        {
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
+    private async Task LoadTrustedDevicesAsync()
+    {
+        var service = ResolveTrustService();
+        OnPropertyChanged(nameof(SupportsTrustManagement));
+        if (service is null)
+            return;
+
+        try
+        {
+            var records = await service.GetAllAsync(CancellationToken.None);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ReplaceTrustedDevices(records));
+        }
+        catch (Exception ex)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message)));
+        }
+    }
+
+    [RelayCommand]
+    private async Task RefreshTrustedDevicesAsync() => await LoadTrustedDevicesAsync();
+
+    private void ReplaceTrustedDevices(IReadOnlyList<FileTrustRecord> records)
+    {
+        foreach (var existing in TrustedDevices)
+            UnsubscribeTrustDevice(existing);
+
+        TrustedDevices.Clear();
+
+        foreach (var record in records)
+        {
+            var item = new FileTrustDeviceItem(record.ClientId, record.FullBrowseGranted, record.AutoAcceptIncoming);
+            SubscribeTrustDevice(item);
+            TrustedDevices.Add(item);
+        }
+
+        OnPropertyChanged(nameof(HasTrustedDevices));
+    }
+
+    private void SubscribeTrustDevice(FileTrustDeviceItem item)
+    {
+        item.FullBrowseChanged += OnTrustFullBrowseChanged;
+        item.AutoAcceptChanged += OnTrustAutoAcceptChanged;
+        item.RevokeRequested += OnTrustRevokeRequested;
+    }
+
+    private void UnsubscribeTrustDevice(FileTrustDeviceItem item)
+    {
+        item.FullBrowseChanged -= OnTrustFullBrowseChanged;
+        item.AutoAcceptChanged -= OnTrustAutoAcceptChanged;
+        item.RevokeRequested -= OnTrustRevokeRequested;
+    }
+
+    private async void OnTrustFullBrowseChanged(object? sender, bool granted)
+    {
+        if (sender is not FileTrustDeviceItem item || ResolveTrustService() is not { } service)
+            return;
+        try
+        {
+            await service.SetFullBrowseGrantedAsync(item.ClientId, granted, CancellationToken.None);
+            ShowTransientStatus(LocalizationService.Instance["Settings_TrustUpdated"]);
+        }
+        catch (Exception ex)
+        {
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
+    private async void OnTrustAutoAcceptChanged(object? sender, bool autoAccept)
+    {
+        if (sender is not FileTrustDeviceItem item || ResolveTrustService() is not { } service)
+            return;
+        try
+        {
+            await service.SetAutoAcceptIncomingAsync(item.ClientId, autoAccept, CancellationToken.None);
+            ShowTransientStatus(LocalizationService.Instance["Settings_TrustUpdated"]);
+        }
+        catch (Exception ex)
+        {
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+        }
+    }
+
+    private async void OnTrustRevokeRequested(object? sender, EventArgs e)
+    {
+        if (sender is not FileTrustDeviceItem item || ResolveTrustService() is not { } service)
+            return;
+        try
+        {
+            await service.RevokeAsync(item.ClientId, CancellationToken.None);
+            UnsubscribeTrustDevice(item);
+            TrustedDevices.Remove(item);
+            OnPropertyChanged(nameof(HasTrustedDevices));
+            ShowTransientStatus(LocalizationService.Instance["Settings_TrustRevoked"]);
         }
         catch (Exception ex)
         {
@@ -788,3 +926,52 @@ public partial class FileTransferSharedRootItem : ObservableObject
 }
 
 public record LanguageItem(string DisplayName, string Code);
+
+/// <summary>
+/// One paired device's file-sharing trust state, shown in the Settings trust-management list (2.1).
+/// Toggling a switch raises an event the <see cref="SettingsViewModel"/> persists through the
+/// <see cref="IFileTrustService"/>; the initial seed is suppressed so loading does not write back.
+/// </summary>
+public partial class FileTrustDeviceItem : ObservableObject
+{
+    public string ClientId { get; }
+
+    /// <summary>Short, friendly identifier for a (non-technical) user — the leading chars of the client id.</summary>
+    public string ShortId => ClientId.Length > 12 ? ClientId[..12] + "…" : ClientId;
+
+    private readonly bool _seeding;
+
+    [ObservableProperty]
+    private bool _fullBrowseGranted;
+
+    [ObservableProperty]
+    private bool _autoAcceptIncoming;
+
+    public event EventHandler<bool>? FullBrowseChanged;
+    public event EventHandler<bool>? AutoAcceptChanged;
+    public event EventHandler? RevokeRequested;
+
+    public FileTrustDeviceItem(string clientId, bool fullBrowseGranted, bool autoAcceptIncoming)
+    {
+        ClientId = clientId;
+        _seeding = true;
+        FullBrowseGranted = fullBrowseGranted;
+        AutoAcceptIncoming = autoAcceptIncoming;
+        _seeding = false;
+    }
+
+    partial void OnFullBrowseGrantedChanged(bool value)
+    {
+        if (!_seeding)
+            FullBrowseChanged?.Invoke(this, value);
+    }
+
+    partial void OnAutoAcceptIncomingChanged(bool value)
+    {
+        if (!_seeding)
+            AutoAcceptChanged?.Invoke(this, value);
+    }
+
+    [RelayCommand]
+    private void Revoke() => RevokeRequested?.Invoke(this, EventArgs.Empty);
+}

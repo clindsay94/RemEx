@@ -8,6 +8,8 @@ namespace Remex.Desktop.Converters;
 
 public class Base64ToImageConverter : IValueConverter
 {
+    public static readonly Base64ToImageConverter Instance = new();
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is string base64 && !string.IsNullOrWhiteSpace(base64))

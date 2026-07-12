@@ -1,0 +1,57 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:Remex.Desktop.ViewModels"
+        xmlns:local="clr-namespace:Remex.Desktop.Converters"
+        mc:Ignorable="d" d:DesignWidth="440" d:DesignHeight="300"
+        x:Class="Remex.Desktop.Views.FileConsentDialog"
+        x:DataType="vm:FileConsentDialogViewModel"
+        Width="440" Height="300"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Title="{local:Localize FileConsent_WindowTitle}"
+        ExtendClientAreaToDecorationsHint="True">
+
+    <Border Padding="24" Background="{DynamicResource CardBackgroundBrush}">
+        <Grid RowDefinitions="Auto,*,Auto">
+
+            <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,16">
+                <TextBlock Text="{Binding Title}"
+                           FontSize="20" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Text="{Binding Message}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="1" Spacing="14" VerticalAlignment="Center">
+                <Border IsVisible="{Binding HasDetail}"
+                        Background="{DynamicResource GlassBaseDarkBrush}"
+                        BorderBrush="{DynamicResource CardBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14,10">
+                    <TextBlock Text="{Binding Detail}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap"/>
+                </Border>
+
+                <CheckBox IsChecked="{Binding Remember}"
+                          Content="{local:Localize FileConsent_Remember}"
+                          Foreground="{DynamicResource TextSecondaryBrush}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,16,0,0">
+                <Button Content="{local:Localize FileConsent_Deny}"
+                        Command="{Binding DenyCommand}"
+                        Classes="outline"/>
+                <Button Content="{local:Localize FileConsent_Allow}"
+                        Command="{Binding AllowCommand}"
+                        Classes="accent"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

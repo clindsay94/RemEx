@@ -29,6 +29,18 @@ public sealed class FileTransferClient : IDisposable
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _manageWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _hashWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _rootManageWaiters = new();
+    // ── 2.1 File Sharing Overhaul (protocolVersion 3) response waiters ──
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _volumesWaiters = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _searchWaiters = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _metadataWaiters = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _thumbnailWaiters = new();
+
+    /// <summary>
+    /// v3 file-transfer capabilities advertised by the connected host in the most recent
+    /// <c>file_roots_response</c>. Null for a v2 host (or before roots are first fetched). The UI gates
+    /// every v3 feature on this so a v3 message is never sent to a v2 peer (plan §1.5).
+    /// </summary>
+    public FileCapabilities? Capabilities { get; private set; }
 
     public FileTransferClient(ConnectionViewModel connection)
     {
@@ -53,11 +65,26 @@ public sealed class FileTransferClient : IDisposable
         if (ReferenceEquals(_rootsWaiter, tcs))
             _rootsWaiter = null;
 
+        // Capture the v3 capability handshake (additive field; null for v2 hosts). Roots are always
+        // fetched first, so this doubles as the negotiation — no separate handshake message.
+        Capabilities = response.FileRootsResponse?.FileCapabilities;
+
         if (response.FileRootsResponse?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
             throw new IOException($"Root listing error: {err}");
 
         return response.FileRootsResponse?.Roots ?? [];
     }
+
+    /// <summary>True when the connected host advertises the v3 file-manager protocol (copy/move/mkdir/
+    /// search/metadata/thumbnail on <c>/ws</c>). Gates every v3 message so none is sent to a v2 peer.</summary>
+    public bool SupportsV3 => (Capabilities?.Protocol ?? 0) >= 3;
+
+    /// <summary>True when the host advertises a given file-manager op in its capability set.</summary>
+    public bool SupportsOp(string op) =>
+        Capabilities?.Ops is { } ops && System.Array.IndexOf(ops, op) >= 0;
+
+    /// <summary>True when full-device (volume) browsing may be offered for this host.</summary>
+    public bool SupportsFullBrowse => SupportsV3 && Capabilities?.FullBrowse == true;
 
     public async Task<IReadOnlyList<FileEntry>> BrowseRemoteAsync(string rootId, string relativePath, CancellationToken ct)
     {
@@ -148,6 +175,152 @@ public sealed class FileTransferClient : IDisposable
             throw new IOException($"Hash verification failed: {err}");
 
         return response.FileHashResponse?.Sha256Base64 ?? string.Empty;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 2.1 File Sharing Overhaul (protocolVersion 3) — file-manager ops on /ws.
+    // Field names/type-strings mirror remex.core verbatim (RemexMessage / FileTransferMessages).
+    // Callers must gate on Capabilities so these are never sent to a v2 host.
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /// <summary>Copies <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within the same root.</summary>
+    public Task CopyRemoteAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
+        => ManageAsync(rootId, relativePath, Remex.Core.Models.FileManageOperations.Copy, newName: null, destinationRelativePath, overwrite, ct);
+
+    /// <summary>Moves <paramref name="relativePath"/> to <paramref name="destinationRelativePath"/> within the same root.</summary>
+    public Task MoveRemoteAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
+        => ManageAsync(rootId, relativePath, Remex.Core.Models.FileManageOperations.Move, newName: null, destinationRelativePath, overwrite, ct);
+
+    /// <summary>Creates a new folder named <paramref name="folderName"/> under <paramref name="parentRelativePath"/> (wire: RelativePath=parent, NewName=folder).</summary>
+    public Task MakeDirectoryRemoteAsync(string rootId, string parentRelativePath, string folderName, CancellationToken ct)
+        => ManageAsync(rootId, parentRelativePath, Remex.Core.Models.FileManageOperations.Mkdir, newName: folderName, destinationPath: null, overwrite: false, ct);
+
+    private async Task ManageAsync(string rootId, string relativePath, string operation, string? newName, string? destinationPath, bool overwrite, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _manageWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileManageRequest,
+            FileManageRequest = new FileManageRequest
+            {
+                RequestId = requestId,
+                RootId = rootId,
+                RelativePath = relativePath,
+                Operation = operation,
+                NewName = newName,
+                DestinationPath = destinationPath,
+                Overwrite = overwrite,
+            }
+        });
+
+        var response = await tcs.Task;
+        _manageWaiters.TryRemove(requestId, out _);
+
+        if (response.FileManageResponse?.Success == false)
+            throw new IOException(response.FileManageResponse.ErrorMessage ?? $"{operation} failed.");
+    }
+
+    /// <summary>Bounded recursive search under a root subtree. Returns hits plus whether results were capped.</summary>
+    public async Task<(IReadOnlyList<FileSearchEntry> Entries, bool Truncated)> SearchRemoteAsync(
+        string rootId, string? relativePath, string query, int maxResults, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _searchWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileSearchRequest,
+            FileSearchRequest = new FileSearchRequest
+            {
+                RequestId = requestId,
+                RootId = rootId,
+                RelativePath = relativePath,
+                Query = query,
+                MaxResults = maxResults,
+            }
+        });
+
+        var response = await tcs.Task;
+        _searchWaiters.TryRemove(requestId, out _);
+
+        if (response.FileSearchResponse?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
+            throw new IOException($"Search error: {err}");
+
+        var resp = response.FileSearchResponse;
+        return (resp?.Entries ?? [], resp?.Truncated ?? false);
+    }
+
+    /// <summary>Detailed metadata (size, timestamps, item count, mime, read-only) for a single item.</summary>
+    public async Task<FileMetadataResponse> GetMetadataRemoteAsync(string rootId, string relativePath, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _metadataWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileMetadataRequest,
+            FileMetadataRequest = new FileMetadataRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath }
+        });
+
+        var response = await tcs.Task;
+        _metadataWaiters.TryRemove(requestId, out _);
+
+        if (response.FileMetadataResponse is not { } meta)
+            throw new IOException("No metadata response received.");
+        if (meta.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
+            throw new IOException($"Metadata error: {err}");
+        return meta;
+    }
+
+    /// <summary>Requests a small base64 JPEG thumbnail (images only in v1). Returns null when unavailable.</summary>
+    public async Task<string?> GetThumbnailRemoteAsync(string rootId, string relativePath, int maxDim, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _thumbnailWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileThumbnailRequest,
+            FileThumbnailRequest = new FileThumbnailRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, MaxDim = maxDim }
+        });
+
+        var response = await tcs.Task;
+        _thumbnailWaiters.TryRemove(requestId, out _);
+
+        return response.FileThumbnailResponse?.JpegBase64;
+    }
+
+    /// <summary>Enumerates the host's mounted volumes/drives once full-browse consent is granted (plan §1.2).</summary>
+    public async Task<(IReadOnlyList<FileVolumeInfo> Volumes, bool FullBrowseGranted)> ListVolumesAsync(CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _volumesWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        await _connection.SendAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileVolumesRequest,
+            FileVolumesRequest = new FileVolumesRequest { RequestId = requestId }
+        });
+
+        var response = await tcs.Task;
+        _volumesWaiters.TryRemove(requestId, out _);
+
+        var resp = response.FileVolumesResponse;
+        if (resp?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
+            throw new IOException($"Volumes error: {err}");
+        return (resp?.Volumes ?? [], resp?.FullBrowseGranted ?? false);
     }
 
     public async Task<IReadOnlyList<FileSharedRoot>> AddRemoteRootAsync(string sourceRootId, string sourceRelativePath, CancellationToken ct)
@@ -389,6 +562,27 @@ public sealed class FileTransferClient : IDisposable
             case MessageTypes.FileRootManageResponse when message.FileRootManageResponse is { } rootManage:
                 if (_rootManageWaiters.TryGetValue(rootManage.RequestId, out var rootManageTcs))
                     rootManageTcs.TrySetResult(message);
+                break;
+
+            // ── 2.1 File Sharing Overhaul (protocolVersion 3) responses ──
+            case MessageTypes.FileVolumesResponse when message.FileVolumesResponse is { } volumes:
+                if (_volumesWaiters.TryGetValue(volumes.RequestId, out var volumesTcs))
+                    volumesTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileSearchResponse when message.FileSearchResponse is { } search:
+                if (_searchWaiters.TryGetValue(search.RequestId, out var searchTcs))
+                    searchTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileMetadataResponse when message.FileMetadataResponse is { } metadata:
+                if (_metadataWaiters.TryGetValue(metadata.RequestId, out var metadataTcs))
+                    metadataTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileThumbnailResponse when message.FileThumbnailResponse is { } thumbnail:
+                if (_thumbnailWaiters.TryGetValue(thumbnail.RequestId, out var thumbnailTcs))
+                    thumbnailTcs.TrySetResult(message);
                 break;
         }
     }

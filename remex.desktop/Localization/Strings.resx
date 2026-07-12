@@ -2485,4 +2485,256 @@ Linux: ip addr  or  hostname -I</value>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
     <value>Refresh Icon</value>
   </data>
+
+  <!-- ═══ 2.1 File Sharing Overhaul — file manager ═══ -->
+  <data name="FileTransfer_BreadcrumbRoot" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="FileTransfer_SearchWatermark" xml:space="preserve">
+    <value>Search this folder…</value>
+  </data>
+  <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
+    <value>{0} result(s) found.</value>
+  </data>
+  <data name="FileTransfer_SearchTruncatedFormat" xml:space="preserve">
+    <value>Showing the first {0} matches — refine your search to see more.</value>
+  </data>
+  <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
+    <value>Search failed: {0}</value>
+  </data>
+  <data name="FileTransfer_SortLabel" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="FileTransfer_SortName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="FileTransfer_SortSize" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="FileTransfer_SortDate" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
+    <value>Send to Phone</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
+    <value>Pick files on this PC and send them to the current folder on the connected device.</value>
+  </data>
+  <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
+    <value>New Folder</value>
+  </data>
+  <data name="FileTransfer_NewFolderTooltip" xml:space="preserve">
+    <value>Create a new folder here.</value>
+  </data>
+  <data name="FileTransfer_NewFolderLabel" xml:space="preserve">
+    <value>Folder name</value>
+  </data>
+  <data name="FileTransfer_NewFolderWatermark" xml:space="preserve">
+    <value>New folder name…</value>
+  </data>
+  <data name="FileTransfer_CreateFolderConfirmBtn" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
+    <value>Creating folder “{0}”…</value>
+  </data>
+  <data name="FileTransfer_CreateFolderComplete" xml:space="preserve">
+    <value>Folder created.</value>
+  </data>
+  <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
+    <value>Could not create folder: {0}</value>
+  </data>
+  <data name="FileTransfer_CopyBtn" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="FileTransfer_CopyTooltip" xml:space="preserve">
+    <value>Copy the selected item(s). Then open a folder and press Paste.</value>
+  </data>
+  <data name="FileTransfer_CutBtn" xml:space="preserve">
+    <value>Cut</value>
+  </data>
+  <data name="FileTransfer_CutTooltip" xml:space="preserve">
+    <value>Move the selected item(s). Then open a folder and press Paste.</value>
+  </data>
+  <data name="FileTransfer_PasteBtn" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="FileTransfer_PasteTooltip" xml:space="preserve">
+    <value>Paste the copied or cut item(s) into this folder.</value>
+  </data>
+  <data name="FileTransfer_CopyReadyFormat" xml:space="preserve">
+    <value>{0} item(s) ready to copy — open a folder and press Paste.</value>
+  </data>
+  <data name="FileTransfer_CutReadyFormat" xml:space="preserve">
+    <value>{0} item(s) ready to move — open a folder and press Paste.</value>
+  </data>
+  <data name="FileTransfer_CopyingFormat" xml:space="preserve">
+    <value>Copying {0} item(s)…</value>
+  </data>
+  <data name="FileTransfer_MovingFormat" xml:space="preserve">
+    <value>Moving {0} item(s)…</value>
+  </data>
+  <data name="FileTransfer_CopyComplete" xml:space="preserve">
+    <value>Copy complete.</value>
+  </data>
+  <data name="FileTransfer_MoveComplete" xml:space="preserve">
+    <value>Move complete.</value>
+  </data>
+  <data name="FileTransfer_PasteCrossRoot" xml:space="preserve">
+    <value>Copy and move only work within the same shared folder.</value>
+  </data>
+  <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
+    <value>Paste failed: {0}</value>
+  </data>
+  <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
+    <value>Properties</value>
+  </data>
+  <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
+    <value>Show details and a preview of the selected item.</value>
+  </data>
+  <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
+    <value>PROPERTIES</value>
+  </data>
+  <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
+    <value>Could not load details: {0}</value>
+  </data>
+  <data name="FileTransfer_PropSize" xml:space="preserve">
+    <value>Size</value>
+  </data>
+  <data name="FileTransfer_PropItems" xml:space="preserve">
+    <value>Items</value>
+  </data>
+  <data name="FileTransfer_PropModified" xml:space="preserve">
+    <value>Modified</value>
+  </data>
+  <data name="FileTransfer_PropCreated" xml:space="preserve">
+    <value>Created</value>
+  </data>
+  <data name="FileTransfer_PropType" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="FileTransfer_PropReadOnly" xml:space="preserve">
+    <value>Read-only</value>
+  </data>
+  <data name="FileTransfer_VolumesTooltip" xml:space="preserve">
+    <value>Show the connected device's drives (requires permission).</value>
+  </data>
+  <data name="FileTransfer_VolumesTitle" xml:space="preserve">
+    <value>DRIVES</value>
+  </data>
+  <data name="FileTransfer_VolumesRequesting" xml:space="preserve">
+    <value>Requesting drive access…</value>
+  </data>
+  <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
+    <value>{0} drive(s) available.</value>
+  </data>
+  <data name="FileTransfer_VolumesDenied" xml:space="preserve">
+    <value>Full-device access was not granted.</value>
+  </data>
+  <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
+    <value>Could not list drives: {0}</value>
+  </data>
+  <data name="FileTransfer_QueueTitle" xml:space="preserve">
+    <value>TRANSFERS</value>
+  </data>
+  <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
+    <value>Clear finished</value>
+  </data>
+  <data name="FileTransfer_QueuedForUpload" xml:space="preserve">
+    <value>Added to the transfer queue.</value>
+  </data>
+  <data name="FileTransfer_QueuedForDownload" xml:space="preserve">
+    <value>Added to the transfer queue.</value>
+  </data>
+  <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
+    <value>UPLOAD</value>
+  </data>
+  <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
+    <value>DOWNLOAD</value>
+  </data>
+  <data name="FileTransfer_QueueKindSend" xml:space="preserve">
+    <value>SEND</value>
+  </data>
+  <data name="FileTransfer_QueueStateQueued" xml:space="preserve">
+    <value>Waiting…</value>
+  </data>
+  <data name="FileTransfer_QueueStateNegotiating" xml:space="preserve">
+    <value>Starting…</value>
+  </data>
+  <data name="FileTransfer_QueueStateActive" xml:space="preserve">
+    <value>Transferring…</value>
+  </data>
+  <data name="FileTransfer_QueueStatePaused" xml:space="preserve">
+    <value>Paused</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerifying" xml:space="preserve">
+    <value>Verifying…</value>
+  </data>
+  <data name="FileTransfer_QueueStateDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="FileTransfer_QueueStateFailed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="FileTransfer_QueueStateCancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="FileTransfer_DropTargetReadOnly" xml:space="preserve">
+    <value>This folder is read-only — pick a folder you can write to.</value>
+  </data>
+
+  <!-- ═══ 2.1 File Sharing Overhaul — consent dialog ═══ -->
+  <data name="FileConsent_WindowTitle" xml:space="preserve">
+    <value>Permission Request</value>
+  </data>
+  <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
+    <value>Allow full device browsing?</value>
+  </data>
+  <data name="FileConsent_FullBrowseMessage" xml:space="preserve">
+    <value>A paired device is asking to browse all of the drives and folders on this PC.</value>
+  </data>
+  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
+    <value>Accept incoming files?</value>
+  </data>
+  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
+    <value>A paired device wants to send files to this PC.</value>
+  </data>
+  <data name="FileConsent_Remember" xml:space="preserve">
+    <value>Remember my choice for this device</value>
+  </data>
+  <data name="FileConsent_Allow" xml:space="preserve">
+    <value>Allow</value>
+  </data>
+  <data name="FileConsent_Deny" xml:space="preserve">
+    <value>Deny</value>
+  </data>
+
+  <!-- ═══ 2.1 File Sharing Overhaul — trust settings ═══ -->
+  <data name="Settings_TrustSection" xml:space="preserve">
+    <value>FILE-SHARING TRUST</value>
+  </data>
+  <data name="Settings_TrustDesc" xml:space="preserve">
+    <value>Control what each paired device may do with your files. Full device browsing and auto-accepting incoming files are off by default.</value>
+  </data>
+  <data name="Settings_TrustEmpty" xml:space="preserve">
+    <value>No devices have been granted file-sharing permissions yet.</value>
+  </data>
+  <data name="Settings_TrustRefresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Settings_TrustRevoke" xml:space="preserve">
+    <value>Revoke</value>
+  </data>
+  <data name="Settings_TrustFullBrowse" xml:space="preserve">
+    <value>Allow browsing all drives</value>
+  </data>
+  <data name="Settings_TrustAutoAccept" xml:space="preserve">
+    <value>Auto-accept incoming files</value>
+  </data>
+  <data name="Settings_TrustUpdated" xml:space="preserve">
+    <value>Trust settings updated.</value>
+  </data>
+  <data name="Settings_TrustRevoked" xml:space="preserve">
+    <value>Device permissions revoked.</value>
+  </data>
 </root>

@@ -92,6 +92,9 @@ class SettingsManager(val context: Context) {
                  */
                 val SHARED_FOLDER_URIS_KEY = stringSetPreferencesKey("shared_folder_uris")
 
+                /** Single SAF tree URI granting full-device browse to consenting paired PCs (2.1). */
+                val FULL_BROWSE_ROOT_URI_KEY = stringPreferencesKey("full_browse_root_uri")
+
                 /**
                  * Sentinel value indicating the host address has not been configured by the user.
                  */
@@ -522,5 +525,42 @@ class SettingsManager(val context: Context) {
                         prefs[SHARED_FOLDER_URIS_KEY] =
                                 (prefs[SHARED_FOLDER_URIS_KEY] ?: emptySet()) - uri
                 }
+        }
+
+        // ── File-sharing 2.1: full-browse SAF root + per-device trust ─────────────
+        // (plan §2). Full-browse is a single SAF ACTION_OPEN_DOCUMENT_TREE grant of a storage root,
+        // exposed as a "volume" to a consenting paired PC. Per-device trust keys follow the plan's
+        // fileTrust_<deviceId>_fullBrowse / _autoAccept scheme. The full SAF picker + consent UI land
+        // in WP9; these accessors are the persistence plumbing WP6 relies on.
+
+        val fullBrowseRootUriFlow: Flow<String?> =
+                context.dataStore.data.map { prefs -> prefs[FULL_BROWSE_ROOT_URI_KEY] }
+
+        suspend fun setFullBrowseRootUri(uri: String) {
+                context.dataStore.edit { prefs -> prefs[FULL_BROWSE_ROOT_URI_KEY] = uri }
+        }
+
+        suspend fun clearFullBrowseRootUri() {
+                context.dataStore.edit { prefs -> prefs.remove(FULL_BROWSE_ROOT_URI_KEY) }
+        }
+
+        private fun fileTrustFullBrowseKey(deviceId: String) =
+                booleanPreferencesKey("fileTrust_${deviceId}_fullBrowse")
+
+        private fun fileTrustAutoAcceptKey(deviceId: String) =
+                booleanPreferencesKey("fileTrust_${deviceId}_autoAccept")
+
+        fun fileTrustFullBrowseFlow(deviceId: String): Flow<Boolean> =
+                context.dataStore.data.map { prefs -> prefs[fileTrustFullBrowseKey(deviceId)] ?: false }
+
+        fun fileTrustAutoAcceptFlow(deviceId: String): Flow<Boolean> =
+                context.dataStore.data.map { prefs -> prefs[fileTrustAutoAcceptKey(deviceId)] ?: false }
+
+        suspend fun setFileTrustFullBrowse(deviceId: String, granted: Boolean) {
+                context.dataStore.edit { prefs -> prefs[fileTrustFullBrowseKey(deviceId)] = granted }
+        }
+
+        suspend fun setFileTrustAutoAccept(deviceId: String, enabled: Boolean) {
+                context.dataStore.edit { prefs -> prefs[fileTrustAutoAcceptKey(deviceId)] = enabled }
         }
 }

@@ -180,6 +180,16 @@ public partial class App : Application
                 viewModel.Connection.AttachEmbeddedPairingService(pairingService);
             }
 
+            // Wire the embedded host's file-trust service so this (serving) PC raises a consent dialog when
+            // a paired device asks for full-device browse or an incoming file push (plan §2). Mirrors the
+            // pairing-service event pattern above.
+            if (EmbeddedHostServices?.GetService(typeof(Remex.Core.Services.FileTransfer.IFileTrustService))
+                is Remex.Core.Services.FileTransfer.IFileTrustService fileTrustService)
+            {
+                fileTrustService.ConsentRequested += prompt =>
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => ShowFileConsentDialogAsync(fileTrustService, prompt));
+            }
+
             if (OperatingSystem.IsWindows() && !CommandModeContext.IsServerMode)
             {
                 var pairingPinQueryService = Services.GetService<IPairingPinQueryService>(); // optional service
@@ -269,6 +279,39 @@ public partial class App : Application
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Failed to initialize app: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Shows the file-sharing consent dialog for a pending prompt and relays the user's decision back to the
+    /// host's <see cref="Remex.Core.Services.FileTransfer.IFileTrustService"/>. Dismissing the window (or a
+    /// missing decision) resolves as a clean deny; the service's own 60-second timeout is the backstop.
+    /// </summary>
+    private async void ShowFileConsentDialogAsync(
+        Remex.Core.Services.FileTransfer.IFileTrustService service,
+        Remex.Core.Services.FileTransfer.FileConsentPrompt prompt)
+    {
+        try
+        {
+            var vm = new FileConsentDialogViewModel(prompt.Request);
+            var dialog = new FileConsentDialog { DataContext = vm };
+
+            Remex.Core.Services.FileTransfer.FileConsentDecision decision;
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is { } owner)
+                decision = await dialog.ShowDialog<Remex.Core.Services.FileTransfer.FileConsentDecision>(owner);
+            else
+            {
+                dialog.Show();
+                decision = await vm.ResultTask;
+            }
+
+            service.ResolveConsent(prompt.Request.ConsentId, decision.Granted, decision.Remember);
+        }
+        catch (Exception ex)
+        {
+            // Never let a UI failure hang the host's pending consent — deny cleanly instead.
+            System.Diagnostics.Debug.WriteLine($"File consent dialog failed: {ex.Message}");
+            service.ResolveConsent(prompt.Request.ConsentId, granted: false, remember: false);
         }
     }
 

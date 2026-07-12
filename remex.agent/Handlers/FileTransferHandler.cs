@@ -511,6 +511,135 @@ public sealed class FileTransferHandler(
         await MessageSerializer.SendAsync(ws, response, ct);
     }
 
+    // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP-jjdb: consent-response + incoming push ──
+
+    /// <summary>
+    /// Handles an inbound <c>file_consent_response</c> (plan §1.2 / §2). This is the peer's decision for a
+    /// consent prompt this (serving) host previously raised via <see cref="IFileTrustService.RequestConsentAsync"/>
+    /// — it resolves the matching pending prompt exactly as the local consent UI would. Resolution is keyed
+    /// solely by <see cref="FileConsentResponse.ConsentId"/>, so whichever responder arrives first (the local
+    /// dialog or this remote message) wins; an unknown/already-resolved id is a no-op. There is no reply.
+    /// </summary>
+    public void HandleFileConsentResponse(RemexMessage message)
+    {
+        var response = message.FileConsentResponse;
+        if (response is null)
+            return;
+
+        fileTrustService.ResolveConsent(response.ConsentId, response.Granted, response.Remember);
+        logger.LogInformation(
+            "Resolved file consent {ConsentId}: granted={Granted}, remember={Remember}.",
+            response.ConsentId, response.Granted, response.Remember);
+    }
+
+    /// <summary>
+    /// Handles an inbound <c>file_push_offer</c> (plan §1.2 / §2): a paired client offering to push one or
+    /// more files to this PC. Incoming pushes are consent-gated per device — if <paramref name="clientId"/>
+    /// does not already hold an auto-accept-incoming grant, a consent prompt is raised on this host and held
+    /// until the user decides or the 60-second timeout auto-denies. On acceptance the host assigns a fresh
+    /// transfer id per offered file (index-aligned to <see cref="FilePushOffer.Files"/>) and returns them in
+    /// the <c>file_push_response</c>; the client then negotiates each file with a
+    /// <c>file_transfer_offer(mode="push")</c> carrying its assigned id. On denial (or timeout) the response
+    /// is <c>accepted=false</c> with no ids (a deny is not an error).
+    /// </summary>
+    public async Task HandleFilePushOfferAsync(
+        RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
+    {
+        var offer = message.FilePushOffer;
+        if (offer is null) return;
+
+        RemexMessage response;
+        try
+        {
+            var consent = new FileConsentRequest
+            {
+                ConsentId = Guid.NewGuid().ToString("N"),
+                Kind = FileConsentKinds.IncomingPush,
+                Detail = DescribePushFiles(offer.Files),
+            };
+
+            var decision = await fileTrustService.RequestConsentAsync(clientId ?? string.Empty, consent, ct);
+
+            string[]? transferIds = null;
+            if (decision.Granted)
+            {
+                // Receiver-assigned ids, index-aligned to the offered files. The client echoes each id back
+                // on its follow-up file_transfer_offer(mode="push") so the receive session lines up 1:1.
+                transferIds = new string[offer.Files.Length];
+                for (var i = 0; i < transferIds.Length; i++)
+                    transferIds[i] = Guid.NewGuid().ToString("N");
+            }
+
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FilePushResponse,
+                ProtocolVersion = ProtocolVersionPolicy.Current,
+                FilePushResponse = new FilePushResponse
+                {
+                    PushId = offer.PushId,
+                    Accepted = decision.Granted,
+                    TransferIds = transferIds,
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "File push offer {PushId} failed.", offer.PushId);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FilePushResponse,
+                ProtocolVersion = ProtocolVersionPolicy.Current,
+                FilePushResponse = new FilePushResponse
+                {
+                    PushId = offer.PushId,
+                    Accepted = false,
+                }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <summary>
+    /// Builds the human-readable <see cref="FileConsentRequest.Detail"/> for an incoming-push prompt: the
+    /// offered file names (capped) plus the total size. Kept data-forward (names + a locale-neutral size)
+    /// so the localized chrome lives in the consent dialog, not in this wire summary.
+    /// </summary>
+    private static string DescribePushFiles(FilePushFile[] files)
+    {
+        if (files is null || files.Length == 0)
+            return string.Empty;
+
+        const int maxNames = 5;
+        var names = files.Take(maxNames).Select(f => f.Name);
+        var joined = string.Join(", ", names);
+        if (files.Length > maxNames)
+            joined += ", …";
+
+        var totalBytes = files.Sum(f => f.Size);
+        return $"{joined} ({FormatBytes(totalBytes)})";
+    }
+
+    /// <summary>Formats a byte count into a compact, locale-neutral size string (e.g. "12.4 MB").</summary>
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024)
+            return $"{bytes} B";
+
+        string[] units = ["KB", "MB", "GB", "TB"];
+        double size = bytes;
+        var unit = -1;
+        do
+        {
+            size /= 1024;
+            unit++;
+        }
+        while (size >= 1024 && unit < units.Length - 1);
+
+        return string.Create(
+            System.Globalization.CultureInfo.InvariantCulture, $"{size:0.#} {units[unit]}");
+    }
+
     /// <summary>
     /// Handles a <c>file_search_request</c> (plan §1.2). Runs a bounded recursive name search under the
     /// requested root subtree; results are capped at <see cref="FileTransferLimits.SearchMaxResults"/> and

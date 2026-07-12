@@ -967,6 +967,12 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     case MessageTypes.FileManageResponse:
                     case MessageTypes.FileHashResponse:
                     case MessageTypes.FileRootManageResponse:
+                    // ── 2.1 File Sharing Overhaul (protocolVersion 3) responses — additive; older
+                    //    hosts never send these, so v2 peers are unaffected. ──
+                    case MessageTypes.FileVolumesResponse:
+                    case MessageTypes.FileSearchResponse:
+                    case MessageTypes.FileMetadataResponse:
+                    case MessageTypes.FileThumbnailResponse:
                         FileTransferMessageReceived?.Invoke(message);
                         break;
                 }

@@ -347,6 +347,43 @@
                     </StackPanel>
                 </Border>
 
+                <!-- ═══ File-Sharing Trust Section ═══ -->
+                <Border Classes="glass-card" Padding="24" IsVisible="{Binding SupportsTrustManagement}">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustSection}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="{local:Localize Settings_TrustRefresh}" Command="{Binding RefreshTrustedDevicesCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                        </Grid>
+
+                        <TextBlock Text="{local:Localize Settings_TrustDesc}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+
+                        <TextBlock Text="{local:Localize Settings_TrustEmpty}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding !HasTrustedDevices}"/>
+
+                        <ItemsControl ItemsSource="{Binding TrustedDevices}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:FileTrustDeviceItem">
+                                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
+                                        <StackPanel Spacing="12">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Text="{Binding ShortId}" FontSize="14" FontWeight="Bold" FontFamily="Consolas,monospace" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Content="{local:Localize Settings_TrustRevoke}" Command="{Binding RevokeCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" CornerRadius="8" Cursor="Hand"/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustFullBrowse}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding FullBrowseGranted}" OnContent="" OffContent=""/>
+                                            </Grid>
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustAutoAccept}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoAcceptIncoming}" OnContent="" OffContent=""/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
                 <!-- ═══ Help Section ═══ -->
                 <Border Classes="glass-card" Padding="24">
                     <Grid ColumnDefinitions="*,Auto">

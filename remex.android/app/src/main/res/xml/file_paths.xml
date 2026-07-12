@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider paths for open-after-download + share staging (plan WP8).
+    Authority: ${applicationId}.fileprovider (see AndroidManifest). Only app-owned locations are
+    exposed, and each is served to a viewer via a temporary read grant (ACTION_VIEW). Downloads the
+    user routes to a SAF content:// document do not go through here — those are opened directly.
+-->
+<paths>
+    <!-- Binary-channel transfer working area (incoming/outgoing partials + finalized files). -->
+    <files-path name="internal_transfers" path="transfers/" />
+    <!-- Files staged from the OS share sheet before they are pushed to the PC. -->
+    <files-path name="share_staging" path="share_staging/" />
+    <!-- Cache scratch, if a download is ever committed there. -->
+    <cache-path name="internal_cache" path="." />
+    <!-- App-scoped external storage (no runtime permission required). -->
+    <external-files-path name="external_files" path="." />
+</paths>

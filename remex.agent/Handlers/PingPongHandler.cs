@@ -385,6 +385,19 @@ public sealed class PingPongHandler(
                         await fileTransferHandler.HandleFileThumbnailRequestAsync(message, webSocket, ct);
                         break;
 
+                    // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP-jjdb: consent-response + push ──
+                    // file_consent_response resolves a consent prompt this host raised (full-browse or
+                    // incoming-push); file_push_offer raises an incoming-push consent and replies with the
+                    // receiver-assigned transfer ids. connectionClientId identifies the paired device even
+                    // when the message body omits clientId — the connection is already authenticated above.
+                    case MessageTypes.FileConsentResponse:
+                        fileTransferHandler.HandleFileConsentResponse(message);
+                        break;
+
+                    case MessageTypes.FilePushOffer:
+                        await fileTransferHandler.HandleFilePushOfferAsync(message, webSocket, connectionClientId, ct);
+                        break;
+
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP4: v3 transfer negotiation ──
                     // Control plane for the binary /ws/files channel. The bulk data itself never touches this
                     // switch — it flows as FileFrameEnvelope frames on /ws/files (see TransferSessionManager

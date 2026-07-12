@@ -13,11 +13,22 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.R
+import com.clindsay94.remex.share.FileOpener
 
 object FileTransferNotificationManager {
 
     private const val CHANNEL_ID = "remex_file_transfer"
     private const val NOTIFICATION_ID = 1002
+
+    // Consent prompts use a separate high-importance channel (heads-up + sound) so a sensitive
+    // full-browse / incoming-push request the PC raised is noticed, distinct from the silent
+    // low-priority transfer-progress channel above. One notification per consentId.
+    private const val CONSENT_CHANNEL_ID = "remex_file_consent"
+    private const val CONSENT_NOTIFICATION_ID_BASE = 1200
+
+    // Completion notifications use their own id space (one per file, derived from the name) so a
+    // finished download's "Open" prompt is not clobbered by the ongoing-progress notification.
+    private const val COMPLETE_NOTIFICATION_ID_BASE = 1100
 
     fun showTransferStarted(context: Context, fileName: String, isDownload: Boolean) {
         notify(
@@ -99,6 +110,72 @@ object FileTransferNotificationManager {
         )
     }
 
+    /**
+     * Posts a "download complete" notification carrying an **Open** action that launches a viewer for
+     * the just-downloaded file (plan WP8, open-after-download). [localUri] is the local destination
+     * (a SAF `content://` document or a `file://` path); MIME is inferred from [fileName]. Falls back
+     * to a plain completion notification when no viewer can be resolved.
+     */
+    fun showDownloadComplete(context: Context, fileName: String, localUri: String) {
+        if (!canPostNotifications(context)) return
+        ensureChannel(context)
+
+        val notificationId =
+            COMPLETE_NOTIFICATION_ID_BASE + (fileName.hashCode() and 0xFFFF)
+
+        val builder =
+                NotificationCompat.Builder(context, CHANNEL_ID)
+                        .setSmallIcon(R.drawable.ic_notification)
+                        .setContentTitle(
+                                context.getString(
+                                        R.string.file_transfer_notification_complete_title
+                                )
+                        )
+                        .setContentText(
+                                context.getString(
+                                        R.string.file_transfer_notification_download_complete,
+                                        fileName,
+                                )
+                        )
+                        .setOnlyAlertOnce(true)
+                        .setSilent(true)
+                        .setAutoCancel(true)
+                        .setPriority(NotificationCompat.PRIORITY_LOW)
+
+        val viewIntent = FileOpener.buildViewIntent(context, localUri, fileName)
+        if (viewIntent != null) {
+            val openPending =
+                    PendingIntent.getActivity(
+                            context,
+                            notificationId,
+                            viewIntent,
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                    )
+            builder.setContentIntent(openPending)
+            builder.addAction(
+                    0,
+                    context.getString(R.string.file_transfer_notification_open),
+                    openPending,
+            )
+        } else {
+            // No viewer resolvable — tapping just opens the app.
+            val tapIntent =
+                    Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+            builder.setContentIntent(
+                    PendingIntent.getActivity(
+                            context,
+                            notificationId,
+                            tapIntent,
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                    )
+            )
+        }
+
+        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+    }
+
     fun showTransferFailed(context: Context, message: String) {
         notify(
                 context = context,
@@ -113,6 +190,101 @@ object FileTransferNotificationManager {
     fun cancel(context: Context) {
         if (!canPostNotifications(context)) return
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+    }
+
+    // ── Consent prompts (plan §2 / WP9) ───────────────────────────────────────
+
+    /**
+     * Posts a high-priority consent notification for a sensitive request the PC raised — a full-device
+     * browse grant or an incoming file push — carrying **Allow** / **Deny** actions that resolve the
+     * prompt via [FileConsentActionReceiver]. A parallel foreground dialog mirrors the same prompt; the
+     * first responder wins. Silently no-ops when notifications are not permitted, in which case the
+     * prompt still auto-denies after its timeout.
+     */
+    fun showConsentRequest(context: Context, prompt: FileConsentPrompt) {
+        if (!canPostNotifications(context)) return
+        ensureConsentChannel(context)
+
+        val isPush = prompt.kind == FileConsentKinds.INCOMING_PUSH
+        val title =
+            context.getString(
+                if (isPush) R.string.file_consent_push_title
+                else R.string.file_consent_full_browse_title
+            )
+        val body =
+            when {
+                isPush && !prompt.detail.isNullOrBlank() ->
+                    context.getString(R.string.file_consent_push_message, prompt.detail)
+                isPush -> context.getString(R.string.file_consent_push_message_generic)
+                else -> context.getString(R.string.file_consent_full_browse_message)
+            }
+
+        val notificationId = consentNotificationId(prompt.consentId)
+        val allowPending = consentActionIntent(context, prompt.consentId, granted = true, notificationId)
+        val denyPending = consentActionIntent(context, prompt.consentId, granted = false, notificationId)
+
+        val builder =
+            NotificationCompat.Builder(context, CONSENT_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                .setContentIntent(denyPending)
+                .setDeleteIntent(denyPending)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
+                .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .addAction(0, context.getString(R.string.file_consent_deny), denyPending)
+                .addAction(0, context.getString(R.string.file_consent_allow), allowPending)
+
+        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+    }
+
+    /** Clears the consent notification for [consentId] once resolved (by action, dialog, or timeout). */
+    fun cancelConsent(context: Context, consentId: String) {
+        if (!canPostNotifications(context)) return
+        NotificationManagerCompat.from(context).cancel(consentNotificationId(consentId))
+    }
+
+    private fun consentActionIntent(
+        context: Context,
+        consentId: String,
+        granted: Boolean,
+        notificationId: Int,
+    ): PendingIntent {
+        val intent =
+            Intent(context, FileConsentActionReceiver::class.java).apply {
+                action = FileConsentActionReceiver.ACTION_RESOLVE
+                putExtra(FileConsentActionReceiver.EXTRA_CONSENT_ID, consentId)
+                putExtra(FileConsentActionReceiver.EXTRA_GRANTED, granted)
+            }
+        // Distinct request code per (notification, decision) so Allow and Deny do not collide.
+        val requestCode = notificationId * 2 + if (granted) 1 else 0
+        return PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+    }
+
+    private fun consentNotificationId(consentId: String): Int =
+        CONSENT_NOTIFICATION_ID_BASE + (consentId.hashCode() and 0xFFFF)
+
+    private fun ensureConsentChannel(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val channel =
+            NotificationChannel(
+                    CONSENT_CHANNEL_ID,
+                    context.getString(R.string.file_consent_channel_name),
+                    NotificationManager.IMPORTANCE_HIGH,
+                )
+                .apply {
+                    description = context.getString(R.string.file_consent_channel_description)
+                    setShowBadge(true)
+                }
+        context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
     private fun notify(

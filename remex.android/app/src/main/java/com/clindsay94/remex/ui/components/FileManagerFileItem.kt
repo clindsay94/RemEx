@@ -1,0 +1,238 @@
+package com.clindsay94.remex.ui.components
+
+import android.graphics.BitmapFactory
+import android.util.Base64
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.screens.FileManagerLogic
+import com.clindsay94.remex.ui.screens.RemoteFileEntry
+
+/** Decodes a base64 JPEG thumbnail to an [ImageBitmap], memoised on the encoded string. */
+@Composable
+private fun rememberThumbnail(base64: String?): ImageBitmap? {
+    return remember(base64) {
+        if (base64.isNullOrBlank()) null
+        else try {
+            val bytes = Base64.decode(base64, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+private fun subtitleFor(entry: RemoteFileEntry): String =
+    if (entry.isDirectory) ""
+    else buildString {
+        if (entry.sizeBytes > 0) append(FileManagerLogic.formatBytes(entry.sizeBytes))
+        entry.relativePath?.let {
+            if (isNotEmpty()) append("  •  ")
+            append(it)
+        }
+    }
+
+/** Single-column list row (plan WP7). Long-press enters multi-select; a checkbox replaces the icon there. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun FileManagerListItem(
+    entry: RemoteFileEntry,
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
+    thumbnailBase64: String?,
+    showDownload: Boolean,
+    showOverflow: Boolean,
+    onRequestThumbnail: () -> Unit,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit,
+    onDownload: () -> Unit,
+    onOverflow: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (!entry.isDirectory && FileManagerLogic.isThumbnailCandidate(entry.name)) {
+        LaunchedEffect(entry.relativePath ?: entry.name) { onRequestThumbnail() }
+    }
+    val thumb = rememberThumbnail(thumbnailBase64)
+    val subtitle = subtitleFor(entry)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(onClick = onTap, onLongClick = onLongPress)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (isSelectionMode && entry.name != FileManagerLogic.PARENT_ENTRY) {
+            Icon(
+                imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                contentDescription = null,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+        } else if (thumb != null) {
+            Image(
+                bitmap = thumb,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(6.dp)),
+            )
+        } else {
+            Icon(
+                imageVector = if (entry.isDirectory) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
+                contentDescription = null,
+                tint = if (entry.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = entry.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (entry.isDirectory) FontWeight.SemiBold else FontWeight.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (subtitle.isNotEmpty()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        if (!isSelectionMode && entry.name != FileManagerLogic.PARENT_ENTRY) {
+            if (showDownload && !entry.isDirectory) {
+                IconButton(onClick = onDownload) {
+                    Icon(
+                        Icons.Default.Download,
+                        contentDescription = stringResource(R.string.file_transfer_download),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (showOverflow) {
+                IconButton(onClick = onOverflow) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.cd_more_options),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Thumbnail grid cell (plan WP7). Tap opens/selects; long-press toggles multi-select. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun FileManagerGridItem(
+    entry: RemoteFileEntry,
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
+    thumbnailBase64: String?,
+    onRequestThumbnail: () -> Unit,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (!entry.isDirectory && FileManagerLogic.isThumbnailCandidate(entry.name)) {
+        LaunchedEffect(entry.relativePath ?: entry.name) { onRequestThumbnail() }
+    }
+    val thumb = rememberThumbnail(thumbnailBase64)
+
+    Column(
+        modifier = modifier
+            .combinedClickable(onClick = onTap, onLongClick = onLongPress)
+            .padding(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f), contentAlignment = Alignment.Center) {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                if (thumb != null) {
+                    Image(
+                        bitmap = thumb,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (entry.isDirectory) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
+                            contentDescription = null,
+                            tint = if (entry.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(36.dp),
+                        )
+                    }
+                }
+            }
+            if (isSelectionMode && entry.name != FileManagerLogic.PARENT_ENTRY) {
+                Icon(
+                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(22.dp),
+                )
+            }
+        }
+        Text(
+            text = entry.name,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            fontWeight = if (entry.isDirectory) FontWeight.SemiBold else FontWeight.Normal,
+        )
+    }
+}

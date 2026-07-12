@@ -8,29 +8,55 @@ import androidx.documentfile.provider.DocumentFile
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.security.PinnedHostStore
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.security.MessageDigest
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
+/**
+ * Android host mirror for the PC's file-transfer control plane.
+ *
+ * Two protocol generations coexist here (plan §1.5):
+ *  - **v2 legacy base64** (`file_transfer_start/chunk/end/cancel`) is kept **intact** and served by
+ *    the handlers in this object, so a v2 PC keeps working for one release.
+ *  - **v3** (roots/browse/manage/copy/move/mkdir, **file_root_manage_request**, volumes, search,
+ *    metadata, thumbnail, offer/ready/complete/result/control, consent, and bidirectional binary
+ *    frames on `/ws/files`) is delegated to the testable [FileHostHandler].
+ *
+ * This object owns the Android wiring only: it snapshots the user's shared-folder URIs + full-browse
+ * grant, builds the SAF-backed [FileSystemFacade], and routes inbound `/ws` messages to the right
+ * generation. Every v3 wire type-string / field name lives in [FileHostHandler] and mirrors
+ * `remex.core` VERBATIM.
+ */
 object AndroidFileTransferHost {
     private const val TAG = "AndroidFileTransferHost"
     private const val CHUNK_SIZE = 65536
     private const val PROGRESS_CHUNK_INTERVAL = 10
     private const val MAX_UPLOAD_BYTES = 5_000_000_000L
+    private const val ORPHAN_MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000
 
     private var job: Job? = null
     private lateinit var settingsManager: SettingsManager
     private lateinit var context: Context
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // Live snapshots of the served-device configuration, kept fresh by collectors started in start().
+    @Volatile private var sharedFolderUris: Set<String> = emptySet()
+    @Volatile private var fullBrowseRootUri: String? = null
+
+    private var hostHandler: FileHostHandler? = null
 
     private class TransferState(
         val transferId: String,
@@ -55,11 +81,22 @@ object AndroidFileTransferHost {
     fun start(ctx: Context) {
         context = ctx.applicationContext
         settingsManager = SettingsManager(context)
+        // Wire the serving-side consent flow before any inbound request can raise a prompt (plan WP9).
+        FileConsentManager.start(context)
+        hostHandler = buildHostHandler()
+
         job?.cancel()
         job = scope.launch {
             RemexClientManager.fileTransferMessages.collect { json ->
                 handleMessage(json)
             }
+        }
+        // Keep the served-device configuration snapshots fresh.
+        scope.launch { settingsManager.sharedFolderUrisFlow.collect { sharedFolderUris = it } }
+        scope.launch { settingsManager.fullBrowseRootUriFlow.collect { fullBrowseRootUri = it } }
+        // Sweep any staging partials orphaned by a prior crash (plan §1.3).
+        scope.launch {
+            runCatching { hostHandler?.cleanupOrphans(ORPHAN_MAX_AGE_MS) }
         }
     }
 
@@ -70,65 +107,211 @@ object AndroidFileTransferHost {
         activeTransfers.clear()
     }
 
+    private fun stagingDir(): File = File(context.filesDir, "transfers/incoming")
+
+    private fun buildHostHandler(): FileHostHandler {
+        val provider =
+            object : SharedRootsProvider {
+                override fun sharedRoots(): List<RootDescriptor> =
+                    sharedFolderUris.mapNotNull { uriStr ->
+                        val doc = DocumentFile.fromTreeUri(context, Uri.parse(uriStr))
+                        if (doc != null && doc.canRead()) {
+                            RootDescriptor(
+                                rootId = uriStr,
+                                displayName = doc.name ?: "Shared Folder",
+                                isWritable = doc.canWrite(),
+                                canRename = doc.canWrite(),
+                                canMove = doc.canWrite(),
+                                canDelete = doc.canWrite(),
+                                canRemoveRoot = false,
+                            )
+                        } else null
+                    }
+
+                override fun fullBrowseVolumes(): List<VolumeDescriptor> {
+                    val uri = fullBrowseRootUri ?: return emptyList()
+                    val doc = DocumentFile.fromTreeUri(context, Uri.parse(uri)) ?: return emptyList()
+                    return listOf(
+                        VolumeDescriptor(
+                            id = uri,
+                            label = doc.name ?: "Device storage",
+                            path = uri,
+                            totalBytes = 0L,
+                            freeBytes = 0L,
+                            kind = "root",
+                        )
+                    )
+                }
+
+                override fun isFullBrowseGranted(): Boolean = fullBrowseRootUri != null
+            }
+
+        val mutator =
+            object : RootMutator {
+                override suspend fun removeRoot(rootId: String): Boolean {
+                    if (!sharedFolderUris.contains(rootId)) return false
+                    settingsManager.removeSharedFolderUri(rootId)
+                    return true
+                }
+
+                override suspend fun addRoot(sourceRootId: String, sourceRelativePath: String?): Boolean =
+                    false // SAF requires an on-device folder pick; handled in WP9's settings UI.
+            }
+
+        return FileHostHandler(
+            facade = SafFileSystemFacade(context, provider),
+            rootsProvider = provider,
+            sender = ControlMessageSender { RemexCoreClient.SendMessage(it) },
+            channel = FileTransferChannelClient,
+            rootMutator = mutator,
+            stagingDir = stagingDir(),
+            scope = scope,
+        )
+    }
+
+    /**
+     * Ensures the shared binary `/ws/files` socket is open before serving a v3 transfer. The socket is
+     * always Android-initiated (cert-pinned via the SPKI captured at pairing time). Returns true once
+     * connected.
+     */
+    private suspend fun ensureBinaryChannel(): Boolean {
+        if (FileTransferChannelClient.isOpen) return true
+        val host = settingsManager.hostFlow.first()
+        val port = settingsManager.portFlow.first()
+        if (host.isBlank()) return false
+        val clientId = settingsManager.getOrCreateClientId()
+        val spki =
+            PinnedHostStore.getPin(context, host)?.takeIf { it.isNotBlank() } ?: return false
+        return FileTransferChannelClient.ensureConnected(host, port, clientId, spki)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Consent hooks (plan §2 / WP9). The serving-side consent for full-device
+    // browse is handled by the settings toggle (a SAF root pick is the OS-level
+    // consent, mirrored into the per-device trust key). The live prompt below is
+    // for an incoming file push, mirroring the PC's HandleFilePushOfferAsync.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Handles an inbound `file_push_offer`: a paired PC offering to push files to this device. Gated by
+     * per-device consent — if the PC does not already hold an auto-accept-incoming grant a prompt is
+     * raised (notification + foreground dialog) and held until the user decides or the 60s timeout
+     * auto-denies. On acceptance a fresh receiver-assigned transfer id is returned per offered file
+     * (index-aligned to `files`); the PC then negotiates each file with a
+     * `file_transfer_offer(mode="push")` carrying its assigned id. On denial the response is
+     * `accepted=false` with no ids. Field names mirror `remex.core` FilePushOffer/FilePushResponse.
+     */
+    private suspend fun handlePushOffer(offer: JSONObject) {
+        val pushId = offer.optString("pushId")
+        if (pushId.isBlank()) return
+        val filesArr = offer.optJSONArray("files") ?: JSONArray()
+        val fileCount = filesArr.length()
+
+        val decision =
+            FileConsentManager.requestConsent(
+                deviceId = peerDeviceId(),
+                kind = FileConsentKinds.INCOMING_PUSH,
+                detail = describePushFiles(filesArr),
+            )
+
+        val payload =
+            JSONObject().apply {
+                put("pushId", pushId)
+                put("accepted", decision.granted)
+                if (decision.granted) {
+                    val ids = JSONArray()
+                    repeat(fileCount) { ids.put(UUID.randomUUID().toString().replace("-", "")) }
+                    put("transferIds", ids)
+                }
+            }
+        RemexCoreClient.SendMessage(
+            JSONObject().apply {
+                put("type", "file_push_response")
+                put("protocolVersion", 3)
+                put("filePushResponse", payload)
+            }.toString()
+        )
+    }
+
+    /** Stable per-device trust id for the paired PC (its configured host address). */
+    private suspend fun peerDeviceId(): String =
+        FilePeerIdentity.deviceId(runCatching { settingsManager.hostFlow.first() }.getOrNull())
+
+    /**
+     * Human-readable summary of a push offer's files (capped names + total size) for the consent
+     * prompt. Mirrors the PC's FileTransferHandler.DescribePushFiles so both prompts read the same.
+     */
+    private fun describePushFiles(filesArr: JSONArray): String {
+        val count = filesArr.length()
+        if (count == 0) return ""
+        val maxNames = 5
+        val names = StringBuilder()
+        var totalBytes = 0L
+        for (i in 0 until count) {
+            val f = filesArr.optJSONObject(i) ?: continue
+            totalBytes += f.optLong("size", 0L)
+            if (i < maxNames) {
+                if (names.isNotEmpty()) names.append(", ")
+                names.append(f.optString("name"))
+            }
+        }
+        if (count > maxNames) names.append(", …")
+        return "$names (${formatBytes(totalBytes)})"
+    }
+
+    private fun formatBytes(bytes: Long): String =
+        when {
+            bytes >= 1_073_741_824L -> "%.1f GB".format(bytes / 1_073_741_824.0)
+            bytes >= 1_048_576L -> "%.1f MB".format(bytes / 1_048_576.0)
+            bytes >= 1_024L -> "%.1f KB".format(bytes / 1_024.0)
+            else -> "$bytes B"
+        }
+
     private suspend fun handleMessage(json: String) {
         try {
             val obj = JSONObject(json)
             when (obj.optString("type")) {
-                "file_roots_request" -> handleRootsRequest()
-                "file_browse_request" -> handleBrowseRequest(obj.optJSONObject("fileBrowseRequest") ?: return)
+                // ── v2 legacy base64 path (kept intact for v2 peers) ──
                 "file_transfer_start" -> handleTransferStart(obj.optJSONObject("fileTransferStart") ?: return)
                 "file_transfer_chunk" -> handleTransferChunk(obj.optJSONObject("fileTransferChunk") ?: return)
                 "file_transfer_end" -> handleTransferEnd(obj.optJSONObject("fileTransferEnd") ?: return)
                 "file_transfer_cancel" -> handleTransferCancel(obj.optJSONObject("fileTransferCancel") ?: return)
-                "file_manage_request" -> handleManageRequest(obj.optJSONObject("fileManageRequest") ?: return)
+
+                // ── v3 path (delegated to the testable host handler) ──
+                "file_transfer_offer" -> {
+                    // A v3 transfer needs the binary channel; open it before negotiating. Per-file
+                    // push offers ride this after the file_push_offer below was already consented, so
+                    // no second prompt is raised here (mirrors the PC's file_push_offer → offer flow).
+                    ensureBinaryChannel()
+                    hostHandler?.handleControlMessage(json)
+                }
+                // Incoming push from the PC: consent-gated on this (serving) device (plan §2 / WP9).
+                // Dispatched off the collector so a 60s prompt cannot head-of-line-block other inbound
+                // control messages (browse/manage responses share this stream).
+                "file_push_offer" -> {
+                    val offer = obj.optJSONObject("filePushOffer")
+                    if (offer != null) scope.launch { handlePushOffer(offer) }
+                }
+                else -> {
+                    // roots/browse/manage/root_manage/volumes/search/metadata/thumbnail/
+                    // complete/control/result — all v3-capable, superset of the old v2 responses.
+                    hostHandler?.handleControlMessage(json)
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error handling file transfer message", e)
         }
     }
 
-    private suspend fun handleRootsRequest() {
-        try {
-            val uris = settingsManager.sharedFolderUrisFlow.first()
-            val rootsArray = JSONArray()
-            for (uriStr in uris) {
-                val uri = Uri.parse(uriStr)
-                val doc = DocumentFile.fromTreeUri(context, uri)
-                if (doc != null && doc.canRead()) {
-                    rootsArray.put(JSONObject().apply {
-                        put("rootId", uriStr)
-                        put("displayName", doc.name ?: "Unknown Folder")
-                        put("isWritable", doc.canWrite())
-                        put("canRename", doc.canWrite())
-                        put("canMove", doc.canWrite())
-                        put("canDelete", doc.canWrite())
-                        put("canRemoveRoot", false)
-                    })
-                }
-            }
-            val response = JSONObject().apply {
-                put("type", "file_roots_response")
-                put("fileRootsResponse", JSONObject().apply {
-                    put("roots", rootsArray)
-                })
-            }
-            RemexCoreClient.SendMessage(response.toString())
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to list roots", e)
-            RemexCoreClient.SendMessage(JSONObject().apply {
-                put("type", "file_roots_response")
-                put("fileRootsResponse", JSONObject().apply {
-                    put("roots", JSONArray())
-                    put("errorMessage", e.message ?: "Failed to list Android folders")
-                })
-            }.toString())
-        }
-    }
+    // ─────────────────────────────────────────────────────────────────────────
+    // v2 legacy base64 transfer path — UNCHANGED behavior (plan §1.5). Do not
+    // remove until 2.2; v2 PCs still stream chunks over /ws with this contract.
+    // ─────────────────────────────────────────────────────────────────────────
 
     private fun resolveDocument(rootId: String, relativePath: String): DocumentFile? {
         val rootUri = Uri.parse(rootId)
         var currentDoc = DocumentFile.fromTreeUri(context, rootUri)
-        
+
         if (currentDoc == null || !currentDoc.canRead()) return null
 
         if (relativePath.isNotEmpty()) {
@@ -139,56 +322,6 @@ object AndroidFileTransferHost {
             }
         }
         return currentDoc
-    }
-
-    private fun handleBrowseRequest(req: JSONObject) {
-        val requestId = req.optString("requestId")
-        val rootId = req.optString("rootId")
-        val relativePath = req.optString("relativePath", "").trim('/')
-        
-        try {
-            val currentDoc = resolveDocument(rootId, relativePath)
-            if (currentDoc == null) {
-                sendBrowseError(requestId, rootId, relativePath, "Path not found or access denied.")
-                return
-            }
-
-            val entriesArray = JSONArray()
-            currentDoc.listFiles().forEach { file ->
-                entriesArray.put(JSONObject().apply {
-                    put("name", file.name ?: "Unnamed")
-                    put("isDirectory", file.isDirectory)
-                    put("sizeBytes", if (file.isDirectory) 0L else file.length())
-                    put("modifiedUnixMs", file.lastModified())
-                })
-            }
-
-            RemexCoreClient.SendMessage(JSONObject().apply {
-                put("type", "file_browse_response")
-                put("fileBrowseResponse", JSONObject().apply {
-                    put("requestId", requestId)
-                    put("rootId", rootId)
-                    put("relativePath", relativePath)
-                    put("entries", entriesArray)
-                })
-            }.toString())
-        } catch (e: Exception) {
-            Log.e(TAG, "Browse error for path \$relativePath", e)
-            sendBrowseError(requestId, rootId, relativePath, e.message ?: "Browse failed")
-        }
-    }
-
-    private fun sendBrowseError(requestId: String, rootId: String, relativePath: String, error: String) {
-        RemexCoreClient.SendMessage(JSONObject().apply {
-            put("type", "file_browse_response")
-            put("fileBrowseResponse", JSONObject().apply {
-                put("requestId", requestId)
-                put("rootId", rootId)
-                put("relativePath", relativePath)
-                put("entries", JSONArray())
-                put("errorMessage", error)
-            })
-        }.toString())
     }
 
     private fun sendTransferEnd(transferId: String, success: Boolean, error: String? = null, hash: String? = null) {
@@ -214,7 +347,7 @@ object AndroidFileTransferHost {
         try {
             val parentPath = relativePath.substringBeforeLast('/', "")
             val targetName = relativePath.substringAfterLast('/', fileName)
-            
+
             if (direction == "upload") {
                 val parentDoc = resolveDocument(rootId, parentPath)
                 if (parentDoc == null || !parentDoc.canWrite()) {
@@ -224,7 +357,7 @@ object AndroidFileTransferHost {
 
                 // Delete existing if any
                 parentDoc.findFile(targetName)?.delete()
-                
+
                 val newFile = parentDoc.createFile("*/*", targetName)
                 if (newFile == null) {
                     sendTransferEnd(transferId, false, "Failed to create file.")
@@ -298,7 +431,7 @@ object AndroidFileTransferHost {
                         val hash = Base64.encodeToString(state.digest.digest(), Base64.NO_WRAP)
                         sendTransferEnd(transferId, true, hash = hash)
                     } catch (e: CancellationException) {
-                        Log.i(TAG, "Download cancelled: \$transferId")
+                        Log.i(TAG, "Download cancelled: $transferId")
                     } catch (e: Exception) {
                         Log.e(TAG, "Download stream failed", e)
                         sendTransferEnd(transferId, false, e.message)
@@ -321,7 +454,7 @@ object AndroidFileTransferHost {
 
         try {
             val data = Base64.decode(dataBase64, Base64.DEFAULT)
-            
+
             if (state.direction == "upload" && state.bytesTransferred + data.size > MAX_UPLOAD_BYTES) {
                 state.cleanup()
                 activeTransfers.remove(transferId)
@@ -363,7 +496,7 @@ object AndroidFileTransferHost {
             if (state.direction == "upload" && success) {
                 val actualHash = Base64.encodeToString(state.digest.digest(), Base64.NO_WRAP)
                 if (expectedHash.isNotEmpty() && actualHash != expectedHash) {
-                    sendTransferEnd(transferId, false, "Hash mismatch. Expected \$expectedHash, got \$actualHash.")
+                    sendTransferEnd(transferId, false, "Hash mismatch. Expected $expectedHash, got $actualHash.")
                     return
                 }
                 sendTransferEnd(transferId, true, hash = actualHash)
@@ -377,53 +510,5 @@ object AndroidFileTransferHost {
     private fun handleTransferCancel(req: JSONObject) {
         val transferId = req.optString("transferId")
         activeTransfers.remove(transferId)?.cleanup()
-    }
-
-    private fun handleManageRequest(req: JSONObject) {
-        val requestId = req.optString("requestId")
-        val operation = req.optString("operation") // "rename", "delete"
-        val rootId = req.optString("rootId")
-        val relativePath = req.optString("relativePath")
-        val newName = req.optString("newName")
-
-        try {
-            val doc = resolveDocument(rootId, relativePath)
-            if (doc == null || !doc.canWrite()) {
-                sendManageResponse(requestId, false, "File not found or access denied.")
-                return
-            }
-
-            when (operation) {
-                "rename" -> {
-                    if (doc.renameTo(newName)) {
-                        sendManageResponse(requestId, true)
-                    } else {
-                        sendManageResponse(requestId, false, "Rename failed.")
-                    }
-                }
-                "delete" -> {
-                    if (doc.delete()) {
-                        sendManageResponse(requestId, true)
-                    } else {
-                        sendManageResponse(requestId, false, "Delete failed.")
-                    }
-                }
-                else -> sendManageResponse(requestId, false, "Unknown operation.")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Manage request failed", e)
-            sendManageResponse(requestId, false, e.message)
-        }
-    }
-
-    private fun sendManageResponse(requestId: String, success: Boolean, error: String? = null) {
-        RemexCoreClient.SendMessage(JSONObject().apply {
-            put("type", "file_manage_response")
-            put("fileManageResponse", JSONObject().apply {
-                put("requestId", requestId)
-                put("success", success)
-                if (error != null) put("errorMessage", error)
-            })
-        }.toString())
     }
 }

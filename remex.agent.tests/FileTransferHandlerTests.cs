@@ -7,6 +7,7 @@ using Remex.Core.Models;
 using Remex.Core.Services.FileTransfer;
 using Remex.Agent.Handlers;
 using Remex.Agent.Services.FileTransfer;
+using Remex.Agent.Services.Security;
 using SkiaSharp;
 
 namespace Remex.Agent.Tests;
@@ -661,6 +662,150 @@ public sealed class FileTransferHandlerTests : IDisposable
         var resp = LastThumbnail(ws);
         Assert.Null(resp.ErrorMessage);
         Assert.Null(resp.JpegBase64);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 2.1 File Sharing Overhaul (protocolVersion 3) — WP-jjdb: inbound consent-
+    // response routing + incoming push-offer consent gate. These drive a REAL
+    // FileTrustService (temp store + paired registry) so the consent round-trip
+    // through RequestConsentAsync / ResolveConsent is exercised end-to-end.
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private (FileTransferHandler handler, FileTrustService trust) CreateTrustHandler(string clientId)
+    {
+        var baseTemp = Path.Combine(Path.GetTempPath(), "remex-jjdb-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(baseTemp);
+        _tempDirs.Add(baseTemp);
+
+        var registry = new PairedClientRegistry(
+            NullLogger<PairedClientRegistry>.Instance,
+            Path.Combine(baseTemp, "paired_clients.json"));
+        registry.RegisterClient(clientId);
+
+        var trust = new FileTrustService(
+            NullLogger<FileTrustService>.Instance,
+            registry,
+            Path.Combine(baseTemp, "file_transfer_trust.json"),
+            TimeSpan.FromSeconds(5));
+
+        var handler = new FileTransferHandler(
+            NullLogger<FileTransferHandler>.Instance,
+            new Mock<IFileTransferService>().Object,
+            trust,
+            new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
+
+        return (handler, trust);
+    }
+
+    private static FilePushResponse LastPushResponse(FakeWebSocket ws)
+        => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FilePushResponse).FilePushResponse!;
+
+    [Fact]
+    public async Task ConsentResponse_ResolvesPendingConsent()
+    {
+        var (handler, trust) = CreateTrustHandler("client-a");
+        var consentId = Guid.NewGuid().ToString("N");
+
+        // Host raises a consent (as file_volumes_request would) and awaits the peer's decision.
+        var pending = trust.RequestConsentAsync(
+            "client-a",
+            new FileConsentRequest { ConsentId = consentId, Kind = FileConsentKinds.FullBrowse },
+            CancellationToken.None);
+
+        // The inbound file_consent_response must resolve that exact pending prompt.
+        handler.HandleFileConsentResponse(new RemexMessage
+        {
+            Type = MessageTypes.FileConsentResponse,
+            FileConsentResponse = new FileConsentResponse
+            {
+                ConsentId = consentId,
+                Granted = true,
+                Remember = false,
+            }
+        });
+
+        var decision = await pending;
+        Assert.True(decision.Granted);
+        Assert.False(decision.Remember);
+    }
+
+    [Fact]
+    public async Task ConsentResponse_UnknownConsentId_IsNoOp()
+    {
+        var (handler, _) = CreateTrustHandler("client-a");
+
+        // No pending prompt for this id — must not throw and must send nothing.
+        var ws = new FakeWebSocket();
+        handler.HandleFileConsentResponse(new RemexMessage
+        {
+            Type = MessageTypes.FileConsentResponse,
+            FileConsentResponse = new FileConsentResponse
+            {
+                ConsentId = "ghost-consent",
+                Granted = true,
+                Remember = true,
+            }
+        });
+
+        Assert.Empty(ws.ReceivedMessages);
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task PushOffer_Accepted_AssignsUniqueTransferIdPerFile()
+    {
+        var (handler, trust) = CreateTrustHandler("client-a");
+        // Approve the incoming-push consent the host raises for this offer.
+        trust.ConsentRequested += prompt =>
+            trust.ResolveConsent(prompt.Request.ConsentId, granted: true, remember: false);
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFilePushOfferAsync(new RemexMessage
+        {
+            Type = MessageTypes.FilePushOffer,
+            FilePushOffer = new FilePushOffer
+            {
+                PushId = "push-1",
+                Files =
+                [
+                    new FilePushFile { Name = "a.txt", Size = 10 },
+                    new FilePushFile { Name = "b.bin", Size = 2048 },
+                ]
+            }
+        }, ws, "client-a", CancellationToken.None);
+
+        var resp = LastPushResponse(ws);
+        Assert.Equal("push-1", resp.PushId);
+        Assert.True(resp.Accepted);
+        Assert.NotNull(resp.TransferIds);
+        Assert.Equal(2, resp.TransferIds!.Length);                 // one id per offered file
+        Assert.All(resp.TransferIds, id => Assert.False(string.IsNullOrWhiteSpace(id)));
+        Assert.Equal(2, resp.TransferIds.Distinct().Count());      // ids are unique
+    }
+
+    [Fact]
+    public async Task PushOffer_Denied_ReturnsNotAcceptedWithoutTransferIds()
+    {
+        var (handler, trust) = CreateTrustHandler("client-a");
+        // Decline the incoming-push consent.
+        trust.ConsentRequested += prompt =>
+            trust.ResolveConsent(prompt.Request.ConsentId, granted: false, remember: false);
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFilePushOfferAsync(new RemexMessage
+        {
+            Type = MessageTypes.FilePushOffer,
+            FilePushOffer = new FilePushOffer
+            {
+                PushId = "push-2",
+                Files = [new FilePushFile { Name = "secret.txt", Size = 5 }]
+            }
+        }, ws, "client-a", CancellationToken.None);
+
+        var resp = LastPushResponse(ws);
+        Assert.Equal("push-2", resp.PushId);
+        Assert.False(resp.Accepted);
+        Assert.Null(resp.TransferIds);
     }
 
     public void Dispose()

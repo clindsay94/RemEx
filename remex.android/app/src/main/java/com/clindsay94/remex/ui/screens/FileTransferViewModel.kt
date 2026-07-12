@@ -12,6 +12,10 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.R
+import com.clindsay94.remex.service.FileManageOperations
+import com.clindsay94.remex.service.FileTransferEngine
+import com.clindsay94.remex.service.FileTransferForegroundService
+import com.clindsay94.remex.service.FileTransferLimits
 import com.clindsay94.remex.service.FileTransferNotificationManager
 import java.io.OutputStream
 import java.security.MessageDigest
@@ -23,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -32,6 +37,7 @@ import org.json.JSONObject
 
 private const val TAG = "FileTransferVM"
 private const val CHUNK_SIZE = 65_536
+private const val SEARCH_DEBOUNCE_MS = 400L
 
 private fun JSONObject.optMeaningfulString(key: String): String? {
     if (!has(key) || isNull(key)) return null
@@ -39,120 +45,178 @@ private fun JSONObject.optMeaningfulString(key: String): String? {
     return value.takeUnless { it.isEmpty() || it.equals("null", ignoreCase = true) }
 }
 
+/**
+ * One row in a browse listing (folder entry) OR a search hit. [modifiedUnixMs] powers date sorting;
+ * [relativePath] is non-null only for search hits (which live outside the current folder) so the UI
+ * can act on them directly. Mirrors `remex.core` `FileEntry` / `FileSearchEntry` fields.
+ */
 data class RemoteFileEntry(
-        val name: String,
-        val isDirectory: Boolean,
-        val sizeBytes: Long,
+    val name: String,
+    val isDirectory: Boolean,
+    val sizeBytes: Long,
+    val modifiedUnixMs: Long = 0L,
+    /** Full path relative to the root — set for search hits, null for ordinary current-folder rows. */
+    val relativePath: String? = null,
 )
 
 data class RemoteSharedRoot(
-        val rootId: String,
-        val displayName: String,
-        val isWritable: Boolean,
-        val canRename: Boolean,
-        val canMove: Boolean,
-        val canDelete: Boolean,
-        val canRemoveRoot: Boolean = false,
+    val rootId: String,
+    val displayName: String,
+    val isWritable: Boolean,
+    val canRename: Boolean,
+    val canMove: Boolean,
+    val canDelete: Boolean,
+    val canRemoveRoot: Boolean = false,
 )
 
 private data class ActiveDownload(
-        val transferId: String,
-        val destinationUri: Uri,
-        val outputStream: OutputStream,
-        val chunkChannel: Channel<ByteArray>,
-        val writerJob: Job,
-        val digest: MessageDigest,
+    val transferId: String,
+    val destinationUri: Uri,
+    val outputStream: OutputStream,
+    val chunkChannel: Channel<ByteArray>,
+    val writerJob: Job,
+    val digest: MessageDigest,
 )
 
+/**
+ * File-manager screen state + actions (plan WP7). The control plane (roots/browse/manage/volumes/
+ * search/metadata/thumbnail) is JSON on `/ws`; bulk v3 transfers are delegated to
+ * [FileTransferEngine] (which owns the binary `/ws/files` channel + persistent queue + foreground
+ * service) so they survive the screen being closed. A v2 host (no [FileManagerCapabilities.binary])
+ * transparently falls back to the untouched legacy base64 transfer path — no v3 message is sent to a
+ * v2 peer.
+ *
+ * All wire field names below mirror `remex.core` (`RemexMessage` / `FileTransferMessages`) VERBATIM.
+ */
 class FileTransferViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _remotePath = MutableStateFlow("/")
-    val remotePath = _remotePath.asStateFlow()
-
-    private val _remoteEntries = MutableStateFlow<List<RemoteFileEntry>>(emptyList())
-    val remoteEntries = _remoteEntries.asStateFlow()
-
+    // ── Roots / capabilities / volumes ────────────────────────────────────────
     private val _remoteRoots = MutableStateFlow<List<RemoteSharedRoot>>(emptyList())
     val remoteRoots = _remoteRoots.asStateFlow()
+
+    private val _capabilities = MutableStateFlow<FileManagerCapabilities?>(null)
+    val capabilities = _capabilities.asStateFlow()
+
+    private val _volumes = MutableStateFlow<List<RemoteVolume>>(emptyList())
+    val volumes = _volumes.asStateFlow()
+
+    private val _fullBrowseGranted = MutableStateFlow(false)
+    val fullBrowseGranted = _fullBrowseGranted.asStateFlow()
 
     private val _selectedRootId = MutableStateFlow<String?>(null)
     val selectedRootId = _selectedRootId.asStateFlow()
 
+    // ── Current listing ────────────────────────────────────────────────────────
+    private val _remotePath = MutableStateFlow("/")
+    val remotePath = _remotePath.asStateFlow()
+
+    private val _rawEntries = MutableStateFlow<List<RemoteFileEntry>>(emptyList())
+
+    private val _sortOption = MutableStateFlow(SortOption())
+    val sortOption = _sortOption.asStateFlow()
+
+    private val _viewMode = MutableStateFlow(FileViewMode.LIST)
+    val viewMode = _viewMode.asStateFlow()
+
+    /** Sorted view of the current folder (or the search results while searching). */
+    private val _displayedEntries = MutableStateFlow<List<RemoteFileEntry>>(emptyList())
+    val displayedEntries = _displayedEntries.asStateFlow()
+
+    // ── Search ───────────────────────────────────────────────────────────────
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    private val _searchActive = MutableStateFlow(false)
+    val searchActive = _searchActive.asStateFlow()
+
+    private val _searchTruncated = MutableStateFlow(false)
+    val searchTruncated = _searchTruncated.asStateFlow()
+
+    private var searchDebounceJob: Job? = null
+    private var pendingSearchRequestId: String? = null
+    private val _searchResults = MutableStateFlow<List<RemoteFileEntry>>(emptyList())
+
+    // ── Status / loading ──────────────────────────────────────────────────────
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-    private val _isTransferring = MutableStateFlow(false)
-    val isTransferring = _isTransferring.asStateFlow()
-
-    private val _transferProgress = MutableStateFlow(0f)
-    val transferProgress = _transferProgress.asStateFlow()
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing = _isRefreshing.asStateFlow()
 
     private val _statusText = MutableStateFlow("")
     val statusText = _statusText.asStateFlow()
 
-    // ── Selection mode ────────────────────────────────────────────────────────
+    // ── Selection ─────────────────────────────────────────────────────────────
     private val _isSelectionMode = MutableStateFlow(false)
     val isSelectionMode = _isSelectionMode.asStateFlow()
 
     private val _selectedEntryNames = MutableStateFlow<Set<String>>(emptySet())
     val selectedEntryNames = _selectedEntryNames.asStateFlow()
 
-    // ── Pending manage / root-manage operations ───────────────────────────────
+    // ── Properties sheet ──────────────────────────────────────────────────────
+    private val _properties = MutableStateFlow<FileProperties?>(null)
+    val properties = _properties.asStateFlow()
+
+    private val _propertiesLoading = MutableStateFlow(false)
+    val propertiesLoading = _propertiesLoading.asStateFlow()
+
+    private var pendingPropertiesRequestId: String? = null
+    private var propertiesTargetName: String = ""
+
+    // ── Thumbnails (relativePath -> base64 JPEG, "" = requested/absent) ────────
+    private val _thumbnails = MutableStateFlow<Map<String, String>>(emptyMap())
+    val thumbnails = _thumbnails.asStateFlow()
+    private val requestedThumbnails = ConcurrentHashMap<String, Boolean>()
+
+    // ── Destination picker (copy/move) ────────────────────────────────────────
+    private val _destinationPath = MutableStateFlow("/")
+    val destinationPath = _destinationPath.asStateFlow()
+
+    private val _destinationEntries = MutableStateFlow<List<RemoteFileEntry>>(emptyList())
+    val destinationEntries = _destinationEntries.asStateFlow()
+
+    private val _destinationLoading = MutableStateFlow(false)
+    val destinationLoading = _destinationLoading.asStateFlow()
+
+    private var pendingDestinationRequestId: String? = null
+
+    // ── v3 transfer queue (from the shared engine) ────────────────────────────
+    val transferQueue = FileTransferEngine.queue
+
+    // ── Legacy (v2) single-transfer state ─────────────────────────────────────
+    private val _isTransferring = MutableStateFlow(false)
+    val isTransferring = _isTransferring.asStateFlow()
+
+    private val _transferProgress = MutableStateFlow(0f)
+    val transferProgress = _transferProgress.asStateFlow()
+
+    // ── Pending request bookkeeping ───────────────────────────────────────────
     private val pendingManageOps = ConcurrentHashMap<String, CompletableDeferred<JSONObject>>()
     private val pendingRootManageOps = ConcurrentHashMap<String, CompletableDeferred<JSONObject>>()
-
     private var pendingBrowseRequestId: String? = null
-    // Timeout watchdogs for roots/browse requests (completed by the response handlers),
-    // mirroring the withTimeout(30_000) pattern used by the manage operations above.
     private var pendingRootsDeferred: CompletableDeferred<Unit>? = null
     private var pendingBrowseDeferred: CompletableDeferred<Unit>? = null
+
     private var activeTransferId: String? = null
     private var activeTransferFileName: String? = null
     private var activeDownload: ActiveDownload? = null
     private var activeUploadJob: Job? = null
 
     init {
+        // Start the (idempotent) engine so its queue is readable and its control-message collector is
+        // live before the user enqueues anything; the foreground service holds the process open.
+        FileTransferEngine.start(getApplication())
         viewModelScope.launch {
-            RemexClientManager.fileTransferMessages.collect { json ->
-                handleFileTransferMessage(json)
-            }
+            RemexClientManager.fileTransferMessages.collect { json -> handleFileTransferMessage(json) }
         }
         loadRemoteRoots()
     }
 
-    // ── Selection helpers ─────────────────────────────────────────────────────
+    private fun app() = getApplication<Application>()
 
-    fun enterSelectionMode(entry: RemoteFileEntry) {
-        if (entry.name == "..") return
-        _isSelectionMode.value = true
-        _selectedEntryNames.value = setOf(entry.name)
-    }
+    private fun caps() = _capabilities.value
 
-    fun toggleEntrySelection(entry: RemoteFileEntry) {
-        if (entry.name == "..") return
-        if (!_isSelectionMode.value) {
-            enterSelectionMode(entry)
-            return
-        }
-        val current = _selectedEntryNames.value
-        val updated = if (entry.name in current) current - entry.name else current + entry.name
-        _selectedEntryNames.value = updated
-        if (updated.isEmpty()) _isSelectionMode.value = false
-    }
-
-    fun selectAll() {
-        _selectedEntryNames.value = _remoteEntries.value
-            .filter { it.name != ".." }
-            .map { it.name }
-            .toSet()
-    }
-
-    fun clearSelection() {
-        _isSelectionMode.value = false
-        _selectedEntryNames.value = emptySet()
-    }
-
-    // ── Remote roots / browsing ───────────────────────────────────────────────
+    // ── Roots / browsing ──────────────────────────────────────────────────────
 
     fun loadRemoteRoots() {
         _isLoading.value = true
@@ -160,17 +224,17 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         val deferred = CompletableDeferred<Unit>()
         pendingRootsDeferred = deferred
         sendMessage(
-                JSONObject().apply {
-                    put("type", "file_roots_request")
-                    put("fileRootsRequest", JSONObject())
-                }
+            JSONObject().apply {
+                put("type", "file_roots_request")
+                put("fileRootsRequest", JSONObject())
+            }
         )
         viewModelScope.launch {
             try {
                 withTimeout(30_000) { deferred.await() }
             } catch (_: TimeoutCancellationException) {
                 if (pendingRootsDeferred === deferred) {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_timeout)
+                    _statusText.value = app().getString(R.string.file_transfer_pin_timeout)
                     _isLoading.value = false
                 }
             } finally {
@@ -183,18 +247,26 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         if (_selectedRootId.value == rootId) return
         _selectedRootId.value = rootId
         clearSelection()
+        clearSearchInternal()
+        browseRemote("/")
+    }
+
+    /** Selects a full-browse volume as the active browsing root (its id doubles as a root id). */
+    fun selectVolume(volume: RemoteVolume) {
+        _selectedRootId.value = volume.id
+        clearSelection()
+        clearSearchInternal()
         browseRemote("/")
     }
 
     fun browseRemote(path: String = _remotePath.value) {
         val rootId = _selectedRootId.value
         if (rootId.isNullOrBlank()) {
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_select_folder_first)
+            _statusText.value = app().getString(R.string.file_transfer_select_folder_first)
             return
         }
-
         clearSelection()
-        val requestId = UUID.randomUUID().toString().replace("-", "")
+        val requestId = newRequestId()
         pendingBrowseRequestId = requestId
         _remotePath.value = path
         _isLoading.value = true
@@ -203,28 +275,27 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         val deferred = CompletableDeferred<Unit>()
         pendingBrowseDeferred = deferred
         sendMessage(
-                JSONObject().apply {
-                    put("type", "file_browse_request")
-                    put(
-                            "fileBrowseRequest",
-                            JSONObject().apply {
-                                put("requestId", requestId)
-                                put("path", path)
-                                put("rootId", rootId)
-                                put("relativePath", path)
-                            }
-                    )
-                }
+            JSONObject().apply {
+                put("type", "file_browse_request")
+                put(
+                    "fileBrowseRequest",
+                    JSONObject().apply {
+                        put("requestId", requestId)
+                        put("path", path)
+                        put("rootId", rootId)
+                        put("relativePath", path)
+                    },
+                )
+            }
         )
         viewModelScope.launch {
             try {
                 withTimeout(30_000) { deferred.await() }
             } catch (_: TimeoutCancellationException) {
-                // Only reset if this request is still the active one; a newer browse
-                // supersedes this watchdog.
                 if (pendingBrowseRequestId == requestId) {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_timeout)
+                    _statusText.value = app().getString(R.string.file_transfer_pin_timeout)
                     _isLoading.value = false
+                    _isRefreshing.value = false
                 }
             } finally {
                 if (pendingBrowseDeferred === deferred) pendingBrowseDeferred = null
@@ -234,121 +305,165 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun navigateInto(entry: RemoteFileEntry) {
         if (!entry.isDirectory) return
-        val current = _remotePath.value.replace('\\', '/').trimEnd('/')
-        val newPath =
-                if (entry.name == "..") {
-                    val parent = current.substringBeforeLast('/')
-                    if (parent.isEmpty()) "/" else parent
-                } else if (current.isEmpty() || current == "/") {
-                    entry.name
-                } else {
-                    "$current/${entry.name}"
-                }
-        browseRemote(newPath)
+        // Search hits carry their own relativePath; ordinary rows derive it from the current folder.
+        val target = entry.relativePath ?: run {
+            if (entry.name == FileManagerLogic.PARENT_ENTRY) FileManagerLogic.parentPath(_remotePath.value)
+            else FileManagerLogic.combinePath(_remotePath.value, entry.name)
+        }
+        clearSearchInternal()
+        browseRemote(target)
     }
 
-    // ── File management ───────────────────────────────────────────────────────
+    /** Breadcrumb tap — jump directly to an ancestor path. */
+    fun navigateToPath(path: String) {
+        clearSearchInternal()
+        browseRemote(path)
+    }
+
+    /** Pull-to-refresh: re-fetch roots and re-browse the current folder. */
+    fun refresh() {
+        _isRefreshing.value = true
+        loadRemoteRoots()
+        if (!_selectedRootId.value.isNullOrBlank()) browseRemote(_remotePath.value)
+        else _isRefreshing.value = false
+    }
+
+    // ── Sort / view ───────────────────────────────────────────────────────────
+
+    fun setSort(field: SortField) {
+        _sortOption.value = FileManagerLogic.nextSort(_sortOption.value, field)
+        recomputeDisplayed()
+    }
+
+    fun toggleViewMode() {
+        _viewMode.value = if (_viewMode.value == FileViewMode.LIST) FileViewMode.GRID else FileViewMode.LIST
+    }
+
+    private fun recomputeDisplayed() {
+        val source = if (_searchActive.value) _searchResults.value else _rawEntries.value
+        _displayedEntries.value = FileManagerLogic.sortEntries(source, _sortOption.value)
+    }
+
+    // ── Search (debounced) ──────────────────────────────────────────────────────
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+        searchDebounceJob?.cancel()
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) {
+            clearSearchInternal()
+            return
+        }
+        // Server-side search is a v3 capability; on a v2 host fall back to filtering the loaded folder.
+        val supportsServerSearch = caps()?.ops?.contains("search") == true
+        searchDebounceJob = viewModelScope.launch {
+            delay(SEARCH_DEBOUNCE_MS)
+            if (supportsServerSearch) sendSearch(trimmed) else localFilter(trimmed)
+        }
+    }
+
+    fun clearSearch() = clearSearchInternal()
+
+    private fun clearSearchInternal() {
+        searchDebounceJob?.cancel()
+        pendingSearchRequestId = null
+        if (_searchQuery.value.isNotEmpty()) _searchQuery.value = ""
+        _searchActive.value = false
+        _searchTruncated.value = false
+        _searchResults.value = emptyList()
+        recomputeDisplayed()
+    }
+
+    private fun localFilter(query: String) {
+        _searchActive.value = true
+        _searchTruncated.value = false
+        _searchResults.value = _rawEntries.value.filter {
+            it.name != FileManagerLogic.PARENT_ENTRY && it.name.contains(query, ignoreCase = true)
+        }
+        recomputeDisplayed()
+    }
+
+    private fun sendSearch(query: String) {
+        val rootId = _selectedRootId.value ?: return
+        val requestId = newRequestId()
+        pendingSearchRequestId = requestId
+        _searchActive.value = true
+        _isLoading.value = true
+        sendV3(
+            "file_search_request",
+            "fileSearchRequest",
+            JSONObject().apply {
+                put("requestId", requestId)
+                put("rootId", rootId)
+                put("relativePath", _remotePath.value)
+                put("query", query)
+                put("maxResults", FileTransferLimits.SEARCH_MAX_RESULTS)
+            },
+        )
+    }
+
+    // ── Selection ─────────────────────────────────────────────────────────────
+
+    fun enterSelectionMode(entry: RemoteFileEntry) {
+        if (entry.name == FileManagerLogic.PARENT_ENTRY) return
+        _isSelectionMode.value = true
+        _selectedEntryNames.value = setOf(entry.name)
+    }
+
+    fun toggleEntrySelection(entry: RemoteFileEntry) {
+        if (entry.name == FileManagerLogic.PARENT_ENTRY) return
+        if (!_isSelectionMode.value) {
+            enterSelectionMode(entry)
+            return
+        }
+        val updated = FileManagerLogic.toggleSelection(_selectedEntryNames.value, entry.name)
+        _selectedEntryNames.value = updated
+        if (updated.isEmpty()) _isSelectionMode.value = false
+    }
+
+    fun selectAll() {
+        _selectedEntryNames.value =
+            _displayedEntries.value.filter { it.name != FileManagerLogic.PARENT_ENTRY }.map { it.name }.toSet()
+    }
+
+    fun clearSelection() {
+        _isSelectionMode.value = false
+        _selectedEntryNames.value = emptySet()
+    }
+
+    // ── File management (delete / rename / mkdir / copy / move) ────────────────
 
     fun deleteEntry(entry: RemoteFileEntry) {
         val rootId = _selectedRootId.value ?: return
+        val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_deleting_single, entry.name)
-            val requestId = UUID.randomUUID().toString().replace("-", "")
-            val deferred = CompletableDeferred<JSONObject>()
-            pendingManageOps[requestId] = deferred
-
-            sendMessage(
-                    JSONObject().apply {
-                        put("type", "file_manage_request")
-                        put(
-                                "fileManageRequest",
-                                JSONObject().apply {
-                                    put("requestId", requestId)
-                                    put("rootId", rootId)
-                                    put(
-                                            "relativePath",
-                                            combineRemotePath(_remotePath.value, entry.name)
-                                    )
-                                    put("operation", "delete")
-                                }
-                        )
-                    }
-            )
-
-            try {
-                val response = withTimeout(30_000) { deferred.await() }
-                val error =
-                        response
-                                .optJSONObject("fileManageResponse")
-                                ?.optMeaningfulString("errorMessage")
-                if (error != null) {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_delete_failed, error)
-                } else {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_deleted_success)
-                    browseRemote()
-                }
-            } catch (_: TimeoutCancellationException) {
-                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_delete_timeout)
-            } finally {
-                pendingManageOps.remove(requestId)
-                _isLoading.value = false
-            }
+            _statusText.value = app().getString(R.string.file_transfer_deleting_single, entry.name)
+            val error = runManage(rootId, relative, FileManageOperations.DELETE)
+            _statusText.value =
+                if (error != null) app().getString(R.string.file_transfer_delete_failed, error)
+                else app().getString(R.string.file_transfer_deleted_success)
+            _isLoading.value = false
+            if (error == null) browseRemote()
         }
     }
 
     fun deleteSelectedEntries() {
         val rootId = _selectedRootId.value ?: return
-        val toDelete = _remoteEntries.value
-            .filter { it.name in _selectedEntryNames.value && it.name != ".." }
-        if (toDelete.isEmpty()) return
-
+        val targets = _displayedEntries.value.filter {
+            it.name in _selectedEntryNames.value && it.name != FileManagerLogic.PARENT_ENTRY
+        }
+        if (targets.isEmpty()) return
         clearSelection()
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_deleting_multiple, toDelete.size)
-            var errorCount = 0
-
-            for (entry in toDelete) {
-                val requestId = UUID.randomUUID().toString().replace("-", "")
-                val deferred = CompletableDeferred<JSONObject>()
-                pendingManageOps[requestId] = deferred
-
-                sendMessage(
-                        JSONObject().apply {
-                            put("type", "file_manage_request")
-                            put(
-                                    "fileManageRequest",
-                                    JSONObject().apply {
-                                        put("requestId", requestId)
-                                        put("rootId", rootId)
-                                        put(
-                                                "relativePath",
-                                                combineRemotePath(_remotePath.value, entry.name)
-                                        )
-                                        put("operation", "delete")
-                                    }
-                            )
-                        }
-                )
-
-                try {
-                    val response = withTimeout(30_000) { deferred.await() }
-                    val error =
-                            response
-                                    .optJSONObject("fileManageResponse")
-                                    ?.optMeaningfulString("errorMessage")
-                    if (error != null) errorCount++
-                } catch (_: TimeoutCancellationException) {
-                    errorCount++
-                } finally {
-                    pendingManageOps.remove(requestId)
-                }
+            _statusText.value = app().getString(R.string.file_transfer_deleting_multiple, targets.size)
+            var errors = 0
+            for (entry in targets) {
+                val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
+                if (runManage(rootId, relative, FileManageOperations.DELETE) != null) errors++
             }
-
-            _statusText.value =
-                    if (errorCount == 0) getApplication<Application>().getString(R.string.file_transfer_deleted_multiple_success, toDelete.size)
-                    else getApplication<Application>().getString(R.string.file_transfer_deleted_multiple_failed, toDelete.size - errorCount, toDelete.size, errorCount)
+            _statusText.value = multiResultText(targets.size, errors)
             _isLoading.value = false
             browseRemote()
         }
@@ -358,349 +473,478 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         val trimmed = newName.trim()
         if (trimmed.isEmpty() || trimmed == entry.name) return
         val rootId = _selectedRootId.value ?: return
-
+        val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_renaming_single, entry.name)
-            val requestId = UUID.randomUUID().toString().replace("-", "")
-            val deferred = CompletableDeferred<JSONObject>()
-            pendingManageOps[requestId] = deferred
-
-            sendMessage(
-                    JSONObject().apply {
-                        put("type", "file_manage_request")
-                        put(
-                                "fileManageRequest",
-                                JSONObject().apply {
-                                    put("requestId", requestId)
-                                    put("rootId", rootId)
-                                    put(
-                                            "relativePath",
-                                            combineRemotePath(_remotePath.value, entry.name)
-                                    )
-                                    put("operation", "rename")
-                                    put("newName", trimmed)
-                                }
-                        )
-                    }
-            )
-
-            try {
-                val response = withTimeout(30_000) { deferred.await() }
-                val error =
-                        response
-                                .optJSONObject("fileManageResponse")
-                                ?.optMeaningfulString("errorMessage")
-                if (error != null) {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_rename_failed, error)
-                } else {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_renamed_success)
-                    browseRemote()
-                }
-            } catch (_: TimeoutCancellationException) {
-                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_rename_timeout)
-            } finally {
-                pendingManageOps.remove(requestId)
-                _isLoading.value = false
-            }
+            _statusText.value = app().getString(R.string.file_transfer_renaming_single, entry.name)
+            val error = runManage(rootId, relative, FileManageOperations.RENAME, newName = trimmed)
+            _statusText.value =
+                if (error != null) app().getString(R.string.file_transfer_rename_failed, error)
+                else app().getString(R.string.file_transfer_renamed_success)
+            _isLoading.value = false
+            if (error == null) browseRemote()
         }
     }
+
+    fun createFolder(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        val rootId = _selectedRootId.value ?: return
+        val relative = FileManagerLogic.combinePath(_remotePath.value, trimmed)
+        viewModelScope.launch {
+            _isLoading.value = true
+            _statusText.value = app().getString(R.string.file_manager_creating_folder, trimmed)
+            val error = runManage(rootId, relative, FileManageOperations.MKDIR)
+            _statusText.value =
+                if (error != null) app().getString(R.string.file_manager_new_folder_failed, error)
+                else app().getString(R.string.file_manager_folder_created)
+            _isLoading.value = false
+            if (error == null) browseRemote()
+        }
+    }
+
+    fun copySelectedTo(destFolder: String) = manageSelectedTo(destFolder, FileManageOperations.COPY)
+
+    fun moveSelectedTo(destFolder: String) = manageSelectedTo(destFolder, FileManageOperations.MOVE)
+
+    private fun manageSelectedTo(destFolder: String, operation: String) {
+        val rootId = _selectedRootId.value ?: return
+        val targets = _displayedEntries.value.filter {
+            it.name in _selectedEntryNames.value && it.name != FileManagerLogic.PARENT_ENTRY
+        }
+        if (targets.isEmpty()) return
+        clearSelection()
+        viewModelScope.launch {
+            _isLoading.value = true
+            val movingLabel =
+                if (operation == FileManageOperations.MOVE) app().getString(R.string.file_manager_moving, targets.size)
+                else app().getString(R.string.file_manager_copying, targets.size)
+            _statusText.value = movingLabel
+            var errors = 0
+            for (entry in targets) {
+                val relative = FileManagerLogic.combinePath(_remotePath.value, entry.name)
+                val destination = FileManagerLogic.combinePath(destFolder, entry.name)
+                if (runManage(rootId, relative, operation, destinationPath = destination) != null) errors++
+            }
+            _statusText.value = multiResultText(targets.size, errors)
+            _isLoading.value = false
+            browseRemote()
+        }
+    }
+
+    /** Sends one file_manage_request and awaits its response; returns an error message or null on success. */
+    private suspend fun runManage(
+        rootId: String,
+        relativePath: String,
+        operation: String,
+        newName: String? = null,
+        destinationPath: String? = null,
+    ): String? {
+        val requestId = newRequestId()
+        val deferred = CompletableDeferred<JSONObject>()
+        pendingManageOps[requestId] = deferred
+        // copy/move/mkdir are v3-only ops; delete/rename ride the untouched legacy path.
+        val v3Op = operation == FileManageOperations.COPY ||
+            operation == FileManageOperations.MOVE ||
+            operation == FileManageOperations.MKDIR
+        val payload = JSONObject().apply {
+            put("requestId", requestId)
+            put("rootId", rootId)
+            put("relativePath", relativePath)
+            put("operation", operation)
+            if (newName != null) put("newName", newName)
+            if (destinationPath != null) put("destinationPath", destinationPath)
+            if (v3Op) put("overwrite", false)
+        }
+        if (v3Op) sendV3("file_manage_request", "fileManageRequest", payload)
+        else sendMessage(JSONObject().apply { put("type", "file_manage_request"); put("fileManageRequest", payload) })
+        return try {
+            val response = withTimeout(30_000) { deferred.await() }
+            response.optJSONObject("fileManageResponse")?.optMeaningfulString("errorMessage")
+        } catch (_: TimeoutCancellationException) {
+            app().getString(R.string.file_transfer_delete_timeout)
+        } finally {
+            pendingManageOps.remove(requestId)
+        }
+    }
+
+    private fun multiResultText(total: Int, errors: Int): String =
+        if (errors == 0) app().getString(R.string.file_transfer_deleted_multiple_success, total)
+        else app().getString(R.string.file_transfer_deleted_multiple_failed, total - errors, total, errors)
+
+    // ── Quick-access root management ──────────────────────────────────────────
 
     fun pinCurrentFolder() {
         val rootId = _selectedRootId.value ?: return
         val path = _remotePath.value
-        if (path == "/" || path == "\\") return
-
+        if (FileManagerLogic.isAtRoot(path)) return
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_adding_shortcut)
-            val requestId = UUID.randomUUID().toString().replace("-", "")
-            val deferred = CompletableDeferred<JSONObject>()
-            pendingRootManageOps[requestId] = deferred
-
-            sendMessage(
-                    JSONObject().apply {
-                        put("type", "file_root_manage_request")
-                        put(
-                                "fileRootManageRequest",
-                                JSONObject().apply {
-                                    put("requestId", requestId)
-                                    put("operation", "add")
-                                    put("sourceRootId", rootId)
-                                    put("sourceRelativePath", path)
-                                }
-                        )
-                    }
-            )
-
-            try {
-                val response = withTimeout(30_000) { deferred.await() }
-                val respObj = response.optJSONObject("fileRootManageResponse")
-                val error = respObj?.optMeaningfulString("errorMessage")
-                if (error != null) {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_failed, error)
-                } else {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_shortcut_added)
-                    updateRootsFromResponse(respObj)
+            _statusText.value = app().getString(R.string.file_transfer_adding_shortcut)
+            val respObj = runRootManage { requestId ->
+                JSONObject().apply {
+                    put("requestId", requestId)
+                    put("operation", "add")
+                    put("sourceRootId", rootId)
+                    put("sourceRelativePath", path)
                 }
-            } catch (_: TimeoutCancellationException) {
-                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_timeout)
-            } finally {
-                pendingRootManageOps.remove(requestId)
-                _isLoading.value = false
             }
+            handleRootManageResult(respObj, R.string.file_transfer_shortcut_added, R.string.file_transfer_pin_failed)
         }
     }
 
     fun removeRoot(rootId: String) {
         viewModelScope.launch {
             _isLoading.value = true
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_removing_shortcut)
-            val requestId = UUID.randomUUID().toString().replace("-", "")
-            val deferred = CompletableDeferred<JSONObject>()
-            pendingRootManageOps[requestId] = deferred
-
-            sendMessage(
-                    JSONObject().apply {
-                        put("type", "file_root_manage_request")
-                        put(
-                                "fileRootManageRequest",
-                                JSONObject().apply {
-                                    put("requestId", requestId)
-                                    put("operation", "remove")
-                                    put("rootId", rootId)
-                                }
-                        )
-                    }
-            )
-
-            try {
-                val response = withTimeout(30_000) { deferred.await() }
-                val respObj = response.optJSONObject("fileRootManageResponse")
-                val error = respObj?.optMeaningfulString("errorMessage")
-                if (error != null) {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_remove_failed, error)
-                } else {
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_shortcut_removed)
-                    updateRootsFromResponse(respObj)
+            _statusText.value = app().getString(R.string.file_transfer_removing_shortcut)
+            val respObj = runRootManage { requestId ->
+                JSONObject().apply {
+                    put("requestId", requestId)
+                    put("operation", "remove")
+                    put("rootId", rootId)
                 }
-            } catch (_: TimeoutCancellationException) {
-                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_pin_timeout)
-            } finally {
-                pendingRootManageOps.remove(requestId)
-                _isLoading.value = false
             }
+            handleRootManageResult(respObj, R.string.file_transfer_shortcut_removed, R.string.file_transfer_remove_failed)
         }
     }
 
-    // ── Uploads / downloads ───────────────────────────────────────────────────
+    /** Builds a root-manage payload with the supplied request id, sends it, and awaits the response. */
+    private suspend fun runRootManage(buildPayload: (String) -> JSONObject): JSONObject? {
+        val requestId = newRequestId()
+        val deferred = CompletableDeferred<JSONObject>()
+        pendingRootManageOps[requestId] = deferred
+        sendMessage(
+            JSONObject().apply {
+                put("type", "file_root_manage_request")
+                put("fileRootManageRequest", buildPayload(requestId))
+            }
+        )
+        return try {
+            val response = withTimeout(30_000) { deferred.await() }
+            response.optJSONObject("fileRootManageResponse")
+        } catch (_: TimeoutCancellationException) {
+            null
+        } finally {
+            pendingRootManageOps.remove(requestId)
+        }
+    }
+
+    private fun handleRootManageResult(respObj: JSONObject?, successRes: Int, failRes: Int) {
+        _isLoading.value = false
+        if (respObj == null) {
+            _statusText.value = app().getString(R.string.file_transfer_pin_timeout)
+            return
+        }
+        val error = respObj.optMeaningfulString("errorMessage")
+        if (error != null) {
+            _statusText.value = app().getString(failRes, error)
+        } else {
+            _statusText.value = app().getString(successRes)
+            updateRootsFromResponse(respObj)
+        }
+    }
+
+    // ── Volumes (full-browse) ─────────────────────────────────────────────────
+
+    fun loadVolumes() {
+        if (caps()?.fullBrowse != true) return
+        val requestId = newRequestId()
+        _statusText.value = app().getString(R.string.file_manager_requesting_volumes)
+        sendV3(
+            "file_volumes_request",
+            "fileVolumesRequest",
+            JSONObject().apply { put("requestId", requestId) },
+        )
+    }
+
+    // ── Properties sheet ──────────────────────────────────────────────────────
+
+    fun showProperties(entry: RemoteFileEntry) {
+        val rootId = _selectedRootId.value ?: return
+        if (caps()?.isV3 != true) {
+            // v2 host has no metadata message; show the little we already know locally.
+            _properties.value = FileProperties(
+                name = entry.name,
+                sizeBytes = entry.sizeBytes,
+                createdUtc = 0,
+                modifiedUtc = entry.modifiedUnixMs,
+                isDirectory = entry.isDirectory,
+                itemCount = null,
+                mimeType = null,
+                readOnly = false,
+            )
+            return
+        }
+        val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
+        val requestId = newRequestId()
+        pendingPropertiesRequestId = requestId
+        propertiesTargetName = entry.name
+        _propertiesLoading.value = true
+        _properties.value = null
+        sendV3(
+            "file_metadata_request",
+            "fileMetadataRequest",
+            JSONObject().apply {
+                put("requestId", requestId)
+                put("rootId", rootId)
+                put("relativePath", relative)
+            },
+        )
+    }
+
+    fun dismissProperties() {
+        _properties.value = null
+        _propertiesLoading.value = false
+        pendingPropertiesRequestId = null
+    }
+
+    // ── Thumbnails ────────────────────────────────────────────────────────────
+
+    fun requestThumbnail(entry: RemoteFileEntry) {
+        if (caps()?.isV3 != true) return
+        if (entry.isDirectory || !FileManagerLogic.isThumbnailCandidate(entry.name)) return
+        val rootId = _selectedRootId.value ?: return
+        val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
+        if (requestedThumbnails.putIfAbsent(relative, true) != null) return // already asked
+        val requestId = newRequestId()
+        // The thumbnail response echoes only requestId (not the path), so remember which path this id
+        // is for and resolve it on the way back.
+        pendingThumbnailPaths[requestId] = relative
+        sendV3(
+            "file_thumbnail_request",
+            "fileThumbnailRequest",
+            JSONObject().apply {
+                put("requestId", requestId)
+                put("rootId", rootId)
+                put("relativePath", relative)
+                put("maxDim", FileTransferLimits.THUMBNAIL_DEFAULT_MAX_DIM)
+            },
+        )
+    }
+    private val pendingThumbnailPaths = ConcurrentHashMap<String, String>()
+
+    // ── Destination picker (copy/move browsing) ──────────────────────────────
+
+    fun openDestinationPicker() {
+        _destinationPath.value = "/"
+        browseDestination("/")
+    }
+
+    fun browseDestination(path: String) {
+        val rootId = _selectedRootId.value ?: return
+        val requestId = newRequestId()
+        pendingDestinationRequestId = requestId
+        _destinationPath.value = path
+        _destinationLoading.value = true
+        sendMessage(
+            JSONObject().apply {
+                put("type", "file_browse_request")
+                put(
+                    "fileBrowseRequest",
+                    JSONObject().apply {
+                        put("requestId", requestId)
+                        put("path", path)
+                        put("rootId", rootId)
+                        put("relativePath", path)
+                    },
+                )
+            }
+        )
+    }
+
+    fun navigateDestinationInto(entry: RemoteFileEntry) {
+        if (!entry.isDirectory) return
+        val target =
+            if (entry.name == FileManagerLogic.PARENT_ENTRY) FileManagerLogic.parentPath(_destinationPath.value)
+            else FileManagerLogic.combinePath(_destinationPath.value, entry.name)
+        browseDestination(target)
+    }
+
+    // ── Transfers ─────────────────────────────────────────────────────────────
 
     fun uploadFromUri(uri: Uri) {
         val rootId = _selectedRootId.value
         if (rootId.isNullOrBlank()) {
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_select_folder_first)
+            _statusText.value = app().getString(R.string.file_transfer_select_folder_first)
             return
         }
-        if (_isTransferring.value) return
-
         val (displayName, sizeBytes) = queryMetadata(uri)
         val targetName = displayName ?: "upload-${System.currentTimeMillis()}"
-        val remoteRelativePath = combineRemotePath(_remotePath.value, targetName)
-        val transferId = UUID.randomUUID().toString().replace("-", "")
+        val destRelativePath = FileManagerLogic.combinePath(_remotePath.value, targetName)
 
+        if (caps()?.binary == true) {
+            // v3: hand off to the persistent queue + foreground service.
+            FileTransferEngine.enqueueUpload(
+                localUri = uri.toString(),
+                fileName = targetName,
+                size = sizeBytes ?: 0L,
+                destRoot = rootId,
+                destRelativePath = destRelativePath,
+            )
+            FileTransferForegroundService.start(app())
+            _statusText.value = app().getString(R.string.file_manager_queued_upload, targetName)
+        } else {
+            legacyUpload(uri, rootId, targetName, destRelativePath, sizeBytes)
+        }
+    }
+
+    /** SAF destination already chosen by the caller (CreateDocument); routes v3 vs legacy. */
+    fun downloadEntryTo(entry: RemoteFileEntry, destinationUri: Uri) {
+        val rootId = _selectedRootId.value
+        if (rootId.isNullOrBlank()) {
+            _statusText.value = app().getString(R.string.file_transfer_select_folder_first)
+            return
+        }
+        if (entry.isDirectory) return
+        val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
+
+        if (caps()?.binary == true) {
+            FileTransferEngine.enqueueDownload(
+                destUri = destinationUri.toString(),
+                fileName = entry.name,
+                size = entry.sizeBytes,
+                sourceRoot = rootId,
+                sourceRelativePath = relative,
+            )
+            FileTransferForegroundService.start(app())
+            _statusText.value = app().getString(R.string.file_manager_queued_download, entry.name)
+        } else {
+            legacyDownload(entry, rootId, relative, destinationUri)
+        }
+    }
+
+    // ── v3 queue controls ─────────────────────────────────────────────────────
+
+    fun pauseTransfer(id: String) = FileTransferEngine.pause(id)
+
+    fun resumeTransfer(id: String) {
+        FileTransferEngine.resume(id)
+        FileTransferForegroundService.start(app())
+    }
+
+    fun cancelTransfer(id: String) = FileTransferEngine.cancel(id)
+
+    fun clearFinishedTransfers() = FileTransferEngine.clearFinished()
+
+    // ── Legacy (v2) base64 transfer path — kept intact for v2 peers ────────────
+
+    private fun legacyUpload(uri: Uri, rootId: String, targetName: String, remoteRelativePath: String, sizeBytes: Long?) {
+        if (_isTransferring.value) return
+        val transferId = newRequestId()
         activeTransferId = transferId
         activeTransferFileName = targetName
         _isTransferring.value = true
         _transferProgress.value = 0f
-        _statusText.value = getApplication<Application>().getString(R.string.file_transfer_uploading_single, targetName)
-        FileTransferNotificationManager.showTransferStarted(
-                getApplication(),
-                targetName,
-                isDownload = false,
-        )
+        _statusText.value = app().getString(R.string.file_transfer_uploading_single, targetName)
+        FileTransferNotificationManager.showTransferStarted(app(), targetName, isDownload = false)
 
-        activeUploadJob =
-                viewModelScope.launch(Dispatchers.IO) {
-                    try {
-                        val resolver = getApplication<Application>().contentResolver
-                        val input =
-                                resolver.openInputStream(uri)
-                                        ?: throw IllegalStateException(
-                                                "Unable to open the selected file."
-                                        )
-
-                        input.use { stream ->
-                            sendMessage(
-                                    JSONObject().apply {
-                                        put("type", "file_transfer_start")
-                                        put(
-                                                "fileTransferStart",
-                                                JSONObject().apply {
-                                                    put("transferId", transferId)
-                                                    put("direction", "upload")
-                                                    put("remotePath", remoteRelativePath)
-                                                    put("remoteRootId", rootId)
-                                                    put("remoteRelativePath", remoteRelativePath)
-                                                    put("fileName", targetName)
-                                                    put("totalBytes", sizeBytes ?: 0L)
-                                                    put("sha256", "")
-                                                }
-                                        )
-                                    }
-                            )
-
-                            val digest = MessageDigest.getInstance("SHA-256")
-                            val buffer = ByteArray(CHUNK_SIZE)
-                            var offset = 0L
-
-                            while (true) {
-                                val read = stream.read(buffer)
-                                if (read <= 0) break
-
-                                digest.update(buffer, 0, read)
-                                sendMessage(
-                                        JSONObject().apply {
-                                            put("type", "file_transfer_chunk")
-                                            put(
-                                                    "fileTransferChunk",
-                                                    JSONObject().apply {
-                                                        put("transferId", transferId)
-                                                        put("offset", offset)
-                                                        put(
-                                                                "dataBase64",
-                                                                Base64.encodeToString(
-                                                                        buffer,
-                                                                        0,
-                                                                        read,
-                                                                        Base64.NO_WRAP
-                                                                )
-                                                        )
-                                                    }
-                                            )
-                                        }
-                                )
-                                offset += read
-                            }
-
-                            sendMessage(
-                                    JSONObject().apply {
-                                        put("type", "file_transfer_end")
-                                        put(
-                                                "fileTransferEnd",
-                                                JSONObject().apply {
-                                                    put("transferId", transferId)
-                                                    put("success", true)
-                                                    put(
-                                                            "sha256",
-                                                            Base64.encodeToString(
-                                                                    digest.digest(),
-                                                                    Base64.NO_WRAP
-                                                            )
-                                                    )
-                                                }
-                                        )
-                                    }
-                            )
-                        }
-                    } catch (_: CancellationException) {
-                        Log.i(TAG, "Upload cancelled for $transferId")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Upload failed", e)
-                        val message = e.message ?: getApplication<Application>().getString(R.string.file_transfer_unknown_error)
-                        _statusText.value = getApplication<Application>().getString(R.string.file_transfer_upload_failed, message)
-                        FileTransferNotificationManager.showTransferFailed(
-                                getApplication(),
-                                getApplication<Application>().getString(R.string.file_transfer_upload_failed, message),
-                        )
-                        resetTransferState()
+        activeUploadJob = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val input = app().contentResolver.openInputStream(uri)
+                    ?: throw IllegalStateException("Unable to open the selected file.")
+                input.use { stream ->
+                    sendMessage(JSONObject().apply {
+                        put("type", "file_transfer_start")
+                        put("fileTransferStart", JSONObject().apply {
+                            put("transferId", transferId)
+                            put("direction", "upload")
+                            put("remotePath", remoteRelativePath)
+                            put("remoteRootId", rootId)
+                            put("remoteRelativePath", remoteRelativePath)
+                            put("fileName", targetName)
+                            put("totalBytes", sizeBytes ?: 0L)
+                            put("sha256", "")
+                        })
+                    })
+                    val digest = MessageDigest.getInstance("SHA-256")
+                    val buffer = ByteArray(CHUNK_SIZE)
+                    var offset = 0L
+                    while (true) {
+                        val read = stream.read(buffer)
+                        if (read <= 0) break
+                        digest.update(buffer, 0, read)
+                        sendMessage(JSONObject().apply {
+                            put("type", "file_transfer_chunk")
+                            put("fileTransferChunk", JSONObject().apply {
+                                put("transferId", transferId)
+                                put("offset", offset)
+                                put("dataBase64", Base64.encodeToString(buffer, 0, read, Base64.NO_WRAP))
+                            })
+                        })
+                        offset += read
                     }
+                    sendMessage(JSONObject().apply {
+                        put("type", "file_transfer_end")
+                        put("fileTransferEnd", JSONObject().apply {
+                            put("transferId", transferId)
+                            put("success", true)
+                            put("sha256", Base64.encodeToString(digest.digest(), Base64.NO_WRAP))
+                        })
+                    })
                 }
+            } catch (_: CancellationException) {
+                Log.i(TAG, "Upload cancelled for $transferId")
+            } catch (e: Exception) {
+                Log.e(TAG, "Upload failed", e)
+                val message = e.message ?: app().getString(R.string.file_transfer_unknown_error)
+                _statusText.value = app().getString(R.string.file_transfer_upload_failed, message)
+                FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_upload_failed, message))
+                resetTransferState()
+            }
+        }
     }
 
-    fun downloadToUri(entry: RemoteFileEntry, destinationUri: Uri) {
-        val rootId = _selectedRootId.value
-        if (rootId.isNullOrBlank()) {
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_select_folder_first)
-            return
-        }
-        if (entry.isDirectory || _isTransferring.value) return
-
-        val transferId = UUID.randomUUID().toString().replace("-", "")
-        val resolver = getApplication<Application>().contentResolver
-        val output = resolver.openOutputStream(destinationUri, "w")
+    private fun legacyDownload(entry: RemoteFileEntry, rootId: String, remoteRelativePath: String, destinationUri: Uri) {
+        if (_isTransferring.value) return
+        val transferId = newRequestId()
+        val output = app().contentResolver.openOutputStream(destinationUri, "w")
         if (output == null) {
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_unable_open_location)
+            _statusText.value = app().getString(R.string.file_transfer_unable_open_location)
             return
         }
-
         val channel = Channel<ByteArray>(Channel.UNLIMITED)
-        val writerJob =
-                viewModelScope.launch(Dispatchers.IO) {
-                    output.use { stream ->
-                        for (chunk in channel) {
-                            stream.write(chunk)
-                        }
-                        stream.flush()
-                    }
-                }
-
+        val writerJob = viewModelScope.launch(Dispatchers.IO) {
+            output.use { stream ->
+                for (chunk in channel) stream.write(chunk)
+                stream.flush()
+            }
+        }
         activeTransferId = transferId
         activeTransferFileName = entry.name
-        activeDownload =
-                ActiveDownload(
-                        transferId = transferId,
-                        destinationUri = destinationUri,
-                        outputStream = output,
-                        chunkChannel = channel,
-                        writerJob = writerJob,
-                        digest = MessageDigest.getInstance("SHA-256"),
-                )
+        activeDownload = ActiveDownload(transferId, destinationUri, output, channel, writerJob, MessageDigest.getInstance("SHA-256"))
         _isTransferring.value = true
         _transferProgress.value = 0f
-        _statusText.value = getApplication<Application>().getString(R.string.file_transfer_downloading_single, entry.name)
-        FileTransferNotificationManager.showTransferStarted(
-                getApplication(),
-                entry.name,
-                isDownload = true,
-        )
-
-        val remoteRelativePath = combineRemotePath(_remotePath.value, entry.name)
-        sendMessage(
-                JSONObject().apply {
-                    put("type", "file_transfer_start")
-                    put(
-                            "fileTransferStart",
-                            JSONObject().apply {
-                                put("transferId", transferId)
-                                put("direction", "download")
-                                put("remotePath", remoteRelativePath)
-                                put("remoteRootId", rootId)
-                                put("remoteRelativePath", remoteRelativePath)
-                                put("fileName", entry.name)
-                                put("totalBytes", 0)
-                                put("sha256", "")
-                            }
-                    )
-                }
-        )
+        _statusText.value = app().getString(R.string.file_transfer_downloading_single, entry.name)
+        FileTransferNotificationManager.showTransferStarted(app(), entry.name, isDownload = true)
+        sendMessage(JSONObject().apply {
+            put("type", "file_transfer_start")
+            put("fileTransferStart", JSONObject().apply {
+                put("transferId", transferId)
+                put("direction", "download")
+                put("remotePath", remoteRelativePath)
+                put("remoteRootId", rootId)
+                put("remoteRelativePath", remoteRelativePath)
+                put("fileName", entry.name)
+                put("totalBytes", 0)
+                put("sha256", "")
+            })
+        })
     }
 
-    fun cancelTransfer() {
+    fun cancelLegacyTransfer() {
         val id = activeTransferId ?: return
-        sendMessage(
-                JSONObject().apply {
-                    put("type", "file_transfer_cancel")
-                    put("fileTransferCancel", JSONObject().apply { put("transferId", id) })
-                }
-        )
+        sendMessage(JSONObject().apply {
+            put("type", "file_transfer_cancel")
+            put("fileTransferCancel", JSONObject().apply { put("transferId", id) })
+        })
         activeUploadJob?.cancel()
         cleanupDownload(deletePartial = true)
-        _statusText.value = getApplication<Application>().getString(R.string.file_transfer_cancelled)
-        FileTransferNotificationManager.cancel(getApplication())
+        _statusText.value = app().getString(R.string.file_transfer_cancelled)
+        FileTransferNotificationManager.cancel(app())
         resetTransferState()
     }
 
-    // ── Message handling ──────────────────────────────────────────────────────
+    // ── Inbound message handling ──────────────────────────────────────────────
 
     private fun handleFileTransferMessage(json: String) {
         try {
@@ -708,11 +952,16 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             when (obj.optString("type")) {
                 "file_roots_response" -> handleRootsResponse(obj)
                 "file_browse_response" -> handleBrowseResponse(obj)
+                "file_manage_response" -> handleManageResponse(obj)
+                "file_root_manage_response" -> handleRootManageResponse(obj)
+                "file_volumes_response" -> handleVolumesResponse(obj)
+                "file_search_response" -> handleSearchResponse(obj)
+                "file_metadata_response" -> handleMetadataResponse(obj)
+                "file_thumbnail_response" -> handleThumbnailResponse(obj)
+                // Legacy (v2) transfer stream:
                 "file_transfer_progress" -> handleProgress(obj)
                 "file_transfer_chunk" -> handleChunk(obj)
                 "file_transfer_end" -> handleTransferEnd(obj)
-                "file_manage_response" -> handleManageResponse(obj)
-                "file_root_manage_response" -> handleRootManageResponse(obj)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error handling file transfer message", e)
@@ -722,110 +971,216 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private fun handleRootsResponse(obj: JSONObject) {
         pendingRootsDeferred?.complete(Unit)
         _isLoading.value = false
+        _isRefreshing.value = false
         val response = obj.optJSONObject("fileRootsResponse") ?: return
+        parseCapabilities(response.optJSONObject("fileCapabilities"))
         val errorMessage = response.optMeaningfulString("errorMessage")
         if (errorMessage != null) {
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_shared_folders_unavailable, errorMessage)
+            _statusText.value = app().getString(R.string.file_transfer_shared_folders_unavailable, errorMessage)
             return
         }
-
-        val arr = response.optJSONArray("roots") ?: JSONArray()
-        val roots = parseRoots(arr)
+        val roots = parseRoots(response.optJSONArray("roots") ?: JSONArray())
         _remoteRoots.value = roots
         if (_selectedRootId.value.isNullOrBlank()) {
             roots.firstOrNull()?.let { selectRoot(it.rootId) }
         }
-        if (roots.isEmpty()) {
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_no_shared_folders)
+        if (roots.isEmpty() && !_fullBrowseGranted.value) {
+            _statusText.value = app().getString(R.string.file_transfer_no_shared_folders)
         }
+        // Volumes are NOT auto-requested: an ungranted file_volumes_request raises a consent prompt on
+        // the PC, so full-device browse is only ever kicked off by an explicit user tap (loadVolumes()).
+    }
+
+    private fun parseCapabilities(obj: JSONObject?) {
+        if (obj == null) {
+            _capabilities.value = null
+            return
+        }
+        val ops = mutableSetOf<String>()
+        obj.optJSONArray("ops")?.let { arr -> for (i in 0 until arr.length()) ops.add(arr.optString(i)) }
+        _capabilities.value = FileManagerCapabilities(
+            protocol = obj.optInt("protocol", 2),
+            binary = obj.optBoolean("binary", false),
+            resume = obj.optBoolean("resume", false),
+            ops = ops,
+            fullBrowse = obj.optBoolean("fullBrowse", false),
+            push = obj.optBoolean("push", false),
+        )
     }
 
     private fun handleBrowseResponse(obj: JSONObject) {
         val response = obj.optJSONObject("fileBrowseResponse") ?: return
-        if (response.optString("requestId") != pendingBrowseRequestId) return
+        val requestId = response.optString("requestId")
+        // Route to the destination picker if this is its browse.
+        if (requestId == pendingDestinationRequestId) {
+            _destinationLoading.value = false
+            val entries = mutableListOf<RemoteFileEntry>()
+            if (!FileManagerLogic.isAtRoot(_destinationPath.value)) {
+                entries.add(RemoteFileEntry(FileManagerLogic.PARENT_ENTRY, true, 0))
+            }
+            parseEntries(response.optJSONArray("entries")).filter { it.isDirectory }.forEach { entries.add(it) }
+            _destinationEntries.value = entries
+            return
+        }
+        if (requestId != pendingBrowseRequestId) return
 
         pendingBrowseDeferred?.complete(Unit)
         _isLoading.value = false
+        _isRefreshing.value = false
         val errorMessage = response.optMeaningfulString("errorMessage")
         if (errorMessage != null) {
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_browse_error, errorMessage)
+            _statusText.value = app().getString(R.string.file_transfer_browse_error, errorMessage)
             return
         }
-
         val path = response.optString("relativePath", _remotePath.value)
         _remotePath.value = if (path.isBlank()) "/" else path
 
         val entries = mutableListOf<RemoteFileEntry>()
-        if (_remotePath.value != "/" && _remotePath.value != "\\") {
-            entries.add(RemoteFileEntry("..", isDirectory = true, sizeBytes = 0))
+        if (!FileManagerLogic.isAtRoot(_remotePath.value)) {
+            entries.add(RemoteFileEntry(FileManagerLogic.PARENT_ENTRY, true, 0))
         }
+        entries.addAll(parseEntries(response.optJSONArray("entries")))
+        _rawEntries.value = entries
+        requestedThumbnails.clear()
+        recomputeDisplayed()
+    }
 
-        val arr = response.optJSONArray("entries") ?: JSONArray()
-        for (index in 0 until arr.length()) {
-            val item = arr.getJSONObject(index)
-            entries.add(
-                    RemoteFileEntry(
-                            name = item.optString("name"),
-                            isDirectory = item.optBoolean("isDirectory"),
-                            sizeBytes = item.optLong("sizeBytes"),
-                    )
+    private fun parseEntries(arr: JSONArray?): List<RemoteFileEntry> {
+        val list = mutableListOf<RemoteFileEntry>()
+        if (arr == null) return list
+        for (i in 0 until arr.length()) {
+            val item = arr.getJSONObject(i)
+            list.add(
+                RemoteFileEntry(
+                    name = item.optString("name"),
+                    isDirectory = item.optBoolean("isDirectory"),
+                    sizeBytes = item.optLong("sizeBytes"),
+                    modifiedUnixMs = item.optLong("modifiedUnixMs"),
+                )
             )
         }
-        _remoteEntries.value = entries
+        return list
     }
 
     private fun handleManageResponse(obj: JSONObject) {
-        val response = obj.optJSONObject("fileManageResponse") ?: return
-        val requestId = response.optString("requestId")
+        val requestId = obj.optJSONObject("fileManageResponse")?.optString("requestId") ?: return
         pendingManageOps[requestId]?.complete(obj)
     }
 
     private fun handleRootManageResponse(obj: JSONObject) {
-        val response = obj.optJSONObject("fileRootManageResponse") ?: return
-        val requestId = response.optString("requestId")
+        val requestId = obj.optJSONObject("fileRootManageResponse")?.optString("requestId") ?: return
         pendingRootManageOps[requestId]?.complete(obj)
     }
+
+    private fun handleVolumesResponse(obj: JSONObject) {
+        val response = obj.optJSONObject("fileVolumesResponse") ?: return
+        _fullBrowseGranted.value = response.optBoolean("fullBrowseGranted", false)
+        val error = response.optMeaningfulString("errorMessage")
+        if (error != null) {
+            _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+        }
+        val arr = response.optJSONArray("volumes") ?: JSONArray()
+        val list = mutableListOf<RemoteVolume>()
+        for (i in 0 until arr.length()) {
+            val v = arr.getJSONObject(i)
+            list.add(
+                RemoteVolume(
+                    id = v.optString("id"),
+                    label = v.optString("label"),
+                    path = v.optString("path"),
+                    totalBytes = v.optLong("totalBytes"),
+                    freeBytes = v.optLong("freeBytes"),
+                    kind = v.optString("kind"),
+                )
+            )
+        }
+        _volumes.value = list
+        if (_statusText.value == app().getString(R.string.file_manager_requesting_volumes)) _statusText.value = ""
+    }
+
+    private fun handleSearchResponse(obj: JSONObject) {
+        val response = obj.optJSONObject("fileSearchResponse") ?: return
+        if (response.optString("requestId") != pendingSearchRequestId) return
+        _isLoading.value = false
+        val error = response.optMeaningfulString("errorMessage")
+        if (error != null) {
+            _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+            return
+        }
+        _searchTruncated.value = response.optBoolean("truncated", false)
+        val arr = response.optJSONArray("entries") ?: JSONArray()
+        val hits = mutableListOf<RemoteFileEntry>()
+        for (i in 0 until arr.length()) {
+            val e = arr.getJSONObject(i)
+            hits.add(
+                RemoteFileEntry(
+                    name = e.optString("name"),
+                    isDirectory = e.optBoolean("isDirectory"),
+                    sizeBytes = e.optLong("sizeBytes"),
+                    modifiedUnixMs = e.optLong("modifiedUnixMs"),
+                    relativePath = e.optString("relativePath"),
+                )
+            )
+        }
+        _searchResults.value = hits
+        recomputeDisplayed()
+    }
+
+    private fun handleMetadataResponse(obj: JSONObject) {
+        val response = obj.optJSONObject("fileMetadataResponse") ?: return
+        if (response.optString("requestId") != pendingPropertiesRequestId) return
+        _propertiesLoading.value = false
+        val error = response.optMeaningfulString("errorMessage")
+        if (error != null) {
+            _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+            _properties.value = null
+            return
+        }
+        _properties.value = FileProperties(
+            name = propertiesTargetName,
+            sizeBytes = response.optLong("size"),
+            createdUtc = response.optLong("createdUtc"),
+            modifiedUtc = response.optLong("modifiedUtc"),
+            isDirectory = response.optBoolean("isDirectory"),
+            itemCount = if (response.has("itemCount") && !response.isNull("itemCount")) response.optInt("itemCount") else null,
+            mimeType = response.optMeaningfulString("mimeType"),
+            readOnly = response.optBoolean("readOnly"),
+        )
+    }
+
+    private fun handleThumbnailResponse(obj: JSONObject) {
+        val response = obj.optJSONObject("fileThumbnailResponse") ?: return
+        val requestId = response.optString("requestId")
+        val path = pendingThumbnailPaths.remove(requestId) ?: return
+        val base64 = response.optMeaningfulString("jpegBase64") ?: return
+        _thumbnails.value = _thumbnails.value + (path to base64)
+    }
+
+    // ── Legacy transfer stream handlers ───────────────────────────────────────
 
     private fun handleProgress(obj: JSONObject) {
         val progress = obj.optJSONObject("fileTransferProgress") ?: return
         if (progress.optString("transferId") != activeTransferId) return
-
         val total = progress.optLong("totalBytes", 0)
         val transferred = progress.optLong("bytesTransferred", 0)
-        val action = if (activeDownload != null) getApplication<Application>().getString(R.string.file_transfer_action_downloading) else getApplication<Application>().getString(R.string.file_transfer_action_uploading)
-
+        val action = if (activeDownload != null) app().getString(R.string.file_transfer_action_downloading)
+            else app().getString(R.string.file_transfer_action_uploading)
         if (total > 0) {
             _transferProgress.value = (transferred.toFloat() / total).coerceIn(0f, 1f)
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_progress_status, action, "${(transferred * 100 / total)}%")
+            _statusText.value = app().getString(R.string.file_transfer_progress_status, action, "${(transferred * 100 / total)}%")
         } else if (transferred > 0) {
             _transferProgress.value = 0f
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_progress_status, action, formatBytes(transferred))
-        } else {
-            return
-        }
-
+            _statusText.value = app().getString(R.string.file_transfer_progress_status, action, FileManagerLogic.formatBytes(transferred))
+        } else return
         FileTransferNotificationManager.showTransferProgress(
-                getApplication(),
-                fileName = activeTransferFileName ?: "File transfer",
-                isDownload = activeDownload != null,
-                transferredBytes = transferred,
-                totalBytes = total,
+            app(), activeTransferFileName ?: "File transfer", activeDownload != null, transferred, total,
         )
     }
-
-    private fun formatBytes(bytes: Long): String =
-            when {
-                bytes >= 1_073_741_824L -> "%.1f GB".format(bytes / 1_073_741_824.0)
-                bytes >= 1_048_576L -> "%.1f MB".format(bytes / 1_048_576.0)
-                bytes >= 1_024L -> "%.1f KB".format(bytes / 1_024.0)
-                else -> "$bytes B"
-            }
 
     private fun handleChunk(obj: JSONObject) {
         val chunk = obj.optJSONObject("fileTransferChunk") ?: return
         val download = activeDownload ?: return
         if (chunk.optString("transferId") != download.transferId) return
-
         val data = Base64.decode(chunk.optString("dataBase64"), Base64.DEFAULT)
         download.digest.update(data)
         download.chunkChannel.trySend(data)
@@ -834,55 +1189,37 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private fun handleTransferEnd(obj: JSONObject) {
         val end = obj.optJSONObject("fileTransferEnd") ?: return
         if (end.optString("transferId") != activeTransferId) return
-
         val success = end.optBoolean("success", false)
         val errorMessage = end.optMeaningfulString("errorMessage")
         val expectedSha256 = end.optMeaningfulString("sha256")
-
         if (success) {
             val download = activeDownload
             if (download != null) {
-                val fileName = activeTransferFileName ?: getApplication<Application>().getString(R.string.file_transfer_file_fallback)
+                val fileName = activeTransferFileName ?: app().getString(R.string.file_transfer_file_fallback)
                 val actualSha256 = Base64.encodeToString(download.digest.digest(), Base64.NO_WRAP)
-                val hashMismatch = expectedSha256 != null && expectedSha256 != actualSha256
-                if (hashMismatch) {
-                    Log.w(TAG, "Download SHA-256 mismatch: expected=$expectedSha256 actual=$actualSha256")
+                if (expectedSha256 != null && expectedSha256 != actualSha256) {
+                    Log.w(TAG, "Download SHA-256 mismatch")
                     cleanupDownload(deletePartial = true)
-                    _statusText.value = getApplication<Application>().getString(R.string.file_transfer_download_failed_integrity)
-                    FileTransferNotificationManager.showTransferFailed(
-                            getApplication(),
-                            getApplication<Application>().getString(R.string.file_transfer_download_failed_sha256),
-                    )
+                    _statusText.value = app().getString(R.string.file_transfer_download_failed_integrity)
+                    FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_download_failed_sha256))
                     resetTransferState()
                     return
                 }
                 cleanupDownload(deletePartial = false)
-                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_download_complete)
-                FileTransferNotificationManager.showTransferComplete(
-                        getApplication(),
-                        fileName,
-                        isDownload = true,
-                )
+                _statusText.value = app().getString(R.string.file_transfer_download_complete)
+                FileTransferNotificationManager.showTransferComplete(app(), fileName, isDownload = true)
             } else {
-                val fileName = activeTransferFileName ?: getApplication<Application>().getString(R.string.file_transfer_file_fallback)
-                _statusText.value = getApplication<Application>().getString(R.string.file_transfer_upload_complete)
-                FileTransferNotificationManager.showTransferComplete(
-                        getApplication(),
-                        fileName,
-                        isDownload = false,
-                )
+                val fileName = activeTransferFileName ?: app().getString(R.string.file_transfer_file_fallback)
+                _statusText.value = app().getString(R.string.file_transfer_upload_complete)
+                FileTransferNotificationManager.showTransferComplete(app(), fileName, isDownload = false)
                 browseRemote(_remotePath.value)
             }
         } else {
             cleanupDownload(deletePartial = true)
-            val message = errorMessage ?: getApplication<Application>().getString(R.string.file_transfer_unknown_error)
-            _statusText.value = getApplication<Application>().getString(R.string.file_transfer_transfer_failed, message)
-            FileTransferNotificationManager.showTransferFailed(
-                    getApplication(),
-                    getApplication<Application>().getString(R.string.file_transfer_transfer_failed, message),
-            )
+            val message = errorMessage ?: app().getString(R.string.file_transfer_unknown_error)
+            _statusText.value = app().getString(R.string.file_transfer_transfer_failed, message)
+            FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_transfer_failed, message))
         }
-
         resetTransferState()
     }
 
@@ -899,8 +1236,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     }
 
     private fun parseRoots(arr: JSONArray): List<RemoteSharedRoot> = buildList {
-        for (index in 0 until arr.length()) {
-            val item = arr.getJSONObject(index)
+        for (i in 0 until arr.length()) {
+            val item = arr.getJSONObject(i)
             add(
                 RemoteSharedRoot(
                     rootId = item.optString("rootId"),
@@ -924,10 +1261,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             viewModelScope.launch(Dispatchers.IO) {
                 try { download.outputStream.close() } catch (_: Exception) {}
                 try {
-                    DocumentsContract.deleteDocument(
-                            getApplication<Application>().contentResolver,
-                            download.destinationUri,
-                    )
+                    DocumentsContract.deleteDocument(app().contentResolver, download.destinationUri)
                 } catch (_: Exception) {}
             }
             return
@@ -946,49 +1280,42 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     }
 
     private fun queryMetadata(uri: Uri): Pair<String?, Long?> {
-        val resolver = getApplication<Application>().contentResolver
+        val resolver = app().contentResolver
         var name: String? = null
         var size: Long? = null
-
-        resolver.query(
-                        uri,
-                        arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE),
-                        null,
-                        null,
-                        null
-                )
-                ?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                        val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                        if (nameIndex >= 0) name = cursor.getString(nameIndex)
-                        if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
-                            size = cursor.getLong(sizeIndex)
-                        }
-                    }
-                }
-
+        resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                if (nameIndex >= 0) name = cursor.getString(nameIndex)
+                if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) size = cursor.getLong(sizeIndex)
+            }
+        }
         val initialSize = size
         if (initialSize == null || initialSize <= 0L) {
             try {
                 resolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
                     val length = afd.length
-                    if (length != AssetFileDescriptor.UNKNOWN_LENGTH && length > 0L) {
-                        size = length
-                    }
+                    if (length != AssetFileDescriptor.UNKNOWN_LENGTH && length > 0L) size = length
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "openAssetFileDescriptor fallback failed for $uri", e)
             }
         }
-
         return name to size
     }
 
-    private fun combineRemotePath(currentPath: String, childName: String): String {
-        val normalizedCurrent = currentPath.replace('\\', '/').trimEnd('/')
-        return if (normalizedCurrent.isEmpty() || normalizedCurrent == "/") childName
-        else "$normalizedCurrent/$childName"
+    private fun newRequestId(): String = UUID.randomUUID().toString().replace("-", "")
+
+    /** Sends a v3-only control/browse message (protocolVersion 3). Only ever called for a v3 host. */
+    private fun sendV3(type: String, payloadKey: String, payload: JSONObject) {
+        sendMessage(
+            JSONObject().apply {
+                put("type", type)
+                put("protocolVersion", 3)
+                put(payloadKey, payload)
+            }
+        )
     }
 
     private fun sendMessage(msg: JSONObject) {

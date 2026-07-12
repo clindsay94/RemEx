@@ -519,6 +519,27 @@
     <string name="settings_ft_add_folder">Add folder…</string>
     <string name="settings_ft_remove_folder">Remove folder</string>
 
+    <!-- File sharing: access-from-this-PC controls (2.1, WP9) -->
+    <string name="settings_ft_access_title">Access from your PC</string>
+    <string name="settings_ft_access_desc">Choose what your paired PC is allowed to do with this phone\'s files.</string>
+    <string name="settings_ft_full_browse_title">Allow full-device browsing</string>
+    <string name="settings_ft_full_browse_desc">Let the PC browse a whole storage folder you pick. You choose the folder, and you can turn this off at any time.</string>
+    <string name="settings_ft_auto_accept_title">Auto-accept incoming files</string>
+    <string name="settings_ft_auto_accept_desc">Automatically accept files your PC sends, without asking each time.</string>
+
+    <!-- File sharing: consent prompts (2.1, WP9) -->
+    <string name="file_consent_channel_name">File sharing requests</string>
+    <string name="file_consent_channel_description">Asks you to allow or deny sensitive file-sharing requests from your PC.</string>
+    <string name="file_consent_push_title">Incoming files from your PC</string>
+    <string name="file_consent_push_message">Your PC wants to send: %1$s. Allow?</string>
+    <string name="file_consent_push_message_generic">Your PC wants to send files to this phone. Allow?</string>
+    <string name="file_consent_full_browse_title">Full-device browse request</string>
+    <string name="file_consent_full_browse_message">Your PC wants to browse this phone\'s storage. Allow?</string>
+    <string name="file_consent_allow">Allow</string>
+    <string name="file_consent_deny">Deny</string>
+    <string name="file_consent_remember">Remember my choice for this PC</string>
+    <string name="file_consent_expires_in">Expires in %1$d seconds</string>
+
     
     <string name="shape_circle">Circle</string>
     <string name="shape_square">Square</string>
@@ -693,4 +714,80 @@
     <string name="cd_clear_search">Clear search</string>
     <string name="pairing_error_timeout">The PC didn’t respond. Check that it’s turned on and connected to the same network, then try again.</string>
     <string name="host_discovered_snackbar">PC found: %1$s</string>
+    <string name="file_transfer_service_title">RemEx file transfers</string>
+    <string name="file_transfer_service_active">Syncing files with your PC…</string>
+    <!-- File-sharing 2.1 (WP7): file-manager UI overhaul -->
+    <string name="file_manager_quick_access">Quick access</string>
+    <string name="file_manager_volumes">This PC</string>
+    <string name="file_manager_volume_chip_label">%1$s • %2$s free</string>
+    <string name="file_manager_search">Search</string>
+    <string name="file_manager_search_hint">Search this folder…</string>
+    <string name="file_manager_search_close">Close search</string>
+    <string name="file_manager_search_truncated">Showing the first results — refine your search to narrow it down.</string>
+    <string name="file_manager_no_results">No matching files.</string>
+    <string name="file_manager_sort">Sort</string>
+    <string name="file_manager_sort_name">Name</string>
+    <string name="file_manager_sort_size">Size</string>
+    <string name="file_manager_sort_date">Date</string>
+    <string name="file_manager_view_grid">Grid view</string>
+    <string name="file_manager_view_list">List view</string>
+    <string name="file_manager_new_folder">New folder</string>
+    <string name="file_manager_folder_name_hint">Folder name</string>
+    <string name="file_manager_create">Create</string>
+    <string name="file_manager_creating_folder">Creating folder %1$s…</string>
+    <string name="file_manager_new_folder_failed">New folder failed: %1$s</string>
+    <string name="file_manager_folder_created">Folder created.</string>
+    <string name="file_manager_copy">Copy</string>
+    <string name="file_manager_move">Move</string>
+    <string name="file_manager_copying">Copying %1$d items…</string>
+    <string name="file_manager_moving">Moving %1$d items…</string>
+    <string name="file_manager_copy_here_title">Copy to…</string>
+    <string name="file_manager_move_here_title">Move to…</string>
+    <string name="file_manager_copy_here">Copy here</string>
+    <string name="file_manager_move_here">Move here</string>
+    <string name="file_manager_properties">Properties</string>
+    <string name="file_manager_prop_type">Type</string>
+    <string name="file_manager_prop_folder">Folder</string>
+    <string name="file_manager_prop_file">File</string>
+    <string name="file_manager_prop_size">Size</string>
+    <string name="file_manager_prop_items">Items</string>
+    <string name="file_manager_prop_mime">Kind</string>
+    <string name="file_manager_prop_modified">Modified</string>
+    <string name="file_manager_prop_created">Created</string>
+    <string name="file_manager_prop_readonly">Read-only</string>
+    <string name="file_manager_prop_yes">Yes</string>
+    <string name="file_manager_prop_no">No</string>
+    <string name="file_manager_requesting_volumes">Loading drives…</string>
+    <string name="file_manager_queued_upload">Queued upload: %1$s</string>
+    <string name="file_manager_queued_download">Queued download: %1$s</string>
+    <string name="file_manager_transfers_title">Transfers (%1$d)</string>
+    <string name="file_manager_clear_finished">Clear finished</string>
+    <string name="file_manager_pause">Pause</string>
+    <string name="file_manager_resume">Resume</string>
+    <string name="file_manager_transfer_queued">Queued</string>
+    <string name="file_manager_transfer_negotiating">Starting…</string>
+    <string name="file_manager_transfer_active">%1$s</string>
+    <string name="file_manager_transfer_paused">Paused • %1$s</string>
+    <string name="file_manager_transfer_verifying">Verifying…</string>
+    <string name="file_manager_transfer_done">Done</string>
+    <string name="file_manager_transfer_failed">Failed</string>
+    <string name="file_manager_transfer_cancelled">Cancelled</string>
+    <string name="file_manager_browse_device">Browse this PC</string>
+
+    <!-- Send to PC (share target + open-after-download, 2.1 WP8) -->
+    <string name="share_to_pc_title">Send to PC</string>
+    <string name="share_to_pc_device_label">Destination PC</string>
+    <string name="share_to_pc_files_to_send">Files to send: %1$d</string>
+    <string name="share_to_pc_choose_folder">Choose a destination folder</string>
+    <string name="share_to_pc_folder_label">Folder: %1$s</string>
+    <string name="share_to_pc_no_shared_folders">This PC has no shared folders yet. Add one in RemEx on your PC, then try again.</string>
+    <string name="share_to_pc_up">Up one level</string>
+    <string name="share_to_pc_send">Send</string>
+    <string name="share_to_pc_cancel">Cancel</string>
+    <string name="share_to_pc_queued">Sending to your PC. You can watch progress in RemEx.</string>
+    <string name="share_to_pc_nothing_to_send">There are no files to send.</string>
+    <string name="share_to_pc_connecting">Connecting to your PC…</string>
+    <string name="share_to_pc_not_configured">No PC is set up yet. Open RemEx and connect to your PC first, then try sharing again.</string>
+    <string name="share_to_pc_open_app">Open RemEx</string>
+    <string name="file_transfer_notification_open">Open</string>
 </resources>
