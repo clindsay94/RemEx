@@ -204,7 +204,7 @@ Input events (mouse move, click, scroll, keyboard) are sent from client → host
   {
     "service": "remex.agent",
     "status": "running",
-    "version": "2.0.0"
+    "version": "2.1.0"
   }
   ```
 

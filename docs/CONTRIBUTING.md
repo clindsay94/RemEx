@@ -97,8 +97,8 @@ Managed centrally in `Directory.Build.props`.
 ### Android Native App
 Managed in `remex.android/app/version.properties`:
 ```properties
-versionCode=15
-versionName=2.0.0
+versionCode=26
+versionName=2.1.0
 ```
 
 Use `.\gradlew remexPublishRelease` from the `remex.android/` directory to auto-increment these values and prepare a release build.

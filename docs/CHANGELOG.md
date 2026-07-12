@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Path-escape protection on every operation.** Browse, transfer, copy, move, make-folder, search, metadata, and thumbnail all resolve their paths through one shared validator that blocks directory traversal (`..`), sanitizes filenames, and enforces an unconditional block on sensitive Linux system paths (`/proc`, `/sys`, `/dev`, `/run`, `/boot/efi`) that can never be disabled. Root-escape attempts are rejected rather than served. (`FilePathValidation`.)
 - **Secrets never leave in savefiles.** `.remexsave` exports and auto-snapshots exclude `cert.pfx`, `paired_clients.json`, `pinned_hosts.json`, and the keep-session-unlocked flag, so a backup can never carry the pairing credentials that authorize a device — the user always re-pairs after a restore. (`RemexSavefileService`.)
 
+### Removed
+
+- **Stale "Windows Service" / "Linux Service" onboarding tutorial pages.** These two steps of the first-run tutorial told new users to install a background service — obsolete since the RemEx-aep single-process migration removed that architecture entirely. The remaining tutorial and glossary pages were renumbered to close the gap; 39 now-orphaned localization keys were removed from all 9 PC locale files. (`ShellViewModel`.)
+
 ---
 
 ## [2.0.1] — 2026-07-11

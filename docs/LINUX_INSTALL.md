@@ -58,8 +58,8 @@ the built-in health check afterwards:
 
 ```bash
 # Replace the filename with the version you downloaded
-tar -xzf remex-agent-v2.0.0-linux-x64.tar.gz
-./remex-agent-v2.0.0-linux-x64/install.sh
+tar -xzf remex-agent-v2.1.0-linux-x64.tar.gz
+./remex-agent-v2.1.0-linux-x64/install.sh
 ```
 
 The installer:
@@ -157,7 +157,7 @@ break every phone you already paired.
 **Fix.** Re-run the installer — it repairs this automatically:
 
 ```bash
-./remex-agent-v2.0.0-linux-x64/install.sh
+./remex-agent-v2.1.0-linux-x64/install.sh
 ```
 
 Or do it by hand:
@@ -291,7 +291,7 @@ One command builds everything: the .NET app, the native PipeWire bridge, and the
 
 ```bash
 ls installer/Output/
-# → remex-agent-v2.0.0-linux-x64.tar.gz
+# → remex-agent-v2.1.0-linux-x64.tar.gz
 ```
 
 Verify the native bridge made it into the package:
@@ -306,8 +306,8 @@ tar -tzf installer/Output/remex-agent-v*.tar.gz | grep libremex_linux_bridge
 
 ```bash
 cd installer/Output
-tar -xzf remex-agent-v2.0.0-linux-x64.tar.gz
-./remex-agent-v2.0.0-linux-x64/install.sh
+tar -xzf remex-agent-v2.1.0-linux-x64.tar.gz
+./remex-agent-v2.1.0-linux-x64/install.sh
 ```
 
 ### B4. Dev shortcut (run without packaging)

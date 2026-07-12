@@ -7,7 +7,7 @@
 ### Your PC, in your pocket. A buttery‑smooth, end‑to‑end‑encrypted remote desktop and control suite that turns any Android phone into a full remote for your Windows or Linux machine.
 
 <p>
-  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-FFB000?style=for-the-badge&labelColor=0d1117" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0-FFB000?style=for-the-badge&labelColor=0d1117" />
   <img alt="Platforms" src="https://img.shields.io/badge/host-Windows%20%7C%20Linux-1f6feb?style=for-the-badge&labelColor=0d1117" />
   <img alt="Client" src="https://img.shields.io/badge/client-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white&labelColor=0d1117" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-8957e5?style=for-the-badge&labelColor=0d1117" />
@@ -169,7 +169,7 @@ flowchart TB
 | **WSS** | `/ws/desktop` | `5005` | H.264 / MJPEG remote‑desktop stream |
 | **TCP (TLS)** | — | `8338` | External script command ingress (paired clients only) |
 
-All `/ws` traffic rides the **`RemexMessage` JSON envelope** at `protocolVersion: 2`. Mismatched majors fail loudly rather than silently corrupting state. Hosts are discovered automatically on the LAN via **mDNS**. The dashboard UI and the host run in the **same process**, so there is no local pipe or socket between them to secure — one of several attack surfaces that simply no longer exists in 2.0.
+All `/ws` traffic rides the **`RemexMessage` JSON envelope**, currently `protocolVersion: 2` by default (the minimum supported version, kept for backward compatibility). Mismatched majors fail loudly rather than silently corrupting state. Since 2.1, file transfers additionally negotiate up to `protocolVersion 3` on a dedicated binary channel (`/ws/files`) for faster, resumable transfers — gated entirely on capabilities the host advertises, so a v3 message is never sent to a v2 peer. Hosts are discovered automatically on the LAN via **mDNS**. The dashboard UI and the host run in the **same process**, so there is no local pipe or socket between them to secure — one of several attack surfaces that simply no longer exists since 2.0.
 
 ---
 
@@ -203,7 +203,7 @@ RemEx is built so that the only way in is the way *you* authorized.
 
 **Windows — the easy way (no coding required):**
 
-1. Download the installer — **`RemEx-v2.0.0-Setup.exe`** — from the project's [**GitHub Releases**](https://github.com/clindsay94/RemEx/releases) page.
+1. Download the installer — **`RemEx-v2.1.0-Setup.exe`** — from the project's [**GitHub Releases**](https://github.com/clindsay94/RemEx/releases) page.
 2. Double‑click it and follow the wizard. Leave **"Launch RemEx when you sign in"** ticked so RemEx starts by itself every time you log in.
 3. RemEx opens its dashboard. The **6‑digit pairing PIN** you'll need in step 3 is shown right there.
 
