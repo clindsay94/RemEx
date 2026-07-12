@@ -2735,4 +2735,169 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_TrustRevoked" xml:space="preserve">
     <value>Cihaz izinleri iptal edildi.</value>
   </data>
+  <data name="Settings_ServiceSection" xml:space="preserve">
+    <value>WINDOWS HİZMETİ</value>
+  </data>
+  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
+    <value>WINDOWS SERVICE</value>
+  </data>
+  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
+    <value>LINUX BACKGROUND SERVICE</value>
+  </data>
+  <data name="Settings_ServiceLogin" xml:space="preserve">
+    <value>HİZMET GİRİŞİ</value>
+  </data>
+  <data name="Settings_ServiceDesc" xml:space="preserve">
+    <value>Hizmet, RemEx'in uygulama açık olmadan uzak komutları kabul edebilmesi için arka planda çalışır.</value>
+  </data>
+  <data name="Service_Publishing" xml:space="preserve">
+    <value>Remex.PC yayımlanıyor…</value>
+  </data>
+  <data name="Service_PublishFailed" xml:space="preserve">
+    <value>Yayımlama başarısız — log'a bakın.</value>
+  </data>
+  <data name="Service_Creating" xml:space="preserve">
+    <value>Hizmet oluşturuluyor…</value>
+  </data>
+  <data name="Service_CreateFailed" xml:space="preserve">
+    <value>Hizmet oluşturma başarısız — log'a bakın.</value>
+  </data>
+  <data name="Service_ConfiguringLogin" xml:space="preserve">
+    <value>Giriş yapılandırılıyor…</value>
+  </data>
+  <data name="Service_ConfigureFailed" xml:space="preserve">
+    <value>Kimlik bilgileri yapılandırılamadı — log'a bakın.</value>
+  </data>
+  <data name="Service_GrantingRights" xml:space="preserve">
+    <value>Oturum açma hakları veriliyor…</value>
+  </data>
+  <data name="Service_StoppingEmbedded" xml:space="preserve">
+    <value>Gömülü PC durduruluyor…</value>
+  </data>
+  <data name="Service_StartingService" xml:space="preserve">
+    <value>Hizmet başlatılıyor…</value>
+  </data>
+  <data name="Service_InstalledStarted" xml:space="preserve">
+    <value>Yüklendi &amp; başlatıldı.</value>
+  </data>
+  <data name="Service_InstalledStartFailed" xml:space="preserve">
+    <value>Yüklendi — başlatma başarısız olabilir, log'a bakın.</value>
+  </data>
+  <data name="Service_InstallingLinux" xml:space="preserve">
+    <value>systemd hizmeti kuruluyor…</value>
+  </data>
+  <data name="Service_InstallFailed" xml:space="preserve">
+    <value>Hizmet kurulumu başarısız oldu.</value>
+  </data>
+  <data name="Service_RemovingLinux" xml:space="preserve">
+    <value>systemd hizmeti kaldırılıyor…</value>
+  </data>
+  <data name="Service_DeletingService" xml:space="preserve">
+    <value>Hizmet siliniyor…</value>
+  </data>
+  <data name="Service_ApplyingCredentials" xml:space="preserve">
+    <value>Kimlik bilgileri uygulanıyor…</value>
+  </data>
+  <data name="Service_LocatingHost" xml:space="preserve">
+    <value>Remex.PC bulunuyor…</value>
+  </data>
+  <data name="Service_HostNotFound" xml:space="preserve">
+    <value>Remex.PC.exe bulunamadı.</value>
+  </data>
+  <data name="Service_StartedMsg" xml:space="preserve">
+    <value>Başlatıldı.</value>
+  </data>
+  <data name="Service_StartFailed" xml:space="preserve">
+    <value>Başlatma başarısız — log'a bakın.</value>
+  </data>
+  <data name="Tutorial_P2_Title" xml:space="preserve">
+    <value>Bir Windows Hizmeti Olarak Çalıştır</value>
+  </data>
+  <data name="Tutorial_P2_Body1" xml:space="preserve">
+    <value>RemEx'i oturum açmadan 7/24 çalışır durumda tutmak için bir Windows hizmeti olarak yükleyin:</value>
+  </data>
+  <data name="Tutorial_P2_Steps" xml:space="preserve">
+    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
+2. Set your Windows username and password
+3. Click 'Install as Service'
+4. The service starts automatically on boot</value>
+  </data>
+  <data name="Tutorial_P2_Note" xml:space="preserve">
+    <value>Hizmet, ekran yakalama ve uygulama başlatma için masaüstü oturumunuza erişebilmesi adına kullanıcı hesabınız altında çalışır.</value>
+  </data>
+  <data name="Tutorial_P3_Title" xml:space="preserve">
+    <value>Linux Hizmet Kurulumu</value>
+  </data>
+  <data name="Tutorial_P3_Body1" xml:space="preserve">
+    <value>Linux'ta RemEx PC, otomatik başlatma için bir systemd hizmeti olarak çalışabilir.</value>
+  </data>
+  <data name="Tutorial_P3_Steps" xml:space="preserve">
+    <value>1. Download the latest Linux PC archive from GitHub Releases.
+2. Extract it.
+3. Run ./install.sh install inside the remex-PC folder.
+4. Use systemctl --user status remex-PC to verify it is running.</value>
+  </data>
+  <data name="Tutorial_P3_Link" xml:space="preserve">
+    <value>Ayrıntılı talimatlar için GitHub'daki docs/linux-service-setup.md dosyasına bakın.</value>
+  </data>
+  <data name="Shell_HostBinaryPath" xml:space="preserve">
+    <value>PC Binary Yolu</value>
+  </data>
+  <data name="Shell_HostPathHint" xml:space="preserve">
+    <value>Remex.PC.exe konumu (otomatik algılama için boş bırakın)</value>
+  </data>
+  <data name="Shell_HostPathTooltip" xml:space="preserve">
+    <value>Remex.PC.exe konumu. Otomatik algılama için boş bırakın (aynı klasör, kardeş klasörler vb.)</value>
+  </data>
+  <data name="Shell_HostPathWatermark" xml:space="preserve">
+    <value>Otomatik algıla (veya özel yol belirle)</value>
+  </data>
+  <data name="Tutorial_P3_Body2" xml:space="preserve">
+    <value>Ayrıntılı talimatlar, yapılandırma seçenekleri ve sorun giderme için tam kılavuza bakın:</value>
+  </data>
+  <data name="Settings_SelectHostTitle" xml:space="preserve">
+    <value>Remex.PC.exe Seç</value>
+  </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>Komutlar</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>İşlemler</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>Bağlantı</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>SSS</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>Kişiselleştir</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>CANLI GÖRÜNÜM</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>Görünümü kişiselleştir</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>Bağlantı</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>HOST BAĞLANTISI</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>Host adresi</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>Ağımdaki hostları bul</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>Eşleştirme</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>Gecikme</value>
+  </data>
 </root>

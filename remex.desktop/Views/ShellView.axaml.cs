@@ -27,7 +27,7 @@ public partial class ShellView : UserControl
         if (DataContext is ShellViewModel vm)
             vm.BeginWelcomeSplash();
 
-        var bootSplash = this.FindControl<Controls.BootSequenceControl>("BootSplash");
+        var bootSplash = this.FindControl<Controls.Splash.SkiaSplashControl>("BootSplash");
         if (bootSplash != null)
             bootSplash.SequenceCompleted += () =>
             {

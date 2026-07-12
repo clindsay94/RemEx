@@ -163,6 +163,7 @@
     <string name="cd_key_insert">Insert</string>
     <string name="cd_more_keys">Więcej klawiszy</string>
     <string name="cd_show_pc_keys">Pokaż klawisze PC</string>
+    <string name="cd_move_pc_keys">Przenieś pasek klawiszy PC</string>
     <string name="cd_reset_input">Resetuj wejście</string>
     <string name="cd_settings">Ustawienia</string>
     <string name="cd_toggle_fullscreen">Tryb pełnoekranowy</string>

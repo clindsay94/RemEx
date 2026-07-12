@@ -9,6 +9,7 @@
     <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.11" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.11" />
     <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.11" />
+    <PackageVersion Include="Avalonia.Skia" Version="11.3.11" />
 
     <!-- Microsoft Extensions & Standard Libraries -->
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.5" />

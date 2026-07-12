@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:conv="using:Remex.Desktop.Converters"
+    x:Class="Remex.Desktop.Views.FaqView" x:DataType="vm:FaqViewModel">
+    <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32" Spacing="24" MaxWidth="820" HorizontalAlignment="Left">
+
+            <!-- Header -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="{conv:Localize Nav_Faq}" FontSize="22" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                <TextBlock Text="{conv:Localize About_Faq}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="3"/>
+            </StackPanel>
+
+            <!-- FAQ items (one glass-card per Q/A) -->
+            <ItemsControl ItemsSource="{Binding FaqItems}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Classes="glass-card" Padding="18" Margin="0,0,0,12">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="{Binding Question}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Answer}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

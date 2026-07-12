@@ -2731,4 +2731,169 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>विश्वास सेटिंग्स अपडेट की गईं।</value>
   </data>
+  <data name="Settings_ServiceSection" xml:space="preserve">
+    <value>विंडोज़ सेवा</value>
+  </data>
+  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
+    <value>WINDOWS SERVICE</value>
+  </data>
+  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
+    <value>LINUX BACKGROUND SERVICE</value>
+  </data>
+  <data name="Settings_ServiceLogin" xml:space="preserve">
+    <value>सेवा लॉगिन</value>
+  </data>
+  <data name="Settings_ServiceDesc" xml:space="preserve">
+    <value>सेवा पृष्ठभूमि में चलती है ताकि RemEx ऐप खुले बिना रिमोट कमांड स्वीकार कर सके।</value>
+  </data>
+  <data name="Service_Publishing" xml:space="preserve">
+    <value>Remex.PC प्रकाशित हो रहा है…</value>
+  </data>
+  <data name="Service_PublishFailed" xml:space="preserve">
+    <value>प्रकाशन विफल — लॉग देखें।</value>
+  </data>
+  <data name="Service_Creating" xml:space="preserve">
+    <value>सेवा बना रहे हैं…</value>
+  </data>
+  <data name="Service_CreateFailed" xml:space="preserve">
+    <value>सेवा बनाने में विफल — लॉग देखें।</value>
+  </data>
+  <data name="Service_ConfiguringLogin" xml:space="preserve">
+    <value>लॉगिन कॉन्फ़िगर हो रहा है…</value>
+  </data>
+  <data name="Service_ConfigureFailed" xml:space="preserve">
+    <value>क्रेडेंशियल कॉन्फ़िगर करने में विफल — लॉग देखें।</value>
+  </data>
+  <data name="Service_GrantingRights" xml:space="preserve">
+    <value>लॉगऑन अधिकार दे रहे हैं…</value>
+  </data>
+  <data name="Service_StoppingEmbedded" xml:space="preserve">
+    <value>एम्बेडेड होस्ट बंद हो रहा है…</value>
+  </data>
+  <data name="Service_StartingService" xml:space="preserve">
+    <value>सेवा शुरू हो रही है…</value>
+  </data>
+  <data name="Service_InstalledStarted" xml:space="preserve">
+    <value>इंस्टॉल &amp; शुरू हो गया।</value>
+  </data>
+  <data name="Service_InstalledStartFailed" xml:space="preserve">
+    <value>इंस्टॉल — शुरू विफल हो सकता है, लॉग देखें।</value>
+  </data>
+  <data name="Service_InstallingLinux" xml:space="preserve">
+    <value>Installing systemd service…</value>
+  </data>
+  <data name="Service_InstallFailed" xml:space="preserve">
+    <value>Service installation failed.</value>
+  </data>
+  <data name="Service_RemovingLinux" xml:space="preserve">
+    <value>Removing systemd service…</value>
+  </data>
+  <data name="Service_DeletingService" xml:space="preserve">
+    <value>सेवा हटा रहे हैं…</value>
+  </data>
+  <data name="Service_ApplyingCredentials" xml:space="preserve">
+    <value>क्रेडेंशियल लागू हो रहे हैं…</value>
+  </data>
+  <data name="Service_LocatingHost" xml:space="preserve">
+    <value>Remex.PC खोजा जा रहा है…</value>
+  </data>
+  <data name="Service_HostNotFound" xml:space="preserve">
+    <value>Remex.PC.exe नहीं मिला।</value>
+  </data>
+  <data name="Service_StartedMsg" xml:space="preserve">
+    <value>शुरू हो गया।</value>
+  </data>
+  <data name="Service_StartFailed" xml:space="preserve">
+    <value>शुरू करना विफल रहा — लॉग देखें。</value>
+  </data>
+  <data name="Tutorial_P2_Title" xml:space="preserve">
+    <value>विंडोज़ सेवा के रूप में चलाएं</value>
+  </data>
+  <data name="Tutorial_P2_Body1" xml:space="preserve">
+    <value>लॉग इन किए बिना RemEx को 24/7 चालू रखने के लिए, इसे विंडोज़ सेवा के रूप में इंस्टॉल करें:</value>
+  </data>
+  <data name="Tutorial_P2_Steps" xml:space="preserve">
+    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
+2. Set your Windows username and password
+3. Click 'Install as Service'
+4. The service starts automatically on boot</value>
+  </data>
+  <data name="Tutorial_P2_Note" xml:space="preserve">
+    <value>सेवा आपके उपयोगकर्ता खाते के तहत चलती है ताकि यह स्क्रीन कैप्चर और ऐप लॉन्चिंग के लिए आपके डेस्कटॉप सत्र तक पहुंच सके。</value>
+  </data>
+  <data name="Tutorial_P3_Title" xml:space="preserve">
+    <value>लिनक्स सेवा सेटअप</value>
+  </data>
+  <data name="Tutorial_P3_Body1" xml:space="preserve">
+    <value>लिनक्स पर, स्वचालित स्टार्टअप के लिए RemEx होस्ट सिस्टमडी सेवा के रूप में चल सकता है。</value>
+  </data>
+  <data name="Tutorial_P3_Steps" xml:space="preserve">
+    <value>1. Download the latest Linux PC archive from GitHub Releases.
+2. Extract it.
+3. Run ./install.sh install inside the remex-PC folder.
+4. Use systemctl --user status remex-PC to verify it is running.</value>
+  </data>
+  <data name="Tutorial_P3_Link" xml:space="preserve">
+    <value>विस्तृत निर्देशों के लिए, GitHub पर docs/linux-service-setup.md देखें</value>
+  </data>
+  <data name="Shell_HostBinaryPath" xml:space="preserve">
+    <value>होस्ट बाइनरी पथ</value>
+  </data>
+  <data name="Shell_HostPathHint" xml:space="preserve">
+    <value>Remex.PC.exe का पथ (स्वतः पहचान के लिए खाली छोड़ दें)</value>
+  </data>
+  <data name="Shell_HostPathTooltip" xml:space="preserve">
+    <value>Remex.PC.exe का पथ। स्वतः पहचान (समान फ़ोल्डर, सिबलिंग फ़ोल्डर, आदि) के लिए खाली छोड़ दें।</value>
+  </data>
+  <data name="Shell_HostPathWatermark" xml:space="preserve">
+    <value>स्वतः पहचानें (या कस्टम पथ सेट करें)</value>
+  </data>
+  <data name="Tutorial_P3_Body2" xml:space="preserve">
+    <value>विस्तृत निर्देशों, कॉन्फ़िगरेशन विकल्पों और समस्या निवारण के लिए, पूरी गाइड देखें:</value>
+  </data>
+  <data name="Settings_SelectHostTitle" xml:space="preserve">
+    <value>Remex.PC.exe चुनें</value>
+  </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>कमांड</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>प्रक्रियाएँ</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>कनेक्शन</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>सामान्य प्रश्न</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>वैयक्तिकृत करें</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>लाइव रूप-रंग</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>दिखावट वैयक्तिकृत करें</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>कनेक्शन</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>होस्ट लिंक</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>होस्ट पता</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>मेरे नेटवर्क पर होस्ट खोजें</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>पेयरिंग</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>होस्ट</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>विलंबता</value>
+  </data>
 </root>

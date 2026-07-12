@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\remex.desktop\remex.desktop.csproj" />
     <ProjectReference Include="..\remex.core\remex.core.csproj" />
+    <ProjectReference Include="..\remex.branding\remex.branding.csproj" />
   </ItemGroup>
 
 </Project>

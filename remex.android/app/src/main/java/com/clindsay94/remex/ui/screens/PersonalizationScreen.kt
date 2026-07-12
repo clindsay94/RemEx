@@ -16,9 +16,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
@@ -36,6 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.core.graphics.toColorInt
 import androidx.core.os.LocaleListCompat
@@ -192,6 +196,7 @@ fun PersonalizationScreenContent(
         mutableFloatStateOf(settings.taskManagerCardShapePreset)
     }
     var splashStyle by remember { mutableStateOf(settings.splashStyle) }
+    var showSplashPreview by remember { mutableStateOf(false) }
 
     LaunchedEffect(
             themeMode,
@@ -491,7 +496,7 @@ fun PersonalizationScreenContent(
                             stringResource(R.string.personalization_splash_style),
                             style = MaterialTheme.typography.labelMedium
                     )
-                    val splashStyleOptions = listOf("RemexCommand", "CosmicZoom")
+                    val splashStyleOptions = listOf("RemexCommand", "CosmicZoom", "Pong")
                     Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -503,15 +508,29 @@ fun PersonalizationScreenContent(
                                     modifier = Modifier.weight(1f)
                             ) {
                                 Text(
-                                    if (option == "RemexCommand")
-                                        stringResource(R.string.personalization_splash_original)
-                                    else
-                                        stringResource(R.string.personalization_splash_cosmic),
+                                    when (option) {
+                                        "RemexCommand" -> stringResource(R.string.personalization_splash_original)
+                                        "CosmicZoom" -> stringResource(R.string.personalization_splash_cosmic)
+                                        else -> stringResource(R.string.personalization_splash_pong)
+                                    },
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
+                    }
+
+                    OutlinedButton(
+                            onClick = { showSplashPreview = true },
+                            modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Icon(
+                                Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.personalization_splash_preview))
                     }
                 }
             }
@@ -927,6 +946,36 @@ fun PersonalizationScreenContent(
             }
 
             Spacer(modifier = Modifier.height(40.dp))
+        }
+    }
+
+    if (showSplashPreview) {
+        Dialog(
+                onDismissRequest = { showSplashPreview = false },
+                properties =
+                        DialogProperties(
+                                usePlatformDefaultWidth = false,
+                                dismissOnBackPress = true,
+                                dismissOnClickOutside = false
+                        )
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                SplashScreen(
+                        splashStyle = splashStyle,
+                        onFinished = { showSplashPreview = false }
+                )
+                IconButton(
+                        onClick = { showSplashPreview = false },
+                        modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+                ) {
+                    Icon(
+                            Icons.Default.Close,
+                            contentDescription =
+                                    stringResource(R.string.personalization_splash_preview_close),
+                            tint = Color.White
+                    )
+                }
+            }
         }
     }
 }

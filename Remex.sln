@@ -1,19 +1,25 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Core", "remex.core\remex.core.csproj", "{8CC5CA1C-4A11-4575-98C1-91BD755DF9E1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "remex.core", "remex.core\remex.core.csproj", "{8CC5CA1C-4A11-4575-98C1-91BD755DF9E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Desktop", "remex.desktop\remex.desktop.csproj", "{185BE9F0-2DC9-4571-96E5-D6ADF784367F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "remex.desktop", "remex.desktop\remex.desktop.csproj", "{185BE9F0-2DC9-4571-96E5-D6ADF784367F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Core.Tests", "remex.core.tests\remex.core.tests.csproj", "{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "remex.core.tests", "remex.core.tests\remex.core.tests.csproj", "{B59A3F32-B7C9-425A-B02A-51D6EFE8F80F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Agent.Tests", "remex.agent.tests\remex.agent.tests.csproj", "{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "remex.agent.tests", "remex.agent.tests\remex.agent.tests.csproj", "{AB5776B3-C9FD-4686-B3AA-98F93EAF3CCB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Desktop.Tests", "remex.desktop.tests\remex.desktop.tests.csproj", "{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "remex.desktop.tests", "remex.desktop.tests\remex.desktop.tests.csproj", "{B6A23CD5-2C88-46A0-9A93-F3553C4C9E6C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remex.Agent", "remex.agent\remex.agent.csproj", "{2A61B7C0-A598-429F-B093-6D16D4B64AEF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "remex.agent", "remex.agent\remex.agent.csproj", "{2A61B7C0-A598-429F-B093-6D16D4B64AEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "remex.branding", "remex.branding\remex.branding.csproj", "{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{07C2787E-EAC7-C090-1BA3-A61EC2A24D84}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrandAssetGen", "tools\BrandAssetGen\BrandAssetGen.csproj", "{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -97,8 +103,35 @@ Global
 		{2A61B7C0-A598-429F-B093-6D16D4B64AEF}.Release|x64.Build.0 = Release|Any CPU
 		{2A61B7C0-A598-429F-B093-6D16D4B64AEF}.Release|x86.ActiveCfg = Release|Any CPU
 		{2A61B7C0-A598-429F-B093-6D16D4B64AEF}.Release|x86.Build.0 = Release|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Debug|x64.Build.0 = Debug|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Debug|x86.Build.0 = Debug|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Release|x64.ActiveCfg = Release|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Release|x64.Build.0 = Release|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Release|x86.ActiveCfg = Release|Any CPU
+		{8CE21234-A5D4-4D92-AB51-9DCE8CA6CB72}.Release|x86.Build.0 = Release|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Debug|x64.Build.0 = Debug|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Debug|x86.Build.0 = Debug|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Release|x64.ActiveCfg = Release|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Release|x64.Build.0 = Release|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Release|x86.ActiveCfg = Release|Any CPU
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FC72DADC-91D9-4B0D-AEAE-CC647B86064D} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

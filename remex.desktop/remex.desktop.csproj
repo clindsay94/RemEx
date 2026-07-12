@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Skia" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
@@ -30,5 +31,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\remex.core\remex.core.csproj" />
+    <ProjectReference Include="..\remex.branding\remex.branding.csproj" />
   </ItemGroup>
 </Project>

@@ -2731,4 +2731,169 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>Pengaturan kepercayaan diperbarui.</value>
   </data>
+  <data name="Settings_ServiceSection" xml:space="preserve">
+    <value>LAYANAN WINDOWS</value>
+  </data>
+  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
+    <value>WINDOWS SERVICE</value>
+  </data>
+  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
+    <value>LINUX BACKGROUND SERVICE</value>
+  </data>
+  <data name="Settings_ServiceLogin" xml:space="preserve">
+    <value>LOGIN LAYANAN</value>
+  </data>
+  <data name="Settings_ServiceDesc" xml:space="preserve">
+    <value>Layanan berjalan di latar belakang agar RemEx dapat menerima perintah jarak jauh tanpa membuka aplikasi.</value>
+  </data>
+  <data name="Service_Publishing" xml:space="preserve">
+    <value>Menerbitkan Remex.PC…</value>
+  </data>
+  <data name="Service_PublishFailed" xml:space="preserve">
+    <value>Penerbitan gagal — lihat log.</value>
+  </data>
+  <data name="Service_Creating" xml:space="preserve">
+    <value>Membuat layanan…</value>
+  </data>
+  <data name="Service_CreateFailed" xml:space="preserve">
+    <value>Gagal membuat layanan — lihat log.</value>
+  </data>
+  <data name="Service_ConfiguringLogin" xml:space="preserve">
+    <value>Mengonfigurasi login…</value>
+  </data>
+  <data name="Service_ConfigureFailed" xml:space="preserve">
+    <value>Gagal mengonfigurasi kredensial — lihat log.</value>
+  </data>
+  <data name="Service_GrantingRights" xml:space="preserve">
+    <value>Memberikan hak masuk…</value>
+  </data>
+  <data name="Service_StoppingEmbedded" xml:space="preserve">
+    <value>Menghentikan PC tertanam…</value>
+  </data>
+  <data name="Service_StartingService" xml:space="preserve">
+    <value>Memulai layanan…</value>
+  </data>
+  <data name="Service_InstalledStarted" xml:space="preserve">
+    <value>Terinstal &amp; dimulai.</value>
+  </data>
+  <data name="Service_InstalledStartFailed" xml:space="preserve">
+    <value>Terinstal — mulai mungkin gagal, lihat log.</value>
+  </data>
+  <data name="Service_InstallingLinux" xml:space="preserve">
+    <value>Menginstal layanan systemd…</value>
+  </data>
+  <data name="Service_InstallFailed" xml:space="preserve">
+    <value>Instalasi layanan gagal.</value>
+  </data>
+  <data name="Service_RemovingLinux" xml:space="preserve">
+    <value>Menghapus layanan systemd…</value>
+  </data>
+  <data name="Service_DeletingService" xml:space="preserve">
+    <value>Menghapus layanan…</value>
+  </data>
+  <data name="Service_ApplyingCredentials" xml:space="preserve">
+    <value>Menerapkan kredensial…</value>
+  </data>
+  <data name="Service_LocatingHost" xml:space="preserve">
+    <value>Menemukan Remex.PC…</value>
+  </data>
+  <data name="Service_HostNotFound" xml:space="preserve">
+    <value>Remex.PC.exe tidak ditemukan.</value>
+  </data>
+  <data name="Service_StartedMsg" xml:space="preserve">
+    <value>Dimulai.</value>
+  </data>
+  <data name="Service_StartFailed" xml:space="preserve">
+    <value>Gagal memulai — lihat log.</value>
+  </data>
+  <data name="Tutorial_P2_Title" xml:space="preserve">
+    <value>Jalankan sebagai Layanan Windows</value>
+  </data>
+  <data name="Tutorial_P2_Body1" xml:space="preserve">
+    <value>Untuk menjaga RemEx berjalan 24/7 tanpa perlu login, instal sebagai layanan Windows:</value>
+  </data>
+  <data name="Tutorial_P2_Steps" xml:space="preserve">
+    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
+2. Set your Windows username and password
+3. Click 'Install as Service'
+4. The service starts automatically on boot</value>
+  </data>
+  <data name="Tutorial_P2_Note" xml:space="preserve">
+    <value>Layanan berjalan di bawah akun pengguna Anda sehingga dapat mengakses sesi desktop Anda untuk tangkapan layar dan peluncuran aplikasi.</value>
+  </data>
+  <data name="Tutorial_P3_Title" xml:space="preserve">
+    <value>Pengaturan Layanan Linux</value>
+  </data>
+  <data name="Tutorial_P3_Body1" xml:space="preserve">
+    <value>Di Linux, RemEx PC dapat berjalan sebagai layanan systemd untuk startup otomatis.</value>
+  </data>
+  <data name="Tutorial_P3_Steps" xml:space="preserve">
+    <value>1. Download the latest Linux PC archive from GitHub Releases.
+2. Extract it.
+3. Run ./install.sh install inside the remex-PC folder.
+4. Use systemctl --user status remex-PC to verify it is running.</value>
+  </data>
+  <data name="Tutorial_P3_Link" xml:space="preserve">
+    <value>Untuk instruksi rinci, lihat docs/linux-service-setup.md di GitHub</value>
+  </data>
+  <data name="Shell_HostBinaryPath" xml:space="preserve">
+    <value>Jalur Biner PC</value>
+  </data>
+  <data name="Shell_HostPathHint" xml:space="preserve">
+    <value>Jalur ke Remex.PC.exe (kosongkan untuk deteksi otomatis)</value>
+  </data>
+  <data name="Shell_HostPathTooltip" xml:space="preserve">
+    <value>Jalur ke Remex.PC.exe. Kosongkan untuk deteksi otomatis (folder yang sama, folder saudara, dll.)</value>
+  </data>
+  <data name="Shell_HostPathWatermark" xml:space="preserve">
+    <value>Deteksi otomatis (atau tetapkan jalur kustom)</value>
+  </data>
+  <data name="Tutorial_P3_Body2" xml:space="preserve">
+    <value>Untuk instruksi rinci, opsi konfigurasi, dan pemecahan masalah, lihat panduan lengkap:</value>
+  </data>
+  <data name="Settings_SelectHostTitle" xml:space="preserve">
+    <value>Pilih Remex.PC.exe</value>
+  </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>Perintah</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>Proses</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>Koneksi</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>FAQ</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>Personalisasi</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>TAMPILAN LANGSUNG</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>Personalisasi tampilan</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>Koneksi</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>TAUTAN HOST</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>Alamat host</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>Temukan host di jaringan saya</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>Penyandingan</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>Latensi</value>
+  </data>
 </root>

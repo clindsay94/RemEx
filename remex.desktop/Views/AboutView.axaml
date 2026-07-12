@@ -1,7 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Desktop.ViewModels"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.AboutView" x:DataType="vm:AboutViewModel">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:controls="clr-namespace:Remex.Desktop.Controls" x:Class="Remex.Desktop.Views.AboutView" x:DataType="vm:AboutViewModel">
 
     <UserControl.Styles>
         <Style Selector="Button.about-back">

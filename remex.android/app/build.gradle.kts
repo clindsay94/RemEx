@@ -770,7 +770,7 @@ tasks.matching { it.name == "mergeReleaseJniLibFolders" }.configureEach {
 
 dependencies {
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.13.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-crashlytics-ndk")
     implementation("com.google.firebase:firebase-crashlytics")
@@ -808,7 +808,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core:5.23.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
     // org.json is an Android stub in unit tests; use the real implementation
-    testImplementation("org.json:json:20251224")
+    testImplementation("org.json:json:20260522")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

@@ -209,7 +209,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<string> AvailableSplashStyles { get; } = new()
     {
-        "RemexCommand", "CosmicZoom"
+        "RemexCommand", "CosmicZoom", "Pong"
     };
 
     partial void OnSelectedThemeChanged(AppTheme value)

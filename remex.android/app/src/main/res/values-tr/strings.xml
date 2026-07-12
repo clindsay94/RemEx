@@ -163,6 +163,7 @@
     <string name="cd_key_insert">Insert</string>
     <string name="cd_more_keys">Diğer tuşlar</string>
     <string name="cd_show_pc_keys">PC tuşlarını göster</string>
+    <string name="cd_move_pc_keys">PC tuş çubuğunu taşı</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Settings</string>
     <string name="cd_toggle_fullscreen">Toggle fullscreen</string>

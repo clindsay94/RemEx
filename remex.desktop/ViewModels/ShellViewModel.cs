@@ -244,6 +244,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private RemoteDesktopViewModel? _remoteDesktopViewModel;
     private TaskManagerViewModel? _taskManagerViewModel;
     private AboutViewModel? _aboutViewModel;
+    private FaqViewModel? _faqViewModel;
     private FileTransferViewModel? _fileTransferViewModel;
     private DiagnosticLogsViewModel? _diagnosticLogsViewModel;
 
@@ -315,6 +316,7 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _remoteDesktopViewModel?.Dispose();
         _taskManagerViewModel?.Dispose();
         _aboutViewModel?.Dispose();
+        _faqViewModel?.Dispose();
         _fileTransferViewModel?.Dispose();
 
         // Dispose shared connection ViewModel
@@ -535,6 +537,20 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    public void NavigateToFaq()
+    {
+        _faqViewModel ??= new FaqViewModel();
+        SetTransitionAndNavigate(11, _faqViewModel);
+    }
+
+    [RelayCommand]
+    public void NavigateToConnection()
+    {
+        // The Connection screen binds directly to the shared ConnectionViewModel instance.
+        SetTransitionAndNavigate(10, Connection);
+    }
+
+    [RelayCommand]
     public void NavigateToFileTransfer()
     {
         NotifyIfDisconnected(LocalizationService.Instance["Nav_Files"]);
@@ -609,15 +625,20 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     {
         IsSettingsPanelOpen = false;
         EnsureSettingsVm();
-        CurrentView = _settingsViewModel;
+        SetTransitionAndNavigate(9, _settingsViewModel!);
     }
 
+    /// <summary>
+    /// Opens the live Personalization popup. Kept for the command palette / Home shortcut that
+    /// previously navigated to the full-screen Customization page (now retired — its content
+    /// lives in the FAB popup so changes preview live against the current screen).
+    /// </summary>
     [RelayCommand]
     public void NavigateToCustomization()
     {
-        IsSettingsPanelOpen = false;
+        EnsureSettingsVm();
         EnsureCustomizationVm();
-        CurrentView = _customizationViewModel;
+        IsSettingsPanelOpen = true;
     }
 
     private void EnsureSettingsVm()

@@ -2732,4 +2732,169 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>Zaktualizowano ustawienia zaufania.</value>
   </data>
+  <data name="Settings_ServiceSection" xml:space="preserve">
+    <value>USŁUGA WINDOWS</value>
+  </data>
+  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
+    <value>WINDOWS SERVICE</value>
+  </data>
+  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
+    <value>LINUX BACKGROUND SERVICE</value>
+  </data>
+  <data name="Settings_ServiceLogin" xml:space="preserve">
+    <value>LOGOWANIE USŁUGI</value>
+  </data>
+  <data name="Settings_ServiceDesc" xml:space="preserve">
+    <value>Usługa działa w tle, aby RemEx mógł przyjmować zdalne polecenia bez otwartej aplikacji.</value>
+  </data>
+  <data name="Service_Publishing" xml:space="preserve">
+    <value>Publikowanie Remex.PC…</value>
+  </data>
+  <data name="Service_PublishFailed" xml:space="preserve">
+    <value>Publikacja nie powiodła się — sprawdź log.</value>
+  </data>
+  <data name="Service_Creating" xml:space="preserve">
+    <value>Tworzenie usługi…</value>
+  </data>
+  <data name="Service_CreateFailed" xml:space="preserve">
+    <value>Nie udało się utworzyć usługi — sprawdź log.</value>
+  </data>
+  <data name="Service_ConfiguringLogin" xml:space="preserve">
+    <value>Konfigurowanie logowania…</value>
+  </data>
+  <data name="Service_ConfigureFailed" xml:space="preserve">
+    <value>Nie udało się skonfigurować poświadczeń — sprawdź log.</value>
+  </data>
+  <data name="Service_GrantingRights" xml:space="preserve">
+    <value>Przyznawanie praw logowania…</value>
+  </data>
+  <data name="Service_StoppingEmbedded" xml:space="preserve">
+    <value>Zatrzymywanie wbudowanego hosta…</value>
+  </data>
+  <data name="Service_StartingService" xml:space="preserve">
+    <value>Uruchamianie usługi…</value>
+  </data>
+  <data name="Service_InstalledStarted" xml:space="preserve">
+    <value>Zainstalowano &amp; uruchomiono.</value>
+  </data>
+  <data name="Service_InstalledStartFailed" xml:space="preserve">
+    <value>Zainstalowano — uruchomienie mogło się nie powieść, sprawdź log.</value>
+  </data>
+  <data name="Service_InstallingLinux" xml:space="preserve">
+    <value>Installing systemd service…</value>
+  </data>
+  <data name="Service_InstallFailed" xml:space="preserve">
+    <value>Service installation failed.</value>
+  </data>
+  <data name="Service_RemovingLinux" xml:space="preserve">
+    <value>Removing systemd service…</value>
+  </data>
+  <data name="Service_DeletingService" xml:space="preserve">
+    <value>Usuwanie usługi…</value>
+  </data>
+  <data name="Service_ApplyingCredentials" xml:space="preserve">
+    <value>Stosowanie poświadczeń…</value>
+  </data>
+  <data name="Service_LocatingHost" xml:space="preserve">
+    <value>Lokalizowanie Remex.PC...</value>
+  </data>
+  <data name="Service_HostNotFound" xml:space="preserve">
+    <value>Nie znaleziono Remex.PC.exe.</value>
+  </data>
+  <data name="Service_StartedMsg" xml:space="preserve">
+    <value>Uruchomiono.</value>
+  </data>
+  <data name="Service_StartFailed" xml:space="preserve">
+    <value>Błąd uruchomienia — sprawdź log.</value>
+  </data>
+  <data name="Tutorial_P2_Title" xml:space="preserve">
+    <value>Uruchom jako usługę Windows</value>
+  </data>
+  <data name="Tutorial_P2_Body1" xml:space="preserve">
+    <value>Aby RemEx działał 24/7 bez konieczności logowania, zainstaluj go jako usługę Windows:</value>
+  </data>
+  <data name="Tutorial_P2_Steps" xml:space="preserve">
+    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
+2. Set your Windows username and password
+3. Click 'Install as Service'
+4. The service starts automatically on boot</value>
+  </data>
+  <data name="Tutorial_P2_Note" xml:space="preserve">
+    <value>Usługa działa na Twoim koncie użytkownika, dzięki czemu ma dostęp do sesji pulpitu w celu przechwytywania ekranu i uruchamiania aplikacji.</value>
+  </data>
+  <data name="Tutorial_P3_Title" xml:space="preserve">
+    <value>Konfiguracja usługi Linux</value>
+  </data>
+  <data name="Tutorial_P3_Body1" xml:space="preserve">
+    <value>W systemie Linux PC RemEx może działać jako usługa systemd dla automatycznego startu.</value>
+  </data>
+  <data name="Tutorial_P3_Steps" xml:space="preserve">
+    <value>1. Download the latest Linux PC archive from GitHub Releases.
+2. Extract it.
+3. Run ./install.sh install inside the remex-PC folder.
+4. Use systemctl --user status remex-PC to verify it is running.</value>
+  </data>
+  <data name="Tutorial_P3_Link" xml:space="preserve">
+    <value>Szczegółowe instrukcje znajdziesz w pliku docs/linux-service-setup.md na GitHubie</value>
+  </data>
+  <data name="Shell_HostBinaryPath" xml:space="preserve">
+    <value>Ścieżka pliku hosta</value>
+  </data>
+  <data name="Shell_HostPathHint" xml:space="preserve">
+    <value>Ścieżka do Remex.PC.exe (pozostaw puste dla autowykrywania)</value>
+  </data>
+  <data name="Shell_HostPathTooltip" xml:space="preserve">
+    <value>Ścieżka do Remex.PC.exe. Pozostaw puste dla automatycznego wykrywania (ten sam folder, foldery sąsiednie itp.)</value>
+  </data>
+  <data name="Shell_HostPathWatermark" xml:space="preserve">
+    <value>Autowykrywanie (lub ustaw własną ścieżkę)</value>
+  </data>
+  <data name="Tutorial_P3_Body2" xml:space="preserve">
+    <value>Szczegółowe instrukcje, opcje konfiguracji i rozwiązywanie problemów znajdziesz w pełnym przewodniku:</value>
+  </data>
+  <data name="Settings_SelectHostTitle" xml:space="preserve">
+    <value>Wybierz Remex.PC.exe</value>
+  </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>Polecenia</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>Procesy</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>Połączenie</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>FAQ</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>Personalizuj</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>WYGLĄD NA ŻYWO</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>Personalizuj wygląd</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>Połączenie</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>ŁĄCZE Z HOSTEM</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>Adres hosta</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>Znajdź hosty w mojej sieci</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>Parowanie</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>Opóźnienie</value>
+  </data>
 </root>

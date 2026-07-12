@@ -151,9 +151,8 @@ cp "$LINUX_DIR/remex-agent.desktop" "$AGENT_STAGE/"
 cp "$LINUX_DIR/agent-install.sh"    "$AGENT_STAGE/install.sh"
 chmod +x "$AGENT_STAGE/install.sh"
 
-# Icon — prefer New-REMEX.png, then icon.png, then icon.ico
-if   [[ -f "$REPO_ROOT/remex.desktop/Assets/New-REMEX.png" ]]; then cp "$REPO_ROOT/remex.desktop/Assets/New-REMEX.png" "$AGENT_STAGE/remex.png"
-elif [[ -f "$AGENT_PROJ/icon.png" ]]; then cp "$AGENT_PROJ/icon.png" "$AGENT_STAGE/remex.png"
+# Icon — use the generated brand mark (PNG preferred for Linux .desktop, ICO fallback)
+if   [[ -f "$REPO_ROOT/remex.desktop/Assets/icon.png" ]]; then cp "$REPO_ROOT/remex.desktop/Assets/icon.png" "$AGENT_STAGE/remex.png"
 elif [[ -f "$AGENT_PROJ/icon.ico" ]]; then cp "$AGENT_PROJ/icon.ico" "$AGENT_STAGE/remex.ico"
 fi
 

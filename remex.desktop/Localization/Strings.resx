@@ -2737,4 +2737,181 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_TrustRevoked" xml:space="preserve">
     <value>Device permissions revoked.</value>
   </data>
+  <data name="Settings_ServiceSection" xml:space="preserve">
+    <value>BACKGROUND SERVICE</value>
+  </data>
+  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
+    <value>WINDOWS SERVICE</value>
+  </data>
+  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
+    <value>LINUX BACKGROUND SERVICE</value>
+  </data>
+  <data name="Settings_ServiceLogin" xml:space="preserve">
+    <value>SERVICE LOGIN</value>
+  </data>
+  <data name="Settings_ServiceDesc" xml:space="preserve">
+    <value>The service runs in the background so RemEx can accept remote commands without the app open. It runs under your Windows account to access the desktop session.</value>
+  </data>
+  <data name="Service_Publishing" xml:space="preserve">
+    <value>Publishing Remex.PC…</value>
+  </data>
+  <data name="Service_PublishFailed" xml:space="preserve">
+    <value>Publish failed — see log.</value>
+  </data>
+  <data name="Service_Creating" xml:space="preserve">
+    <value>Creating service…</value>
+  </data>
+  <data name="Service_CreateFailed" xml:space="preserve">
+    <value>Failed to create service — see log.</value>
+  </data>
+  <data name="Service_ConfiguringLogin" xml:space="preserve">
+    <value>Configuring login…</value>
+  </data>
+  <data name="Service_ConfigureFailed" xml:space="preserve">
+    <value>Failed to configure credentials — see log.</value>
+  </data>
+  <data name="Service_GrantingRights" xml:space="preserve">
+    <value>Granting logon rights…</value>
+  </data>
+  <data name="Service_StoppingEmbedded" xml:space="preserve">
+    <value>Stopping embedded PC…</value>
+  </data>
+  <data name="Service_StartingService" xml:space="preserve">
+    <value>Starting service…</value>
+  </data>
+  <data name="Service_InstalledStarted" xml:space="preserve">
+    <value>Installed &amp; started.</value>
+  </data>
+  <data name="Service_InstalledStartFailed" xml:space="preserve">
+    <value>Installed — start may have failed, see log.</value>
+  </data>
+  <data name="Service_InstallingLinux" xml:space="preserve">
+    <value>Installing systemd service…</value>
+  </data>
+  <data name="Service_InstallFailed" xml:space="preserve">
+    <value>Service installation failed.</value>
+  </data>
+  <data name="Service_RemovingLinux" xml:space="preserve">
+    <value>Removing systemd service…</value>
+  </data>
+  <data name="Service_DeletingService" xml:space="preserve">
+    <value>Deleting service…</value>
+  </data>
+  <data name="Service_ApplyingCredentials" xml:space="preserve">
+    <value>Applying credentials…</value>
+  </data>
+  <data name="Service_LocatingHost" xml:space="preserve">
+    <value>Locating Remex.PC…</value>
+  </data>
+  <data name="Service_HostNotFound" xml:space="preserve">
+    <value>Remex.PC.exe not found.</value>
+  </data>
+  <data name="Service_StartedMsg" xml:space="preserve">
+    <value>Started.</value>
+  </data>
+  <data name="Service_StartFailed" xml:space="preserve">
+    <value>Start failed — see log.</value>
+  </data>
+  <data name="Tutorial_P2_Title" xml:space="preserve">
+    <value>Run as a Windows Service</value>
+  </data>
+  <data name="Tutorial_P2_Body1" xml:space="preserve">
+    <value>To keep RemEx running 24/7 without being logged in, install it as a Windows service:</value>
+  </data>
+  <data name="Tutorial_P2_Steps" xml:space="preserve">
+    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
+2. Set your Windows username and password
+3. Click 'Install as Service'
+4. The service starts automatically on boot</value>
+  </data>
+  <data name="Tutorial_P2_Note" xml:space="preserve">
+    <value>The service runs under your user account so it can access your desktop session for screen capture and app launching.</value>
+  </data>
+  <data name="Tutorial_P3_Title" xml:space="preserve">
+    <value>Linux Service Setup</value>
+  </data>
+  <data name="Tutorial_P3_Body1" xml:space="preserve">
+    <value>On Linux, RemEx PC installs as a user-level systemd service so it can start with your session and stay available in the background.</value>
+  </data>
+  <data name="Tutorial_P3_Steps" xml:space="preserve">
+    <value>1. Download the latest Linux PC archive from GitHub Releases.
+2. Extract it.
+3. Run ./install.sh install inside the remex-PC folder.
+4. Use systemctl --user status remex-PC to verify it is running.</value>
+  </data>
+  <data name="Tutorial_P3_Link" xml:space="preserve">
+    <value>Tip: use the bundled install.sh script instead of copying service files by hand.</value>
+  </data>
+  <data name="Shell_HostBinaryPath" xml:space="preserve">
+    <value>PC Binary Path</value>
+  </data>
+  <data name="Shell_HostPathHint" xml:space="preserve">
+    <value>Path to Remex.PC.exe (leave empty for auto-detection)</value>
+  </data>
+  <data name="Shell_HostPathTooltip" xml:space="preserve">
+    <value>Path to Remex.PC.exe. Leave empty for auto-detection (same folder, sibling folders, etc.)</value>
+  </data>
+  <data name="Shell_HostPathWatermark" xml:space="preserve">
+    <value>Auto-detect (or set custom path)</value>
+  </data>
+  <data name="Tutorial_P3_Body2" xml:space="preserve">
+    <value>The same release page also includes the Linux desktop client package if you want the full Avalonia UI on that machine.</value>
+  </data>
+  <data name="Settings_SelectHostTitle" xml:space="preserve">
+    <value>Select Remex.PC.exe</value>
+  </data>
+  <data name="Splash_Style_RemexCommand" xml:space="preserve">
+    <value>Original Scan</value>
+  </data>
+  <data name="Splash_Style_CosmicZoom" xml:space="preserve">
+    <value>Cosmic Zoom</value>
+  </data>
+  <data name="Splash_Style_Pong" xml:space="preserve">
+    <value>Signal Pong</value>
+  </data>
+  <data name="Splash_SkipHint" xml:space="preserve">
+    <value>Click anywhere to skip</value>
+  </data>
+  <data name="Nav_Commands" xml:space="preserve">
+    <value>Commands</value>
+  </data>
+  <data name="Nav_Processes" xml:space="preserve">
+    <value>Processes</value>
+  </data>
+  <data name="Nav_Connection" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="Nav_Faq" xml:space="preserve">
+    <value>FAQ</value>
+  </data>
+  <data name="Personalize_Title" xml:space="preserve">
+    <value>Personalize</value>
+  </data>
+  <data name="Personalize_Subtitle" xml:space="preserve">
+    <value>LIVE APPEARANCE</value>
+  </data>
+  <data name="Personalize_FabTooltip" xml:space="preserve">
+    <value>Personalize appearance</value>
+  </data>
+  <data name="Conn_Header" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="Conn_Subheader" xml:space="preserve">
+    <value>HOST LINK</value>
+  </data>
+  <data name="Conn_HostAddress" xml:space="preserve">
+    <value>Host address</value>
+  </data>
+  <data name="Conn_DiscoverHosts" xml:space="preserve">
+    <value>Find hosts on my network</value>
+  </data>
+  <data name="Conn_Pairing" xml:space="preserve">
+    <value>Pairing</value>
+  </data>
+  <data name="Conn_HostInfo" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Conn_Latency" xml:space="preserve">
+    <value>Latency</value>
+  </data>
 </root>
