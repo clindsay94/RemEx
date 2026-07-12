@@ -131,7 +131,7 @@
                                             Command="{Binding ToggleDrawerCommand}" HorizontalAlignment="Center" Padding="0"
                                             ToolTip.Tip="{conv:Localize Shell_ToggleDrawerTooltip}">
                                         <Border Width="30" Height="30" CornerRadius="15" ClipToBounds="True">
-                                            <Image Source="avares://Remex.Desktop/Assets/New-REMEX.png" Stretch="UniformToFill"/>
+                                            <ctrl:BrandMark/>
                                         </Border>
                                     </Button>
                                     <TextBlock Text="RemEx" FontFamily="{StaticResource Orbitron}" FontSize="14" FontWeight="Bold"

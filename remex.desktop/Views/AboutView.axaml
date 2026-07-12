@@ -58,7 +58,7 @@
                     <!-- App Logo and Name -->
                     <StackPanel Spacing="12" HorizontalAlignment="Center">
                         <Border Width="100" Height="100" CornerRadius="50" ClipToBounds="True" HorizontalAlignment="Center">
-                            <Image Source="avares://Remex.Desktop/Assets/New-REMEX.png" Height="200" Stretch="UniformToFill"/>
+                            <controls:BrandMark/>
                         </Border>
 
                         <TextBlock Classes="page-subtitle" Text="{local:Localize About_Tagline}" HorizontalAlignment="Center"/>

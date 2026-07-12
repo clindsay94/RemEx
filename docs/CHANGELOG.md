@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.1] — 2026-07-12
+
+### Fixed
+
+- **Recovered the splash / brand / navigation revamp that 2.1.0 shipped without.** The 2.1.0 changes (file-sharing overhaul, savefile import/export, launcher rework, Orbitron typography) were committed onto the commit *before* the `feature/android-splash-revamp` branch diverged, so the published 2.1.0 build was missing: the **third splash style (Signal Pong)** and the Skia/Compose splash rework on both PC and Android; the **slate-and-amber brand mark** (replacing the old neon icons); the **navigation-rail glyphs** and the settings-family cluster (Connection · About · FAQ) beneath Settings; and the **FAB → live Personalization popup** (replacing the full-screen Customization page). 2.1.1 merges that branch back in on top of everything in 2.1.0 — nothing from 2.1.0 was dropped. (Merge `0bac425`.)
+- **About page referenced a removed `FaqItems` binding.** FAQ is now its own `FaqView` destination; the orphaned inline FAQ section in `AboutView` (bound to the since-removed `AboutViewModel.FaqItems`) is removed. (`AboutView.axaml`.)
+
+---
+
 ## [2.1.0] — 2026-07-11
 
 ### Added
