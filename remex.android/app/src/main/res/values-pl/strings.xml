@@ -604,6 +604,7 @@
     <string name="wake_pc_mac_not_configured">Adres MAC nie skonfigurowany — ustaw w Ustawieniach</string>
     <string name="wake_pc_lib_not_loaded">Nie można wysłać sygnału wybudzania</string>
     <string name="pairing_error_generic">Parowanie nie powiodło się — spróbuj ponownie</string>
+    <string name="pairing_error_unknown">Wystąpił nieoczekiwany błąd parowania.</string>
     <string name="splash_command_your">KONTROLUJ </string>
     <string name="splash_pc">SWÓJ KOMPUTER</string>
     <string name="splash_command_center">⚡ CENTRUM DOWODZENIA</string>

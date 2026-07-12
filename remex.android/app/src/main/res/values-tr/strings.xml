@@ -604,6 +604,7 @@
     <string name="wake_pc_mac_not_configured">MAC adresi yapılandırılmadı — Ayarlar\'dan ayarlayın</string>
     <string name="wake_pc_lib_not_loaded">Uyandırma sinyali gönderilemiyor</string>
     <string name="pairing_error_generic">Eşleştirme başarısız — lütfen tekrar deneyin</string>
+    <string name="pairing_error_unknown">Beklenmeyen bir eşleştirme hatası oluştu.</string>
     <string name="splash_command_your">PC\'NİZİ </string>
     <string name="splash_pc">YÖNETİN</string>
     <string name="splash_command_center">⚡ KONTROL MERKEZİ</string>

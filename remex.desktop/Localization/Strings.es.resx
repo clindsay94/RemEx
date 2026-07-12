@@ -2500,4 +2500,261 @@ Chrome)</value>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
     <value>Actualizar icono</value>
   </data>
+
+  <!-- ═══ 2.1 File Sharing Overhaul — file manager ═══ -->
+  <data name="FileTransfer_BreadcrumbRoot" xml:space="preserve">
+    <value>Inicio</value>
+  </data>
+  <data name="FileTransfer_SearchWatermark" xml:space="preserve">
+    <value>Buscar en esta carpeta…</value>
+  </data>
+  <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
+    <value>{0} resultado(s) encontrado(s).</value>
+  </data>
+  <data name="FileTransfer_SearchTruncatedFormat" xml:space="preserve">
+    <value>Mostrando las primeras {0} coincidencias — refina tu búsqueda para ver más.</value>
+  </data>
+  <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
+    <value>Error en la búsqueda: {0}</value>
+  </data>
+  <data name="FileTransfer_SortLabel" xml:space="preserve">
+    <value>Ordenar</value>
+  </data>
+  <data name="FileTransfer_SortName" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+  <data name="FileTransfer_SortSize" xml:space="preserve">
+    <value>Tamaño</value>
+  </data>
+  <data name="FileTransfer_SortDate" xml:space="preserve">
+    <value>Fecha</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
+    <value>Enviar al teléfono</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
+    <value>Elige archivos en este PC y envíalos a la carpeta actual del dispositivo conectado.</value>
+  </data>
+  <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
+    <value>Nueva carpeta</value>
+  </data>
+  <data name="FileTransfer_NewFolderTooltip" xml:space="preserve">
+    <value>Crear una nueva carpeta aquí.</value>
+  </data>
+  <data name="FileTransfer_NewFolderLabel" xml:space="preserve">
+    <value>Nombre de la carpeta</value>
+  </data>
+  <data name="FileTransfer_NewFolderWatermark" xml:space="preserve">
+    <value>Nombre de la nueva carpeta…</value>
+  </data>
+  <data name="FileTransfer_CreateFolderConfirmBtn" xml:space="preserve">
+    <value>Crear</value>
+  </data>
+  <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
+    <value>Creando la carpeta “{0}”…</value>
+  </data>
+  <data name="FileTransfer_CreateFolderComplete" xml:space="preserve">
+    <value>Carpeta creada.</value>
+  </data>
+  <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
+    <value>No se pudo crear la carpeta: {0}</value>
+  </data>
+  <data name="FileTransfer_CopyBtn" xml:space="preserve">
+    <value>Copiar</value>
+  </data>
+  <data name="FileTransfer_CopyTooltip" xml:space="preserve">
+    <value>Copia los elementos seleccionados. Luego abre una carpeta y pulsa Pegar.</value>
+  </data>
+  <data name="FileTransfer_CutBtn" xml:space="preserve">
+    <value>Cortar</value>
+  </data>
+  <data name="FileTransfer_CutTooltip" xml:space="preserve">
+    <value>Mueve los elementos seleccionados. Luego abre una carpeta y pulsa Pegar.</value>
+  </data>
+  <data name="FileTransfer_PasteBtn" xml:space="preserve">
+    <value>Pegar</value>
+  </data>
+  <data name="FileTransfer_PasteTooltip" xml:space="preserve">
+    <value>Pega los elementos copiados o cortados en esta carpeta.</value>
+  </data>
+  <data name="FileTransfer_CopyReadyFormat" xml:space="preserve">
+    <value>{0} elemento(s) listo(s) para copiar — abre una carpeta y pulsa Pegar.</value>
+  </data>
+  <data name="FileTransfer_CutReadyFormat" xml:space="preserve">
+    <value>{0} elemento(s) listo(s) para mover — abre una carpeta y pulsa Pegar.</value>
+  </data>
+  <data name="FileTransfer_CopyingFormat" xml:space="preserve">
+    <value>Copiando {0} elemento(s)…</value>
+  </data>
+  <data name="FileTransfer_MovingFormat" xml:space="preserve">
+    <value>Moviendo {0} elemento(s)…</value>
+  </data>
+  <data name="FileTransfer_CopyComplete" xml:space="preserve">
+    <value>Copia completada.</value>
+  </data>
+  <data name="FileTransfer_MoveComplete" xml:space="preserve">
+    <value>Movimiento completado.</value>
+  </data>
+  <data name="FileTransfer_PasteCrossRoot" xml:space="preserve">
+    <value>Copiar y mover solo funcionan dentro de la misma carpeta compartida.</value>
+  </data>
+  <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
+    <value>Error al pegar: {0}</value>
+  </data>
+  <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
+    <value>Propiedades</value>
+  </data>
+  <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
+    <value>Muestra los detalles y una vista previa del elemento seleccionado.</value>
+  </data>
+  <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
+    <value>PROPIEDADES</value>
+  </data>
+  <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
+    <value>No se pudieron cargar los detalles: {0}</value>
+  </data>
+  <data name="FileTransfer_PropSize" xml:space="preserve">
+    <value>Tamaño</value>
+  </data>
+  <data name="FileTransfer_PropItems" xml:space="preserve">
+    <value>Elementos</value>
+  </data>
+  <data name="FileTransfer_PropModified" xml:space="preserve">
+    <value>Modificado</value>
+  </data>
+  <data name="FileTransfer_PropCreated" xml:space="preserve">
+    <value>Creado</value>
+  </data>
+  <data name="FileTransfer_PropType" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="FileTransfer_PropReadOnly" xml:space="preserve">
+    <value>Solo lectura</value>
+  </data>
+  <data name="FileTransfer_VolumesTooltip" xml:space="preserve">
+    <value>Muestra las unidades del dispositivo conectado (requiere permiso).</value>
+  </data>
+  <data name="FileTransfer_VolumesTitle" xml:space="preserve">
+    <value>UNIDADES</value>
+  </data>
+  <data name="FileTransfer_VolumesRequesting" xml:space="preserve">
+    <value>Solicitando acceso a las unidades…</value>
+  </data>
+  <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
+    <value>{0} unidad(es) disponible(s).</value>
+  </data>
+  <data name="FileTransfer_VolumesDenied" xml:space="preserve">
+    <value>No se concedió acceso completo al dispositivo.</value>
+  </data>
+  <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
+    <value>No se pudieron listar las unidades: {0}</value>
+  </data>
+  <data name="FileTransfer_QueueTitle" xml:space="preserve">
+    <value>TRANSFERENCIAS</value>
+  </data>
+  <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
+    <value>Borrar finalizadas</value>
+  </data>
+  <data name="FileTransfer_QueuedForUpload" xml:space="preserve">
+    <value>Añadido a la cola de transferencias.</value>
+  </data>
+  <data name="FileTransfer_QueuedForDownload" xml:space="preserve">
+    <value>Añadido a la cola de transferencias.</value>
+  </data>
+  <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
+    <value>SUBIDA</value>
+  </data>
+  <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
+    <value>DESCARGA</value>
+  </data>
+  <data name="FileTransfer_QueueKindSend" xml:space="preserve">
+    <value>ENVÍO</value>
+  </data>
+  <data name="FileTransfer_QueueStateQueued" xml:space="preserve">
+    <value>Esperando…</value>
+  </data>
+  <data name="FileTransfer_QueueStateNegotiating" xml:space="preserve">
+    <value>Iniciando…</value>
+  </data>
+  <data name="FileTransfer_QueueStateActive" xml:space="preserve">
+    <value>Transfiriendo…</value>
+  </data>
+  <data name="FileTransfer_QueueStatePaused" xml:space="preserve">
+    <value>Pausado</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerifying" xml:space="preserve">
+    <value>Verificando…</value>
+  </data>
+  <data name="FileTransfer_QueueStateDone" xml:space="preserve">
+    <value>Completado</value>
+  </data>
+  <data name="FileTransfer_QueueStateFailed" xml:space="preserve">
+    <value>Fallido</value>
+  </data>
+  <data name="FileTransfer_QueueStateCancelled" xml:space="preserve">
+    <value>Cancelado</value>
+  </data>
+  <data name="FileTransfer_DropTargetReadOnly" xml:space="preserve">
+    <value>Esta carpeta es de solo lectura — elige una carpeta en la que puedas escribir.</value>
+  </data>
+
+  <!-- ═══ 2.1 File Sharing Overhaul — consent dialog ═══ -->
+  <data name="FileConsent_WindowTitle" xml:space="preserve">
+    <value>Solicitud de permiso</value>
+  </data>
+  <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
+    <value>¿Permitir la exploración completa del dispositivo?</value>
+  </data>
+  <data name="FileConsent_FullBrowseMessage" xml:space="preserve">
+    <value>Un dispositivo emparejado solicita explorar todas las unidades y carpetas de este PC.</value>
+  </data>
+  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
+    <value>¿Aceptar los archivos entrantes?</value>
+  </data>
+  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
+    <value>Un dispositivo emparejado quiere enviar archivos a este PC.</value>
+  </data>
+  <data name="FileConsent_Remember" xml:space="preserve">
+    <value>Recordar mi elección para este dispositivo</value>
+  </data>
+  <data name="FileConsent_Allow" xml:space="preserve">
+    <value>Permitir</value>
+  </data>
+  <data name="FileConsent_Deny" xml:space="preserve">
+    <value>Denegar</value>
+  </data>
+
+  <!-- ═══ 2.1 File Sharing Overhaul — trust settings ═══ -->
+  <data name="Settings_TrustSection" xml:space="preserve">
+    <value>CONFIANZA PARA COMPARTIR ARCHIVOS</value>
+  </data>
+  <data name="Settings_TrustDesc" xml:space="preserve">
+    <value>Controla lo que cada dispositivo emparejado puede hacer con tus archivos. La exploración completa del dispositivo y la aceptación automática de archivos entrantes están desactivadas de forma predeterminada.</value>
+  </data>
+  <data name="Settings_TrustEmpty" xml:space="preserve">
+    <value>Ningún dispositivo tiene permisos de uso compartido de archivos todavía.</value>
+  </data>
+  <data name="Settings_TrustRefresh" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="Settings_TrustRevoke" xml:space="preserve">
+    <value>Revocar</value>
+  </data>
+  <data name="Settings_TrustFullBrowse" xml:space="preserve">
+    <value>Permitir explorar todas las unidades</value>
+  </data>
+  <data name="Settings_TrustAutoAccept" xml:space="preserve">
+    <value>Aceptar automáticamente los archivos entrantes</value>
+  </data>
+  <data name="Settings_TrustUpdated" xml:space="preserve">
+    <value>Configuración de confianza actualizada.</value>
+  </data>
+  <data name="Settings_TrustRevoked" xml:space="preserve">
+    <value>Permisos del dispositivo revocados.</value>
+  </data>
+
+  <!-- ═══ 2.1 File Sharing Overhaul — misc ═══ -->
+  <data name="RemoteDesktop_FpsValue" xml:space="preserve">
+    <value>{0} FPS</value>
+  </data>
 </root>

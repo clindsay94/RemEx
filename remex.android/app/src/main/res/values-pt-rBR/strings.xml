@@ -604,6 +604,7 @@
     <string name="wake_pc_mac_not_configured">Endereço MAC não configurado — defina nas Configurações</string>
     <string name="wake_pc_lib_not_loaded">Não é possível enviar o sinal de despertar</string>
     <string name="pairing_error_generic">Falha no pareamento — tente novamente</string>
+    <string name="pairing_error_unknown">Ocorreu um erro de pareamento inesperado.</string>
     <string name="splash_command_your">CONTROLE </string>
     <string name="splash_pc">SEU PC</string>
     <string name="splash_command_center">⚡ CENTRO DE COMANDO</string>

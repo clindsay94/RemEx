@@ -2482,4 +2482,253 @@ Linux: ip addr  or  hostname -I</value>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
     <value>Atualizar ícone</value>
   </data>
+  <data name="FileConsent_Allow" xml:space="preserve">
+    <value>Permitir</value>
+  </data>
+  <data name="FileConsent_Deny" xml:space="preserve">
+    <value>Negar</value>
+  </data>
+  <data name="FileConsent_FullBrowseMessage" xml:space="preserve">
+    <value>Um dispositivo pareado está solicitando navegar por todas as unidades e pastas deste PC.</value>
+  </data>
+  <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
+    <value>Permitir navegação completa no dispositivo?</value>
+  </data>
+  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
+    <value>Um dispositivo pareado quer enviar arquivos para este PC.</value>
+  </data>
+  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
+    <value>Aceitar arquivos recebidos?</value>
+  </data>
+  <data name="FileConsent_Remember" xml:space="preserve">
+    <value>Lembrar minha escolha para este dispositivo</value>
+  </data>
+  <data name="FileConsent_WindowTitle" xml:space="preserve">
+    <value>Solicitação de Permissão</value>
+  </data>
+  <data name="FileTransfer_BreadcrumbRoot" xml:space="preserve">
+    <value>Início</value>
+  </data>
+  <data name="FileTransfer_CopyBtn" xml:space="preserve">
+    <value>Copiar</value>
+  </data>
+  <data name="FileTransfer_CopyComplete" xml:space="preserve">
+    <value>Cópia concluída.</value>
+  </data>
+  <data name="FileTransfer_CopyReadyFormat" xml:space="preserve">
+    <value>{0} item(ns) pronto(s) para copiar — abra uma pasta e pressione Colar.</value>
+  </data>
+  <data name="FileTransfer_CopyTooltip" xml:space="preserve">
+    <value>Copia o(s) item(ns) selecionado(s). Depois abra uma pasta e pressione Colar.</value>
+  </data>
+  <data name="FileTransfer_CopyingFormat" xml:space="preserve">
+    <value>Copiando {0} item(ns)…</value>
+  </data>
+  <data name="FileTransfer_CreateFolderComplete" xml:space="preserve">
+    <value>Pasta criada.</value>
+  </data>
+  <data name="FileTransfer_CreateFolderConfirmBtn" xml:space="preserve">
+    <value>Criar</value>
+  </data>
+  <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
+    <value>Não foi possível criar a pasta: {0}</value>
+  </data>
+  <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
+    <value>Criando a pasta “{0}”…</value>
+  </data>
+  <data name="FileTransfer_CutBtn" xml:space="preserve">
+    <value>Recortar</value>
+  </data>
+  <data name="FileTransfer_CutReadyFormat" xml:space="preserve">
+    <value>{0} item(ns) pronto(s) para mover — abra uma pasta e pressione Colar.</value>
+  </data>
+  <data name="FileTransfer_CutTooltip" xml:space="preserve">
+    <value>Move o(s) item(ns) selecionado(s). Depois abra uma pasta e pressione Colar.</value>
+  </data>
+  <data name="FileTransfer_DropTargetReadOnly" xml:space="preserve">
+    <value>Esta pasta é somente leitura — escolha uma pasta em que você possa gravar.</value>
+  </data>
+  <data name="FileTransfer_MoveComplete" xml:space="preserve">
+    <value>Movimentação concluída.</value>
+  </data>
+  <data name="FileTransfer_MovingFormat" xml:space="preserve">
+    <value>Movendo {0} item(ns)…</value>
+  </data>
+  <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
+    <value>Nova Pasta</value>
+  </data>
+  <data name="FileTransfer_NewFolderLabel" xml:space="preserve">
+    <value>Nome da pasta</value>
+  </data>
+  <data name="FileTransfer_NewFolderTooltip" xml:space="preserve">
+    <value>Criar uma nova pasta aqui.</value>
+  </data>
+  <data name="FileTransfer_NewFolderWatermark" xml:space="preserve">
+    <value>Nome da nova pasta…</value>
+  </data>
+  <data name="FileTransfer_PasteBtn" xml:space="preserve">
+    <value>Colar</value>
+  </data>
+  <data name="FileTransfer_PasteCrossRoot" xml:space="preserve">
+    <value>Copiar e mover só funcionam dentro da mesma pasta compartilhada.</value>
+  </data>
+  <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
+    <value>Falha ao colar: {0}</value>
+  </data>
+  <data name="FileTransfer_PasteTooltip" xml:space="preserve">
+    <value>Cola o(s) item(ns) copiado(s) ou recortado(s) nesta pasta.</value>
+  </data>
+  <data name="FileTransfer_PropCreated" xml:space="preserve">
+    <value>Criado</value>
+  </data>
+  <data name="FileTransfer_PropItems" xml:space="preserve">
+    <value>Itens</value>
+  </data>
+  <data name="FileTransfer_PropModified" xml:space="preserve">
+    <value>Modificado</value>
+  </data>
+  <data name="FileTransfer_PropReadOnly" xml:space="preserve">
+    <value>Somente leitura</value>
+  </data>
+  <data name="FileTransfer_PropSize" xml:space="preserve">
+    <value>Tamanho</value>
+  </data>
+  <data name="FileTransfer_PropType" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+  <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
+    <value>Propriedades</value>
+  </data>
+  <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
+    <value>Não foi possível carregar os detalhes: {0}</value>
+  </data>
+  <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
+    <value>PROPRIEDADES</value>
+  </data>
+  <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
+    <value>Mostra detalhes e uma prévia do item selecionado.</value>
+  </data>
+  <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
+    <value>Limpar concluídos</value>
+  </data>
+  <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
+    <value>DOWNLOAD</value>
+  </data>
+  <data name="FileTransfer_QueueKindSend" xml:space="preserve">
+    <value>ENVIO</value>
+  </data>
+  <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
+    <value>UPLOAD</value>
+  </data>
+  <data name="FileTransfer_QueueStateActive" xml:space="preserve">
+    <value>Transferindo…</value>
+  </data>
+  <data name="FileTransfer_QueueStateCancelled" xml:space="preserve">
+    <value>Cancelado</value>
+  </data>
+  <data name="FileTransfer_QueueStateDone" xml:space="preserve">
+    <value>Concluído</value>
+  </data>
+  <data name="FileTransfer_QueueStateFailed" xml:space="preserve">
+    <value>Falhou</value>
+  </data>
+  <data name="FileTransfer_QueueStateNegotiating" xml:space="preserve">
+    <value>Iniciando…</value>
+  </data>
+  <data name="FileTransfer_QueueStatePaused" xml:space="preserve">
+    <value>Pausado</value>
+  </data>
+  <data name="FileTransfer_QueueStateQueued" xml:space="preserve">
+    <value>Aguardando…</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerifying" xml:space="preserve">
+    <value>Verificando…</value>
+  </data>
+  <data name="FileTransfer_QueueTitle" xml:space="preserve">
+    <value>TRANSFERÊNCIAS</value>
+  </data>
+  <data name="FileTransfer_QueuedForDownload" xml:space="preserve">
+    <value>Adicionado à fila de transferências.</value>
+  </data>
+  <data name="FileTransfer_QueuedForUpload" xml:space="preserve">
+    <value>Adicionado à fila de transferências.</value>
+  </data>
+  <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
+    <value>Falha na busca: {0}</value>
+  </data>
+  <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
+    <value>{0} resultado(s) encontrado(s).</value>
+  </data>
+  <data name="FileTransfer_SearchTruncatedFormat" xml:space="preserve">
+    <value>Mostrando as primeiras {0} correspondências — refine sua busca para ver mais.</value>
+  </data>
+  <data name="FileTransfer_SearchWatermark" xml:space="preserve">
+    <value>Buscar nesta pasta…</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
+    <value>Enviar para o Celular</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
+    <value>Escolha arquivos neste PC e envie-os para a pasta atual no dispositivo conectado.</value>
+  </data>
+  <data name="FileTransfer_SortDate" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="FileTransfer_SortLabel" xml:space="preserve">
+    <value>Ordenar</value>
+  </data>
+  <data name="FileTransfer_SortName" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="FileTransfer_SortSize" xml:space="preserve">
+    <value>Tamanho</value>
+  </data>
+  <data name="FileTransfer_VolumesDenied" xml:space="preserve">
+    <value>O acesso completo ao dispositivo não foi concedido.</value>
+  </data>
+  <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
+    <value>Não foi possível listar as unidades: {0}</value>
+  </data>
+  <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
+    <value>{0} unidade(s) disponível(is).</value>
+  </data>
+  <data name="FileTransfer_VolumesRequesting" xml:space="preserve">
+    <value>Solicitando acesso às unidades…</value>
+  </data>
+  <data name="FileTransfer_VolumesTitle" xml:space="preserve">
+    <value>UNIDADES</value>
+  </data>
+  <data name="FileTransfer_VolumesTooltip" xml:space="preserve">
+    <value>Mostra as unidades do dispositivo conectado (requer permissão).</value>
+  </data>
+  <data name="RemoteDesktop_FpsValue" xml:space="preserve">
+    <value>{0} FPS</value>
+  </data>
+  <data name="Settings_TrustAutoAccept" xml:space="preserve">
+    <value>Aceitar automaticamente arquivos recebidos</value>
+  </data>
+  <data name="Settings_TrustDesc" xml:space="preserve">
+    <value>Controle o que cada dispositivo pareado pode fazer com seus arquivos. A navegação completa no dispositivo e a aceitação automática de arquivos recebidos ficam desativadas por padrão.</value>
+  </data>
+  <data name="Settings_TrustEmpty" xml:space="preserve">
+    <value>Nenhum dispositivo recebeu permissões de compartilhamento de arquivos ainda.</value>
+  </data>
+  <data name="Settings_TrustFullBrowse" xml:space="preserve">
+    <value>Permitir navegação em todas as unidades</value>
+  </data>
+  <data name="Settings_TrustRefresh" xml:space="preserve">
+    <value>Atualizar</value>
+  </data>
+  <data name="Settings_TrustRevoke" xml:space="preserve">
+    <value>Revogar</value>
+  </data>
+  <data name="Settings_TrustRevoked" xml:space="preserve">
+    <value>Permissões do dispositivo revogadas.</value>
+  </data>
+  <data name="Settings_TrustSection" xml:space="preserve">
+    <value>CONFIANÇA DE COMPARTILHAMENTO DE ARQUIVOS</value>
+  </data>
+  <data name="Settings_TrustUpdated" xml:space="preserve">
+    <value>Configurações de confiança atualizadas.</value>
+  </data>
 </root>

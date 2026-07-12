@@ -2482,4 +2482,257 @@ Linux: ip addr  or  hostname -I</value>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
     <value>Simgeyi Yenile</value>
   </data>
+
+  <data name="FileConsent_WindowTitle" xml:space="preserve">
+    <value>İzin İsteği</value>
+  </data>
+  <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
+    <value>Tam cihaz gezintisine izin verilsin mi?</value>
+  </data>
+  <data name="FileConsent_FullBrowseMessage" xml:space="preserve">
+    <value>Eşleştirilmiş bir cihaz, bu PC'deki tüm sürücülere ve klasörlere göz atmak istiyor.</value>
+  </data>
+  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
+    <value>Gelen dosyalar kabul edilsin mi?</value>
+  </data>
+  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
+    <value>Eşleştirilmiş bir cihaz bu PC'ye dosya göndermek istiyor.</value>
+  </data>
+  <data name="FileConsent_Remember" xml:space="preserve">
+    <value>Bu cihaz için seçimimi hatırla</value>
+  </data>
+  <data name="FileConsent_Allow" xml:space="preserve">
+    <value>İzin Ver</value>
+  </data>
+  <data name="FileConsent_Deny" xml:space="preserve">
+    <value>Reddet</value>
+  </data>
+
+  <data name="FileTransfer_BreadcrumbRoot" xml:space="preserve">
+    <value>Ana Sayfa</value>
+  </data>
+  <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
+    <value>Yeni Klasör</value>
+  </data>
+  <data name="FileTransfer_NewFolderTooltip" xml:space="preserve">
+    <value>Burada yeni bir klasör oluşturun.</value>
+  </data>
+  <data name="FileTransfer_NewFolderLabel" xml:space="preserve">
+    <value>Klasör adı</value>
+  </data>
+  <data name="FileTransfer_NewFolderWatermark" xml:space="preserve">
+    <value>Yeni klasör adı…</value>
+  </data>
+  <data name="FileTransfer_CreateFolderConfirmBtn" xml:space="preserve">
+    <value>Oluştur</value>
+  </data>
+  <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
+    <value>“{0}” klasörü oluşturuluyor…</value>
+  </data>
+  <data name="FileTransfer_CreateFolderComplete" xml:space="preserve">
+    <value>Klasör oluşturuldu.</value>
+  </data>
+  <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
+    <value>Klasör oluşturulamadı: {0}</value>
+  </data>
+  <data name="FileTransfer_CopyBtn" xml:space="preserve">
+    <value>Kopyala</value>
+  </data>
+  <data name="FileTransfer_CopyTooltip" xml:space="preserve">
+    <value>Seçili öğe(ler)i kopyalayın. Ardından bir klasör açın ve Yapıştır'a basın.</value>
+  </data>
+  <data name="FileTransfer_CutBtn" xml:space="preserve">
+    <value>Kes</value>
+  </data>
+  <data name="FileTransfer_CutTooltip" xml:space="preserve">
+    <value>Seçili öğe(ler)i taşıyın. Ardından bir klasör açın ve Yapıştır'a basın.</value>
+  </data>
+  <data name="FileTransfer_PasteBtn" xml:space="preserve">
+    <value>Yapıştır</value>
+  </data>
+  <data name="FileTransfer_PasteTooltip" xml:space="preserve">
+    <value>Kopyalanan veya kesilen öğe(ler)i bu klasöre yapıştırın.</value>
+  </data>
+  <data name="FileTransfer_CopyReadyFormat" xml:space="preserve">
+    <value>{0} öğe kopyalanmaya hazır — bir klasör açın ve Yapıştır'a basın.</value>
+  </data>
+  <data name="FileTransfer_CutReadyFormat" xml:space="preserve">
+    <value>{0} öğe taşınmaya hazır — bir klasör açın ve Yapıştır'a basın.</value>
+  </data>
+  <data name="FileTransfer_CopyingFormat" xml:space="preserve">
+    <value>{0} öğe kopyalanıyor…</value>
+  </data>
+  <data name="FileTransfer_MovingFormat" xml:space="preserve">
+    <value>{0} öğe taşınıyor…</value>
+  </data>
+  <data name="FileTransfer_CopyComplete" xml:space="preserve">
+    <value>Kopyalama tamamlandı.</value>
+  </data>
+  <data name="FileTransfer_MoveComplete" xml:space="preserve">
+    <value>Taşıma tamamlandı.</value>
+  </data>
+  <data name="FileTransfer_PasteCrossRoot" xml:space="preserve">
+    <value>Kopyalama ve taşıma yalnızca aynı paylaşılan klasör içinde çalışır.</value>
+  </data>
+  <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
+    <value>Yapıştırma başarısız: {0}</value>
+  </data>
+  <data name="FileTransfer_SearchWatermark" xml:space="preserve">
+    <value>Bu klasörde ara…</value>
+  </data>
+  <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
+    <value>{0} sonuç bulundu.</value>
+  </data>
+  <data name="FileTransfer_SearchTruncatedFormat" xml:space="preserve">
+    <value>İlk {0} eşleşme gösteriliyor — daha fazlasını görmek için aramanızı daraltın.</value>
+  </data>
+  <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
+    <value>Arama başarısız: {0}</value>
+  </data>
+  <data name="FileTransfer_SortLabel" xml:space="preserve">
+    <value>Sırala</value>
+  </data>
+  <data name="FileTransfer_SortName" xml:space="preserve">
+    <value>Ad</value>
+  </data>
+  <data name="FileTransfer_SortSize" xml:space="preserve">
+    <value>Boyut</value>
+  </data>
+  <data name="FileTransfer_SortDate" xml:space="preserve">
+    <value>Tarih</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
+    <value>Telefona Gönder</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
+    <value>Bu PC'den dosya seçin ve bağlı cihazdaki geçerli klasöre gönderin.</value>
+  </data>
+  <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
+    <value>Özellikler</value>
+  </data>
+  <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
+    <value>Seçili öğenin ayrıntılarını ve önizlemesini gösterin.</value>
+  </data>
+  <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
+    <value>ÖZELLİKLER</value>
+  </data>
+  <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
+    <value>Ayrıntılar yüklenemedi: {0}</value>
+  </data>
+  <data name="FileTransfer_PropSize" xml:space="preserve">
+    <value>Boyut</value>
+  </data>
+  <data name="FileTransfer_PropItems" xml:space="preserve">
+    <value>Öğeler</value>
+  </data>
+  <data name="FileTransfer_PropModified" xml:space="preserve">
+    <value>Değiştirilme</value>
+  </data>
+  <data name="FileTransfer_PropCreated" xml:space="preserve">
+    <value>Oluşturulma</value>
+  </data>
+  <data name="FileTransfer_PropType" xml:space="preserve">
+    <value>Tür</value>
+  </data>
+  <data name="FileTransfer_PropReadOnly" xml:space="preserve">
+    <value>Salt okunur</value>
+  </data>
+  <data name="FileTransfer_VolumesTooltip" xml:space="preserve">
+    <value>Bağlı cihazın sürücülerini gösterin (izin gerektirir).</value>
+  </data>
+  <data name="FileTransfer_VolumesTitle" xml:space="preserve">
+    <value>SÜRÜCÜLER</value>
+  </data>
+  <data name="FileTransfer_VolumesRequesting" xml:space="preserve">
+    <value>Sürücü erişimi isteniyor…</value>
+  </data>
+  <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
+    <value>{0} sürücü kullanılabilir.</value>
+  </data>
+  <data name="FileTransfer_VolumesDenied" xml:space="preserve">
+    <value>Tam cihaz erişimi verilmedi.</value>
+  </data>
+  <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
+    <value>Sürücüler listelenemedi: {0}</value>
+  </data>
+  <data name="FileTransfer_QueueTitle" xml:space="preserve">
+    <value>AKTARIMLAR</value>
+  </data>
+  <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
+    <value>Bitenleri temizle</value>
+  </data>
+  <data name="FileTransfer_QueuedForUpload" xml:space="preserve">
+    <value>Aktarım kuyruğuna eklendi.</value>
+  </data>
+  <data name="FileTransfer_QueuedForDownload" xml:space="preserve">
+    <value>Aktarım kuyruğuna eklendi.</value>
+  </data>
+  <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
+    <value>YÜKLEME</value>
+  </data>
+  <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
+    <value>İNDİRME</value>
+  </data>
+  <data name="FileTransfer_QueueKindSend" xml:space="preserve">
+    <value>GÖNDER</value>
+  </data>
+  <data name="FileTransfer_QueueStateQueued" xml:space="preserve">
+    <value>Bekliyor…</value>
+  </data>
+  <data name="FileTransfer_QueueStateNegotiating" xml:space="preserve">
+    <value>Başlatılıyor…</value>
+  </data>
+  <data name="FileTransfer_QueueStateActive" xml:space="preserve">
+    <value>Aktarılıyor…</value>
+  </data>
+  <data name="FileTransfer_QueueStatePaused" xml:space="preserve">
+    <value>Duraklatıldı</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerifying" xml:space="preserve">
+    <value>Doğrulanıyor…</value>
+  </data>
+  <data name="FileTransfer_QueueStateDone" xml:space="preserve">
+    <value>Tamamlandı</value>
+  </data>
+  <data name="FileTransfer_QueueStateFailed" xml:space="preserve">
+    <value>Başarısız</value>
+  </data>
+  <data name="FileTransfer_QueueStateCancelled" xml:space="preserve">
+    <value>İptal edildi</value>
+  </data>
+  <data name="FileTransfer_DropTargetReadOnly" xml:space="preserve">
+    <value>Bu klasör salt okunur — yazabileceğiniz bir klasör seçin.</value>
+  </data>
+
+  <data name="RemoteDesktop_FpsValue" xml:space="preserve">
+    <value>{0} FPS</value>
+  </data>
+
+  <data name="Settings_TrustSection" xml:space="preserve">
+    <value>DOSYA PAYLAŞIMI GÜVENİ</value>
+  </data>
+  <data name="Settings_TrustDesc" xml:space="preserve">
+    <value>Her eşleştirilmiş cihazın dosyalarınızla neler yapabileceğini kontrol edin. Tam cihaz gezintisi ve gelen dosyaları otomatik kabul etme varsayılan olarak kapalıdır.</value>
+  </data>
+  <data name="Settings_TrustEmpty" xml:space="preserve">
+    <value>Henüz hiçbir cihaza dosya paylaşımı izni verilmedi.</value>
+  </data>
+  <data name="Settings_TrustRefresh" xml:space="preserve">
+    <value>Yenile</value>
+  </data>
+  <data name="Settings_TrustRevoke" xml:space="preserve">
+    <value>İptal Et</value>
+  </data>
+  <data name="Settings_TrustFullBrowse" xml:space="preserve">
+    <value>Tüm sürücülere göz atmaya izin ver</value>
+  </data>
+  <data name="Settings_TrustAutoAccept" xml:space="preserve">
+    <value>Gelen dosyaları otomatik kabul et</value>
+  </data>
+  <data name="Settings_TrustUpdated" xml:space="preserve">
+    <value>Güven ayarları güncellendi.</value>
+  </data>
+  <data name="Settings_TrustRevoked" xml:space="preserve">
+    <value>Cihaz izinleri iptal edildi.</value>
+  </data>
 </root>

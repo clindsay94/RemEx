@@ -604,6 +604,7 @@
     <string name="wake_pc_mac_not_configured">Adresse MAC non configurée — à définir dans les paramètres</string>
     <string name="wake_pc_lib_not_loaded">Impossible d\'envoyer le signal de réveil</string>
     <string name="pairing_error_generic">Échec du couplage — veuillez réessayer</string>
+    <string name="pairing_error_unknown">Une erreur de couplage inattendue s\'est produite.</string>
     <string name="splash_command_your">CONTRÔLEZ </string>
     <string name="splash_pc">VOTRE PC</string>
     <string name="splash_command_center">⚡ CENTRE DE CONTRÔLE</string>

@@ -2482,4 +2482,253 @@ Linux: ip addr  or  hostname -I</value>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
     <value>आइकन रीफ़्रेश करें</value>
   </data>
+  <data name="FileConsent_Allow" xml:space="preserve">
+    <value>अनुमति दें</value>
+  </data>
+  <data name="FileConsent_Deny" xml:space="preserve">
+    <value>अस्वीकार करें</value>
+  </data>
+  <data name="FileConsent_FullBrowseMessage" xml:space="preserve">
+    <value>एक युग्मित डिवाइस इस पीसी की सभी ड्राइव और फ़ोल्डर ब्राउज़ करने की अनुमति मांग रहा है।</value>
+  </data>
+  <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
+    <value>पूर्ण डिवाइस ब्राउज़िंग की अनुमति दें?</value>
+  </data>
+  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
+    <value>एक युग्मित डिवाइस इस पीसी पर फ़ाइलें भेजना चाहता है।</value>
+  </data>
+  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
+    <value>आने वाली फ़ाइलें स्वीकार करें?</value>
+  </data>
+  <data name="FileConsent_Remember" xml:space="preserve">
+    <value>इस डिवाइस के लिए मेरा चयन याद रखें</value>
+  </data>
+  <data name="FileConsent_WindowTitle" xml:space="preserve">
+    <value>अनुमति अनुरोध</value>
+  </data>
+  <data name="FileTransfer_BreadcrumbRoot" xml:space="preserve">
+    <value>होम</value>
+  </data>
+  <data name="FileTransfer_CopyBtn" xml:space="preserve">
+    <value>कॉपी करें</value>
+  </data>
+  <data name="FileTransfer_CopyComplete" xml:space="preserve">
+    <value>कॉपी पूर्ण।</value>
+  </data>
+  <data name="FileTransfer_CopyReadyFormat" xml:space="preserve">
+    <value>{0} आइटम कॉपी करने के लिए तैयार हैं — एक फ़ोल्डर खोलें और पेस्ट दबाएं।</value>
+  </data>
+  <data name="FileTransfer_CopyTooltip" xml:space="preserve">
+    <value>चयनित आइटम कॉपी करें। फिर एक फ़ोल्डर खोलें और पेस्ट दबाएं।</value>
+  </data>
+  <data name="FileTransfer_CopyingFormat" xml:space="preserve">
+    <value>{0} आइटम कॉपी हो रहे हैं…</value>
+  </data>
+  <data name="FileTransfer_CreateFolderComplete" xml:space="preserve">
+    <value>फ़ोल्डर बनाया गया।</value>
+  </data>
+  <data name="FileTransfer_CreateFolderConfirmBtn" xml:space="preserve">
+    <value>बनाएं</value>
+  </data>
+  <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
+    <value>फ़ोल्डर नहीं बनाया जा सका: {0}</value>
+  </data>
+  <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
+    <value>फ़ोल्डर “{0}” बनाया जा रहा है…</value>
+  </data>
+  <data name="FileTransfer_CutBtn" xml:space="preserve">
+    <value>कट करें</value>
+  </data>
+  <data name="FileTransfer_CutReadyFormat" xml:space="preserve">
+    <value>{0} आइटम स्थानांतरित करने के लिए तैयार हैं — एक फ़ोल्डर खोलें और पेस्ट दबाएं।</value>
+  </data>
+  <data name="FileTransfer_CutTooltip" xml:space="preserve">
+    <value>चयनित आइटम स्थानांतरित करें। फिर एक फ़ोल्डर खोलें और पेस्ट दबाएं।</value>
+  </data>
+  <data name="FileTransfer_DropTargetReadOnly" xml:space="preserve">
+    <value>यह फ़ोल्डर केवल-पढ़ने योग्य है — ऐसा फ़ोल्डर चुनें जिसमें आप लिख सकें।</value>
+  </data>
+  <data name="FileTransfer_MoveComplete" xml:space="preserve">
+    <value>स्थानांतरण पूर्ण।</value>
+  </data>
+  <data name="FileTransfer_MovingFormat" xml:space="preserve">
+    <value>{0} आइटम स्थानांतरित हो रहे हैं…</value>
+  </data>
+  <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
+    <value>नया फ़ोल्डर</value>
+  </data>
+  <data name="FileTransfer_NewFolderLabel" xml:space="preserve">
+    <value>फ़ोल्डर का नाम</value>
+  </data>
+  <data name="FileTransfer_NewFolderTooltip" xml:space="preserve">
+    <value>यहाँ एक नया फ़ोल्डर बनाएं।</value>
+  </data>
+  <data name="FileTransfer_NewFolderWatermark" xml:space="preserve">
+    <value>नए फ़ोल्डर का नाम…</value>
+  </data>
+  <data name="FileTransfer_PasteBtn" xml:space="preserve">
+    <value>पेस्ट करें</value>
+  </data>
+  <data name="FileTransfer_PasteCrossRoot" xml:space="preserve">
+    <value>कॉपी और स्थानांतरण केवल एक ही साझा फ़ोल्डर के भीतर काम करते हैं।</value>
+  </data>
+  <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
+    <value>पेस्ट विफल: {0}</value>
+  </data>
+  <data name="FileTransfer_PasteTooltip" xml:space="preserve">
+    <value>कॉपी या कट किए गए आइटम को इस फ़ोल्डर में पेस्ट करें।</value>
+  </data>
+  <data name="FileTransfer_PropCreated" xml:space="preserve">
+    <value>बनाया गया</value>
+  </data>
+  <data name="FileTransfer_PropItems" xml:space="preserve">
+    <value>आइटम</value>
+  </data>
+  <data name="FileTransfer_PropModified" xml:space="preserve">
+    <value>संशोधित</value>
+  </data>
+  <data name="FileTransfer_PropReadOnly" xml:space="preserve">
+    <value>केवल-पढ़ने योग्य</value>
+  </data>
+  <data name="FileTransfer_PropSize" xml:space="preserve">
+    <value>आकार</value>
+  </data>
+  <data name="FileTransfer_PropType" xml:space="preserve">
+    <value>प्रकार</value>
+  </data>
+  <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
+    <value>गुण</value>
+  </data>
+  <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
+    <value>विवरण लोड नहीं किया जा सका: {0}</value>
+  </data>
+  <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
+    <value>गुण</value>
+  </data>
+  <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
+    <value>चयनित आइटम का विवरण और पूर्वावलोकन दिखाएं।</value>
+  </data>
+  <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
+    <value>पूर्ण हटाएं</value>
+  </data>
+  <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
+    <value>डाउनलोड</value>
+  </data>
+  <data name="FileTransfer_QueueKindSend" xml:space="preserve">
+    <value>भेजें</value>
+  </data>
+  <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
+    <value>अपलोड</value>
+  </data>
+  <data name="FileTransfer_QueueStateActive" xml:space="preserve">
+    <value>स्थानांतरण हो रहा है…</value>
+  </data>
+  <data name="FileTransfer_QueueStateCancelled" xml:space="preserve">
+    <value>रद्द किया गया</value>
+  </data>
+  <data name="FileTransfer_QueueStateDone" xml:space="preserve">
+    <value>पूर्ण</value>
+  </data>
+  <data name="FileTransfer_QueueStateFailed" xml:space="preserve">
+    <value>विफल</value>
+  </data>
+  <data name="FileTransfer_QueueStateNegotiating" xml:space="preserve">
+    <value>शुरू हो रहा है…</value>
+  </data>
+  <data name="FileTransfer_QueueStatePaused" xml:space="preserve">
+    <value>रोका गया</value>
+  </data>
+  <data name="FileTransfer_QueueStateQueued" xml:space="preserve">
+    <value>प्रतीक्षा हो रही है…</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerifying" xml:space="preserve">
+    <value>सत्यापित हो रहा है…</value>
+  </data>
+  <data name="FileTransfer_QueueTitle" xml:space="preserve">
+    <value>स्थानांतरण</value>
+  </data>
+  <data name="FileTransfer_QueuedForDownload" xml:space="preserve">
+    <value>स्थानांतरण कतार में जोड़ा गया।</value>
+  </data>
+  <data name="FileTransfer_QueuedForUpload" xml:space="preserve">
+    <value>स्थानांतरण कतार में जोड़ा गया।</value>
+  </data>
+  <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
+    <value>खोज विफल: {0}</value>
+  </data>
+  <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
+    <value>{0} परिणाम मिले।</value>
+  </data>
+  <data name="FileTransfer_SearchTruncatedFormat" xml:space="preserve">
+    <value>पहले {0} मिलान दिखाए जा रहे हैं — अधिक देखने के लिए अपनी खोज को परिष्कृत करें।</value>
+  </data>
+  <data name="FileTransfer_SearchWatermark" xml:space="preserve">
+    <value>इस फ़ोल्डर में खोजें…</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
+    <value>फ़ोन पर भेजें</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
+    <value>इस पीसी पर फ़ाइलें चुनें और उन्हें कनेक्टेड डिवाइस के वर्तमान फ़ोल्डर में भेजें।</value>
+  </data>
+  <data name="FileTransfer_SortDate" xml:space="preserve">
+    <value>दिनांक</value>
+  </data>
+  <data name="FileTransfer_SortLabel" xml:space="preserve">
+    <value>क्रमबद्ध करें</value>
+  </data>
+  <data name="FileTransfer_SortName" xml:space="preserve">
+    <value>नाम</value>
+  </data>
+  <data name="FileTransfer_SortSize" xml:space="preserve">
+    <value>आकार</value>
+  </data>
+  <data name="FileTransfer_VolumesDenied" xml:space="preserve">
+    <value>पूर्ण-डिवाइस एक्सेस नहीं दी गई।</value>
+  </data>
+  <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
+    <value>ड्राइव सूचीबद्ध नहीं की जा सकीं: {0}</value>
+  </data>
+  <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
+    <value>{0} ड्राइव उपलब्ध हैं।</value>
+  </data>
+  <data name="FileTransfer_VolumesRequesting" xml:space="preserve">
+    <value>ड्राइव एक्सेस का अनुरोध किया जा रहा है…</value>
+  </data>
+  <data name="FileTransfer_VolumesTitle" xml:space="preserve">
+    <value>ड्राइव</value>
+  </data>
+  <data name="FileTransfer_VolumesTooltip" xml:space="preserve">
+    <value>कनेक्टेड डिवाइस की ड्राइव दिखाएं (अनुमति आवश्यक)।</value>
+  </data>
+  <data name="RemoteDesktop_FpsValue" xml:space="preserve">
+    <value>{0} FPS</value>
+  </data>
+  <data name="Settings_TrustAutoAccept" xml:space="preserve">
+    <value>आने वाली फ़ाइलें स्वतः स्वीकार करें</value>
+  </data>
+  <data name="Settings_TrustDesc" xml:space="preserve">
+    <value>नियंत्रित करें कि प्रत्येक युग्मित डिवाइस आपकी फ़ाइलों के साथ क्या कर सकता है। पूर्ण डिवाइस ब्राउज़िंग और आने वाली फ़ाइलों को स्वतः स्वीकार करना डिफ़ॉल्ट रूप से बंद है।</value>
+  </data>
+  <data name="Settings_TrustEmpty" xml:space="preserve">
+    <value>अभी तक किसी भी डिवाइस को फ़ाइल-साझाकरण अनुमतियां नहीं दी गई हैं।</value>
+  </data>
+  <data name="Settings_TrustFullBrowse" xml:space="preserve">
+    <value>सभी ड्राइव ब्राउज़ करने की अनुमति दें</value>
+  </data>
+  <data name="Settings_TrustRefresh" xml:space="preserve">
+    <value>रिफ्रेश करें</value>
+  </data>
+  <data name="Settings_TrustRevoke" xml:space="preserve">
+    <value>निरस्त करें</value>
+  </data>
+  <data name="Settings_TrustRevoked" xml:space="preserve">
+    <value>डिवाइस अनुमतियां निरस्त की गईं।</value>
+  </data>
+  <data name="Settings_TrustSection" xml:space="preserve">
+    <value>फ़ाइल-साझाकरण विश्वास</value>
+  </data>
+  <data name="Settings_TrustUpdated" xml:space="preserve">
+    <value>विश्वास सेटिंग्स अपडेट की गईं।</value>
+  </data>
 </root>

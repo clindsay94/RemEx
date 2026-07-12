@@ -102,9 +102,12 @@ RemEx 2.0 is a ground‑up overhaul of the streaming and input pipeline. The hea
 - Eight Android **Quick Settings tiles**: Lock, Shutdown, Restart, Restart‑to‑UEFI, Wake‑on‑LAN, Sleep, Hibernate, Monitor‑Off.
 - **Two‑stage haptics** so you feel the difference between *sent* and *acknowledged*.
 
-### 📁 File Transfer
-- Browse, upload, download, and cancel — with **SHA‑256 integrity verification** end to end.
-- Android can host shared folders the PC can reach.
+### 📁 File Sharing
+- A full **file manager** on both the phone and the PC — browse, search, sort, copy, move, make folders, view properties and image thumbnails, and drag‑and‑drop upload.
+- **Resumable transfers** over a dedicated binary channel: lose Wi‑Fi mid‑transfer, reconnect, and it picks up where it left off — every file checked end‑to‑end with **SHA‑256**. A queue keeps transfers going even if the app closes or the PC restarts.
+- **Opt‑in full‑device browse** — with your explicit permission, one device can browse the other's whole file system (system paths that could harm the machine are always blocked).
+- **Share to PC from any app** on Android, and tap **Open** on a finished download to open it right away.
+- Every sensitive action is **consent‑gated** and remembered per device. See [**File sharing, explained**](docs/FILE_SHARING.md).
 
 ### 🔌 Cross‑Platform Host
 - One `remex.agent` codebase runs as an **always‑elevated app inside your signed‑in desktop session** — auto‑started with no prompt by a Windows Task Scheduler logon task or a Linux XDG autostart entry. No Windows Service, no daemon, no Session 0.

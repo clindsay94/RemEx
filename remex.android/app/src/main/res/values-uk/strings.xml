@@ -604,6 +604,7 @@
     <string name="wake_pc_mac_not_configured">MAC-адресу не налаштовано — вкажіть у налаштуваннях</string>
     <string name="wake_pc_lib_not_loaded">Неможливо надіслати сигнал пробудження</string>
     <string name="pairing_error_generic">Помилка підключення — спробуйте ще раз</string>
+    <string name="pairing_error_unknown">Сталася неочікувана помилка підключення.</string>
     <string name="splash_command_your">КЕРУЙТЕ </string>
     <string name="splash_pc">СВОЇМ ПК</string>
     <string name="splash_command_center">⚡ ЦЕНТР КЕРУВАННЯ</string>

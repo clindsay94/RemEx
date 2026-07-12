@@ -604,6 +604,7 @@
     <string name="wake_pc_mac_not_configured">MAC पता कॉन्फ़िगर नहीं है — सेटिंग्स में सेट करें</string>
     <string name="wake_pc_lib_not_loaded">वेक सिग्नल नहीं भेजा जा सकता</string>
     <string name="pairing_error_generic">पेयरिंग विफल — कृपया पुनः प्रयास करें</string>
+    <string name="pairing_error_unknown">एक अप्रत्याशित पेयरिंग त्रुटि हुई।</string>
     <string name="splash_command_your">अपने PC को </string>
     <string name="splash_pc">नियंत्रित करें</string>
     <string name="splash_command_center">⚡ नियंत्रण केंद्र</string>

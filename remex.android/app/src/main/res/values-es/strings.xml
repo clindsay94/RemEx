@@ -604,6 +604,7 @@
     <string name="wake_pc_mac_not_configured">Dirección MAC no configurada — configúrala en Ajustes</string>
     <string name="wake_pc_lib_not_loaded">No se puede enviar la señal de encendido</string>
     <string name="pairing_error_generic">Error de emparejamiento — por favor, inténtalo de nuevo</string>
+    <string name="pairing_error_unknown">Se produjo un error de emparejamiento inesperado.</string>
     <string name="splash_command_your">CONTROLA </string>
     <string name="splash_pc">TU PC</string>
     <string name="splash_command_center">⚡ CENTRO DE CONTROL</string>

@@ -2482,4 +2482,254 @@ Linux: ip addr  or  hostname -I</value>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
     <value>Оновити значок</value>
   </data>
+
+  <data name="FileConsent_Allow" xml:space="preserve">
+    <value>Дозволити</value>
+  </data>
+  <data name="FileConsent_Deny" xml:space="preserve">
+    <value>Відмовити</value>
+  </data>
+  <data name="FileConsent_FullBrowseMessage" xml:space="preserve">
+    <value>Спарований пристрій просить дозволу переглядати всі диски та папки на цьому ПК.</value>
+  </data>
+  <data name="FileConsent_FullBrowseTitle" xml:space="preserve">
+    <value>Дозволити повний перегляд пристрою?</value>
+  </data>
+  <data name="FileConsent_IncomingPushMessage" xml:space="preserve">
+    <value>Спарований пристрій хоче надіслати файли на цей ПК.</value>
+  </data>
+  <data name="FileConsent_IncomingPushTitle" xml:space="preserve">
+    <value>Прийняти вхідні файли?</value>
+  </data>
+  <data name="FileConsent_Remember" xml:space="preserve">
+    <value>Запам'ятати мій вибір для цього пристрою</value>
+  </data>
+  <data name="FileConsent_WindowTitle" xml:space="preserve">
+    <value>Запит дозволу</value>
+  </data>
+  <data name="FileTransfer_BreadcrumbRoot" xml:space="preserve">
+    <value>Головна</value>
+  </data>
+  <data name="FileTransfer_CopyBtn" xml:space="preserve">
+    <value>Копіювати</value>
+  </data>
+  <data name="FileTransfer_CopyComplete" xml:space="preserve">
+    <value>Копіювання завершено.</value>
+  </data>
+  <data name="FileTransfer_CopyReadyFormat" xml:space="preserve">
+    <value>Готово до копіювання: {0} елемент(ів) — відкрийте папку та натисніть «Вставити».</value>
+  </data>
+  <data name="FileTransfer_CopyTooltip" xml:space="preserve">
+    <value>Копіювати вибрані елементи. Потім відкрийте папку та натисніть «Вставити».</value>
+  </data>
+  <data name="FileTransfer_CopyingFormat" xml:space="preserve">
+    <value>Копіювання {0} елемент(ів)…</value>
+  </data>
+  <data name="FileTransfer_CreateFolderComplete" xml:space="preserve">
+    <value>Папку створено.</value>
+  </data>
+  <data name="FileTransfer_CreateFolderConfirmBtn" xml:space="preserve">
+    <value>Створити</value>
+  </data>
+  <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
+    <value>Не вдалося створити папку: {0}</value>
+  </data>
+  <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
+    <value>Створення папки «{0}»…</value>
+  </data>
+  <data name="FileTransfer_CutBtn" xml:space="preserve">
+    <value>Вирізати</value>
+  </data>
+  <data name="FileTransfer_CutReadyFormat" xml:space="preserve">
+    <value>Готово до переміщення: {0} елемент(ів) — відкрийте папку та натисніть «Вставити».</value>
+  </data>
+  <data name="FileTransfer_CutTooltip" xml:space="preserve">
+    <value>Перемістити вибрані елементи. Потім відкрийте папку та натисніть «Вставити».</value>
+  </data>
+  <data name="FileTransfer_DropTargetReadOnly" xml:space="preserve">
+    <value>Ця папка лише для читання — виберіть папку з доступом для запису.</value>
+  </data>
+  <data name="FileTransfer_MoveComplete" xml:space="preserve">
+    <value>Переміщення завершено.</value>
+  </data>
+  <data name="FileTransfer_MovingFormat" xml:space="preserve">
+    <value>Переміщення {0} елемент(ів)…</value>
+  </data>
+  <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
+    <value>Нова папка</value>
+  </data>
+  <data name="FileTransfer_NewFolderLabel" xml:space="preserve">
+    <value>Назва папки</value>
+  </data>
+  <data name="FileTransfer_NewFolderTooltip" xml:space="preserve">
+    <value>Створити тут нову папку.</value>
+  </data>
+  <data name="FileTransfer_NewFolderWatermark" xml:space="preserve">
+    <value>Назва нової папки…</value>
+  </data>
+  <data name="FileTransfer_PasteBtn" xml:space="preserve">
+    <value>Вставити</value>
+  </data>
+  <data name="FileTransfer_PasteCrossRoot" xml:space="preserve">
+    <value>Копіювання та переміщення працюють лише в межах однієї спільної папки.</value>
+  </data>
+  <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
+    <value>Помилка вставлення: {0}</value>
+  </data>
+  <data name="FileTransfer_PasteTooltip" xml:space="preserve">
+    <value>Вставити скопійовані або вирізані елементи в цю папку.</value>
+  </data>
+  <data name="FileTransfer_PropCreated" xml:space="preserve">
+    <value>Створено</value>
+  </data>
+  <data name="FileTransfer_PropItems" xml:space="preserve">
+    <value>Елементів</value>
+  </data>
+  <data name="FileTransfer_PropModified" xml:space="preserve">
+    <value>Змінено</value>
+  </data>
+  <data name="FileTransfer_PropReadOnly" xml:space="preserve">
+    <value>Лише читання</value>
+  </data>
+  <data name="FileTransfer_PropSize" xml:space="preserve">
+    <value>Розмір</value>
+  </data>
+  <data name="FileTransfer_PropType" xml:space="preserve">
+    <value>Тип</value>
+  </data>
+  <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
+    <value>Властивості</value>
+  </data>
+  <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
+    <value>Не вдалося завантажити відомості: {0}</value>
+  </data>
+  <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
+    <value>ВЛАСТИВОСТІ</value>
+  </data>
+  <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
+    <value>Показати відомості та попередній перегляд вибраного елемента.</value>
+  </data>
+  <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
+    <value>Очистити завершені</value>
+  </data>
+  <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
+    <value>ЗАВАНТАЖЕННЯ</value>
+  </data>
+  <data name="FileTransfer_QueueKindSend" xml:space="preserve">
+    <value>НАДСИЛАННЯ</value>
+  </data>
+  <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
+    <value>ВИВАНТАЖЕННЯ</value>
+  </data>
+  <data name="FileTransfer_QueueStateActive" xml:space="preserve">
+    <value>Передавання…</value>
+  </data>
+  <data name="FileTransfer_QueueStateCancelled" xml:space="preserve">
+    <value>Скасовано</value>
+  </data>
+  <data name="FileTransfer_QueueStateDone" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="FileTransfer_QueueStateFailed" xml:space="preserve">
+    <value>Помилка</value>
+  </data>
+  <data name="FileTransfer_QueueStateNegotiating" xml:space="preserve">
+    <value>Запуск…</value>
+  </data>
+  <data name="FileTransfer_QueueStatePaused" xml:space="preserve">
+    <value>Призупинено</value>
+  </data>
+  <data name="FileTransfer_QueueStateQueued" xml:space="preserve">
+    <value>Очікування…</value>
+  </data>
+  <data name="FileTransfer_QueueStateVerifying" xml:space="preserve">
+    <value>Перевірка…</value>
+  </data>
+  <data name="FileTransfer_QueueTitle" xml:space="preserve">
+    <value>ПЕРЕДАЧІ</value>
+  </data>
+  <data name="FileTransfer_QueuedForDownload" xml:space="preserve">
+    <value>Додано до черги передач.</value>
+  </data>
+  <data name="FileTransfer_QueuedForUpload" xml:space="preserve">
+    <value>Додано до черги передач.</value>
+  </data>
+  <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
+    <value>Помилка пошуку: {0}</value>
+  </data>
+  <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
+    <value>Знайдено {0} результат(ів).</value>
+  </data>
+  <data name="FileTransfer_SearchTruncatedFormat" xml:space="preserve">
+    <value>Показано перші {0} збігів — уточніть пошук, щоб побачити більше.</value>
+  </data>
+  <data name="FileTransfer_SearchWatermark" xml:space="preserve">
+    <value>Пошук у цій папці…</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
+    <value>Надіслати на телефон</value>
+  </data>
+  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
+    <value>Виберіть файли на цьому ПК і надішліть їх до поточної папки на підключеному пристрої.</value>
+  </data>
+  <data name="FileTransfer_SortDate" xml:space="preserve">
+    <value>Дата</value>
+  </data>
+  <data name="FileTransfer_SortLabel" xml:space="preserve">
+    <value>Сортувати</value>
+  </data>
+  <data name="FileTransfer_SortName" xml:space="preserve">
+    <value>Назва</value>
+  </data>
+  <data name="FileTransfer_SortSize" xml:space="preserve">
+    <value>Розмір</value>
+  </data>
+  <data name="FileTransfer_VolumesDenied" xml:space="preserve">
+    <value>Повний доступ до пристрою не надано.</value>
+  </data>
+  <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
+    <value>Не вдалося отримати список дисків: {0}</value>
+  </data>
+  <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
+    <value>Доступно дисків: {0}.</value>
+  </data>
+  <data name="FileTransfer_VolumesRequesting" xml:space="preserve">
+    <value>Запит доступу до дисків…</value>
+  </data>
+  <data name="FileTransfer_VolumesTitle" xml:space="preserve">
+    <value>ДИСКИ</value>
+  </data>
+  <data name="FileTransfer_VolumesTooltip" xml:space="preserve">
+    <value>Показати диски підключеного пристрою (потребує дозволу).</value>
+  </data>
+  <data name="RemoteDesktop_FpsValue" xml:space="preserve">
+    <value>{0} FPS</value>
+  </data>
+  <data name="Settings_TrustAutoAccept" xml:space="preserve">
+    <value>Автоматично приймати вхідні файли</value>
+  </data>
+  <data name="Settings_TrustDesc" xml:space="preserve">
+    <value>Керуйте тим, що кожен спарований пристрій може робити з вашими файлами. Повний перегляд пристрою та автоматичне прийняття вхідних файлів вимкнені за замовчуванням.</value>
+  </data>
+  <data name="Settings_TrustEmpty" xml:space="preserve">
+    <value>Жодному пристрою ще не надано дозволів на спільний доступ до файлів.</value>
+  </data>
+  <data name="Settings_TrustFullBrowse" xml:space="preserve">
+    <value>Дозволити перегляд усіх дисків</value>
+  </data>
+  <data name="Settings_TrustRefresh" xml:space="preserve">
+    <value>Оновити</value>
+  </data>
+  <data name="Settings_TrustRevoke" xml:space="preserve">
+    <value>Відкликати</value>
+  </data>
+  <data name="Settings_TrustRevoked" xml:space="preserve">
+    <value>Дозволи пристрою відкликано.</value>
+  </data>
+  <data name="Settings_TrustSection" xml:space="preserve">
+    <value>ДОВІРА СПІЛЬНОГО ДОСТУПУ ДО ФАЙЛІВ</value>
+  </data>
+  <data name="Settings_TrustUpdated" xml:space="preserve">
+    <value>Налаштування довіри оновлено.</value>
+  </data>
 </root>

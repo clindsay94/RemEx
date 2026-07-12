@@ -604,6 +604,7 @@
     <string name="wake_pc_mac_not_configured">Alamat MAC belum dikonfigurasi — atur di Pengaturan</string>
     <string name="wake_pc_lib_not_loaded">Tidak dapat mengirim sinyal bangun</string>
     <string name="pairing_error_generic">Penyandingan gagal — silakan coba lagi</string>
+    <string name="pairing_error_unknown">Terjadi kesalahan penyandingan yang tidak terduga.</string>
     <string name="splash_command_your">KENDALIKAN </string>
     <string name="splash_pc">PC ANDA</string>
     <string name="splash_command_center">⚡ PUSAT KENDALI</string>
