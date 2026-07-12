@@ -1133,9 +1133,12 @@ public sealed class RemoteDesktopHandler : IDisposable
         _drawCursor = config.DrawCursor && !_clientCapabilities.SupportsCursorShape;
         _negotiatedCodec = config.Codec;
 
-        // Explicit client opt-in/out always wins. Otherwise default on for H.264 at high frame rates,
-        // where a fixed preset scale most likely leaves sharpness on the table on capable hardware.
-        _adaptiveScaleEnabled = config.AdaptiveScale ?? (_targetFps >= 90 && _negotiatedCodec == DesktopCodecKind.H264);
+        // Explicit client opt-in/out always wins. Default is now OFF: a mid-stream adaptive scale change
+        // resizes the encoded frame, which forces the Android client to tear down and rebuild its
+        // SurfaceView + H.264 decoder (a SurfaceView freezes its buffer->view scale at creation) — so as
+        // the controller oscillates up/down the stream shows a periodic black flash/hitch. The fixed
+        // preset scales are stable; only enable adaptive when a client explicitly requests it.
+        _adaptiveScaleEnabled = config.AdaptiveScale ?? false;
 
         // If a setting that affects the H.264 encoder changed mid-stream, bump the config version so
         // the capture loop rebuilds the encoder (the encoder is built once with fixed qp/fps/size and

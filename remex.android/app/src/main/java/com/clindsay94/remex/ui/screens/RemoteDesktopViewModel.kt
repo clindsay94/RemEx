@@ -1454,17 +1454,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             put("scale", _configState.value.scale)
             put("targetFps", _configState.value.targetFps)
             put("codec", _configState.value.codec)
-            // Phase 5 (RemEx-eo0f): explicitly opt into the host's adaptive capture-scale controller
-            // for the two presets whose fixed scale is a real tradeoff (SMOOTH_SHARP trades sharpness
-            // for FPS headroom at 0.5; UNLIMITED requests full-res regardless of whether the host can
-            // sustain it). For BALANCED/DATA_SAVER/CUSTOM the field is omitted entirely (NOT sent as
-            // false) so the host's own default rule (targetFps>=90 && H264) decides instead of this
-            // client forcing it off.
-            if (_configState.value.preset == DesktopPreset.SMOOTH_SHARP ||
-                            _configState.value.preset == DesktopPreset.UNLIMITED
-            ) {
-                put("adaptiveScale", true)
-            }
+            // Adaptive capture-scale (Phase 5, RemEx-eo0f) is intentionally NOT opted into: changing the
+            // capture scale mid-stream resizes the encoded frame, which forces this client to rebuild its
+            // SurfaceView + H.264 decoder each time (a periodic black flash/hitch as it oscillates). The
+            // presets use their fixed scale, which is stable. Field omitted -> host's off-by-default rule.
             // The client renders the true native cursor itself from the streamed cursor SHAPE
             // (desktop_cursor_shape, real BGRA pixels) positioned by the live desktop_cursor_state.
             // Host-side compositing is left off so the cursor never freezes on mouse-only frames
