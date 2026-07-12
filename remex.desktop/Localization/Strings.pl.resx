@@ -1315,99 +1315,99 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   
   <data name="FileTransfer_DeleteBtn" xml:space="preserve">
-    <value>Delete</value>
+    <value>Usuń</value>
   </data>
   <data name="FileTransfer_DeleteTooltip" xml:space="preserve">
-    <value>Delete the selected file or folder on the PC</value>
+    <value>Usuń wybrany plik lub folder na komputerze</value>
   </data>
   <data name="FileTransfer_DeletingFormat" xml:space="preserve">
-    <value>Deleting {0}…</value>
+    <value>Usuwanie {0}…</value>
   </data>
   <data name="FileTransfer_DeleteComplete" xml:space="preserve">
-    <value>Deleted.</value>
+    <value>Usunięto.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Delete failed: {0}</value>
+    <value>Usuwanie nie powiodło się: {0}</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
-    <value>Deleting {0} items…</value>
+    <value>Usuwanie {0} elementów…</value>
   </data>
   <data name="FileTransfer_DeleteMultipleCompleteFormat" xml:space="preserve">
-    <value>Deleted {0} items.</value>
+    <value>Usunięto {0} elementów.</value>
   </data>
   <data name="FileTransfer_SelectAllBtn" xml:space="preserve">
-    <value>Select All</value>
+    <value>Zaznacz wszystko</value>
   </data>
   <data name="FileTransfer_SelectAllTooltip" xml:space="preserve">
-    <value>Select all files and folders in the current directory</value>
+    <value>Zaznacz wszystkie pliki i foldery w bieżącym katalogu</value>
   </data>
   <data name="FileTransfer_RenameBtn" xml:space="preserve">
-    <value>Rename</value>
+    <value>Zmień nazwę</value>
   </data>
   <data name="FileTransfer_RenameTooltip" xml:space="preserve">
-    <value>Rename the selected file or folder on the PC</value>
+    <value>Zmień nazwę wybranego pliku lub folderu na komputerze</value>
   </data>
   <data name="FileTransfer_RenamingFormat" xml:space="preserve">
-    <value>Renaming {0} to {1}…</value>
+    <value>Zmiana nazwy z {0} na {1}…</value>
   </data>
   <data name="FileTransfer_RenameComplete" xml:space="preserve">
-    <value>Renamed.</value>
+    <value>Zmieniono nazwę.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Rename failed: {0}</value>
+    <value>Zmiana nazwy nie powiodła się: {0}</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
-    <value>Confirm</value>
+    <value>Potwierdź</value>
   </data>
   <data name="FileTransfer_RenameCancelBtn" xml:space="preserve">
-    <value>Cancel</value>
+    <value>Anuluj</value>
   </data>
   <data name="FileTransfer_RenameInputPlaceholder" xml:space="preserve">
-    <value>New name…</value>
+    <value>Nowa nazwa…</value>
   </data>
   
   <data name="FileTransfer_VerifyHashBtn" xml:space="preserve">
-    <value>Verify SHA-256</value>
+    <value>Zweryfikuj SHA-256</value>
   </data>
   <data name="FileTransfer_VerifyHashTooltip" xml:space="preserve">
-    <value>Compute and display the SHA-256 hash of the selected file on the PC</value>
+    <value>Oblicz i wyświetl skrót SHA-256 wybranego pliku na komputerze</value>
   </data>
   <data name="FileTransfer_HashComputingFormat" xml:space="preserve">
-    <value>Computing SHA-256 of {0}…</value>
+    <value>Obliczanie SHA-256 dla {0}…</value>
   </data>
   <data name="FileTransfer_HashComplete" xml:space="preserve">
-    <value>SHA-256 computed.</value>
+    <value>Obliczono SHA-256.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Hash failed: {0}</value>
+    <value>Obliczanie skrótu nie powiodło się: {0}</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
   </data>
   
   <data name="FileTransfer_PinFolderTooltip" xml:space="preserve">
-    <value>Pin the current folder as a new shared root in the dropdown</value>
+    <value>Przypnij bieżący folder jako nowy folder udostępniony na liście rozwijanej</value>
   </data>
   <data name="FileTransfer_PinningFolder" xml:space="preserve">
-    <value>Pinning folder as shared root…</value>
+    <value>Przypinanie folderu jako udostępnionego…</value>
   </data>
   <data name="FileTransfer_PinComplete" xml:space="preserve">
-    <value>Folder added to shared roots.</value>
+    <value>Folder dodany do folderów udostępnionych.</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>Could not pin folder: {0}</value>
+    <value>Nie można przypiąć folderu: {0}</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
-    <value>Remove this shared folder from the dropdown</value>
+    <value>Usuń ten folder udostępniony z listy rozwijanej</value>
   </data>
   <data name="FileTransfer_RemovingRootFormat" xml:space="preserve">
-    <value>Removing {0} from shared folders…</value>
+    <value>Usuwanie {0} z folderów udostępnionych…</value>
   </data>
   <data name="FileTransfer_RemoveRootComplete" xml:space="preserve">
-    <value>Shared folder removed.</value>
+    <value>Folder udostępniony usunięty.</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>Could not remove folder: {0}</value>
+    <value>Nie można usunąć folderu: {0}</value>
   </data>
 
   

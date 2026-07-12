@@ -1315,99 +1315,99 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   
   <data name="FileTransfer_DeleteBtn" xml:space="preserve">
-    <value>Delete</value>
+    <value>Sil</value>
   </data>
   <data name="FileTransfer_DeleteTooltip" xml:space="preserve">
-    <value>Delete the selected file or folder on the PC</value>
+    <value>Bilgisayarda seçili dosyayı veya klasörü sil</value>
   </data>
   <data name="FileTransfer_DeletingFormat" xml:space="preserve">
-    <value>Deleting {0}…</value>
+    <value>{0} siliniyor…</value>
   </data>
   <data name="FileTransfer_DeleteComplete" xml:space="preserve">
-    <value>Deleted.</value>
+    <value>Silindi.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Delete failed: {0}</value>
+    <value>Silme başarısız: {0}</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
-    <value>Deleting {0} items…</value>
+    <value>{0} öğe siliniyor…</value>
   </data>
   <data name="FileTransfer_DeleteMultipleCompleteFormat" xml:space="preserve">
-    <value>Deleted {0} items.</value>
+    <value>{0} öğe silindi.</value>
   </data>
   <data name="FileTransfer_SelectAllBtn" xml:space="preserve">
-    <value>Select All</value>
+    <value>Tümünü Seç</value>
   </data>
   <data name="FileTransfer_SelectAllTooltip" xml:space="preserve">
-    <value>Select all files and folders in the current directory</value>
+    <value>Geçerli dizindeki tüm dosyaları ve klasörleri seç</value>
   </data>
   <data name="FileTransfer_RenameBtn" xml:space="preserve">
-    <value>Rename</value>
+    <value>Yeniden Adlandır</value>
   </data>
   <data name="FileTransfer_RenameTooltip" xml:space="preserve">
-    <value>Rename the selected file or folder on the PC</value>
+    <value>Bilgisayarda seçili dosyayı veya klasörü yeniden adlandır</value>
   </data>
   <data name="FileTransfer_RenamingFormat" xml:space="preserve">
-    <value>Renaming {0} to {1}…</value>
+    <value>{0} adı {1} olarak değiştiriliyor…</value>
   </data>
   <data name="FileTransfer_RenameComplete" xml:space="preserve">
-    <value>Renamed.</value>
+    <value>Yeniden adlandırıldı.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Rename failed: {0}</value>
+    <value>Yeniden adlandırma başarısız: {0}</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
-    <value>Confirm</value>
+    <value>Onayla</value>
   </data>
   <data name="FileTransfer_RenameCancelBtn" xml:space="preserve">
-    <value>Cancel</value>
+    <value>İptal</value>
   </data>
   <data name="FileTransfer_RenameInputPlaceholder" xml:space="preserve">
-    <value>New name…</value>
+    <value>Yeni ad…</value>
   </data>
   
   <data name="FileTransfer_VerifyHashBtn" xml:space="preserve">
-    <value>Verify SHA-256</value>
+    <value>SHA-256 Doğrula</value>
   </data>
   <data name="FileTransfer_VerifyHashTooltip" xml:space="preserve">
-    <value>Compute and display the SHA-256 hash of the selected file on the PC</value>
+    <value>Bilgisayarda seçili dosyanın SHA-256 karmasını hesaplayıp göster</value>
   </data>
   <data name="FileTransfer_HashComputingFormat" xml:space="preserve">
-    <value>Computing SHA-256 of {0}…</value>
+    <value>{0} için SHA-256 hesaplanıyor…</value>
   </data>
   <data name="FileTransfer_HashComplete" xml:space="preserve">
-    <value>SHA-256 computed.</value>
+    <value>SHA-256 hesaplandı.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Hash failed: {0}</value>
+    <value>Karma başarısız: {0}</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
   </data>
   
   <data name="FileTransfer_PinFolderTooltip" xml:space="preserve">
-    <value>Pin the current folder as a new shared root in the dropdown</value>
+    <value>Geçerli klasörü açılır listede yeni bir paylaşılan kök olarak sabitle</value>
   </data>
   <data name="FileTransfer_PinningFolder" xml:space="preserve">
-    <value>Pinning folder as shared root…</value>
+    <value>Klasör paylaşılan kök olarak sabitleniyor…</value>
   </data>
   <data name="FileTransfer_PinComplete" xml:space="preserve">
-    <value>Folder added to shared roots.</value>
+    <value>Klasör paylaşılan köklere eklendi.</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>Could not pin folder: {0}</value>
+    <value>Klasör sabitlenemedi: {0}</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
-    <value>Remove this shared folder from the dropdown</value>
+    <value>Bu paylaşılan klasörü açılır listeden kaldır</value>
   </data>
   <data name="FileTransfer_RemovingRootFormat" xml:space="preserve">
-    <value>Removing {0} from shared folders…</value>
+    <value>{0}, paylaşılan klasörlerden kaldırılıyor…</value>
   </data>
   <data name="FileTransfer_RemoveRootComplete" xml:space="preserve">
-    <value>Shared folder removed.</value>
+    <value>Paylaşılan klasör kaldırıldı.</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>Could not remove folder: {0}</value>
+    <value>Klasör kaldırılamadı: {0}</value>
   </data>
 
   
