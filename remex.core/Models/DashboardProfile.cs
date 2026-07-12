@@ -75,7 +75,7 @@ public record DashboardProfile
     public int GridSize { get; init; } = 50;
 
     /// <summary>Persisted WebSocket host address for the remote connection.</summary>
-    public string HostAddress { get; init; } = "ws://localhost:5005/ws";
+    public string HostAddress { get; init; } = "wss://localhost:5005/ws";
 
     /// <summary>Persisted path to the Remex.Agent.exe binary or its containing directory.</summary>
     public string HostPath { get; init; } = string.Empty;
