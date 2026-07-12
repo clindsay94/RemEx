@@ -25,7 +25,7 @@ public class DashboardProfileTests
         Assert.Equal("Default", profile.ProfileName);
         Assert.False(profile.IsSnapToGridEnabled);
         Assert.Equal(50, profile.GridSize);
-        Assert.Equal("ws://localhost:5005/ws", profile.HostAddress);
+        Assert.Equal("wss://localhost:5005/ws", profile.HostAddress);
         Assert.Empty(profile.Cards);
         Assert.Empty(profile.PinnedSensorIds);
     }
