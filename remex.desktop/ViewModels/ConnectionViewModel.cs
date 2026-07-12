@@ -39,6 +39,10 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     private const int MaxLatencyPoints = 30;
     private const int MaxReconnectDelaySeconds = 30;
     private ClientWebSocket? _webSocket;
+    // Serializes all outbound sends. A WebSocket permits only one outstanding SendAsync at a time, so a
+    // file-transfer chunk loop sending concurrently with a browse/ping/launcher/layout send throws
+    // "There is already one outstanding 'SendAsync'..." and can fault the socket mid-transfer.
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
     private CancellationTokenSource? _receiveCts;
     private CancellationTokenSource? _reconnectCts;
     private bool _userDisconnected;
@@ -440,9 +444,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     public async Task RequestProcessListAsync()
     {
-        if (_webSocket?.State != WebSocketState.Open) return;
         var msg = new RemexMessage { Type = MessageTypes.ProcessListRequest };
-        await MessageSerializer.SendAsync(_webSocket, msg);
+        await SendGuardedAsync(msg);
     }
 
     [RelayCommand]
@@ -643,7 +646,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         _pendingCommands[correlationId] = tcs;
         try
         {
-            await MessageSerializer.SendAsync(_webSocket!, msg with { CorrelationId = correlationId }, ct);
+            await SendGuardedAsync(msg with { CorrelationId = correlationId }, ct);
             try
             {
                 return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(CommandTimeoutSeconds), ct);
@@ -823,7 +826,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 Type = MessageTypes.Ping,
                 Timestamp = Stopwatch.GetTimestamp(),
             };
-            await MessageSerializer.SendAsync(_webSocket, ping);
+            await SendGuardedAsync(ping);
             StatusText = LocalizationService.Instance["Status_PingSent"];
         }
         catch (WebSocketException ex)
@@ -838,10 +841,26 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         }
     }
 
-    public async Task SendAsync(RemexMessage message)
+    public Task SendAsync(RemexMessage message) => SendGuardedAsync(message);
+
+    /// <summary>
+    /// The single outbound-send choke point. Acquires <see cref="_sendLock"/> so only one
+    /// WebSocket.SendAsync is ever in flight — every caller (file-transfer chunks, browse, ping,
+    /// commands, launcher/layout) routes through here instead of touching the socket directly.
+    /// </summary>
+    private async Task SendGuardedAsync(RemexMessage message, CancellationToken ct = default)
     {
-        if (_webSocket?.State != WebSocketState.Open) return;
-        await MessageSerializer.SendAsync(_webSocket, message);
+        var ws = _webSocket;
+        if (ws?.State != WebSocketState.Open) return;
+        await _sendLock.WaitAsync(ct);
+        try
+        {
+            await MessageSerializer.SendAsync(ws, message, ct);
+        }
+        finally
+        {
+            _sendLock.Release();
+        }
     }
 
     public async Task SendLayoutUpdateAsync(Remex.Core.Models.DashboardProfile profile)
@@ -855,7 +874,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 Type = MessageTypes.LayoutUpdate,
                 DashboardProfile = profile,
             };
-            await MessageSerializer.SendAsync(_webSocket, msg);
+            await SendGuardedAsync(msg);
         }
         catch (WebSocketException ex)
         {

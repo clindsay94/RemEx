@@ -720,16 +720,12 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         if (Connection.IsConnected)
         {
             // Request the host to re-send its stored layout.
-            var ws = Connection.GetWebSocket();
-            if (ws != null)
+            var msg = new RemexMessage
             {
-                var msg = new RemexMessage
-                {
-                    Type = MessageTypes.LayoutRequest,
-                };
-                await MessageSerializer.SendAsync(ws, msg);
-                LayoutStatus = "Sync requested…";
-            }
+                Type = MessageTypes.LayoutRequest,
+            };
+            await Connection.SendAsync(msg);
+            LayoutStatus = "Sync requested…";
         }
         else
         {
