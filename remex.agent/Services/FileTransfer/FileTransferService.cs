@@ -11,7 +11,6 @@ namespace Remex.Agent.Services.FileTransfer;
 
 public sealed class FileTransferService : IFileTransferService
 {
-    private static readonly string[] RestrictedLinuxPaths = ["/proc", "/sys", "/dev"];
     private const long MaxUploadBytes = 5_000_000_000L;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -614,36 +613,13 @@ public sealed class FileTransferService : IFileTransferService
         return root;
     }
 
+    // Browse/transfer/delete/rename/hash resolve through the SAME shared validator as copy/move/search/
+    // metadata/thumbnail, so the root-escape guard and the full restricted-system-path denylist
+    // (/proc, /sys, /dev, /run, /boot/efi) are enforced uniformly rather than via a narrower local copy.
     private string ResolvePath(string rootId, string relativePath)
     {
         var root = GetConfiguredRoot(rootId);
-        var rootPath = Path.GetFullPath(root.AbsolutePath);
-        var trimmedRelativePath = string.IsNullOrWhiteSpace(relativePath) || relativePath is "/" or "\\"
-            ? string.Empty
-            : relativePath.TrimStart('/', '\\');
-
-        var resolved = string.IsNullOrEmpty(trimmedRelativePath)
-            ? rootPath
-            : Path.GetFullPath(Path.Combine(rootPath, trimmedRelativePath));
-
-        var pathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        var isInsideRoot = resolved.Equals(rootPath, pathComparison)
-            || resolved.StartsWith(rootPath + Path.DirectorySeparatorChar, pathComparison)
-            || resolved.StartsWith(rootPath + Path.AltDirectorySeparatorChar, pathComparison);
-
-        if (!isInsideRoot)
-            throw new UnauthorizedAccessException($"Access denied: '{relativePath}' escapes shared root '{root.DisplayName}'.");
-
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            foreach (var restricted in RestrictedLinuxPaths)
-            {
-                if (resolved.StartsWith(restricted + "/", StringComparison.Ordinal) || resolved == restricted)
-                    throw new UnauthorizedAccessException($"Access denied: '{relativePath}' is a restricted system path.");
-            }
-        }
-
-        return resolved;
+        return FilePathValidation.ResolveWithinRoot(root.AbsolutePath, relativePath, root.DisplayName);
     }
 
     private IReadOnlyList<ConfiguredRoot> LoadConfiguredRoots()
