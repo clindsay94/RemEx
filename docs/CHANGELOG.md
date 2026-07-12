@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Recovered the splash / brand / navigation revamp that 2.1.0 shipped without.** The 2.1.0 changes (file-sharing overhaul, savefile import/export, launcher rework, Orbitron typography) were committed onto the commit *before* the `feature/android-splash-revamp` branch diverged, so the published 2.1.0 build was missing: the **third splash style (Signal Pong)** and the Skia/Compose splash rework on both PC and Android; the **slate-and-amber brand mark** (replacing the old neon icons); the **navigation-rail glyphs** and the settings-family cluster (Connection · About · FAQ) beneath Settings; and the **FAB → live Personalization popup** (replacing the full-screen Customization page). 2.1.1 merges that branch back in on top of everything in 2.1.0 — nothing from 2.1.0 was dropped. (Merge `0bac425`.)
 - **About page referenced a removed `FaqItems` binding.** FAQ is now its own `FaqView` destination; the orphaned inline FAQ section in `AboutView` (bound to the since-removed `AboutViewModel.FaqItems`) is removed. (`AboutView.axaml`.)
+- **PC app crashed on launch after the brand refresh.** Two views still referenced the deleted old-neon `New-REMEX.png` (`ShellView.axaml`, `AboutView.axaml`), so Avalonia threw `FileNotFoundException` when showing the window. Both now render the new native-vector `BrandMark` control, matching Home — so the sidebar, Home, and About all show the slate/amber mark and the app launches. (`ShellView.axaml`, `AboutView.axaml`.)
+- **Default host address used plaintext `ws://`, which never connected.** The host serves TLS only on `/ws`, so a fresh install's default `ws://localhost:5005/ws` was refused until hand-edited. The default is now `wss://localhost:5005/ws`. (`DashboardProfile.cs`.)
+
+### Changed
+
+- **Connection screen folded into About RemEx.** The single-card Connection screen (status, host address, discover-hosts, QR, pairing PIN) now lives as a section on the About page and is removed from the left nav rail; the settings-family cluster is now Settings · About · FAQ. The controls bind to the same shared `ConnectionViewModel`, so all behavior is unchanged. (`AboutView.axaml`, `AboutViewModel.cs`, `ShellView.axaml`.)
 
 ---
 
