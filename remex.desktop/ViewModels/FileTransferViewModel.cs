@@ -210,6 +210,19 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     partial void OnSortDescendingChanged(bool value) => RebuildEntryDisplay();
 
+    // ─── View mode (details list / resizable icon grid) ───
+
+    /// <summary>When true, files render as a resizable icon grid instead of a details list.</summary>
+    [ObservableProperty]
+    private bool _isIconView;
+
+    /// <summary>Icon tile edge length (px) for the icon view, driven by the size slider.</summary>
+    [ObservableProperty]
+    private double _iconSize = 96;
+
+    [RelayCommand]
+    private void ToggleViewMode() => IsIconView = !IsIconView;
+
     [RelayCommand]
     private void SortBy(string field)
     {

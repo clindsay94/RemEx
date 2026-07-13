@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -28,8 +30,10 @@ public partial class AboutViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<WhatsNewItem> WhatsNewItems { get; } = new();
 
-    /// <summary>The shared connection view-model, surfaced so the About screen can host the connection card
-    /// (the Connection screen was folded into About and removed from the nav rail).</summary>
+    /// <summary>Localized FAQ question/answer pairs, merged into About from the former standalone FAQ page.</summary>
+    public ObservableCollection<FaqItem> FaqItems { get; } = new();
+
+    /// <summary>The shared connection view-model (used for the host-version display).</summary>
     public ConnectionViewModel Connection => _connection;
 
     public AboutViewModel(ConnectionViewModel connection, ShellViewModel shell)
@@ -47,6 +51,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
 
         UpdateHostVersion();
         LoadWhatsNew();
+        LoadFaq();
     }
 
     private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
@@ -56,30 +61,100 @@ public partial class AboutViewModel : ObservableObject, IDisposable
 
         WhatsNewItems.Clear();
         LoadWhatsNew();
+        FaqItems.Clear();
+        LoadFaq();
         UpdateHostVersion();
     }
     
     private void LoadWhatsNew()
     {
+        // Pull the highlights straight from the bundled CHANGELOG so this stays current every release.
+        try
+        {
+            using var stream = Avalonia.Platform.AssetLoader.Open(new Uri("avares://Remex.Desktop/Assets/CHANGELOG.md"));
+            using var reader = new StreamReader(stream);
+            foreach (var entry in ParseChangelog(reader.ReadToEnd(), maxItems: 12))
+                WhatsNewItems.Add(entry);
+            if (WhatsNewItems.Count > 0)
+                return;
+        }
+        catch
+        {
+            // Fall back to the localized static highlights below if the changelog can't be read.
+        }
+
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_Features"],
             LocalizationService.Instance["About_WhatsNew_Features_Body"]));
-
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_Fixes"],
             LocalizationService.Instance["About_WhatsNew_Fixes_Body"]));
-
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_FileTransfer"],
             LocalizationService.Instance["About_WhatsNew_FileTransfer_Body"]));
-
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_Android"],
             LocalizationService.Instance["About_WhatsNew_Android_Body"]));
-
         WhatsNewItems.Add(new WhatsNewItem(
             LocalizationService.Instance["About_WhatsNew_Issues"],
             LocalizationService.Instance["About_WhatsNew_Issues_Body"]));
+    }
+
+    /// <summary>Parses the most recent CHANGELOG version section into What's-New highlights (bold title + description).</summary>
+    private static List<WhatsNewItem> ParseChangelog(string markdown, int maxItems)
+    {
+        var items = new List<WhatsNewItem>();
+        var lines = markdown.Replace("\r\n", "\n").Split('\n');
+        int i = 0;
+        while (i < lines.Length && !lines[i].StartsWith("## [", StringComparison.Ordinal)) i++;
+        i++; // move past the first version heading (most recent section)
+        for (; i < lines.Length && items.Count < maxItems; i++)
+        {
+            if (lines[i].StartsWith("## [", StringComparison.Ordinal))
+                break; // stop at the next version — only surface the latest
+            var trimmed = lines[i].TrimStart();
+            if (!trimmed.StartsWith("- ", StringComparison.Ordinal))
+                continue;
+            var (title, description) = ParseBullet(trimmed.Substring(2));
+            if (!string.IsNullOrWhiteSpace(title))
+                items.Add(new WhatsNewItem(title, description));
+        }
+        return items;
+    }
+
+    private static (string Title, string Description) ParseBullet(string bullet)
+    {
+        bullet = bullet.Trim();
+        string title = string.Empty, description = bullet;
+        if (bullet.StartsWith("**", StringComparison.Ordinal))
+        {
+            int end = bullet.IndexOf("**", 2, StringComparison.Ordinal);
+            if (end > 0)
+            {
+                title = bullet.Substring(2, end - 2).Trim().TrimEnd('.', ' ');
+                description = bullet.Substring(end + 2).Trim();
+            }
+        }
+        // Drop a trailing "(files…; RemEx-id.)" attribution — it's noise for end users.
+        int lastParen = description.LastIndexOf('(');
+        if (lastParen >= 0)
+        {
+            var tail = description.Substring(lastParen);
+            if (tail.Contains("RemEx-") || tail.Contains('`'))
+                description = description.Substring(0, lastParen).TrimEnd();
+        }
+        description = description.Replace("**", string.Empty).Replace("`", string.Empty).Trim();
+        return (title, description);
+    }
+
+    private void LoadFaq()
+    {
+        for (int q = 1; q <= 11; q++)
+        {
+            FaqItems.Add(new FaqItem(
+                LocalizationService.Instance[$"Faq_Q{q}_Question"],
+                LocalizationService.Instance[$"Faq_Q{q}_Answer"]));
+        }
     }
 
     [RelayCommand]

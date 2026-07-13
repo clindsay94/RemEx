@@ -96,6 +96,24 @@
   <data name="Remote_Graceful" xml:space="preserve">
     <value>GRACEFUL</value>
   </data>
+  <data name="Remote_WakeTitle" xml:space="preserve">
+    <value>Wake this PC from your phone</value>
+  </data>
+  <data name="Remote_WakeExplainer" xml:space="preserve">
+    <value>Wake-on-LAN lets your phone switch this PC on over your network — even when it's asleep or fully shut down. It works by sending a small "magic packet" that tells this computer to power up.</value>
+  </data>
+  <data name="Remote_ThisPcMac" xml:space="preserve">
+    <value>THIS PC'S MAC ADDRESS</value>
+  </data>
+  <data name="Remote_CopyMac" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Remote_MacCopied" xml:space="preserve">
+    <value>MAC address copied — paste it into the RemEx app on your phone.</value>
+  </data>
+  <data name="Remote_WakeInstruction" xml:space="preserve">
+    <value>To set it up: open the RemEx app on your phone, go to Settings → Wake-on-LAN, and enter the address above. Your phone can then wake this PC anytime it's on the same network.</value>
+  </data>
   <data name="Remote_Forced" xml:space="preserve">
     <value>FORCED (IMMEDIATE)</value>
   </data>
@@ -488,6 +506,21 @@
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Reset to Theme Defaults</value>
+  </data>
+  <data name="Custom_Typography" xml:space="preserve">
+    <value>TYPOGRAPHY</value>
+  </data>
+  <data name="Custom_PageTitleFont" xml:space="preserve">
+    <value>Page Title Font</value>
+  </data>
+  <data name="Custom_PageTitleFontTip" xml:space="preserve">
+    <value>Font for large page titles. Includes the app's display fonts and any font installed on this system.</value>
+  </data>
+  <data name="Custom_ContentFont" xml:space="preserve">
+    <value>Content Font</value>
+  </data>
+  <data name="Custom_ContentFontTip" xml:space="preserve">
+    <value>Font for body and content text — descriptions, labels, and the sensor workspace. Fixed-width data readouts keep their monospace font.</value>
   </data>
   <data name="Custom_Back" xml:space="preserve">
     <value>← Command Center</value>
@@ -1876,6 +1909,60 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Logs_QueryService" xml:space="preserve">
     <value>Query Service Logs</value>
   </data>
+  <data name="Logs_Preset" xml:space="preserve">
+    <value>Preset:</value>
+  </data>
+  <data name="Logs_SearchWatermark" xml:space="preserve">
+    <value>Search logs…</value>
+  </data>
+  <data name="Logs_CaptureLevel" xml:space="preserve">
+    <value>Capture:</value>
+  </data>
+  <data name="Logs_CaptureLevelTip" xml:space="preserve">
+    <value>How much detail is retained in memory. Lower keeps more for filtering; the display filter never discards captured entries.</value>
+  </data>
+  <data name="Logs_ExportAs" xml:space="preserve">
+    <value>Export as:</value>
+  </data>
+  <data name="Logs_Export" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Logs_ExportTitle" xml:space="preserve">
+    <value>Export Logs</value>
+  </data>
+  <data name="Logs_PresetAll" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Logs_PresetErrors" xml:space="preserve">
+    <value>Errors &amp; Warnings</value>
+  </data>
+  <data name="Logs_PresetConnection" xml:space="preserve">
+    <value>Connection &amp; Pairing</value>
+  </data>
+  <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
+    <value>Remote Desktop</value>
+  </data>
+  <data name="Logs_PresetFileTransfer" xml:space="preserve">
+    <value>File Transfer</value>
+  </data>
+  <data name="Logs_PresetInput" xml:space="preserve">
+    <value>Input &amp; Commands</value>
+  </data>
+  <data name="Logs_PresetStartup" xml:space="preserve">
+    <value>Startup &amp; Elevation</value>
+  </data>
+  <data name="Logs_ScopeCurrentView" xml:space="preserve">
+    <value>Current view</value>
+  </data>
+  <data name="Logs_ScopeEverything" xml:space="preserve">
+    <value>Everything captured</value>
+  </data>
+  <data name="Logs_ScopeWarningsPlus" xml:space="preserve">
+    <value>Warnings &amp; errors</value>
+  </data>
+  <data name="Logs_ScopeErrorsOnly" xml:space="preserve">
+    <value>Errors only</value>
+  </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Display</value>
   </data>
@@ -2118,6 +2205,60 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Home_LogoTooltip" xml:space="preserve">
     <value>REMEX - Remote Execution / Live Telemetry</value>
+  </data>
+  <data name="Home_WelcomeTitle" xml:space="preserve">
+    <value>Welcome to RemEx</value>
+  </data>
+  <data name="Home_WelcomeIntro" xml:space="preserve">
+    <value>Control this PC from your phone — stream the desktop, browse and transfer files, launch apps, run commands, and watch live sensors. Pair your phone in Settings to get started.</value>
+  </data>
+  <data name="Home_SearchPrompt" xml:space="preserve">
+    <value>Search screens and actions…</value>
+  </data>
+  <data name="Home_ScNav" xml:space="preserve">
+    <value>Switch screens</value>
+  </data>
+  <data name="Home_ScSettings" xml:space="preserve">
+    <value>Personalize</value>
+  </data>
+  <data name="Home_ScClose" xml:space="preserve">
+    <value>Close pop-ups</value>
+  </data>
+  <data name="Home_QsSensors" xml:space="preserve">
+    <value>Sensors</value>
+  </data>
+  <data name="Home_QsCommands" xml:space="preserve">
+    <value>Commands</value>
+  </data>
+  <data name="Home_QsApps" xml:space="preserve">
+    <value>Apps</value>
+  </data>
+  <data name="Home_QsProcesses" xml:space="preserve">
+    <value>Processes</value>
+  </data>
+  <data name="Home_QsFiles" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="Home_QsLogs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="Home_QsPersonalize" xml:space="preserve">
+    <value>Personalize</value>
+  </data>
+  <data name="Home_QsAbout" xml:space="preserve">
+    <value>About &amp; Help</value>
+  </data>
+  <data name="Home_GitHubCard" xml:space="preserve">
+    <value>RemEx on GitHub</value>
+  </data>
+  <data name="Home_GitHubCardDesc" xml:space="preserve">
+    <value>View the source, report an issue, or star the project.</value>
+  </data>
+  <data name="Home_PlayStoreCard" xml:space="preserve">
+    <value>Get the phone app</value>
+  </data>
+  <data name="Home_PlayStoreCardDesc" xml:space="preserve">
+    <value>Download RemEx for Android on Google Play.</value>
   </data>
   <data name="Shell_LogsDiagnostics" xml:space="preserve">
     <value>Logs &amp; Diagnostics</value>
@@ -2513,6 +2654,12 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Date</value>
+  </data>
+  <data name="FileTransfer_ToggleViewTooltip" xml:space="preserve">
+    <value>Switch between list and icon view</value>
+  </data>
+  <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
+    <value>Icon size</value>
   </data>
   <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
     <value>Send to Phone</value>

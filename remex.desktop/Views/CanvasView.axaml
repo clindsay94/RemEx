@@ -155,7 +155,7 @@
         <Border Grid.Row="0" Background="{DynamicResource GlassBaseDarkBrush}" Padding="12 8">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                 <Button Classes="back-btn" IsHitTestVisible="False" Background="Transparent">
-                    <TextBlock Text="{local:Localize Canvas_Header}" FontFamily="{StaticResource Orbitron}" FontSize="28" FontWeight="Black" LetterSpacing="2" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                    <TextBlock Text="{local:Localize Canvas_Header}" FontFamily="{DynamicResource PageTitleFontFamily}" FontSize="28" FontWeight="Black" LetterSpacing="2" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                 </Button>
                 <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,12,0"/>

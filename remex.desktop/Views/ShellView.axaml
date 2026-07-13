@@ -130,7 +130,7 @@
                                     <Button Classes="nav-item" Width="48" Height="48" CornerRadius="{DynamicResource CornerRadiusLarge}"
                                             Command="{Binding ToggleDrawerCommand}" HorizontalAlignment="Center" Padding="0"
                                             ToolTip.Tip="{conv:Localize Shell_ToggleDrawerTooltip}">
-                                        <Border Width="30" Height="30" CornerRadius="15" ClipToBounds="True">
+                                        <Border Width="44" Height="44" CornerRadius="22" ClipToBounds="True">
                                             <ctrl:BrandMark/>
                                         </Border>
                                     </Button>
@@ -143,7 +143,7 @@
                                     <Button Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" IsVisible="{Binding IsDrawerOpen}" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Opacity="0.5">
                                             <Path Data="{StaticResource IconSearch}" Fill="{DynamicResource TextSecondaryBrush}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center"/>
-                                            <TextBlock Text="Ctrl+Shift+P" FontSize="10" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Ctrl+K" FontSize="10" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
@@ -226,13 +226,6 @@
                                             </Grid>
                                         </Button>
 
-                                        <!-- FAQ -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=11}" Command="{Binding NavigateToFaqCommand}" ToolTip.Tip="{conv:Localize Nav_Faq}">
-                                            <Grid ColumnDefinitions="64,*">
-                                                <Path Grid.Column="0" Data="{StaticResource IconFaq}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Faq}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
-                                            </Grid>
-                                        </Button>
                                     </StackPanel>
                                 </ScrollViewer>
 
@@ -320,12 +313,6 @@
                                 </DataTemplate>
                                 <DataTemplate DataType="vm:AboutViewModel">
                                     <views:AboutView />
-                                </DataTemplate>
-                                <DataTemplate DataType="vm:FaqViewModel">
-                                    <views:FaqView />
-                                </DataTemplate>
-                                <DataTemplate DataType="vm:ConnectionViewModel">
-                                    <views:ConnectionView />
                                 </DataTemplate>
                                 <DataTemplate DataType="vm:FileTransferViewModel">
                                     <views:FileTransferView />

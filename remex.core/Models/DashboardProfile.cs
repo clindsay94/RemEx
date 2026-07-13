@@ -195,6 +195,18 @@ public record CustomizationSettings
     [JsonPropertyName("splashStyle")]
     public string SplashStyle { get; init; } = "RemexCommand";
 
+    /// <summary>Font family for page-title headers (an avares URI for a bundled font, or a system font name).</summary>
+    [JsonPropertyName("pageTitleFont")]
+    public string PageTitleFontFamily { get; init; } = "avares://Remex.Desktop/Assets/Fonts#Orbitron";
+
+    /// <summary>Font family for card / section headers. Empty = inherit the app default. (Reserved for the card-header tier.)</summary>
+    [JsonPropertyName("cardHeaderFont")]
+    public string CardHeaderFontFamily { get; init; } = "";
+
+    /// <summary>Font family for body / content text (an avares URI for a bundled font, or a system font name). Default = Inter (the app default).</summary>
+    [JsonPropertyName("bodyFont")]
+    public string BodyFontFamily { get; init; } = "avares://Avalonia.Fonts.Inter/Assets#Inter";
+
     /// <summary>Compatibility alias for older UI clients.</summary>
     [JsonIgnore]
     public string BaseTheme

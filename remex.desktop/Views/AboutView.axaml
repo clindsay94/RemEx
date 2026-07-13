@@ -41,7 +41,7 @@
     </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32" Spacing="24">
+        <StackPanel Classes="page-content" Margin="32" Spacing="24">
 
             <!-- Back Button -->
             <Button Classes="about-back" Content="{local:Localize Settings_Back}" Command="{Binding NavigateBackCommand}" HorizontalAlignment="Left"/>
@@ -50,10 +50,10 @@
             <TextBlock Classes="page-title" Text="{local:Localize About_Header}" HorizontalAlignment="Center"/>
 
             <!-- ═══ RESPONSIVE TWO-COLUMN CONTENT ═══ -->
-            <WrapPanel HorizontalAlignment="Center">
+            <WrapPanel x:Name="AboutCards" HorizontalAlignment="Stretch">
 
                 <!-- LEFT COLUMN -->
-                <StackPanel MinWidth="400" MaxWidth="640" Spacing="24" Margin="0,0,16,16">
+                <StackPanel Width="{Binding #AboutCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,24,16">
 
                     <!-- App Logo and Name -->
                     <StackPanel Spacing="12" HorizontalAlignment="Center">
@@ -73,7 +73,7 @@
                                         <TextBlock Text="{local:Localize About_KeyboardShortcuts}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,8"/>
 
                                         <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto" Margin="0,4">
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl + Shift + P" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl + K" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{local:Localize About_CommandPalette}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,0,8"/>
 
                                             <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl + Z" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,16,8"/>
@@ -120,7 +120,7 @@
                 </StackPanel>
 
                 <!-- RIGHT COLUMN -->
-                <StackPanel MinWidth="400" MaxWidth="640" Spacing="24" Margin="0,0,16,16">
+                <StackPanel Width="{Binding #AboutCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,0,16">
 
                     <!-- What's New Section -->
                     <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
@@ -154,8 +154,19 @@
 
             </WrapPanel>
 
-            <!-- Connection (folded in from its former standalone nav screen) -->
-            <views:ConnectionView DataContext="{Binding Connection}"/>
+            <!-- FAQ (merged from the former standalone FAQ page) -->
+            <StackPanel Spacing="12" MaxWidth="900" HorizontalAlignment="Stretch" Margin="0,8,0,0">
+                <TextBlock Text="{local:Localize Nav_Faq}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                <ItemsControl ItemsSource="{Binding FaqItems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Expander Margin="0,0,0,8" Padding="4" Header="{Binding Question}">
+                                <TextBlock Text="{Binding Answer}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            </Expander>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
 
             <!-- Footer -->
             <TextBlock Text="{local:Localize About_MadeWith}" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center" Margin="0,16,0,32"/>

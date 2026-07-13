@@ -19,9 +19,15 @@ public static class InMemoryLogSink
 {
     private static readonly object LockObject = new object();
     private static readonly List<LogEntry> EntriesList = new List<LogEntry>();
-    private const int MaxEntries = 1000;
+    private const int MaxEntries = 3000;
 
-    public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Information;
+    /// <summary>
+    /// The capture floor: entries below this level are never stored. Kept low (Debug) so the
+    /// diagnostics UI can filter the retained buffer live and non-destructively — raising the
+    /// on-screen display level no longer discards anything already captured. Set to Trace for
+    /// deep-dive capture, or higher to reduce retention overhead.
+    /// </summary>
+    public static LogLevel MinimumLogLevel { get; set; } = LogLevel.Debug;
 
     public static event Action<LogEntry>? LogAdded;
 

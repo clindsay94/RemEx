@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,6 +21,17 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
     private DashboardProfile _profile = new();
 
     public ConnectionViewModel Connection { get; }
+
+    /// <summary>This PC's primary MAC address, shown so the user can enter it into the phone app for Wake-on-LAN.</summary>
+    [ObservableProperty]
+    private string _hostMacAddress = string.Empty;
+
+    /// <summary>Name of the network adapter the MAC address belongs to.</summary>
+    [ObservableProperty]
+    private string _hostAdapterName = string.Empty;
+
+    /// <summary>Set by the view to copy text to the system clipboard.</summary>
+    public Func<string, Task>? CopyToClipboardAsync { get; set; }
 
     [ObservableProperty]
     [NotifyDataErrorInfo]
@@ -51,7 +63,32 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
         _wolService = Guard.NotNull(wolService);
         _layoutService = Guard.NotNull(layoutService);
 
+        (HostMacAddress, HostAdapterName) = GetPrimaryMacAddress();
+
         _ = LoadWolConfigAsync();
+    }
+
+    /// <summary>Finds this PC's primary MAC address, preferring an active wired (Ethernet) adapter.</summary>
+    private static (string Mac, string Adapter) GetPrimaryMacAddress()
+    {
+        try
+        {
+            var nic = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(n => n.OperationalStatus == OperationalStatus.Up
+                            && n.NetworkInterfaceType != NetworkInterfaceType.Loopback
+                            && n.NetworkInterfaceType != NetworkInterfaceType.Tunnel
+                            && n.GetPhysicalAddress().GetAddressBytes().Length == 6)
+                .OrderByDescending(n => n.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                .FirstOrDefault();
+            if (nic is null)
+                return (string.Empty, string.Empty);
+            var bytes = nic.GetPhysicalAddress().GetAddressBytes();
+            return (string.Join(":", bytes.Select(b => b.ToString("X2"))), nic.Name);
+        }
+        catch
+        {
+            return (string.Empty, string.Empty);
+        }
     }
 
     private async Task LoadWolConfigAsync()
@@ -219,6 +256,15 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
         WolStatusText = ok
             ? string.Format(LocalizationService.Instance["Wol_SuccessFormat"], successMessage)
             : string.Format(LocalizationService.Instance["Wol_ErrorFormat"], msg);
+    }
+
+    [RelayCommand]
+    private async Task CopyMacAsync()
+    {
+        if (CopyToClipboardAsync is null || string.IsNullOrEmpty(HostMacAddress))
+            return;
+        await CopyToClipboardAsync(HostMacAddress);
+        WolStatusText = LocalizationService.Instance["Remote_MacCopied"];
     }
 
     [RelayCommand]

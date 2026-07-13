@@ -51,7 +51,7 @@
     </UserControl.Styles>
 
     <ScrollViewer Background="Transparent" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="40" Spacing="32">
+        <StackPanel Classes="page-content" Margin="40" Spacing="32">
 
             <!-- ═══ Header ═══ -->
             <Grid ColumnDefinitions="Auto,*,Auto">
@@ -66,10 +66,10 @@
             </Grid>
 
             <!-- ═══ RESPONSIVE TWO-COLUMN CONTENT ═══ -->
-            <WrapPanel Margin="0,10,0,0" HorizontalAlignment="Center">
+            <WrapPanel x:Name="SettingsCards" Margin="0,10,0,0" HorizontalAlignment="Stretch">
 
                 <!-- LEFT COLUMN -->
-                <StackPanel MinWidth="420" MaxWidth="760" Spacing="24" Margin="0,0,16,16">
+                <StackPanel Width="{Binding #SettingsCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,24,16">
 
                     <!-- ═══ Connection Section ═══ -->
                     <Border Classes="glass-card" Padding="24">
@@ -213,33 +213,7 @@
                 </StackPanel>
 
                 <!-- RIGHT COLUMN -->
-                <StackPanel MinWidth="420" MaxWidth="760" Spacing="24" Margin="0,0,16,16">
-
-                    <!-- ═══ Remote Desktop Section ═══ -->
-                    <Border Classes="glass-card" Padding="24">
-                        <StackPanel Spacing="20">
-                            <TextBlock Text="{local:Localize Settings_RemoteDesktop}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
-
-                            <StackPanel Spacing="8" ToolTip.Tip="{local:Localize Settings_CompressQualityTooltip}">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{local:Localize RemoteDesktop_Quality}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Grid.Column="1" FontSize="14" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding StreamQuality, StringFormat={}{0}%}"/>
-                                </Grid>
-                                <Slider Minimum="10" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Value="{Binding StreamQuality}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
-                            </StackPanel>
- 
-                            <StackPanel Spacing="8" ToolTip.Tip="{local:Localize Settings_TargetFrameRateTooltip}">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="{local:Localize RemoteDesktop_Fps}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                        <TextBlock Text="{local:Localize Settings_StreamFpsDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
-                                    </StackPanel>
-                                    <TextBlock Grid.Column="1" FontSize="14" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Text="{Binding StreamFps, Converter={x:Static conv:FpsDisplayConverter.Instance}}"/>
-                                </Grid>
-                                <Slider Minimum="1" Maximum="360" Value="{Binding StreamFps}" Foreground="{DynamicResource AccentPrimaryBrush}" ToolTip.Tip="{local:Localize Settings_ChooseTargetFpsTooltip}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
+                <StackPanel Width="{Binding #SettingsCards.Bounds.Width, Converter={x:Static local:ResponsiveColumnWidthConverter.Instance}}" Spacing="24" Margin="0,0,0,16">
 
                     <!-- ═══ Layout Section ═══ -->
                     <Border Classes="glass-card" Padding="24">

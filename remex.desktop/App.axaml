@@ -49,6 +49,10 @@
             <FontFamily x:Key="Sixtyfour">avares://Remex.Desktop/Assets/Fonts/Sixtyfour-Regular.ttf#Sixtyfour</FontFamily>
             <FontFamily x:Key="VictorMono">avares://Remex.Desktop/Assets/Fonts/victor_mono_bold.ttf#Victor Mono</FontFamily>
             <FontFamily x:Key="Orbitron">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
+            <!-- Themeable header font — overridden live by the personalization font picker; default = Orbitron. -->
+            <FontFamily x:Key="PageTitleFontFamily">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
+            <!-- Themeable content/body font — overridden live by the picker; default = Inter (the app default font). -->
+            <FontFamily x:Key="BodyFontFamily">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 
@@ -181,18 +185,30 @@
             <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
         </Style>
         <Style Selector="TextBlock.page-title">
-            <Setter Property="FontFamily" Value="{StaticResource Orbitron}"/>
+            <Setter Property="FontFamily" Value="{DynamicResource PageTitleFontFamily}"/>
             <Setter Property="FontSize" Value="30"/>
             <Setter Property="FontWeight" Value="Black"/>
             <Setter Property="LetterSpacing" Value="2"/>
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
         <Style Selector="TextBlock.page-subtitle">
-            <Setter Property="FontFamily" Value="{StaticResource Orbitron}"/>
+            <Setter Property="FontFamily" Value="{DynamicResource PageTitleFontFamily}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="LetterSpacing" Value="4"/>
             <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+        </Style>
+
+        <!-- Non-feature page content column: fills available width, caps + centers on wide displays. -->
+        <Style Selector="StackPanel.page-content">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="MaxWidth" Value="1200"/>
+        </Style>
+        <!-- Card / section header. FontFamily is themed live via the font picker (Phase 2). -->
+        <Style Selector="TextBlock.card-title">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Black"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
 
 

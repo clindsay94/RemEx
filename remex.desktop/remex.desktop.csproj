@@ -10,6 +10,8 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <AvaloniaResource Include="Themes\**" />
+    <!-- Bundle the changelog so the About page's "What's New" can read the latest release notes at runtime. -->
+    <AvaloniaResource Include="..\docs\CHANGELOG.md" Link="Assets\CHANGELOG.md" />
   </ItemGroup>
 
   <ItemGroup>

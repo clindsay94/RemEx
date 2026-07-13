@@ -158,6 +158,39 @@ public class ThemeService : IDisposable
 
             SetResourceOverrideInternal("CanvasBackgroundType", settings.BackgroundMaterial);
 
+            // Live-themeable typography (font picker). Set directly on the application's root
+            // resources — NOT the merged override dictionary — because App.axaml defines
+            // PageTitleFontFamily as an OWN key, and a dictionary's own keys take precedence over its
+            // merged dictionaries (a merged override would be shadowed and never apply). Writing the
+            // own key in place still raises ResourcesChanged, so DynamicResource re-resolves live.
+            // Guarded so a malformed/unresolvable persisted or system font string can never crash.
+            if (Application.Current is { } app)
+            {
+                try
+                {
+                    var pageTitleFont = string.IsNullOrWhiteSpace(settings.PageTitleFontFamily)
+                        ? "avares://Remex.Desktop/Assets/Fonts#Orbitron"
+                        : settings.PageTitleFontFamily;
+                    app.Resources["PageTitleFontFamily"] = new FontFamily(pageTitleFont);
+                }
+                catch
+                {
+                    // Leave the existing PageTitleFontFamily resource (App.axaml default) in place.
+                }
+
+                try
+                {
+                    var bodyFont = string.IsNullOrWhiteSpace(settings.BodyFontFamily)
+                        ? "avares://Avalonia.Fonts.Inter/Assets#Inter"
+                        : settings.BodyFontFamily;
+                    app.Resources["BodyFontFamily"] = new FontFamily(bodyFont);
+                }
+                catch
+                {
+                    // Leave the existing BodyFontFamily resource (App.axaml default) in place.
+                }
+            }
+
             // Reattach the override dictionary — fires one ResourcesChanged for all updates.
             merged?.Add(_overrideResources);
 
