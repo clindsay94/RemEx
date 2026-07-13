@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **Remote desktop went black (cursor only) + briefly zoomed when the resolution scale changed mid-session, recovering only after a monitor switch.** The Android H.264 `SurfaceView`/decoder was keyed on the encoded resolution, so the instant the host reported new dimensions (a capture-scale change rebuilds the encoder) Compose tore the live decoder down and built an empty one — which came up mid-GOP and dropped every P-frame until the host's next periodic keyframe or a monitor-switch re-bootstrap. The decoder already adopts a new resolution *in place* via its own SPS-change reconfigure (`maybeReconfigureForNewSps`), feeding the fresh keyframe with no gap, so the resolution is no longer part of the `SurfaceView` key; only the video-box size still triggers a rebuild (an unrelated frozen-buffer-scale guard). This is the underlying fragility that 2.1.1 only *mitigated* by disabling adaptive capture scale — deliberate scale/preset changes now reconfigure seamlessly too. (`RemoteDesktopScreen.kt`; RemEx-x3eb.)
+
+---
+
 ## [2.1.1] — 2026-07-12
 
 ### Fixed

@@ -1986,7 +1986,7 @@ fun RemoteDesktopScreenContent(
                                         // the wrong geometry (see the freeze note below) until an unrelated key() input
                                         // (e.g. fullscreen toggle) happens to force a rebuild. (Phase 2, RemEx-bqoe)
                                         if (activeCodec == "H264" && desktopMetaReady) {
-                                                // Rebuild the SurfaceView when the video box (imageSize) settles, not only on a
+                                                // Rebuild the SurfaceView only when the video box (imageSize) settles — NOT on a
                                                 // resolution change. A SurfaceView's content sublayer freezes its buffer->view
                                                 // SCALE at creation: if the surface is first created while imageSize is
                                                 // transiently smaller (e.g. during the capture_unavailable -> reconnect churn on
@@ -1998,7 +1998,20 @@ fun RemoteDesktopScreenContent(
                                                 // built at correct geometry. imageSize is stable while streaming (independent of
                                                 // zoom/pan, which the Modifier.layout below applies without a rebuild), so this
                                                 // does not churn the decoder in steady state. (RemEx-4fv3)
-                                                key(streamPixelWidth, streamPixelHeight, imageSize) {
+                                                //
+                                                // Resolution (streamPixelWidth/Height) is deliberately NOT in this key. A
+                                                // mid-session capture-scale change makes the host rebuild its encoder and emit a
+                                                // fresh SPS/PPS+IDR; the LIVE decoder adopts that in place via
+                                                // H264StreamDecoder.maybeReconfigureForNewSps (stop → configure(new SPS) → feed
+                                                // the IDR → start) with zero frame gap. Keying on resolution instead tore the
+                                                // decoder down the instant desktop_meta reported the new size — the replacement
+                                                // came up empty and mid-GOP, dropping P-frames until the host's next periodic IDR
+                                                // (or a monitor-switch re-bootstrap), i.e. black-with-cursor + a transient zoom.
+                                                // The decoder's width/height are hints only (it configures from the stream's own
+                                                // SPS), and holder.setFixedSize is overridden by the codec's decoded geometry, so
+                                                // a persisted surface renders the new resolution correctly. contentRect()/fit
+                                                // still re-key on the dims, so layout re-aspects without a rebuild. (RemEx-x3eb)
+                                                key(imageSize) {
                                                 AndroidView(
                                                         factory = { context ->
                                                                 var localDecoder: H264StreamDecoder? = null
