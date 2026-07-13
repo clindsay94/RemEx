@@ -112,6 +112,10 @@ class H264StreamDecoder(
             Log.i(TAG, "MediaCodec H.264 decoder created (sync); awaiting SPS/PPS to configure (hint ${width}x$height).")
             val info = MediaCodec.BufferInfo()
             var configured = false
+            // One-shot: whether we've already asked the host for an on-demand IDR while waiting to
+            // configure. A decoder created mid-GOP (e.g. an imageSize-driven SurfaceView rebuild)
+            // would otherwise sit black until the host's next PERIODIC keyframe. (RemEx-p7fz)
+            var requestedInitialKeyframe = false
 
             while (running) {
                 if (!configured) {
@@ -122,7 +126,16 @@ class H264StreamDecoder(
                     val sps = nals.firstOrNull { it.type == NAL_TYPE_SPS }
                     val pps = nals.firstOrNull { it.type == NAL_TYPE_PPS }
                     if (sps == null || pps == null) {
-                        continue // not a keyframe AU — keep waiting (host emits an IDR every 60 frames)
+                        // We're receiving frames but joined mid-GOP (this AU is a P-frame — no SPS/PPS,
+                        // undecodable with no reference). Rather than wait up to a full GOP for the host's
+                        // next periodic IDR (black screen the whole time), ask once for an on-demand
+                        // keyframe so we configure from the very next AU. The one-shot guard avoids
+                        // flooding the host with a request per dropped P-frame. (RemEx-p7fz)
+                        if (!requestedInitialKeyframe) {
+                            requestedInitialKeyframe = true
+                            onKeyframeNeeded?.invoke()
+                        }
+                        continue // keep waiting for the SPS/PPS-carrying IDR
                     }
                     val csd0 = au.copyOfRange(sps.start, sps.end)
                     val csd1 = au.copyOfRange(pps.start, pps.end)
@@ -158,7 +171,21 @@ class H264StreamDecoder(
                     outIndex = codec.dequeueOutputBuffer(info, 0)
                 }
                 // outIndex < 0 is INFO_TRY_AGAIN_LATER / INFO_OUTPUT_FORMAT_CHANGED / buffers-changed —
-                // nothing to do (rendering goes straight to the Surface).
+                // rendering goes straight to the Surface. Instrument the format change: the codec's
+                // output format is the AUTHORITATIVE decoded geometry (coded size + crop). Logging it on
+                // every change lets us compare against the host's desktop_meta dims and the Compose
+                // contentRect to pin down the mid-session zoom/black geometry mismatch. (RemEx-x3eb diag)
+                if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                    val of = codec.outputFormat
+                    fun geti(k: String) = if (of.containsKey(k)) of.getInteger(k) else -1
+                    val cw = geti(MediaFormat.KEY_WIDTH)
+                    val ch = geti(MediaFormat.KEY_HEIGHT)
+                    val cl = geti("crop-left"); val cr = geti("crop-right")
+                    val ct = geti("crop-top"); val cb = geti("crop-bottom")
+                    val dispW = if (cr >= cl && cl >= 0) cr - cl + 1 else cw
+                    val dispH = if (cb >= ct && ct >= 0) cb - ct + 1 else ch
+                    Log.i(TAG, "OUTPUT_FORMAT_CHANGED: coded=${cw}x$ch crop=[$cl,$ct..$cr,$cb] display=${dispW}x$dispH")
+                }
             }
         } catch (e: InterruptedException) {
             // release() interrupted us — normal shutdown.

@@ -574,7 +574,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                         _streamPixelWidth.value = pixelWidth
                         _streamPixelHeight.value = pixelHeight
                     }
-                    Log.i(TAG, "Desktop stream metadata parsed: activeCodec=${_activeCodecState.value}, streamRes=${_streamPixelWidth.value}x${_streamPixelHeight.value}")
+                    Log.i(TAG, "Desktop stream metadata parsed: activeCodec=${_activeCodecState.value}, host encoded=${encodedWidth}x$encodedHeight pixel=${pixelWidth}x$pixelHeight, adopted streamRes=${_streamPixelWidth.value}x${_streamPixelHeight.value}")
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse desktop meta", e)
                 }
