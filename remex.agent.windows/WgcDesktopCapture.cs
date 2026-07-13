@@ -53,6 +53,15 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
     private bool _sessionLost;                     // set from GraphicsCaptureItem.Closed
 
     private byte[]? _lastRawFrame;
+    // Scale that produced _lastRawFrame (-1 = none yet). A cached frame is a valid replay ONLY for
+    // a request at the same scale: replaying it across a preset change hands the encoder a
+    // wrong-size buffer, which desyncs its fixed -s WxH rawvideo input and forces an encoder
+    // reinit every frame — and on a static desktop (no new WGC frame to re-derive from) that
+    // starves the stream indefinitely (RemEx-wmm8).
+    private double _lastRawFrameScale = -1;
+    // Whether _stagingTexture still holds the most recent frame's pixels, letting a scale change
+    // on a static desktop re-derive a correctly-sized output instead of starving.
+    private bool _stagingHasFrame;
     private int _stagingWidth;
     private int _stagingHeight;
 
@@ -544,6 +553,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
             return true;
 
         Release(ref _stagingTexture);
+        _stagingHasFrame = false;
         _stagingWidth = 0;
         _stagingHeight = 0;
 
@@ -592,11 +602,14 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         isLive = false;
         if (_disposed) return null;
 
-        // Non-blocking: a concurrent capture is doing the real work, so replaying its cached frame is live.
+        // Non-blocking: a concurrent capture is doing the real work, so replaying its cached frame is live —
+        // but only when the cache matches the requested scale. A wrong-scale replay reported live would be
+        // fed to the encoder and desync its fixed-size rawvideo input, so report it stale instead.
         if (!_lock.Wait(0))
         {
-            isLive = true;
-            return _lastRawFrame;
+            var cached = _lastRawFrame;
+            isLive = cached is not null && _lastRawFrameScale == scale;
+            return cached;
         }
 
         try
@@ -633,8 +646,23 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         Direct3D11CaptureFrame? frame = _framePool!.TryGetNextFrame();
         if (frame is null)
         {
-            // No new frame but session alive = unchanged desktop. Healthy static screen → live.
-            isLive = true;
+            // No new frame but session alive = unchanged desktop. The cached frame is a healthy
+            // replay only when it was produced at THIS scale; after a preset change it is the
+            // wrong buffer size for the rebuilt encoder, so re-derive the output from the retained
+            // staging pixels instead — without this, a static desktop starves the stream in an
+            // encoder-reinit loop until the desktop happens to change (RemEx-wmm8).
+            if (_lastRawFrame is not null && _lastRawFrameScale == scale)
+            {
+                isLive = true;
+                return _lastRawFrame;
+            }
+
+            if (_stagingHasFrame)
+            {
+                return MapStagingAndEncode(scale, out isLive);
+            }
+
+            isLive = true; // healthy static screen; nothing captured yet at any scale
             return _lastRawFrame;
         }
 
@@ -667,6 +695,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
 
             // ID3D11DeviceContext::CopyResource = slot 47.
             GetSlot<CopyResourceFn>(_d3dContext, 47)(_d3dContext, _stagingTexture, srcTex);
+            _stagingHasFrame = true;
         }
         finally
         {
@@ -674,6 +703,15 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
             frame.Dispose();
         }
 
+        return MapStagingAndEncode(scale, out isLive);
+    }
+
+    // Must be called under _lock with a valid frame in _stagingTexture (_stagingHasFrame). Maps the
+    // staging texture and converts it to the even-aligned target size for <paramref name="scale"/>,
+    // refreshing the cached frame and its scale marker. Serves both the fresh-frame path and the
+    // static-desktop rescale path (scale changed, no new WGC frame — RemEx-wmm8).
+    private byte[]? MapStagingAndEncode(double scale, out bool isLive)
+    {
         IntPtr mappedPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MappedSubresource>());
         // ID3D11DeviceContext::Map = slot 14.
         int mapHr = GetSlot<MapFn>(_d3dContext, 14)(_d3dContext, _stagingTexture, 0, D3D11_MAP_READ, 0, mappedPtr);
@@ -688,6 +726,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         {
             var mapped = Marshal.PtrToStructure<MappedSubresource>(mappedPtr);
             _lastRawFrame = EncodeToRawBgra(mapped.pData, (int)mapped.RowPitch, Width, Height, scale);
+            _lastRawFrameScale = scale;
             isLive = true;
             return _lastRawFrame;
         }
@@ -807,6 +846,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         _sessionLost = false;
 
         Release(ref _stagingTexture);
+        _stagingHasFrame = false;
         _stagingWidth = 0;
         _stagingHeight = 0;
         Width = 0;
@@ -823,6 +863,7 @@ public sealed class WgcDesktopCapture : IWgcCaptureSource
         Release(ref _stagingTexture);
         Release(ref _d3dContext);
         Release(ref _d3dDevice);
+        _stagingHasFrame = false;
         _stagingWidth = 0;
         _stagingHeight = 0;
     }
