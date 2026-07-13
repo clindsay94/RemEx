@@ -372,6 +372,7 @@
     <string name="file_transfer_notification_progress">%1$d sur %2$d octets transférés</string>
     <string name="file_transfer_notification_complete_title">Transfert terminé</string>
     <string name="file_transfer_notification_upload_complete">%1$s téléversé</string>
+    <string name="file_transfer_notification_upload_failed">Envoi de %1$s échoué</string>
     <string name="file_transfer_notification_download_complete">%1$s téléchargé</string>
     <string name="file_transfer_notification_failed_title">Échec du transfert</string>
     <string name="file_transfer_rename">Renommer</string>
@@ -509,6 +510,8 @@
     <string name="file_transfer_action_uploading">Envoi</string>
     <string name="file_transfer_adding_shortcut">Ajout du raccourci…</string>
     <string name="file_transfer_browse_error">Erreur de navigation : %1$s</string>
+    <string name="file_transfer_send_error">Erreur : %1$s</string>
+$line
     <string name="file_transfer_cancelled">Annulé.</string>
     <string name="file_transfer_delete_failed">Échec de suppression : %1$s</string>
     <string name="file_transfer_delete_timeout">Délai de suppression dépassé.</string>

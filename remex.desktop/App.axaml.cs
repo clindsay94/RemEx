@@ -70,6 +70,7 @@ public partial class App : Application
         });
         collection.AddSingleton<ThemeService>();
         collection.AddSingleton<HardwareThemeService>();
+        collection.AddSingleton<UpdateCheckService>();
         collection.AddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
         collection.AddSingleton<PinnedCertStore>();
         collection.AddSingleton<IPairingPinQueryService, IpcPairingPinQueryService>();
@@ -135,6 +136,13 @@ public partial class App : Application
             var layoutService = Services.GetRequiredService<DashboardLayoutService>();
             var savefileService = Services.GetRequiredService<RemexSavefileService>();
             var profile = await layoutService.LoadAsync();
+
+            // Auto-check for a newer GitHub release on startup unless the user opted out. Fire-and-forget
+            // so a slow/absent network never delays the window; the About page reads the cached result.
+            if (profile == null || profile.CheckForUpdatesAutomatically)
+            {
+                _ = Services.GetService<UpdateCheckService>()?.CheckAsync();
+            }
 
             // Silent rolling auto-snapshot: restart the debounce timer every time the dashboard
             // profile is written to disk (canvas moves, settings changes, theme swaps, etc.).

@@ -371,7 +371,8 @@
     <string name="file_transfer_notification_preparing">Preparing transfer…</string>
     <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
     <string name="file_transfer_notification_complete_title">Transfer complete</string>
-    <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
+    <string name="file_transfer_notification_upload_complete">%1$s вивантажено</string>
+    <string name="file_transfer_notification_upload_failed">Не вдалося надіслати %1$s</string>
     <string name="file_transfer_notification_download_complete">Downloaded %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer failed</string>
     <string name="file_transfer_rename">Rename</string>
@@ -509,6 +510,8 @@
     <string name="file_transfer_action_uploading">Відправлення</string>
     <string name="file_transfer_adding_shortcut">Додавання ярлика…</string>
     <string name="file_transfer_browse_error">Помилка огляду: %1$s</string>
+    <string name="file_transfer_send_error">Помилка: %1$s</string>
+$line
     <string name="file_transfer_cancelled">Скасовано.</string>
     <string name="file_transfer_delete_failed">Помилка видалення: %1$s</string>
     <string name="file_transfer_delete_timeout">Час видалення вичерпано.</string>

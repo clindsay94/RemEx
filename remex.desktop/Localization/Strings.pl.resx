@@ -2909,4 +2909,34 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Splash_Style_Pong" xml:space="preserve">
     <value>Signal Pong</value>
   </data>
+  <data name="About_Update_Title" xml:space="preserve">
+    <value>Aktualizacja oprogramowania</value>
+  </data>
+  <data name="About_Update_Checking" xml:space="preserve">
+    <value>Sprawdzanie aktualizacji…</value>
+  </data>
+  <data name="About_Update_UpToDate" xml:space="preserve">
+    <value>Masz najnowszą wersję.</value>
+  </data>
+  <data name="About_Update_Available" xml:space="preserve">
+    <value>Dostępna aktualizacja: {0}</value>
+  </data>
+  <data name="About_Update_Failed" xml:space="preserve">
+    <value>Nie można sprawdzić aktualizacji. Spróbuj ponownie później.</value>
+  </data>
+  <data name="About_Update_CheckButton" xml:space="preserve">
+    <value>Sprawdź aktualizacje</value>
+  </data>
+  <data name="About_Update_DownloadButton" xml:space="preserve">
+    <value>Pobierz</value>
+  </data>
+  <data name="Settings_CheckForUpdates" xml:space="preserve">
+    <value>Automatycznie sprawdzaj aktualizacje</value>
+  </data>
+  <data name="Settings_CheckForUpdatesDesc" xml:space="preserve">
+    <value>Szukaj nowszej wersji w serwisie GitHub przy uruchamianiu RemEx.</value>
+  </data>
+  <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
+    <value>Wysyła jedno anonimowe żądanie do GitHub przy uruchomieniu. Żadne dane osobowe nie są wysyłane.</value>
+  </data>
 </root>

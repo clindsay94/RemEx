@@ -3061,4 +3061,34 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Conn_Latency" xml:space="preserve">
     <value>Latency</value>
   </data>
+  <data name="About_Update_Title" xml:space="preserve">
+    <value>Software Update</value>
+  </data>
+  <data name="About_Update_Checking" xml:space="preserve">
+    <value>Checking for updates…</value>
+  </data>
+  <data name="About_Update_UpToDate" xml:space="preserve">
+    <value>You're on the latest version.</value>
+  </data>
+  <data name="About_Update_Available" xml:space="preserve">
+    <value>Update available: {0}</value>
+  </data>
+  <data name="About_Update_Failed" xml:space="preserve">
+    <value>Couldn't check for updates. Try again later.</value>
+  </data>
+  <data name="About_Update_CheckButton" xml:space="preserve">
+    <value>Check for updates</value>
+  </data>
+  <data name="About_Update_DownloadButton" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Settings_CheckForUpdates" xml:space="preserve">
+    <value>Check for updates automatically</value>
+  </data>
+  <data name="Settings_CheckForUpdatesDesc" xml:space="preserve">
+    <value>Look for a newer version on GitHub when RemEx starts.</value>
+  </data>
+  <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
+    <value>Makes one anonymous request to GitHub at startup. No personal data is sent.</value>
+  </data>
 </root>

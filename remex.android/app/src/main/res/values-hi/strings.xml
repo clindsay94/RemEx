@@ -372,6 +372,7 @@
     <string name="file_transfer_notification_progress">%1$d में से %2$d बाइट्स ट्रांसफर हुए</string>
     <string name="file_transfer_notification_complete_title">ट्रांसफर पूरा हुआ</string>
     <string name="file_transfer_notification_upload_complete">%1$s अपलोड हो गया</string>
+    <string name="file_transfer_notification_upload_failed">%1$s भेजने में विफल</string>
     <string name="file_transfer_notification_download_complete">%1$s डाउनलोड हो गया</string>
     <string name="file_transfer_notification_failed_title">ट्रांसफर विफल रहा</string>
     <string name="file_transfer_rename">नाम बदलें</string>
@@ -509,6 +510,8 @@
     <string name="file_transfer_action_uploading">अपलोड किया जा रहा है</string>
     <string name="file_transfer_adding_shortcut">शॉर्टकट जोड़ा जा रहा है…</string>
     <string name="file_transfer_browse_error">ब्राउज़ त्रुटि: %1$s</string>
+    <string name="file_transfer_send_error">त्रुटि: %1$s</string>
+$line
     <string name="file_transfer_cancelled">रद्द कर दिया गया।</string>
     <string name="file_transfer_delete_failed">हटाना विफल: %1$s</string>
     <string name="file_transfer_delete_timeout">हटाने की समयावधि समाप्त।</string>

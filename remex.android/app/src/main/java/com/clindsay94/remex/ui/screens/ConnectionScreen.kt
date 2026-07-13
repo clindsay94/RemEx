@@ -262,18 +262,24 @@ fun ConnectionScreenContent(
                 }
         }
 
-        // Autofill host/port and show snackbar when a host is discovered
+        // Autofill host/port and show snackbar when a host is discovered. Consume the event
+        // *before* showing the snackbar (and fire the snackbar on the screen's own scope, not this
+        // effect) so a configuration change — e.g. rotation — during the snackbar's few seconds can't
+        // replay the 'PC found' message: the state is already cleared. (RemEx-b0lv)
         LaunchedEffect(discoveredHost) {
                 discoveredHost?.let {
                         hostInput = it.host
                         portInput = it.port.toString()
-                        snackbarHostState.showSnackbar(
-                                context.getString(
-                                        R.string.host_discovered_snackbar,
-                                        it.host
-                                )
-                        )
+                        val discoveredHostName = it.host
                         onConsumeDiscoveredHost()
+                        scope.launch {
+                                snackbarHostState.showSnackbar(
+                                        context.getString(
+                                                R.string.host_discovered_snackbar,
+                                                discoveredHostName
+                                        )
+                                )
+                        }
                 }
         }
 

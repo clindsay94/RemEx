@@ -2908,4 +2908,34 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Splash_Style_Pong" xml:space="preserve">
     <value>Signal Pong</value>
   </data>
+  <data name="About_Update_Title" xml:space="preserve">
+    <value>Mise à jour du logiciel</value>
+  </data>
+  <data name="About_Update_Checking" xml:space="preserve">
+    <value>Recherche de mises à jour…</value>
+  </data>
+  <data name="About_Update_UpToDate" xml:space="preserve">
+    <value>Vous avez la dernière version.</value>
+  </data>
+  <data name="About_Update_Available" xml:space="preserve">
+    <value>Mise à jour disponible : {0}</value>
+  </data>
+  <data name="About_Update_Failed" xml:space="preserve">
+    <value>Impossible de vérifier les mises à jour. Réessayez plus tard.</value>
+  </data>
+  <data name="About_Update_CheckButton" xml:space="preserve">
+    <value>Rechercher des mises à jour</value>
+  </data>
+  <data name="About_Update_DownloadButton" xml:space="preserve">
+    <value>Télécharger</value>
+  </data>
+  <data name="Settings_CheckForUpdates" xml:space="preserve">
+    <value>Vérifier les mises à jour automatiquement</value>
+  </data>
+  <data name="Settings_CheckForUpdatesDesc" xml:space="preserve">
+    <value>Recherche une version plus récente sur GitHub au démarrage de RemEx.</value>
+  </data>
+  <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
+    <value>Effectue une requête anonyme à GitHub au démarrage. Aucune donnée personnelle n'est envoyée.</value>
+  </data>
 </root>

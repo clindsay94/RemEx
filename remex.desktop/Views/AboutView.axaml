@@ -114,6 +114,30 @@
                                 </StackPanel>
                                 <TextBlock Text="{Binding HostVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
                             </StackPanel>
+
+                            <!-- Divider -->
+                            <Border Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
+
+                            <!-- Software Update -->
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <Path Data="{StaticResource IconSync}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{local:Localize About_Update_Title}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding UpdateStatusText}" IsVisible="{Binding HasUpdateStatus}"
+                                           FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                                           TextWrapping="Wrap" Margin="30,0,0,0"/>
+                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="30,4,0,0">
+                                    <Button Classes="action-btn"
+                                            Content="{local:Localize About_Update_CheckButton}"
+                                            Command="{Binding CheckForUpdatesCommand}"
+                                            IsEnabled="{Binding !IsCheckingForUpdate}"/>
+                                    <Button Classes="github-btn"
+                                            Content="{local:Localize About_Update_DownloadButton}"
+                                            Command="{Binding DownloadUpdateCommand}"
+                                            IsVisible="{Binding IsUpdateAvailable}"/>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

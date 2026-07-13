@@ -372,6 +372,7 @@
     <string name="file_transfer_notification_progress">%1$d de %2$d bytes transferidos</string>
     <string name="file_transfer_notification_complete_title">Transferência concluída</string>
     <string name="file_transfer_notification_upload_complete">%1$s enviado com sucesso</string>
+    <string name="file_transfer_notification_upload_failed">Falha ao enviar %1$s</string>
     <string name="file_transfer_notification_download_complete">%1$s baixado com sucesso</string>
     <string name="file_transfer_notification_failed_title">Falha na transferência</string>
     <string name="file_transfer_rename">Renomear</string>
@@ -509,6 +510,8 @@
     <string name="file_transfer_action_uploading">Enviando</string>
     <string name="file_transfer_adding_shortcut">Adicionando atalho…</string>
     <string name="file_transfer_browse_error">Erro de navegação: %1$s</string>
+    <string name="file_transfer_send_error">Erro: %1$s</string>
+$line
     <string name="file_transfer_cancelled">Cancelado.</string>
     <string name="file_transfer_delete_failed">Falha ao excluir: %1$s</string>
     <string name="file_transfer_delete_timeout">Tempo limite de exclusão atingido.</string>

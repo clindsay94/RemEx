@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Remex.Core.Services;
 
 namespace Remex.Desktop.Services.FileTransfer;
 
@@ -19,13 +20,17 @@ public sealed class FileTransferRootSettingsService
 
     public FileTransferRootSettingsService()
     {
-        var baseFolder = OperatingSystem.IsAndroid()
-            ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
-            : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-
-        var appData = Path.Combine(baseFolder, "Remex");
-        Directory.CreateDirectory(appData);
-        _configPath = Path.Combine(appData, "file_transfer_roots.json");
+        // Mirror FileTransferService (the live host) EXACTLY: resolve the shared-roots store through
+        // RemexDataPaths so Settings writes the SAME file the host reads. On Windows the host runs as
+        // the LocalSystem service and reads C:\ProgramData\RemEx; writing to per-user
+        // LocalApplicationData here meant adding/removing a shared root in Settings never reached the
+        // host after the one-time migration (RemEx-y8xy). Off Windows the legacy per-user folder is
+        // returned verbatim, so behaviour there is unchanged.
+        var legacyFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
+        var baseFolder = RemexDataPaths.ResolveDirectory(legacyFolder);
+        RemexDataPaths.TryMigrateWindowsFile("file_transfer_roots.json");
+        _configPath = Path.Combine(baseFolder, "file_transfer_roots.json");
     }
 
     public async Task<IReadOnlyList<FileTransferRootConfiguration>> LoadAsync()

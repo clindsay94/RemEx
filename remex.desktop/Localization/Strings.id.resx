@@ -2908,4 +2908,34 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Splash_Style_Pong" xml:space="preserve">
     <value>Signal Pong</value>
   </data>
+  <data name="About_Update_Title" xml:space="preserve">
+    <value>Pembaruan Perangkat Lunak</value>
+  </data>
+  <data name="About_Update_Checking" xml:space="preserve">
+    <value>Memeriksa pembaruan…</value>
+  </data>
+  <data name="About_Update_UpToDate" xml:space="preserve">
+    <value>Anda menggunakan versi terbaru.</value>
+  </data>
+  <data name="About_Update_Available" xml:space="preserve">
+    <value>Pembaruan tersedia: {0}</value>
+  </data>
+  <data name="About_Update_Failed" xml:space="preserve">
+    <value>Tidak dapat memeriksa pembaruan. Coba lagi nanti.</value>
+  </data>
+  <data name="About_Update_CheckButton" xml:space="preserve">
+    <value>Periksa pembaruan</value>
+  </data>
+  <data name="About_Update_DownloadButton" xml:space="preserve">
+    <value>Unduh</value>
+  </data>
+  <data name="Settings_CheckForUpdates" xml:space="preserve">
+    <value>Periksa pembaruan secara otomatis</value>
+  </data>
+  <data name="Settings_CheckForUpdatesDesc" xml:space="preserve">
+    <value>Cari versi lebih baru di GitHub saat RemEx dimulai.</value>
+  </data>
+  <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
+    <value>Membuat satu permintaan anonim ke GitHub saat memulai. Tidak ada data pribadi yang dikirim.</value>
+  </data>
 </root>

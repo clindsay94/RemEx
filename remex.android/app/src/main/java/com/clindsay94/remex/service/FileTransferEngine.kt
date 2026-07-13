@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import android.util.Log
+import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
@@ -195,14 +196,23 @@ object FileTransferEngine {
         } catch (e: Exception) {
             Log.w(TAG, "Transfer ${t.id} failed", e)
             updateState(t.id) { it.copy(state = TransferState.Failed, error = e.message) }
+            // A push/upload that dies mid-stream (thrown here, not via runUpload's own terminal
+            // branches) still owes the user a Share-to-PC result, same as runDownload's notify.
+            if (t.mode != FileTransferModes.DOWNLOAD) notifyUploadFailed(t)
         }
     }
 
     private suspend fun runUpload(t: QueuedTransfer) {
         val resume = t.bytesTransferred in 1 until t.size
-        val ready = negotiate(t, resumeRequested = resume) ?: return
+        val ready = negotiate(t, resumeRequested = resume)
+        if (ready == null) {
+            // negotiate() already marked the transfer Failed with its reason.
+            notifyUploadFailed(t)
+            return
+        }
         if (!ready.accepted) {
             updateState(t.id) { it.copy(state = TransferState.Failed, error = ready.declineReason ?: "Declined.") }
+            notifyUploadFailed(t)
             return
         }
         val startOffset = TransferResumeLogic.senderStartOffset(ready.startOffset, t.size)
@@ -274,14 +284,23 @@ object FileTransferEngine {
             val result = awaitResult(t.id)
             if (result != null && result.verified) {
                 updateState(t.id) { it.copy(state = TransferState.Done) }
+                // Confirm the send (parity with runDownload's completion notification).
+                FileTransferNotificationManager.showTransferComplete(appContext, t.fileName, isDownload = false)
             } else {
                 updateState(t.id) {
                     it.copy(state = TransferState.Failed, error = result?.error ?: "Verification failed.")
                 }
+                notifyUploadFailed(t)
             }
         } finally {
             FileTransferChannelClient.unregisterSink(t.id)
         }
+    }
+
+    /** Posts a Share-to-PC failure notification for [t]; the body names the file via localized text. */
+    private fun notifyUploadFailed(t: QueuedTransfer) {
+        val message = appContext.getString(R.string.file_transfer_notification_upload_failed, t.fileName)
+        FileTransferNotificationManager.showTransferFailed(appContext, message)
     }
 
     private suspend fun runDownload(t: QueuedTransfer) {

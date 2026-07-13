@@ -111,6 +111,13 @@ public record DashboardProfile
     /// </summary>
     public bool CloseToTray { get; init; } = true;
 
+    /// <summary>
+    /// When true, the desktop app checks the public GitHub Releases API for a newer RemEx build
+    /// on startup and shows a notice in About. PC-only; the Android client ignores it. Defaults to
+    /// true — the check is a single anonymous request to api.github.com with no telemetry.
+    /// </summary>
+    public bool CheckForUpdatesAutomatically { get; init; } = true;
+
     /// <summary>Host screen capture JPEG quality (10–100). Applies to the stream sent to mobile clients.</summary>
     public int StreamQuality { get; init; } = 100;
 

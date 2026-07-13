@@ -28,6 +28,26 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isShowShortcutsOpen;
 
+    // ── Update check (RemEx-<update-checker>) ──────────────────────────────────
+    private readonly UpdateCheckService? _updateService;
+    private string? _downloadUrl;
+
+    /// <summary>True while a check is running — the view disables the button and shows progress.</summary>
+    [ObservableProperty]
+    private bool _isCheckingForUpdate;
+
+    /// <summary>True only when a newer release exists — gates the Download button and highlight.</summary>
+    [ObservableProperty]
+    private bool _isUpdateAvailable;
+
+    /// <summary>Whether any status line (checking / up-to-date / available / failed) should show.</summary>
+    [ObservableProperty]
+    private bool _hasUpdateStatus;
+
+    /// <summary>Localized status message for the update card.</summary>
+    [ObservableProperty]
+    private string _updateStatusText = string.Empty;
+
     public ObservableCollection<WhatsNewItem> WhatsNewItems { get; } = new();
 
     /// <summary>Localized FAQ question/answer pairs, merged into About from the former standalone FAQ page.</summary>
@@ -49,6 +69,17 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         var version = Assembly.GetExecutingAssembly().GetName().Version;
         ClientVersion = version?.ToString() ?? "unknown";
 
+        // The update check runs at startup (App.InitializeAppAsync); pick up any cached result so the
+        // card is populated the instant About opens, and stay subscribed for the startup check that may
+        // still be in flight. Resolved from the container like the other App.Services lookups here.
+        _updateService = App.Services?.GetService(typeof(UpdateCheckService)) as UpdateCheckService;
+        if (_updateService != null)
+        {
+            _updateService.ResultChanged += OnUpdateResultChanged;
+            if (_updateService.LastResult != null)
+                ApplyUpdateResult(_updateService.LastResult);
+        }
+
         UpdateHostVersion();
         LoadWhatsNew();
         LoadFaq();
@@ -64,6 +95,9 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         FaqItems.Clear();
         LoadFaq();
         UpdateHostVersion();
+        // Re-localize the update status line for the new culture.
+        if (_updateService?.LastResult != null)
+            ApplyUpdateResult(_updateService.LastResult);
     }
     
     private void LoadWhatsNew()
@@ -221,6 +255,73 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Manual "Check for updates" button. Safe to invoke repeatedly; never throws.</summary>
+    [RelayCommand]
+    private async System.Threading.Tasks.Task CheckForUpdatesAsync()
+    {
+        if (_updateService == null || IsCheckingForUpdate)
+            return;
+
+        IsCheckingForUpdate = true;
+        HasUpdateStatus = true;
+        UpdateStatusText = LocalizationService.Instance["About_Update_Checking"];
+        try
+        {
+            ApplyUpdateResult(await _updateService.CheckAsync());
+        }
+        finally
+        {
+            IsCheckingForUpdate = false;
+        }
+    }
+
+    /// <summary>Opens the release's download page in the default browser.</summary>
+    [RelayCommand]
+    private void DownloadUpdate()
+    {
+        var url = _downloadUrl ?? _updateService?.ReleasesUrl ?? "https://github.com/clindsay94/remex/releases/latest";
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+        }
+        catch
+        {
+            // Silently fail if a browser can't be opened.
+        }
+    }
+
+    /// <summary>Fired (possibly off the UI thread) when the startup or a manual check completes.</summary>
+    private void OnUpdateResultChanged(object? sender, EventArgs e)
+    {
+        var result = _updateService?.LastResult;
+        if (result == null)
+            return;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyUpdateResult(result));
+    }
+
+    private void ApplyUpdateResult(UpdateCheckResult result)
+    {
+        _downloadUrl = result.DownloadUrl;
+        HasUpdateStatus = true;
+        switch (result.Status)
+        {
+            case UpdateCheckStatus.UpdateAvailable:
+                IsUpdateAvailable = true;
+                UpdateStatusText = string.Format(
+                    LocalizationService.Instance["About_Update_Available"],
+                    result.LatestVersion);
+                break;
+            case UpdateCheckStatus.UpToDate:
+                IsUpdateAvailable = false;
+                UpdateStatusText = LocalizationService.Instance["About_Update_UpToDate"];
+                break;
+            default:
+                IsUpdateAvailable = false;
+                UpdateStatusText = LocalizationService.Instance["About_Update_Failed"];
+                break;
+        }
+    }
+
     [RelayCommand]
     private void NavigateBack()
     {
@@ -231,6 +332,8 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     {
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         LocalizationService.Instance.PropertyChanged -= OnLocalizationChanged;
+        if (_updateService != null)
+            _updateService.ResultChanged -= OnUpdateResultChanged;
     }
 }
 
