@@ -719,6 +719,9 @@ fun RemoteDesktopScreenContent(
             panOffsetX = 0f
             panOffsetY = 0f
             lastFitKey = fitKey
+            // Instrumentation (RD zoom diag): shows exactly why the initial view is zoomed — the box
+            // size, whether it was judged landscape, the letterboxed content rect, and the zoom applied.
+            Log.i(TAG, "RD-fit: imageSize=${imageSize.width}x${imageSize.height} landscape=$isLandscapeBox streamRes=${streamPixelWidth}x$streamPixelHeight rect=${rect.w.roundToInt()}x${rect.h.roundToInt()} -> zoomFactor=$zoomFactor (fitKey=$fitKey)")
         }
 
         Scaffold(
@@ -1985,7 +1988,15 @@ fun RemoteDesktopScreenContent(
                                         // host's real desktop_meta arrives, freezing the SurfaceView's buffer->view scale at
                                         // the wrong geometry (see the freeze note below) until an unrelated key() input
                                         // (e.g. fullscreen toggle) happens to force a rebuild. (Phase 2, RemEx-bqoe)
-                                        if (activeCodec == "H264" && desktopMetaReady) {
+                                        // Gate on lastFitKey too (not just desktopMetaReady): a SurfaceView freezes its
+                                        // buffer->view SCALE at creation, and since x3eb no longer recreates it on a
+                                        // resolution change, a surface built BEFORE the fit effect settles zoomFactor/geometry
+                                        // stays frozen at that pre-fit (zoomed) scale until an unrelated recreate — the
+                                        // "starts zoomed, then refreshes to full" report. lastFitKey is non-empty only once
+                                        // the fit has run against the real desktop dims, so waiting for it means the first (and
+                                        // only) surface is built at the correct scale. Mid-session scale changes still
+                                        // reconfigure in place (streamRes is not a key), so no black regression. (RemEx-oenj)
+                                        if (activeCodec == "H264" && desktopMetaReady && lastFitKey.isNotEmpty()) {
                                                 // Rebuild the SurfaceView only when the video box (imageSize) settles — NOT on a
                                                 // resolution change. A SurfaceView's content sublayer freezes its buffer->view
                                                 // SCALE at creation: if the surface is first created while imageSize is
@@ -2008,9 +2019,13 @@ fun RemoteDesktopScreenContent(
                                                 // came up empty and mid-GOP, dropping P-frames until the host's next periodic IDR
                                                 // (or a monitor-switch re-bootstrap), i.e. black-with-cursor + a transient zoom.
                                                 // The decoder's width/height are hints only (it configures from the stream's own
-                                                // SPS), and holder.setFixedSize is overridden by the codec's decoded geometry, so
-                                                // a persisted surface renders the new resolution correctly. contentRect()/fit
-                                                // still re-key on the dims, so layout re-aspects without a rebuild. (RemEx-x3eb)
+                                                // SPS). Because the surface persists across resolution changes, its fixed buffer
+                                                // geometry MUST be re-pinned when the stream resolution changes — the update
+                                                // lambda below does that. (On the S24 Ultra's c2 Qualcomm decoder the codec does
+                                                // NOT override a stale setFixedSize: the frozen creation-time geometry rendered
+                                                // every frame zoomed by exactly oldRes/newRes ≈ 1/scale — RemEx-oenj.)
+                                                // contentRect()/fit still re-key on the dims, so layout re-aspects without a
+                                                // rebuild. (RemEx-x3eb)
                                                 key(imageSize) {
                                                 AndroidView(
                                                         factory = { context ->
@@ -2056,6 +2071,20 @@ fun RemoteDesktopScreenContent(
                                                                                         Log.i(TAG, "H.264 SurfaceView destroyed.")
                                                                                 }
                                                                         })
+                                                                }
+                                                        },
+                                                        update = { view ->
+                                                                // Re-pin the surface's producer buffer geometry to the CURRENT stream
+                                                                // resolution. surfaceCreated pins it once, but since x3eb the SurfaceView
+                                                                // deliberately survives a mid-session scale change (the decoder adopts the
+                                                                // new SPS in place), so without this re-pin the buffer→view scale stays
+                                                                // frozen at the creation-time resolution and every decoded frame renders
+                                                                // zoomed by exactly oldRes/newRes (magnification ≈ 1/scale) until an
+                                                                // unrelated recreate — the "starts zoomed, refreshes to full" bug.
+                                                                // SurfaceView.setFixedSize no-ops when the size is unchanged, so calling
+                                                                // it on every recomposition is free. (RemEx-oenj)
+                                                                if (streamPixelWidth > 0 && streamPixelHeight > 0) {
+                                                                        view.holder.setFixedSize(streamPixelWidth, streamPixelHeight)
                                                                 }
                                                         },
                                                         // A SurfaceView's native surface is composited at the view's LAYOUT
