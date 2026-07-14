@@ -7,7 +7,7 @@
 ### Your PC, in your pocket. A buttery‑smooth, end‑to‑end‑encrypted remote desktop and control suite that turns any Android phone into a full remote for your Windows or Linux machine.
 
 <p>
-  <img alt="Version" src="https://img.shields.io/badge/version-2.2.0-FFB000?style=for-the-badge&labelColor=0d1117" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.3.0-FFB000?style=for-the-badge&labelColor=0d1117" />
   <img alt="Platforms" src="https://img.shields.io/badge/host-Windows%20%7C%20Linux-1f6feb?style=for-the-badge&labelColor=0d1117" />
   <img alt="Client" src="https://img.shields.io/badge/client-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white&labelColor=0d1117" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-8957e5?style=for-the-badge&labelColor=0d1117" />
@@ -25,6 +25,10 @@
 
 <sub>**Android (client) → PC (host).** One encrypted connection. No cloud relay, no account, no telemetry leaving your network.</sub>
 
+<p>
+  <a href="https://play.google.com/store/apps/details?id=com.clindsay94.remex"><b>📲 Get RemEx on Google Play</b></a> — currently in Open Testing · or grab the PC installer and APK from <a href="https://github.com/clindsay94/RemEx/releases">GitHub Releases</a>
+</p>
+
 </div>
 
 ---
@@ -41,7 +45,7 @@ It streams your desktop at up to **120 FPS** with a hardware‑accelerated H.264
 
 ## 🧭 Table of Contents
 
-- [What's New in 2.2](#-whats-new-in-22)
+- [What's New in 2.3](#-whats-new-in-23)
 - [Feature Tour](#-feature-tour)
 - [Architecture](#-architecture)
 - [Communication Protocols](#-communication-protocols)
@@ -57,9 +61,18 @@ It streams your desktop at up to **120 FPS** with a hardware‑accelerated H.264
 
 ---
 
-## 🚀 What's New in 2.2
+## 🚀 What's New in 2.3
 
-RemEx 2.2 brings a gorgeous UI redesign to the PC dashboard, deep diagnostic logs, and a file-sharing overhaul that supports resumable, lightning-fast transfers.
+RemEx 2.3 closes out the last Google Play App Security flags on the Android app, and makes the PC dashboard's Home page genuinely useful at a glance — no digging into Sensors required.
+
+- **Play Store Hardened:** Removed the last unsafe-TLS trust-all code paths Google Play flagged — the pairing PIN now auto-fills over the already-encrypted pairing connection instead of a separate HTTPS call.
+- **Home, At a Glance:** A live CPU · memory · uptime strip and a "Recent activity" feed (files, app launches, power and remote commands — from both your phone and your PC) now sit right on the Home page.
+- **Scale It to You:** A new UI-size slider (85%–130%) resizes the whole dashboard's text and controls for readability.
+- **Rock-Solid Fonts:** A font that fails to load can no longer freeze the app.
+
+### 2.2: File Sharing Pro & the Dashboard Glow-Up
+
+RemEx 2.2 brought a gorgeous UI redesign to the PC dashboard, deep diagnostic logs, and a file-sharing overhaul that supports resumable, lightning-fast transfers.
 
 - **File Sharing Pro:** Drag-and-drop transfers, two-way PC/Android browsing, and a new resizable icon grid view.
 - **Flawless Remote Desktop:** Seamless H.264 resolution scaling mid-stream without connection drops, zooming bugs, or encoder starvation. 
@@ -106,6 +119,7 @@ RemEx 2.0 was a ground‑up overhaul of the streaming and input pipeline. The he
 ### 📊 Live Telemetry
 - Real‑time hardware sensors via **HWiNFO** (Windows) and **lmsensors** (Linux).
 - A free‑form **4,000 × 4,000 canvas** to arrange sensor cards exactly how you like, with snapshot‑to‑clipboard.
+- An always‑on **CPU · memory · uptime strip** and a **Recent activity feed** right on the Home page — no sensor pinning required.
 
 ### ⚡ Power & Quick Actions
 - Eight Android **Quick Settings tiles**: Lock, Shutdown, Restart, Restart‑to‑UEFI, Wake‑on‑LAN, Sleep, Hibernate, Monitor‑Off.
@@ -205,14 +219,14 @@ RemEx is built so that the only way in is the way *you* authorized.
 | Side | Requirement |
 |---|---|
 | 🖥️ PC host | Windows 10/11 (64‑bit) **or** a modern Linux desktop (Wayland or X11; PipeWire for screen capture). Run `--doctor` on Linux to verify prerequisites. |
-| 📱 Android client | An Android phone (built against SDK 37 / Android 17). |
+| 📱 Android client | An Android phone running **Android 14** or newer (built against SDK 37 / Android 17). |
 | 🌐 Network | Phone and PC on the **same local network**. No internet, cloud account, or relay required. |
 
 ### 1. Install the host on your PC
 
 **Windows — the easy way (no coding required):**
 
-1. Download the installer — **`RemEx-v2.1.0-Setup.exe`** — from the project's [**GitHub Releases**](https://github.com/clindsay94/RemEx/releases) page.
+1. Download the installer — **`RemEx-v2.3.0-Setup.exe`** — from the project's [**GitHub Releases**](https://github.com/clindsay94/RemEx/releases) page.
 2. Double‑click it and follow the wizard. Leave **"Launch RemEx when you sign in"** ticked so RemEx starts by itself every time you log in.
 3. RemEx opens its dashboard. The **6‑digit pairing PIN** you'll need in step 3 is shown right there.
 
@@ -233,7 +247,13 @@ A friendly ANSI startup banner prints the active ports, platform, and state. See
 
 ### 2. Install the Android app
 
-Install the RemEx APK on your phone — grab the latest build from the project's **GitHub Releases** page. On first launch you'll be guided through the Local Network permission and battery‑optimization onboarding. See [`docs/ANDROID_SETUP.md`](docs/ANDROID_SETUP.md).
+**Google Play (recommended):** RemEx is currently in **Open Testing** — open the listing below, tap **Join the program**, then install it like any other Play Store app so you get automatic updates:
+
+👉 [**RemEx on Google Play**](https://play.google.com/store/apps/details?id=com.clindsay94.remex)
+
+**Or sideload the APK directly** — grab the latest build from the project's [**GitHub Releases**](https://github.com/clindsay94/RemEx/releases) page instead.
+
+On first launch you'll be guided through the Local Network permission and battery‑optimization onboarding. See [`docs/ANDROID_SETUP.md`](docs/ANDROID_SETUP.md).
 
 ### 3. Pair your phone with your PC
 
@@ -287,6 +307,8 @@ RemEx is meant to look as good as it performs — for technical and non‑techni
 | **BaseDarkGlass** | Clean dark‑glass baseline |
 
 **Eight languages**, switchable live without a restart. Every user‑facing string flows through the localization system — no hardcoded English.
+
+**Adjustable UI scale (85%–130%)** — resize the whole dashboard's text and controls live from Personalization, no restart required.
 
 **Cinematic onboarding** — choose your boot intro, including the "Cosmic Zoom" splash: a radiating hyperdrive starfield, a slow‑zooming neon "R", a high‑voltage screen flash with a physical haptic shudder, and the gold‑orange lightning bolt materializing into the full title.
 
