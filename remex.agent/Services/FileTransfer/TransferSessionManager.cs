@@ -418,11 +418,18 @@ public sealed class TransferSessionManager : IDisposable
         }
     }
 
-    /// <summary>Handles an inbound <c>file_transfer_complete</c> and replies with <c>file_transfer_result</c>.</summary>
-    public async Task HandleCompleteAsync(FileTransferComplete complete, WebSocket controlWs, CancellationToken ct)
+    /// <summary>Handles an inbound <c>file_transfer_complete</c> and replies with <c>file_transfer_result</c>.
+    /// <paramref name="isLoopback"/> distinguishes a real remote device from the PC UI's own self-connection,
+    /// so only genuine phone pushes are surfaced in the Home activity feed.</summary>
+    public async Task HandleCompleteAsync(FileTransferComplete complete, WebSocket controlWs, bool isLoopback, CancellationToken ct)
     {
         if (complete is null)
             return;
+
+        // Capture the destination file name now — CompleteReceiveAsync removes the session below.
+        string? receivedName = _receiveSessions.TryGetValue(complete.TransferId, out var pendingSession)
+            ? System.IO.Path.GetFileName(pendingSession.HostRelativePath)
+            : null;
 
         var result = await CompleteReceiveAsync(complete.TransferId, complete.Sha256Base64, ct);
         await MessageSerializer.SendAsync(controlWs, new RemexMessage
@@ -431,6 +438,15 @@ public sealed class TransferSessionManager : IDisposable
             ProtocolVersion = ProtocolVersionPolicy.Current,
             FileTransferResult = result,
         }, ct);
+
+        // Feed the Home "Recent activity" panel when a real remote device pushes a file onto this PC.
+        // Skip loopback: a PC-user upload over the self-connection is already recorded desktop-side, so
+        // recording it here too would double-count the same file.
+        if (!isLoopback && result.Verified && !string.IsNullOrEmpty(receivedName))
+        {
+            Remex.Desktop.Services.ActivityService.Instance.Record(
+                Remex.Desktop.Services.ActivityKind.FileReceived, receivedName);
+        }
     }
 
     /// <summary>Handles a <c>file_transfer_control</c> action (pause / resume / cancel).</summary>

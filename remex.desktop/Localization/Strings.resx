@@ -522,6 +522,15 @@
   <data name="Custom_ContentFontTip" xml:space="preserve">
     <value>Font for body and content text — descriptions, labels, and the sensor workspace. Fixed-width data readouts keep their monospace font.</value>
   </data>
+  <data name="Custom_UiScale" xml:space="preserve">
+    <value>UI Size</value>
+  </data>
+  <data name="Custom_UiScaleTip" xml:space="preserve">
+    <value>Make everything — text and controls — larger or smaller, from 85% to 130%.</value>
+  </data>
+  <data name="Custom_FontUnavailable" xml:space="preserve">
+    <value>This font couldn't be loaded on this PC and may not be installed: {0}. The default font is being used instead.</value>
+  </data>
   <data name="Custom_Back" xml:space="preserve">
     <value>← Command Center</value>
   </data>
@@ -2169,6 +2178,42 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
     <value>// DIRECTIVES</value>
+  </data>
+  <data name="Home_StatCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="Home_StatMemory" xml:space="preserve">
+    <value>MEMORY</value>
+  </data>
+  <data name="Home_StatUptime" xml:space="preserve">
+    <value>UPTIME</value>
+  </data>
+  <data name="Home_RecentActivity" xml:space="preserve">
+    <value>// RECENT_ACTIVITY</value>
+  </data>
+  <data name="Home_ClearActivity" xml:space="preserve">
+    <value>CLEAR</value>
+  </data>
+  <data name="Home_NoRecentActivity" xml:space="preserve">
+    <value>No activity yet. Launch an app, run a command, or move a file and it will show up here.</value>
+  </data>
+  <data name="Activity_FileReceived" xml:space="preserve">
+    <value>Received {0} from phone</value>
+  </data>
+  <data name="Activity_FileSent" xml:space="preserve">
+    <value>Sent {0} to phone</value>
+  </data>
+  <data name="Activity_FileUploaded" xml:space="preserve">
+    <value>Uploaded {0}</value>
+  </data>
+  <data name="Activity_FileDownloaded" xml:space="preserve">
+    <value>Downloaded {0}</value>
+  </data>
+  <data name="Activity_AppLaunched" xml:space="preserve">
+    <value>Launched {0}</value>
+  </data>
+  <data name="Activity_CommandRun" xml:space="preserve">
+    <value>Ran {0} command</value>
   </data>
   <data name="Home_RemoteControl" xml:space="preserve">
     <value>REMOTE_CONTROL</value>

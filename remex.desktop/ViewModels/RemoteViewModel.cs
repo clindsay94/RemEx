@@ -256,6 +256,10 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
         WolStatusText = ok
             ? string.Format(LocalizationService.Instance["Wol_SuccessFormat"], successMessage)
             : string.Format(LocalizationService.Instance["Wol_ErrorFormat"], msg);
+
+        // Log only commands that were accepted, so the Home feed reflects real actions.
+        if (ok)
+            ActivityService.Instance.Record(ActivityKind.CommandRun, action);
     }
 
     [RelayCommand]

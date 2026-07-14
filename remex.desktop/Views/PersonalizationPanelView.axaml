@@ -216,6 +216,18 @@
                     <TextBlock Text="{local:Localize Custom_ContentFont}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                     <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedBodyFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340"/>
                 </Grid>
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_UiScaleTip}">
+                    <TextBlock Text="{local:Localize Custom_UiScale}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left">
+                        <Slider Minimum="0.85" Maximum="1.3" Value="{Binding UiScale}" Width="168" VerticalAlignment="Center" TickFrequency="0.05" IsSnapToTickEnabled="True"/>
+                        <TextBlock Text="{Binding UiScale, StringFormat={}{0:P0}}" VerticalAlignment="Center" MinWidth="42" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Shown only when a chosen font can't be loaded on this machine; the app falls back safely. -->
+                <Border Background="#22F59E0B" BorderBrush="#55F59E0B" BorderThickness="1" CornerRadius="8" Padding="12,8" IsVisible="{Binding HasFontWarning}">
+                    <TextBlock Text="{Binding FontWarning}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                </Border>
             </StackPanel>
         </Border>
 

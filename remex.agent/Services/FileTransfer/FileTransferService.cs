@@ -92,20 +92,52 @@ public sealed class FileTransferService : IFileTransferService
         var dir = new DirectoryInfo(ResolvePath(rootId, relativePath));
         if (!dir.Exists)
             throw new DirectoryNotFoundException($"Directory not found in shared root '{rootId}': {relativePath}");
+        return Task.FromResult(EnumerateDirectory(dir));
+    }
 
-        var entries = dir.EnumerateFileSystemInfos()
-            .Select(fsi => new FileEntry
+    // Full-device browse of a mounted volume (RemEx-hb1t). The caller (FileTransferHandler) has already
+    // verified this client holds a full-browse consent grant and that volumeAbsolutePath is a real
+    // enumerated volume; here we enforce path safety only — ResolveWithinRoot collapses '..' and bounds
+    // the resolved path within the volume root (plus the restricted-system-path denylist), so the client
+    // cannot escape the volume. Listing is read-only; full browse never exposes write/delete.
+    public Task<IReadOnlyList<FileEntry>> BrowseVolumeAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct)
+    {
+        var resolved = FilePathValidation.ResolveWithinRoot(volumeAbsolutePath, relativePath, volumeAbsolutePath);
+        var dir = new DirectoryInfo(resolved);
+        if (!dir.Exists)
+            throw new DirectoryNotFoundException($"Folder not found: '{relativePath}'.");
+        return Task.FromResult(EnumerateDirectory(dir));
+    }
+
+    // Shared, resilient directory listing. Entries whose metadata can't be read (locked/protected system
+    // files, common when browsing a full volume) are skipped rather than failing the whole listing; an
+    // unreadable *directory* still surfaces as an error to the caller.
+    private static IReadOnlyList<FileEntry> EnumerateDirectory(DirectoryInfo dir)
+    {
+        var entries = new List<FileEntry>();
+        foreach (var fsi in dir.EnumerateFileSystemInfos())
+        {
+            try
             {
-                Name = fsi.Name,
-                IsDirectory = fsi is DirectoryInfo,
-                SizeBytes = fsi is FileInfo fi ? fi.Length : 0,
-                ModifiedUnixMs = new DateTimeOffset(fsi.LastWriteTimeUtc).ToUnixTimeMilliseconds()
-            })
-            .OrderByDescending(e => e.IsDirectory)
-            .ThenBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        return Task.FromResult<IReadOnlyList<FileEntry>>(entries);
+                entries.Add(new FileEntry
+                {
+                    Name = fsi.Name,
+                    IsDirectory = fsi is DirectoryInfo,
+                    SizeBytes = fsi is FileInfo fi ? fi.Length : 0,
+                    ModifiedUnixMs = new DateTimeOffset(fsi.LastWriteTimeUtc).ToUnixTimeMilliseconds(),
+                });
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                // Skip an entry whose metadata is unreadable; listing the rest beats failing the browse.
+            }
+        }
+        entries.Sort(static (a, b) =>
+        {
+            var byDir = b.IsDirectory.CompareTo(a.IsDirectory);
+            return byDir != 0 ? byDir : string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+        });
+        return entries;
     }
 
     public Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct)

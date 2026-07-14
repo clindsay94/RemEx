@@ -10,6 +10,14 @@ public interface IFileTransferService
 {
     Task<IReadOnlyList<FileSharedRoot>> ListRootsAsync(CancellationToken ct);
     Task<IReadOnlyList<FileEntry>> BrowseAsync(string rootId, string relativePath, CancellationToken ct);
+
+    /// <summary>
+    /// Full-device browse of a mounted <paramref name="volumeAbsolutePath"/> (a real, enumerated volume
+    /// root such as <c>C:\</c>). Navigation is bounded within the volume — no escape above it. The CALLER
+    /// MUST have verified the client's full-browse consent grant and that the path is a genuine volume
+    /// before calling this; the service enforces only path-escape safety and lists read-only.
+    /// </summary>
+    Task<IReadOnlyList<FileEntry>> BrowseVolumeAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct);
     Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct);
     Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct);
     Task DeleteAsync(string rootId, string relativePath, CancellationToken ct);

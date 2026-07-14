@@ -214,6 +214,10 @@ public record CustomizationSettings
     [JsonPropertyName("bodyFont")]
     public string BodyFontFamily { get; init; } = "avares://Avalonia.Fonts.Inter/Assets#Inter";
 
+    /// <summary>Overall UI scale (text and everything else), applied as a layout transform on the shell. 1.0 = 100%.</summary>
+    [JsonPropertyName("uiScale")]
+    public double UiScale { get; init; } = 1.0;
+
     /// <summary>Compatibility alias for older UI clients.</summary>
     [JsonIgnore]
     public string BaseTheme

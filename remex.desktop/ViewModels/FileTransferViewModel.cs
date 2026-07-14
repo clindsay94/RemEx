@@ -64,6 +64,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         _client = new FileTransferClient(connection);
         TransferQueue = new FileTransferQueue();
         TransferQueue.Changed += OnQueueChanged;
+        TransferQueue.ItemCompleted += OnTransferCompleted;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
         _ = InitializeAsync();
     }
@@ -80,6 +81,19 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     {
         OnPropertyChanged(nameof(HasQueueItems));
         OnPropertyChanged(nameof(HasActiveTransfer));
+    }
+
+    /// <summary>Records a successful user-driven transfer in the Home "Recent activity" feed.</summary>
+    private static void OnTransferCompleted(FileTransferQueueItem item)
+    {
+        var kind = item.Kind switch
+        {
+            FileTransferQueueKind.Upload => ActivityKind.FileUploaded,
+            FileTransferQueueKind.Download => ActivityKind.FileDownloaded,
+            FileTransferQueueKind.SendToPhone => ActivityKind.FileSent,
+            _ => ActivityKind.FileUploaded,
+        };
+        ActivityService.Instance.Record(kind, item.FileName);
     }
 
     [RelayCommand]
@@ -1108,6 +1122,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     {
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         TransferQueue.Changed -= OnQueueChanged;
+        TransferQueue.ItemCompleted -= OnTransferCompleted;
         _searchCts?.Cancel();
         _client.Dispose();
     }

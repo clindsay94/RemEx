@@ -7,6 +7,7 @@ import android.provider.OpenableColumns
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
@@ -181,9 +182,21 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
         _phase.value = SharePhase.SENDING
         viewModelScope.launch(Dispatchers.IO) {
             var queued = 0
+            var skipped = 0
             for (file in toSend) {
                 val safeName = ShareDestinationResolver.sanitizeFileName(file.name)
-                val staged = stage(file.uri, safeName) ?: continue
+                val staged = stage(file.uri, safeName)
+                // Guard against silently uploading an empty file (RemEx-hb1t): stage() returns null on an
+                // unreadable source, and can produce a 0-byte file when the content URI yields no bytes
+                // (an unmaterialized cloud file, a revoked share grant, etc.). Uploading that saves an
+                // empty file on the PC that the host "verifies" as 0 == 0 — silent data loss. Allow through
+                // only a source that genuinely declares 0 bytes; queryMetadata is consulted just for the
+                // 0-byte case (cheap and rare).
+                if (staged == null || (staged.length() == 0L && queryMetadata(file.uri).second != 0L)) {
+                    staged?.delete()
+                    skipped++
+                    continue
+                }
                 // Send the destination DIRECTORY only — the host appends fileName itself
                 // (CombineHostRelative). Sending the full 'dir/name' path doubled it into 'name/name',
                 // so every pushed file landed inside a folder named after the file. (RemEx-y6x6.)
@@ -199,8 +212,17 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
                 )
                 queued++
             }
-            if (queued > 0) FileTransferJobService.schedule(getApplication<Application>())
-            _phase.value = SharePhase.SENT
+            if (skipped > 0) {
+                _statusText.value =
+                    getApplication<Application>().getString(R.string.share_to_pc_skipped_unreadable, skipped)
+            }
+            if (queued > 0) {
+                FileTransferJobService.schedule(getApplication<Application>())
+                _phase.value = SharePhase.SENT
+            } else {
+                // Nothing was sendable — don't show a false "sent" confirmation; keep the user on the list.
+                _phase.value = SharePhase.READY
+            }
         }
     }
 

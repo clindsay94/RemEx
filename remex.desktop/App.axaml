@@ -53,6 +53,8 @@
             <FontFamily x:Key="PageTitleFontFamily">avares://Remex.Desktop/Assets/Fonts#Orbitron</FontFamily>
             <!-- Themeable content/body font — overridden live by the picker; default = Inter (the app default font). -->
             <FontFamily x:Key="BodyFontFamily">avares://Avalonia.Fonts.Inter/Assets#Inter</FontFamily>
+            <!-- Overall UI scale (the personalization "UI size" slider). Overridden live by ThemeService. -->
+            <x:Double x:Key="UiScale">1</x:Double>
         </ResourceDictionary>
     </Application.Resources>
 

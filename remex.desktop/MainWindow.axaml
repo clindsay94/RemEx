@@ -27,6 +27,13 @@
         <KeyBinding Gesture="Ctrl+Y" Command="{Binding CanvasRedoCommand}" />
     </Window.KeyBindings>
 
-    <views:ShellView />
+    <!-- Whole-UI scale for the personalization "UI size" slider. Scales the entire shell (text and
+         chrome) uniformly; in-tree overlays scale with it. Bound live via the UiScale resource. -->
+    <LayoutTransformControl>
+        <LayoutTransformControl.LayoutTransform>
+            <ScaleTransform ScaleX="{DynamicResource UiScale}" ScaleY="{DynamicResource UiScale}"/>
+        </LayoutTransformControl.LayoutTransform>
+        <views:ShellView />
+    </LayoutTransformControl>
 </Window>
 

@@ -139,6 +139,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                                  ?? AvailableFonts.FirstOrDefault();
         _selectedBodyFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.BodyFontFamily)
                             ?? AvailableFonts.FirstOrDefault();
+        _uiScale = settings.UiScale <= 0 ? 1.0 : Math.Clamp(settings.UiScale, 0.85, 1.3);
 
         // Load saved custom accent colours
         var profile = _layoutService.CurrentProfile;
@@ -148,6 +149,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         // Load available background types
         RefreshBackgroundTypes();
+
+        // Surface any persisted font that no longer resolves on this machine.
+        ValidateFonts();
     }
 
     private void RefreshBackgroundTypes()
@@ -223,13 +227,52 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private FontOption? _selectedPageTitleFont;
 
-    partial void OnSelectedPageTitleFontChanged(FontOption? value) => ApplyAndSave();
+    partial void OnSelectedPageTitleFontChanged(FontOption? value)
+    {
+        ValidateFonts();
+        ApplyAndSave();
+    }
 
     /// <summary>The selected content/body font; persisted as its <see cref="FontOption.Value"/>.</summary>
     [ObservableProperty]
     private FontOption? _selectedBodyFont;
 
-    partial void OnSelectedBodyFontChanged(FontOption? value) => ApplyAndSave();
+    partial void OnSelectedBodyFontChanged(FontOption? value)
+    {
+        ValidateFonts();
+        ApplyAndSave();
+    }
+
+    /// <summary>
+    /// Non-null when a chosen font can't be loaded on this machine — shown as a gentle notice in the
+    /// panel. The app doesn't break (ThemeService falls back to the default), this just explains why.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasFontWarning))]
+    private string? _fontWarning;
+
+    /// <summary>True when <see cref="FontWarning"/> is set — drives the notice's visibility.</summary>
+    public bool HasFontWarning => !string.IsNullOrEmpty(FontWarning);
+
+    /// <summary>Overall UI scale (85%–130%). Applied live as a layout transform over the whole shell.</summary>
+    [ObservableProperty]
+    private double _uiScale = 1.0;
+
+    partial void OnUiScaleChanged(double value) => ApplyAndSave();
+
+    /// <summary>Flags any selected font that won't materialize, so the user gets a plain-English heads-up.</summary>
+    private void ValidateFonts()
+    {
+        var unavailable = new System.Collections.Generic.List<string>();
+        if (SelectedPageTitleFont is { } title && !SystemFontService.TryResolveFont(title.Value, out _))
+            unavailable.Add(title.DisplayName);
+        if (SelectedBodyFont is { } body && !SystemFontService.TryResolveFont(body.Value, out _))
+            unavailable.Add(body.DisplayName);
+
+        FontWarning = unavailable.Count == 0
+            ? null
+            : string.Format(LocalizationService.Instance["Custom_FontUnavailable"], string.Join(", ", unavailable));
+    }
 
     partial void OnSelectedThemeChanged(AppTheme value)
     {
@@ -308,6 +351,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             PageTitleFontFamily = SelectedPageTitleFont?.Value ?? "avares://Remex.Desktop/Assets/Fonts#Orbitron",
             CardHeaderFontFamily = _layoutService.CurrentProfile.Customization.CardHeaderFontFamily,
             BodyFontFamily = SelectedBodyFont?.Value ?? "avares://Avalonia.Fonts.Inter/Assets#Inter",
+            UiScale = UiScale,
             CustomAccentColors = CustomAccentColors.Take(8).ToList()
         };
 

@@ -166,29 +166,19 @@ public class ThemeService : IDisposable
             // Guarded so a malformed/unresolvable persisted or system font string can never crash.
             if (Application.Current is { } app)
             {
-                try
-                {
-                    var pageTitleFont = string.IsNullOrWhiteSpace(settings.PageTitleFontFamily)
-                        ? "avares://Remex.Desktop/Assets/Fonts#Orbitron"
-                        : settings.PageTitleFontFamily;
-                    app.Resources["PageTitleFontFamily"] = new FontFamily(pageTitleFont);
-                }
-                catch
-                {
-                    // Leave the existing PageTitleFontFamily resource (App.axaml default) in place.
-                }
+                // Resolve each font through a guard that force-loads the glyph typeface and falls back to
+                // the App.axaml default if it can't be materialized. A bad avares URI or a font the
+                // platform can't load otherwise throws at RENDER time (outside any try/catch here), which
+                // freezes the UI thread — so validation must happen now, before the resource is assigned.
+                app.Resources["PageTitleFontFamily"] = SystemFontService.ResolveFontOrDefault(
+                    settings.PageTitleFontFamily, "avares://Remex.Desktop/Assets/Fonts#Orbitron");
 
-                try
-                {
-                    var bodyFont = string.IsNullOrWhiteSpace(settings.BodyFontFamily)
-                        ? "avares://Avalonia.Fonts.Inter/Assets#Inter"
-                        : settings.BodyFontFamily;
-                    app.Resources["BodyFontFamily"] = new FontFamily(bodyFont);
-                }
-                catch
-                {
-                    // Leave the existing BodyFontFamily resource (App.axaml default) in place.
-                }
+                app.Resources["BodyFontFamily"] = SystemFontService.ResolveFontOrDefault(
+                    settings.BodyFontFamily, "avares://Avalonia.Fonts.Inter/Assets#Inter");
+
+                // Overall UI scale — clamped to a safe, legible range so the shell can't be shrunk into
+                // illegibility or blown up past the window. Consumed by the shell's layout transform.
+                app.Resources["UiScale"] = settings.UiScale <= 0 ? 1.0 : Math.Clamp(settings.UiScale, 0.85, 1.3);
             }
 
             // Reattach the override dictionary — fires one ResourcesChanged for all updates.

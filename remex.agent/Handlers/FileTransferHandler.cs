@@ -91,7 +91,7 @@ public sealed class FileTransferHandler(
         }
     }
 
-    public async Task HandleFileBrowseRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileBrowseRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileBrowseRequest;
         if (req is null) return;
@@ -102,7 +102,23 @@ public sealed class FileTransferHandler(
             if (string.IsNullOrWhiteSpace(req.RootId))
                 throw new UnauthorizedAccessException("A shared root is required for remote browsing.");
 
-            var entries = await fileTransferService.BrowseAsync(req.RootId, req.RelativePath ?? string.Empty, ct);
+            IReadOnlyList<FileEntry> entries;
+            var isConfiguredRoot = (await fileTransferService.ListRootsAsync(ct)).Any(r => r.RootId == req.RootId);
+            if (isConfiguredRoot)
+            {
+                entries = await fileTransferService.BrowseAsync(req.RootId, req.RelativePath ?? string.Empty, ct);
+            }
+            else
+            {
+                // Not a configured shared root: treat as a full-device VOLUME browse. Gated on this paired
+                // client holding a full-browse consent grant (re-verified here, never trusting RootId), and
+                // on RootId being a genuine mounted volume. BrowseVolumeAsync bounds navigation within it.
+                if (string.IsNullOrWhiteSpace(clientId) || !await fileTrustService.IsFullBrowseGrantedAsync(clientId, ct))
+                    throw new UnauthorizedAccessException("Full-device browsing has not been granted for this device.");
+                var volume = volumeEnumerator.Enumerate().FirstOrDefault(v => v.Id == req.RootId)
+                    ?? throw new UnauthorizedAccessException($"Unknown shared root '{req.RootId}'.");
+                entries = await fileTransferService.BrowseVolumeAsync(volume.Path, req.RelativePath ?? string.Empty, ct);
+            }
             response = new RemexMessage
             {
                 Type = MessageTypes.FileBrowseResponse,

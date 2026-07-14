@@ -801,6 +801,7 @@ $line
     <string name="share_to_pc_cancel">Cancel</string>
     <string name="share_to_pc_queued">Sending to your PC. You can watch progress in RemEx.</string>
     <string name="share_to_pc_nothing_to_send">There are no files to send.</string>
+    <string name="share_to_pc_skipped_unreadable">Skipped %1$d file(s) that couldn\'t be read — they may be empty or no longer available.</string>
     <string name="share_to_pc_connecting">Connecting to your PC…</string>
     <string name="share_to_pc_not_configured">No PC is set up yet. Open RemEx and connect to your PC first, then try sharing again.</string>
     <string name="share_to_pc_open_app">Open RemEx</string>

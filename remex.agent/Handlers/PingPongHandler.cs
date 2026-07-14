@@ -236,6 +236,18 @@ public sealed class PingPongHandler(
                             cmdResponse = cmdResponse with { CorrelationId = message.CorrelationId };
                         await MessageSerializer.SendAsync(webSocket, cmdResponse, ct);
                         logger.LogDebug("Sent command response for {Action}.", message.CommandAction);
+                        // Surface a phone-initiated command in the Home "Recent activity" feed. Skip
+                        // loopback: the PC UI's own commands travel over its self-connection into this same
+                        // handler and are already recorded desktop-side, so recording them here too would
+                        // double-count. Skip LaunchApp — its meaningful detail is the target app, captured
+                        // elsewhere, not the bare verb "LaunchApp".
+                        if (!isLoopback
+                            && cmdResponse.CommandSuccess == true
+                            && !string.Equals(message.CommandAction, "LaunchApp", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Remex.Desktop.Services.ActivityService.Instance.Record(
+                                Remex.Desktop.Services.ActivityKind.CommandRun, message.CommandAction);
+                        }
                         break;
 
                     case MessageTypes.LauncherAdd when message.LauncherEntry is not null:
@@ -349,7 +361,7 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.FileBrowseRequest:
-                        await fileTransferHandler.HandleFileBrowseRequestAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileBrowseRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     case MessageTypes.FileTransferStart:
@@ -445,7 +457,7 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.FileTransferComplete when message.FileTransferComplete is not null:
-                        await transferSessionManager.HandleCompleteAsync(message.FileTransferComplete, webSocket, ct);
+                        await transferSessionManager.HandleCompleteAsync(message.FileTransferComplete, webSocket, isLoopback, ct);
                         break;
 
                     case MessageTypes.FileTransferResult when message.FileTransferResult is not null:

@@ -3,6 +3,7 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:ctrl="using:Remex.Desktop.Controls"
+    xmlns:services="using:Remex.Desktop.Services"
     xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.HomeView" x:DataType="vm:HomeViewModel">
 
     <UserControl.Styles>
@@ -96,6 +97,39 @@
                     </WrapPanel>
                 </StackPanel>
             </Grid>
+
+            <!-- ═══ ALWAYS-ON STATS STRIP (live CPU · memory · uptime) ═══ -->
+            <Border Classes="glass-card" Padding="6,4" HorizontalAlignment="Center" CornerRadius="18">
+                <StackPanel Orientation="Horizontal">
+                    <!-- CPU -->
+                    <StackPanel Width="190" Spacing="7" Margin="22,14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{local:Localize Home_StatCpu}" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding CpuText}" FontSize="21" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        </Grid>
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding CpuPercent}" Height="4" MinHeight="4" CornerRadius="2" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource GlassBaseDarkBrush}"/>
+                    </StackPanel>
+
+                    <Rectangle Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="0,14" VerticalAlignment="Stretch"/>
+
+                    <!-- MEMORY -->
+                    <StackPanel Width="190" Spacing="7" Margin="22,14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{local:Localize Home_StatMemory}" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding RamText}" FontSize="21" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        </Grid>
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding RamPercent}" Height="4" MinHeight="4" CornerRadius="2" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource GlassBaseDarkBrush}"/>
+                    </StackPanel>
+
+                    <Rectangle Width="1" Fill="{DynamicResource CardBorderBrush}" Margin="0,14" VerticalAlignment="Stretch"/>
+
+                    <!-- UPTIME -->
+                    <StackPanel Width="190" Spacing="7" Margin="22,14" VerticalAlignment="Center">
+                        <TextBlock Text="{local:Localize Home_StatUptime}" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Black" LetterSpacing="3" Foreground="{DynamicResource TextMutedBrush}"/>
+                        <TextBlock Text="{Binding UptimeText}" FontSize="18" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
             <WrapPanel Margin="0,24,0,0" HorizontalAlignment="Center">
 
@@ -215,6 +249,43 @@
                     </UniformGrid>
                 </StackPanel>
             </WrapPanel>
+
+            <!-- ═══ RECENT ACTIVITY ═══ -->
+            <StackPanel MaxWidth="780" HorizontalAlignment="Center" Spacing="16">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{local:Localize Home_RecentActivity}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="4" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Classes="action-pill" Command="{Binding ClearActivityCommand}" Padding="14,7" IsVisible="{Binding HasRecentActivity}">
+                        <TextBlock Text="{local:Localize Home_ClearActivity}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold"/>
+                    </Button>
+                </Grid>
+
+                <!-- Populated feed -->
+                <Border Classes="glass-card" Padding="8" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding HasRecentActivity}">
+                    <ScrollViewer MaxHeight="300" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding RecentActivity}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="services:ActivityEntry">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="12,9">
+                                        <Border Grid.Column="0" Width="34" Height="34" CornerRadius="10" Background="{DynamicResource GlassBaseDarkBrush}" Margin="0,0,14,0">
+                                            <TextBlock Text="{Binding Glyph}" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <TextBlock Grid.Column="1" Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding TimeLabel}" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="12,0,4,0"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+
+                <!-- Empty state -->
+                <Border Classes="glass-card" Padding="32" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0" IsVisible="{Binding !HasRecentActivity}">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="🗒" FontSize="26" HorizontalAlignment="Center" Opacity="0.7"/>
+                        <TextBlock Text="{local:Localize Home_NoRecentActivity}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" TextAlignment="Center" MaxWidth="420" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
 
             <!-- ═══ Links: GitHub + Google Play ═══ -->
             <WrapPanel HorizontalAlignment="Center" Margin="0,8,0,0">

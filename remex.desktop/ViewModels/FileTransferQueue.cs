@@ -118,6 +118,10 @@ public sealed class FileTransferQueue
     /// <summary>Raised whenever an item is added or an item's state changes (for aggregate UI recomputation).</summary>
     public event Action? Changed;
 
+    /// <summary>Raised on the UI thread once an item completes successfully (reaches <see cref="TransferState.Done"/>).
+    /// Feeds the Home "Recent activity" panel; failed/cancelled items are intentionally not surfaced.</summary>
+    public event Action<FileTransferQueueItem>? ItemCompleted;
+
     public FileTransferQueue()
         : this(null)
     {
@@ -216,6 +220,7 @@ public sealed class FileTransferQueue
             _post(() => item.Progress = 100.0);
             SetState(item, TransferState.Done);
             item.Completion.TrySetResult();
+            _post(() => ItemCompleted?.Invoke(item));
         }
         catch (OperationCanceledException)
         {

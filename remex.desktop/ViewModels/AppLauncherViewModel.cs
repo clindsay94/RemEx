@@ -144,6 +144,10 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         if (entry == null || string.IsNullOrWhiteSpace(entry.TargetPath))
             return;
 
+        // Feed the Home "Recent activity" panel. The display name is the useful bit regardless of
+        // whether the launch is forwarded to a connected phone or run on this PC below.
+        ActivityService.Instance.Record(ActivityKind.AppLaunched, entry.DisplayName);
+
         if (Connection.IsConnected)
         {
             var p = new System.Collections.Generic.Dictionary<string, string> { { "TargetPath", entry.TargetPath } };

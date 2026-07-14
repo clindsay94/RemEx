@@ -273,6 +273,7 @@ public sealed class TransferSessionManagerTests
 
         public Task<IReadOnlyList<FileSharedRoot>> ListRootsAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<FileEntry>> BrowseAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<FileEntry>> BrowseVolumeAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task DeleteAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task RenameAsync(string rootId, string relativePath, string newName, CancellationToken ct) => throw new NotSupportedException();
