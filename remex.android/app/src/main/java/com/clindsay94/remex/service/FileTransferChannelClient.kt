@@ -153,7 +153,19 @@ object FileTransferChannelClient : FileFrameChannel {
         val client =
             OkHttpClient.Builder()
                 .sslSocketFactory(sslContext.socketFactory, trustManager)
-                .hostnameVerifier { _, _ -> true }
+                .hostnameVerifier { _, session ->
+                    // Identity on this channel is the pinned SPKI, not a DNS name: the host cert is
+                    // self-signed and the user may dial an IP, a MagicDNS name, or a LAN name — so a
+                    // name check is meaningless, but an unconditional trust-all verifier is ASI-flagged
+                    // and wrong in principle. Verify the presented leaf against the same SPKI pin the TLS
+                    // handshake already enforced (belt-and-braces); anything else returns false.
+                    try {
+                        val leaf = session.peerCertificates.firstOrNull() as? X509Certificate
+                        leaf != null && trustManager.matchesPin(leaf)
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
                 // Tighter ping so OkHttp detects a silently-dead peer (and fires onFailure -> reconnect)
                 // in ~10-20s of background hygiene, instead of waiting on OS TCP retransmit (minutes). The
                 // primary staleness defence is invalidate() on control-reconnect / transfer failure. (ix8d)
@@ -293,13 +305,23 @@ object FileTransferChannelClient : FileFrameChannel {
             val leaf =
                 chain?.firstOrNull()
                     ?: throw CertificateException("No server certificate presented.")
-            val spki = MessageDigest.getInstance("SHA-256").digest(leaf.publicKey.encoded)
-            val actual = Base64.encodeToString(spki, Base64.NO_WRAP)
-            if (actual != expected) {
+            if (!matchesPin(leaf)) {
                 throw CertificateException(
                     "Host SPKI pin mismatch on /ws/files — refusing connection."
                 )
             }
+        }
+
+        /**
+         * True iff [cert]'s SubjectPublicKeyInfo SHA-256 matches the pinned hash. Factored out of
+         * checkServerTrusted so the hostname verifier can enforce the SAME pin — the peer identity
+         * on this channel is the pinned SPKI, not a DNS name — replacing the ASI-flagged
+         * unconditional trust-all verifier with a conditional one that can return false.
+         */
+        fun matchesPin(cert: X509Certificate): Boolean {
+            val spki = MessageDigest.getInstance("SHA-256").digest(cert.publicKey.encoded)
+            val actual = Base64.encodeToString(spki, Base64.NO_WRAP)
+            return actual == expected
         }
 
         override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()

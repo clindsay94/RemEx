@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Core.Models.IPC;
 using Remex.Core.Services.Security;
 using Remex.Agent.Services.Security;
 
@@ -77,6 +78,9 @@ public sealed class PairingHandler
                     HostName = Environment.MachineName,
                     CertificateSpkiHashBase64 = _certificateService.GetSpkiSha256Base64(),
                     PinHmacBase64 = pinHmacBase64,
+                    // Advertise that this host can relay the active PIN over /ws (pairing_pin_request).
+                    // New apps only auto-fetch when they see this flag; older apps ignore it.
+                    SupportsPinAutoFetch = true,
                 },
             };
 
@@ -165,6 +169,63 @@ public sealed class PairingHandler
             // be distinguished from an incorrect PIN by the peer (PAIR-7 / RemEx-xk9).
             return MakeError("PIN verification failed. Please try again.");
         }
+    }
+
+    /// <summary>
+    /// Handles an incoming <c>pairing_pin_request</c>: relays the currently-active pairing PIN over
+    /// the pairing <c>/ws</c> socket so the Android app can auto-fill it without a trust-all HTTP
+    /// fetch (ASI compliance, RemEx-1t0b). This path is deliberately no more powerful than
+    /// <c>GET /pairing-pin</c>: it is gated by the identical
+    /// <see cref="TransportTrust.IsTrustedForPinAutoFetch"/> decision (computed at the <c>/ws</c> map
+    /// site and passed in as <paramref name="isTrustedForPinAutoFetch"/>), and it only ever
+    /// <em>reads</em> an already-active PIN via <see cref="PairingService.TryGetActivePinInfo"/> — it
+    /// never creates, extends, or mutates a session (it does not touch
+    /// <c>AcquirePairingSessionAsync</c>).
+    /// </summary>
+    /// <returns>
+    /// A <c>pairing_pin_response</c> whose payload is the active PIN when trusted, or null when the
+    /// transport is untrusted OR no session is active. The two pin-less cases are byte-identical by
+    /// design (mirrors the HTTP endpoint's 404-for-both), so a caller on an untrusted transport
+    /// cannot probe whether a pairing session exists.
+    /// </returns>
+    public async Task<RemexMessage> HandlePairingPinRequestAsync(
+        RemexMessage message, bool isTrustedForPinAutoFetch, CancellationToken ct)
+    {
+        PairingPinInfo? pinInfo = null;
+
+        if (isTrustedForPinAutoFetch)
+        {
+            // TryGetActivePinInfo is a non-blocking _lock.Wait(0) snapshot that can transiently miss
+            // under contention (why the old HTTP path retried). By the time a client asks, the session
+            // is already active (AcquirePairingSessionAsync ran during pairing_request), so only lock
+            // contention — not session absence — should cause a miss. A short retry covers it.
+            for (var attempt = 0; attempt < 3; attempt++)
+            {
+                if (_pairingService.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs))
+                {
+                    pinInfo = new PairingPinInfo(pin, expiresAtUnixMs);
+                    break;
+                }
+
+                if (attempt < 2)
+                    await Task.Delay(100, ct);
+            }
+
+            if (pinInfo is null)
+                _logger.LogInformation("pairing_pin_request from a trusted transport, but no active PIN was readable.");
+        }
+        else
+        {
+            _logger.LogInformation("pairing_pin_request denied: transport is not trusted for PIN auto-fetch.");
+        }
+
+        return new RemexMessage
+        {
+            Type = MessageTypes.PairingPinResponse,
+            CorrelationId = message.CorrelationId,
+            // Null for BOTH "untrusted" and "no active session" — indistinguishable by design.
+            PairingPin = pinInfo,
+        };
     }
 
     private static RemexMessage MakeError(string errorText) => new()

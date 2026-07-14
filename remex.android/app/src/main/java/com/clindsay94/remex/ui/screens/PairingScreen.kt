@@ -41,6 +41,10 @@ data class PairingUiState(
     val isLoading: Boolean = false,
     val pairingError: String? = null,
     val autoFilledPin: String? = null,
+    // True when an auto-fetch was attempted on a trusted transport but returned no PIN, so the
+    // screen can prompt the user to type the PIN shown on the PC. Never set on untrusted transports
+    // (where we deliberately never attempt an auto-fetch), so it doesn't nag in the normal manual case.
+    val autoPinFetchFailed: Boolean = false,
 )
 
 class PairingViewModel : ViewModel() {
@@ -161,16 +165,31 @@ class PairingViewModel : ViewModel() {
             startPairingInFlight = false
             if (result == "OK") {
                 startPairingSucceeded = true
-                // After the handshake, auto-fetch the PIN from the host's HTTP endpoint ONLY when
-                // the caller has determined the transport is trusted (loopback or an active
-                // Tailscale/WireGuard tunnel). On those paths the channel is already authenticated
-                // and MITM-resistant, so relaying the PIN over it leaks nothing an attacker could
-                // use. On plain LAN/internet we deliberately leave it null so the PIN keeps its
-                // out-of-band, anti-MITM purpose and the user must type it manually.
-                val fetchedPin =
-                        if (allowAutoPin) withContext(Dispatchers.IO) { tryFetchPinFromHost(hostUrl) }
-                        else null
-                _uiState.value = PairingUiState(isLoading = false, autoFilledPin = fetchedPin)
+                // After the handshake, auto-fetch the PIN over the already-open native pairing
+                // WebSocket (pairing_pin_request) ONLY when the caller has determined the transport
+                // is trusted (loopback or an active Tailscale/WireGuard tunnel). The host enforces
+                // the SAME TransportTrust gate on its side; on untrusted transports it replies with
+                // no PIN and the user types it manually, so the PIN keeps its out-of-band, anti-MITM
+                // value. The old trust-all HTTPS fetch is gone — this uses the .NET-trusted socket,
+                // which Google Play's ASI scanner does not flag. The 8s outer bound is belt-and-
+                // braces over the native call's own 5s budget.
+                val fetchedPin: String? =
+                        if (allowAutoPin) {
+                            val raw = withContext(Dispatchers.IO) {
+                                runCatching {
+                                    withTimeout(8_000) { RemexCoreClient.FetchPairingPin().getOrNull() }
+                                }.getOrNull()
+                            }
+                            parseFetchedPin(raw)
+                        } else null
+                _uiState.value = PairingUiState(
+                        isLoading = false,
+                        autoFilledPin = fetchedPin,
+                        // Only flag a failure when we actually attempted a fetch (trusted transport)
+                        // and got nothing back — that's when the "enter the PIN shown on your PC"
+                        // notice is helpful. On untrusted transports we never tried, so no notice.
+                        autoPinFetchFailed = allowAutoPin && fetchedPin == null,
+                )
             } else {
                 val message =
                         when {
@@ -190,45 +209,17 @@ class PairingViewModel : ViewModel() {
         }
     }
 
-    private suspend fun tryFetchPinFromHost(hostUrl: String): String? {
-        val uri = try { java.net.URI(hostUrl) } catch (e: Exception) { return null }
-        val base = "https://${uri.host}:${uri.port}"
-        // The /pairing-pin endpoint can transiently 404 in the window between the WebSocket
-        // handshake returning and the host publishing the active session (TryGetActivePinInfo
-        // uses a non-blocking lock acquire), so retry a few times. On the first miss we also
-        // POST /start-pairing, which proactively materialises a session and returns the PIN —
-        // it safely reuses the already-active session bound to this client's ECDH key.
-        repeat(5) { attempt ->
-            httpFetchPin("$base/pairing-pin", "GET")?.let { return it }
-            if (attempt == 0) httpFetchPin("$base/start-pairing", "POST")?.let { return it }
-            kotlinx.coroutines.delay(400)
-        }
-        return null
-    }
-
-    // Trust-all TLS is acceptable here ONLY because this path is gated behind
-    // TransportTrust.canAutoFetchPin (loopback or an active Tailscale tunnel): the
-    // WireGuard transport already authenticates the peer, so cert verification adds nothing.
-    private fun httpFetchPin(urlStr: String, method: String): String? {
-        return try {
-            val trustAll = arrayOf<javax.net.ssl.TrustManager>(object : javax.net.ssl.X509TrustManager {
-                override fun checkClientTrusted(c: Array<java.security.cert.X509Certificate>, a: String) {}
-                override fun checkServerTrusted(c: Array<java.security.cert.X509Certificate>, a: String) {}
-                override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
-            })
-            val sslCtx = javax.net.ssl.SSLContext.getInstance("TLS")
-            sslCtx.init(null, trustAll, java.security.SecureRandom())
-            val conn = java.net.URL(urlStr).openConnection() as javax.net.ssl.HttpsURLConnection
-            conn.sslSocketFactory = sslCtx.socketFactory
-            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
-            conn.requestMethod = method
-            conn.connectTimeout = 3000
-            conn.readTimeout = 3000
-            if (method == "POST") { conn.doOutput = true; conn.outputStream.use {} }
-            if (conn.responseCode != 200) return null
-            val json = conn.inputStream.bufferedReader().readText()
-            org.json.JSONObject(json).optString("pin").takeIf { it.length == 6 }
-        } catch (e: Exception) { null }
+    /**
+     * Parses the native FetchPairingPin result string into a 6-digit PIN, or null. Accepts ONLY the
+     * "OK:<pin>|<expiryUnixMs>" success shape with an exactly-6-digit numeric PIN; "UNSUPPORTED",
+     * "ERROR: ...", blank, and any other/malformed input all yield null. Pure and total so it can be
+     * unit-tested without the native layer (RemEx-1t0b test plan). Replaces the deleted trust-all
+     * HTTPS auto-fetch (httpFetchPin/tryFetchPinFromHost) that Google Play's ASI scanner flagged.
+     */
+    internal fun parseFetchedPin(raw: String?): String? {
+        if (raw == null || !raw.startsWith("OK:")) return null
+        val pin = raw.substring(3).substringBefore("|")
+        return pin.takeIf { it.length == 6 && it.all { c -> c.isDigit() } }
     }
 
     fun resetPairingState() {
@@ -264,7 +255,7 @@ fun PairingScreen(
         viewModel.startPairing(context, hostUrl, "Android Client", "2.0.0", clientId, allowAutoPin)
     }
 
-    // Auto-fill PIN when the host returns it via HTTP after the WebSocket handshake
+    // Auto-fill PIN when the host relays it over the pairing WebSocket after the handshake
     LaunchedEffect(state.autoFilledPin) {
         val fetched = state.autoFilledPin
         if (!fetched.isNullOrBlank() && pin.isEmpty()) {
@@ -342,6 +333,17 @@ fun PairingScreenContent(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
             )
+
+            // Shown only when a trusted-transport auto-fetch came back empty: guide the
+            // non-technical user to read the PIN off their PC and type it in.
+            if (state.autoPinFetchFailed) {
+                Text(
+                        text = stringResource(R.string.pairing_auto_pin_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                )
+            }
 
             AnimatedVisibility(
                     visible = state.pairingError != null,

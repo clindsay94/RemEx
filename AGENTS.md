@@ -151,7 +151,8 @@ Key new components agents must know before touching remote desktop, capture, pai
 **`TransportTrust` — host-side Tailscale pairing PIN awareness:**
 - `/pairing-pin` is now served when the caller is on loopback **or** when both caller and host-side address are Tailscale IPs (`100.64.0.0/10` or `fd7a:115c:a1e0::/48`). `/start-pairing` remains loopback-only.
 - Requiring the host-side address to also be Tailscale defeats a LAN attacker spoofing a `100.64.x.x` source via the LAN IP. Plain LAN/internet stay closed (404).
-- Key symbols: `TransportTrust`, `HostBootstrapper`.
+- As of 2.3.0 (RemEx-1t0b) the `/ws` `pairing_pin_request` message shares this **exact same** `IsTrustedForPinAutoFetch` gate (computed at the `/ws` map site and passed into `PingPongHandler`/`PairingHandler`). It is an ASI-compliant replacement for the Android app's old trust-all HTTP fetch; it only *relays* an already-active PIN and never creates a session. `GET /pairing-pin` is retained one release for shipped ≤2.2.4 apps.
+- Key symbols: `TransportTrust`, `HostBootstrapper`, `PingPongHandler`, `PairingHandler`.
 
 **Keep-session-unlocked (security-sensitive, Windows-only):**
 - Settings toggle (off by default) that keeps the interactive session usable while a remote-desktop client is connected. Backed by `ISessionKeepUnlockedService` writing `ProgramData\RemEx\keep-session-unlocked.flag`. Prominent 8-language security warning shown while enabled.

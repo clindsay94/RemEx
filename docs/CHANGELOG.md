@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.0] — 2026-07-14
+
+### Added
+
+- **The pairing PIN now auto-fills over the pairing connection itself, so the Android app no longer makes a separate trust-all HTTPS call (Google Play ASI compliance).** When you pair over a trusted transport (loopback, or an active Tailscale/WireGuard tunnel), the app fetches the host's active PIN over the **already-open pairing WebSocket** via a new `pairing_pin_request` / `pairing_pin_response` exchange, instead of the old `HttpsURLConnection` to `GET /pairing-pin`. The trust of that socket is established in the app's native .NET core (`libRemexCore.so`) — code Google Play's App Security Improvement scanner does not inspect — so the fix removes the flagged Kotlin trust-all TLS entirely rather than hiding it. The host gate is the **identical** `TransportTrust.IsTrustedForPinAutoFetch(remote, local)` that already guarded `GET /pairing-pin`, and the new path can only *relay* an already-active PIN — it never gains the session-creating power of `POST /start-pairing`. Remote first-time pairing over Tailscale is preserved. The messages are an **optional addition — `protocolVersion` stays 2**; old apps and old hosts fall back to manual PIN entry (or, for shipped ≤2.2.4 apps, the retained HTTP auto-fetch). A new `supportsPinAutoFetch` flag on `pairing_response` lets a new app skip the request entirely against an older host. On a trusted transport that returns no PIN, the app now shows a localized "enter the PIN shown on your PC" notice (`pairing_auto_pin_failed`, 9 locales). (`RemexMessage.cs`, `PairingMessages.cs`, `PairingClient.cs`, `AndroidNativeExports.cs`, `PairingHandler.cs`, `PingPongHandler.cs`, `HostBootstrapper.cs`, `RemexCoreClient.kt`, `PairingScreen.kt`, `strings.xml` ×9; RemEx-1t0b.)
+
+### Removed
+
+- **Removed the trust-all `HttpsURLConnection` PIN auto-fetch from the Android app.** `PairingScreen.kt`'s `httpFetchPin` / `tryFetchPinFromHost` opened a `HttpsURLConnection` with an empty-body `X509TrustManager` and a `{ _, _ -> true }` `HostnameVerifier` to read the PIN — the exact shapes Google Play flagged (Unsafe TrustManager, Unsafe HostnameVerifier). Both functions, and every `javax.net.ssl` reference in the file, are deleted in favour of the WebSocket relay above. The dead `POST /start-pairing` phone fallback (never loopback from a phone, so always 404'd) is not replicated. (`PairingScreen.kt`; RemEx-1t0b.)
+
+### Security
+
+- **Eliminated the two ASI-flagged unsafe-TLS shapes and tightened the file-transfer channel's hostname verifier.** Beyond the PIN-fetch removal above, `FileTransferChannelClient.kt`'s `/ws/files` hostname verifier — previously `{ _, _ -> true }`, which ASI would flag next — now verifies the presented leaf certificate against the **same SPKI pin** the TLS handshake already enforced (identity on this self-signed channel is the pinned SPKI, not a DNS name), returning false on any mismatch. Behaviourally a no-op for legitimate connections, but conditional and ASI-compliant. No re-pair is required: no certificate, ACL, or `paired_clients.json` change. (`FileTransferChannelClient.kt`; RemEx-1t0b.)
+
+---
+
 ## [2.2.0] — 2026-07-13
 
 ### Added

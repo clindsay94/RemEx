@@ -31,7 +31,7 @@ public sealed class PingPongHandler(
     TransferSessionManager transferSessionManager,
     PairedClientRegistry pairedClientRegistry)
 {
-    public async Task HandleAsync(WebSocket webSocket, bool isLoopback, CancellationToken ct)
+    public async Task HandleAsync(WebSocket webSocket, bool isLoopback, bool isTrustedForPinAutoFetch, CancellationToken ct)
     {
         // Per-connection pairing gate. Loopback connections come from the embedded host on the
         // same machine, where pairing adds no security and is intentionally skipped on the client
@@ -305,6 +305,19 @@ public sealed class PingPongHandler(
                             pairingStarted = false;
                             logger.LogInformation("Pairing verified — connection authenticated.");
                         }
+                        break;
+
+                    case MessageTypes.PairingPinRequest:
+                        // ASI-compliant PIN relay (RemEx-1t0b). Reply with the active PIN iff the
+                        // transport is trusted for auto-fetch (isTrustedForPinAutoFetch is computed at
+                        // the /ws map site — the same TransportTrust gate as GET /pairing-pin). The
+                        // handler only reads an already-active PIN; it never creates or mutates a
+                        // session. We always reply, so the client's fetch never hangs — a pin-less
+                        // response simply means the user enters the PIN manually.
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            await pairingHandler.HandlePairingPinRequestAsync(message, isTrustedForPinAutoFetch, ct),
+                            ct);
                         break;
 
                     case MessageTypes.ReconnectProof:
@@ -625,6 +638,10 @@ public sealed class PingPongHandler(
         // The reconnect challenge/response handshake is itself how an unpaired connection
         // authenticates, so it must be permitted before pairing is established.
         MessageTypes.ReconnectProof => false,
+        // The PIN auto-fetch request must be usable *during* pairing (the connection is not yet
+        // paired). Its own gate is transport trust (IsTrustedForPinAutoFetch), enforced in the
+        // handler — not the pairing gate. It only relays an already-active PIN.
+        MessageTypes.PairingPinRequest => false,
         _ => true,
     };
 

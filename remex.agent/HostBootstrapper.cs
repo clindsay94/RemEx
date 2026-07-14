@@ -446,7 +446,14 @@ public static class HostBootstrapper
             var remoteIp = context.Connection.RemoteIpAddress;
             var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
 
-            await handler.HandleAsync(ws, isLoopback, context.RequestAborted);
+            // Whether this connection may auto-fetch the pairing PIN over /ws (pairing_pin_request).
+            // Computed here from the real Kestrel connection addresses using the *identical* gate as
+            // GET /pairing-pin (see the /pairing-pin map above), so the WS path is no more powerful
+            // than that endpoint. A null RemoteIpAddress (TestServer/in-process) fails closed.
+            var isTrustedForPinAutoFetch = Remex.Agent.Services.Security.TransportTrust
+                .IsTrustedForPinAutoFetch(remoteIp, context.Connection.LocalIpAddress);
+
+            await handler.HandleAsync(ws, isLoopback, isTrustedForPinAutoFetch, context.RequestAborted);
         });
 
         // Remote Desktop WebSocket endpoint (dedicated binary stream)
