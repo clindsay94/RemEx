@@ -11,7 +11,7 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.FileTransferEngine
-import com.clindsay94.remex.service.FileTransferForegroundService
+import com.clindsay94.remex.service.FileTransferJobService
 import com.clindsay94.remex.ui.screens.FileManagerLogic
 import java.io.File
 import java.util.UUID
@@ -184,8 +184,10 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
             for (file in toSend) {
                 val safeName = ShareDestinationResolver.sanitizeFileName(file.name)
                 val staged = stage(file.uri, safeName) ?: continue
-                val destRelativePath =
-                    ShareDestinationResolver.resolveDestRelativePath(_path.value, file.name)
+                // Send the destination DIRECTORY only — the host appends fileName itself
+                // (CombineHostRelative). Sending the full 'dir/name' path doubled it into 'name/name',
+                // so every pushed file landed inside a folder named after the file. (RemEx-y6x6.)
+                val destRelativePath = _path.value.replace('\\', '/').trim('/')
                 FileTransferEngine.enqueueUpload(
                     localUri = Uri.fromFile(staged).toString(),
                     fileName = safeName,
@@ -197,7 +199,7 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
                 )
                 queued++
             }
-            if (queued > 0) FileTransferForegroundService.start(getApplication<Application>())
+            if (queued > 0) FileTransferJobService.schedule(getApplication<Application>())
             _phase.value = SharePhase.SENT
         }
     }

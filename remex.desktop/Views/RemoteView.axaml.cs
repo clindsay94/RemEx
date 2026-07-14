@@ -19,7 +19,10 @@ public partial class RemoteView : UserControl
         base.OnDataContextChanged(e);
 
         if (_previousViewModel is not null)
+        {
             _previousViewModel.OnConfirmationRequested = null;
+            _previousViewModel.CopyToClipboardAsync = null;
+        }
 
         _previousViewModel = DataContext as RemoteViewModel;
 
@@ -32,6 +35,13 @@ public partial class RemoteView : UserControl
                 if (topLevel is Window parentWindow)
                     return await dialog.ShowDialog<bool>(parentWindow);
                 return false;
+            };
+
+            _previousViewModel.CopyToClipboardAsync = async text =>
+            {
+                var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+                if (clipboard is not null)
+                    await clipboard.SetTextAsync(text);
             };
         }
     }

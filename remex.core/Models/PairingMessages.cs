@@ -17,6 +17,14 @@ public sealed record PairingResponse
     [JsonPropertyName("hostName")] public required string HostName { get; init; }
     [JsonPropertyName("certificateSpkiHash")] public required string CertificateSpkiHashBase64 { get; init; }
     [JsonPropertyName("pinHmac")] public required string PinHmacBase64 { get; init; }
+
+    /// <summary>
+    /// True when this host can relay the active pairing PIN over the pairing <c>/ws</c> socket via
+    /// <c>pairing_pin_request</c>/<c>pairing_pin_response</c>. New optional handshake field; it does
+    /// not bump <c>protocolVersion</c> — an absent/false value means an older host, and the client
+    /// simply falls back to manual PIN entry (or, for legacy apps, the retained HTTP auto-fetch).
+    /// </summary>
+    [JsonPropertyName("supportsPinAutoFetch")] public bool SupportsPinAutoFetch { get; init; }
 }
 
 public sealed record PairingComplete

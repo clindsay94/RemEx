@@ -135,6 +135,10 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _canvasBackgroundType = settings.BackgroundMaterial;
         _syncWithHardware = settings.SyncWithHardware;
         _splashStyle = settings.SplashStyle;
+        _selectedPageTitleFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.PageTitleFontFamily)
+                                 ?? AvailableFonts.FirstOrDefault();
+        _selectedBodyFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.BodyFontFamily)
+                            ?? AvailableFonts.FirstOrDefault();
 
         // Load saved custom accent colours
         var profile = _layoutService.CurrentProfile;
@@ -212,6 +216,21 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         "RemexCommand", "CosmicZoom", "Pong"
     };
 
+    /// <summary>Available header fonts (bundled display fonts + installed system fonts).</summary>
+    public ObservableCollection<FontOption> AvailableFonts { get; } = new(SystemFontService.GetHeaderFonts());
+
+    /// <summary>The selected page-title font; persisted as its <see cref="FontOption.Value"/>.</summary>
+    [ObservableProperty]
+    private FontOption? _selectedPageTitleFont;
+
+    partial void OnSelectedPageTitleFontChanged(FontOption? value) => ApplyAndSave();
+
+    /// <summary>The selected content/body font; persisted as its <see cref="FontOption.Value"/>.</summary>
+    [ObservableProperty]
+    private FontOption? _selectedBodyFont;
+
+    partial void OnSelectedBodyFontChanged(FontOption? value) => ApplyAndSave();
+
     partial void OnSelectedThemeChanged(AppTheme value)
     {
         OnPropertyChanged(nameof(SelectedThemePreset));
@@ -286,6 +305,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             BackgroundMaterial = CanvasBackgroundType,
             SyncWithHardware = SyncWithHardware,
             SplashStyle = SplashStyle,
+            PageTitleFontFamily = SelectedPageTitleFont?.Value ?? "avares://Remex.Desktop/Assets/Fonts#Orbitron",
+            CardHeaderFontFamily = _layoutService.CurrentProfile.Customization.CardHeaderFontFamily,
+            BodyFontFamily = SelectedBodyFont?.Value ?? "avares://Avalonia.Fonts.Inter/Assets#Inter",
             CustomAccentColors = CustomAccentColors.Take(8).ToList()
         };
 

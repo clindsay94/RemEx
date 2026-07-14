@@ -2,7 +2,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:converters="using:Remex.Desktop.Converters"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.AppLauncherView" x:DataType="vm:AppLauncherViewModel" DragDrop.AllowDrop="True">
 
     <UserControl.Resources>
         <converters:Base64ToImageConverter x:Key="Base64ToImageConverter" />

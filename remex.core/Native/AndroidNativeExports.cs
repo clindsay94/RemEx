@@ -660,6 +660,62 @@ public static class AndroidNativeExports
         });
     }
 
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_FetchPairingPinNative")]
+    public static IntPtr FetchPairingPinNative(IntPtr env, IntPtr thiz)
+    {
+        return Export(env, () =>
+        {
+            // Serialize against StartPairing/Submit/Clear so the session statics aren't disposed-then-used
+            // by a concurrent pairing export (JNI-4 / RemEx-8ay). The 5s budget below caps how long a
+            // concurrent manual Submit could wait on this lock.
+            lock (PairingSyncRoot)
+            {
+                try
+                {
+                    if (_pairingWebSocket == null || _activePairingClient == null || _activePairingResponse == null)
+                        return "ERROR: No active pairing session";
+
+                    // Fast path for older hosts: they never advertised the capability, so don't even
+                    // send the request — that would just burn the full 5s budget waiting for a host
+                    // that will never reply (older routers log-and-ignore the unknown type).
+                    if (!_activePairingResponse.SupportsPinAutoFetch)
+                        return "UNSUPPORTED";
+
+                    Console.Error.WriteLine("[Pairing] Fetching active PIN over the pairing socket (5s budget)");
+
+                    var client = _activePairingClient;
+                    PairingPinInfo? pinInfo;
+                    using (var fetchCts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                    {
+                        try
+                        {
+                            pinInfo = client.RequestPinAsync(fetchCts.Token).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) when (fetchCts.IsCancellationRequested)
+                        {
+                            return "ERROR: PIN fetch timed out";
+                        }
+                    }
+
+                    // Null == the host declined (untrusted transport) OR there is no active PIN —
+                    // indistinguishable by design (mirrors GET /pairing-pin's 404-for-both).
+                    if (pinInfo is null)
+                        return "ERROR: PIN not available";
+
+                    return $"OK:{pinInfo.Pin}|{pinInfo.ExpiresAtUnixMs}";
+                }
+                catch (Exception ex)
+                {
+                    // NON-DESTRUCTIVE CONTRACT (§3.3): never ClearActivePairingState() on any path in
+                    // this export. Whatever went wrong auto-fetching the PIN, the pairing session must
+                    // stay valid so the user can still type the PIN in manually.
+                    Console.Error.WriteLine($"[Pairing] FetchPairingPin failed: {ex.GetType().Name}: {ex.Message}");
+                    return $"ERROR: {ex.GetType().Name}: {ex.Message}";
+                }
+            }
+        });
+    }
+
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_GetPinnedHostHashNative")]
     public static IntPtr GetPinnedHostHashNative(IntPtr env, IntPtr thiz, IntPtr hostIdPtr)
     {
@@ -1106,9 +1162,18 @@ public static class AndroidNativeExports
                 RemexJson.Serialize(msg.HostCapabilities, RemexJsonSerializerContext.Default.HostCapabilities));
         }
 
-        if (msg.Type is MessageTypes.FileRootsResponse or MessageTypes.FileBrowseResponse or MessageTypes.FileTransferChunk
-                       or MessageTypes.FileTransferProgress or MessageTypes.FileTransferEnd
-                       or MessageTypes.FileManageResponse or MessageTypes.FileHashResponse or MessageTypes.FileRootManageResponse)
+        // Forward the ENTIRE file-transfer control family (every "file_*" message) to the Kotlin file
+        // layer. This deliberately replaces the old hand-maintained allowlist, which only knew the 2.0
+        // types: when the 2.1 File Sharing Overhaul (protocolVersion 3) added file_transfer_ready /
+        // complete / result / control, the v3 browse responses (volumes / search / metadata / thumbnail)
+        // and consent / push, this router silently dropped every one of them — bricking all v3 transfer
+        // negotiation ("Peer did not respond") and v3 browse while the host itself looked perfectly
+        // healthy. Every "file_*" type is destined for onFileTransferMessage, and each of the four Kotlin
+        // collectors (FileTransferEngine, ShareToPcViewModel, AndroidFileTransferHost, FileTransferViewModel)
+        // switches on `type` and ignores the ones it does not handle, so forwarding the whole family is
+        // safe and stops this stale-allowlist regression from ever recurring. Ordinal compare keeps it
+        // NativeAOT-safe and culture-independent. Do NOT narrow this back into an explicit type list.
+        if (msg.Type is { } fileType && fileType.StartsWith("file_", StringComparison.Ordinal))
         {
             NotifyJavaData(
                 _onFileTransferMessageMethodId,

@@ -147,8 +147,12 @@ fun FileTransferScreen(
             onDismiss = { showNewFolder = false },
         )
     }
-    properties?.let { props ->
-        FileManagerPropertiesSheet(properties = props, loading = propertiesLoading, onDismiss = vm::dismissProperties)
+    if (propertiesLoading || properties != null) {
+        FileManagerPropertiesSheet(
+            properties = properties,
+            thumbnailBase64 = properties?.relativePath?.let { thumbnails[it] },
+            onDismiss = vm::dismissProperties,
+        )
     }
     destinationMode?.let { mode ->
         FileManagerDestinationSheet(
@@ -292,6 +296,7 @@ fun FileTransferScreen(
                                         isSelectionMode = isSelectionMode,
                                         isSelected = entry.name in selectedEntryNames,
                                         thumbnailBase64 = thumbnails[entry.relativePath ?: FileManagerLogic.combinePath(remotePath, entry.name)],
+                                        showOverflow = entry.name != FileManagerLogic.PARENT_ENTRY,
                                         onRequestThumbnail = { vm.requestThumbnail(entry) },
                                         onTap = {
                                             if (isSelectionMode) vm.toggleEntrySelection(entry)
@@ -299,6 +304,7 @@ fun FileTransferScreen(
                                             else vm.showProperties(entry)
                                         },
                                         onLongPress = { vm.enterSelectionMode(entry) },
+                                        onOverflow = { contextMenuEntry = entry },
                                     )
                                 }
                             }

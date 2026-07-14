@@ -153,8 +153,23 @@ object FileTransferChannelClient : FileFrameChannel {
         val client =
             OkHttpClient.Builder()
                 .sslSocketFactory(sslContext.socketFactory, trustManager)
-                .hostnameVerifier { _, _ -> true }
-                .pingInterval(20, TimeUnit.SECONDS)
+                .hostnameVerifier { _, session ->
+                    // Identity on this channel is the pinned SPKI, not a DNS name: the host cert is
+                    // self-signed and the user may dial an IP, a MagicDNS name, or a LAN name — so a
+                    // name check is meaningless, but an unconditional trust-all verifier is ASI-flagged
+                    // and wrong in principle. Verify the presented leaf against the same SPKI pin the TLS
+                    // handshake already enforced (belt-and-braces); anything else returns false.
+                    try {
+                        val leaf = session.peerCertificates.firstOrNull() as? X509Certificate
+                        leaf != null && trustManager.matchesPin(leaf)
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+                // Tighter ping so OkHttp detects a silently-dead peer (and fires onFailure -> reconnect)
+                // in ~10-20s of background hygiene, instead of waiting on OS TCP retransmit (minutes). The
+                // primary staleness defence is invalidate() on control-reconnect / transfer failure. (ix8d)
+                .pingInterval(10, TimeUnit.SECONDS)
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(0, TimeUnit.MILLISECONDS)
                 .build()
@@ -247,6 +262,27 @@ object FileTransferChannelClient : FileFrameChannel {
         sinks.clear()
     }
 
+    /**
+     * Force-nukes the channel socket with OkHttp [WebSocket.cancel] (NOT a graceful [WebSocket.close],
+     * which waits for a close handshake that a silently-dead peer will never answer) and resets state via
+     * [handleClosed] so the next [ensureConnected] dials a fresh socket instead of reusing a zombie.
+     *
+     * `ws.send()` only enqueues into OkHttp's transmit buffer and returns true even on a half-open/dead
+     * TCP link, so after a silent drop (host restart, Wi-Fi blip, doze) the app streams bytes that never
+     * leave the device — the host receives nothing and the transfer stalls. Call this the moment we know
+     * the link is suspect: the control channel reconnected (both sockets target the same host, so the data
+     * socket is almost certainly stale too) or a transfer timed out. (RemEx-ix8d.)
+     */
+    fun invalidate() {
+        val stale = webSocket
+        try {
+            stale?.cancel()
+        } catch (e: Exception) {
+            // best-effort
+        }
+        handleClosed()
+    }
+
     private val EMPTY = ByteArray(0)
 
     /**
@@ -269,13 +305,23 @@ object FileTransferChannelClient : FileFrameChannel {
             val leaf =
                 chain?.firstOrNull()
                     ?: throw CertificateException("No server certificate presented.")
-            val spki = MessageDigest.getInstance("SHA-256").digest(leaf.publicKey.encoded)
-            val actual = Base64.encodeToString(spki, Base64.NO_WRAP)
-            if (actual != expected) {
+            if (!matchesPin(leaf)) {
                 throw CertificateException(
                     "Host SPKI pin mismatch on /ws/files — refusing connection."
                 )
             }
+        }
+
+        /**
+         * True iff [cert]'s SubjectPublicKeyInfo SHA-256 matches the pinned hash. Factored out of
+         * checkServerTrusted so the hostname verifier can enforce the SAME pin — the peer identity
+         * on this channel is the pinned SPKI, not a DNS name — replacing the ASI-flagged
+         * unconditional trust-all verifier with a conditional one that can return false.
+         */
+        fun matchesPin(cert: X509Certificate): Boolean {
+            val spki = MessageDigest.getInstance("SHA-256").digest(cert.publicKey.encoded)
+            val actual = Base64.encodeToString(spki, Base64.NO_WRAP)
+            return actual == expected
         }
 
         override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()

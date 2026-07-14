@@ -7,7 +7,7 @@
 ### Your PC, in your pocket. A buttery‑smooth, end‑to‑end‑encrypted remote desktop and control suite that turns any Android phone into a full remote for your Windows or Linux machine.
 
 <p>
-  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0-FFB000?style=for-the-badge&labelColor=0d1117" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.2.0-FFB000?style=for-the-badge&labelColor=0d1117" />
   <img alt="Platforms" src="https://img.shields.io/badge/host-Windows%20%7C%20Linux-1f6feb?style=for-the-badge&labelColor=0d1117" />
   <img alt="Client" src="https://img.shields.io/badge/client-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white&labelColor=0d1117" />
   <img alt="License" src="https://img.shields.io/badge/license-MIT-8957e5?style=for-the-badge&labelColor=0d1117" />
@@ -41,7 +41,7 @@ It streams your desktop at up to **120 FPS** with a hardware‑accelerated H.264
 
 ## 🧭 Table of Contents
 
-- [What's New in 2.0](#-whats-new-in-20)
+- [What's New in 2.2](#-whats-new-in-22)
 - [Feature Tour](#-feature-tour)
 - [Architecture](#-architecture)
 - [Communication Protocols](#-communication-protocols)
@@ -57,9 +57,18 @@ It streams your desktop at up to **120 FPS** with a hardware‑accelerated H.264
 
 ---
 
-## 🚀 What's New in 2.0
+## 🚀 What's New in 2.2
 
-RemEx 2.0 is a ground‑up overhaul of the streaming and input pipeline. The headline: it finally *feels* like you're sitting at the machine.
+RemEx 2.2 brings a gorgeous UI redesign to the PC dashboard, deep diagnostic logs, and a file-sharing overhaul that supports resumable, lightning-fast transfers.
+
+- **File Sharing Pro:** Drag-and-drop transfers, two-way PC/Android browsing, and a new resizable icon grid view.
+- **Flawless Remote Desktop:** Seamless H.264 resolution scaling mid-stream without connection drops, zooming bugs, or encoder starvation. 
+- **Total Glow-Up:** A beautiful new PC Home dashboard, custom typography, improved app launcher, and 3 fun Android splash screens.
+- **Deep Diagnostics:** Rebuilt live-filtering logs page for easy troubleshooting and scoped exports.
+
+### 2.0: The Streaming & Input Overhaul
+
+RemEx 2.0 was a ground‑up overhaul of the streaming and input pipeline. The headline: it finally *feels* like you're sitting at the machine.
 
 | 🎬 Remote Desktop | ⚡ Performance | 🔒 Security |
 |---|---|---|

@@ -2908,4 +2908,34 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Splash_Style_Pong" xml:space="preserve">
     <value>Signal Pong</value>
   </data>
+  <data name="About_Update_Title" xml:space="preserve">
+    <value>सॉफ़्टवेयर अपडेट</value>
+  </data>
+  <data name="About_Update_Checking" xml:space="preserve">
+    <value>अपडेट की जाँच हो रही है…</value>
+  </data>
+  <data name="About_Update_UpToDate" xml:space="preserve">
+    <value>आपके पास नवीनतम संस्करण है।</value>
+  </data>
+  <data name="About_Update_Available" xml:space="preserve">
+    <value>अपडेट उपलब्ध है: {0}</value>
+  </data>
+  <data name="About_Update_Failed" xml:space="preserve">
+    <value>अपडेट की जाँच नहीं हो सकी। बाद में पुनः प्रयास करें।</value>
+  </data>
+  <data name="About_Update_CheckButton" xml:space="preserve">
+    <value>अपडेट जाँचें</value>
+  </data>
+  <data name="About_Update_DownloadButton" xml:space="preserve">
+    <value>डाउनलोड करें</value>
+  </data>
+  <data name="Settings_CheckForUpdates" xml:space="preserve">
+    <value>स्वचालित रूप से अपडेट जाँचें</value>
+  </data>
+  <data name="Settings_CheckForUpdatesDesc" xml:space="preserve">
+    <value>RemEx शुरू होने पर GitHub पर नया संस्करण खोजें।</value>
+  </data>
+  <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
+    <value>शुरू होने पर GitHub को एक गुमनाम अनुरोध भेजता है। कोई व्यक्तिगत डेटा नहीं भेजा जाता।</value>
+  </data>
 </root>

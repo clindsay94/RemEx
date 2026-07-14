@@ -199,9 +199,22 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     val mac = settingsManager.macAddressFlow.first()
                     val broadcast = settingsManager.broadcastIpFlow.first()
                     if (mac.isNotEmpty()) {
-                        RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull()
-                        Log.d("DashboardVM", "Wake-on-LAN packet sent to $mac via $broadcast:9")
-                        _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_sent))
+                        // Report the *actual* native result rather than optimistically saying "sent"
+                        // (mirrors RemoteControlViewModel.wakePc): the WakePc JNI call returns a JSON
+                        // envelope with a success flag, so a failed send now surfaces as a failure. (RemEx-nbfb)
+                        val responseJson = RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull() ?: ""
+                        val success = try {
+                            JSONObject(responseJson).optBoolean("success", false)
+                        } catch (e: Exception) {
+                            false
+                        }
+                        if (success) {
+                            Log.d("DashboardVM", "Wake-on-LAN packet sent to $mac via $broadcast:9")
+                            _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_sent))
+                        } else {
+                            Log.w("DashboardVM", "Wake-on-LAN not confirmed by native layer for $mac")
+                            _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_failed))
+                        }
                     } else {
                         Log.w("DashboardVM", "Cannot send Wake-on-LAN: MAC address not configured")
                         _wakeStatus.tryEmit(getApplication<Application>().getString(R.string.wake_pc_mac_not_configured))

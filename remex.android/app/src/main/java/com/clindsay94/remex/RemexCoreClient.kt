@@ -274,6 +274,39 @@ object RemexCoreClient {
     }
 
     @JvmStatic
+    @JvmName("FetchPairingPinNative")
+    private external fun FetchPairingPinNative(): String
+
+    /**
+     * Fetches the host's currently-active pairing PIN over the already-open native pairing
+     * WebSocket (ASI-compliant replacement for the old trust-all HTTP auto-fetch). Returns the
+     * native result string: "OK:<pin>|<expiryUnixMs>" on success, "UNSUPPORTED" against an older
+     * host that can't relay the PIN, or "ERROR: ..." on timeout / no-session / denied transport.
+     * Never mutates pairing state, so manual PIN entry always remains available on any failure.
+     */
+    @JvmStatic
+    fun FetchPairingPin(): Result<String> {
+        return if (isLibraryLoaded) {
+            try {
+                Log.d(TAG, "FetchPairingPin → native")
+                val result = FetchPairingPinNative()
+                // Never log the raw PIN — log only the response shape.
+                val redacted = if (result.startsWith("OK:")) "OK:<pin>|<expiry>" else result
+                Log.d(TAG, "FetchPairingPin ← native result: $redacted")
+                Result.success(result)
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "FetchPairingPinNative not loaded", e)
+                Result.failure(e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "FetchPairingPinNative crashed", e)
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
+        }
+    }
+
+    @JvmStatic
     @JvmName("GetPinnedHostHashNative")
     private external fun GetPinnedHostHashNative(hostId: String): String
 

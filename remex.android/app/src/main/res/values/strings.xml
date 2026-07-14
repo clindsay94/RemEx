@@ -336,6 +336,7 @@
     
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
+    <string name="pairing_auto_pin_failed">Couldn\'t fetch the PIN automatically — enter the PIN shown on your PC.</string>
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
@@ -500,6 +501,7 @@
     <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
     <string name="file_transfer_notification_complete_title">Transfer complete</string>
     <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
+    <string name="file_transfer_notification_upload_failed">Could not send %1$s</string>
     <string name="file_transfer_notification_download_complete">Downloaded %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer failed</string>
 
@@ -686,6 +688,8 @@
     <string name="file_transfer_unable_open_location">Unable to open the selected save location.</string>
     <string name="file_transfer_shared_folders_unavailable">Shared folders unavailable: %1$s</string>
     <string name="file_transfer_browse_error">Browse error: %1$s</string>
+    <string name="file_transfer_send_error">Error: %1$s</string>
+$line
     <string name="file_transfer_action_downloading">Downloading</string>
     <string name="file_transfer_action_uploading">Uploading</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>
@@ -724,6 +728,9 @@
     <string name="host_discovered_snackbar">PC found: %1$s</string>
     <string name="file_transfer_service_title">RemEx file transfers</string>
     <string name="file_transfer_service_active">Syncing files with your PC…</string>
+    <!-- Ongoing FGS notification progress line: "45% · 3/7". Locale-neutral (digits + percent + slash),
+         so it is intentionally not translated. -->
+    <string name="file_transfer_service_progress" translatable="false">%1$d%% · %2$d/%3$d</string>
     <!-- File-sharing 2.1 (WP7): file-manager UI overhaul -->
     <string name="file_manager_quick_access">Quick access</string>
     <string name="file_manager_volumes">This PC</string>

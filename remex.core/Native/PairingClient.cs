@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net.WebSockets;
 using Remex.Core.Messages;
 using Remex.Core.Models;
+using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
 
 namespace Remex.Core.Native;
@@ -173,6 +174,50 @@ public class PairingClient
                 _sessionKey = null;
             }
         }
+    }
+
+    /// <summary>
+    /// Requests that the host relay the currently-active pairing PIN over this pairing socket
+    /// (<see cref="MessageTypes.PairingPinRequest"/>) — the ASI-compliant replacement for the old
+    /// trust-all HTTP auto-fetch. The response arrives on the same socket, is consumed here, and is
+    /// returned synchronously; it is never routed through the native inbound callback, so it cannot
+    /// be silently dropped as the RemEx-y6x6 file-transfer types were. Reuses the existing
+    /// ignore-until-match receive loop, so a stray non-pin frame is skipped, not mis-handled.
+    /// </summary>
+    /// <returns>
+    /// The PIN payload, or <c>null</c> when the host declines (untrusted transport OR no active
+    /// session — deliberately indistinguishable) or the socket closes. Never mutates pairing state.
+    /// </returns>
+    public async Task<PairingPinInfo?> RequestPinAsync(CancellationToken ct)
+    {
+        var req = new RemexMessage
+        {
+            Type = MessageTypes.PairingPinRequest,
+            ProtocolVersion = 2,
+            ClientId = ClientId,
+            CorrelationId = Guid.NewGuid().ToString("N")
+        };
+
+        await MessageSerializer.SendAsync(_webSocket, req);
+        _log?.Invoke("Sent pairing_pin_request over the pairing socket.");
+
+        while (!ct.IsCancellationRequested)
+        {
+            var response = await ReceiveMessageAsync(ct);
+            if (response is null)
+            {
+                // Socket closed / receive failed — don't spin on a dead connection.
+                _log?.Invoke("Pairing socket closed before a pairing_pin_response arrived.");
+                return null;
+            }
+
+            if (response.Type == MessageTypes.PairingPinResponse)
+                return response.PairingPin; // may be null: host declined or no active PIN
+
+            _log?.Invoke($"Ignoring non-pin message during PIN fetch: {response.Type}");
+        }
+
+        return null;
     }
 
     private async Task<RemexMessage?> ReceiveMessageAsync(CancellationToken ct)

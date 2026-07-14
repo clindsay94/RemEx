@@ -2912,4 +2912,34 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Splash_Style_Pong" xml:space="preserve">
     <value>Signal Pong</value>
   </data>
+  <data name="About_Update_Title" xml:space="preserve">
+    <value>Yazılım Güncellemesi</value>
+  </data>
+  <data name="About_Update_Checking" xml:space="preserve">
+    <value>Güncellemeler denetleniyor…</value>
+  </data>
+  <data name="About_Update_UpToDate" xml:space="preserve">
+    <value>En son sürümü kullanıyorsunuz.</value>
+  </data>
+  <data name="About_Update_Available" xml:space="preserve">
+    <value>Güncelleme mevcut: {0}</value>
+  </data>
+  <data name="About_Update_Failed" xml:space="preserve">
+    <value>Güncellemeler denetlenemedi. Daha sonra tekrar deneyin.</value>
+  </data>
+  <data name="About_Update_CheckButton" xml:space="preserve">
+    <value>Güncellemeleri denetle</value>
+  </data>
+  <data name="About_Update_DownloadButton" xml:space="preserve">
+    <value>İndir</value>
+  </data>
+  <data name="Settings_CheckForUpdates" xml:space="preserve">
+    <value>Güncellemeleri otomatik denetle</value>
+  </data>
+  <data name="Settings_CheckForUpdatesDesc" xml:space="preserve">
+    <value>RemEx başladığında GitHub'da daha yeni bir sürüm arar.</value>
+  </data>
+  <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
+    <value>Başlangıçta GitHub'a bir anonim istek gönderir. Kişisel veri gönderilmez.</value>
+  </data>
 </root>

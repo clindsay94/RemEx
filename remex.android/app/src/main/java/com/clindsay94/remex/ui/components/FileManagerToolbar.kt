@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -16,7 +17,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
@@ -195,7 +195,7 @@ fun FileManagerSelectionBar(
                     Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.file_manager_copy))
                 }
                 IconButton(onClick = onMove, enabled = selectedCount > 0) {
-                    Icon(Icons.Default.DriveFileMove, contentDescription = stringResource(R.string.file_manager_move))
+                    Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(R.string.file_manager_move))
                 }
             }
             if (canDelete) {

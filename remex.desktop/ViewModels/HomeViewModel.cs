@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -114,6 +115,32 @@ public partial class HomeViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void NavigateToFileTransfer() => _shell.NavigateToFileTransfer();
+
+    [RelayCommand]
+    private void NavigateToDiagnosticLogs() => _shell.NavigateToDiagnosticLogs();
+
+    [RelayCommand]
+    private void NavigateToAbout() => _shell.NavigateToAbout();
+
+    // ═══════════════ External links ═══════════════
+
+    [RelayCommand]
+    private void OpenGitHub() => OpenUrl("https://github.com/clindsay94/remex");
+
+    [RelayCommand]
+    private void OpenPlayStore() => OpenUrl("https://play.google.com/store/apps/details?id=com.clindsay94.remex");
+
+    private static void OpenUrl(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+        }
+        catch
+        {
+            // Ignore if no browser / handler is available.
+        }
+    }
 
     public void Dispose()
     {

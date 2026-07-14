@@ -58,6 +58,15 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     partial void OnIsCloseToTrayEnabledChanged(bool value) => Save();
 
+    /// <summary>
+    /// When true, the app checks GitHub for a newer release on startup and surfaces it in About.
+    /// A single anonymous request to api.github.com; no telemetry. Defaults to true.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isCheckForUpdatesEnabled = true;
+
+    partial void OnIsCheckForUpdatesEnabledChanged(bool value) => Save();
+
     [ObservableProperty]
     private bool _isLaunchAtLoginEnabled;
 
@@ -235,6 +244,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             HostAddress = _profile.HostAddress;
             Language = string.IsNullOrWhiteSpace(_profile.Language) ? "en" : _profile.Language;
             IsCloseToTrayEnabled = _profile.CloseToTray;
+            IsCheckForUpdatesEnabled = _profile.CheckForUpdatesAutomatically;
 
             var startupService = App.Services?.GetService(typeof(IStartupRegistrationService)) as IStartupRegistrationService;
             if (startupService != null)
@@ -863,6 +873,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             HostAddress = HostAddress,
             Language = Language,
             CloseToTray = IsCloseToTrayEnabled,
+            CheckForUpdatesAutomatically = IsCheckForUpdatesEnabled,
             StreamQuality = StreamQuality,
             StreamFps = StreamFps
         };

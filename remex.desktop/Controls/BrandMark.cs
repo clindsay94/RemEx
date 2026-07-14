@@ -56,15 +56,19 @@ public sealed class BrandMark : Control
         };
         context.DrawRectangle(bg, null, new Rect(0, 0, w, h));
 
-        // Center the 108-unit mark, undistorted, and apply the 0.8 group scale about (54,54).
+        // Fit the terminal-window mark to fill the control: map the window geometry's bounding box
+        // to the centered square so the window's border becomes the icon's edge — no surrounding
+        // padding — while preserving proportions. Half the window stroke is inset so it isn't clipped.
         double min = Math.Min(w, h);
-        double s = min / RemexBrandData.Viewport;
-        var center = Matrix.CreateTranslation((w - min) / 2, (h - min) / 2);
-        var scale = Matrix.CreateScale(s, s);
-        var group = Matrix.CreateTranslation(-RemexBrandData.GroupPivot, -RemexBrandData.GroupPivot)
-                    * Matrix.CreateScale(RemexBrandData.GroupScale, RemexBrandData.GroupScale)
-                    * Matrix.CreateTranslation(RemexBrandData.GroupPivot, RemexBrandData.GroupPivot);
-        using (context.PushTransform(group * scale * center))
+        var wb = Window.Bounds;
+        double boxSide = Math.Max(wb.Width, wb.Height);
+        if (boxSide <= 0) return;
+        // size (px) / (box + stroke) (path units) — reserves the stroke so it isn't clipped, units-consistent.
+        double s = min / (boxSide + RemexBrandData.WindowStrokeWidth);
+        var fit = Matrix.CreateTranslation(-(wb.X + wb.Width / 2), -(wb.Y + wb.Height / 2))
+                  * Matrix.CreateScale(s, s)
+                  * Matrix.CreateTranslation(w / 2, h / 2);
+        using (context.PushTransform(fit))
         {
             context.DrawGeometry(WindowFill, WindowStroke, Window);
             context.DrawGeometry(Amber, null, Dot1);

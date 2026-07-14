@@ -204,6 +204,21 @@
             </StackPanel>
         </Border>
 
+        <!-- ═══ Section 4: Typography ═══ -->
+        <Border Classes="glass-card" Padding="20">
+            <StackPanel Spacing="16">
+                <TextBlock Text="{local:Localize Custom_Typography}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_PageTitleFontTip}">
+                    <TextBlock Text="{local:Localize Custom_PageTitleFont}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedPageTitleFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_ContentFontTip}">
+                    <TextBlock Text="{local:Localize Custom_ContentFont}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableFonts}" SelectedItem="{Binding SelectedBodyFont}" HorizontalAlignment="Left" Width="200" MaxDropDownHeight="340"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
         <Button Content="{local:Localize Custom_Reset}" Command="{Binding ResetToDefaultCommand}" HorizontalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
 
     </StackPanel>

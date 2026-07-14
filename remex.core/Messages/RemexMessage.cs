@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Remex.Core.Models;
+using Remex.Core.Models.IPC;
 
 namespace Remex.Core.Messages;
 
@@ -256,6 +257,14 @@ public sealed record RemexMessage
 
     [JsonPropertyName("filePushResponse")]
     public FilePushResponse? FilePushResponse { get; init; }
+
+    /// <summary>
+    /// PIN payload for <see cref="MessageTypes.PairingPinResponse"/>. Null when the transport is
+    /// untrusted OR no pairing session is active (deliberately indistinguishable — mirrors the
+    /// <c>GET /pairing-pin</c> 404-for-both design). Optional addition; no protocolVersion bump.
+    /// </summary>
+    [JsonPropertyName("pairingPin")]
+    public PairingPinInfo? PairingPin { get; init; }
 }
 
 /// <summary>
@@ -308,6 +317,14 @@ public static class MessageTypes
     public const string ReconnectChallenge = "reconnect_challenge";
     /// <summary>Client → host reconnect proof (HMAC over the challenge nonce).</summary>
     public const string ReconnectProof = "reconnect_proof";
+    /// <summary>
+    /// Client → host request to relay the active pairing PIN over the pairing <c>/ws</c> socket
+    /// (ASI-compliant replacement for the trust-all HTTP auto-fetch). Gated host-side by
+    /// <c>TransportTrust.IsTrustedForPinAutoFetch</c>; can only relay an already-active PIN.
+    /// </summary>
+    public const string PairingPinRequest = "pairing_pin_request";
+    /// <summary>Host → client response carrying the active PIN (or null payload when denied/absent).</summary>
+    public const string PairingPinResponse = "pairing_pin_response";
 
     // ── 2.0 File Transfer ──
     public const string FileTransferStart = "file_transfer_start";

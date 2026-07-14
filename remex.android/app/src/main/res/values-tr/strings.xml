@@ -260,6 +260,7 @@
     <string name="connection_unpair">Unpair</string>
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
+    <string name="pairing_auto_pin_failed">PIN otomatik olarak alınamadı — bilgisayarınızda görünen PIN\'i girin.</string>
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
@@ -371,7 +372,8 @@
     <string name="file_transfer_notification_preparing">Preparing transfer…</string>
     <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
     <string name="file_transfer_notification_complete_title">Transfer complete</string>
-    <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
+    <string name="file_transfer_notification_upload_complete">%1$s yüklendi</string>
+    <string name="file_transfer_notification_upload_failed">%1$s gönderilemedi</string>
     <string name="file_transfer_notification_download_complete">Downloaded %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer failed</string>
     <string name="file_transfer_rename">Rename</string>
@@ -509,6 +511,8 @@
     <string name="file_transfer_action_uploading">Yükleniyor</string>
     <string name="file_transfer_adding_shortcut">Kısayol ekleniyor…</string>
     <string name="file_transfer_browse_error">Göz atma hatası: %1$s</string>
+    <string name="file_transfer_send_error">Hata: %1$s</string>
+$line
     <string name="file_transfer_cancelled">İptal edildi.</string>
     <string name="file_transfer_delete_failed">Silme başarısız: %1$s</string>
     <string name="file_transfer_delete_timeout">Silme işlemi zaman aşımına uğradı.</string>

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
@@ -50,7 +51,7 @@ import com.clindsay94.remex.ui.screens.RemoteFileEntry
 
 /** Decodes a base64 JPEG thumbnail to an [ImageBitmap], memoised on the encoded string. */
 @Composable
-private fun rememberThumbnail(base64: String?): ImageBitmap? {
+internal fun rememberThumbnail(base64: String?): ImageBitmap? {
     return remember(base64) {
         if (base64.isNullOrBlank()) null
         else try {
@@ -176,9 +177,11 @@ fun FileManagerGridItem(
     isSelectionMode: Boolean,
     isSelected: Boolean,
     thumbnailBase64: String?,
+    showOverflow: Boolean,
     onRequestThumbnail: () -> Unit,
     onTap: () -> Unit,
     onLongPress: () -> Unit,
+    onOverflow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (!entry.isDirectory && FileManagerLogic.isThumbnailCandidate(entry.name)) {
@@ -224,6 +227,23 @@ fun FileManagerGridItem(
                     tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                     modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(22.dp),
                 )
+            } else if (showOverflow && entry.name != FileManagerLogic.PARENT_ENTRY) {
+                // Per-item actions (download/rename/delete/pin) — the list view exposes these via its
+                // trailing overflow; the grid needs its own affordance or they were unreachable here.
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                ) {
+                    IconButton(onClick = onOverflow, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.cd_more_options),
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
             }
         }
         Text(

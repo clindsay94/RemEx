@@ -14,7 +14,7 @@ import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.R
 import com.clindsay94.remex.service.FileManageOperations
 import com.clindsay94.remex.service.FileTransferEngine
-import com.clindsay94.remex.service.FileTransferForegroundService
+import com.clindsay94.remex.service.FileTransferJobService
 import com.clindsay94.remex.service.FileTransferLimits
 import com.clindsay94.remex.service.FileTransferNotificationManager
 import java.io.OutputStream
@@ -162,6 +162,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     private var pendingPropertiesRequestId: String? = null
     private var propertiesTargetName: String = ""
+    private var propertiesTargetRelative: String? = null
 
     // ── Thumbnails (relativePath -> base64 JPEG, "" = requested/absent) ────────
     private val _thumbnails = MutableStateFlow<Map<String, String>>(emptyMap())
@@ -661,6 +662,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun showProperties(entry: RemoteFileEntry) {
         val rootId = _selectedRootId.value ?: return
+        val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
+        // Warm the thumbnail cache so the properties sheet can show a preview for image files.
+        requestThumbnail(entry)
         if (caps()?.isV3 != true) {
             // v2 host has no metadata message; show the little we already know locally.
             _properties.value = FileProperties(
@@ -672,13 +676,14 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 itemCount = null,
                 mimeType = null,
                 readOnly = false,
+                relativePath = relative,
             )
             return
         }
-        val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
         val requestId = newRequestId()
         pendingPropertiesRequestId = requestId
         propertiesTargetName = entry.name
+        propertiesTargetRelative = relative
         _propertiesLoading.value = true
         _properties.value = null
         sendV3(
@@ -770,7 +775,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
         val (displayName, sizeBytes) = queryMetadata(uri)
         val targetName = displayName ?: "upload-${System.currentTimeMillis()}"
-        val destRelativePath = FileManagerLogic.combinePath(_remotePath.value, targetName)
+        // Destination DIRECTORY only — the host appends fileName itself. Including it here doubled the
+        // path into 'name/name', so every upload became a folder named after the file. (RemEx-y6x6.)
+        val destRelativePath = _remotePath.value.replace('\\', '/').trim('/')
 
         if (caps()?.binary == true) {
             // v3: hand off to the persistent queue + foreground service.
@@ -781,7 +788,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 destRoot = rootId,
                 destRelativePath = destRelativePath,
             )
-            FileTransferForegroundService.start(app())
+            FileTransferJobService.schedule(app())
             _statusText.value = app().getString(R.string.file_manager_queued_upload, targetName)
         } else {
             legacyUpload(uri, rootId, targetName, destRelativePath, sizeBytes)
@@ -806,7 +813,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 sourceRoot = rootId,
                 sourceRelativePath = relative,
             )
-            FileTransferForegroundService.start(app())
+            FileTransferJobService.schedule(app())
             _statusText.value = app().getString(R.string.file_manager_queued_download, entry.name)
         } else {
             legacyDownload(entry, rootId, relative, destinationUri)
@@ -819,7 +826,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun resumeTransfer(id: String) {
         FileTransferEngine.resume(id)
-        FileTransferForegroundService.start(app())
+        FileTransferJobService.schedule(app())
     }
 
     fun cancelTransfer(id: String) = FileTransferEngine.cancel(id)
@@ -1014,6 +1021,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         // Route to the destination picker if this is its browse.
         if (requestId == pendingDestinationRequestId) {
             _destinationLoading.value = false
+            // Surface a failed folder browse instead of silently showing an empty picker: without
+            // this the copy/move destination sheet looked like an empty folder on any error.
+            response.optMeaningfulString("errorMessage")?.let { error ->
+                _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+                _destinationEntries.value = emptyList()
+                return
+            }
             val entries = mutableListOf<RemoteFileEntry>()
             if (!FileManagerLogic.isAtRoot(_destinationPath.value)) {
                 entries.add(RemoteFileEntry(FileManagerLogic.PARENT_ENTRY, true, 0))
@@ -1145,6 +1159,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             itemCount = if (response.has("itemCount") && !response.isNull("itemCount")) response.optInt("itemCount") else null,
             mimeType = response.optMeaningfulString("mimeType"),
             readOnly = response.optBoolean("readOnly"),
+            relativePath = propertiesTargetRelative,
         )
     }
 
@@ -1323,7 +1338,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             RemexCoreClient.SendMessage(msg.toString()).getOrNull()
         } catch (e: Exception) {
             Log.e(TAG, "SendMessage failed", e)
-            _statusText.value = "Error: ${e.message}"
+            _statusText.value =
+                app().getString(R.string.file_transfer_send_error, e.message ?: "")
         }
     }
 }

@@ -260,6 +260,7 @@
     <string name="connection_unpair">Unpair</string>
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
+    <string name="pairing_auto_pin_failed">Tidak dapat mengambil PIN secara otomatis — masukkan PIN yang ditampilkan di PC Anda.</string>
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
@@ -372,6 +373,7 @@
     <string name="file_transfer_notification_progress">%1$d dari %2$d byte ditransfer</string>
     <string name="file_transfer_notification_complete_title">Transfer selesai</string>
     <string name="file_transfer_notification_upload_complete">Berhasil mengunggah %1$s</string>
+    <string name="file_transfer_notification_upload_failed">Gagal mengirim %1$s</string>
     <string name="file_transfer_notification_download_complete">Berhasil mengunduh %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer gagal</string>
     <string name="file_transfer_rename">Ubah Nama</string>
@@ -509,6 +511,8 @@
     <string name="file_transfer_action_uploading">Mengunggah</string>
     <string name="file_transfer_adding_shortcut">Menambahkan pintasan…</string>
     <string name="file_transfer_browse_error">Kesalahan penelusuran: %1$s</string>
+    <string name="file_transfer_send_error">Kesalahan: %1$s</string>
+$line
     <string name="file_transfer_cancelled">Dibatalkan.</string>
     <string name="file_transfer_delete_failed">Gagal menghapus: %1$s</string>
     <string name="file_transfer_delete_timeout">Waktu penghapusan habis.</string>

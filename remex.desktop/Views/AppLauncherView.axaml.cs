@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -47,11 +49,46 @@ public partial class AppLauncherView : UserControl
             grid.AddHandler(InputElement.PointerReleasedEvent, OnGridPointerReleased, RoutingStrategies.Tunnel);
             grid.AddHandler(InputElement.PointerCaptureLostEvent, OnGridCaptureLost);
         }
+
+        // External file / shortcut drop → add to the launcher (separate from the internal
+        // pointer-capture reorder above; OS drag-drop uses a different event family).
+        AddHandler(DragDrop.DragOverEvent, OnFileDragOver);
+        AddHandler(DragDrop.DropEvent, OnFileDrop);
     }
 
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
+    }
+
+    private void OnFileDragOver(object? sender, DragEventArgs e)
+    {
+        e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private async void OnFileDrop(object? sender, DragEventArgs e)
+    {
+        try
+        {
+            if (DataContext is not AppLauncherViewModel vm) return;
+            if (!e.Data.Contains(DataFormats.Files)) return;
+
+            var files = e.Data.GetFiles();
+            if (files is null) return;
+
+            var paths = files.OfType<IStorageFile>()
+                             .Select(f => f.TryGetLocalPath())
+                             .Where(p => !string.IsNullOrEmpty(p))
+                             .Select(p => p!)
+                             .ToList();
+            if (paths.Count > 0)
+                await vm.AddDroppedAppsAsync(paths);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Remex] Launcher drop failed: {ex.Message}");
+        }
     }
 
     protected override void OnDataContextChanged(System.EventArgs e)

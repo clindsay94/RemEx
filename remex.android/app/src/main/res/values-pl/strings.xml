@@ -260,6 +260,7 @@
     <string name="connection_unpair">Unpair</string>
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
+    <string name="pairing_auto_pin_failed">Nie udało się automatycznie pobrać kodu PIN — wpisz PIN wyświetlony na komputerze.</string>
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
@@ -372,6 +373,7 @@
     <string name="file_transfer_notification_progress">Przesłano %1$d z %2$d bajtów</string>
     <string name="file_transfer_notification_complete_title">Transfer zakończony</string>
     <string name="file_transfer_notification_upload_complete">Wysłano %1$s</string>
+    <string name="file_transfer_notification_upload_failed">Nie udało się wysłać %1$s</string>
     <string name="file_transfer_notification_download_complete">Pobrano %1$s</string>
     <string name="file_transfer_notification_failed_title">Transfer nie powiódł się</string>
     <string name="file_transfer_rename">Zmień nazwę</string>
@@ -509,6 +511,8 @@
     <string name="file_transfer_action_uploading">Przesyłanie</string>
     <string name="file_transfer_adding_shortcut">Dodawanie skrótu…</string>
     <string name="file_transfer_browse_error">Błąd przeglądania: %1$s</string>
+    <string name="file_transfer_send_error">Błąd: %1$s</string>
+$line
     <string name="file_transfer_cancelled">Anulowano.</string>
     <string name="file_transfer_delete_failed">Usuwanie nie powiodło się: %1$s</string>
     <string name="file_transfer_delete_timeout">Przekroczono limit czasu usuwania.</string>

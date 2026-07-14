@@ -260,6 +260,7 @@
     <string name="connection_unpair">Unpair</string>
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
+    <string name="pairing_auto_pin_failed">No se pudo obtener el PIN automáticamente — escribe el PIN que aparece en tu PC.</string>
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
@@ -372,6 +373,7 @@
     <string name="file_transfer_notification_progress">%1$d de %2$d bytes transferidos</string>
     <string name="file_transfer_notification_complete_title">Transferencia completada</string>
     <string name="file_transfer_notification_upload_complete">%1$s subido</string>
+    <string name="file_transfer_notification_upload_failed">No se pudo enviar %1$s</string>
     <string name="file_transfer_notification_download_complete">%1$s descargado</string>
     <string name="file_transfer_notification_failed_title">Transferencia fallida</string>
     <string name="file_transfer_rename">Renombrar</string>
@@ -509,6 +511,8 @@
     <string name="file_transfer_action_uploading">Subiendo</string>
     <string name="file_transfer_adding_shortcut">Agregando acceso directo…</string>
     <string name="file_transfer_browse_error">Error de exploración: %1$s</string>
+    <string name="file_transfer_send_error">Error: %1$s</string>
+$line
     <string name="file_transfer_cancelled">Cancelado.</string>
     <string name="file_transfer_delete_failed">Error al eliminar: %1$s</string>
     <string name="file_transfer_delete_timeout">Tiempo de espera agotado al eliminar.</string>

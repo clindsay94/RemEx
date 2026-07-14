@@ -275,6 +275,41 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         IsAndroidAddPanelOpen = false;
     }
 
+    /// <summary>
+    /// Adds launcher entries for files (e.g. .lnk / .exe shortcuts) dropped onto the launcher grid.
+    /// Mirrors the "Add program" dialog's save path: when connected the entry is sent to the host,
+    /// otherwise it is added and persisted locally.
+    /// </summary>
+    public async Task AddDroppedAppsAsync(IReadOnlyList<string> paths)
+    {
+        if (paths is null || paths.Count == 0) return;
+
+        var addedLocally = false;
+        foreach (var path in paths)
+        {
+            if (string.IsNullOrWhiteSpace(path)) continue;
+
+            var name = System.IO.Path.GetFileNameWithoutExtension(path);
+            if (string.IsNullOrWhiteSpace(name)) name = System.IO.Path.GetFileName(path);
+
+            var entry = NormalizeEntry(new AppEntry(Guid.NewGuid(), name, path, "#4A3AFF", null));
+
+            if (Connection.IsConnected)
+            {
+                var msg = new RemexMessage { Type = MessageTypes.LauncherAdd, LauncherEntry = entry };
+                await Connection.SendAsync(msg);
+            }
+            else
+            {
+                Launchers.Add(entry);
+                addedLocally = true;
+            }
+        }
+
+        if (addedLocally)
+            await SaveLaunchersAsync();
+    }
+
     [RelayCommand]
     private async Task ReorderLauncherAsync((AppEntry source, AppEntry target) param)
     {

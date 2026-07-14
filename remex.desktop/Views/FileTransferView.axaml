@@ -154,6 +154,8 @@
                         <Button Classes="crumb-btn" Content="{local:Localize FileTransfer_SortSize}" Command="{Binding SortByCommand}" CommandParameter="size"/>
                         <Button Classes="crumb-btn" Content="{local:Localize FileTransfer_SortDate}" Command="{Binding SortByCommand}" CommandParameter="date"/>
                         <TextBlock Text="{Binding SortDescending, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=↓|↑}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <Button Classes="crumb-btn" Command="{Binding ToggleViewModeCommand}" ToolTip.Tip="{local:Localize FileTransfer_ToggleViewTooltip}" Margin="16,0,0,0" Content="{Binding IsIconView, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=☰|▦}"/>
+                        <Slider Minimum="64" Maximum="176" Value="{Binding IconSize}" Width="96" VerticalAlignment="Center" IsVisible="{Binding IsIconView}" ToolTip.Tip="{local:Localize FileTransfer_IconSizeTooltip}"/>
                     </StackPanel>
                 </Border>
 
@@ -201,21 +203,42 @@
                     <Grid Grid.Column="0">
                         <TextBlock Text="{local:Localize FileTransfer_Loading}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsLoading}"/>
 
-                        <!-- Folder listing -->
-                        <ListBox x:Name="RemoteFileList" ItemsSource="{Binding RemoteEntries}" SelectedItem="{Binding SelectedRemoteEntry}" SelectionMode="Multiple" Background="Transparent" BorderThickness="0" IsVisible="{Binding !ShowSearchResults}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:FileEntry">
-                                    <Border Background="Transparent" Padding="12,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
-                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding IsDirectory, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=📁|📄}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding ModifiedUnixMs, Converter={x:Static local:UnixMsToLocalConverter.Instance}}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,12,0" IsVisible="{Binding !IsDirectory}"/>
-                                            <TextBlock Grid.Column="3" Text="{Binding SizeBytes, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" IsVisible="{Binding !IsDirectory}"/>
+                        <!-- Folder listing: details list OR resizable icon grid; hidden during search -->
+                        <Panel IsVisible="{Binding !ShowSearchResults}">
+                            <ListBox x:Name="RemoteFileList" ItemsSource="{Binding RemoteEntries}" SelectedItem="{Binding SelectedRemoteEntry}" SelectionMode="Multiple" Background="Transparent" BorderThickness="0" IsVisible="{Binding !IsIconView}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:FileEntry">
+                                        <Border Background="Transparent" Padding="12,8" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                                <TextBlock Grid.Column="0" Text="{Binding IsDirectory, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=📁|📄}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="2" Text="{Binding ModifiedUnixMs, Converter={x:Static local:UnixMsToLocalConverter.Instance}}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="0,0,12,0" IsVisible="{Binding !IsDirectory}"/>
+                                                <TextBlock Grid.Column="3" Text="{Binding SizeBytes, Converter={x:Static local:BytesToHumanReadableConverter.Instance}}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" IsVisible="{Binding !IsDirectory}"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- Icon grid (resizable via the size slider) -->
+                            <ListBox x:Name="RemoteIconGrid" ItemsSource="{Binding RemoteEntries}" SelectedItem="{Binding SelectedRemoteEntry}" SelectionMode="Multiple" Background="Transparent" BorderThickness="0" IsVisible="{Binding IsIconView}">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" ItemWidth="{Binding IconSize}" ItemHeight="{Binding IconSize}"/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="models:FileEntry">
+                                        <Grid RowDefinitions="*,Auto" Margin="6">
+                                            <Viewbox Grid.Row="0" Stretch="Uniform" MaxHeight="120">
+                                                <TextBlock Text="{Binding IsDirectory, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=📁|📄}"/>
+                                            </Viewbox>
+                                            <TextBlock Grid.Row="1" Text="{Binding Name}" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
                                         </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Panel>
 
                         <!-- Search results -->
                         <ListBox ItemsSource="{Binding SearchResults}" SelectionMode="Single" Background="Transparent" BorderThickness="0" IsVisible="{Binding ShowSearchResults}">

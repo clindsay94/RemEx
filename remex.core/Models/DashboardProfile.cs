@@ -111,6 +111,13 @@ public record DashboardProfile
     /// </summary>
     public bool CloseToTray { get; init; } = true;
 
+    /// <summary>
+    /// When true, the desktop app checks the public GitHub Releases API for a newer RemEx build
+    /// on startup and shows a notice in About. PC-only; the Android client ignores it. Defaults to
+    /// true — the check is a single anonymous request to api.github.com with no telemetry.
+    /// </summary>
+    public bool CheckForUpdatesAutomatically { get; init; } = true;
+
     /// <summary>Host screen capture JPEG quality (10–100). Applies to the stream sent to mobile clients.</summary>
     public int StreamQuality { get; init; } = 100;
 
@@ -194,6 +201,18 @@ public record CustomizationSettings
     /// <summary>Selected splash screen animation sequence style.</summary>
     [JsonPropertyName("splashStyle")]
     public string SplashStyle { get; init; } = "RemexCommand";
+
+    /// <summary>Font family for page-title headers (an avares URI for a bundled font, or a system font name).</summary>
+    [JsonPropertyName("pageTitleFont")]
+    public string PageTitleFontFamily { get; init; } = "avares://Remex.Desktop/Assets/Fonts#Orbitron";
+
+    /// <summary>Font family for card / section headers. Empty = inherit the app default. (Reserved for the card-header tier.)</summary>
+    [JsonPropertyName("cardHeaderFont")]
+    public string CardHeaderFontFamily { get; init; } = "";
+
+    /// <summary>Font family for body / content text (an avares URI for a bundled font, or a system font name). Default = Inter (the app default).</summary>
+    [JsonPropertyName("bodyFont")]
+    public string BodyFontFamily { get; init; } = "avares://Avalonia.Fonts.Inter/Assets#Inter";
 
     /// <summary>Compatibility alias for older UI clients.</summary>
     [JsonIgnore]

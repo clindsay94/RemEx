@@ -3,7 +3,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:views="using:Remex.Desktop.Views"
-    xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="RemEx — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaChromeHints="PreferSystemChrome" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="Mica, AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="#0A0A10" WindowStartupLocation="CenterScreen">
+    xmlns:vm="using:Remex.Desktop.ViewModels" mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800" x:Class="Remex.Desktop.MainWindow" Title="RemEx — Command Center" Icon="avares://Remex.Desktop/Assets/icon.png" x:DataType="vm:ShellViewModel" FontFamily="{DynamicResource BodyFontFamily}" Width="1200" Height="800" ExtendClientAreaToDecorationsHint="True" ExtendClientAreaChromeHints="PreferSystemChrome" ExtendClientAreaTitleBarHeightHint="32" TransparencyLevelHint="Mica, AcrylicBlur, None" Background="Transparent" TransparencyBackgroundFallback="#0A0A10" WindowStartupLocation="CenterScreen">
 
     <Window.KeyBindings>
         <!-- Direct navigation shortcuts -->
@@ -12,7 +12,8 @@
         <KeyBinding Gesture="Ctrl+D3" Command="{Binding NavigateToRemoteCommand}" />
         <KeyBinding Gesture="Ctrl+D4" Command="{Binding NavigateToAppLauncherCommand}" />
         <KeyBinding Gesture="Ctrl+D5" Command="{Binding NavigateToTaskManagerCommand}" />
-        <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateToRemoteDesktopCommand}" />
+        <KeyBinding Gesture="Ctrl+D6" Command="{Binding NavigateToFileTransferCommand}" />
+        <KeyBinding Gesture="Ctrl+D7" Command="{Binding NavigateToDiagnosticLogsCommand}" />
         <!-- Settings (Ctrl+,) -->
         <KeyBinding Gesture="Ctrl+OemComma" Command="{Binding ToggleSettingsPanelCommand}" />
         <!-- Dismiss overlays -->

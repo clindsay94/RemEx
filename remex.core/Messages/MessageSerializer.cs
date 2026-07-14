@@ -33,17 +33,33 @@ public static class MessageSerializer
     /// <summary>
     /// Send a <see cref="RemexMessage"/> over a WebSocket connection.
     /// </summary>
+    // A WebSocket permits only ONE outstanding SendAsync at a time. The host sends to a single socket
+    // from multiple concurrent producers (the telemetry stream, the control reader loop, and — since the
+    // consent-gated handlers run off the reader loop — deferred file responses). Without serialization,
+    // overlapping sends throw InvalidOperationException and desync/drop the connection. The gate is keyed
+    // weakly on the socket so it is collected together with the socket; no per-connection plumbing needed.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<WebSocket, SemaphoreSlim> SendGates = new();
+
     public static async Task SendAsync(
         WebSocket webSocket,
         RemexMessage message,
         CancellationToken ct = default)
     {
         var bytes = Serialize(message);
-        await webSocket.SendAsync(
-            new ArraySegment<byte>(bytes),
-            WebSocketMessageType.Text,
-            endOfMessage: true,
-            ct);
+        var gate = SendGates.GetValue(webSocket, static _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct);
+        try
+        {
+            await webSocket.SendAsync(
+                new ArraySegment<byte>(bytes),
+                WebSocketMessageType.Text,
+                endOfMessage: true,
+                ct);
+        }
+        finally
+        {
+            gate.Release();
+        }
     }
 
     private const int MaxMessageSize = 4 * 1024 * 1024; // 4 MB safety limit

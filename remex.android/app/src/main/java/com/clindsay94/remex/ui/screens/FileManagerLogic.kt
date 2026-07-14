@@ -62,6 +62,8 @@ data class FileProperties(
     val itemCount: Int?,
     val mimeType: String?,
     val readOnly: Boolean,
+    /** Root-relative path of the target, used to look up its cached thumbnail for the sheet. */
+    val relativePath: String? = null,
 )
 
 object FileManagerLogic {

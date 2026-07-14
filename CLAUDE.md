@@ -192,6 +192,7 @@ All user-facing strings in `remex.agent` (UI labels, tooltips, error messages, n
 1. Bump `protocolVersion` in both `remex.agent` and `remex.android`.
 2. Coordinate the release — a version mismatch between host and Android causes silent deserialization failures, not clean errors.
 3. Non-breaking additions (new optional fields) do not require a bump, but document them in CHANGELOG.md.
+4. **Adding a new message TYPE the Android client must receive? You MUST also route it to the phone.** Inbound `/ws` messages reach Kotlin only if `AndroidNativeExports.OnNativeMessageReceived` (in `Remex.Core`, compiled into `libRemexCore.so`) forwards them to a JNI callback. File messages now forward by `file_*` prefix, so any `file_*` type is covered — but a **non-`file_` client-bound type still needs its own callback wiring**, and a type the router doesn't recognize is **silently dropped with no error on either side**. This exact stale-allowlist gap bricked all of v3 file transfer with "Peer did not respond" (RemEx-y6x6). Always test the round-trip on a real device after adding a client-bound message type. **Deliberate exception — `pairing_pin_response` (RemEx-1t0b):** this host→client reply is intentionally *not* routed through `OnNativeMessageReceived`. It arrives on the pairing `/ws` socket, which only `PairingClient` reads, and is consumed synchronously as the return value of the `FetchPairingPinNative` native export — so it needs no JNI callback and cannot be silently dropped by construction. Do **not** "fix" this by adding it to the router.
 
 ## Android Prerequisites
 
@@ -269,7 +270,7 @@ Read the relevant sub-project `AGENTS.md` before touching files in that director
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (11582 symbols, 22538 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (14894 symbols, 30192 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

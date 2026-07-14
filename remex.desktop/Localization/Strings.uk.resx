@@ -2909,4 +2909,34 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Splash_Style_Pong" xml:space="preserve">
     <value>Signal Pong</value>
   </data>
+  <data name="About_Update_Title" xml:space="preserve">
+    <value>Оновлення програми</value>
+  </data>
+  <data name="About_Update_Checking" xml:space="preserve">
+    <value>Перевірка оновлень…</value>
+  </data>
+  <data name="About_Update_UpToDate" xml:space="preserve">
+    <value>У вас найновіша версія.</value>
+  </data>
+  <data name="About_Update_Available" xml:space="preserve">
+    <value>Доступне оновлення: {0}</value>
+  </data>
+  <data name="About_Update_Failed" xml:space="preserve">
+    <value>Не вдалося перевірити оновлення. Спробуйте пізніше.</value>
+  </data>
+  <data name="About_Update_CheckButton" xml:space="preserve">
+    <value>Перевірити оновлення</value>
+  </data>
+  <data name="About_Update_DownloadButton" xml:space="preserve">
+    <value>Завантажити</value>
+  </data>
+  <data name="Settings_CheckForUpdates" xml:space="preserve">
+    <value>Автоматично перевіряти оновлення</value>
+  </data>
+  <data name="Settings_CheckForUpdatesDesc" xml:space="preserve">
+    <value>Шукати новішу версію на GitHub під час запуску RemEx.</value>
+  </data>
+  <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
+    <value>Надсилає один анонімний запит до GitHub під час запуску. Особисті дані не надсилаються.</value>
+  </data>
 </root>

@@ -47,24 +47,33 @@ public static partial class SplashBrand
             new[] { BackdropStart, BackdropEnd }, null, SKShaderTileMode.Clamp);
         canvas.DrawRect(0, 0, width, height, bg);
 
+        // Fit the window mark's bounds to fill the canvas so the window border becomes the icon's
+        // edge (no surrounding padding), proportions preserved; the stroke is reserved so it isn't
+        // clipped. Matches the in-app BrandMark control. Group padding is disabled here (the fit fills).
         float s = Math.Min(width, height);
+        var wb = Window.Bounds;
+        float boxSide = Math.Max(wb.Width, wb.Height);
+        if (boxSide <= 0f) return;
+        float scale = s / (boxSide + RemexBrandData.WindowStrokeWidth);
         canvas.Save();
-        canvas.Translate((width - s) / 2f, (height - s) / 2f);
-        canvas.Scale(s / RemexBrandData.Viewport);
-        DrawMark(canvas);
+        canvas.Translate(width / 2f, height / 2f);
+        canvas.Scale(scale);
+        canvas.Translate(-(wb.Left + wb.Width / 2f), -(wb.Top + wb.Height / 2f));
+        DrawMark(canvas, 1f, 1f);
         canvas.Restore();
     }
 
     /// <summary>Draw the terminal-window mark in 108-unit space (caller sets scale/translation).</summary>
-    public static void DrawMark(SKCanvas canvas, float opacity = 1f)
+    public static void DrawMark(SKCanvas canvas, float opacity = 1f, float? groupScale = null)
     {
         byte a = Alpha(opacity);
         using var fill = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
         using var stroke = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
 
+        float gs = groupScale ?? RemexBrandData.GroupScale;
         canvas.Save();
         canvas.Translate(RemexBrandData.GroupPivot, RemexBrandData.GroupPivot);
-        canvas.Scale(RemexBrandData.GroupScale);
+        canvas.Scale(gs);
         canvas.Translate(-RemexBrandData.GroupPivot, -RemexBrandData.GroupPivot);
 
         fill.Color = WindowFill.WithAlpha(a);

@@ -358,6 +358,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
             finally { Marshal.FreeHGlobal(texDescPtr); }
 
             if (hr != S_OK) throw new InvalidOperationException($"CreateTexture2D hr=0x{hr:X8}");
+            _stagingHasFrame = false; // fresh staging texture — no frame copied into it yet
         }
         finally
         {
@@ -409,6 +410,15 @@ internal sealed class DxgiDesktopCapture : IDisposable
     }
 
     private byte[]? _lastRawFrame;
+    // Scale that produced _lastRawFrame (-1 = none yet). A cached frame is a valid replay ONLY for
+    // a request at the same scale: replaying it across a preset change hands the encoder a
+    // wrong-size buffer, which desyncs its fixed -s WxH rawvideo input and forces an encoder
+    // reinit every frame — and on a static desktop (no new duplication frame to re-derive from)
+    // that starves the stream indefinitely (RemEx-wmm8).
+    private double _lastRawFrameScale = -1;
+    // Whether _stagingTexture still holds the most recent frame's pixels, letting a scale change
+    // on a static desktop re-derive a correctly-sized output instead of starving.
+    private bool _stagingHasFrame;
 
     // isLive distinguishes a fresh/confirmed-healthy capture from a STALE cached replay (RemEx-ltd). It is
     // true exactly where the duplication is confirmed alive (a real frame, or a no-change frame on a healthy
@@ -420,11 +430,14 @@ internal sealed class DxgiDesktopCapture : IDisposable
         if (_disposed) return null;
 
         // Another capture holds the lock: returning its in-flight cached frame is not a stall (the concurrent
-        // capture is doing the real work), so report live.
+        // capture is doing the real work), so report live — but only when the cache matches the requested
+        // scale. A wrong-scale replay reported live would be fed to the encoder and desync its fixed-size
+        // rawvideo input, so report it stale instead.
         if (!_lock.Wait(0))
         {
-            isLive = true;
-            return _lastRawFrame;
+            var cached = _lastRawFrame;
+            isLive = cached is not null && _lastRawFrameScale == scale;
+            return cached;
         }
 
         try
@@ -453,8 +466,9 @@ internal sealed class DxgiDesktopCapture : IDisposable
         if (hr == DXGI_ERROR_WAIT_TIMEOUT)
         {
             _reinitThrottle.RecordHealthyFrame(); // output alive, just no change — clears loss escalation
-            isLive = true; // healthy static screen
-            return _lastRawFrame;
+            // Healthy static screen: replay the cache only when it matches the requested scale;
+            // otherwise re-derive from the retained staging pixels (RemEx-wmm8).
+            return ReplayOrRescale(scale, drawCursor, out isLive);
         }
 
         if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_SESSION_DISCONNECTED)
@@ -476,10 +490,10 @@ internal sealed class DxgiDesktopCapture : IDisposable
         {
             UpdatePointerShapeFromFrame(frameInfo);
 
-            if (frameInfo.AccumulatedFrames == 0 && _lastRawFrame is not null)
+            if (frameInfo.AccumulatedFrames == 0 && (_lastRawFrame is not null || _stagingHasFrame))
             {
-                isLive = true; // healthy output, no new content this tick
-                return _lastRawFrame;
+                // Healthy output, no new content this tick — same replay-or-rescale as WAIT_TIMEOUT.
+                return ReplayOrRescale(scale, drawCursor, out isLive);
             }
 
             hr = QueryInterface(dxgiResource, IID_ID3D11Texture2D, out var srcTex);
@@ -488,6 +502,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
             try
             {
                 GetSlot<CopyResourceFn>(_d3dContext, 47)(_d3dContext, _stagingTexture, srcTex);
+                _stagingHasFrame = true;
             }
             finally
             {
@@ -500,13 +515,43 @@ internal sealed class DxgiDesktopCapture : IDisposable
             GetSlot<ReleaseFrameFn>(_duplOutput, 14)(_duplOutput);
         }
 
+        return MapStagingAndEncode(scale, drawCursor, out isLive);
+    }
+
+    // Healthy no-new-frame tick: the cached frame is a valid replay only at the scale that produced
+    // it. After a scale change, re-derive the output from the retained staging pixels so the encoder
+    // keeps receiving correctly-sized frames on a static desktop (RemEx-wmm8).
+    private byte[]? ReplayOrRescale(double scale, bool drawCursor, out bool isLive)
+    {
+        if (_lastRawFrame is not null && _lastRawFrameScale == scale)
+        {
+            isLive = true;
+            return _lastRawFrame;
+        }
+
+        if (_stagingHasFrame)
+        {
+            return MapStagingAndEncode(scale, drawCursor, out isLive);
+        }
+
+        isLive = true; // healthy, but nothing captured yet to re-derive from
+        return _lastRawFrame;
+    }
+
+    // Must be called under _lock with a valid frame in _stagingTexture (_stagingHasFrame). Maps the
+    // staging texture and converts it to the even-aligned target size for the requested scale,
+    // refreshing the cached frame and its scale marker. Serves both the fresh-frame path and the
+    // static-desktop rescale path.
+    private byte[]? MapStagingAndEncode(double scale, bool drawCursor, out bool isLive)
+    {
         IntPtr mappedPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MappedSubresource>());
-        hr = GetSlot<MapFn>(_d3dContext, 14)(
+        var hr = GetSlot<MapFn>(_d3dContext, 14)(
             _d3dContext, _stagingTexture, 0, D3D11_MAP_READ, 0, mappedPtr);
 
         if (hr != S_OK)
         {
             Marshal.FreeHGlobal(mappedPtr);
+            isLive = false;
             return _lastRawFrame; // stale: map failed
         }
 
@@ -514,6 +559,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         {
             var mapped = Marshal.PtrToStructure<MappedSubresource>(mappedPtr);
             _lastRawFrame = EncodeToRawBgra(mapped.pData, (int)mapped.RowPitch, Width, Height, scale, drawCursor, DesktopLeft, DesktopTop);
+            _lastRawFrameScale = scale;
             isLive = true; // fresh frame produced
             return _lastRawFrame;
         }
@@ -756,6 +802,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         // Release the lost duplication + staging texture FIRST so IsAvailable reports false (callers fall
         // back to GDI) and we never AcquireNextFrame against a dead output. Keep D3D device/context alive.
         Release(ref _stagingTexture);
+        _stagingHasFrame = false;
         Release(ref _duplOutput);
         Width = 0;
         Height = 0;
@@ -1050,6 +1097,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     {
         // Release in reverse dependency order: staging texture → duplication → context → device
         Release(ref _stagingTexture);
+        _stagingHasFrame = false;
         Release(ref _duplOutput);
         Release(ref _d3dContext);
         Release(ref _d3dDevice);

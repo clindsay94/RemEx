@@ -2935,4 +2935,34 @@ Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, et
   <data name="Splash_Style_Pong" xml:space="preserve">
     <value>Signal Pong</value>
   </data>
+  <data name="About_Update_Title" xml:space="preserve">
+    <value>Actualización de software</value>
+  </data>
+  <data name="About_Update_Checking" xml:space="preserve">
+    <value>Buscando actualizaciones…</value>
+  </data>
+  <data name="About_Update_UpToDate" xml:space="preserve">
+    <value>Tienes la última versión.</value>
+  </data>
+  <data name="About_Update_Available" xml:space="preserve">
+    <value>Actualización disponible: {0}</value>
+  </data>
+  <data name="About_Update_Failed" xml:space="preserve">
+    <value>No se pudo buscar actualizaciones. Inténtalo más tarde.</value>
+  </data>
+  <data name="About_Update_CheckButton" xml:space="preserve">
+    <value>Buscar actualizaciones</value>
+  </data>
+  <data name="About_Update_DownloadButton" xml:space="preserve">
+    <value>Descargar</value>
+  </data>
+  <data name="Settings_CheckForUpdates" xml:space="preserve">
+    <value>Buscar actualizaciones automáticamente</value>
+  </data>
+  <data name="Settings_CheckForUpdatesDesc" xml:space="preserve">
+    <value>Busca una versión más reciente en GitHub cuando RemEx se inicia.</value>
+  </data>
+  <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
+    <value>Hace una solicitud anónima a GitHub al iniciar. No se envían datos personales.</value>
+  </data>
 </root>
