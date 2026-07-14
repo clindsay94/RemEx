@@ -15,6 +15,15 @@ private const val TAG = "H264StreamDecoder"
 // oldest, and ask the host for a keyframe so the next decodable point recovers cleanly. (RemEx-bqc)
 private const val MAX_INPUT_BACKLOG = 6
 
+/**
+ * While the decoder waits for its first SPS/PPS-carrying IDR, re-request an on-demand keyframe on
+ * this cadence. The first request still fires immediately (RemEx-p7fz); the retries cover a request
+ * being lost (e.g. swallowed by the host's post-start reinit cooldown) so the wait can never be
+ * open-ended. The host throttles floods on its side, so a retry inside its cooldown is merely
+ * counted, never harmful. (RemEx-vj7b)
+ */
+private const val INITIAL_KEYFRAME_RETRY_MS = 2000L
+
 // H.264 NAL unit types (nal_unit_type = first byte after the start code, low 5 bits).
 private const val NAL_TYPE_IDR = 5   // IDR slice (keyframe)
 private const val NAL_TYPE_SPS = 7   // Sequence Parameter Set
@@ -66,8 +75,13 @@ class H264StreamDecoder(
 
     private val decodeThread = Thread({ runDecodeLoop() }, "H264DecodeLoop")
 
-    // Touched only on the decode thread.
-    private var renderedFrames = 0
+    // Written only on the decode thread; sampled cross-thread by the ViewModel's decode-progress
+    // watchdog, hence @Volatile.
+    @Volatile private var renderedFrames = 0
+
+    /** Frames actually rendered to the surface — the watchdog's decode-progress signal. (RemEx-vj7b) */
+    val renderedFrameCount: Int
+        get() = renderedFrames
 
     // Adaptive-playback / input-buffer upper bound: the host's full-screen (scale 1.0) frame. We don't
     // know the exact monitor size here, so bound to 4K — that covers essentially all PC displays; the
@@ -112,10 +126,12 @@ class H264StreamDecoder(
             Log.i(TAG, "MediaCodec H.264 decoder created (sync); awaiting SPS/PPS to configure (hint ${width}x$height).")
             val info = MediaCodec.BufferInfo()
             var configured = false
-            // One-shot: whether we've already asked the host for an on-demand IDR while waiting to
-            // configure. A decoder created mid-GOP (e.g. an imageSize-driven SurfaceView rebuild)
-            // would otherwise sit black until the host's next PERIODIC keyframe. (RemEx-p7fz)
-            var requestedInitialKeyframe = false
+            // When we last asked the host for an on-demand IDR while waiting to configure. A decoder
+            // created mid-GOP (e.g. an imageSize-driven SurfaceView rebuild) would otherwise sit
+            // black until the host's next PERIODIC keyframe (RemEx-p7fz) — and a single request can
+            // be lost to the host's post-start reinit cooldown, so retry on a slow cadence instead
+            // of one-shot. 0L baseline → the first undecodable AU still requests immediately. (RemEx-vj7b)
+            var lastConfigureKeyframeRequestMs = 0L
 
             while (running) {
                 if (!configured) {
@@ -128,11 +144,13 @@ class H264StreamDecoder(
                     if (sps == null || pps == null) {
                         // We're receiving frames but joined mid-GOP (this AU is a P-frame — no SPS/PPS,
                         // undecodable with no reference). Rather than wait up to a full GOP for the host's
-                        // next periodic IDR (black screen the whole time), ask once for an on-demand
-                        // keyframe so we configure from the very next AU. The one-shot guard avoids
-                        // flooding the host with a request per dropped P-frame. (RemEx-p7fz)
-                        if (!requestedInitialKeyframe) {
-                            requestedInitialKeyframe = true
+                        // next periodic IDR (black screen the whole time), ask for an on-demand keyframe
+                        // so we configure from the very next AU. The throttle avoids flooding the host
+                        // with a request per dropped P-frame while still retrying if an earlier request
+                        // was lost. (RemEx-p7fz, RemEx-vj7b)
+                        val nowMs = android.os.SystemClock.elapsedRealtime()
+                        if (nowMs - lastConfigureKeyframeRequestMs >= INITIAL_KEYFRAME_RETRY_MS) {
+                            lastConfigureKeyframeRequestMs = nowMs
                             onKeyframeNeeded?.invoke()
                         }
                         continue // keep waiting for the SPS/PPS-carrying IDR

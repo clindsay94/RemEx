@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.1] — 2026-07-14
+
+### Fixed
+
+- **The phone now authenticates the moment it connects — previously nothing worked until you opened the Task Manager page.** The host issues its reconnect challenge lazily, on the first message that carries the phone's client id — and no screen sent one automatically, so every request was rejected with "Pairing required" until the Task Manager page (coincidentally the only screen that talks on open) happened to trigger the handshake. The app's native core now sends a gate-exempt kickoff `ping` right after the socket opens, which drives the existing challenge → proof handshake to completion within about a second of connecting, on every connect and reconnect — no user action needed, and a never-paired app is unaffected (no client id, no kickoff). The PC also shows it now: a 📱 "Phone connected" entry lands in the Home recent-activity feed whenever a phone pairs or re-authenticates, throttled to once a minute so a flapping network can't flood the feed. No protocol change — `ping` is an existing, pairing-exempt message. (`RemexNativeClient.cs`, `PingPongHandler.cs`, `ActivityService.cs`, `Strings.resx` ×9; RemEx-moqo.)
+- **Remote desktop no longer starts black until you switch monitors away and back.** The stream's only guaranteed self-contained keyframe was emitted right at stream start — often before the phone's decoder surface existed — and the phone's one compensating keyframe request was swallowed by the host's 5-second anti-reinit-storm cooldown, so the picture stayed black until a monitor switch forced a full restart. Four layered fixes close the race: (1) the AMD and Intel encoder paths now repeat SPS/PPS on every periodic keyframe (`-header_insertion_mode idr` / `-repeat_pps 1`; `repeat-headers=1` made explicit and unit-tested on libx264, NVENC already repeats implicitly), so a late-joining or rebuilt decoder always configures from the next ~1 s GOP keyframe; (2) the host honors the **first** client keyframe request after stream start even inside the reinit cooldown (single-shot bypass — storm protection intact); (3) the phone's decoder retries its keyframe request every 2 s while waiting for SPS/PPS instead of asking exactly once; (4) the stall watchdog now tracks frames actually **decoded**, not merely arriving — if frames flow but nothing renders, it nudges for a keyframe at 4 s and at 9 s automatically does what the manual workaround did: restarts the stream (bounded to 2 attempts per episode). (`FFmpegH264Encoder.cs`, `RemoteDesktopHandler.cs`, `H264StreamDecoder.kt`, `RemoteDesktopViewModel.kt`, new encoder-args tests; RemEx-vj7b — extends RemEx-p7fz, RemEx-5t4, RemEx-bqc.)
+
+---
+
 ## [2.3.0] — 2026-07-14
 
 ### Added

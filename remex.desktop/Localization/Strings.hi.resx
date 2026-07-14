@@ -2938,4 +2938,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
     <value>शुरू होने पर GitHub को एक गुमनाम अनुरोध भेजता है। कोई व्यक्तिगत डेटा नहीं भेजा जाता।</value>
   </data>
+  <data name="Activity_DeviceConnected" xml:space="preserve">
+    <value>फ़ोन कनेक्ट हुआ</value>
+  </data>
 </root>

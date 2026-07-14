@@ -2938,4 +2938,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
     <value>Faz uma solicitação anônima ao GitHub na inicialização. Nenhum dado pessoal é enviado.</value>
   </data>
+  <data name="Activity_DeviceConnected" xml:space="preserve">
+    <value>Telefone conectado</value>
+  </data>
 </root>

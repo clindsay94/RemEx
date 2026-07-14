@@ -2215,6 +2215,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Activity_CommandRun" xml:space="preserve">
     <value>Ran {0} command</value>
   </data>
+  <data name="Activity_DeviceConnected" xml:space="preserve">
+    <value>Phone connected</value>
+  </data>
   <data name="Home_RemoteControl" xml:space="preserve">
     <value>REMOTE_CONTROL</value>
   </data>

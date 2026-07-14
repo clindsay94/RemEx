@@ -2942,4 +2942,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
     <value>Başlangıçta GitHub'a bir anonim istek gönderir. Kişisel veri gönderilmez.</value>
   </data>
+  <data name="Activity_DeviceConnected" xml:space="preserve">
+    <value>Telefon bağlandı</value>
+  </data>
 </root>

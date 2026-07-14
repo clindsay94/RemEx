@@ -2965,4 +2965,7 @@ Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, et
   <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
     <value>Hace una solicitud anónima a GitHub al iniciar. No se envían datos personales.</value>
   </data>
+  <data name="Activity_DeviceConnected" xml:space="preserve">
+    <value>Teléfono conectado</value>
+  </data>
 </root>

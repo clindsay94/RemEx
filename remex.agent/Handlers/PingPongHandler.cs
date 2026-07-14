@@ -316,6 +316,7 @@ public sealed class PingPongHandler(
                             isPaired = true;
                             pairingStarted = false;
                             logger.LogInformation("Pairing verified — connection authenticated.");
+                            RecordDeviceConnectedActivity();
                         }
                         break;
 
@@ -342,6 +343,7 @@ public sealed class PingPongHandler(
                             logger.LogInformation(
                                 "Reconnect proof verified — connection authenticated for client {ClientId}.",
                                 message.ReconnectProof?.ClientId ?? message.ClientId);
+                            RecordDeviceConnectedActivity();
                         }
                         else
                         {
@@ -637,6 +639,26 @@ public sealed class PingPongHandler(
         CommandSuccess = success,
         CommandMessage = msg,
     };
+
+    private static long _lastDeviceConnectedTicks;
+
+    /// <summary>
+    /// Surfaces "Phone connected" in the Home recent-activity feed when a phone authenticates
+    /// (fresh pairing or PAIR-1 reconnect proof). Loopback can never reach the call sites — it
+    /// starts pre-paired — so this only ever records a real device. Throttled to once per minute
+    /// process-wide: with the connect-time kickoff ping (RemEx-moqo) every reconnect authenticates,
+    /// and a flapping network must not flood the 60-entry feed.
+    /// </summary>
+    private static void RecordDeviceConnectedActivity()
+    {
+        var now = DateTime.UtcNow.Ticks;
+        var last = Interlocked.Read(ref _lastDeviceConnectedTicks);
+        if (now - last < TimeSpan.FromSeconds(60).Ticks) return;
+        if (Interlocked.CompareExchange(ref _lastDeviceConnectedTicks, now, last) != last) return;
+
+        Remex.Desktop.Services.ActivityService.Instance.Record(
+            Remex.Desktop.Services.ActivityKind.DeviceConnected, string.Empty);
+    }
 
     /// <summary>
     /// Returns true when the message type must be rejected before the connection has completed

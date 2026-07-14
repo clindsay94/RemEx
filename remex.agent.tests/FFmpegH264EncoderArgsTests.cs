@@ -125,4 +125,48 @@ public sealed class FFmpegH264EncoderArgsTests
         Assert.False(FFmpegH264Encoder.ContainsIdr(Array.Empty<byte>()));
         Assert.False(FFmpegH264Encoder.ContainsIdr(new byte[] { 0x00, 0x00 }));
     }
+
+    // Self-contained GOP keyframes (RemEx-vj7b): a decoder that joins (or is rebuilt) mid-stream
+    // can only configure from a keyframe that carries in-band SPS/PPS. nvenc repeats them
+    // implicitly for raw -f h264 output; these codecs need an explicit flag — losing one
+    // reintroduces the "black until monitor switch" startup race.
+    [Theory]
+    [InlineData("libx264", "repeat-headers=1")]
+    [InlineData("h264_amf", "-header_spacing 60")] // spacing == ComputeGop(60) so headers ride the IDRs
+    [InlineData("h264_qsv", "-repeat_pps 1")]
+    public void BuildEncoderArgs_RepeatsParameterSetsOnNaturalIdrs(string codec, string expectedFlag)
+    {
+        var args = FFmpegH264Encoder.BuildEncoderArgs(codec, 1920, 1080, 60, 24, forProbe: false);
+
+        Assert.Contains(expectedFlag, args);
+    }
+
+    [Theory]
+    [InlineData("h264_nvenc_bgra")]
+    [InlineData("h264_nvenc")]
+    [InlineData("h264_qsv")]
+    [InlineData("h264_amf")]
+    [InlineData("h264_vaapi")]
+    [InlineData("libx264")]
+    public void BuildEncoderArgs_EveryCodecEmitsAccessUnitDelimiters(string codec)
+    {
+        // The stdout ReaderLoop splits encoded access units on AUD start codes; a codec argset
+        // without AUD emission silently breaks frame framing.
+        var args = FFmpegH264Encoder.BuildEncoderArgs(codec, 1920, 1080, 60, 24, forProbe: false);
+
+        Assert.True(
+            args.Contains("-aud 1") || args.Contains("aud=1"),
+            $"No AUD flag in args for {codec}: {args}");
+    }
+
+    [Fact]
+    public void BuildEncoderArgs_ProbeExercisesTheHeaderRepetitionFlags()
+    {
+        // The capability probe must run the exact encoder flags of the real stream, so an
+        // unsupported header-repetition option fails the probe (silent fallback to the next
+        // codec) instead of killing the live stream.
+        var probe = FFmpegH264Encoder.BuildEncoderArgs("h264_amf", 1920, 1080, 60, 24, forProbe: true);
+
+        Assert.Contains("-header_spacing 60", probe);
+    }
 }

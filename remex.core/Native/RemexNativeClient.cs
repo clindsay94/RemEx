@@ -139,6 +139,29 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
             JniHelper.AndroidLogE("RemexNative", "Successfully connected to remote server");
             ConnectionStateChanged?.Invoke(true);
             _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_connectionCts.Token));
+
+            // PAIR-1 kickoff: the host issues its reconnect challenge lazily, on the first inbound
+            // message that carries our clientId (PingPongHandler). Nothing else is guaranteed to
+            // send until the user opens a screen that talks (historically only the Task Manager
+            // page did), so nudge the handshake NOW with a gate-exempt ping — SendMessageAsync
+            // stamps ClientId/ProtocolVersion, the host answers with reconnect_challenge, and
+            // RespondToReconnectChallenge completes authentication with no user action. Skipped
+            // when this client has never paired (no clientId → nothing to authenticate with).
+            // Failure is non-fatal: any later send re-triggers the challenge. (RemEx-moqo)
+            if (!string.IsNullOrEmpty(_clientId))
+            {
+                try
+                {
+                    await SendMessageAsync(
+                        new RemexMessage { Type = MessageTypes.Ping, Timestamp = DateTime.UtcNow.Ticks },
+                        linkedCts.Token);
+                    JniHelper.AndroidLogE("RemexNative", "Sent post-connect kickoff ping (pairing handshake nudge).");
+                }
+                catch (Exception pingEx)
+                {
+                    JniHelper.AndroidLogE("RemexNative", $"Kickoff ping failed (non-fatal): {pingEx.Message}");
+                }
+            }
         }
         catch (Exception ex)
         {

@@ -2939,4 +2939,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
     <value>Wysyła jedno anonimowe żądanie do GitHub przy uruchomieniu. Żadne dane osobowe nie są wysyłane.</value>
   </data>
+  <data name="Activity_DeviceConnected" xml:space="preserve">
+    <value>Połączono telefon</value>
+  </data>
 </root>

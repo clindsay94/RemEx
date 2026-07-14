@@ -33,6 +33,17 @@ private const val FRAME_WATCHDOG_POLL_MS = 1000L
 private const val FRAME_STALL_TIMEOUT_MS = 7000L
 
 /**
+ * Decode-progress escalation thresholds (RemEx-vj7b): frames are ARRIVING but nothing has decoded —
+ * the arrival watchdog above cannot see this state because it resets on every arriving frame, even
+ * ones the decoder can't use (missed SPS/PPS+IDR, the black-start race). First nudge the host for a
+ * keyframe, then automate the user's manual fix — a full stop+restart, exactly what switching
+ * monitors away and back does — bounded so a genuinely broken decode path can't restart-loop.
+ */
+private const val DECODE_STALL_KEYFRAME_MS = 4000L
+private const val DECODE_STALL_RESTART_MS = 9000L
+private const val MAX_DECODE_STALL_RESTARTS = 2
+
+/**
  * Virtual-key codes for the latching PC-key modifiers on the "PC keys" bar (RemEx-yi8o).
  * `internal` (not `private`) so [RemoteDesktopChordTest] can assert directly against the real
  * constant set rather than a hand-copied literal that could silently drift (RemEx-9krr).
@@ -245,6 +256,13 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     @Volatile private var lastFrameArrivalMs = 0L
     private var frameWatchdogJob: Job? = null
 
+    // Decode-progress escalation state (RemEx-vj7b). lastDecodeProgressMs advances when H.264
+    // frames are actually rendered (sampled via renderedFrameCount) or an MJPEG bitmap decodes.
+    // decodeStallRestarts deliberately survives stream starts — actuallyStartStreaming resets
+    // reconnectAttempts, so that counter can't bound this — and resets on manual stop or progress.
+    @Volatile private var lastDecodeProgressMs = 0L
+    @Volatile private var decodeStallRestarts = 0
+
     private fun onFrameArrived() {
         lastFrameArrivalMs = System.currentTimeMillis()
     }
@@ -269,18 +287,60 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private fun armFrameWatchdog() {
         frameWatchdogJob?.cancel()
         lastFrameArrivalMs = System.currentTimeMillis()
+        lastDecodeProgressMs = lastFrameArrivalMs
         frameWatchdogJob =
                 viewModelScope.launch {
+                    var lastRenderedSample = -1
+                    var keyframeNudgeSent = false
                     // delay() is cancellable, so cancelling the job (stop/clear) exits the loop.
                     while (true) {
                         delay(FRAME_WATCHDOG_POLL_MS)
                         if (!_isStreaming.value) continue
                         // A reconnect already in flight will re-arm the watchdog on the next start.
                         if (reconnectJob?.isActive == true) continue
-                        val gap = System.currentTimeMillis() - lastFrameArrivalMs
-                        if (gap >= FRAME_STALL_TIMEOUT_MS) {
-                            Log.w(TAG, "No decoded frame in ${gap}ms; stream appears stalled — reconnecting.")
+                        val now = System.currentTimeMillis()
+
+                        // H.264 decode progress = the decoder's rendered-frame counter advancing.
+                        // (MJPEG progress is stamped directly by decodeFrame's success path.)
+                        val rendered = activeH264Decoder?.renderedFrameCount ?: -1
+                        if (rendered >= 0 && rendered != lastRenderedSample) {
+                            lastRenderedSample = rendered
+                            lastDecodeProgressMs = now
+                            keyframeNudgeSent = false
+                            decodeStallRestarts = 0
+                        }
+
+                        // Transport stall (RemEx-5t4): nothing arriving at all — reconnect.
+                        val arrivalGap = now - lastFrameArrivalMs
+                        if (arrivalGap >= FRAME_STALL_TIMEOUT_MS) {
+                            Log.w(TAG, "No frame in ${arrivalGap}ms; stream appears stalled — reconnecting.")
                             attemptReconnect()
+                            continue
+                        }
+
+                        // Frames ARRIVE but nothing decodes (RemEx-vj7b): the decoder missed (or never
+                        // got) its SPS/PPS+IDR — the state the arrival reset above masks. Escalate:
+                        // one keyframe nudge, then automate the manual monitor-switch fix (a full
+                        // stop+restart), bounded by MAX_DECODE_STALL_RESTARTS.
+                        val decodeGap = now - lastDecodeProgressMs
+                        if (decodeGap >= DECODE_STALL_RESTART_MS) {
+                            if (decodeStallRestarts < MAX_DECODE_STALL_RESTARTS) {
+                                decodeStallRestarts++
+                                Log.w(
+                                        TAG,
+                                        "Frames arriving but none decoded in ${decodeGap}ms; restarting " +
+                                                "stream ($decodeStallRestarts/$MAX_DECODE_STALL_RESTARTS)."
+                                )
+                                // Re-baseline so this loop can't double-fire before the restart
+                                // re-arms a fresh watchdog.
+                                lastDecodeProgressMs = now
+                                keyframeNudgeSent = false
+                                restartStreamWithCurrentTarget()
+                            }
+                        } else if (decodeGap >= DECODE_STALL_KEYFRAME_MS && !keyframeNudgeSent) {
+                            keyframeNudgeSent = true
+                            Log.w(TAG, "Frames arriving but none decoded in ${decodeGap}ms; requesting keyframe.")
+                            requestKeyframe()
                         }
                     }
                 }
@@ -685,6 +745,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 // Wrap bitmap with a unique timestamp to bypass StateFlow equality checks
                 _currentFrame.value = DesktopFrame(decoded)
                 recordFrameTimestamp()
+                lastDecodeProgressMs = System.currentTimeMillis()
             } else {
                 Log.e(TAG, "decodeFrame: BitmapFactory returned null for ${bytes.size} bytes")
                 // Fallback: Reset reuse if decoding failed
@@ -700,6 +761,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     reusableBitmap = decoded
                     _currentFrame.value = DesktopFrame(decoded)
                     recordFrameTimestamp()
+                    lastDecodeProgressMs = System.currentTimeMillis()
                 }
             } catch (e2: Exception) {
                 Log.e(TAG, "Frame decode failed after fallback", e2)
@@ -1037,6 +1099,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         reconnectJob?.cancel()
         reconnectJob = null
         reconnectAttempts = maxReconnectAttempts // Prevent auto-reconnect after manual stop
+        decodeStallRestarts = 0 // Manual stop ends the episode; the next session gets fresh restarts (RemEx-vj7b)
         cancelFrameWatchdog()
 
         catalogTimeoutJob?.cancel()

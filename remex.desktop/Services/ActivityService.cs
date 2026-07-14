@@ -35,6 +35,9 @@ public enum ActivityKind
 
     /// <summary>A power/remote command issued from the Remote screen.</summary>
     CommandRun,
+
+    /// <summary>The connected phone completed its pairing/reconnect handshake with this PC.</summary>
+    DeviceConnected,
 }
 
 /// <summary>
@@ -62,6 +65,7 @@ public sealed class ActivityEntry
         ActivityKind.FileDownloaded => "⬇️", // ⬇️
         ActivityKind.AppLaunched => "\U0001F680",    // 🚀
         ActivityKind.CommandRun => "⚡",         // ⚡
+        ActivityKind.DeviceConnected => "\U0001F4F1", // 📱
         _ => "•",                               // •
     };
 

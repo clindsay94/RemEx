@@ -228,7 +228,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// arguments the real run will use — only the output side differs (single frame to a
     /// discarded null muxer vs. a flushed Annex-B stream on stdout).
     /// </summary>
-    private static string BuildEncoderArgs(string codec, int width, int height, int fps, int qp, bool forProbe)
+    internal static string BuildEncoderArgs(string codec, int width, int height, int fps, int qp, bool forProbe)
     {
         var argsBuilder = new StringBuilder();
 
@@ -262,6 +262,11 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // 0fps black screen. NVENC native BGRA input avoids the filter entirely. (RemEx-dptu)
                 //
                 // -rc vbr -cq {qp}: quality-anchored VBR (constqp had no bitrate ceiling at all).
+                //
+                // In-band SPS/PPS on every IDR: nvenc has no explicit AVOption for this — ffmpeg sets
+                // repeatSPSPPS whenever AV_CODEC_FLAG_GLOBAL_HEADER is unset, which is always true for
+                // raw `-f h264 -` output, so every natural GOP keyframe is already self-contained and
+                // a decoder joining mid-stream configures from the next one. (RemEx-vj7b)
                 argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {qp} -b:v 0 -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1");
                 break;
             case "h264_nvenc":
@@ -281,18 +286,29 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 break;
             case "h264_qsv":
                 // Intel Quick Sync. QVBR: -global_quality anchors quality, -maxrate/-bufsize cap peaks.
-                argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1");
+                // -repeat_pps 1: QSV does not re-emit the PPS on IDRs by default, so a decoder that
+                // missed the stream-start access unit could never configure from natural GOP
+                // keyframes — black until a full restart. (RemEx-vj7b)
+                argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -repeat_pps 1 -aud 1");
                 break;
             case "h264_amf":
                 // AMD AMF. vbr_peak: -b:v is the target (75% of the ceiling), -maxrate the hard peak.
-                argsBuilder.Append($"-c:v h264_amf -quality speed -rc vbr_peak -b:v {maxRate * 3 / 4} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1");
+                // -header_spacing {gop}: AMF's default effectively emits SPS/PPS only once, so a
+                // decoder that missed the stream-start access unit could never configure from natural
+                // GOP keyframes — black until a full restart. Spacing == GOP length aligns header
+                // insertion with the periodic IDRs (AMD's recommended streaming setup). NOTE: this is
+                // the H.264 AMF option — `header_insertion_mode` exists only on hevc_amf. (RemEx-vj7b)
+                argsBuilder.Append($"-c:v h264_amf -quality speed -rc vbr_peak -b:v {maxRate * 3 / 4} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -header_spacing {gop} -aud 1");
                 break;
             default:
                 // libx264 software fallback with zero latency. libx264 has no generic
                 // `-aud` AVOption; AUD emission is requested via x264 params instead. x264 always
                 // makes a forced keyframe a true IDR, so no extra flag is needed for it.
                 // -crf stays quality-anchored; -maxrate/-bufsize turn it into VBV-constrained CRF.
-                argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -x264-params aud=1");
+                // repeat-headers=1: already x264's default without GLOBAL_HEADER, made explicit so
+                // self-contained GOP keyframes are a tested contract, not an ffmpeg default that a
+                // future muxer/global-header change could silently revoke. (RemEx-vj7b)
+                argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -x264-params aud=1:repeat-headers=1");
                 break;
         }
 

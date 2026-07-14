@@ -2938,4 +2938,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
     <value>Membuat satu permintaan anonim ke GitHub saat memulai. Tidak ada data pribadi yang dikirim.</value>
   </data>
+  <data name="Activity_DeviceConnected" xml:space="preserve">
+    <value>Ponsel terhubung</value>
+  </data>
 </root>

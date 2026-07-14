@@ -354,6 +354,14 @@ public sealed class RemoteDesktopHandler : IDisposable
         double lastEncoderRebuildMs = double.NegativeInfinity;
         int throttledKeyframeRequests = 0;
 
+        // Startup-race backstop (RemEx-vj7b): the FIRST client keyframe request of this session is
+        // honored even inside the cooldown. Stream start itself counts as a rebuild, so a decoder
+        // created after the bootstrap IDR (late surface, key(imageSize) rebuild) would otherwise
+        // have its request swallowed and sit black for the full window. Single-shot per
+        // desktop_start, so the reinit-storm protection above still holds; the Android client
+        // restarts the whole session on a monitor switch, which re-arms it naturally.
+        bool startupKeyframeBypassArmed = true;
+
         // Self-healing H.264: a failed encoder rebuild (transient GPU/driver/portal churn during a
         // monitor switch or reconnect) no longer demotes the session to MJPEG permanently. The loop
         // streams MJPEG-tagged frames while the encoder is down and retries H.264 on this cooldown.
@@ -405,10 +413,20 @@ public sealed class RemoteDesktopHandler : IDisposable
                         {
                             encoderSerial = -1;
                         }
+                        else if (startupKeyframeBypassArmed)
+                        {
+                            encoderSerial = -1;
+                            _logger.LogInformation(
+                                "Honoring first keyframe request inside the reinit cooldown (single-shot startup bypass).");
+                        }
                         else
                         {
                             throttledKeyframeRequests++;
                         }
+
+                        // The bypass exists for the session's FIRST request only — however that
+                        // request was resolved. Everything after runs on the normal cooldown.
+                        startupKeyframeBypassArmed = false;
                     }
 
                     // Rebuild the encoder on a stream-serial change (target switch) OR when an

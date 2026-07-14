@@ -2938,4 +2938,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
     <value>Effectue une requête anonyme à GitHub au démarrage. Aucune donnée personnelle n'est envoyée.</value>
   </data>
+  <data name="Activity_DeviceConnected" xml:space="preserve">
+    <value>Téléphone connecté</value>
+  </data>
 </root>
