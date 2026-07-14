@@ -139,7 +139,20 @@ public sealed class TransferSessionManager : IDisposable
 
         var partialPath = PartialPathFor(offer.TransferId);
         var manifestPath = ManifestPathFor(offer.TransferId);
+        // An UPLOAD's DestRelativePath is the destination DIRECTORY (not the full path); the file name is
+        // carried separately and appended here. (Contrast BeginSendAsync, where a DOWNLOAD's
+        // DestRelativePath is the source file's full path.) The Android client was fixed in 2.2.3 to send
+        // the directory only — previously it sent 'dir/name', which combined here to 'dir/name/name' and
+        // landed every push in a folder named after the file (RemEx-y6x6).
         var hostRelativePath = CombineHostRelative(offer.DestRelativePath, offer.FileName);
+
+        // A re-offer of an already-live transferId (client retry, or a dropped socket where the queue
+        // re-sends) must release the prior session's exclusive .remexpart handle BEFORE we touch the
+        // partial below. Otherwise the resume re-hash (read) or the FileShare.None open throws
+        // IOException "used by another process" and the old handle leaks. (The replace at the tail of
+        // this method was too late — the file access above it fails first.)
+        if (_receiveSessions.TryRemove(offer.TransferId, out var superseded))
+            superseded.DisposeStreamOnly();
 
         long startOffset = 0;
         IncrementalHash hasher;
@@ -208,9 +221,8 @@ public sealed class TransferSessionManager : IDisposable
             LastAckedOffset = startOffset,
         };
 
-        // Replace any prior live session for this id (e.g. a resume after a dropped socket).
-        if (_receiveSessions.TryRemove(offer.TransferId, out var prior))
-            prior.DisposeStreamOnly();
+        // Any prior live session for this id was already superseded at the top of this method (before we
+        // opened the partial), so this is a clean insert.
         _receiveSessions[offer.TransferId] = session;
 
         _logger.LogInformation(
@@ -493,23 +505,30 @@ public sealed class TransferSessionManager : IDisposable
             existing.MarkSuperseded();
         _channels[key] = channel;
 
+        _logger.LogInformation("DIAG /ws/files channel loop STARTED for {ClientId} (wsState={State}).", key, ws.State);
+        var diagDataFrames = 0;
         try
         {
             while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
                 var frameBytes = await ReceiveBinaryAsync(ws, ct);
                 if (frameBytes is null)
+                {
+                    _logger.LogInformation("DIAG /ws/files recv returned null for {ClientId} after {N} data frame(s) (wsState={State}) — loop exiting.", key, diagDataFrames, ws.State);
                     break; // socket closed or an oversize/protocol-invalid frame.
+                }
 
                 if (!FileFrameCodec.TryRead(frameBytes, out var envelope, out var payload) || envelope is null)
                 {
-                    _logger.LogWarning("Discarding malformed /ws/files frame from {ClientId}.", key);
+                    _logger.LogWarning("Discarding malformed /ws/files frame ({Len} bytes) from {ClientId}.", frameBytes.Length, key);
                     continue;
                 }
 
                 switch (envelope.Kind)
                 {
                     case FileFrameKinds.Data:
+                        if (diagDataFrames++ == 0)
+                            _logger.LogInformation("DIAG first DATA frame on /ws/files: transfer={Id}, offset={Off}, len={Len}.", envelope.TransferId, envelope.Offset, payload.Length);
                         await HandleInboundDataFrameAsync(channel, envelope, payload.ToArray(), ct);
                         break;
 
@@ -629,7 +648,14 @@ public sealed class TransferSessionManager : IDisposable
             return;
         }
 
-        var hostRelativePath = CombineHostRelative(offer.DestRelativePath, offer.FileName);
+        // DOWNLOAD path fix (RemEx-ix8d): the peer sends DestRelativePath as the source file's FULL
+        // relative path within the root (it already includes the file name) — unlike an UPLOAD, where
+        // DestRelativePath is the destination *directory*. So use it directly here; the receive path's
+        // CombineHostRelative(DestRelativePath, FileName) would double the name into 'file/file' and fail
+        // every download with "File not found in shared root".
+        var hostRelativePath = string.IsNullOrWhiteSpace(offer.DestRelativePath)
+            ? offer.FileName
+            : offer.DestRelativePath;
         Stream source;
         try
         {
@@ -712,8 +738,11 @@ public sealed class TransferSessionManager : IDisposable
         }
     }
 
-    private static async Task SendReadyAsync(WebSocket controlWs, string transferId, bool accepted, long startOffset, string? declineReason, CancellationToken ct)
+    private async Task SendReadyAsync(WebSocket controlWs, string transferId, bool accepted, long startOffset, string? declineReason, CancellationToken ct)
     {
+        // DIAG (RemEx-ix8d): confirm the ready reply is actually written and time the send — a slow send
+        // would fingerprint a per-socket send-gate stall; a decline reason fingerprints the offer path.
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         await MessageSerializer.SendAsync(controlWs, new RemexMessage
         {
             Type = MessageTypes.FileTransferReady,
@@ -726,6 +755,9 @@ public sealed class TransferSessionManager : IDisposable
                 DeclineReason = declineReason,
             },
         }, ct);
+        _logger.LogInformation(
+            "DIAG file_transfer_ready sent for {TransferId}: accepted={Accepted}, decline='{Decline}', sendMs={Ms}.",
+            transferId, accepted, declineReason ?? "-", sw.ElapsedMilliseconds);
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

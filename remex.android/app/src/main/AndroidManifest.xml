@@ -22,7 +22,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"
         tools:ignore="ForegroundServicesPolicy" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- File transfers use a User-Initiated Data Transfer job (not a dataSync FGS) per Play policy;
+         RUN_USER_INITIATED_JOBS replaces FOREGROUND_SERVICE_DATA_SYNC (RemEx-gvbq). -->
+    <uses-permission android:name="android.permission.RUN_USER_INITIATED_JOBS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.USE_LOOPBACK_INTERFACE" />
 
@@ -221,11 +223,13 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
-        <!-- Foreground service so file transfers survive app kill (dataSync type, 2.1) -->
+        <!-- User-Initiated Data Transfer job keeps file transfers alive while the queue drains
+             (RemEx-gvbq). Replaces the former dataSync foreground service; see
+             docs/superpowers/specs/2026-07-13-uidt-migration-design.md. -->
         <service
-            android:name=".service.FileTransferForegroundService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:name=".service.FileTransferJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
 
         <!-- Share target: "Send to PC" from any app's share sheet (2.1, WP8). -->
         <activity

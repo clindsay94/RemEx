@@ -154,7 +154,10 @@ object FileTransferChannelClient : FileFrameChannel {
             OkHttpClient.Builder()
                 .sslSocketFactory(sslContext.socketFactory, trustManager)
                 .hostnameVerifier { _, _ -> true }
-                .pingInterval(20, TimeUnit.SECONDS)
+                // Tighter ping so OkHttp detects a silently-dead peer (and fires onFailure -> reconnect)
+                // in ~10-20s of background hygiene, instead of waiting on OS TCP retransmit (minutes). The
+                // primary staleness defence is invalidate() on control-reconnect / transfer failure. (ix8d)
+                .pingInterval(10, TimeUnit.SECONDS)
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(0, TimeUnit.MILLISECONDS)
                 .build()
@@ -245,6 +248,27 @@ object FileTransferChannelClient : FileFrameChannel {
     fun close() {
         closeInternal()
         sinks.clear()
+    }
+
+    /**
+     * Force-nukes the channel socket with OkHttp [WebSocket.cancel] (NOT a graceful [WebSocket.close],
+     * which waits for a close handshake that a silently-dead peer will never answer) and resets state via
+     * [handleClosed] so the next [ensureConnected] dials a fresh socket instead of reusing a zombie.
+     *
+     * `ws.send()` only enqueues into OkHttp's transmit buffer and returns true even on a half-open/dead
+     * TCP link, so after a silent drop (host restart, Wi-Fi blip, doze) the app streams bytes that never
+     * leave the device — the host receives nothing and the transfer stalls. Call this the moment we know
+     * the link is suspect: the control channel reconnected (both sockets target the same host, so the data
+     * socket is almost certainly stale too) or a transfer timed out. (RemEx-ix8d.)
+     */
+    fun invalidate() {
+        val stale = webSocket
+        try {
+            stale?.cancel()
+        } catch (e: Exception) {
+            // best-effort
+        }
+        handleClosed()
     }
 
     private val EMPTY = ByteArray(0)

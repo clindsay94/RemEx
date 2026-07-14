@@ -14,7 +14,7 @@ import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.R
 import com.clindsay94.remex.service.FileManageOperations
 import com.clindsay94.remex.service.FileTransferEngine
-import com.clindsay94.remex.service.FileTransferForegroundService
+import com.clindsay94.remex.service.FileTransferJobService
 import com.clindsay94.remex.service.FileTransferLimits
 import com.clindsay94.remex.service.FileTransferNotificationManager
 import java.io.OutputStream
@@ -775,7 +775,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
         val (displayName, sizeBytes) = queryMetadata(uri)
         val targetName = displayName ?: "upload-${System.currentTimeMillis()}"
-        val destRelativePath = FileManagerLogic.combinePath(_remotePath.value, targetName)
+        // Destination DIRECTORY only — the host appends fileName itself. Including it here doubled the
+        // path into 'name/name', so every upload became a folder named after the file. (RemEx-y6x6.)
+        val destRelativePath = _remotePath.value.replace('\\', '/').trim('/')
 
         if (caps()?.binary == true) {
             // v3: hand off to the persistent queue + foreground service.
@@ -786,7 +788,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 destRoot = rootId,
                 destRelativePath = destRelativePath,
             )
-            FileTransferForegroundService.start(app())
+            FileTransferJobService.schedule(app())
             _statusText.value = app().getString(R.string.file_manager_queued_upload, targetName)
         } else {
             legacyUpload(uri, rootId, targetName, destRelativePath, sizeBytes)
@@ -811,7 +813,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 sourceRoot = rootId,
                 sourceRelativePath = relative,
             )
-            FileTransferForegroundService.start(app())
+            FileTransferJobService.schedule(app())
             _statusText.value = app().getString(R.string.file_manager_queued_download, entry.name)
         } else {
             legacyDownload(entry, rootId, relative, destinationUri)
@@ -824,7 +826,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun resumeTransfer(id: String) {
         FileTransferEngine.resume(id)
-        FileTransferForegroundService.start(app())
+        FileTransferJobService.schedule(app())
     }
 
     fun cancelTransfer(id: String) = FileTransferEngine.cancel(id)

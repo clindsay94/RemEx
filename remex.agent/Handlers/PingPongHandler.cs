@@ -369,8 +369,18 @@ public sealed class PingPongHandler(
 
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP2 ──
                     case MessageTypes.FileVolumesRequest:
-                        await fileTransferHandler.HandleFileVolumesRequestAsync(message, webSocket, connectionClientId, ct);
+                    {
+                        // "Browse this PC" full-device access is consent-gated and awaits the user's decision
+                        // (up to 60s). Run it OFF the reader loop — otherwise the whole connection stalls for
+                        // the duration of the prompt, so file transfers on the same socket report "peer did
+                        // not respond". Deferred sends are serialized per-socket in MessageSerializer.
+                        var volMsg = message;
+                        var volClientId = connectionClientId;
+                        _ = RunDetachedAsync(
+                            () => fileTransferHandler.HandleFileVolumesRequestAsync(volMsg, webSocket, volClientId, ct),
+                            "file_volumes_request");
                         break;
+                    }
 
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP3 ──
                     case MessageTypes.FileSearchRequest:
@@ -395,8 +405,18 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.FilePushOffer:
-                        await fileTransferHandler.HandleFilePushOfferAsync(message, webSocket, connectionClientId, ct);
+                    {
+                        // Consent-gated: this awaits a user consent decision (up to 60s). Run it OFF the
+                        // reader loop so a pending consent cannot block file_transfer_offer / volumes / etc.
+                        // on this same connection. Per-socket send serialization (MessageSerializer) makes
+                        // the deferred response safe against the loop's own concurrent sends.
+                        var pushMsg = message;
+                        var pushClientId = connectionClientId;
+                        _ = RunDetachedAsync(
+                            () => fileTransferHandler.HandleFilePushOfferAsync(pushMsg, webSocket, pushClientId, ct),
+                            "file_push_offer");
                         break;
+                    }
 
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP4: v3 transfer negotiation ──
                     // Control plane for the binary /ws/files channel. The bulk data itself never touches this
@@ -562,6 +582,27 @@ public sealed class PingPongHandler(
         catch (Exception ex)
         {
             return MakeCommandResponse(false, $"Error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Runs a consent-gated file handler detached from the control reader loop so its (up to 60s) consent
+    /// wait cannot stall other messages on the same connection. Exceptions are observed and logged here so
+    /// the fire-and-forget task never faults silently; cancellation (connection closing) is expected.
+    /// </summary>
+    private async Task RunDetachedAsync(Func<Task> handler, string label)
+    {
+        try
+        {
+            await handler();
+        }
+        catch (OperationCanceledException)
+        {
+            // Connection closing while the handler awaited consent — nothing to do.
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Deferred {Label} handler failed.", label);
         }
     }
 

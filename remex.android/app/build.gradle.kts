@@ -61,7 +61,9 @@ android {
 
     defaultConfig {
         applicationId = remexAndroidApplicationId
-        minSdk = 26
+        // UIDT (User-Initiated Data Transfer) jobs require API 34; the file-transfer lifetime moved
+        // off the dataSync foreground service onto UIDT jobs, so 34 is the floor (RemEx-gvbq).
+        minSdk = 34
         targetSdk = 37
         //noinspection OldTargetApi
         versionCode = remexVersionCode

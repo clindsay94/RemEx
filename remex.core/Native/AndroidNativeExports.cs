@@ -1106,9 +1106,18 @@ public static class AndroidNativeExports
                 RemexJson.Serialize(msg.HostCapabilities, RemexJsonSerializerContext.Default.HostCapabilities));
         }
 
-        if (msg.Type is MessageTypes.FileRootsResponse or MessageTypes.FileBrowseResponse or MessageTypes.FileTransferChunk
-                       or MessageTypes.FileTransferProgress or MessageTypes.FileTransferEnd
-                       or MessageTypes.FileManageResponse or MessageTypes.FileHashResponse or MessageTypes.FileRootManageResponse)
+        // Forward the ENTIRE file-transfer control family (every "file_*" message) to the Kotlin file
+        // layer. This deliberately replaces the old hand-maintained allowlist, which only knew the 2.0
+        // types: when the 2.1 File Sharing Overhaul (protocolVersion 3) added file_transfer_ready /
+        // complete / result / control, the v3 browse responses (volumes / search / metadata / thumbnail)
+        // and consent / push, this router silently dropped every one of them — bricking all v3 transfer
+        // negotiation ("Peer did not respond") and v3 browse while the host itself looked perfectly
+        // healthy. Every "file_*" type is destined for onFileTransferMessage, and each of the four Kotlin
+        // collectors (FileTransferEngine, ShareToPcViewModel, AndroidFileTransferHost, FileTransferViewModel)
+        // switches on `type` and ignores the ones it does not handle, so forwarding the whole family is
+        // safe and stops this stale-allowlist regression from ever recurring. Ordinal compare keeps it
+        // NativeAOT-safe and culture-independent. Do NOT narrow this back into an explicit type list.
+        if (msg.Type is { } fileType && fileType.StartsWith("file_", StringComparison.Ordinal))
         {
             NotifyJavaData(
                 _onFileTransferMessageMethodId,

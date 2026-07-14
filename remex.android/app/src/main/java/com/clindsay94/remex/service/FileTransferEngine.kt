@@ -34,7 +34,8 @@ import org.json.JSONObject
  * `TransferSessionManager`.
  *
  * Work is persisted to `filesDir/transfer_queue.json` via [TransferQueueStore] so it survives process
- * death; the [FileTransferForegroundService] keeps the process alive while the queue drains, so a
+ * death; the [FileTransferJobService] (a User-Initiated Data Transfer job) keeps the process alive
+ * while the queue drains, so a
  * transfer is not bound to `viewModelScope`. The UI (WP7) observes [queue] and calls the enqueue*
  * methods; WP8's share sheet enqueues push uploads the same way.
  */
@@ -72,6 +73,18 @@ object FileTransferEngine {
 
         scope.launch {
             RemexClientManager.fileTransferMessages.collect { json -> onControlMessage(json) }
+        }
+        scope.launch {
+            // Proactive staleness defence (RemEx-ix8d): a control-plane (re)connect implies the prior
+            // /ws/files socket is a stale zombie (both channels target the same host over the same path),
+            // so force-nuke it on every false->true transition. The next transfer then dials a FRESH
+            // binary channel instead of streaming bytes into a silently-dead OkHttp socket. The first
+            // connect is a harmless no-op (no channel open yet).
+            var wasConnected = false
+            RemexClientManager.isConnected.collect { connected ->
+                if (connected && !wasConnected) FileTransferChannelClient.invalidate()
+                wasConnected = connected
+            }
         }
         scope.launch { drainLoop() }
     }
@@ -196,6 +209,10 @@ object FileTransferEngine {
         } catch (e: Exception) {
             Log.w(TAG, "Transfer ${t.id} failed", e)
             updateState(t.id) { it.copy(state = TransferState.Failed, error = e.message) }
+            // A mid-stream failure (channel closed, broken pipe, ack stall) means the binary channel is
+            // dead/stale — nuke it so the next transfer reconnects fresh instead of reusing the zombie
+            // and streaming into the void again. (RemEx-ix8d.)
+            FileTransferChannelClient.invalidate()
             // A push/upload that dies mid-stream (thrown here, not via runUpload's own terminal
             // branches) still owes the user a Share-to-PC result, same as runDownload's notify.
             if (t.mode != FileTransferModes.DOWNLOAD) notifyUploadFailed(t)
@@ -276,6 +293,17 @@ object FileTransferEngine {
                     digest.update(buf, 0, read)
                     sent += read
                     updateProgress(t.id, sent)
+                }
+                // Drain before completing (RemEx-y6x6): the bulk data frames and file_transfer_complete
+                // travel on SEPARATE sockets (/ws/files vs the control /ws). If we announce completion the
+                // instant the last frame is enqueued, the tiny complete overtakes the still-in-flight bulk
+                // bytes — the host finalizes against a partial file and fails "Transfer incomplete" while the
+                // data is literally still arriving (host logs showed complete processed BEFORE the first data
+                // frame). Wait until the host has ACKed every byte; its Final-frame ack sets committed==size.
+                while (committed.get() < t.size) {
+                    if (ackSignal.receiveCatching().isClosed) {
+                        throw IllegalStateException("Channel closed before the host acknowledged all data.")
+                    }
                 }
             }
             val sha = Base64.encodeToString(digest.digest(), Base64.NO_WRAP)
@@ -418,6 +446,11 @@ object FileTransferEngine {
         readyWaiters.remove(t.id)
         if (ready == null) {
             updateState(t.id) { it.copy(state = TransferState.Failed, error = "Peer did not respond.") }
+            // No control reply within the window: the socket(s) to the host are very likely silently-dead
+            // OkHttp zombies (send() keeps enqueueing into a half-open link, so bytes never leave the
+            // device and the host receives nothing). Force-nuke the binary channel so the retry dials a
+            // FRESH /ws/files socket instead of streaming into the void again. (RemEx-ix8d.)
+            FileTransferChannelClient.invalidate()
         }
         return ready
     }
