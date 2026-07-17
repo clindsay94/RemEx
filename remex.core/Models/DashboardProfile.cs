@@ -35,6 +35,12 @@ public record CardState
     [JsonPropertyName("zIndex")]
     public int Layer { get; init; }
 
+    /// <summary>Chosen telemetry view (Dashboard 2.0). <see cref="GraphType.Auto"/> = resolve from Kind/unit at render.</summary>
+    public GraphType DisplayMode { get; init; } = GraphType.Auto;
+
+    /// <summary>Second sensor bound for the <see cref="GraphType.DualMetric"/> overlay (null otherwise).</summary>
+    public string? SecondarySensorId { get; init; }
+
     /// <summary>Compatibility alias for older canvas-oriented callers.</summary>
     [JsonIgnore]
     public double PositionX
@@ -88,6 +94,9 @@ public record DashboardProfile
 
     /// <summary>Sensor names pinned to the Home overview.</summary>
     public List<string> PinnedSensorIds { get; init; } = new();
+
+    /// <summary>Screen identifiers whose contextual coach marks the user has already seen/dismissed (Dashboard 2.0).</summary>
+    public List<string> SeenCoachMarks { get; init; } = new();
 
     /// <summary>Persisted Wake-on-LAN target MAC address (e.g. "AA:BB:CC:DD:EE:FF").</summary>
     public string WolMacAddress { get; init; } = string.Empty;

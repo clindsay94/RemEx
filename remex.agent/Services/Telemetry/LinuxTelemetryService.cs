@@ -110,10 +110,10 @@ public class LinuxTelemetryService : ITelemetryService
 
         var sensors = new List<SensorReading>
         {
-            new() { Name = "Total CPU Usage", Value = cpuResult, Unit = "%", Category = "CPU", Source = "Linux" },
-            new() { Name = "Physical Memory Used", Value = ramResult.used, Unit = "GB", Category = "Memory", Source = "Linux" },
-            new() { Name = "Physical Memory Available", Value = ramResult.total - ramResult.used, Unit = "GB", Category = "Memory", Source = "Linux" },
-            new() { Name = "Physical Memory Load", Value = ramResult.total > 0 ? (ramResult.used / ramResult.total) * 100.0 : 0, Unit = "%", Category = "Memory", Source = "Linux" }
+            new() { Name = "Total CPU Usage", Value = cpuResult, Unit = "%", Category = "CPU", Source = "Linux", Kind = MetricKind.CpuLoad, Id = "linux:cpu:load" },
+            new() { Name = "Physical Memory Used", Value = ramResult.used, Unit = "GB", Category = "Memory", Source = "Linux", Kind = MetricKind.RamUsedGb, Id = "linux:mem:used" },
+            new() { Name = "Physical Memory Available", Value = ramResult.total - ramResult.used, Unit = "GB", Category = "Memory", Source = "Linux", Id = "linux:mem:avail" },
+            new() { Name = "Physical Memory Load", Value = ramResult.total > 0 ? (ramResult.used / ramResult.total) * 100.0 : 0, Unit = "%", Category = "Memory", Source = "Linux", Kind = MetricKind.RamLoad, Id = "linux:mem:load" }
         };
 
         // Hardware monitoring via /sys/class/hwmon
@@ -158,7 +158,11 @@ public class LinuxTelemetryService : ITelemetryService
                                         Value = tempC,
                                         Unit = "°C",
                                         Category = category.Length > 0 ? category : "Temperature",
-                                        Source = "Linux"
+                                        Source = "Linux",
+                                        Kind = category == "CPU" ? MetricKind.CpuTempC
+                                             : category == "GPU" ? MetricKind.GpuTempC
+                                             : MetricKind.TempC,
+                                        Id = $"linux:hwmon:{Path.GetFileName(hwmonDir)}:{Path.GetFileNameWithoutExtension(tempInput)}"
                                     });
                                 }
                             }
@@ -191,7 +195,9 @@ public class LinuxTelemetryService : ITelemetryService
                                     Value = rpm,
                                     Unit = "RPM",
                                     Category = "Fan",
-                                    Source = "Linux"
+                                    Source = "Linux",
+                                    Kind = MetricKind.FanRpm,
+                                    Id = $"linux:hwmon:{Path.GetFileName(hwmonDir)}:{Path.GetFileNameWithoutExtension(fanInput)}"
                                 });
                             }
                         }

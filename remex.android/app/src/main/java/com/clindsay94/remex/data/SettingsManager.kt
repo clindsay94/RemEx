@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.clindsay94.remex.ui.screens.DashboardShapes
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -79,6 +80,8 @@ class SettingsManager(val context: Context) {
                         floatPreferencesKey("remote_control_card_shape_preset_v2")
                 val REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY =
                         floatPreferencesKey("remote_mouse_card_shape_preset_v2")
+                // One-time non-destructive migration off the universal clover default (decision #5).
+                val SHAPE_DEFAULTS_MIGRATED_V2_KEY = booleanPreferencesKey("shape_defaults_migrated_v2")
                 val THEME_SEED_COLOR_KEY = stringPreferencesKey("theme_seed_color")
                 val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
                 val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
@@ -133,8 +136,8 @@ class SettingsManager(val context: Context) {
                 val fontScale: Float = 1.0f,
                 val cardCornerRadius: Int = 20,
                 val cardOpacity: Float = 1.0f,
-                val pcCardShapePreset: Float = 18.0f,
-                val telemetryCardShapePreset: Float = 18.0f,
+                val pcCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
+                val telemetryCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val appLauncherCardShapePreset: Float = 18.0f,
                 val taskManagerCardShapePreset: Float = 18.0f,
                 val remoteDesktopCardShapePreset: Float = 18.0f,
@@ -255,12 +258,12 @@ class SettingsManager(val context: Context) {
 
         val pcCardShapePresetFlow: Flow<Float> =
                 context.dataStore.data.map { preferences ->
-                        preferences[PC_CARD_SHAPE_PRESET_KEY] ?: 18.0f
+                        preferences[PC_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT
                 }
 
         val telemetryCardShapePresetFlow: Flow<Float> =
                 context.dataStore.data.map { preferences ->
-                        preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: 18.0f
+                        preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT
                 }
 
         val connectionPreferencesFlow: Flow<ConnectionPreferences> =
@@ -328,9 +331,9 @@ class SettingsManager(val context: Context) {
                                 fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
                                 cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: 20,
                                 cardOpacity = preferences[CARD_OPACITY_KEY] ?: 1.0f,
-                                pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
+                                pcCardShapePreset = preferences[PC_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                 telemetryCardShapePreset =
-                                        preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
+                                        preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                 appLauncherCardShapePreset =
                                         preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
                                 taskManagerCardShapePreset =
@@ -454,6 +457,27 @@ class SettingsManager(val context: Context) {
         suspend fun saveHomeEnabledCards(enabledCardsJson: String) {
                 context.dataStore.edit { preferences ->
                         preferences[HOME_ENABLED_CARDS_JSON_KEY] = enabledCardsJson
+                }
+        }
+
+        /**
+         * One-time, idempotent migration off the universal clover default (decision #5) for the
+         * pc/telemetry buckets only. Rewrites ONLY an absent or legacy-clover (18.0f) stored value
+         * to INHERIT so existing cards adopt the new per-category shapes; a deliberately-chosen
+         * non-clover shape is preserved. Never touches home_layout_json and must not be called from
+         * inside an undo-tracked interaction (no beginInteraction()).
+         */
+        suspend fun migrateShapeDefaultsV2() {
+                val prefs = context.dataStore.data.first()
+                if (prefs[SHAPE_DEFAULTS_MIGRATED_V2_KEY] == true) return
+                context.dataStore.edit { p ->
+                        listOf(PC_CARD_SHAPE_PRESET_KEY, TELEMETRY_CARD_SHAPE_PRESET_KEY).forEach { key ->
+                                val stored = p[key]
+                                if (stored == null || stored == DashboardShapes.LEGACY_CLOVER_INDEX) {
+                                        p[key] = DashboardShapes.SHAPE_PRESET_INHERIT
+                                }
+                        }
+                        p[SHAPE_DEFAULTS_MIGRATED_V2_KEY] = true
                 }
         }
 

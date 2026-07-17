@@ -23,4 +23,25 @@ public record SensorReading
     /// Used to display source badges and to deduplicate overlapping sensors.
     /// </summary>
     public string Source { get; init; } = "Unknown";
+
+    /// <summary>
+    /// Semantic metric role (Dashboard 2.0). Drives canonical units and client-side card
+    /// matching so a card binds by meaning, not by a fragile host name/unit string.
+    /// Additive/optional (no protocolVersion bump) — older hosts leave it
+    /// <see cref="MetricKind.Unknown"/> and older clients ignore it.
+    /// </summary>
+    public MetricKind Kind { get; init; } = MetricKind.Unknown;
+
+    /// <summary>
+    /// Stable per-sensor id, e.g. "hwi:{dwSensorID:x}:{dwReadingID:x}" (Windows HWiNFO) or a
+    /// canonical slug such as "linux:cpu:load". Additive/optional; empty from older hosts.
+    /// </summary>
+    public string Id { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Device group for UI grouping of the sensor picker (Dashboard 2.0), derived from HWiNFO's
+    /// parent-sensor name — e.g. "GPU", "Samsung 980 PRO 2TB [C:]", "Motherboard", "Memory".
+    /// Additive/optional; empty from older hosts (clients fall back to <see cref="Category"/>).
+    /// </summary>
+    public string Group { get; init; } = string.Empty;
 }

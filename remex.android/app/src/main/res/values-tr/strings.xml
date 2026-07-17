@@ -208,7 +208,6 @@
     <string name="dashboard_wake_pc_button">WAKE PC</string>
     <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Collecting data…</string>
-    <string name="cd_change_display_mode">Change display mode</string>
     <string name="screen_connection_title">Connection</string>
     <string name="screen_splash_title">Loading</string>
     <string name="screen_tutorial_title">Tutorial</string>

@@ -2968,4 +2968,10 @@ Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, et
   <data name="Activity_DeviceConnected" xml:space="preserve">
     <value>Teléfono conectado</value>
   </data>
+  <data name="Home_HwInfoCard" xml:space="preserve">
+    <value>Obtener HWiNFO</value>
+  </data>
+  <data name="Home_HwInfoCardDesc" xml:space="preserve">
+    <value>Gratis: proporciona los sensores de hardware detallados del PC en RemEx.</value>
+  </data>
 </root>

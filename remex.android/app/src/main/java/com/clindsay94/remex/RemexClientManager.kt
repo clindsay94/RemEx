@@ -324,6 +324,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                                 .setReconnectSecret(context, hostId, parts[2])
                                         com.clindsay94.remex.security.PinnedHostStore
                                                 .setReconnectSecret(context, host, parts[2])
+                                        // Also key by the SPKI hash — the one host identity that is
+                                        // stable across EVERY address (LAN, Tailscale, …). connect()
+                                        // retrieves by SPKI so a stale per-IP secret can never be used
+                                        // after a transport switch. (RemEx-060g)
+                                        com.clindsay94.remex.security.PinnedHostStore
+                                                .setReconnectSecret(context, newHash, parts[2])
                                     }
                                     Log.i("RemexManager", "Automatic pairing successful for $host")
                                 }
@@ -366,8 +372,15 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 // host's proof-of-possession challenge on reconnect; without it the host rejects every
                 // request from the connection as unpaired. Null/blank before the first paired
                 // reconnect-secret is stored (then the host challenges and a re-pair is required). (RemEx-xuo)
+                // Prefer the SPKI-keyed secret (stable across addresses) so a stale per-IP secret is
+                // never used after a LAN <-> Tailscale switch. Fall back to the legacy per-address key
+                // for pairings made before this fix — those need one re-pair to become address-proof.
+                // (RemEx-060g)
                 val reconnectSecret =
-                        com.clindsay94.remex.security.PinnedHostStore.getReconnectSecret(context, host)
+                        (spkiHash?.let {
+                            com.clindsay94.remex.security.PinnedHostStore.getReconnectSecret(context, it)
+                        })
+                                ?: com.clindsay94.remex.security.PinnedHostStore.getReconnectSecret(context, host)
                 val initRequest =
                         JSONObject().apply {
                             put("host", host)

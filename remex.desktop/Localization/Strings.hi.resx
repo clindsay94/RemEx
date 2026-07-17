@@ -2941,4 +2941,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Activity_DeviceConnected" xml:space="preserve">
     <value>फ़ोन कनेक्ट हुआ</value>
   </data>
+  <data name="Home_HwInfoCard" xml:space="preserve">
+    <value>HWiNFO पाएं</value>
+  </data>
+  <data name="Home_HwInfoCardDesc" xml:space="preserve">
+    <value>निःशुल्क — RemEx के लिए विस्तृत PC हार्डवेयर सेंसर को सक्षम करता है।</value>
+  </data>
 </root>

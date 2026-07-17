@@ -2945,4 +2945,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Activity_DeviceConnected" xml:space="preserve">
     <value>Telefon bağlandı</value>
   </data>
+  <data name="Home_HwInfoCard" xml:space="preserve">
+    <value>HWiNFO'yu indir</value>
+  </data>
+  <data name="Home_HwInfoCardDesc" xml:space="preserve">
+    <value>Ücretsiz — RemEx için ayrıntılı PC donanım sensörlerini besler.</value>
+  </data>
 </root>

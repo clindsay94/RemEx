@@ -208,7 +208,6 @@
     <string name="dashboard_wake_pc_button">LIGAR PC</string>
     <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Coletando dados…</string>
-    <string name="cd_change_display_mode">Alterar modo de exibição</string>
     <string name="screen_connection_title">Conexão</string>
     <string name="screen_splash_title">Loading</string>
     <string name="screen_tutorial_title">Tutorial</string>

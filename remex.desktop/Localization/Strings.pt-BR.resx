@@ -2941,4 +2941,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Activity_DeviceConnected" xml:space="preserve">
     <value>Telefone conectado</value>
   </data>
+  <data name="Home_HwInfoCard" xml:space="preserve">
+    <value>Obter o HWiNFO</value>
+  </data>
+  <data name="Home_HwInfoCardDesc" xml:space="preserve">
+    <value>Grátis — fornece os sensores de hardware detalhados do PC no RemEx.</value>
+  </data>
 </root>

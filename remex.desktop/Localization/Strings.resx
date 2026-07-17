@@ -2308,6 +2308,12 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
     <value>Download RemEx for Android on Google Play.</value>
   </data>
+  <data name="Home_HwInfoCard" xml:space="preserve">
+    <value>Get HWiNFO</value>
+  </data>
+  <data name="Home_HwInfoCardDesc" xml:space="preserve">
+    <value>Free — powers RemEx's detailed PC hardware sensors.</value>
+  </data>
   <data name="Shell_LogsDiagnostics" xml:space="preserve">
     <value>Logs &amp; Diagnostics</value>
   </data>

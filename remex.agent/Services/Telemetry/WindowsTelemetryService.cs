@@ -149,6 +149,27 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
 
             var sensors = new System.Collections.Generic.List<SensorReading>();
 
+            // Read the parent-sensor section so each reading can be categorized/grouped/named by the
+            // actual device HWiNFO groups it under (drive letter + model, CPU/GPU model, etc.) — far
+            // more reliable than the reading's own generic label.
+            var parentNames = new string[header.dwNumSensorElements];
+            int sensorSize = (int)header.dwSizeOfSensorElement;
+            byte[] sensorBytes = new byte[sensorSize];
+            for (uint si = 0; si < header.dwNumSensorElements; si++)
+            {
+                accessor.ReadArray((long)header.dwOffsetOfSensorSection + (long)si * sensorSize, sensorBytes, 0, sensorSize);
+                var sensorHandle = GCHandle.Alloc(sensorBytes, GCHandleType.Pinned);
+                try
+                {
+                    var se = Marshal.PtrToStructure<HWiNFO_SENSOR_ELEMENT>(sensorHandle.AddrOfPinnedObject());
+                    parentNames[si] = !string.IsNullOrWhiteSpace(se.szSensorNameUser) ? se.szSensorNameUser : se.szSensorNameOrig;
+                }
+                finally
+                {
+                    sensorHandle.Free();
+                }
+            }
+
             int readingSize = (int)header.dwSizeOfReadingElement;
             byte[] readingBytes = new byte[readingSize];
 
@@ -165,8 +186,17 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
                     
                     if (!string.IsNullOrWhiteSpace(label))
                     {
-                        var value = FormatSensorValue(reading.Value, reading.szUnit, reading.tReading);
-                        var unit = NormalizeUnit(reading.szUnit, reading.Value);
+                        var parent = reading.dwSensorIndex < parentNames.Length
+                            ? (parentNames[reading.dwSensorIndex] ?? string.Empty)
+                            : string.Empty;
+                        var (category, group, dev) = ClassifyDevice(parent, label);
+                        var kind = ClassifyKind(category, reading.tReading, label, reading.szUnit);
+                        var value = FormatSensorValue(NormalizeValueForKind(kind, reading.Value, reading.szUnit), reading.szUnit, reading.tReading);
+                        var canon = MetricUnits.Canonical(kind);
+                        // Canonical unit when we recognize the metric; otherwise the normalized host unit.
+                        // A card renders this value+unit, so a bogus "ms"/blank unit on an Unknown sensor
+                        // can never reach a kind-bound load/temperature card (the 1089.0ms bug class).
+                        var unit = canon.Length > 0 ? canon : NormalizeUnit(reading.szUnit, reading.Value);
 
                         // Filter out obvious bogus readings (e.g. 115°C, 127°C, -66°C, -128°C) 
                         // which are common placeholder values for disconnected sensors.
@@ -178,11 +208,14 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
 
                         sensors.Add(new SensorReading
                         {
-                            Name = label,
+                            Name = DeviceName(dev, label),
                             Value = value,
                             Unit = unit,
-                            Category = DetermineCategory(label),
-                            Source = "HWInfo"
+                            Category = category,
+                            Source = "HWInfo",
+                            Kind = kind,
+                            Id = $"hwi:{reading.dwSensorIndex:x}:{reading.dwReadingID:x}",
+                            Group = group
                         });
                     }
                 }
@@ -243,6 +276,159 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         return unit;
     }
 
+    /// <summary>
+    /// Classifies an HWiNFO reading into a semantic <see cref="MetricKind"/> from its reading TYPE
+    /// (authoritative, from HWiNFO itself) plus a label hint to split CPU/GPU/memory/network. Anything
+    /// unrecognized stays <see cref="MetricKind.Unknown"/> — the safe sink that never binds a curated card.
+    /// </summary>
+    private static MetricKind ClassifyHwInfo(SENSOR_READING_TYPE t, string label)
+    {
+        var l = label.ToLowerInvariant();
+        bool cpu = l.Contains("cpu") || l.Contains("core") || l.Contains("processor") || l.Contains("ccd");
+        bool gpu = l.Contains("gpu") || l.Contains("graphics") || l.Contains("video");
+        bool mem = l.Contains("memory") || l.Contains("ram") || l.Contains("physical") || l.Contains("ddr");
+        bool net = l.Contains("network") || l.Contains("throughput") || l.Contains("bandwidth")
+                   || l.Contains("nic") || l.Contains("ethernet") || l.Contains("wi-fi");
+        return t switch
+        {
+            SENSOR_READING_TYPE.SENSOR_TYPE_USAGE when gpu => MetricKind.GpuLoad,
+            SENSOR_READING_TYPE.SENSOR_TYPE_USAGE when mem => MetricKind.RamLoad,
+            SENSOR_READING_TYPE.SENSOR_TYPE_USAGE when cpu => MetricKind.CpuLoad,
+            SENSOR_READING_TYPE.SENSOR_TYPE_TEMP when gpu  => MetricKind.GpuTempC,
+            SENSOR_READING_TYPE.SENSOR_TYPE_TEMP when cpu  => MetricKind.CpuTempC,
+            SENSOR_READING_TYPE.SENSOR_TYPE_TEMP           => MetricKind.TempC,
+            SENSOR_READING_TYPE.SENSOR_TYPE_CLOCK          => MetricKind.ClockMhz,
+            SENSOR_READING_TYPE.SENSOR_TYPE_POWER          => MetricKind.PowerW,
+            SENSOR_READING_TYPE.SENSOR_TYPE_FAN            => MetricKind.FanRpm,
+            SENSOR_READING_TYPE.SENSOR_TYPE_VOLT           => MetricKind.VoltageV,
+            SENSOR_READING_TYPE.SENSOR_TYPE_OTHER when net => MetricKind.NetThroughputMbps,
+            _                                              => MetricKind.Unknown,
+        };
+    }
+
+    /// <summary>
+    /// Scales a value into the metric's canonical unit where the host reports a compatible-but-different
+    /// unit. Currently only network throughput needs it (HWiNFO may report KB/s or MB/s; canonical is Mbps).
+    /// </summary>
+    private static double NormalizeValueForKind(MetricKind kind, double value, string hostUnit)
+    {
+        if (kind is MetricKind.NetThroughputMbps or MetricKind.NetDownMbps or MetricKind.NetUpMbps)
+        {
+            var u = hostUnit.ToLowerInvariant();
+            if (u.Contains("kb")) return value * 0.008;   // KB/s → Mbps
+            if (u.Contains("mb")) return value * 8.0;     // MB/s → Mbps
+            return value;                                  // already Mbit/s
+        }
+        return value;
+    }
+
+    /// <summary>
+    /// Semantic <see cref="MetricKind"/> for a reading. Uses the proven reading-type map
+    /// (<see cref="ClassifyHwInfo"/>), then rescues memory readings HWiNFO reports as type OTHER
+    /// (Physical Memory Load/Used/Total) so the RAM card can bind — the fix for the empty RAM card.
+    /// </summary>
+    private static MetricKind ClassifyKind(string category, SENSOR_READING_TYPE t, string label, string hostUnit)
+    {
+        var k = ClassifyHwInfo(t, label);
+        if (k != MetricKind.Unknown) return k;
+        if (category == "Memory")
+        {
+            var l = label.ToLowerInvariant();
+            var u = (hostUnit ?? string.Empty).ToLowerInvariant();
+            if (u == "%" && l.Contains("physical") && l.Contains("load")) return MetricKind.RamLoad;
+            if ((u == "mb" || u == "gb") && l.Contains("physical") && l.Contains("used")) return MetricKind.RamUsedGb;
+            if ((u == "mb" || u == "gb") && l.Contains("physical") && l.Contains("total")) return MetricKind.RamTotalGb;
+        }
+        return MetricKind.Unknown;
+    }
+
+    /// <summary>
+    /// Buckets a reading into (coarse category, device group, short device tag) from HWiNFO's PARENT
+    /// sensor name. The group keys the picker's collapsible sections (each drive its own); the tag
+    /// prefixes the display name. This is what turns 166 "Other" readings into real categories.
+    /// </summary>
+    private static (string category, string group, string? dev) ClassifyDevice(string parent, string label)
+    {
+        var p = (parent ?? string.Empty).ToLowerInvariant();
+        var l = label.ToLowerInvariant();
+        var letter = DriveLetter(parent ?? string.Empty);
+        bool driveish = p.StartsWith("drive:") || p.StartsWith("s.m.a.r.t") || p.Contains("ssd")
+                        || p.Contains("nvme") || p.Contains("st8000") || p.Contains("pcie ssd");
+        if (driveish)
+        {
+            var model = ShortModel(parent ?? string.Empty);
+            var g = letter != null ? $"{model} [{letter}:]" : model;
+            return ("Disk", g, g);
+        }
+        if (p.Contains("gpu") || p.Contains("geforce") || p.Contains("radeon") || p.Contains("nvidia") || p.Contains("rtx"))
+            return ("GPU", "GPU", "GPU");
+        if (p.StartsWith("network:"))
+        {
+            var sub = (p.Contains("wi-fi") || p.Contains("wifi")) ? "Wi-Fi" : "Ethernet";
+            return ("Network", $"Network ({sub})", sub);
+        }
+        if (p.Contains("nuvoton") || p.Contains("nct") || p.Contains("chipset"))
+            return ("Motherboard", "Motherboard", "MB");
+        if (p.StartsWith("cpu [") || p.Contains("ryzen") || p.Contains("core i") || p.Contains("processor"))
+            return ("CPU", "CPU", CpuShort(parent ?? string.Empty));
+        if (p.Contains("dimm") || p.Contains("ddr") || p.Contains("memory timings")
+            || (p.StartsWith("system:") && (l.Contains("memory") || l.Contains("page file"))))
+            return ("Memory", "Memory", "RAM");
+        if (p.Contains("presentmon"))
+            return ("Performance", "Performance", "FPS");
+        return ("Other", "Other", null);
+    }
+
+    /// <summary>Device-prefixes a label, avoiding a double prefix when the label already names the device.</summary>
+    private static string DeviceName(string? dev, string label)
+    {
+        if (string.IsNullOrEmpty(dev)) return label;
+        var first = dev.ToLowerInvariant().Split(' ')[0];
+        if (!string.IsNullOrEmpty(first) && label.ToLowerInvariant().Contains(first)) return label;
+        return $"{dev} · {label}";
+    }
+
+    /// <summary>Extracts a drive letter from a parent name like "... [C:]"; null if none.</summary>
+    private static string? DriveLetter(string parent)
+    {
+        for (int i = parent.IndexOf('['); i >= 0 && i + 3 < parent.Length; i = parent.IndexOf('[', i + 1))
+            if (char.IsLetter(parent[i + 1]) && parent[i + 2] == ':' && parent[i + 3] == ']')
+                return char.ToUpperInvariant(parent[i + 1]).ToString();
+        return null;
+    }
+
+    /// <summary>Short drive model: strips the "Drive:"/"S.M.A.R.T.:" prefix, "(serial)", "[C:]", and "SSD".</summary>
+    private static string ShortModel(string parent)
+    {
+        var s = parent;
+        int c = s.IndexOf(':');
+        if (c >= 0 && c < 12) s = s.Substring(c + 1);
+        s = StripBetween(s, '(', ')');
+        s = StripBetween(s, '[', ']');
+        s = s.Replace("SSD", " ").Replace("Series", " ");
+        return string.Join(" ", s.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    private static string StripBetween(string s, char open, char close)
+    {
+        int a;
+        while ((a = s.IndexOf(open)) >= 0)
+        {
+            int b = s.IndexOf(close, a + 1);
+            if (b < 0) break;
+            s = s.Remove(a, b - a + 1);
+        }
+        return s;
+    }
+
+    /// <summary>Short CPU model: "CPU [#0]: AMD Ryzen 7 9800X3D" → "Ryzen 7 9800X3D".</summary>
+    private static string CpuShort(string parent)
+    {
+        int c = parent.LastIndexOf(':');
+        var s = c >= 0 ? parent.Substring(c + 1) : parent;
+        return s.Replace("AMD", " ").Replace("Intel", " ").Trim();
+    }
+
     private string DetermineCategory(string label)
     {
         if (string.IsNullOrWhiteSpace(label)) return "Other";
@@ -277,7 +463,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         try
         {
             var cpuValue = _cpuCounter?.NextValue() ?? 0;
-            sensors.Add(new SensorReading { Name = "Total CPU Usage", Value = cpuValue, Unit = "%", Category = "CPU", Source = "WindowsPerf" });
+            sensors.Add(new SensorReading { Name = "Total CPU Usage", Value = cpuValue, Unit = "%", Category = "CPU", Source = "WindowsPerf", Kind = MetricKind.CpuLoad, Id = "wmi:cpu:load" });
         }
         catch (Exception ex)
         {
@@ -294,7 +480,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
                 var usedMemBytes = memStatus.ullTotalPhys - memStatus.ullAvailPhys;
                 sensors.Add(new SensorReading { Name = "Physical Memory Used", Value = usedMemBytes / 1e6, Unit = "MB", Category = "Memory", Source = "WindowsPerf" });
                 sensors.Add(new SensorReading { Name = "Physical Memory Available", Value = memStatus.ullAvailPhys / 1e6, Unit = "MB", Category = "Memory", Source = "WindowsPerf" });
-                sensors.Add(new SensorReading { Name = "Physical Memory Load", Value = memStatus.dwMemoryLoad, Unit = "%", Category = "Memory", Source = "WindowsPerf" });
+                sensors.Add(new SensorReading { Name = "Physical Memory Load", Value = memStatus.dwMemoryLoad, Unit = "%", Category = "Memory", Source = "WindowsPerf", Kind = MetricKind.RamLoad, Id = "wmi:mem:load" });
             }
         }
         catch (Exception ex)
@@ -404,6 +590,17 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         SENSOR_TYPE_CLOCK,
         SENSOR_TYPE_USAGE,
         SENSOR_TYPE_OTHER
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
+    public struct HWiNFO_SENSOR_ELEMENT
+    {
+        public uint dwSensorID;
+        public uint dwSensorInst;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string szSensorNameOrig;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string szSensorNameUser;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]

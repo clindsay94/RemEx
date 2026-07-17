@@ -285,6 +285,10 @@ fun PairingScreen(
                                 if (reconnectSecret.isNotBlank()) {
                                     PinnedHostStore.setReconnectSecret(context, hostId, reconnectSecret)
                                     PinnedHostStore.setReconnectSecret(context, host, reconnectSecret)
+                                    // Also key by the SPKI hash — stable across all addresses — so
+                                    // reconnects retrieve the right secret regardless of which IP
+                                    // (LAN / Tailscale) is in use. (RemEx-060g)
+                                    PinnedHostStore.setReconnectSecret(context, spkiHash, reconnectSecret)
                                 }
                             } catch (e: Exception) {
                                 viewModel.setError(

@@ -20,6 +20,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(AndroidNativeOperationResponse))]
 [JsonSerializable(typeof(AndroidNativeTelemetryResponse))]
 [JsonSerializable(typeof(CardState))]
+[JsonSerializable(typeof(GraphType))]
 [JsonSerializable(typeof(CommandRequest))]
 [JsonSerializable(typeof(CommandResponse))]
 [JsonSerializable(typeof(PairingPinInfo))]
@@ -57,6 +58,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(MonitorInfo))]
 [JsonSerializable(typeof(ProcessInfo))]
 [JsonSerializable(typeof(RemexMessage))]
+[JsonSerializable(typeof(MetricKind))]
 [JsonSerializable(typeof(SensorReading))]
 [JsonSerializable(typeof(TelemetryPayload))]
 // ── 2.0 Pairing ──

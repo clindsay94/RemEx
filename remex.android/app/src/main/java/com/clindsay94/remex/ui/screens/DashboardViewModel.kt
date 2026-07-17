@@ -22,9 +22,24 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.roundToInt
+import com.clindsay94.remex.ui.telemetry.MetricKind
+import com.clindsay94.remex.ui.telemetry.MetricUnits
 
 enum class HomeCardType { PC_STATUS, TELEMETRY, WAKE_ON_LAN }
-enum class TelemetryDisplayMode { VALUE, GAUGE, LINE, BAR, AREA, CIRCLE_GAUGE }
+
+enum class TelemetryDisplayMode {
+    AUTO,          // resolves at render via bestDisplayModeFor(sensor) - mirrors PC GraphType.Auto
+    VALUE,         // big value + trend delta
+    VALUE_SPARK,   // value + mini-sparkline - smart default
+    RING_GAUGE,    // wavy ring (was GAUGE)
+    ARC_GAUGE,     // true 270 degree radial arc (was CIRCLE_GAUGE, now visually distinct)
+    LINE,          // true polyline
+    AREA,          // gradient-filled area
+    BAR,           // bar histogram
+    HUE_PULSE,     // ambient: tile glows cool to warm by load
+    LED_METER,     // ambient: segmented LED column
+    DUAL_METRIC    // ambient: two metrics overlaid (needs secondarySensorId)
+}
 
 data class TelemetryState(
     val cpuUsage: Int = 0,
@@ -37,7 +52,9 @@ data class TelemetrySensor(
     val name: String,
     val category: String,
     val value: Double,
-    val unit: String
+    val unit: String,
+    val kind: MetricKind = MetricKind.UNKNOWN,
+    val group: String = ""
 )
 
 data class HomeCardState(
@@ -49,9 +66,44 @@ data class HomeCardState(
     val yDp: Float = 12f,
     val widthDp: Float = 160f,
     val heightDp: Float = 140f,
-    val displayMode: TelemetryDisplayMode = TelemetryDisplayMode.GAUGE,
-    val pinned: Boolean = false
+    val displayMode: TelemetryDisplayMode = TelemetryDisplayMode.AUTO,
+    val secondarySensorId: String? = null,
+    val pinned: Boolean = false,
+    val shapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
+    val customTitle: String? = null,
+    val showValueOverlay: Boolean = false
 )
+
+/**
+ * Deterministically selects the sensor a card should display. Curated cards (cpu/gpu/ram) bind by
+ * semantic [MetricKind] so an Unknown/timing sensor can never win a load slot — the fix for the
+ * "1089.0ms" RAM bug. Everything else matches by stable id. This is the ONE selection rule,
+ * replacing the two divergent lookups (associateBy last-wins in the view, firstOrNull first-wins in
+ * the VM) that used to disagree.
+ */
+fun selectSensor(cardId: String?, sensors: List<TelemetrySensor>): TelemetrySensor? {
+    if (cardId == null) return null
+    val acceptable: List<MetricKind> = when (cardId) {
+        "sensor:cpu" -> listOf(MetricKind.CPU_LOAD)
+        "sensor:gpu" -> listOf(MetricKind.GPU_LOAD)
+        "sensor:ram" -> listOf(MetricKind.RAM_USED_GB, MetricKind.RAM_LOAD)
+        "sensor:ramtotal" -> listOf(MetricKind.RAM_TOTAL_GB)
+        "sensor:cputemp" -> listOf(MetricKind.CPU_TEMP_C, MetricKind.TEMP_C)
+        "sensor:gputemp" -> listOf(MetricKind.GPU_TEMP_C, MetricKind.TEMP_C)
+        "sensor:nettotal" -> listOf(MetricKind.NET_THROUGHPUT_MBPS)
+        else -> emptyList()
+    }
+    if (acceptable.isNotEmpty()) {
+        for (k in acceptable) {
+            sensors.firstOrNull { it.kind == k }?.let { return it }
+        }
+        // Curated card, but a new host sent no kind-matched sensor: prefer a same-id sensor that
+        // isn't the Unknown sink; only an old host with no kinds at all falls through to a raw id match.
+        return sensors.firstOrNull { it.id == cardId && it.kind != MetricKind.UNKNOWN }
+            ?: sensors.firstOrNull { it.id == cardId }
+    }
+    return sensors.firstOrNull { it.id == cardId }
+}
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -75,7 +127,13 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val _homeCards = MutableStateFlow(defaultCards())
     val homeCards: StateFlow<List<HomeCardState>> = _homeCards.asStateFlow()
 
-    private val _enabledCardIds = MutableStateFlow(setOf("pc_status", "wake_pc", "sensor:cpu", "sensor:gpu", "sensor:ram"))
+    private val _enabledCardIds = MutableStateFlow(
+        setOf(
+            "pc_status", "wake_pc",
+            "sensor:cpu", "sensor:gpu", "sensor:ram",
+            "sensor:ramtotal", "sensor:cputemp", "sensor:gputemp", "sensor:nettotal"
+        )
+    )
     val enabledCardIds: StateFlow<Set<String>> = _enabledCardIds.asStateFlow()
 
     // ── Undo / redo history for canvas edits ────────────────────────────────────
@@ -122,7 +180,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         persistHomeLayout()
     }
 
-    /** Toggle a card's pinned state — pinned cards can't be dragged or resized. */
+    /** Toggle a card's pinned state — position-anchored + resize-locked, but still liftable/selectable. */
     fun togglePin(cardId: String) {
         _homeCards.update { cards ->
             cards.map { if (it.id == cardId) it.copy(pinned = !it.pinned) else it }
@@ -137,6 +195,100 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         persistHomeLayout()
     }
 
+    // ── Two-layer touch model (transient, never persisted) ────────────────────
+    // NORMAL: quick drag pans the canvas. Hold 0.5s -> haptic -> the card is "picked up":
+    //   - drag it     -> transient MOVE (draggingCardId); release drops it -> NORMAL.
+    //   - release still-> SELECT the card (selectedCardIds); tap more cards -> group; the
+    //                     Pin/Reshape/Remove action bar shows for as long as a selection exists.
+    // selectionActive is derived by the UI as selectedCardIds.isNotEmpty().
+    private val _draggingCardId = MutableStateFlow<String?>(null)
+    val draggingCardId: StateFlow<String?> = _draggingCardId.asStateFlow()
+    private val _selectedCardIds = MutableStateFlow<Set<String>>(emptySet())
+    val selectedCardIds: StateFlow<Set<String>> = _selectedCardIds.asStateFlow()
+
+    /** Card picked up and dragged (not selection) - one undo snapshot for the whole move. */
+    fun beginCardDrag(cardId: String) {
+        beginInteraction()
+        _draggingCardId.value = cardId
+    }
+
+    /** Per-frame delta while a single picked-up card is being dragged (pinned cards resist). */
+    fun dragCardBy(deltaXDp: Float, deltaYDp: Float) {
+        val id = _draggingCardId.value ?: return
+        _homeCards.update { cards ->
+            cards.map { card ->
+                if (card.id == id && !card.pinned) {
+                    card.copy(
+                        xDp = (card.xDp + deltaXDp).coerceAtLeast(0f),
+                        yDp = (card.yDp + deltaYDp).coerceAtLeast(0f)
+                    )
+                } else {
+                    card
+                }
+            }
+        }
+    }
+
+    /** Finger lifted after a MOVE - drop the card and return to NORMAL. */
+    fun endCardDrag() {
+        _draggingCardId.value = null
+        persistHomeLayout()
+    }
+
+    /** Held-then-released-in-place - select just this card (enters selection mode + shows bar). */
+    fun selectCard(cardId: String) {
+        _draggingCardId.value = null
+        _selectedCardIds.value = setOf(cardId)
+    }
+
+    /** Tap a card while selectionActive - add/remove it from the group. */
+    fun toggleCardInSelection(cardId: String) {
+        _selectedCardIds.value = FileManagerLogic.toggleSelection(_selectedCardIds.value, cardId)
+    }
+
+    /** Exit selection entirely - back to NORMAL. */
+    fun clearSelection() {
+        _selectedCardIds.value = emptySet()
+    }
+
+    /**
+     * Moves every non-pinned selected card by the same delta - group move while in selection mode.
+     * No beginInteraction()/persist here; the screen owns that lifecycle (drag start/end).
+     */
+    fun moveSelection(deltaXDp: Float, deltaYDp: Float) {
+        val ids = _selectedCardIds.value
+        if (ids.isEmpty()) return
+        _homeCards.update { cards ->
+            cards.map { card ->
+                if (card.id in ids && !card.pinned) {
+                    card.copy(
+                        xDp = (card.xDp + deltaXDp).coerceAtLeast(0f),
+                        yDp = (card.yDp + deltaYDp).coerceAtLeast(0f)
+                    )
+                } else {
+                    card
+                }
+            }
+        }
+    }
+
+    /** Action-bar Pin - all-pinned unpins all, otherwise pins all (one undo step). */
+    fun togglePinSelection() {
+        beginInteraction()
+        val ids = _selectedCardIds.value
+        val allPinned = _homeCards.value.filter { it.id in ids }.all { it.pinned }
+        _homeCards.update { cards -> cards.map { if (it.id in ids) it.copy(pinned = !allPinned) else it } }
+        persistHomeLayout()
+    }
+
+    /** Action-bar Remove - disables the selected cards (geometry kept, reversible via undo). */
+    fun removeSelection() {
+        beginInteraction()
+        _enabledCardIds.update { it - _selectedCardIds.value }
+        persistHomeLayout()
+        clearSelection()
+    }
+
     val cardCornerRadius = settingsManager.cardCornerRadiusFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 20)
 
@@ -144,10 +296,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
 
     val pcCardShapePreset = settingsManager.pcCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardShapes.SHAPE_PRESET_INHERIT)
 
     val telemetryCardShapePreset = settingsManager.telemetryCardShapePresetFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardShapes.SHAPE_PRESET_INHERIT)
 
     val appLauncherCardShapePreset = settingsManager.appLauncherCardShapePresetFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0f)
@@ -166,6 +318,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         loadSavedHomeLayout()
+
+        viewModelScope.launch {
+            settingsManager.migrateShapeDefaultsV2()
+        }
 
         viewModelScope.launch {
             RemexClientManager.telemetry.collect { telemetryData ->
@@ -245,21 +401,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         persistHomeLayout()
     }
 
-    fun moveCard(cardId: String, deltaXDp: Float, deltaYDp: Float) {
-        _homeCards.update { cards ->
-            cards.map { card ->
-                if (card.id == cardId) {
-                    card.copy(
-                        xDp = (card.xDp + deltaXDp).coerceAtLeast(0f),
-                        yDp = (card.yDp + deltaYDp).coerceAtLeast(0f)
-                    )
-                } else {
-                    card
-                }
-            }
-        }
-    }
-
     fun resizeCard(cardId: String, deltaWidthDp: Float, deltaHeightDp: Float) {
         _homeCards.update { cards ->
             cards.map { card ->
@@ -275,25 +416,46 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun cycleTelemetryDisplayMode(cardId: String) {
+    /** Direct setter replacing blind cycling - one beginInteraction()/persist per pick. */
+    fun setTelemetryDisplayMode(cardId: String, mode: TelemetryDisplayMode, secondarySensorId: String? = null) {
         beginInteraction()
         _homeCards.update { cards ->
             cards.map { card ->
                 if (card.id == cardId && card.type == HomeCardType.TELEMETRY) {
-                    val next = when (card.displayMode) {
-                        TelemetryDisplayMode.VALUE -> TelemetryDisplayMode.GAUGE
-                        TelemetryDisplayMode.GAUGE -> TelemetryDisplayMode.LINE
-                        TelemetryDisplayMode.LINE -> TelemetryDisplayMode.BAR
-                        TelemetryDisplayMode.BAR -> TelemetryDisplayMode.AREA
-                        TelemetryDisplayMode.AREA -> TelemetryDisplayMode.CIRCLE_GAUGE
-                        TelemetryDisplayMode.CIRCLE_GAUGE -> TelemetryDisplayMode.VALUE
-                    }
-                    card.copy(displayMode = next)
+                    card.copy(displayMode = mode, secondarySensorId = secondarySensorId ?: card.secondarySensorId)
                 } else {
                     card
                 }
             }
         }
+        persistHomeLayout()
+    }
+
+    /** Per-card shape override (the shape picker's single-card write path). */
+    fun setCardShape(cardId: String, shapeIndex: Float) {
+        beginInteraction()
+        _homeCards.update { cards -> cards.map { if (it.id == cardId) it.copy(shapePreset = shapeIndex) else it } }
+        persistHomeLayout()
+    }
+
+    /** Group-reshape write path - ONE undo snapshot for the whole selection. */
+    fun setGroupShape(cardIds: Set<String>, shapeIndex: Float) {
+        beginInteraction()
+        _homeCards.update { cards -> cards.map { if (it.id in cardIds) it.copy(shapePreset = shapeIndex) else it } }
+        persistHomeLayout()
+    }
+
+    /** Blank/null clears the override - the card falls back to its original [HomeCardState.title]. */
+    fun setCardCustomTitle(cardId: String, title: String?) {
+        beginInteraction()
+        val normalized = title?.takeIf { it.isNotBlank() }
+        _homeCards.update { cards -> cards.map { if (it.id == cardId) it.copy(customTitle = normalized) else it } }
+        persistHomeLayout()
+    }
+
+    fun setCardValueOverlay(cardId: String, enabled: Boolean) {
+        beginInteraction()
+        _homeCards.update { cards -> cards.map { if (it.id == cardId) it.copy(showValueOverlay = enabled) else it } }
         persistHomeLayout()
     }
 
@@ -323,7 +485,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun ensureDefaultCardsExist(sensors: List<TelemetrySensor>) {
-        val telemetryDefaults = listOf("sensor:cpu", "sensor:gpu", "sensor:ram")
+        val telemetryDefaults = listOf(
+            "sensor:cpu", "sensor:gpu", "sensor:ram",
+            "sensor:ramtotal", "sensor:cputemp", "sensor:gputemp", "sensor:nettotal"
+        )
         telemetryDefaults.forEach { requiredId ->
             if (sensors.any { it.id == requiredId } && _enabledCardIds.value.contains(requiredId)) {
                 ensureCardExists(requiredId)
@@ -361,14 +526,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 )
             }
             else -> {
-                val sensor = _telemetrySensors.value.firstOrNull { it.id == cardId }
+                val sensor = selectSensor(cardId, _telemetrySensors.value)
                     ?: return
-                
-                val defaultMode = when {
-                    sensor.unit == "%" -> TelemetryDisplayMode.AREA
-                    sensor.unit.contains("°") -> TelemetryDisplayMode.LINE
-                    else -> TelemetryDisplayMode.BAR
-                }
 
                 HomeCardState(
                     id = cardId,
@@ -379,7 +538,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     yDp = 12f + nextOffset,
                     widthDp = 170f,
                     heightDp = 150f,
-                    displayMode = defaultMode
+                    displayMode = TelemetryDisplayMode.AUTO
                 )
             }
         }
@@ -403,13 +562,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 continue
             }
 
-            val normalized = normalizeSensorId(name, category)
+            val kind = MetricKind.fromWire(sensor.optString("kind").ifBlank { null })
+            val hostId = sensor.optString("id")
+            val group = sensor.optString("group")
+            // Prefer a semantic slug for curated kinds, then the host's stable id, and only fall
+            // back to the legacy name-based normalization for older hosts that send neither.
+            val id = MetricUnits.cardSlug(kind) ?: hostId.ifBlank { normalizeSensorId(name, category) }
             parsed += TelemetrySensor(
-                id = normalized,
+                id = id,
                 name = name,
                 category = category,
                 value = value,
-                unit = unit
+                unit = unit,
+                kind = kind,
+                group = group
             )
         }
 
@@ -451,8 +617,16 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 return@launch
             }
 
+            // Envelope-detecting reader: pre-2.0 saves are a bare array (schemaVersion 0);
+            // 2.0+ saves are `{ "schemaVersion": 1, "cards": [...] }`.
+            val trimmed = savedLayout.trimStart()
+            val array = if (trimmed.startsWith("[")) {
+                JSONArray(savedLayout)
+            } else {
+                JSONObject(savedLayout).optJSONArray("cards") ?: JSONArray()
+            }
+
             val cards = mutableListOf<HomeCardState>()
-            val array = JSONArray(savedLayout)
             for (i in 0 until array.length()) {
                 val obj = array.optJSONObject(i) ?: continue
                 val type = when (obj.optString("type")) {
@@ -460,13 +634,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     "WAKE_ON_LAN" -> HomeCardType.WAKE_ON_LAN
                     else -> HomeCardType.TELEMETRY
                 }
+                // Backward-compat migration: legacy GAUGE/CIRCLE_GAUGE map onto their visually
+                // closest 2.0 replacement; anything unrecognized (including absent) becomes AUTO.
                 val mode = when (obj.optString("displayMode")) {
                     "VALUE" -> TelemetryDisplayMode.VALUE
+                    "VALUE_SPARK" -> TelemetryDisplayMode.VALUE_SPARK
+                    "GAUGE", "RING_GAUGE" -> TelemetryDisplayMode.RING_GAUGE
+                    "CIRCLE_GAUGE", "ARC_GAUGE" -> TelemetryDisplayMode.ARC_GAUGE
                     "LINE" -> TelemetryDisplayMode.LINE
-                    "BAR" -> TelemetryDisplayMode.BAR
                     "AREA" -> TelemetryDisplayMode.AREA
-                    "CIRCLE_GAUGE" -> TelemetryDisplayMode.CIRCLE_GAUGE
-                    else -> TelemetryDisplayMode.GAUGE
+                    "BAR" -> TelemetryDisplayMode.BAR
+                    "HUE_PULSE" -> TelemetryDisplayMode.HUE_PULSE
+                    "LED_METER" -> TelemetryDisplayMode.LED_METER
+                    "DUAL_METRIC" -> TelemetryDisplayMode.DUAL_METRIC
+                    else -> TelemetryDisplayMode.AUTO
                 }
 
                 val id = obj.optString("id")
@@ -482,7 +663,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     widthDp = obj.optDouble("widthDp", 160.0).toFloat(),
                     heightDp = obj.optDouble("heightDp", 140.0).toFloat(),
                     displayMode = mode,
-                    pinned = obj.optBoolean("pinned", false)
+                    secondarySensorId = obj.optString("secondarySensorId").takeIf { it.isNotBlank() },
+                    pinned = obj.optBoolean("pinned", false),
+                    shapePreset = obj.optDouble("shapePreset", DashboardShapes.SHAPE_PRESET_INHERIT.toDouble()).toFloat(),
+                    customTitle = obj.optString("customTitle").takeIf { it.isNotBlank() },
+                    showValueOverlay = obj.optBoolean("showValueOverlay", false)
                 )
             }
 
@@ -506,15 +691,24 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     put("widthDp", card.widthDp)
                     put("heightDp", card.heightDp)
                     put("displayMode", card.displayMode.name)
+                    put("secondarySensorId", card.secondarySensorId)
                     put("pinned", card.pinned)
+                    put("shapePreset", card.shapePreset)
+                    put("customTitle", card.customTitle)
+                    put("showValueOverlay", card.showValueOverlay)
                 }
                 layoutArray.put(obj)
+            }
+
+            val envelope = JSONObject().apply {
+                put("schemaVersion", LAYOUT_SCHEMA_VERSION)
+                put("cards", layoutArray)
             }
 
             val enabledArray = JSONArray()
             _enabledCardIds.value.forEach { enabledArray.put(it) }
 
-            settingsManager.saveHomeLayout(layoutArray.toString())
+            settingsManager.saveHomeLayout(envelope.toString())
             settingsManager.saveHomeEnabledCards(enabledArray.toString())
         }
     }
@@ -570,6 +764,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private companion object {
+        const val LAYOUT_SCHEMA_VERSION = 1
+
         fun defaultCards(): List<HomeCardState> {
             return listOf(
                 HomeCardState(
@@ -599,7 +795,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     yDp = 168f,
                     widthDp = 170f,
                     heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AREA
+                    displayMode = TelemetryDisplayMode.AUTO
                 ),
                 HomeCardState(
                     id = "sensor:gpu",
@@ -610,7 +806,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     yDp = 168f,
                     widthDp = 170f,
                     heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AREA
+                    displayMode = TelemetryDisplayMode.AUTO
                 ),
                 HomeCardState(
                     id = "sensor:ram",
@@ -621,7 +817,51 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     yDp = 326f,
                     widthDp = 170f,
                     heightDp = 150f,
-                    displayMode = TelemetryDisplayMode.AREA
+                    displayMode = TelemetryDisplayMode.AUTO
+                ),
+                HomeCardState(
+                    id = "sensor:ramtotal",
+                    title = "RAM Total",
+                    type = HomeCardType.TELEMETRY,
+                    sensorId = "sensor:ramtotal",
+                    xDp = 200f,
+                    yDp = 326f,
+                    widthDp = 170f,
+                    heightDp = 150f,
+                    displayMode = TelemetryDisplayMode.AUTO
+                ),
+                HomeCardState(
+                    id = "sensor:cputemp",
+                    title = "CPU Temp",
+                    type = HomeCardType.TELEMETRY,
+                    sensorId = "sensor:cputemp",
+                    xDp = 20f,
+                    yDp = 484f,
+                    widthDp = 170f,
+                    heightDp = 150f,
+                    displayMode = TelemetryDisplayMode.AUTO
+                ),
+                HomeCardState(
+                    id = "sensor:gputemp",
+                    title = "GPU Temp",
+                    type = HomeCardType.TELEMETRY,
+                    sensorId = "sensor:gputemp",
+                    xDp = 200f,
+                    yDp = 484f,
+                    widthDp = 170f,
+                    heightDp = 150f,
+                    displayMode = TelemetryDisplayMode.AUTO
+                ),
+                HomeCardState(
+                    id = "sensor:nettotal",
+                    title = "Network",
+                    type = HomeCardType.TELEMETRY,
+                    sensorId = "sensor:nettotal",
+                    xDp = 20f,
+                    yDp = 642f,
+                    widthDp = 170f,
+                    heightDp = 150f,
+                    displayMode = TelemetryDisplayMode.AUTO
                 )
             )
         }

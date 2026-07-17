@@ -2942,4 +2942,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Activity_DeviceConnected" xml:space="preserve">
     <value>Телефон підключено</value>
   </data>
+  <data name="Home_HwInfoCard" xml:space="preserve">
+    <value>Отримати HWiNFO</value>
+  </data>
+  <data name="Home_HwInfoCardDesc" xml:space="preserve">
+    <value>Безкоштовно — забезпечує детальні апаратні датчики ПК у RemEx.</value>
+  </data>
 </root>

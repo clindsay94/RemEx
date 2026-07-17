@@ -2942,4 +2942,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Activity_DeviceConnected" xml:space="preserve">
     <value>Połączono telefon</value>
   </data>
+  <data name="Home_HwInfoCard" xml:space="preserve">
+    <value>Pobierz HWiNFO</value>
+  </data>
+  <data name="Home_HwInfoCardDesc" xml:space="preserve">
+    <value>Za darmo — zasila szczegółowe czujniki sprzętowe komputera w RemEx.</value>
+  </data>
 </root>

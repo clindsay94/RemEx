@@ -149,6 +149,11 @@ val materialShapesList: List<RoundedPolygon> = listOf(
     // Removed: Cookie4/6/7/9/12Sided (scalloped edges clip content),
     //          VerySunny / Burst / Boom (too many spikes), PixelTriangle (awkward aspect),
     //          Arrow (directional, terrible for data cards)
+
+    // Index 24 - plain rounded rectangle for content-heavy cards (PC status). Handled as a
+    // discrete special case in cardShape(), not a real morph target; the placeholder entry here
+    // only keeps materialShapesList/materialShapeNames/shapeSafety index-aligned.
+    MaterialShapes.Square,
 )
 
 /** Human-readable name resource IDs that correspond 1-to-1 with [materialShapesList]. */
@@ -160,7 +165,8 @@ val materialShapeNames: List<Int> = listOf(
     R.string.shape_heart, R.string.shape_flower, R.string.shape_puffy,
     R.string.shape_puffy_diamond, R.string.shape_ghostish, R.string.shape_oval,
     R.string.shape_clover_4_leaf, R.string.shape_clover_8_leaf, R.string.shape_sunny,
-    R.string.shape_soft_burst, R.string.shape_soft_boom, R.string.shape_pixel_circle
+    R.string.shape_soft_burst, R.string.shape_soft_boom, R.string.shape_pixel_circle,
+    R.string.shape_rounded_rectangle
 )
 class MorphPolygonShape(
     private val morph: Morph,
@@ -215,7 +221,14 @@ fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
     if (materialShapesList.isEmpty()) {
         return RoundedCornerShape(cornerRadiusDp.dp)
     }
-    val maxIndex = materialShapesList.size - 1
+    // RoundedRectangle (24) is discrete, not a morph target - the morph engine needs a real
+    // RoundedPolygon at each endpoint, so snap the top of the slider range straight to it instead
+    // of ever morphing into the index-24 placeholder entry in materialShapesList.
+    if (index >= 23.5f) {
+        return RoundedCornerShape(cornerRadiusDp.dp)
+    }
+    // -2, not -1: the last slot is the non-morphable RoundedRectangle placeholder (handled above).
+    val maxIndex = (materialShapesList.size - 2).coerceAtLeast(0)
     val safeIndex = index.coerceIn(0f, maxIndex.toFloat())
 
     val startIndex = safeIndex.toInt()
@@ -265,7 +278,8 @@ fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
         0.45f, // Sunny
         0.55f, // Soft Burst
         0.65f, // Soft Boom
-        0.75f  // Pixel Circle
+        0.75f, // Pixel Circle
+        0.97f  // Rounded Rectangle (plain RoundedCornerShape, no polygon clipping)
     )
 
     val currentSafety = shapeSafety.getOrElse(shapeIndex) { 0.6f }

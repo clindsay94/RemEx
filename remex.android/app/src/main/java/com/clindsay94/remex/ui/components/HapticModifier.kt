@@ -61,3 +61,18 @@ fun android.view.View.hapticCommandFailed() {
     else
         performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
 }
+
+/**
+ * Fired when a 0.5s hold lifts a dashboard card into the selection state.
+ * Falls back to LONG_PRESS on API < 30.
+ */
+fun android.view.View.hapticLift() {
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+        performHapticFeedback(HapticFeedbackConstants.GESTURE_START)
+    else
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+}
+
+/** Fired when a tap adds/removes a card from an active multi-select. */
+fun android.view.View.hapticSelectToggle() =
+    performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)

@@ -266,6 +266,18 @@
     <string name="dashboard_menu_redo">Redo</string>
     <string name="dashboard_pin_card">Pin card</string>
     <string name="dashboard_unpin_card">Unpin card</string>
+    <string name="dashboard_custom_title_label">Card title</string>
+    <string name="dashboard_custom_title_hint">Leave blank to use the sensor name</string>
+    <string name="dashboard_show_value_overlay">Show live value</string>
+    <plurals name="dashboard_selection_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="cd_dashboard_pin_selection">Pin selected cards</string>
+    <string name="cd_dashboard_unpin_selection">Unpin selected cards</string>
+    <string name="cd_dashboard_remove_selection">Remove selected cards</string>
+    <string name="cd_dashboard_reshape_selection">Change shape of selected cards</string>
+    <string name="cd_dashboard_exit_selection">Exit selection</string>
     <string name="dashboard_pc_status">PC Status</string>
     <string name="dashboard_pc_status_subtitle">Connection status orb</string>
     <string name="dashboard_wake_pc">Wake PC</string>
@@ -280,7 +292,31 @@
     <string name="dashboard_wake_pc_button">WAKE PC</string>
     <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Collecting data…</string>
-    <string name="cd_change_display_mode">Change display mode</string>
+    <string name="cd_open_view_picker">Choose display view</string>
+    <string name="dashboard_view_picker_title">Choose a view</string>
+    <string name="shape_picker_title">Choose a shape</string>
+    <string name="dashboard_view_auto">Auto</string>
+    <string name="dashboard_view_big_value">Big value</string>
+    <string name="dashboard_view_value_spark">Value + sparkline</string>
+    <string name="dashboard_view_ring_gauge">Ring gauge</string>
+    <string name="dashboard_view_arc_gauge">Arc gauge</string>
+    <string name="dashboard_view_line">Line</string>
+    <string name="dashboard_view_area">Area</string>
+    <string name="dashboard_view_bar">Bar histogram</string>
+    <string name="dashboard_view_hue_pulse">Hue pulse</string>
+    <string name="dashboard_view_led_meter">LED meter</string>
+    <string name="dashboard_view_dual_metric">Dual metric</string>
+    <string name="dashboard_dual_metric_pick_secondary">Add a second metric</string>
+    <string name="cd_view_value">Big value, %1$s</string>
+    <string name="cd_view_value_spark">Value with sparkline, %1$s</string>
+    <string name="cd_view_ring_gauge">Ring gauge, %1$s</string>
+    <string name="cd_view_arc_gauge">Arc gauge, %1$s</string>
+    <string name="cd_view_line">Line chart, %1$s</string>
+    <string name="cd_view_area">Area chart, %1$s</string>
+    <string name="cd_view_bar">Bar histogram, %1$s</string>
+    <string name="cd_view_hue_pulse">Glowing load tile, %1$s</string>
+    <string name="cd_view_led_meter">LED meter, %1$s</string>
+    <string name="cd_view_dual_metric">Dual metric overlay, %1$s</string>
 
     
     <string name="screen_connection_title">Connection</string>
@@ -444,7 +480,10 @@
     <string name="personalization_shape_remote_commands">Remote Commands</string>
     <string name="personalization_shape_remote_mouse">Remote Mouse</string>
     <string name="personalization_shape_task_manager">Task Manager</string>
+    <string name="personalization_shape_remote_desktop">Remote Desktop</string>
     <string name="personalization_shape_pc_orb">PC Connection Orb</string>
+    <string name="personalization_shape_auto">Auto (per category)</string>
+    <string name="personalization_shape_reset_default">Reset to default shape</string>
     <string name="personalization_preview">PREVIEW</string>
 
     <string name="personalization_section_splash">Splash Animation</string>
@@ -575,6 +614,7 @@
     <string name="shape_soft_burst">Soft Burst</string>
     <string name="shape_soft_boom">Soft Boom</string>
     <string name="shape_pixel_circle">Pixel Circle</string>
+    <string name="shape_rounded_rectangle">Rounded Rectangle</string>
     <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
     <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
     <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>

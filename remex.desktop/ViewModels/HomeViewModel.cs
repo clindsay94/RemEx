@@ -216,6 +216,9 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenPlayStore() => OpenUrl("https://play.google.com/store/apps/details?id=com.clindsay94.remex");
 
+    [RelayCommand]
+    private void OpenHwInfo() => OpenUrl("https://www.hwinfo.com/download/");
+
     private static void OpenUrl(string url)
     {
         try

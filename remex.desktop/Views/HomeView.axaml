@@ -311,6 +311,17 @@
                         </StackPanel>
                     </Grid>
                 </Button>
+                <Button Classes="glass-card interactive" Command="{Binding OpenHwInfoCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_HwInfoCardDesc}">
+                    <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
+                        <Border Width="44" Height="44" CornerRadius="22" Background="#15F59E0B" Margin="0,0,14,0">
+                            <TextBlock Text="🌡️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                            <TextBlock Text="{local:Localize Home_HwInfoCard}" FontSize="13" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{local:Localize Home_HwInfoCardDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </Button>
             </WrapPanel>
 
         </StackPanel>

@@ -208,7 +208,6 @@
     <string name="dashboard_wake_pc_button">RÉVEILLER PC</string>
     <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Collecte des données…</string>
-    <string name="cd_change_display_mode">Changer le mode d\'affichage</string>
     <string name="screen_connection_title">Connexion</string>
     <string name="screen_splash_title">Loading</string>
     <string name="screen_tutorial_title">Tutorial</string>

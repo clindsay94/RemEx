@@ -277,6 +277,39 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Sends on a SPECIFIC socket instead of the current <see cref="_webSocket"/> field. Used for the
+    /// reconnect proof so it can only ever go out on the exact connection whose challenge it answers.
+    /// If that socket was replaced out from under us — e.g. the phone is dual-homed on LAN + Tailscale
+    /// and the client manager re-pointed to a different address — the state check drops the send rather
+    /// than leaking a proof (computed for this challenge's nonce) onto the new connection, whose host
+    /// loop issued a DIFFERENT nonce and would reject it, leaving the connection stuck unpaired. (RemEx-060g)
+    /// </summary>
+    private async Task SendMessageOnSocketAsync(RemexMessage message, ClientWebSocket? targetSocket, CancellationToken ct = default)
+    {
+        if (targetSocket is null || targetSocket.State != WebSocketState.Open) return;
+
+        var outgoing = message with
+        {
+            ProtocolVersion = 2,
+            ClientId = _clientId
+        };
+
+        var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Default.RemexMessage);
+
+        await _sendGate.WaitAsync(ct);
+        try
+        {
+            // Re-check the SAME captured socket inside the gate — never fall back to _webSocket.
+            if (targetSocket.State != WebSocketState.Open) return;
+            await targetSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+        }
+        finally
+        {
+            _sendGate.Release();
+        }
+    }
+
     private async Task ReceiveLoopAsync(CancellationToken ct)
     {
         var buffer = ArrayPool<byte>.Shared.Rent(1024 * 32);
@@ -336,7 +369,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                 // PAIR-1: the host issued a proof-of-possession challenge. Answer with
                 // HMAC-SHA256(reconnectSecret, nonce). Done off the receive loop so we never
                 // block message processing on the outbound send gate.
-                RespondToReconnectChallenge(msg.ReconnectChallenge);
+                RespondToReconnectChallenge(msg.ReconnectChallenge, _webSocket);
                 break;
 
             case MessageTypes.CommandResponse:
@@ -370,7 +403,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     /// If we hold no reconnect secret (never paired, or paired before this client version) we cannot
     /// answer; the host will then require a fresh pairing. Runs off the receive loop.
     /// </summary>
-    private void RespondToReconnectChallenge(ReconnectChallenge challenge)
+    private void RespondToReconnectChallenge(ReconnectChallenge challenge, ClientWebSocket? challengeSocket)
     {
         var secretBase64 = _reconnectSecretBase64;
         if (string.IsNullOrWhiteSpace(secretBase64))
@@ -401,7 +434,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                     },
                 };
 
-                await SendMessageAsync(message);
+                await SendMessageOnSocketAsync(message, challengeSocket);
                 JniHelper.AndroidLogE("RemexNative", "Sent reconnect proof in response to host challenge.");
             }
             catch (Exception ex)

@@ -85,9 +85,16 @@ public static class FilePathValidation
             ? StringComparison.OrdinalIgnoreCase
             : StringComparison.Ordinal;
 
+        // Drive-letter roots (e.g. "Z:\") come back from Path.GetFullPath WITH a trailing separator,
+        // so "rootPath + separator" would be "Z:\\" and no child ("Z:\Folder") could ever match — the
+        // whole drive would look like it escapes itself. Strip any trailing separator before building the
+        // containment prefix; the Equals check still accepts the root path exactly as GetFullPath returns it.
+        var rootPrefix = rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
         var isInsideRoot = candidate.Equals(rootPath, pathComparison)
-            || candidate.StartsWith(rootPath + Path.DirectorySeparatorChar, pathComparison)
-            || candidate.StartsWith(rootPath + Path.AltDirectorySeparatorChar, pathComparison);
+            || candidate.Equals(rootPrefix, pathComparison)
+            || candidate.StartsWith(rootPrefix + Path.DirectorySeparatorChar, pathComparison)
+            || candidate.StartsWith(rootPrefix + Path.AltDirectorySeparatorChar, pathComparison);
 
         if (!isInsideRoot)
         {

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
@@ -866,6 +867,11 @@ fun PersonalizationScreenContent(
                                             { v: Float ->
                                                 taskManagerCardShapePreset = v
                                             },
+                                    stringResource(R.string.personalization_shape_remote_desktop) to
+                                            remoteDesktopCardShapePreset to
+                                            { v: Float ->
+                                                remoteDesktopCardShapePreset = v
+                                            },
                                     stringResource(R.string.personalization_shape_pc_orb) to
                                             pcCardShapePreset to
                                             { v: Float ->
@@ -877,13 +883,20 @@ fun PersonalizationScreenContent(
 
                     shapeConfigs.forEach { (config, setter) ->
                         val (label, current) = config
+                        val isInherit = current == DashboardShapes.SHAPE_PRESET_INHERIT
                         val shapeIndex =
                                 current.roundToInt().coerceIn(0, materialShapeNames.lastIndex)
-                        val shapeName = materialShapeNames[shapeIndex]
-                        var lastHapticIndex by remember { mutableIntStateOf(current.toInt()) }
+                        val shapeNameText =
+                                if (isInherit) stringResource(R.string.personalization_shape_auto)
+                                else stringResource(materialShapeNames[shapeIndex])
+                        // Auto has no real index to preview/morph - park the thumb + swatch at 0
+                        // (Circle) purely as a neutral resting position; the label makes clear
+                        // this is "Auto", not an actual Circle choice.
+                        val sliderDisplayValue = if (isInherit) 0f else current
+                        var lastHapticIndex by remember { mutableIntStateOf(sliderDisplayValue.toInt()) }
                         val animatedShapePreset by
                                 animateFloatAsState(
-                                        targetValue = current,
+                                        targetValue = sliderDisplayValue,
                                         animationSpec =
                                                 androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
                                         label = "shape_morph_$label"
@@ -899,19 +912,36 @@ fun PersonalizationScreenContent(
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                 )
-                                Text(
-                                        stringResource(shapeName),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.SemiBold
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                            shapeNameText,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.SemiBold
+                                    )
+                                    if (!isInherit) {
+                                        IconButton(
+                                                onClick = { setter(DashboardShapes.SHAPE_PRESET_INHERIT) },
+                                                modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Icon(
+                                                    Icons.Default.Refresh,
+                                                    contentDescription =
+                                                            stringResource(
+                                                                    R.string.personalization_shape_reset_default
+                                                            ),
+                                                    modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 Slider(
-                                        value = current,
+                                        value = sliderDisplayValue,
                                         onValueChange = { newValue ->
                                             val newIndex = newValue.roundToInt()
                                             if (newIndex != lastHapticIndex) {
