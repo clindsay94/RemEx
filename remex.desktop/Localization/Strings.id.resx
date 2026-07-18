@@ -2386,6 +2386,15 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Canvas_GraphGauge" xml:space="preserve">
     <value>Pengukur ━━━</value>
   </data>
+  <data name="Canvas_ColorPreset" xml:space="preserve">
+    <value>Warna / Prasetel</value>
+  </data>
+  <data name="Canvas_Rename" xml:space="preserve">
+    <value>Ganti Nama...</value>
+  </data>
+  <data name="Canvas_ShowValueOverlay" xml:space="preserve">
+    <value>Tampilkan Nilai</value>
+  </data>
   <data name="Canvas_SetAlert" xml:space="preserve">
     <value>Atur Peringatan...</value>
   </data>

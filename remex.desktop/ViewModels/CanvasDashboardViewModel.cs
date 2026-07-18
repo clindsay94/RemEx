@@ -768,6 +768,9 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 {
                     var sensor = new SensorViewModel();
 
+                    // Persist per-sensor customization (color, title, overlay, graph type) as it changes.
+                    sensor.PropertyChanged += OnSensorCustomizationChanged;
+
                     // Apply any persisted alert for this sensor.
                     if (_sensorAlerts.TryGetValue(sensorName, out var existingAlert))
                         sensor.Alert = existingAlert;
@@ -780,13 +783,15 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     }
 
                     // Keep one reusable template in staging so users can add more cards.
+                    // Default size is a clean multiple of the 50px snap grid (4×3 cells) so
+                    // freshly-dropped cards tile edge-to-edge without manual resizing.
                     var staged = new CanvasCardViewModel
                     {
                         CardType = "Sensor",
                         CardTitle = sensorName,
                         Sensor = sensor,
                         Width = 200,
-                        Height = 120,
+                        Height = 150,
                     };
                     staged.RequestPinToggle = () => TogglePinToHome(staged);
                     StagedCards.Add(staged);
@@ -802,6 +807,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                         var restored = CanvasCardViewModel.FromCardState(saved);
                         restored.CardTitle = sensorName;
                         restored.Sensor = sensor;
+                        ApplyPersistedSensorState(sensor, saved);
                         var pinnedIds = _profile.PinnedSensorIds ?? Enumerable.Empty<string>();
                         restored.IsPinnedToHome = pinnedIds.Contains(sensorName);
                         restored.RequestPinToggle = () => TogglePinToHome(restored);
@@ -822,24 +828,67 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Persistence ═══════════════
 
+    /// <summary>
+    /// Applies a persisted card's per-sensor customization (graph type, custom title, value-overlay
+    /// visibility, and color theme) onto the shared <see cref="SensorViewModel"/> during layout restore.
+    /// One VM is shared across all cards for a sensor name, so this is per-sensor by design.
+    /// </summary>
+    private static void ApplyPersistedSensorState(SensorViewModel sensor, CardState state)
+    {
+        sensor.SelectedGraphType = state.DisplayMode;
+        if (!string.IsNullOrWhiteSpace(state.CustomTitle))
+            sensor.CustomTitle = state.CustomTitle;
+        sensor.ShowValueOverlay = state.ShowValueOverlay;
+        if (state.CardTheme is not null)
+            sensor.Theme = state.CardTheme;
+    }
+
+    /// <summary>
+    /// Persists the layout when a user changes a sensor's customization (color theme, custom title,
+    /// value-overlay visibility, or graph type). Telemetry updates (Name/Value/Unit) are ignored so
+    /// the incoming reading stream does not spam saves.
+    /// </summary>
+    private void OnSensorCustomizationChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(SensorViewModel.Theme)
+            or nameof(SensorViewModel.CustomTitle)
+            or nameof(SensorViewModel.ShowValueOverlay)
+            or nameof(SensorViewModel.SelectedGraphType))
+        {
+            TriggerSave();
+        }
+    }
+
     private void TriggerSave()
     {
         // Use the current profile from the layout service as the base to avoid overwriting
         // global flags (like HasCompletedTutorial) set by other components.
         var baseProfile = _layoutService.CurrentProfile ?? _profile;
 
+        // Sensor cards are restored lazily as telemetry arrives, so the live canvas is only a full
+        // picture once every sensor has reported. Saving the raw live set would delete every sensor
+        // card whose sensor hasn't reported yet (RemEx-jwvg). "Materialized" = sensors that currently
+        // have a SensorViewModel on the canvas or in staging (created on first sighting, never dropped
+        // on disconnect) — for those the live canvas is authoritative; the rest are preserved from the
+        // persisted profile so an early/partial save can't erode the layout.
+        var materializedSensorNames = new HashSet<string>(
+            Cards.Concat(StagedCards)
+                .Where(c => c.CardType == "Sensor" && c.Sensor != null)
+                .Select(c => c.Sensor!.Name),
+            StringComparer.OrdinalIgnoreCase);
+
+        var liveCardStates = Cards.Select(c => c.ToCardState()).ToList();
+        var livePinned = Cards
+            .Where(c => c.CardType == "Sensor" && c.IsPinnedToHome && c.Sensor != null)
+            .Select(c => c.Sensor!.Name);
+
         var profile = baseProfile with
         {
             IsSnapToGridEnabled = IsSnapToGridEnabled,
             GridSize = GridSize,
             HostAddress = Connection.HostAddress,
-            Cards = Cards.Select(c => c.ToCardState()).ToList(),
-            // Rebuild pinned sensors from the actual card states to ensure consistency
-            PinnedSensorIds = Cards
-                .Where(c => c.CardType == "Sensor" && c.IsPinnedToHome && c.Sensor != null)
-                .Select(c => c.Sensor!.Name)
-                .Distinct()
-                .ToList(),
+            Cards = CanvasLayoutMerge.MergeCards(baseProfile.Cards, liveCardStates, materializedSensorNames),
+            PinnedSensorIds = CanvasLayoutMerge.MergePinnedSensors(baseProfile.PinnedSensorIds, livePinned, materializedSensorNames),
             SensorAlerts = _sensorAlerts.Values.ToList(),
         };
 
@@ -965,6 +1014,27 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             _nextZIndex = z + 1;
     }
 
+    /// <summary>
+    /// Re-applies the layout currently persisted by <see cref="_layoutService"/> to the live canvas.
+    /// Called after a savefile import replaces <c>dashboard_layout.json</c> so the canvas updates in
+    /// place instead of only on the next app restart (RemEx-83c4). Non-sensor cards refresh
+    /// immediately; sensor cards for sensors that aren't live yet re-materialize as their telemetry
+    /// arrives (the restore path reads the freshly-applied <c>_profile</c>). A no-op if the canvas
+    /// hasn't finished its own first load — it will pick the imported layout up from disk then.
+    /// </summary>
+    public void ReloadFromPersistedLayout()
+    {
+        if (!_isInitialized) return;
+
+        var profile = _layoutService.CurrentProfile;
+        if (profile is null) return;
+
+        if (Dispatcher.UIThread.CheckAccess())
+            ApplyProfile(profile);
+        else
+            Dispatcher.UIThread.Post(() => ApplyProfile(profile));
+    }
+
     private void ApplyProfile(DashboardProfile profile)
     {
         _profile = profile;
@@ -1021,6 +1091,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             var restored = CanvasCardViewModel.FromCardState(state);
             restored.CardTitle = state.SensorId ?? "Sensor";
             restored.Sensor = sensor;
+            ApplyPersistedSensorState(sensor, state);
             var pinnedIds2 = profile.PinnedSensorIds ?? Enumerable.Empty<string>();
             restored.IsPinnedToHome = pinnedIds2.Contains(state.SensorId ?? "");
             restored.RequestPinToggle = () => TogglePinToHome(restored);

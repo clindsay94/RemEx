@@ -2584,6 +2584,15 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Canvas_GraphGauge" xml:space="preserve">
     <value>Gauge ━━━</value>
   </data>
+  <data name="Canvas_ColorPreset" xml:space="preserve">
+    <value>Color / Preset</value>
+  </data>
+  <data name="Canvas_Rename" xml:space="preserve">
+    <value>Rename...</value>
+  </data>
+  <data name="Canvas_ShowValueOverlay" xml:space="preserve">
+    <value>Show Value Overlay</value>
+  </data>
   <data name="Canvas_SetAlert" xml:space="preserve">
     <value>Set Alert...</value>
   </data>

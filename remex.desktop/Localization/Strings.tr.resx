@@ -2386,6 +2386,15 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Canvas_GraphGauge" xml:space="preserve">
     <value>Gösterge ━━━</value>
   </data>
+  <data name="Canvas_ColorPreset" xml:space="preserve">
+    <value>Renk / Hazır Ayar</value>
+  </data>
+  <data name="Canvas_Rename" xml:space="preserve">
+    <value>Yeniden Adlandır...</value>
+  </data>
+  <data name="Canvas_ShowValueOverlay" xml:space="preserve">
+    <value>Değeri Göster</value>
+  </data>
   <data name="Canvas_SetAlert" xml:space="preserve">
     <value>Uyarı Ayarla...</value>
   </data>

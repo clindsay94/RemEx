@@ -41,6 +41,15 @@ public record CardState
     /// <summary>Second sensor bound for the <see cref="GraphType.DualMetric"/> overlay (null otherwise).</summary>
     public string? SecondarySensorId { get; init; }
 
+    /// <summary>User-supplied display title overriding the raw sensor name (null = use the sensor name).</summary>
+    public string? CustomTitle { get; init; }
+
+    /// <summary>Whether the numeric value/unit overlay is shown on the card (false = ambient sparkline + title only).</summary>
+    public bool ShowValueOverlay { get; init; } = true;
+
+    /// <summary>Per-card color scheme override (null = the built-in "Default" preset).</summary>
+    public SensorCardTheme? CardTheme { get; init; }
+
     /// <summary>Compatibility alias for older canvas-oriented callers.</summary>
     [JsonIgnore]
     public double PositionX

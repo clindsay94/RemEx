@@ -2404,6 +2404,15 @@ Chrome)</value>
   <data name="Canvas_GraphGauge" xml:space="preserve">
     <value>Indicador ━━━</value>
   </data>
+  <data name="Canvas_ColorPreset" xml:space="preserve">
+    <value>Color / Preajuste</value>
+  </data>
+  <data name="Canvas_Rename" xml:space="preserve">
+    <value>Cambiar nombre...</value>
+  </data>
+  <data name="Canvas_ShowValueOverlay" xml:space="preserve">
+    <value>Mostrar valor superpuesto</value>
+  </data>
   <data name="Canvas_SetAlert" xml:space="preserve">
     <value>Configurar alerta...</value>
   </data>

@@ -18,6 +18,27 @@ public partial class SensorViewModel : ObservableObject
     [ObservableProperty]
     private string _name = string.Empty;
 
+    /// <summary>
+    /// User-supplied title that overrides the raw hardware sensor name on the card.
+    /// Null/blank = fall back to <see cref="Name"/>. Surfaced through <see cref="DisplayName"/>.
+    /// </summary>
+    [ObservableProperty]
+    private string? _customTitle;
+
+    /// <summary>The title shown on the card — the custom title if set, otherwise the sensor name.</summary>
+    public string DisplayName => string.IsNullOrWhiteSpace(CustomTitle) ? Name : CustomTitle!;
+
+    /// <summary>
+    /// Whether the numeric value/unit overlay is drawn on the card. When false the card shows only
+    /// its title over the ambient sparkline. Defaults to true (the classic look).
+    /// </summary>
+    [ObservableProperty]
+    private bool _showValueOverlay = true;
+
+    /// <summary>True while the card title is being edited inline (swaps the label for a text box).</summary>
+    [ObservableProperty]
+    private bool _isEditingTitle;
+
     [ObservableProperty]
     private double _value;
 
@@ -108,7 +129,13 @@ public partial class SensorViewModel : ObservableObject
         OnPropertyChanged(nameof(ResolvedGraphType));
     }
 
-    partial void OnNameChanged(string value) => OnPropertyChanged(nameof(HistorySummary));
+    partial void OnNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(HistorySummary));
+        OnPropertyChanged(nameof(DisplayName));
+    }
+
+    partial void OnCustomTitleChanged(string? value) => OnPropertyChanged(nameof(DisplayName));
     partial void OnValueChanged(double value) => OnPropertyChanged(nameof(HistorySummary));
     partial void OnUnitChanged(string value) => OnPropertyChanged(nameof(HistorySummary));
 
@@ -150,6 +177,26 @@ public partial class SensorViewModel : ObservableObject
         {
             SelectedGraphType = gt;
         }
+    }
+
+    /// <summary>Begins inline title editing — prefills the buffer with the current display name.</summary>
+    [RelayCommand]
+    private void BeginRename()
+    {
+        if (string.IsNullOrWhiteSpace(CustomTitle))
+            CustomTitle = Name;
+        IsEditingTitle = true;
+    }
+
+    /// <summary>Commits inline title editing; a blank title reverts to the raw sensor name.</summary>
+    [RelayCommand]
+    private void EndRename()
+    {
+        if (string.IsNullOrWhiteSpace(CustomTitle))
+            CustomTitle = null;
+        else
+            CustomTitle = CustomTitle!.Trim();
+        IsEditingTitle = false;
     }
 
     /// <summary>

@@ -116,6 +116,49 @@ public partial class CanvasView : UserControl
         }
     }
 
+    // ═══════════════ Inline Card Rename ═══════════════
+
+    private void OnRenameBoxLoaded(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not TextBox tb) return;
+
+        // Focus + select whenever the editor becomes visible (i.e. rename is opened).
+        tb.PropertyChanged += (_, ev) =>
+        {
+            if (ev.Property == Visual.IsVisibleProperty && ev.NewValue is true)
+            {
+                tb.Focus();
+                tb.SelectAll();
+            }
+        };
+
+        if (tb.IsVisible)
+        {
+            tb.Focus();
+            tb.SelectAll();
+        }
+    }
+
+    private void OnRenameKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter || e.Key == Key.Escape)
+        {
+            CommitRename(sender);
+            e.Handled = true;
+        }
+    }
+
+    private void OnRenameLostFocus(object? sender, RoutedEventArgs e) => CommitRename(sender);
+
+    private static void CommitRename(object? sender)
+    {
+        if ((sender as Control)?.DataContext is CanvasCardViewModel { Sensor: { } sensor }
+            && sensor.IsEditingTitle)
+        {
+            sensor.EndRenameCommand.Execute(null);
+        }
+    }
+
     // ═══════════════ Viewport size tracking ═══════════════
 
     protected override void OnSizeChanged(SizeChangedEventArgs e)

@@ -11,7 +11,7 @@ public record SensorCardTheme
     public string CardBackground { get; init; } = "#0A0A16";
     public string AccentColor { get; init; } = "#C0C0FF";
     public string ValueColor { get; init; } = "#E0E0FF";
-    public string LabelColor { get; init; } = "#6666AA";
+    public string LabelColor { get; init; } = "#B8B8E0";
     public string UnitColor { get; init; } = "#8888AA";
 
     /// <summary>
@@ -30,7 +30,7 @@ public record SensorCardTheme
             CardBackground = "#0A0A16",
             AccentColor = "#C0C0FF",
             ValueColor = "#E0E0FF",
-            LabelColor = "#6666AA",
+            LabelColor = "#B8B8E0",
             UnitColor = "#8888AA",
         },
         new SensorCardTheme

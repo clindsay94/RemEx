@@ -60,6 +60,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(RemexMessage))]
 [JsonSerializable(typeof(MetricKind))]
 [JsonSerializable(typeof(SensorReading))]
+[JsonSerializable(typeof(SensorCardTheme))]
 [JsonSerializable(typeof(TelemetryPayload))]
 // ── 2.0 Pairing ──
 [JsonSerializable(typeof(PairingRequest))]

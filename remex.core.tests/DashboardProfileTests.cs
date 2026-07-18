@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using Remex.Core.Models;
+using Remex.Core.Serialization;
 
 namespace Remex.Core.Tests;
 
@@ -103,6 +104,58 @@ public class DashboardProfileTests
         Assert.Equal(5, deserialized.Cards[0].ZIndex);
         Assert.Equal(2, deserialized.PinnedSensorIds.Count);
         Assert.Contains("GPU Temp", deserialized.PinnedSensorIds);
+    }
+
+    // ═══════════════ Per-Card Customization (RemEx-rg28) ═══════════════
+
+    [Fact]
+    public void CardState_CustomizationDefaults_AreCorrect()
+    {
+        var card = new CardState();
+
+        Assert.Null(card.CustomTitle);
+        Assert.True(card.ShowValueOverlay);
+        Assert.Null(card.CardTheme);
+        Assert.Equal(GraphType.Auto, card.DisplayMode);
+    }
+
+    /// <summary>
+    /// Round-trips the new per-card customization through the SOURCE-GENERATED context (not the
+    /// reflection serializer), which is what actually ships in the NativeAOT `libRemexCore.so`.
+    /// A missing [JsonSerializable(typeof(SensorCardTheme))] registration would fail here.
+    /// </summary>
+    [Fact]
+    public void DashboardProfile_SourceGen_RoundTripsCardCustomization()
+    {
+        var original = new DashboardProfile
+        {
+            Cards = new List<CardState>
+            {
+                new CardState
+                {
+                    CardId = "c1",
+                    CardType = "Sensor",
+                    SensorId = "GPU Temp",
+                    DisplayMode = GraphType.Line,
+                    CustomTitle = "My GPU",
+                    ShowValueOverlay = false,
+                    CardTheme = SensorCardTheme.Presets[1], // "Magenta & Cyan"
+                },
+            },
+        };
+
+        var typeInfo = RemexJson.TypeInfo<DashboardProfile>();
+        var json = RemexJson.Serialize(original, typeInfo);
+        var back = RemexJson.Deserialize(json, typeInfo);
+
+        Assert.NotNull(back);
+        var card = Assert.Single(back!.Cards);
+        Assert.Equal(GraphType.Line, card.DisplayMode);
+        Assert.Equal("My GPU", card.CustomTitle);
+        Assert.False(card.ShowValueOverlay);
+        Assert.NotNull(card.CardTheme);
+        Assert.Equal("Magenta & Cyan", card.CardTheme!.Name);
+        Assert.Equal("#00E5FF", card.CardTheme.AccentColor);
     }
 
     // ═══════════════ Snap-to-Grid Math ═══════════════

@@ -711,6 +711,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             await using var stream = await files[0].OpenReadAsync();
             var result = await _savefileService.ImportAsync(stream);
 
+            // Import wrote the imported layout to disk and reloaded the live theme/language, but the
+            // already-open canvas holds its own cards — refresh it in place so the restored layout
+            // appears without an app restart (RemEx-83c4). Also refresh this screen's sensor list.
+            _shell.CanvasViewModel?.ReloadFromPersistedLayout();
+            RefreshSensors();
+
             ShowTransientStatus(string.Format(
                 LocalizationService.Instance["Settings_ImportDone"],
                 result.AppliedSections.Count,
