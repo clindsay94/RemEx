@@ -167,6 +167,15 @@ public class SparklineControl : Control
             case GraphType.Radial:
                 RenderRadial(context, bounds);
                 break;
+            case GraphType.Ring:
+                RenderRing(context, bounds);
+                break;
+            case GraphType.LedMeter:
+                RenderLedMeter(context, bounds);
+                break;
+            case GraphType.GlowArea:
+                RenderGlowArea(context, bounds);
+                break;
             default:
                 RenderBars(context, bounds);
                 break;
@@ -223,6 +232,140 @@ public class SparklineControl : Control
         }
     }
 
+
+    // ═══════════════ Ring Gauge (bold full ring) ═══════════════
+
+    private void RenderRing(DrawingContext context, Rect bounds)
+    {
+        double range = MaxSeen - MinSeen;
+        double fraction = range > 0 ? Math.Clamp((CurrentValue - MinSeen) / range, 0, 1) : 0;
+
+        if (_accentBrush == null) UpdateBrushes();
+
+        double size = Math.Min(bounds.Width, bounds.Height);
+        double centerX = bounds.Width / 2;
+        double centerY = bounds.Height / 2;
+        double strokeWidth = size * 0.16;
+        double radius = (size - strokeWidth) / 2 - 1;
+        if (radius <= 0) return;
+
+        var trackPen = new Pen(TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128)), strokeWidth);
+        var accentPen = new Pen(_accentBrush!, strokeWidth, lineCap: PenLineCap.Round);
+
+        // Full track ring.
+        context.DrawEllipse(null, trackPen, new Point(centerX, centerY), radius, radius);
+
+        if (fraction > 0)
+        {
+            double sweepAngle = Math.Min(fraction * 360, 359.999);
+            var geometry = new StreamGeometry();
+            Point endPt;
+            using (var ctx = geometry.Open())
+            {
+                double startAngle = -90; // top center
+                double endAngle = startAngle + sweepAngle;
+                double startRad = startAngle * Math.PI / 180;
+                double endRad = endAngle * Math.PI / 180;
+
+                Point startPt = new(centerX + radius * Math.Cos(startRad), centerY + radius * Math.Sin(startRad));
+                endPt = new(centerX + radius * Math.Cos(endRad), centerY + radius * Math.Sin(endRad));
+
+                ctx.BeginFigure(startPt, false);
+                ctx.ArcTo(endPt, new Size(radius, radius), 0, sweepAngle > 180, SweepDirection.Clockwise);
+                ctx.EndFigure(false);
+            }
+            context.DrawGeometry(null, accentPen, geometry);
+
+            // Glow at the leading tip.
+            context.DrawEllipse(_glowBrush!, null, endPt, strokeWidth * 0.6, strokeWidth * 0.6);
+        }
+    }
+
+    // ═══════════════ Segmented LED Meter ═══════════════
+
+    private void RenderLedMeter(DrawingContext context, Rect bounds)
+    {
+        double range = MaxSeen - MinSeen;
+        double fraction = range > 0 ? Math.Clamp((CurrentValue - MinSeen) / range, 0, 1) : 0;
+
+        if (_accentBrush == null) UpdateBrushes();
+
+        const int segments = 14;
+        const double gapRatio = 0.28;                 // total horizontal space given to gaps
+        double totalGap = bounds.Width * gapRatio;
+        double segW = (bounds.Width - totalGap) / segments;
+        double gap = segments > 1 ? totalGap / (segments - 1) : 0;
+        if (segW <= 0) return;
+
+        double barH = bounds.Height * 0.55;
+        double y = (bounds.Height - barH) / 2;
+
+        int litCount = (int)Math.Round(fraction * segments);
+        var trackBrush = TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128));
+        var hotBrush = new ImmutableSolidColorBrush(Color.Parse("#FF3B30"));
+
+        for (int i = 0; i < segments; i++)
+        {
+            double x = i * (segW + gap);
+            bool lit = i < litCount;
+            bool isHotSegment = i >= segments - 2;    // the top ~15% of the scale
+
+            IBrush brush = !lit ? trackBrush : (isHotSegment ? hotBrush : _accentBrush!);
+            context.DrawRectangle(brush, null, new RoundedRect(new Rect(x, y, segW, barH), 2));
+        }
+    }
+
+    // ═══════════════ Glow Area (gradient fill + neon top edge) ═══════════════
+
+    private void RenderGlowArea(DrawingContext context, Rect bounds)
+    {
+        var data = History;
+        if (data == null || data.Count < 2) return;
+
+        if (_accentBrush == null) UpdateBrushes();
+
+        var accent = AccentColor;
+        int count = data.Count;
+        double maxHeight = bounds.Height;
+        double stepX = bounds.Width / Math.Max(count - 1, 1);
+
+        var points = new List<Point>(count);
+        for (int i = 0; i < count; i++)
+        {
+            double h = Math.Clamp(data[i] * maxHeight, 0, maxHeight);
+            points.Add(new Point(i * stepX, bounds.Height - h));
+        }
+
+        // Vertical gradient fill under the curve.
+        var geometry = new StreamGeometry();
+        using (var ctx = geometry.Open())
+        {
+            ctx.BeginFigure(new Point(points[0].X, bounds.Height), true);
+            foreach (var pt in points) ctx.LineTo(pt);
+            ctx.LineTo(new Point(points[^1].X, bounds.Height));
+            ctx.EndFigure(true);
+        }
+
+        var gradient = new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
+            GradientStops =
+            {
+                new GradientStop(new Color(150, accent.R, accent.G, accent.B), 0),
+                new GradientStop(new Color(10, accent.R, accent.G, accent.B), 1),
+            },
+        };
+        context.DrawGeometry(gradient, null, geometry);
+
+        // Neon top edge: a thick low-alpha glow pass under a thin crisp line.
+        var glowPen = new Pen(new ImmutableSolidColorBrush(new Color(90, accent.R, accent.G, accent.B)), 4);
+        var crispPen = new Pen(_accentBrush!, 1.5);
+        for (int i = 1; i < points.Count; i++)
+            context.DrawLine(glowPen, points[i - 1], points[i]);
+        for (int i = 1; i < points.Count; i++)
+            context.DrawLine(crispPen, points[i - 1], points[i]);
+    }
 
     // ═══════════════ Bar Chart ═══════════════
 

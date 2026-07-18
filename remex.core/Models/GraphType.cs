@@ -51,4 +51,7 @@ public enum GraphType
 
     /// <summary>Ambient: two metrics overlaid on one card (requires a secondary sensor).</summary>
     DualMetric,
+
+    /// <summary>Filled area with a vertical gradient and a neon-glow top edge.</summary>
+    GlowArea,
 }

@@ -2383,6 +2383,15 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Canvas_GraphArea" xml:space="preserve">
     <value>Alan ▓▓▓</value>
   </data>
+  <data name="Canvas_GraphRing" xml:space="preserve">
+    <value>Halka ◍</value>
+  </data>
+  <data name="Canvas_GraphLed" xml:space="preserve">
+    <value>LED ▮▮▫</value>
+  </data>
+  <data name="Canvas_GraphGlow" xml:space="preserve">
+    <value>Parıltı ▒▓▒</value>
+  </data>
   <data name="Canvas_GraphGauge" xml:space="preserve">
     <value>Gösterge ━━━</value>
   </data>

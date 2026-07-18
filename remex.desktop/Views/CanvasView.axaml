@@ -256,6 +256,9 @@
                                                 <MenuItem Header="{local:Localize Canvas_GraphLine}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Line"/>
                                                 <MenuItem Header="{local:Localize Canvas_GraphArea}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Area"/>
                                                 <MenuItem Header="{local:Localize Canvas_GraphGauge}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Gauge"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphRing}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="Ring"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphLed}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="LedMeter"/>
+                                                <MenuItem Header="{local:Localize Canvas_GraphGlow}" Command="{Binding Sensor.SetGraphTypeCommand}" CommandParameter="GlowArea"/>
                                             </MenuItem>
                                             <MenuItem Header="{local:Localize Canvas_ColorPreset}">
                                                 <MenuItem Header="Default" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Default"/>
@@ -338,20 +341,24 @@
                                         </StackPanel>
 
                                         <!-- ═══ SENSOR ═══ -->
-                                        <Grid IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}">
-                                            <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" AccentColor="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.35"/>
+                                        <Grid IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsSensor}}" RowDefinitions="Auto,*">
+                                            <!-- Row 0: title band on top, above the sparkline (readable without a plate). -->
+                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="4" Margin="8,5,8,2" VerticalAlignment="Top">
+                                                <TextBlock Text="📌" FontSize="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
+                                                <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" FontSize="11" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
 
-                                            <Viewbox Stretch="Uniform" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6">
-                                                <!-- Backing plate: a semi-opaque dark panel (from the card's own palette) so the
-                                                     title/value read clearly over the full-card sparkline in every app theme. -->
-                                                <Border CornerRadius="6" Padding="7,4" Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}">
-                                                    <StackPanel>
-                                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                                            <TextBlock Text="📌" FontSize="10" VerticalAlignment="Center" IsVisible="{Binding IsPinnedToHome}"/>
-                                                            <TextBlock Text="{Binding Sensor.DisplayName, FallbackValue=Sensor}" FontSize="10" FontWeight="Bold" Foreground="{Binding Sensor.Theme.LabelColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
-                                                        </StackPanel>
-                                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom" IsVisible="{Binding Sensor.ShowValueOverlay}">
-                                                            <TextBlock FontSize="18" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
+                                            <!-- Row 1: body — the sparkline fills it prominently; the value floats bottom-left. -->
+                                            <Grid Grid.Row="1">
+                                                <ctrl:SparklineControl History="{Binding Sensor.History}" GraphType="{Binding Sensor.ResolvedGraphType}" AccentColor="{Binding Sensor.Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" TrackBrush="{DynamicResource TextMutedBrush}" CurrentValue="{Binding Sensor.Value}" MinSeen="{Binding Sensor.MinSeenValue}" MaxSeen="{Binding Sensor.MaxSeenValue}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Opacity="0.6"/>
+
+                                                <!-- Value plate: its OWN Viewbox (title excluded) so every card's number renders at a
+                                                     consistent size; DownOnly means short values don't balloon. Layered above the
+                                                     sparkline on a semi-opaque plate so it stays crisp over the prominent line. -->
+                                                <Viewbox Stretch="Uniform" StretchDirection="DownOnly" MaxHeight="34" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6" IsVisible="{Binding Sensor.ShowValueOverlay}">
+                                                    <Border CornerRadius="6" Padding="7,3" Background="{Binding Sensor.Theme.CardBackground, Converter={x:Static conv:HexToTranslucentBrushConverter.Instance}, ConverterParameter=0.8}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
+                                                            <TextBlock FontSize="20" FontWeight="Black" Foreground="{Binding Sensor.Theme.ValueColor, Converter={x:Static conv:HexToBrushConverter.Instance}}">
                                                                 <TextBlock.Text>
                                                                     <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
                                                                         <Binding Path="Sensor.Value"/>
@@ -359,15 +366,14 @@
                                                                     </MultiBinding>
                                                                 </TextBlock.Text>
                                                             </TextBlock>
-                                                            <TextBlock Text="{Binding Sensor.Unit}" FontSize="10" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                                            <TextBlock Text="{Binding Sensor.Unit}" FontSize="11" Foreground="{Binding Sensor.Theme.UnitColor, Converter={x:Static conv:HexToBrushConverter.Instance}}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                                         </StackPanel>
-                                                    </StackPanel>
-                                                </Border>
-                                            </Viewbox>
+                                                    </Border>
+                                                </Viewbox>
+                                            </Grid>
 
-                                            <!-- Inline rename editor: normal-sized overlay (outside the Viewbox so the caret
-                                                 isn't scaled). Commits on Enter or when focus leaves. -->
-                                            <TextBox Text="{Binding Sensor.CustomTitle, Mode=TwoWay}" IsVisible="{Binding Sensor.IsEditingTitle}" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="8" FontSize="12" FontWeight="Bold" MaxLength="40" Loaded="OnRenameBoxLoaded" KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
+                                            <!-- Inline rename editor: normal-sized overlay spanning the card. Commits on Enter/blur. -->
+                                            <TextBox Grid.Row="0" Grid.RowSpan="2" Text="{Binding Sensor.CustomTitle, Mode=TwoWay}" IsVisible="{Binding Sensor.IsEditingTitle}" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="8" FontSize="12" FontWeight="Bold" MaxLength="40" Loaded="OnRenameBoxLoaded" KeyDown="OnRenameKeyDown" LostFocus="OnRenameLostFocus"/>
                                         </Grid>
                                     </Grid>
                                 </ctrl:DraggableCard>

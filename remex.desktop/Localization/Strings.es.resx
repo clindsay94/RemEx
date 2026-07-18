@@ -2401,6 +2401,15 @@ Chrome)</value>
   <data name="Canvas_GraphArea" xml:space="preserve">
     <value>Área ▓▓▓</value>
   </data>
+  <data name="Canvas_GraphRing" xml:space="preserve">
+    <value>Anillo ◍</value>
+  </data>
+  <data name="Canvas_GraphLed" xml:space="preserve">
+    <value>LED ▮▮▫</value>
+  </data>
+  <data name="Canvas_GraphGlow" xml:space="preserve">
+    <value>Brillo ▒▓▒</value>
+  </data>
   <data name="Canvas_GraphGauge" xml:space="preserve">
     <value>Indicador ━━━</value>
   </data>
