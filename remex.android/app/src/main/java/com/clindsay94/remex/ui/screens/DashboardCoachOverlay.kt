@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -32,7 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -88,13 +94,19 @@ fun DashboardCoachOverlay(
             0 -> HoldToLiftDemo(Modifier.align(Alignment.Center))
             1 -> DirectionalPointer(anchor = menuAnchor, haloSize = 48.dp)
             2 -> DirectionalPointer(anchor = addAnchor, haloSize = 84.dp)
+            3 -> ViewPickerDemo(Modifier.align(Alignment.Center))
+            4 -> GroupSelectDemo(Modifier.align(Alignment.Center))
+            5 -> SelectActionBarDemo(Modifier.align(Alignment.Center))
         }
 
         CoachPanel(
             body = when (step) {
                 0 -> stringResource(R.string.coach_hold_body)
                 1 -> stringResource(R.string.coach_menu_body)
-                else -> stringResource(R.string.coach_add_body)
+                2 -> stringResource(R.string.coach_add_body)
+                3 -> stringResource(R.string.coach_view_body)
+                4 -> stringResource(R.string.coach_group_body)
+                else -> stringResource(R.string.coach_select_body)
             },
             isLast = isLast,
             onAdvance = onAdvance,
@@ -102,9 +114,9 @@ fun DashboardCoachOverlay(
             // Place each caption near what its hint points at: step 0 just below the centred animation,
             // step 1 up by the ⋮ menu, step 2 low but lifted clear of the + FAB.
             modifier = when (step) {
-                0 -> Modifier.align(Alignment.Center).offset(y = 150.dp)
                 1 -> Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 64.dp)
-                else -> Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
+                2 -> Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp)
+                else -> Modifier.align(Alignment.Center).offset(y = 162.dp)  // centred animated demos
             }.padding(horizontal = 20.dp, vertical = 28.dp),
         )
     }
@@ -196,6 +208,314 @@ private fun HoldToLiftDemo(modifier: Modifier = Modifier) {
                     translationY = 10.dp.toPx()   // sit slightly low, planted on the card
                     scaleX = fingerScale.value; scaleY = fingerScale.value
                 },
+        )
+    }
+}
+
+/**
+ * Animated view-picker demonstration: a finger taps the ⊞ grid icon on a sample card, and a little
+ * view-picker grid pops up out of that corner (bouncy) — teaching how to change a card's look.
+ */
+@Composable
+private fun ViewPickerDemo(modifier: Modifier = Modifier) {
+    val motion = remember { MotionScheme.expressive() }
+    val fingerScale = remember { Animatable(1.15f) }
+    val gridPop = remember { Animatable(0f) }   // 0 hidden → 1 picker fully popped
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            fingerScale.snapTo(1.15f); gridPop.snapTo(0f)
+            delay(520)
+            fingerScale.animateTo(0.72f, motion.defaultSpatialSpec())   // tap the ⊞ icon
+            coroutineScope {
+                launch { fingerScale.animateTo(1f, motion.fastSpatialSpec()) }
+                launch { gridPop.animateTo(1f, motion.fastSpatialSpec()) }   // picker pops in
+            }
+            delay(950)
+            coroutineScope {
+                launch { gridPop.animateTo(0f, motion.defaultSpatialSpec()) }
+                launch { fingerScale.animateTo(1.15f, motion.defaultSpatialSpec()) }
+            }
+            delay(400)
+        }
+    }
+
+    Box(modifier.size(200.dp), contentAlignment = Alignment.Center) {
+        // Sample card (upper) with a ⊞ view icon in its top-right corner.
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .offset(y = (-44).dp)
+                .size(120.dp, 74.dp)
+                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(20.dp)),
+        ) {
+            Icon(
+                Icons.Filled.GridView,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(20.dp),
+            )
+        }
+
+        // The finger tapping the ⊞ icon at the card's top-right.
+        Icon(
+            imageVector = Icons.Filled.TouchApp,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(x = 44.dp, y = (-56).dp)
+                .size(38.dp)
+                .graphicsLayer { scaleX = fingerScale.value; scaleY = fingerScale.value },
+        )
+
+        // The view-picker grid popping in just below the card.
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .offset(y = 34.dp)
+                .graphicsLayer {
+                    val s = gridPop.value
+                    scaleX = s; scaleY = s
+                    alpha = s
+                    transformOrigin = TransformOrigin(0.5f, 0f)
+                }
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .padding(10.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                repeat(2) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        repeat(3) {
+                            Box(
+                                Modifier
+                                    .size(20.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(6.dp),
+                                    ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Animated multi-select demonstration: a finger taps two sample cards (each springs to a selected
+ * highlight), then the whole group lifts and drags together — teaching group selection + move.
+ */
+@Composable
+private fun GroupSelectDemo(modifier: Modifier = Modifier) {
+    val motion = remember { MotionScheme.expressive() }
+    val fingerX = remember { Animatable(0f) }        // 0 over card A → 1 over card B
+    val fingerScale = remember { Animatable(1.1f) }
+    val selA = remember { Animatable(0f) }           // selection highlight per card
+    val selB = remember { Animatable(0f) }
+    val lift = remember { Animatable(0f) }           // group lift (scale + elevation)
+    val dragX = remember { Animatable(0f) }          // group drag
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            fingerX.snapTo(0f); fingerScale.snapTo(1.1f)
+            selA.snapTo(0f); selB.snapTo(0f); lift.snapTo(0f); dragX.snapTo(0f)
+            delay(460)
+            // Tap card A → select.
+            fingerScale.animateTo(0.74f, motion.defaultSpatialSpec())
+            coroutineScope {
+                launch { fingerScale.animateTo(1.1f, motion.fastSpatialSpec()) }
+                launch { selA.animateTo(1f, motion.fastSpatialSpec()) }
+            }
+            delay(130)
+            fingerX.animateTo(1f, motion.defaultSpatialSpec())   // slide to card B
+            // Tap card B → select.
+            fingerScale.animateTo(0.74f, motion.defaultSpatialSpec())
+            coroutineScope {
+                launch { fingerScale.animateTo(1.1f, motion.fastSpatialSpec()) }
+                launch { selB.animateTo(1f, motion.fastSpatialSpec()) }
+            }
+            delay(160)
+            // Lift the group and drag both together.
+            lift.animateTo(1f, motion.fastSpatialSpec())
+            dragX.animateTo(1f, motion.defaultSpatialSpec())
+            delay(480)
+            coroutineScope {
+                launch { lift.animateTo(0f, motion.defaultSpatialSpec()) }
+                launch { dragX.animateTo(0f, motion.defaultSpatialSpec()) }
+                launch { selA.animateTo(0f, motion.defaultEffectsSpec()) }
+                launch { selB.animateTo(0f, motion.defaultEffectsSpec()) }
+            }
+            delay(360)
+        }
+    }
+
+    Box(modifier.size(200.dp), contentAlignment = Alignment.Center) {
+        val cardW = 62.dp
+        val cardH = 56.dp
+        val halfSpread = 39.dp    // distance of each card's centre from box centre
+        val groupDrag = 24.dp
+
+        // Card A (left) and Card B (right) — both ride the shared lift + drag; each shows its own
+        // selection ring fading in.
+        MiniSelectCard(cardW, cardH, -halfSpread, selA.value, lift.value, dragX.value * 1f, groupDrag)
+        MiniSelectCard(cardW, cardH, halfSpread, selB.value, lift.value, dragX.value * 1f, groupDrag)
+
+        // The finger, sliding from card A to card B and tapping each.
+        Icon(
+            imageVector = Icons.Filled.TouchApp,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size(40.dp)
+                .graphicsLayer {
+                    val spread = halfSpread.toPx()
+                    translationX = (-spread + fingerX.value * 2f * spread) + dragX.value * groupDrag.toPx()
+                    translationY = 6.dp.toPx()
+                    scaleX = fingerScale.value; scaleY = fingerScale.value
+                },
+        )
+    }
+}
+
+/** One selectable mini-card for [GroupSelectDemo]: positioned by [centreOffsetX] from the box centre,
+ *  scaling with the shared [lift], sliding with the shared [dragFraction], and fading in a selection
+ *  ring by [selected] (0..1). */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.MiniSelectCard(
+    width: androidx.compose.ui.unit.Dp,
+    height: androidx.compose.ui.unit.Dp,
+    centreOffsetX: androidx.compose.ui.unit.Dp,
+    selected: Float,
+    lift: Float,
+    dragFraction: Float,
+    dragDistance: androidx.compose.ui.unit.Dp,
+) {
+    Box(
+        Modifier
+            .align(Alignment.Center)
+            .offset(x = centreOffsetX)
+            .size(width, height)
+            .graphicsLayer {
+                val s = 1f + lift * 0.12f
+                scaleX = s; scaleY = s
+                translationX = dragFraction * dragDistance.toPx()
+                shadowElevation = lift * 20f
+                shape = RoundedCornerShape(16.dp)
+                clip = true
+            }
+            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(16.dp))
+            .border(
+                width = 3.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = selected),
+                shape = RoundedCornerShape(16.dp),
+            ),
+    )
+}
+
+/**
+ * Animated select-to-act demonstration: a finger holds a card until it selects (highlight ring), then
+ * the action bar pops up with reshape / pin / remove — the other branch of the hold gesture (hold +
+ * release → select, vs. hold + drag → move).
+ */
+@Composable
+private fun SelectActionBarDemo(modifier: Modifier = Modifier) {
+    val motion = remember { MotionScheme.expressive() }
+    val fingerScale = remember { Animatable(1.15f) }
+    val sel = remember { Animatable(0f) }        // card selection highlight
+    val barPop = remember { Animatable(0f) }     // action bar reveal
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            fingerScale.snapTo(1.15f); sel.snapTo(0f); barPop.snapTo(0f)
+            delay(520)
+            fingerScale.animateTo(0.76f, motion.defaultSpatialSpec())   // press and hold
+            coroutineScope {
+                launch { fingerScale.animateTo(1.05f, motion.fastSpatialSpec()) }
+                launch { sel.animateTo(1f, motion.fastSpatialSpec()) }   // card selects
+            }
+            delay(90)
+            barPop.animateTo(1f, motion.fastSpatialSpec())              // action bar appears
+            delay(1050)
+            coroutineScope {
+                launch { sel.animateTo(0f, motion.defaultEffectsSpec()) }
+                launch { barPop.animateTo(0f, motion.defaultSpatialSpec()) }
+                launch { fingerScale.animateTo(1.15f, motion.defaultSpatialSpec()) }
+            }
+            delay(400)
+        }
+    }
+
+    Box(modifier.size(200.dp), contentAlignment = Alignment.Center) {
+        // Selected sample card (upper).
+        Box(
+            Modifier
+                .align(Alignment.Center)
+                .offset(y = (-42).dp)
+                .size(120.dp, 74.dp)
+                .graphicsLayer {
+                    val s = 1f + sel.value * 0.06f
+                    scaleX = s; scaleY = s
+                    shape = RoundedCornerShape(20.dp)
+                    clip = true
+                }
+                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(20.dp))
+                .border(
+                    width = 3.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = sel.value),
+                    shape = RoundedCornerShape(20.dp),
+                ),
+        )
+
+        // Finger holding the card.
+        Icon(
+            imageVector = Icons.Filled.TouchApp,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = (-30).dp)
+                .size(40.dp)
+                .graphicsLayer { scaleX = fingerScale.value; scaleY = fingerScale.value },
+        )
+
+        // The action bar that appears on select: reshape / pin / remove.
+        Row(
+            Modifier
+                .align(Alignment.Center)
+                .offset(y = 40.dp)
+                .graphicsLayer {
+                    val s = barPop.value
+                    scaleX = s; scaleY = s
+                    alpha = s
+                    transformOrigin = TransformOrigin(0.5f, 0f)
+                }
+                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ActionDot(Icons.Filled.Category)   // reshape
+            ActionDot(Icons.Filled.PushPin)    // pin
+            ActionDot(Icons.Filled.Delete)     // remove
+        }
+    }
+}
+
+/** One round action-bar button used by [SelectActionBarDemo]. */
+@Composable
+private fun ActionDot(icon: ImageVector) {
+    Box(
+        Modifier.size(30.dp).background(MaterialTheme.colorScheme.primary, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(18.dp),
         )
     }
 }

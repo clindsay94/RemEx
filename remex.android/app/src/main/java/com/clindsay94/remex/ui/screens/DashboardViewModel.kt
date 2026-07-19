@@ -109,7 +109,7 @@ fun selectSensor(cardId: String?, sensors: List<TelemetrySensor>): TelemetrySens
  * Number of sequential Home Base coach-mark hints (RemEx-km0i.10). Single source of truth shared by
  * [DashboardViewModel]'s advance logic and [DashboardCoachOverlay].
  */
-const val DASHBOARD_COACH_HINT_COUNT = 3
+const val DASHBOARD_COACH_HINT_COUNT = 6
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
 

@@ -267,6 +267,9 @@
     <string name="coach_hold_body">Hold a card to pick it up, then drag to move it.</string>
     <string name="coach_menu_body">Customize cards, undo, or reset from the menu up here.</string>
     <string name="coach_add_body">Add more sensor cards with the + button.</string>
+    <string name="coach_view_body">Tap the grid icon on a card to change how it looks.</string>
+    <string name="coach_group_body">Hold a card, then tap others to move them as a group.</string>
+    <string name="coach_select_body">Hold a card to select it — a bar appears to reshape, pin, or remove it (or a whole group).</string>
     <string name="coach_next">Next</string>
     <string name="coach_got_it">Got it</string>
     <string name="coach_skip">Skip</string>
