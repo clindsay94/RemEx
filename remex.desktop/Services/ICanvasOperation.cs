@@ -65,6 +65,37 @@ public sealed class AddCardOperation : ICanvasOperation
     public void Undo()    { _cards.Remove(_card); }
 }
 
+/// <summary>Records a change to a card's pinned-to-home state (reversible group pin/unpin).</summary>
+public sealed class PinCardOperation : ICanvasOperation
+{
+    private readonly CanvasCardViewModel _card;
+    private readonly bool _targetPinned;
+    private readonly System.Action<CanvasCardViewModel, bool> _apply;
+
+    public PinCardOperation(CanvasCardViewModel card, bool targetPinned,
+        System.Action<CanvasCardViewModel, bool> apply)
+    {
+        _card = card;
+        _targetPinned = targetPinned;
+        _apply = apply;
+    }
+
+    public void Execute() => _apply(_card, _targetPinned);
+    public void Undo()    => _apply(_card, !_targetPinned);
+}
+
+/// <summary>Batches any set of operations into one undoable unit (group remove / group pin).</summary>
+public sealed class CompositeOperation : ICanvasOperation
+{
+    private readonly List<ICanvasOperation> _ops;
+
+    public CompositeOperation(IEnumerable<ICanvasOperation> ops)
+        => _ops = new List<ICanvasOperation>(ops);
+
+    public void Execute() { foreach (var op in _ops) op.Execute(); }
+    public void Undo()    { for (int i = _ops.Count - 1; i >= 0; i--) _ops[i].Undo(); }
+}
+
 /// <summary>Records a card being removed from the canvas.</summary>
 public sealed class RemoveCardOperation : ICanvasOperation
 {

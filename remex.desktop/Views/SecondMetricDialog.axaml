@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:Remex.Desktop.Converters"
+        x:Class="Remex.Desktop.Views.SecondMetricDialog"
+        Title="{local:Localize SecondMetric_Title}"
+        Width="380" Height="500"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource GlassBaseDarkBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="32">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24,44,24,24">
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16" Spacing="4">
+            <TextBlock Text="{local:Localize SecondMetric_Header}" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+            <TextBlock x:Name="CardTitleText" FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+
+        <!-- Search -->
+        <TextBox Grid.Row="1" x:Name="SearchBox" Watermark="{local:Localize SecondMetric_Search}" Margin="0,0,0,12"
+                 Background="{DynamicResource GlassBaseMediumBrush}" Foreground="{DynamicResource TextPrimaryBrush}"
+                 BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="8,6"/>
+
+        <!-- Candidate list -->
+        <Border Grid.Row="2" Background="{DynamicResource GlassBaseMediumBrush}" CornerRadius="8" Padding="4"
+                BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+            <ListBox x:Name="SensorList" Background="Transparent" BorderThickness="0">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis" Padding="4,2"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,16,0,0">
+            <Button Grid.Column="1" Content="{local:Localize Btn_Clear}" Click="OnClear"
+                    Classes="glass-button" Foreground="#FF6B6B" MinWidth="72" Margin="0,0,8,0"/>
+            <Button Grid.Column="2" Content="{local:Localize Btn_Cancel}" Click="OnCancel"
+                    Classes="glass-button" MinWidth="80" Margin="0,0,8,0"/>
+            <Button Grid.Column="3" Content="{local:Localize SecondMetric_SetBtn}" Click="OnSet"
+                    MinWidth="90" CornerRadius="8" Padding="16,10"
+                    Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"
+                    FontWeight="SemiBold" FontSize="13"/>
+        </Grid>
+
+    </Grid>
+</Window>

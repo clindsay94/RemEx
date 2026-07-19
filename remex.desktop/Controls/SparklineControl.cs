@@ -39,6 +39,14 @@ public class SparklineControl : Control
     public static readonly StyledProperty<IBrush?> TrackBrushProperty =
         AvaloniaProperty.Register<SparklineControl, IBrush?>(nameof(TrackBrush));
 
+    /// <summary>Second normalized (0–1) history series, drawn by <see cref="GraphType.DualMetric"/>.</summary>
+    public static readonly StyledProperty<IList<double>?> SecondaryHistoryProperty =
+        AvaloniaProperty.Register<SparklineControl, IList<double>?>(nameof(SecondaryHistory));
+
+    /// <summary>Accent for the secondary series in <see cref="GraphType.DualMetric"/>.</summary>
+    public static readonly StyledProperty<Color> SecondaryAccentColorProperty =
+        AvaloniaProperty.Register<SparklineControl, Color>(nameof(SecondaryAccentColor), Color.Parse("#FFB020"));
+
     private const byte AreaFillAlpha = 60;
     private const byte GlowAlpha = 100;
     private const byte TrackAlpha = 40;
@@ -90,10 +98,23 @@ public class SparklineControl : Control
         set => SetValue(TrackBrushProperty, value);
     }
 
+    public IList<double>? SecondaryHistory
+    {
+        get => GetValue(SecondaryHistoryProperty);
+        set => SetValue(SecondaryHistoryProperty, value);
+    }
+
+    public Color SecondaryAccentColor
+    {
+        get => GetValue(SecondaryAccentColorProperty);
+        set => SetValue(SecondaryAccentColorProperty, value);
+    }
+
     static SparklineControl()
     {
         AffectsRender<SparklineControl>(HistoryProperty, GraphTypeProperty, AccentColorProperty,
-            CurrentValueProperty, MinSeenProperty, MaxSeenProperty, TrackBrushProperty);
+            CurrentValueProperty, MinSeenProperty, MaxSeenProperty, TrackBrushProperty,
+            SecondaryHistoryProperty, SecondaryAccentColorProperty);
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -156,82 +177,33 @@ public class SparklineControl : Control
                 RenderBars(context, bounds);
                 break;
             case GraphType.Line:
+            case GraphType.BigValue:   // retired view — renders as a line (saved-layout compat)
                 RenderLine(context, bounds, filled: false);
-                break;
-            case GraphType.Area:
-                RenderLine(context, bounds, filled: true);
                 break;
             case GraphType.Gauge:
                 RenderGauge(context, bounds);
                 break;
-            case GraphType.Radial:
-                RenderRadial(context, bounds);
-                break;
+            case GraphType.Radial:     // retired view — renders as the ring gauge (saved-layout compat)
             case GraphType.Ring:
                 RenderRing(context, bounds);
                 break;
             case GraphType.LedMeter:
                 RenderLedMeter(context, bounds);
                 break;
+            case GraphType.Area:       // retired view — renders as glow area (saved-layout compat)
+            case GraphType.ValueSpark: // retired view — renders as glow area (saved-layout compat)
             case GraphType.GlowArea:
+            case GraphType.HuePulse:   // retired view — renders as glow area (saved-layout compat)
                 RenderGlowArea(context, bounds);
+                break;
+            case GraphType.DualMetric:
+                RenderDualMetric(context, bounds);
                 break;
             default:
                 RenderBars(context, bounds);
                 break;
         }
     }
-
-    // ═══════════════ Radial Chart ═══════════════
-
-    private void RenderRadial(DrawingContext context, Rect bounds)
-    {
-        double range = MaxSeen - MinSeen;
-        double fraction = range > 0 ? Math.Clamp((CurrentValue - MinSeen) / range, 0, 1) : 0;
-
-        if (_accentBrush == null) UpdateBrushes();
-
-        double size = Math.Min(bounds.Width, bounds.Height);
-        double centerX = bounds.Width / 2;
-        double centerY = bounds.Height / 2;
-        double strokeWidth = size * 0.12;
-        double radius = (size - strokeWidth) / 2;
-
-        var trackPen = new Pen(TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128)), strokeWidth);
-        var accentPen = new Pen(_accentBrush!, strokeWidth, lineCap: PenLineCap.Round);
-
-        // Draw track
-        context.DrawEllipse(null, trackPen, new Point(centerX, centerY), radius, radius);
-
-        // Draw progress arc
-        if (fraction > 0)
-        {
-            double sweepAngle = fraction * 360;
-            var geometry = new StreamGeometry();
-            Point endPt;
-            
-            using (var ctx = geometry.Open())
-            {
-                double startAngle = -90; // Top center
-                double endAngle = startAngle + sweepAngle;
-
-                double startRad = startAngle * Math.PI / 180;
-                double endRad = endAngle * Math.PI / 180;
-
-                Point startPt = new Point(centerX + radius * Math.Cos(startRad), centerY + radius * Math.Sin(startRad));
-                endPt = new Point(centerX + radius * Math.Cos(endRad), centerY + radius * Math.Sin(endRad));
-
-                ctx.BeginFigure(startPt, false);
-                ctx.ArcTo(endPt, new Size(radius, radius), 0, sweepAngle > 180, SweepDirection.Clockwise);
-                ctx.EndFigure(false);
-            }
-            context.DrawGeometry(null, accentPen, geometry);
-
-            // Glow effect at the tip
-            context.DrawEllipse(_glowBrush!, null, endPt, strokeWidth * 0.8, strokeWidth * 0.8);
-        }
-    }
-
 
     // ═══════════════ Ring Gauge (bold full ring) ═══════════════
 
@@ -324,7 +296,13 @@ public class SparklineControl : Control
 
         if (_accentBrush == null) UpdateBrushes();
 
-        var accent = AccentColor;
+        // The glow shifts from the card's accent (idle) toward warm red as the reading climbs,
+        // so the tile visibly reacts to load — not just a static-colored area chart.
+        double range = MaxSeen - MinSeen;
+        double fraction = range > 0 ? Math.Clamp((CurrentValue - MinSeen) / range, 0, 1) : 0;
+        var accent = LerpColor(AccentColor, Color.Parse("#FF3B30"), fraction * 0.8);
+        var accentBrush = new ImmutableSolidColorBrush(accent);
+
         int count = data.Count;
         double maxHeight = bounds.Height;
         double stepX = bounds.Width / Math.Max(count - 1, 1);
@@ -358,13 +336,75 @@ public class SparklineControl : Control
         };
         context.DrawGeometry(gradient, null, geometry);
 
-        // Neon top edge: a thick low-alpha glow pass under a thin crisp line.
+        // Neon top edge: a thick low-alpha glow pass under a thin crisp line (both value-reactive).
         var glowPen = new Pen(new ImmutableSolidColorBrush(new Color(90, accent.R, accent.G, accent.B)), 4);
-        var crispPen = new Pen(_accentBrush!, 1.5);
+        var crispPen = new Pen(accentBrush, 1.5);
         for (int i = 1; i < points.Count; i++)
             context.DrawLine(glowPen, points[i - 1], points[i]);
         for (int i = 1; i < points.Count; i++)
             context.DrawLine(crispPen, points[i - 1], points[i]);
+    }
+
+
+    // ═══════════════ Dual Metric (two overlaid series) ═══════════════
+
+    private void RenderDualMetric(DrawingContext context, Rect bounds)
+    {
+        var primary = History;
+        if (primary == null || primary.Count < 2) return;
+        if (_accentBrush == null) UpdateBrushes();
+
+        DrawSeriesLine(context, bounds, primary, _accentBrush!, filledAlpha: 40);
+
+        var secondary = SecondaryHistory;
+        if (secondary != null && secondary.Count >= 2)
+        {
+            var secAccent = SecondaryAccentColor;
+            var secBrush = new ImmutableSolidColorBrush(secAccent);
+            DrawSeriesLine(context, bounds, secondary, secBrush, filledAlpha: 0);
+        }
+    }
+
+    /// <summary>Draws a normalized (0–1) series as a line, optionally with a faint area fill.</summary>
+    private static void DrawSeriesLine(DrawingContext context, Rect bounds, IList<double> data,
+        ISolidColorBrush brush, byte filledAlpha)
+    {
+        int count = data.Count;
+        double stepX = bounds.Width / Math.Max(count - 1, 1);
+        var points = new List<Point>(count);
+        for (int i = 0; i < count; i++)
+        {
+            double h = Math.Clamp(data[i] * bounds.Height, 0, bounds.Height);
+            points.Add(new Point(i * stepX, bounds.Height - h));
+        }
+
+        if (filledAlpha > 0)
+        {
+            var c = brush.Color;
+            var geometry = new StreamGeometry();
+            using (var ctx = geometry.Open())
+            {
+                ctx.BeginFigure(new Point(points[0].X, bounds.Height), true);
+                foreach (var pt in points) ctx.LineTo(pt);
+                ctx.LineTo(new Point(points[^1].X, bounds.Height));
+                ctx.EndFigure(true);
+            }
+            context.DrawGeometry(new ImmutableSolidColorBrush(new Color(filledAlpha, c.R, c.G, c.B)), null, geometry);
+        }
+
+        var pen = new Pen(brush, 1.5);
+        for (int i = 1; i < points.Count; i++)
+            context.DrawLine(pen, points[i - 1], points[i]);
+    }
+
+    private static Color LerpColor(Color a, Color b, double t)
+    {
+        t = Math.Clamp(t, 0, 1);
+        return new Color(
+            255,
+            (byte)(a.R + (b.R - a.R) * t),
+            (byte)(a.G + (b.G - a.G) * t),
+            (byte)(a.B + (b.B - a.B) * t));
     }
 
     // ═══════════════ Bar Chart ═══════════════

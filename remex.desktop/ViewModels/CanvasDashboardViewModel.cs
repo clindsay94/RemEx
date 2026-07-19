@@ -309,6 +309,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         Cards.CollectionChanged += OnCardsCollectionChanged;
 
         StagedCards.CollectionChanged += OnStagedCardsCollectionChanged;
+
+        SelectedCards.CollectionChanged += OnSelectedCardsChanged;
     }
 
     private void OnConnectionPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -371,6 +373,9 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             _isInitialized = true;
+
+            // Seed the first-visit coach mark from whatever profile is now loaded.
+            InitCoachMark();
 
             // If a host sync arrived before we finished local load, prioritize the host.
             if (_pendingSyncProfile != null)
@@ -624,18 +629,29 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     private void TogglePinToHome(CanvasCardViewModel card)
     {
         if (card.CardType != "Sensor" || card.Sensor is null) return;
+        SetCardPinned(card, !card.IsPinnedToHome);
+    }
+
+    /// <summary>
+    /// Sets a sensor card's pinned-to-home state to a specific value (not a toggle), updating the
+    /// profile's pinned-id list, persisting, and refreshing Home. The single mutation point so both
+    /// the per-card toggle and the undoable group pin (<see cref="PinCardOperation"/>) stay consistent.
+    /// </summary>
+    private void SetCardPinned(CanvasCardViewModel card, bool pinned)
+    {
+        if (card.CardType != "Sensor" || card.Sensor is null) return;
 
         var sensorName = card.Sensor.Name;
         if (string.IsNullOrWhiteSpace(sensorName)) return;
 
-        card.IsPinnedToHome = !card.IsPinnedToHome;
+        card.IsPinnedToHome = pinned;
 
         if (_profile.PinnedSensorIds == null)
         {
             _profile = _profile with { PinnedSensorIds = new() };
         }
 
-        if (card.IsPinnedToHome)
+        if (pinned)
         {
             if (!_profile.PinnedSensorIds.Contains(sensorName, StringComparer.OrdinalIgnoreCase))
                 _profile.PinnedSensorIds.Add(sensorName);
@@ -651,6 +667,107 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         if (_shell.CurrentView is HomeViewModel home)
             home.RefreshPinnedSensors();
     }
+
+    // ═══════════════ Floating action bar (multi-select group ops) ═══════════════
+
+    /// <summary>True while one or more cards are selected — drives the floating Pin/Remove/Done bar.</summary>
+    [ObservableProperty]
+    private bool _hasSelection;
+
+    /// <summary>Number of currently selected cards (shown on the floating action bar).</summary>
+    [ObservableProperty]
+    private int _selectionCount;
+
+    private void OnSelectedCardsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        SelectionCount = SelectedCards.Count;
+        HasSelection = SelectedCards.Count > 0;
+        OnPropertyChanged(nameof(CoachMarkVisible));
+    }
+
+    /// <summary>Removes every selected card as one undoable operation (routed through RemoveCardOperation).</summary>
+    [RelayCommand]
+    private void RemoveSelected()
+    {
+        if (SelectedCards.Count == 0) return;
+
+        var ops = new List<ICanvasOperation>();
+        foreach (var card in SelectedCards.ToList())
+        {
+            ops.Add(new RemoveCardOperation(Cards, card));
+            Cards.Remove(card);
+        }
+
+        ClearSelection();
+        PushOperation(ops.Count == 1 ? ops[0] : new CompositeOperation(ops));
+        TriggerSave();
+    }
+
+    /// <summary>
+    /// Pins (or unpins) every selected sensor card as one undoable operation. Pins all unless every
+    /// selected card is already pinned, in which case it unpins them — a single intuitive toggle.
+    /// </summary>
+    [RelayCommand]
+    private void PinSelected()
+    {
+        var sensorCards = SelectedCards
+            .Where(c => c.CardType == "Sensor" && c.Sensor is not null && !string.IsNullOrWhiteSpace(c.Sensor!.Name))
+            .ToList();
+        if (sensorCards.Count == 0) return;
+
+        bool targetPinned = !sensorCards.All(c => c.IsPinnedToHome);
+
+        var ops = new List<ICanvasOperation>();
+        foreach (var card in sensorCards)
+        {
+            if (card.IsPinnedToHome == targetPinned) continue;
+            ops.Add(new PinCardOperation(card, targetPinned, SetCardPinned));
+            SetCardPinned(card, targetPinned);
+        }
+
+        if (ops.Count == 0) return;
+        PushOperation(ops.Count == 1 ? ops[0] : new CompositeOperation(ops));
+    }
+
+    // ═══════════════ Coach marks (first-visit contextual hint) ═══════════════
+
+    private const string CanvasCoachKey = "canvas";
+
+    /// <summary>Raw first-visit flag — true until the user dismisses the canvas coach mark.</summary>
+    [ObservableProperty]
+    private bool _showCoachMark;
+
+    /// <summary>
+    /// The coach hint is shown only on first visit AND while nothing is selected — the action bar and
+    /// the hint must never fight for the same corner (spec 5.7 visibility guard).
+    /// </summary>
+    public bool CoachMarkVisible => ShowCoachMark && !HasSelection;
+
+    partial void OnShowCoachMarkChanged(bool value) => OnPropertyChanged(nameof(CoachMarkVisible));
+
+    /// <summary>Seeds coach visibility from the persisted <see cref="DashboardProfile.SeenCoachMarks"/>.</summary>
+    private void InitCoachMark()
+    {
+        var seen = _layoutService.CurrentProfile.SeenCoachMarks ?? new();
+        ShowCoachMark = !seen.Contains(CanvasCoachKey);
+    }
+
+    /// <summary>Dismisses the hint ("Got it") and records it as seen so it never auto-shows again.</summary>
+    [RelayCommand]
+    private void DismissCoachMark()
+    {
+        ShowCoachMark = false;
+
+        var baseProfile = _layoutService.CurrentProfile ?? _profile;
+        var seen = baseProfile.SeenCoachMarks ?? new();
+        if (!seen.Contains(CanvasCoachKey)) seen.Add(CanvasCoachKey);
+        _profile = baseProfile with { SeenCoachMarks = seen };
+        _layoutService.RequestSave(_profile);
+    }
+
+    /// <summary>Replays the contextual hint on demand (the "?" affordance).</summary>
+    [RelayCommand]
+    private void ReplayCoachMark() => ShowCoachMark = true;
 
     private bool CanTogglePinToHome(CanvasCardViewModel? card)
     {
@@ -836,6 +953,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     private static void ApplyPersistedSensorState(SensorViewModel sensor, CardState state)
     {
         sensor.SelectedGraphType = state.DisplayMode;
+        sensor.SecondarySensorId = state.SecondarySensorId;
         if (!string.IsNullOrWhiteSpace(state.CustomTitle))
             sensor.CustomTitle = state.CustomTitle;
         sensor.ShowValueOverlay = state.ShowValueOverlay;
@@ -853,7 +971,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         if (e.PropertyName is nameof(SensorViewModel.Theme)
             or nameof(SensorViewModel.CustomTitle)
             or nameof(SensorViewModel.ShowValueOverlay)
-            or nameof(SensorViewModel.SelectedGraphType))
+            or nameof(SensorViewModel.SelectedGraphType)
+            or nameof(SensorViewModel.SecondarySensorId))
         {
             TriggerSave();
         }
@@ -966,6 +1085,61 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         {
             _isRefreshingSensorActivation = false;
         }
+
+        RefreshSecondaryWiring();
+    }
+
+    /// <summary>Maps every live sensor name to its (shared) view-model, for DualMetric resolution.</summary>
+    private Dictionary<string, SensorViewModel> LiveSensorsByName() =>
+        Cards.Concat(StagedCards)
+            .Where(c => c.CardType == "Sensor" && c.Sensor != null && !string.IsNullOrWhiteSpace(c.Sensor!.Name))
+            .GroupBy(c => c.Sensor!.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Sensor!, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Resolves each sensor card's persisted <see cref="SensorViewModel.SecondarySensorId"/> to a live
+    /// <see cref="SensorViewModel"/> so the DualMetric overlay series has data. Cheap and idempotent —
+    /// safe to call on any card/staging change.
+    /// </summary>
+    private void RefreshSecondaryWiring()
+    {
+        var sensorByName = LiveSensorsByName();
+        foreach (var card in Cards.Where(c => c.CardType == "Sensor" && c.Sensor != null))
+        {
+            var secId = card.Sensor!.SecondarySensorId;
+            card.Sensor.SecondarySensor =
+                (!string.IsNullOrWhiteSpace(secId) && sensorByName.TryGetValue(secId!, out var sec))
+                    ? sec
+                    : null;
+        }
+    }
+
+    /// <summary>Raised when a card wants to choose its DualMetric second sensor (opens a picker dialog).</summary>
+    public event Action<CanvasCardViewModel>? ShowSecondMetricRequested;
+
+    [RelayCommand]
+    private void ChooseSecondMetric(CanvasCardViewModel? card)
+    {
+        if (card?.Sensor is not null)
+            ShowSecondMetricRequested?.Invoke(card);
+    }
+
+    /// <summary>Every OTHER live sensor name, offered as a second-metric choice for the given card.</summary>
+    public IReadOnlyList<string> SecondaryCandidatesFor(CanvasCardViewModel card)
+    {
+        var self = card.Sensor?.Name;
+        return LiveSensorsByName().Keys
+            .Where(n => !string.Equals(n, self, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>Applies (or clears, when null) a card's DualMetric second sensor and resolves it live.</summary>
+    public void ApplySecondMetric(CanvasCardViewModel card, string? sensorName)
+    {
+        if (card.Sensor is null) return;
+        card.Sensor.SecondarySensorId = string.IsNullOrEmpty(sensorName) ? null : sensorName;
+        RefreshSecondaryWiring(); // resolve the live reference immediately (save fires via customization hook)
     }
 
     private void OnSensorActivationChanged(object? sender, bool isActive)
@@ -1133,6 +1307,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         Connection.LayoutProfileReceived -= OnLayoutProfileReceived;
         Cards.CollectionChanged -= OnCardsCollectionChanged;
         StagedCards.CollectionChanged -= OnStagedCardsCollectionChanged;
+        SelectedCards.CollectionChanged -= OnSelectedCardsChanged;
     }
 }
 

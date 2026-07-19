@@ -1,11 +1,14 @@
 using System;
+using System.ComponentModel;
 using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Input.Platform;
+using Avalonia.Threading;
 using Remex.Desktop.Controls;
 using Remex.Desktop.ViewModels;
 
@@ -30,6 +33,12 @@ public partial class CanvasView : UserControl
             _previousVm.ShowSetAlertRequested -= OnShowSetAlertRequested;
         }
 
+        if (_previousVm != null)
+        {
+            _previousVm.PropertyChanged -= OnVmPropertyChanged;
+            _previousVm.ShowSecondMetricRequested -= OnShowSecondMetricRequested;
+        }
+
         _previousVm = DataContext as CanvasDashboardViewModel;
 
         if (_previousVm != null)
@@ -37,10 +46,76 @@ public partial class CanvasView : UserControl
             _previousVm.ResetViewRequested += OnResetViewRequested;
             _previousVm.MinimapPanRequested += OnMinimapPanRequested;
             _previousVm.ShowSetAlertRequested += OnShowSetAlertRequested;
+            _previousVm.ShowSecondMetricRequested += OnShowSecondMetricRequested;
+            _previousVm.PropertyChanged += OnVmPropertyChanged;
         }
 
         // Re-wire the minimap's PanRequested when the VM changes.
         WireMinimapControl();
+    }
+
+    // ═══════════════ Coach mark positioning ═══════════════
+    //
+    // The coach hint must point at the *real* "Sensors" toolbar button, whose X drifts with
+    // window width and localized button widths (the toolbar buttons are a right-aligned group).
+    // So we measure the button at layout time rather than hard-coding a position. The overlay
+    // scrim covers only the canvas (row 1), not the toolbar (row 0), so the button stays bright
+    // above the dim — we only need its X and can draw the whole arrow upward within the canvas.
+
+    private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CanvasDashboardViewModel.CoachMarkVisible))
+            Dispatcher.UIThread.Post(PositionCoachMark, DispatcherPriority.Loaded);
+    }
+
+    private void OnCoachCardSizeChanged(object? sender, SizeChangedEventArgs e) => PositionCoachMark();
+
+    private void PositionCoachMark()
+    {
+        if (CoachOverlay is null || !CoachOverlay.IsVisible) return;
+        if (CoachCanvas is null || CoachCard is null || CoachArrow is null
+            || CoachArrowHead is null || SensorsButton is null) return;
+
+        double canvasW = CoachCanvas.Bounds.Width;
+        if (canvasW <= 0) return;
+
+        // Button center X in the canvas coordinate space (Y is above the canvas, so ignored — the
+        // arrow just points up at the top edge beneath the button). Fallback ≈ where the Sensors
+        // button typically sits if layout isn't ready yet; corrected on the next size change.
+        var pt = SensorsButton.TranslatePoint(new Point(SensorsButton.Bounds.Width / 2, 0), CoachCanvas);
+        double buttonX = pt?.X ?? canvasW * 0.6;
+
+        double cardW = CoachCard.Bounds.Width > 0 ? CoachCard.Bounds.Width : CoachCard.Width;
+        const double cardTop = 72;
+        double cardLeft = Math.Clamp(buttonX - cardW / 2, 12, Math.Max(12, canvasW - cardW - 12));
+        Canvas.SetLeft(CoachCard, cardLeft);
+        Canvas.SetTop(CoachCard, cardTop);
+
+        // Arrow: from the card's top edge up to the top of the canvas, right under the button.
+        double startX = Math.Clamp(buttonX, cardLeft + 24, cardLeft + cardW - 24);
+        double startY = cardTop - 8;
+        double apexY = 4;
+        double headBaseY = apexY + 12;
+        double midY = (startY + headBaseY) / 2;
+
+        var arrow = new StreamGeometry();
+        using (var ctx = arrow.Open())
+        {
+            ctx.BeginFigure(new Point(startX, startY), false);
+            ctx.CubicBezierTo(new Point(startX, midY), new Point(buttonX, midY), new Point(buttonX, headBaseY));
+            ctx.EndFigure(false);
+        }
+        CoachArrow.Data = arrow;
+
+        var head = new StreamGeometry();
+        using (var ctx = head.Open())
+        {
+            ctx.BeginFigure(new Point(buttonX, apexY), true);
+            ctx.LineTo(new Point(buttonX - 7, apexY + 12));
+            ctx.LineTo(new Point(buttonX + 7, apexY + 12));
+            ctx.EndFigure(true);
+        }
+        CoachArrowHead.Data = head;
     }
 
     // ═══════════════ Reset View ═══════════════
@@ -116,6 +191,32 @@ public partial class CanvasView : UserControl
         }
     }
 
+    // ═══════════════ Second Metric (DualMetric) Picker ═══════════════
+
+    private async void OnShowSecondMetricRequested(CanvasCardViewModel card)
+    {
+        try
+        {
+            if (DataContext is not CanvasDashboardViewModel vm || card.Sensor is null) return;
+
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is not Window ownerWindow) return;
+
+            var candidates = vm.SecondaryCandidatesFor(card);
+            var dialog = new SecondMetricDialog(
+                card.Sensor.DisplayName,
+                candidates,
+                card.Sensor.SecondarySensorId,
+                name => vm.ApplySecondMetric(card, name));
+
+            await dialog.ShowDialog(ownerWindow);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[CanvasView] SecondMetric dialog error: {ex.Message}");
+        }
+    }
+
     // ═══════════════ Inline Card Rename ═══════════════
 
     private void OnRenameBoxLoaded(object? sender, RoutedEventArgs e)
@@ -171,6 +272,10 @@ public partial class CanvasView : UserControl
         {
             vm.CanvasViewWidth = e.NewSize.Width;
         }
+
+        // Re-aim the coach arrow at the Sensors button after any viewport resize.
+        if (CoachOverlay is { IsVisible: true })
+            Dispatcher.UIThread.Post(PositionCoachMark, DispatcherPriority.Loaded);
     }
 
     // ═══════════════ Snapshot Export (P8-I) ═══════════════

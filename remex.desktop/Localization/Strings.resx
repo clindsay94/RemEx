@@ -2593,6 +2593,63 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Canvas_GraphGauge" xml:space="preserve">
     <value>Gauge ━━━</value>
   </data>
+  <data name="Canvas_GraphRadial" xml:space="preserve">
+    <value>Radial ◔</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Big Value 42</value>
+  </data>
+  <data name="Canvas_GraphValueSpark" xml:space="preserve">
+    <value>Value + Spark ⌇</value>
+  </data>
+  <data name="Canvas_GraphHue" xml:space="preserve">
+    <value>Hue Pulse ◐</value>
+  </data>
+  <data name="Canvas_GraphDual" xml:space="preserve">
+    <value>Dual Metric ⑂</value>
+  </data>
+  <data name="Canvas_SecondMetric" xml:space="preserve">
+    <value>Second Metric</value>
+  </data>
+  <data name="Canvas_SecondMetricNone" xml:space="preserve">
+    <value>Clear Second Metric</value>
+  </data>
+  <data name="Canvas_ActionPin" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="Canvas_ActionRemove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Canvas_ActionDone" xml:space="preserve">
+    <value>Done</value>
+  </data>
+  <data name="Canvas_SelectedLabel" xml:space="preserve">
+    <value>selected</value>
+  </data>
+  <data name="Canvas_CoachTitle" xml:space="preserve">
+    <value>Build your dashboard</value>
+  </data>
+  <data name="Canvas_CoachBody" xml:space="preserve">
+    <value>Tap the Sensors button up here to add hardware cards. Drag to arrange, right-click a card to change its look, and Ctrl+click cards to select several at once.</value>
+  </data>
+  <data name="Canvas_CoachGotIt" xml:space="preserve">
+    <value>Got it</value>
+  </data>
+  <data name="Canvas_CoachReplayTooltip" xml:space="preserve">
+    <value>Replay the dashboard tips</value>
+  </data>
+  <data name="SecondMetric_Title" xml:space="preserve">
+    <value>Choose Second Metric</value>
+  </data>
+  <data name="SecondMetric_Header" xml:space="preserve">
+    <value>OVERLAY A SECOND SENSOR ON</value>
+  </data>
+  <data name="SecondMetric_Search" xml:space="preserve">
+    <value>Search sensors…</value>
+  </data>
+  <data name="SecondMetric_SetBtn" xml:space="preserve">
+    <value>Set</value>
+  </data>
   <data name="Canvas_ColorPreset" xml:space="preserve">
     <value>Color / Preset</value>
   </data>

@@ -98,22 +98,69 @@ public partial class SensorViewModel : ObservableObject
     private GraphType _selectedGraphType = GraphType.Auto;
 
     /// <summary>
-    /// The resolved graph type — if <see cref="SelectedGraphType"/> is Auto,
-    /// this returns the best type based on the sensor's unit.
+    /// Persisted id (sensor name) of a second metric overlaid on this card when the
+    /// chosen view is <see cref="GraphType.DualMetric"/>. Null = no secondary bound.
+    /// </summary>
+    [ObservableProperty]
+    private string? _secondarySensorId;
+
+    /// <summary>
+    /// Resolved view-model for <see cref="SecondarySensorId"/>, wired by the dashboard.
+    /// Drives the second series drawn by the DualMetric view. Not persisted directly.
+    /// </summary>
+    [ObservableProperty]
+    private SensorViewModel? _secondarySensor;
+
+    /// <summary>Second normalized history series for the DualMetric view (null when unbound).</summary>
+    public ObservableCollection<double>? SecondaryHistory => SecondarySensor?.History;
+
+    /// <summary>Accent hex for the DualMetric second series (falls back to a warm amber).</summary>
+    public string SecondaryAccentHex => SecondarySensor?.Theme.AccentColor ?? "#FFB020";
+
+    partial void OnSecondarySensorChanged(SensorViewModel? value)
+    {
+        OnPropertyChanged(nameof(SecondaryHistory));
+        OnPropertyChanged(nameof(SecondaryAccentHex));
+        OnPropertyChanged(nameof(HasSecondary));
+    }
+
+    /// <summary>
+    /// The resolved graph type — if <see cref="SelectedGraphType"/> is Auto, this returns the best
+    /// type based on the sensor's <see cref="MetricKind"/> (host-stamped), falling back to the
+    /// unit string when the kind is Unknown (older hosts / unclassified sensors).
     /// </summary>
     public GraphType ResolvedGraphType => SelectedGraphType == GraphType.Auto
-        ? ResolveGraphTypeFromUnit(Unit)
+        ? ResolveGraphType(RawReading?.Kind ?? MetricKind.Unknown, Unit)
         : SelectedGraphType;
 
     /// <summary>
-    /// Exposed for the SparklineControl Gauge mode — the raw min ever seen.
+    /// Gauge/Ring/LED fill floor. Gauges read from a meaningful zero, NOT the narrow observed band —
+    /// a CPU sitting steadily at 19% must read 19%, not "full" because its min/max both hovered near 19.
     /// </summary>
-    public double MinSeenValue => _minSeen == double.MaxValue ? 0 : _minSeen;
+    public double MinSeenValue => 0;
 
     /// <summary>
-    /// Exposed for the SparklineControl Gauge mode — the raw max ever seen.
+    /// Gauge/Ring/LED fill ceiling on the metric's real scale: percentages fill 0–100, temperatures
+    /// 0–100 °C, everything else 0–(peak seen). This is what makes the gauges represent the true value.
     /// </summary>
-    public double MaxSeenValue => _maxSeen == double.MinValue ? 100 : _maxSeen;
+    public double MaxSeenValue =>
+        IsPercentMetric ? 100 :
+        IsTemperatureMetric ? 100 :
+        (_maxSeen == double.MinValue ? 100 : Math.Max(_maxSeen, 1));
+
+    private bool IsPercentMetric =>
+        RawReading?.Kind is MetricKind.CpuLoad or MetricKind.GpuLoad or MetricKind.RamLoad
+        || (!string.IsNullOrEmpty(Unit) && Unit.Contains('%'));
+
+    private bool IsTemperatureMetric =>
+        RawReading?.Kind is MetricKind.CpuTempC or MetricKind.GpuTempC or MetricKind.TempC
+        || (!string.IsNullOrEmpty(Unit) && Unit.Contains("°C"));
+
+    /// <summary>True when this card is showing the Dual Metric view — drives the on-card legend.</summary>
+    public bool IsDualMetric => ResolvedGraphType == GraphType.DualMetric;
+
+    /// <summary>True when a second metric is bound (the legend's second row is only shown then).</summary>
+    public bool HasSecondary => SecondarySensor is not null;
 
     /// <summary>
     /// Short accessible description of the sensor's current reading, e.g. "CPU Temp: 72 °C".
@@ -127,6 +174,7 @@ public partial class SensorViewModel : ObservableObject
     partial void OnSelectedGraphTypeChanged(GraphType value)
     {
         OnPropertyChanged(nameof(ResolvedGraphType));
+        OnPropertyChanged(nameof(IsDualMetric));
     }
 
     partial void OnNameChanged(string value)
@@ -247,6 +295,7 @@ public partial class SensorViewModel : ObservableObject
         OnPropertyChanged(nameof(MinSeenValue));
         OnPropertyChanged(nameof(MaxSeenValue));
         OnPropertyChanged(nameof(ResolvedGraphType));
+        OnPropertyChanged(nameof(IsDualMetric));
 
         CheckAlert();
     }
@@ -276,6 +325,28 @@ public partial class SensorViewModel : ObservableObject
 
     // ═══════════════ Auto Resolution ═══════════════
 
+    /// <summary>
+    /// Picks the best view for a sensor from its host-stamped <see cref="MetricKind"/>. This is the
+    /// PC mirror of Android's <c>bestDisplayModeFor</c> — loads read as rings, memory/throughput as
+    /// value+spark, temperatures/voltage as lines, clock/power as filled areas. Unknown kinds defer
+    /// to the legacy unit-string heuristic so older hosts keep working.
+    /// </summary>
+    private static GraphType ResolveGraphType(MetricKind kind, string unit) => kind switch
+    {
+        MetricKind.CpuLoad or MetricKind.GpuLoad or MetricKind.RamLoad => GraphType.Ring,
+        MetricKind.RamUsedGb or MetricKind.RamTotalGb                  => GraphType.GlowArea,
+        MetricKind.CpuTempC or MetricKind.GpuTempC or MetricKind.TempC => GraphType.Line,
+        MetricKind.ClockMhz                                            => GraphType.Line,
+        MetricKind.PowerW                                             => GraphType.GlowArea,
+        MetricKind.FanRpm                                             => GraphType.Bar,
+        MetricKind.NetThroughputMbps
+            or MetricKind.NetDownMbps
+            or MetricKind.NetUpMbps                                    => GraphType.GlowArea,
+        MetricKind.VoltageV                                            => GraphType.Line,
+        MetricKind.DiskRateMBs                                         => GraphType.GlowArea,
+        _                                                             => ResolveGraphTypeFromUnit(unit),
+    };
+
     private static GraphType ResolveGraphTypeFromUnit(string unit)
     {
         if (string.IsNullOrWhiteSpace(unit))
@@ -288,7 +359,7 @@ public partial class SensorViewModel : ObservableObject
             return GraphType.Gauge;
 
         if (unit.Contains("MHz") || unit.Contains("GHz") || unit.Contains("W"))
-            return GraphType.Area;
+            return GraphType.GlowArea;
 
         if (unit.Contains("RPM"))
             return GraphType.Bar;

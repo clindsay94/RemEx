@@ -110,6 +110,7 @@ public partial class CanvasCardViewModel : ObservableObject
         ZIndex = ZIndex,
         // Per-sensor customization (previously dropped on save, incl. the chosen graph type).
         DisplayMode = Sensor?.SelectedGraphType ?? GraphType.Auto,
+        SecondarySensorId = Sensor?.SecondarySensorId,
         CustomTitle = Sensor?.CustomTitle,
         ShowValueOverlay = Sensor?.ShowValueOverlay ?? true,
         CardTheme = Sensor?.Theme,
