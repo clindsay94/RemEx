@@ -50,6 +50,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FilterCenterFocus
 import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -154,6 +156,10 @@ fun DashboardScreen(
         val draggingCardId by viewModel.draggingCardId.collectAsStateWithLifecycle()
         val selectedCardIds by viewModel.selectedCardIds.collectAsStateWithLifecycle()
         val coachStep by viewModel.coachStep.collectAsStateWithLifecycle()
+        // Live on-screen centres of the ⋮ menu and + button, captured via onGloballyPositioned so the
+        // coach pointers land exactly on them regardless of device insets (RemEx-km0i.10).
+        var menuAnchor by remember { mutableStateOf(Offset.Zero) }
+        var addAnchor by remember { mutableStateOf(Offset.Zero) }
 
         val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
@@ -206,7 +212,9 @@ fun DashboardScreen(
                         onBeginInteraction = { viewModel.beginInteraction() },
                         onTogglePin = { cardId -> viewModel.togglePin(cardId) },
                         onClearAllCards = { viewModel.clearAllCards() },
-                        onReplayCoach = { viewModel.replayCoach() }
+                        onReplayCoach = { viewModel.replayCoach() },
+                        onMenuAnchor = { menuAnchor = it },
+                        onAddAnchor = { addAnchor = it }
                 )
                 androidx.compose.material3.SnackbarHost(
                         hostState = snackbarHostState,
@@ -218,6 +226,8 @@ fun DashboardScreen(
                 if (coachStep >= 0 && draggingCardId == null && selectedCardIds.isEmpty()) {
                         DashboardCoachOverlay(
                                 step = coachStep,
+                                menuAnchor = menuAnchor,
+                                addAnchor = addAnchor,
                                 onAdvance = { viewModel.advanceCoach() },
                                 onDismiss = { viewModel.dismissCoach() },
                         )
@@ -267,7 +277,9 @@ fun DashboardScreenContent(
         onBeginInteraction: () -> Unit = {},
         onTogglePin: (String) -> Unit = {},
         onClearAllCards: () -> Unit = {},
-        onReplayCoach: () -> Unit = {}
+        onReplayCoach: () -> Unit = {},
+        onMenuAnchor: (Offset) -> Unit = {},
+        onAddAnchor: (Offset) -> Unit = {}
 ) {
         val view = LocalView.current
 
@@ -388,12 +400,17 @@ fun DashboardScreenContent(
                                                 )
                                         }
                                         Box {
-                                                IconButton(onClick = {
-                                                        view.performHapticFeedback(
-                                                                HapticFeedbackConstants.KEYBOARD_TAP
-                                                        )
-                                                        canvasMenuOpen = true
-                                                }) {
+                                                IconButton(
+                                                        modifier = Modifier.onGloballyPositioned {
+                                                                onMenuAnchor(it.boundsInRoot().center)
+                                                        },
+                                                        onClick = {
+                                                                view.performHapticFeedback(
+                                                                        HapticFeedbackConstants.KEYBOARD_TAP
+                                                                )
+                                                                canvasMenuOpen = true
+                                                        },
+                                                ) {
                                                         Icon(
                                                                 Icons.Default.MoreVert,
                                                                 contentDescription =
@@ -1332,6 +1349,9 @@ fun DashboardScreenContent(
                                         expanded = fabMenuExpanded,
                                         button = {
                                                 ToggleFloatingActionButton(
+                                                        modifier = Modifier.onGloballyPositioned {
+                                                                onAddAnchor(it.boundsInRoot().center)
+                                                        },
                                                         checked = fabMenuExpanded,
                                                         onCheckedChange = {
                                                                 view.performHapticFeedback(
