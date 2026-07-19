@@ -81,6 +81,15 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
     private var pendingBrowseRequestId: String? = null
 
     init {
+        // Cold-start safety (RemEx-c2pg): the OS share sheet can spin this process up from scratch with
+        // NO prior visit to the in-app File Manager and no running transfer job — so nothing else has
+        // initialized the shared FileTransferEngine singleton. confirmSend() enqueues straight into it,
+        // and enqueueUpload() dereferences the `queueStore` lateinit; if start() never ran, that throws
+        // "lateinit property queueStore has not been initialized" and crashes the activity on Send.
+        // start() is idempotent (guarded by its own `started` flag), so mirroring FileTransferViewModel's
+        // init here is safe whether the process is cold or already warm.
+        FileTransferEngine.start(application)
+
         // Mirror the peer's shared folders / folder listings from the control plane.
         viewModelScope.launch {
             RemexClientManager.fileTransferMessages.collect { json -> onControlMessage(json) }
