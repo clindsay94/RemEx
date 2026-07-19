@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] — 2026-07-19
+
 ### Added
 
 - **PC sensor-card graph types were curated to seven genuinely distinct views, and a value-accuracy bug in the gauges was fixed.** The picker previously offered twelve; five were redundant or weak once rendered side by side and are retired from the menu (enum members kept and remapped so saved layouts load unchanged): **Radial**→Ring (near-identical), **ValueSpark**→Area→Glow (just a line — the value already renders on every card's own plate, so a "value + sparkline" layer adds nothing on PC), **HuePulse**→Glow (flat wash superseded by value-reactive Glow), **Area**→Glow (a second filled-area chart), and **Big Value** (trend-direction only, no magnitude). The seven kept: Bar, Line, Gauge, Ring, LED Meter, Glow, Dual Metric. **Gauge/Ring/LED now fill against the metric's real scale** (percentages 0–100, temperatures 0–100 °C, others 0–peak) instead of the narrow observed min/max band — a steady 19 % CPU load now reads 19 %, not "nearly full with red top segments." **Glow** is value-reactive (accent → warm red as load climbs). **Dual Metric** overlays a real second series (chosen via a searchable picker) and shows an on-card colour **legend** mapping each line to its sensor. (`SparklineControl.cs`, `CanvasView.axaml`, `SensorViewModel.cs`, `SensorGaugeScaleTests.cs` (new, 4 tests); RemEx-km0i.11.)
