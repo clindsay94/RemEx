@@ -772,7 +772,7 @@ tasks.matching { it.name == "mergeReleaseJniLibFolders" }.configureEach {
 
 dependencies {
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-crashlytics-ndk")
     implementation("com.google.firebase:firebase-crashlytics")

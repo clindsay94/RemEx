@@ -82,6 +82,9 @@ class SettingsManager(val context: Context) {
                         floatPreferencesKey("remote_mouse_card_shape_preset_v2")
                 // One-time non-destructive migration off the universal clover default (decision #5).
                 val SHAPE_DEFAULTS_MIGRATED_V2_KEY = booleanPreferencesKey("shape_defaults_migrated_v2")
+                // First-run Home Base coach marks: true once the user has seen or dismissed the
+                // dashboard coaching overlay. Reset re-arms it as first-run (RemEx-km0i.10).
+                val DASHBOARD_COACH_SEEN_KEY = booleanPreferencesKey("dashboard_coach_seen")
                 val THEME_SEED_COLOR_KEY = stringPreferencesKey("theme_seed_color")
                 val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
                 val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
@@ -187,6 +190,12 @@ class SettingsManager(val context: Context) {
         val hasCompletedOnboardingFlow: Flow<Boolean?> =
                 context.dataStore.data.map { preferences ->
                         preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
+                }
+
+        // First-run Home Base coach marks; false (unseen) until markDashboardCoachSeen (RemEx-km0i.10).
+        val dashboardCoachSeenFlow: Flow<Boolean> =
+                context.dataStore.data.map { preferences ->
+                        preferences[DASHBOARD_COACH_SEEN_KEY] ?: false
                 }
 
         val hostFlow: Flow<String> =
@@ -394,6 +403,14 @@ class SettingsManager(val context: Context) {
 
         suspend fun resetOnboarding() {
                 context.dataStore.edit { it[HAS_COMPLETED_ONBOARDING_KEY] = false }
+        }
+
+        suspend fun markDashboardCoachSeen() {
+                context.dataStore.edit { it[DASHBOARD_COACH_SEEN_KEY] = true }
+        }
+
+        suspend fun resetDashboardCoach() {
+                context.dataStore.edit { it[DASHBOARD_COACH_SEEN_KEY] = false }
         }
 
         suspend fun getOrCreateClientId(): String {

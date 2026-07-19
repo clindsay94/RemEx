@@ -105,6 +105,12 @@ fun selectSensor(cardId: String?, sensors: List<TelemetrySensor>): TelemetrySens
     return sensors.firstOrNull { it.id == cardId }
 }
 
+/**
+ * Number of sequential Home Base coach-mark hints (RemEx-km0i.10). Single source of truth shared by
+ * [DashboardViewModel]'s advance logic and [DashboardCoachOverlay].
+ */
+const val DASHBOARD_COACH_HINT_COUNT = 3
+
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsManager = SettingsManager(application)
@@ -205,6 +211,43 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val draggingCardId: StateFlow<String?> = _draggingCardId.asStateFlow()
     private val _selectedCardIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedCardIds: StateFlow<Set<String>> = _selectedCardIds.asStateFlow()
+
+    // ── Home Base coach marks (RemEx-km0i.10) ──
+    // -1 = hidden; 0..DASHBOARD_COACH_HINT_COUNT-1 = the sequential hints. The overlay is additionally
+    // render-gated by the UI on drag/selection/sheet state (locked decision #7), so the step persists
+    // underneath a transient suppression rather than being torn down and lost.
+    private val _coachStep = MutableStateFlow(-1)
+    val coachStep: StateFlow<Int> = _coachStep.asStateFlow()
+
+    /** Advance to the next hint; on the last one, finish and remember it was seen. */
+    fun advanceCoach() {
+        val next = _coachStep.value + 1
+        if (next >= DASHBOARD_COACH_HINT_COUNT) dismissCoach() else _coachStep.value = next
+    }
+
+    /** Hide the overlay and persist so it never auto-shows again. */
+    fun dismissCoach() {
+        _coachStep.value = -1
+        viewModelScope.launch { settingsManager.markDashboardCoachSeen() }
+    }
+
+    /** Replay from the first hint. Ignored while a card is lifted or a group is selected. */
+    fun replayCoach() {
+        if (_draggingCardId.value != null || _selectedCardIds.value.isNotEmpty()) return
+        _coachStep.value = 0
+    }
+
+    /** First visit only: auto-show unless already seen (and not mid-gesture). Called once from init. */
+    private fun maybeAutoShowCoach() {
+        viewModelScope.launch {
+            if (!settingsManager.dashboardCoachSeenFlow.first() &&
+                _draggingCardId.value == null &&
+                _selectedCardIds.value.isEmpty()
+            ) {
+                _coachStep.value = 0
+            }
+        }
+    }
 
     /** Card picked up and dragged (not selection) - one undo snapshot for the whole move. */
     fun beginCardDrag(cardId: String) {
@@ -322,6 +365,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             settingsManager.migrateShapeDefaultsV2()
         }
+
+        maybeAutoShowCoach()
 
         viewModelScope.launch {
             RemexClientManager.telemetry.collect { telemetryData ->

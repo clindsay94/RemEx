@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FilterCenterFocus
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -152,6 +153,7 @@ fun DashboardScreen(
         val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
         val draggingCardId by viewModel.draggingCardId.collectAsStateWithLifecycle()
         val selectedCardIds by viewModel.selectedCardIds.collectAsStateWithLifecycle()
+        val coachStep by viewModel.coachStep.collectAsStateWithLifecycle()
 
         val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
@@ -203,12 +205,23 @@ fun DashboardScreen(
                         onRedo = { viewModel.redo() },
                         onBeginInteraction = { viewModel.beginInteraction() },
                         onTogglePin = { cardId -> viewModel.togglePin(cardId) },
-                        onClearAllCards = { viewModel.clearAllCards() }
+                        onClearAllCards = { viewModel.clearAllCards() },
+                        onReplayCoach = { viewModel.replayCoach() }
                 )
                 androidx.compose.material3.SnackbarHost(
                         hostState = snackbarHostState,
                         modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
                 )
+                // First-run coach marks (RemEx-km0i.10), mounted last = top of z-order. Suppressed while a
+                // card is lifted or a group is selected (locked decision #7); the scrim blocks input, so
+                // no bottom sheet can open underneath a live hint.
+                if (coachStep >= 0 && draggingCardId == null && selectedCardIds.isEmpty()) {
+                        DashboardCoachOverlay(
+                                step = coachStep,
+                                onAdvance = { viewModel.advanceCoach() },
+                                onDismiss = { viewModel.dismissCoach() },
+                        )
+                }
         }
 }
 
@@ -253,7 +266,8 @@ fun DashboardScreenContent(
         onRedo: () -> Unit = {},
         onBeginInteraction: () -> Unit = {},
         onTogglePin: (String) -> Unit = {},
-        onClearAllCards: () -> Unit = {}
+        onClearAllCards: () -> Unit = {},
+        onReplayCoach: () -> Unit = {}
 ) {
         val view = LocalView.current
 
@@ -362,6 +376,17 @@ fun DashboardScreenContent(
                         RemexScreenHeader(
                                 title = stringResource(R.string.screen_dashboard_title),
                                 actions = {
+                                        // Replay the first-run coach marks anytime; disabled mid-gesture
+                                        // so it never fights an active lift/selection (RemEx-km0i.10).
+                                        IconButton(
+                                                onClick = onReplayCoach,
+                                                enabled = selectedCardIds.isEmpty(),
+                                        ) {
+                                                Icon(
+                                                        Icons.Filled.HelpOutline,
+                                                        contentDescription = stringResource(R.string.coach_replay),
+                                                )
+                                        }
                                         Box {
                                                 IconButton(onClick = {
                                                         view.performHapticFeedback(

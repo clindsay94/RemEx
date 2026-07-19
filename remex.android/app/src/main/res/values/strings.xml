@@ -262,6 +262,15 @@
     <string name="dashboard_menu_unlock_layout">Unlock layout</string>
     <string name="dashboard_menu_clear_cards">Clear all cards</string>
     <string name="dashboard_menu_options">Canvas options</string>
+    <!-- Home Base first-run coach marks (RemEx-km0i.10) -->
+    <string name="coach_title">Getting around</string>
+    <string name="coach_hold_body">Hold a card to pick it up, then drag to move it.</string>
+    <string name="coach_menu_body">Customize cards, undo, or reset from the menu up here.</string>
+    <string name="coach_add_body">Add more sensor cards with the + button.</string>
+    <string name="coach_next">Next</string>
+    <string name="coach_got_it">Got it</string>
+    <string name="coach_skip">Skip</string>
+    <string name="coach_replay">Show tips</string>
     <string name="dashboard_menu_undo">Undo</string>
     <string name="dashboard_menu_redo">Redo</string>
     <string name="dashboard_pin_card">Pin card</string>
