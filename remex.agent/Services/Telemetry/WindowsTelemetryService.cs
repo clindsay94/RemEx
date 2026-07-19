@@ -100,7 +100,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
             {
                 if (TryReadHwInfo(payload, out var updatedPayload))
                 {
-                    return updatedPayload;
+                    return EnsureRamTotal(updatedPayload);
                 }
             }
             catch (FileNotFoundException)
@@ -114,6 +114,50 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
                 _logger.LogTrace(ex, "Error reading HWiNFO Shared Memory.");
                 _hwinfoAvailable = false;
             }
+        }
+
+        return EnsureRamTotal(payload);
+    }
+
+    /// <summary>
+    /// Guarantees the payload carries a <see cref="MetricKind.RamTotalGb"/> reading so the curated
+    /// RAM Total card binds instead of sitting on "Collecting Data". HWiNFO frequently does not expose
+    /// a "Physical Memory Total" sensor, and the WMI path emits only used/available/load — yet total
+    /// physical RAM is a static machine fact already available from <c>GlobalMemoryStatusEx</c>. We
+    /// inject it only when no producer supplied one, so a real HWiNFO total (if present) still wins.
+    /// </summary>
+    private TelemetryPayload EnsureRamTotal(TelemetryPayload payload)
+    {
+        if (payload.Sensors.Any(s => s.Kind == MetricKind.RamTotalGb))
+            return payload;
+
+        try
+        {
+            var memStatus = new MEMORYSTATUSEX();
+            memStatus.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+            if (GlobalMemoryStatusEx(ref memStatus))
+            {
+                // bytes → GiB, matching the used-value convention (FormatSensorValue divides MB by 1024).
+                var totalGb = Math.Round(memStatus.ullTotalPhys / 1073741824.0, 2);
+                var sensors = new System.Collections.Generic.List<SensorReading>(payload.Sensors)
+                {
+                    new SensorReading
+                    {
+                        Name = "Physical Memory Total",
+                        Value = totalGb,
+                        Unit = "GB",
+                        Category = "Memory",
+                        Source = "System",
+                        Kind = MetricKind.RamTotalGb,
+                        Id = "sys:mem:total"
+                    }
+                };
+                return payload with { Sensors = sensors };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogTrace(ex, "Failed to inject RamTotalGb reading.");
         }
 
         return payload;

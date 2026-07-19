@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > New user-facing strings for the above were added to the base (English) `Strings.resx`; their translation into the other 8 desktop cultures is tracked by RemEx-km0i.16 (localization rollout). .NET resource fallback shows English for these keys until then.
 
+### Fixed
+
+- **The "RAM Total" telemetry card no longer sits on "Collecting Data".** Neither producer was emitting a total-memory reading: HWiNFO frequently exposes no "Physical Memory Total" sensor, and the Windows WMI path emitted only used/available/load. The host now always stamps a `RamTotalGb` reading — Windows from `GlobalMemoryStatusEx.ullTotalPhys`, Linux from `/proc/meminfo` `MemTotal` — injected only when no producer already supplied one, so a real HWiNFO total still wins. Verified on-device alongside the `MetricKind` round-trip (RAM/CPU/GPU cards now read real %/GB, not the old `1089.0ms`). (`WindowsTelemetryService.cs`, `LinuxTelemetryService.cs`; RemEx-km0i.3.)
+
 ---
 
 ## [2.3.2] — 2026-07-18

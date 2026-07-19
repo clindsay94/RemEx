@@ -113,7 +113,11 @@ public class LinuxTelemetryService : ITelemetryService
             new() { Name = "Total CPU Usage", Value = cpuResult, Unit = "%", Category = "CPU", Source = "Linux", Kind = MetricKind.CpuLoad, Id = "linux:cpu:load" },
             new() { Name = "Physical Memory Used", Value = ramResult.used, Unit = "GB", Category = "Memory", Source = "Linux", Kind = MetricKind.RamUsedGb, Id = "linux:mem:used" },
             new() { Name = "Physical Memory Available", Value = ramResult.total - ramResult.used, Unit = "GB", Category = "Memory", Source = "Linux", Id = "linux:mem:avail" },
-            new() { Name = "Physical Memory Load", Value = ramResult.total > 0 ? (ramResult.used / ramResult.total) * 100.0 : 0, Unit = "%", Category = "Memory", Source = "Linux", Kind = MetricKind.RamLoad, Id = "linux:mem:load" }
+            new() { Name = "Physical Memory Load", Value = ramResult.total > 0 ? (ramResult.used / ramResult.total) * 100.0 : 0, Unit = "%", Category = "Memory", Source = "Linux", Kind = MetricKind.RamLoad, Id = "linux:mem:load" },
+            // Total is a static machine fact (from /proc/meminfo MemTotal, the same source used for the
+            // used/load readings above); stamp it so the curated RAM Total card binds instead of sitting
+            // on "Collecting Data" (RemEx-km0i.3 follow-up).
+            new() { Name = "Physical Memory Total", Value = ramResult.total, Unit = "GB", Category = "Memory", Source = "Linux", Kind = MetricKind.RamTotalGb, Id = "linux:mem:total" }
         };
 
         // Hardware monitoring via /sys/class/hwmon
