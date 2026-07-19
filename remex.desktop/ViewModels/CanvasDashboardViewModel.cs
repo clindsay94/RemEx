@@ -858,6 +858,22 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Telemetry Processing ═══════════════
 
+    /// <summary>
+    /// The stable identity for a telemetry sensor: the host-stamped <see cref="SensorReading.Id"/>
+    /// when present (it survives host-side relabels and disambiguates two same-named sensors),
+    /// otherwise the display name. Binding cards by this rather than the raw name is the PC mirror of
+    /// the host's Id/Kind stamping (RemEx-km0i.14): a renamed or duplicate-named sensor no longer
+    /// spawns an orphan card. Note this is a <em>runtime-match</em> refinement only — persisted
+    /// <see cref="CardState.SensorId"/> stays the name because it also drives the card title and the
+    /// pin key, so re-keying storage would be a separate, breaking migration.
+    /// </summary>
+    private static string SensorIdentity(SensorReading reading) =>
+        !string.IsNullOrWhiteSpace(reading.Id) ? reading.Id!
+        : string.IsNullOrWhiteSpace(reading.Name) ? "Unknown" : reading.Name;
+
+    private static string? SensorIdentity(SensorViewModel? sensor) =>
+        sensor?.RawReading is { } r ? SensorIdentity(r) : sensor?.Name;
+
     private void ProcessTelemetry(TelemetryPayload payload)
     {
         Dispatcher.UIThread.Post(() =>
@@ -867,13 +883,16 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             foreach (var reading in payload.Sensors)
             {
                 var sensorName = string.IsNullOrWhiteSpace(reading.Name) ? "Unknown" : reading.Name;
+                // Match by stable identity (host-stamped Id, name fallback), not raw name, so a live
+                // relabel or two same-named sensors bind correctly (RemEx-km0i.14).
+                var identity = SensorIdentity(reading);
 
                 var sensorVms = Cards
-                    .Where(c => c.CardType == "Sensor" && c.Sensor?.Name == sensorName)
+                    .Where(c => c.CardType == "Sensor" && SensorIdentity(c.Sensor) == identity)
                     .Select(c => c.Sensor)
                     .Concat(
                         StagedCards
-                            .Where(c => c.CardType == "Sensor" && c.Sensor?.Name == sensorName)
+                            .Where(c => c.CardType == "Sensor" && SensorIdentity(c.Sensor) == identity)
                             .Select(c => c.Sensor))
                     .Where(s => s is not null)
                     .Select(s => s!)
@@ -892,8 +911,9 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     if (_sensorAlerts.TryGetValue(sensorName, out var existingAlert))
                         sensor.Alert = existingAlert;
 
-                    // Subscribe once per sensor name to prevent duplicate firings on reconnect.
-                    if (_subscribedSensorNames.Add(sensorName))
+                    // Subscribe once per stable sensor identity to prevent duplicate firings on
+                    // reconnect or a live host relabel (see SensorIdentity; RemEx-km0i.14).
+                    if (_subscribedSensorNames.Add(identity))
                     {
                         sensor.AlertTriggered -= OnSensorAlertTriggered;
                         sensor.AlertTriggered += OnSensorAlertTriggered;

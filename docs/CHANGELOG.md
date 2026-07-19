@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > New user-facing strings for the above were added to the base (English) `Strings.resx`; their translation into the other 8 desktop cultures is tracked by RemEx-km0i.16 (localization rollout). .NET resource fallback shows English for these keys until then.
 
+### Changed
+
+- **PC sensor cards now bind to telemetry by stable identity, not raw name.** `CanvasDashboardViewModel.ProcessTelemetry` matches an incoming reading to its card by the host-stamped `SensorReading.Id` (falling back to the name for unstamped sensors), the PC mirror of the host's Id/Kind stamping. A sensor the host relabels mid-session keeps its card instead of spawning an orphan, and two same-named sensors (e.g. dual GPUs both "GPU Temperature") stay correctly distinct. Persisted `CardState.SensorId` intentionally stays the name (it also drives the card title and pin key), so this is a runtime-match refinement with no storage migration. (`CanvasDashboardViewModel.cs`; RemEx-km0i.14.)
+
 ### Fixed
 
 - **The "RAM Total" telemetry card no longer sits on "Collecting Data".** Neither producer was emitting a total-memory reading: HWiNFO frequently exposes no "Physical Memory Total" sensor, and the Windows WMI path emitted only used/available/load. The host now always stamps a `RamTotalGb` reading — Windows from `GlobalMemoryStatusEx.ullTotalPhys`, Linux from `/proc/meminfo` `MemTotal` — injected only when no producer already supplied one, so a real HWiNFO total still wins. Verified on-device alongside the `MetricKind` round-trip (RAM/CPU/GPU cards now read real %/GB, not the old `1089.0ms`). (`WindowsTelemetryService.cs`, `LinuxTelemetryService.cs`; RemEx-km0i.3.)
