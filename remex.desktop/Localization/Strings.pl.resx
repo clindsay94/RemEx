@@ -468,9 +468,6 @@
   <data name="Custom_GlassOpacity" xml:space="preserve">
     <value>Przezroczystość szkła</value>
   </data>
-  <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Window Opacity</value>
-  </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Siła poświaty</value>
   </data>
@@ -503,9 +500,6 @@
   </data>
   <data name="Custom_PresetMonolith" xml:space="preserve">
     <value>Monolith</value>
-  </data>
-  <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
   </data>
 
   
@@ -565,21 +559,6 @@
   </data>
   <data name="Status_PadFullTooltip" xml:space="preserve">
     <value>Pełnowymiarowy pad kursora aktywny</value>
-  </data>
-  <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
-    <value>Connect to a PC to check remote desktop availability.</value>
-  </data>
-  <data name="Status_StreamConnecting" xml:space="preserve">
-    <value>Connecting...</value>
-  </data>
-  <data name="Status_StreamFailedFormat" xml:space="preserve">
-    <value>Failed: {0}</value>
-  </data>
-  <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
-  </data>
-  <data name="Status_FrameDecodeErrorFormat" xml:space="preserve">
-    <value>Frame decode error ({0} bytes): {1}: {2}</value>
   </data>
 
   
@@ -778,9 +757,6 @@
   <data name="Tutorial_Finish" xml:space="preserve">
     <value>Rozpocznij ✓</value>
   </data>
-  <data name="Tutorial_DontShowAgain" xml:space="preserve">
-    <value>Don't show this tutorial again</value>
-  </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
     <value>Witaj w RemEx</value>
@@ -866,22 +842,6 @@ Linux: ip addr  or  hostname -I</value>
     <value>Wprowadź ws://&lt;IP&gt;:5005/ws w ustawieniach połączenia aplikacji na Androidzie.</value>
   </data>
 
-  <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>QR Code Pairing</value>
-  </data>
-  <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
-    <value>The fastest way to connect your phone is by scanning a QR code. The PC generates a pairing code that contains everything your mobile app needs.</value>
-  </data>
-  <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the PC
-2. Click "Show QR Code"
-3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
-5. Point your camera at the code — you'll connect automatically!</value>
-  </data>
-  <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
-    <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
-  </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
     <value>Transfer plików i foldery udostępnione</value>
   </data>
@@ -1151,11 +1111,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_FileTransferTutorialBody" xml:space="preserve">
     <value>Telefon widzi tylko foldery wymienione tutaj. Kieruj rutynowe przesyłki do folderu zapisywalnego, takiego jak RemEx Transfers, a resztę zostaw jako tylko do odczytu, jeśli nie chcesz, aby urządzenia mobilne mogły je modyfikować.</value>
-  </data>
-  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Dodaj folder</value>
@@ -1519,71 +1474,8 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tutorial_SkipTooltip" xml:space="preserve">
     <value>Pomiń samouczek — możesz go powtórzyć w Ustawieniach</value>
   </data>
-  <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
-    <value>Glossary: Command Palette</value>
-  </data>
-  <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Press Ctrl+Shift+P to jump to screens, trigger quick actions, and search the command center instantly.</value>
-  </data>
-  <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glossary: App Launcher</value>
-  </data>
-  <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Launch curated apps and scripts on the PC. Configure entries once on the PC, then start them remotely from RemEx.</value>
-  </data>
-  <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glossary: Task Manager</value>
-  </data>
-  <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
-    <value>Inspect running PC processes, sort by usage, and end stuck tasks without leaving your chair.</value>
-  </data>
-  <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Glossary: Sensor Canvas</value>
-  </data>
-  <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
-  </data>
-  <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glossary: File Transfer</value>
-  </data>
-  <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
-  </data>
-  <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
-    <value>Glossary: Remote Desktop</value>
-  </data>
-  <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Stream your PC screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
-  </data>
-  <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
-    <value>Glossary: Quick Settings</value>
-  </data>
-  <data name="Tutorial_Glossary_QuickSettings_Body" xml:space="preserve">
-    <value>On Android, add RemEx tiles to Quick Settings for instant actions like Lock, Sleep, Restart, or Wake-on-LAN.</value>
-  </data>
-  <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Glossary: Customization</value>
-  </data>
-  <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
-  </data>
 
   
-  <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
-  </data>
-  <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
-  </data>
-  <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
-  </data>
-  <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
-  </data>
-  <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
-  </data>
 
   
   <data name="About_Header" xml:space="preserve">
@@ -1612,83 +1504,8 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Shut Down — Are you sure?</value>
-  </data>
-  <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>The remote PC will shut down. All unsaved work will be lost.</value>
-  </data>
-  <data name="Confirm_Shutdown_Btn" xml:space="preserve">
-    <value>Shut Down</value>
-  </data>
-  <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Restart — Are you sure?</value>
-  </data>
-  <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>The remote PC will restart. All unsaved work will be lost.</value>
-  </data>
-  <data name="Confirm_Restart_Btn" xml:space="preserve">
-    <value>Restart</value>
-  </data>
-  <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Force Shutdown — Are you sure?</value>
-  </data>
-  <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>This will immediately shut down the remote PC. All unsaved work will be lost.</value>
-  </data>
-  <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
-    <value>Force Shutdown</value>
-  </data>
-  <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Force Restart — Are you sure?</value>
-  </data>
-  <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>This will immediately restart the remote PC. All unsaved work will be lost.</value>
-  </data>
-  <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
-    <value>Force Restart</value>
-  </data>
-  <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>Reboot to UEFI — Are you sure?</value>
-  </data>
-  <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>The remote PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost.</value>
-  </data>
-  <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
-    <value>Reboot to UEFI</value>
-  </data>
-  <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with PC</value>
-  </data>
-  <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the PC machine:</value>
-  </data>
-  <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
-  </data>
 
   
-  <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Keyboard Shortcuts</value>
-  </data>
-  <data name="About_CommandPalette" xml:space="preserve">
-    <value>Command Palette</value>
-  </data>
-  <data name="About_UndoLayout" xml:space="preserve">
-    <value>Undo Layout Edit</value>
-  </data>
-  <data name="About_RedoLayout" xml:space="preserve">
-    <value>Redo Layout Edit</value>
-  </data>
-  <data name="About_CloseOverlays" xml:space="preserve">
-    <value>Close Overlays/Panels</value>
-  </data>
-  <data name="About_WhatsNew" xml:space="preserve">
-    <value>What's New?</value>
-  </data>
-  <data name="About_Faq" xml:space="preserve">
-    <value>Frequently Asked Questions</value>
-  </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
     <value>Features</value>
   </data>
@@ -1720,62 +1537,29 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bitmap-on-clipboard deferred to 2.x</value>
   </data>
 
-  <data name="Faq_Q1_Question" xml:space="preserve">
-    <value>What do I need to run on my PC?</value>
-  </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
     <value>Potrzebujesz uruchomionego RemEx na swoim komputerze — to pojedyncza aplikacja (remex.agent), która działa z podniesionymi uprawnieniami w Twojej zalogowanej sesji i uruchamia się automatycznie przy logowaniu. Pobierz najnowszy instalator ze strony GitHub Releases, uruchom go, a aplikacja będzie gotowa jeszcze przed parowaniem.</value>
-  </data>
-  <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>How do I pair my phone or second PC?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
     <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
   </data>
-  <data name="Faq_Q3_Question" xml:space="preserve">
-    <value>How do I find my PC's IP address?</value>
-  </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
     <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. Adres IP możesz też zobaczyć bezpośrednio w oknie RemEx na swoim komputerze.</value>
-  </data>
-  <data name="Faq_Q4_Question" xml:space="preserve">
-    <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Upewnij się, że RemEx jest uruchomiony na Twoim komputerze.\n2. Oba urządzenia muszą być w tej samej sieci Wi-Fi / LAN.\n3. Sprawdź, czy Twój router nie ma włączonej opcji „izolacja AP/klienta”.\n4. Sieci firmowe/gościnne często blokują wykrywanie (mDNS).</value>
   </data>
-  <data name="Faq_Q5_Question" xml:space="preserve">
-    <value>What is the default port?</value>
-  </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
     <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. Aktywny port możesz zobaczyć w oknie RemEx na swoim komputerze.</value>
-  </data>
-  <data name="Faq_Q6_Question" xml:space="preserve">
-    <value>Can I connect over the internet?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
     <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
   </data>
-  <data name="Faq_Q7_Question" xml:space="preserve">
-    <value>Remote Desktop is laggy. What can I do?</value>
-  </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
   </data>
-  <data name="Faq_Q8_Question" xml:space="preserve">
-    <value>What is Wake-on-LAN (WOL)?</value>
-  </data>
-  <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.</value>
-  </data>
-  <data name="Faq_Q9_Question" xml:space="preserve">
-    <value>How do I transfer files?</value>
-  </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
     <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
-  </data>
-  <data name="Faq_Q10_Question" xml:space="preserve">
-    <value>Can I lock my PC remotely?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
     <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
@@ -2753,12 +2537,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_ServiceSection" xml:space="preserve">
     <value>USŁUGA WINDOWS</value>
   </data>
-  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
-    <value>WINDOWS SERVICE</value>
-  </data>
-  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX BACKGROUND SERVICE</value>
-  </data>
   <data name="Settings_ServiceLogin" xml:space="preserve">
     <value>LOGOWANIE USŁUGI</value>
   </data>
@@ -2798,15 +2576,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Service_InstalledStartFailed" xml:space="preserve">
     <value>Zainstalowano — uruchomienie mogło się nie powieść, sprawdź log.</value>
   </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Installing systemd service…</value>
-  </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Service installation failed.</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Removing systemd service…</value>
-  </data>
   <data name="Service_DeletingService" xml:space="preserve">
     <value>Usuwanie usługi…</value>
   </data>
@@ -2831,12 +2600,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tutorial_P2_Body1" xml:space="preserve">
     <value>Aby RemEx działał 24/7 bez konieczności logowania, zainstaluj go jako usługę Windows:</value>
   </data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
-  </data>
   <data name="Tutorial_P2_Note" xml:space="preserve">
     <value>Usługa działa na Twoim koncie użytkownika, dzięki czemu ma dostęp do sesji pulpitu w celu przechwytywania ekranu i uruchamiania aplikacji.</value>
   </data>
@@ -2845,12 +2608,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tutorial_P3_Body1" xml:space="preserve">
     <value>W systemie Linux PC RemEx może działać jako usługa systemd dla automatycznego startu.</value>
-  </data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux PC archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-PC folder.
-4. Use systemctl --user status remex-PC to verify it is running.</value>
   </data>
   <data name="Tutorial_P3_Link" xml:space="preserve">
     <value>Szczegółowe instrukcje znajdziesz w pliku docs/linux-service-setup.md na GitHubie</value>
@@ -2918,15 +2675,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Kliknij w dowolnym miejscu, aby pominąć</value>
   </data>
-  <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
-  </data>
-  <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
-  </data>
-  <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
-  </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Aktualizacja oprogramowania</value>
   </data>
@@ -2965,5 +2713,506 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Home_HwInfoCardDesc" xml:space="preserve">
     <value>Za darmo — zasila szczegółowe czujniki sprzętowe komputera w RemEx.</value>
+  </data>
+  <data name="Custom_AppWindowOpacity" xml:space="preserve">
+    <value>Przezroczystość okna</value>
+  </data>
+  <data name="Custom_PresetDynamic" xml:space="preserve">
+    <value>Dynamiczny</value>
+  </data>
+  <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
+    <value>Połącz się z komputerem, aby sprawdzić dostępność pulpitu zdalnego.</value>
+  </data>
+  <data name="Status_StreamConnecting" xml:space="preserve">
+    <value>Łączenie...</value>
+  </data>
+  <data name="Status_StreamFailedFormat" xml:space="preserve">
+    <value>Niepowodzenie: {0}</value>
+  </data>
+  <data name="Status_Stopped" xml:space="preserve">
+    <value>Zatrzymano</value>
+  </data>
+  <data name="Status_FrameDecodeErrorFormat" xml:space="preserve">
+    <value>Błąd dekodowania klatki ({0} bajtów): {1}: {2}</value>
+  </data>
+  <data name="Tutorial_DontShowAgain" xml:space="preserve">
+    <value>Nie pokazuj tego samouczka ponownie</value>
+  </data>
+  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
+    <value>1. Dodaj foldery PC, które RemEx ma udostępniać.
+2. Włącz przesyłanie tylko dla folderów, które powinny przyjmować pliki z telefonu na PC.
+3. Otwórz Transfer plików na telefonie i przeglądaj udostępnione foldery.</value>
+  </data>
+  <data name="Tutorial_P8_QR_Title" xml:space="preserve">
+    <value>Parowanie kodem QR</value>
+  </data>
+  <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
+    <value>Najszybszym sposobem na połączenie telefonu jest zeskanowanie kodu QR. PC generuje kod parowania zawierający wszystko, czego potrzebuje Twoja aplikacja mobilna.</value>
+  </data>
+  <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
+    <value>1. Otwórz Ustawienia → Połączenie na PC
+2. Kliknij "Pokaż kod QR"
+3. Otwórz aplikację RemEx
+4. Dotknij ikony skanera QR na ekranie połączenia
+5. Skieruj kamerę na kod — połączysz się automatycznie!</value>
+  </data>
+  <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
+    <value>Bez wpisywania, bez adresów IP — po prostu zeskanuj i gotowe. Dane połączenia są zapisane, więc musisz zeskanować tylko raz.</value>
+  </data>
+  <data name="AppLauncher_UnnamedApp" xml:space="preserve">
+    <value>Nienazwana aplikacja</value>
+  </data>
+  <data name="FilePicker_SelectApplication" xml:space="preserve">
+    <value>Wybierz aplikację</value>
+  </data>
+  <data name="FilePicker_Applications" xml:space="preserve">
+    <value>Aplikacje</value>
+  </data>
+  <data name="FilePicker_AllFiles" xml:space="preserve">
+    <value>Wszystkie pliki</value>
+  </data>
+  <data name="Sensor_Unknown" xml:space="preserve">
+    <value>Nieznany</value>
+  </data>
+  <data name="About_KeyboardShortcuts" xml:space="preserve">
+    <value>Skróty klawiaturowe</value>
+  </data>
+  <data name="About_CommandPalette" xml:space="preserve">
+    <value>Paleta poleceń</value>
+  </data>
+  <data name="About_UndoLayout" xml:space="preserve">
+    <value>Cofnij edycję układu</value>
+  </data>
+  <data name="About_RedoLayout" xml:space="preserve">
+    <value>Ponów edycję układu</value>
+  </data>
+  <data name="About_CloseOverlays" xml:space="preserve">
+    <value>Zamknij nakładki/panele</value>
+  </data>
+  <data name="About_WhatsNew" xml:space="preserve">
+    <value>Co nowego?</value>
+  </data>
+  <data name="About_Faq" xml:space="preserve">
+    <value>Najczęściej zadawane pytania</value>
+  </data>
+  <data name="Confirm_Shutdown_Title" xml:space="preserve">
+    <value>Wyłączanie — czy na pewno?</value>
+  </data>
+  <data name="Confirm_Shutdown_Message" xml:space="preserve">
+    <value>Zdalny komputer zostanie wyłączony. Cała niezapisana praca zostanie utracona.</value>
+  </data>
+  <data name="Confirm_Shutdown_Btn" xml:space="preserve">
+    <value>Wyłącz</value>
+  </data>
+  <data name="Confirm_Restart_Title" xml:space="preserve">
+    <value>Restart — czy na pewno?</value>
+  </data>
+  <data name="Confirm_Restart_Message" xml:space="preserve">
+    <value>Zdalny komputer zostanie uruchomiony ponownie. Cała niezapisana praca zostanie utracona.</value>
+  </data>
+  <data name="Confirm_Restart_Btn" xml:space="preserve">
+    <value>Restartuj</value>
+  </data>
+  <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
+    <value>Wymuś wyłączenie — czy na pewno?</value>
+  </data>
+  <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
+    <value>To spowoduje natychmiastowe wyłączenie zdalnego komputera. Cała niezapisana praca zostanie utracona.</value>
+  </data>
+  <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
+    <value>Wymuś wyłączenie</value>
+  </data>
+  <data name="Confirm_ForceRestart_Title" xml:space="preserve">
+    <value>Wymuś restart — czy na pewno?</value>
+  </data>
+  <data name="Confirm_ForceRestart_Message" xml:space="preserve">
+    <value>To spowoduje natychmiastowy restart zdalnego komputera. Cała niezapisana praca zostanie utracona.</value>
+  </data>
+  <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
+    <value>Wymuś restart</value>
+  </data>
+  <data name="Confirm_RebootUefi_Title" xml:space="preserve">
+    <value>Uruchom do UEFI — czy na pewno?</value>
+  </data>
+  <data name="Confirm_RebootUefi_Message" xml:space="preserve">
+    <value>Zdalny komputer uruchomi się ponownie i zabootuje bezpośrednio do ustawień oprogramowania UEFI. Cała niezapisana praca zostanie utracona.</value>
+  </data>
+  <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
+    <value>Uruchom do UEFI</value>
+  </data>
+  <data name="PairingDialogTitle" xml:space="preserve">
+    <value>Sparuj z komputerem</value>
+  </data>
+  <data name="PairingDialogInstruction" xml:space="preserve">
+    <value>Wprowadź 6-cyfrowy kod PIN wyświetlany na komputerze:</value>
+  </data>
+  <data name="Btn_Pair" xml:space="preserve">
+    <value>Sparuj</value>
+  </data>
+  <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
+    <value>Słownik: Paleta poleceń</value>
+  </data>
+  <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
+    <value>Naciśnij Ctrl+Shift+P, aby przeskakiwać między ekranami, wyzwalać szybkie akcje i natychmiast przeszukiwać centrum dowodzenia.</value>
+  </data>
+  <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
+    <value>Słownik: Launcher aplikacji</value>
+  </data>
+  <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
+    <value>Uruchamiaj wyselekcjonowane aplikacje i skrypty na komputerze. Skonfiguruj wpisy raz na komputerze, a następnie uruchamiaj je zdalnie z RemEx.</value>
+  </data>
+  <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
+    <value>Słownik: Menedżer zadań</value>
+  </data>
+  <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
+    <value>Sprawdzaj uruchomione procesy komputera, sortuj po użyciu i kończ utknięte zadania bez wstawania z kanapy.</value>
+  </data>
+  <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
+    <value>Słownik: Kanwa sensorów</value>
+  </data>
+  <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
+    <value>Zbuduj żywą ścianę telemetrii, przypinając czujniki, zmieniając rozmiar kart i rozmieszczając je na wolnej kanwie.</value>
+  </data>
+  <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
+    <value>Słownik: Transfer plików</value>
+  </data>
+  <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
+    <value>Przeglądaj tylko foldery, które PC udostępnił, przesyłaj do lokalizacji z możliwością zapisu i pobierz pliki z weryfikacją SHA-256.</value>
+  </data>
+  <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
+    <value>Słownik: Pulpit zdalny</value>
+  </data>
+  <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
+    <value>Strumieniuj ekran komputera ze zmienną jakością, skalą i FPS, aby wyważyć klarowność względem przepustowości.</value>
+  </data>
+  <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
+    <value>Słownik: Szybkie ustawienia</value>
+  </data>
+  <data name="Tutorial_Glossary_QuickSettings_Body" xml:space="preserve">
+    <value>Na Androidzie dodaj kafelki RemEx do Szybkich ustawień dla natychmiastowych akcji, takich jak Blokada, Uśpienie, Restart czy Wake-on-LAN.</value>
+  </data>
+  <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
+    <value>Słownik: Dostosowanie</value>
+  </data>
+  <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
+    <value>Dostosuj motywy, strategię palety, czcionki, kształty kart i przezroczystość, aby dopasować sposób, w jaki monitorujesz i sterujesz swoim systemem.</value>
+  </data>
+  <data name="Faq_Q1_Question" xml:space="preserve">
+    <value>Co muszę uruchomić na moim komputerze?</value>
+  </data>
+  <data name="Faq_Q2_Question" xml:space="preserve">
+    <value>Jak sparować mój telefon lub drugi komputer?</value>
+  </data>
+  <data name="Faq_Q3_Question" xml:space="preserve">
+    <value>Jak znaleźć adres IP mojego komputera?</value>
+  </data>
+  <data name="Faq_Q4_Question" xml:space="preserve">
+    <value>Autowykrywanie nie znajduje mojego komputera. Co mam sprawdzić?</value>
+  </data>
+  <data name="Faq_Q5_Question" xml:space="preserve">
+    <value>Jaki jest domyślny port?</value>
+  </data>
+  <data name="Faq_Q6_Question" xml:space="preserve">
+    <value>Czy mogę łączyć się przez internet?</value>
+  </data>
+  <data name="Faq_Q7_Question" xml:space="preserve">
+    <value>Pulpit zdalny się zacina. Co mogę zrobić?</value>
+  </data>
+  <data name="Faq_Q8_Question" xml:space="preserve">
+    <value>Co to jest Wake-on-LAN (WOL)?</value>
+  </data>
+  <data name="Faq_Q8_Answer" xml:space="preserve">
+    <value>Wake-on-LAN pozwala na zdalne włączenie komputera. Włącz to w BIOS/UEFI i właściwościach karty sieciowej. Następnie wprowadź adres MAC komputera na ekranie Połączenia.</value>
+  </data>
+  <data name="Faq_Q9_Question" xml:space="preserve">
+    <value>Jak przesyłać pliki?</value>
+  </data>
+  <data name="Faq_Q10_Question" xml:space="preserve">
+    <value>Czy mogę zablokować mój komputer zdalnie?</value>
+  </data>
+  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
+    <value>USŁUGA WINDOWS</value>
+  </data>
+  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
+    <value>USŁUGA LINUX W TLE</value>
+  </data>
+  <data name="Service_InstallingLinux" xml:space="preserve">
+    <value>Instalowanie usługi systemd…</value>
+  </data>
+  <data name="Service_InstallFailed" xml:space="preserve">
+    <value>Instalacja usługi nie powiodła się.</value>
+  </data>
+  <data name="Service_RemovingLinux" xml:space="preserve">
+    <value>Usuwanie usługi systemd…</value>
+  </data>
+  <data name="Tutorial_P2_Steps" xml:space="preserve">
+    <value>1. Otwórz Ustawienia (⚙) → przewiń do 'Usługa Windows'
+2. Ustaw nazwę użytkownika i hasło Windows
+3. Kliknij 'Zainstaluj jako usługę'
+4. Usługa uruchamia się automatycznie przy starcie</value>
+  </data>
+  <data name="Tutorial_P3_Steps" xml:space="preserve">
+    <value>1. Pobierz najnowsze archiwum Linux PC z GitHub Releases.
+2. Rozpakuj je.
+3. Uruchom ./install.sh install wewnątrz folderu remex-PC.
+4. Użyj systemctl --user status remex-PC, aby zweryfikować, że działa.</value>
+  </data>
+  <data name="Splash_Style_RemexCommand" xml:space="preserve">
+    <value>Oryginalny skan</value>
+  </data>
+  <data name="Splash_Style_CosmicZoom" xml:space="preserve">
+    <value>Cosmic Zoom</value>
+  </data>
+  <data name="Splash_Style_Pong" xml:space="preserve">
+    <value>Signal Pong</value>
+  </data>
+  <data name="Activity_AppLaunched" xml:space="preserve">
+    <value>Uruchomiono {0}</value>
+  </data>
+  <data name="Activity_CommandRun" xml:space="preserve">
+    <value>Wykonano polecenie {0}</value>
+  </data>
+  <data name="Activity_FileDownloaded" xml:space="preserve">
+    <value>Pobrano {0}</value>
+  </data>
+  <data name="Activity_FileReceived" xml:space="preserve">
+    <value>Odebrano {0} z telefonu</value>
+  </data>
+  <data name="Activity_FileSent" xml:space="preserve">
+    <value>Wysłano {0} na telefon</value>
+  </data>
+  <data name="Activity_FileUploaded" xml:space="preserve">
+    <value>Przesłano {0}</value>
+  </data>
+  <data name="Canvas_ActionDone" xml:space="preserve">
+    <value>Gotowe</value>
+  </data>
+  <data name="Canvas_ActionPin" xml:space="preserve">
+    <value>Przypnij</value>
+  </data>
+  <data name="Canvas_ActionRemove" xml:space="preserve">
+    <value>Usuń</value>
+  </data>
+  <data name="Canvas_CoachBody" xml:space="preserve">
+    <value>Dotknij przycisku Czujniki u góry, aby dodać karty sprzętowe. Przeciągnij, aby je rozmieścić, kliknij kartę prawym przyciskiem myszy, aby zmienić jej wygląd, a Ctrl+klik pozwala zaznaczyć kilka kart naraz.</value>
+  </data>
+  <data name="Canvas_CoachGotIt" xml:space="preserve">
+    <value>Rozumiem</value>
+  </data>
+  <data name="Canvas_CoachReplayTooltip" xml:space="preserve">
+    <value>Odtwórz ponownie wskazówki pulpitu</value>
+  </data>
+  <data name="Canvas_CoachTitle" xml:space="preserve">
+    <value>Zbuduj swój pulpit</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Duża wartość 42</value>
+  </data>
+  <data name="Canvas_GraphDual" xml:space="preserve">
+    <value>Podwójny wskaźnik ⑂</value>
+  </data>
+  <data name="Canvas_GraphHue" xml:space="preserve">
+    <value>Puls koloru ◐</value>
+  </data>
+  <data name="Canvas_GraphRadial" xml:space="preserve">
+    <value>Promieniowy ◔</value>
+  </data>
+  <data name="Canvas_GraphValueSpark" xml:space="preserve">
+    <value>Wartość + wykres ⌇</value>
+  </data>
+  <data name="Canvas_SecondMetric" xml:space="preserve">
+    <value>Drugi wskaźnik</value>
+  </data>
+  <data name="Canvas_SecondMetricNone" xml:space="preserve">
+    <value>Wyczyść drugi wskaźnik</value>
+  </data>
+  <data name="Canvas_SelectedLabel" xml:space="preserve">
+    <value>zaznaczonych</value>
+  </data>
+  <data name="Custom_ContentFont" xml:space="preserve">
+    <value>Czcionka treści</value>
+  </data>
+  <data name="Custom_ContentFontTip" xml:space="preserve">
+    <value>Czcionka tekstu treści — opisy, etykiety i obszar czujników. Odczyty danych o stałej szerokości zachowują swoją czcionkę monospace.</value>
+  </data>
+  <data name="Custom_FontUnavailable" xml:space="preserve">
+    <value>Nie udało się wczytać tej czcionki na tym komputerze — może nie być zainstalowana: {0}. Zamiast niej używana jest czcionka domyślna.</value>
+  </data>
+  <data name="Custom_PageTitleFont" xml:space="preserve">
+    <value>Czcionka tytułów stron</value>
+  </data>
+  <data name="Custom_PageTitleFontTip" xml:space="preserve">
+    <value>Czcionka dużych tytułów stron. Obejmuje czcionki wyświetlacza aplikacji oraz wszystkie czcionki zainstalowane w tym systemie.</value>
+  </data>
+  <data name="Custom_Typography" xml:space="preserve">
+    <value>TYPOGRAFIA</value>
+  </data>
+  <data name="Custom_UiScale" xml:space="preserve">
+    <value>Rozmiar interfejsu</value>
+  </data>
+  <data name="Custom_UiScaleTip" xml:space="preserve">
+    <value>Powiększ lub pomniejsz wszystko — tekst i elementy sterujące — od 85% do 130%.</value>
+  </data>
+  <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
+    <value>Rozmiar ikon</value>
+  </data>
+  <data name="FileTransfer_ToggleViewTooltip" xml:space="preserve">
+    <value>Przełącz między widokiem listy a ikon</value>
+  </data>
+  <data name="Home_ClearActivity" xml:space="preserve">
+    <value>WYCZYŚĆ</value>
+  </data>
+  <data name="Home_GitHubCard" xml:space="preserve">
+    <value>RemEx na GitHubie</value>
+  </data>
+  <data name="Home_GitHubCardDesc" xml:space="preserve">
+    <value>Zobacz kod źródłowy, zgłoś problem lub oceń projekt gwiazdką.</value>
+  </data>
+  <data name="Home_NoRecentActivity" xml:space="preserve">
+    <value>Brak aktywności. Uruchom aplikację, wykonaj polecenie lub przenieś plik, a pojawi się tutaj.</value>
+  </data>
+  <data name="Home_PlayStoreCard" xml:space="preserve">
+    <value>Pobierz aplikację na telefon</value>
+  </data>
+  <data name="Home_PlayStoreCardDesc" xml:space="preserve">
+    <value>Pobierz RemEx na Androida z Google Play.</value>
+  </data>
+  <data name="Home_QsAbout" xml:space="preserve">
+    <value>Informacje i pomoc</value>
+  </data>
+  <data name="Home_QsApps" xml:space="preserve">
+    <value>Aplikacje</value>
+  </data>
+  <data name="Home_QsCommands" xml:space="preserve">
+    <value>Polecenia</value>
+  </data>
+  <data name="Home_QsFiles" xml:space="preserve">
+    <value>Pliki</value>
+  </data>
+  <data name="Home_QsLogs" xml:space="preserve">
+    <value>Logi</value>
+  </data>
+  <data name="Home_QsPersonalize" xml:space="preserve">
+    <value>Personalizuj</value>
+  </data>
+  <data name="Home_QsProcesses" xml:space="preserve">
+    <value>Procesy</value>
+  </data>
+  <data name="Home_QsSensors" xml:space="preserve">
+    <value>Czujniki</value>
+  </data>
+  <data name="Home_RecentActivity" xml:space="preserve">
+    <value>// OSTATNIA_AKTYWNOŚĆ</value>
+  </data>
+  <data name="Home_ScClose" xml:space="preserve">
+    <value>Zamknij okienka</value>
+  </data>
+  <data name="Home_ScNav" xml:space="preserve">
+    <value>Przełącz ekrany</value>
+  </data>
+  <data name="Home_ScSettings" xml:space="preserve">
+    <value>Personalizuj</value>
+  </data>
+  <data name="Home_SearchPrompt" xml:space="preserve">
+    <value>Szukaj ekranów i akcji…</value>
+  </data>
+  <data name="Home_StatCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="Home_StatMemory" xml:space="preserve">
+    <value>PAMIĘĆ</value>
+  </data>
+  <data name="Home_StatUptime" xml:space="preserve">
+    <value>CZAS PRACY</value>
+  </data>
+  <data name="Home_WelcomeIntro" xml:space="preserve">
+    <value>Steruj tym komputerem ze swojego telefonu — przesyłaj strumieniowo pulpit, przeglądaj i przesyłaj pliki, uruchamiaj aplikacje, wykonuj polecenia i obserwuj czujniki na żywo. Sparuj telefon w Ustawieniach, aby zacząć.</value>
+  </data>
+  <data name="Home_WelcomeTitle" xml:space="preserve">
+    <value>Witaj w RemEx</value>
+  </data>
+  <data name="Logs_CaptureLevel" xml:space="preserve">
+    <value>Przechwytywanie:</value>
+  </data>
+  <data name="Logs_CaptureLevelTip" xml:space="preserve">
+    <value>Ile szczegółów jest zachowywanych w pamięci. Niższy poziom zachowuje więcej danych do filtrowania — filtr wyświetlania nigdy nie odrzuca przechwyconych wpisów.</value>
+  </data>
+  <data name="Logs_Export" xml:space="preserve">
+    <value>Eksportuj</value>
+  </data>
+  <data name="Logs_ExportAs" xml:space="preserve">
+    <value>Eksportuj jako:</value>
+  </data>
+  <data name="Logs_ExportTitle" xml:space="preserve">
+    <value>Eksportuj logi</value>
+  </data>
+  <data name="Logs_Preset" xml:space="preserve">
+    <value>Preset:</value>
+  </data>
+  <data name="Logs_PresetAll" xml:space="preserve">
+    <value>Wszystko</value>
+  </data>
+  <data name="Logs_PresetConnection" xml:space="preserve">
+    <value>Połączenie i parowanie</value>
+  </data>
+  <data name="Logs_PresetErrors" xml:space="preserve">
+    <value>Błędy i ostrzeżenia</value>
+  </data>
+  <data name="Logs_PresetFileTransfer" xml:space="preserve">
+    <value>Transfer plików</value>
+  </data>
+  <data name="Logs_PresetInput" xml:space="preserve">
+    <value>Wejście i polecenia</value>
+  </data>
+  <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
+    <value>Pulpit zdalny</value>
+  </data>
+  <data name="Logs_PresetStartup" xml:space="preserve">
+    <value>Uruchamianie i podwyższone uprawnienia</value>
+  </data>
+  <data name="Logs_ScopeCurrentView" xml:space="preserve">
+    <value>Bieżący widok</value>
+  </data>
+  <data name="Logs_ScopeErrorsOnly" xml:space="preserve">
+    <value>Tylko błędy</value>
+  </data>
+  <data name="Logs_ScopeEverything" xml:space="preserve">
+    <value>Wszystko przechwycone</value>
+  </data>
+  <data name="Logs_ScopeWarningsPlus" xml:space="preserve">
+    <value>Ostrzeżenia i błędy</value>
+  </data>
+  <data name="Logs_SearchWatermark" xml:space="preserve">
+    <value>Szukaj w logach…</value>
+  </data>
+  <data name="Remote_CopyMac" xml:space="preserve">
+    <value>Kopiuj</value>
+  </data>
+  <data name="Remote_MacCopied" xml:space="preserve">
+    <value>Skopiowano adres MAC — wklej go w aplikacji RemEx na telefonie.</value>
+  </data>
+  <data name="Remote_ThisPcMac" xml:space="preserve">
+    <value>ADRES MAC TEGO KOMPUTERA</value>
+  </data>
+  <data name="Remote_WakeExplainer" xml:space="preserve">
+    <value>Wake-on-LAN pozwala telefonowi zdalnie włączyć ten komputer przez sieć — nawet gdy jest uśpiony lub całkowicie wyłączony. Działa to poprzez wysłanie małego "magicznego pakietu", który nakazuje temu komputerowi się uruchomić.</value>
+  </data>
+  <data name="Remote_WakeInstruction" xml:space="preserve">
+    <value>Aby to skonfigurować: otwórz aplikację RemEx na telefonie, przejdź do Ustawienia → Wake-on-LAN i wprowadź powyższy adres. Telefon będzie mógł wtedy obudzić ten komputer, gdy tylko znajdzie się w tej samej sieci.</value>
+  </data>
+  <data name="Remote_WakeTitle" xml:space="preserve">
+    <value>Obudź ten komputer z telefonu</value>
+  </data>
+  <data name="SecondMetric_Header" xml:space="preserve">
+    <value>NAŁÓŻ DRUGI CZUJNIK NA</value>
+  </data>
+  <data name="SecondMetric_Search" xml:space="preserve">
+    <value>Szukaj czujników…</value>
+  </data>
+  <data name="SecondMetric_SetBtn" xml:space="preserve">
+    <value>Ustaw</value>
+  </data>
+  <data name="SecondMetric_Title" xml:space="preserve">
+    <value>Wybierz drugi wskaźnik</value>
   </data>
 </root>

@@ -685,6 +685,7 @@ $line
     <string name="share_to_pc_cancel">Batal</string>
     <string name="share_to_pc_queued">Mengirim ke PC Anda. Anda dapat memantau progres di RemEx.</string>
     <string name="share_to_pc_nothing_to_send">Tidak ada berkas untuk dikirim.</string>
+    <string name="share_to_pc_skipped_unreadable">Dilewatkan %1$d berkas yang tidak dapat dibaca — berkas mungkin kosong atau tidak lagi tersedia.</string>
     <string name="share_to_pc_connecting">Menghubungkan ke PC Anda…</string>
     <string name="share_to_pc_not_configured">Belum ada PC yang disiapkan. Buka RemEx dan hubungkan ke PC Anda terlebih dahulu, lalu coba berbagi lagi.</string>
     <string name="share_to_pc_open_app">Buka RemEx</string>
@@ -713,4 +714,60 @@ $line
     <string name="splash_term_pairing">pairing</string>
     <string name="splash_term_session_ready">session ready</string>
     <string name="personalization_splash_pong">Signal Pong</string>
+    <!-- Home Base first-run coach marks (RemEx-km0i.10) -->
+    <string name="coach_title">Panduan Navigasi</string>
+    <string name="coach_hold_body">Tahan kartu untuk mengambilnya, lalu seret untuk memindahkannya.</string>
+    <string name="coach_menu_body">Kustomisasi kartu, batalkan, atau atur ulang dari menu di sini.</string>
+    <string name="coach_add_body">Tambahkan lebih banyak kartu sensor dengan tombol +.</string>
+    <string name="coach_view_body">Ketuk ikon kisi pada kartu untuk mengubah tampilannya.</string>
+    <string name="coach_group_body">Tahan kartu, lalu ketuk kartu lain untuk memindahkannya sebagai grup.</string>
+    <string name="coach_select_body">Tahan kartu untuk memilihnya — bilah akan muncul untuk mengubah bentuk, menyematkan, atau menghapusnya (atau seluruh grup).</string>
+    <string name="coach_next">Berikutnya</string>
+    <string name="coach_got_it">Mengerti</string>
+    <string name="coach_skip">Lewati</string>
+    <string name="coach_replay">Tampilkan tips</string>
+    <string name="dashboard_custom_title_label">Judul kartu</string>
+    <string name="dashboard_custom_title_hint">Kosongkan untuk menggunakan nama sensor</string>
+    <string name="dashboard_show_value_overlay">Tampilkan nilai langsung</string>
+    <plurals name="dashboard_selection_count">
+        <item quantity="one">%1$d dipilih</item>
+        <item quantity="other">%1$d dipilih</item>
+    </plurals>
+    <string name="cd_dashboard_pin_selection">Sematkan kartu terpilih</string>
+    <string name="cd_dashboard_unpin_selection">Lepas sematan kartu terpilih</string>
+    <string name="cd_dashboard_remove_selection">Hapus kartu terpilih</string>
+    <string name="cd_dashboard_reshape_selection">Ubah bentuk kartu terpilih</string>
+    <string name="cd_dashboard_exit_selection">Keluar dari pemilihan</string>
+    <string name="cd_open_view_picker">Pilih tampilan layar</string>
+    <string name="dashboard_view_picker_title">Pilih tampilan</string>
+    <string name="shape_picker_title">Pilih bentuk</string>
+    <string name="dashboard_view_auto">Otomatis</string>
+    <string name="dashboard_view_big_value">Nilai besar</string>
+    <string name="dashboard_view_value_spark">Nilai + sparkline</string>
+    <string name="dashboard_view_ring_gauge">Pengukur cincin</string>
+    <string name="dashboard_view_arc_gauge">Pengukur busur</string>
+    <string name="dashboard_view_line">Garis</string>
+    <string name="dashboard_view_area">Area</string>
+    <string name="dashboard_view_bar">Histogram batang</string>
+    <string name="dashboard_view_hue_pulse">Denyut warna</string>
+    <string name="dashboard_view_led_meter">Pengukur LED</string>
+    <string name="dashboard_view_dual_metric">Metrik ganda</string>
+    <string name="dashboard_dual_metric_pick_secondary">Tambahkan metrik kedua</string>
+    <string name="cd_view_value">Nilai besar, %1$s</string>
+    <string name="cd_view_value_spark">Nilai dengan sparkline, %1$s</string>
+    <string name="cd_view_ring_gauge">Pengukur cincin, %1$s</string>
+    <string name="cd_view_arc_gauge">Pengukur busur, %1$s</string>
+    <string name="cd_view_line">Grafik garis, %1$s</string>
+    <string name="cd_view_area">Grafik area, %1$s</string>
+    <string name="cd_view_bar">Histogram batang, %1$s</string>
+    <string name="cd_view_hue_pulse">Ubin beban bercahaya, %1$s</string>
+    <string name="cd_view_led_meter">Pengukur LED, %1$s</string>
+    <string name="cd_view_dual_metric">Overlay metrik ganda, %1$s</string>
+    <string name="personalization_shape_remote_desktop">Desktop Jarak Jauh</string>
+    <string name="personalization_shape_auto">Otomatis (per kategori)</string>
+    <string name="personalization_shape_reset_default">Reset ke bentuk default</string>
+    <string name="shape_rounded_rectangle">Persegi Panjang Membulat</string>
+    <!-- Ongoing FGS notification progress line: "45% · 3/7". Locale-neutral (digits + percent + slash),
+         so it is intentionally not translated. -->
+    <string name="file_transfer_service_progress" translatable="false">%1$d%% · %2$d/%3$d</string>
 </resources>

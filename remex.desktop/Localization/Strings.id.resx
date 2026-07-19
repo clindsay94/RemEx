@@ -2965,4 +2965,256 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_HwInfoCardDesc" xml:space="preserve">
     <value>Gratis — memberi RemEx sensor perangkat keras PC yang detail.</value>
   </data>
+
+
+  <data name="Custom_Typography" xml:space="preserve">
+    <value>TIPOGRAFI</value>
+  </data>
+  <data name="Custom_PageTitleFont" xml:space="preserve">
+    <value>Font Judul Halaman</value>
+  </data>
+  <data name="Custom_PageTitleFontTip" xml:space="preserve">
+    <value>Font untuk judul halaman besar. Mencakup font tampilan aplikasi dan font apa pun yang terinstal di sistem ini.</value>
+  </data>
+  <data name="Custom_ContentFont" xml:space="preserve">
+    <value>Font Konten</value>
+  </data>
+  <data name="Custom_ContentFontTip" xml:space="preserve">
+    <value>Font untuk teks isi dan konten — deskripsi, label, dan ruang kerja sensor. Pembacaan data lebar tetap mempertahankan font monospasi.</value>
+  </data>
+  <data name="Custom_UiScale" xml:space="preserve">
+    <value>Ukuran UI</value>
+  </data>
+  <data name="Custom_UiScaleTip" xml:space="preserve">
+    <value>Buat segalanya — teks dan kontrol — lebih besar atau lebih kecil, dari 85% hingga 130%.</value>
+  </data>
+
+  <data name="Remote_WakeTitle" xml:space="preserve">
+    <value>Bangunkan PC ini dari ponsel Anda</value>
+  </data>
+  <data name="Remote_WakeExplainer" xml:space="preserve">
+    <value>Wake-on-LAN memungkinkan ponsel Anda menyalakan PC ini melalui jaringan Anda — bahkan saat sedang tidur atau dimatikan sepenuhnya. Caranya dengan mengirim "paket ajaib" kecil yang memberi tahu komputer ini untuk menyala.</value>
+  </data>
+  <data name="Remote_ThisPcMac" xml:space="preserve">
+    <value>ALAMAT MAC PC INI</value>
+  </data>
+  <data name="Remote_CopyMac" xml:space="preserve">
+    <value>Salin</value>
+  </data>
+  <data name="Remote_MacCopied" xml:space="preserve">
+    <value>Alamat MAC disalin — tempelkan ke aplikasi RemEx di ponsel Anda.</value>
+  </data>
+  <data name="Remote_WakeInstruction" xml:space="preserve">
+    <value>Untuk mengaturnya: buka aplikasi RemEx di ponsel Anda, buka Pengaturan → Wake-on-LAN, lalu masukkan alamat di atas. Ponsel Anda kemudian dapat membangunkan PC ini kapan saja selama berada di jaringan yang sama.</value>
+  </data>
+  <data name="Custom_FontUnavailable" xml:space="preserve">
+    <value>Font ini tidak dapat dimuat di PC ini dan mungkin belum terinstal: {0}. Font default digunakan sebagai gantinya.</value>
+  </data>
+  <data name="Logs_Preset" xml:space="preserve">
+    <value>Preset:</value>
+  </data>
+  <data name="Logs_SearchWatermark" xml:space="preserve">
+    <value>Cari log…</value>
+  </data>
+  <data name="Logs_CaptureLevel" xml:space="preserve">
+    <value>Rekam:</value>
+  </data>
+  <data name="Logs_CaptureLevelTip" xml:space="preserve">
+    <value>Seberapa banyak detail yang disimpan di memori. Tingkat lebih rendah menyimpan lebih banyak untuk difilter; filter tampilan tidak pernah membuang entri yang telah direkam.</value>
+  </data>
+  <data name="Logs_ExportAs" xml:space="preserve">
+    <value>Ekspor sebagai:</value>
+  </data>
+  <data name="Logs_Export" xml:space="preserve">
+    <value>Ekspor</value>
+  </data>
+  <data name="Logs_ExportTitle" xml:space="preserve">
+    <value>Ekspor Log</value>
+  </data>
+  <data name="Logs_PresetAll" xml:space="preserve">
+    <value>Semua</value>
+  </data>
+  <data name="Logs_PresetErrors" xml:space="preserve">
+    <value>Kesalahan &amp; Peringatan</value>
+  </data>
+  <data name="Logs_PresetConnection" xml:space="preserve">
+    <value>Koneksi &amp; Pemasangan</value>
+  </data>
+  <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
+    <value>Desktop Jarak Jauh</value>
+  </data>
+  <data name="Logs_PresetFileTransfer" xml:space="preserve">
+    <value>Transfer File</value>
+  </data>
+  <data name="Logs_PresetInput" xml:space="preserve">
+    <value>Input &amp; Perintah</value>
+  </data>
+  <data name="Logs_PresetStartup" xml:space="preserve">
+    <value>Startup &amp; Elevasi</value>
+  </data>
+  <data name="Logs_ScopeCurrentView" xml:space="preserve">
+    <value>Tampilan saat ini</value>
+  </data>
+  <data name="Logs_ScopeEverything" xml:space="preserve">
+    <value>Semua yang direkam</value>
+  </data>
+  <data name="Logs_ScopeWarningsPlus" xml:space="preserve">
+    <value>Peringatan &amp; kesalahan</value>
+  </data>
+  <data name="Logs_ScopeErrorsOnly" xml:space="preserve">
+    <value>Hanya kesalahan</value>
+  </data>
+  <data name="Home_StatCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="Home_StatMemory" xml:space="preserve">
+    <value>MEMORI</value>
+  </data>
+  <data name="Home_StatUptime" xml:space="preserve">
+    <value>WAKTU AKTIF</value>
+  </data>
+  <data name="Home_RecentActivity" xml:space="preserve">
+    <value>// AKTIVITAS_TERBARU</value>
+  </data>
+  <data name="Home_ClearActivity" xml:space="preserve">
+    <value>HAPUS</value>
+  </data>
+  <data name="Home_NoRecentActivity" xml:space="preserve">
+    <value>Belum ada aktivitas. Luncurkan aplikasi, jalankan perintah, atau pindahkan file dan aktivitas akan muncul di sini.</value>
+  </data>
+  <data name="Activity_FileReceived" xml:space="preserve">
+    <value>Menerima {0} dari ponsel</value>
+  </data>
+  <data name="Activity_FileSent" xml:space="preserve">
+    <value>Mengirim {0} ke ponsel</value>
+  </data>
+  <data name="Activity_FileUploaded" xml:space="preserve">
+    <value>Mengunggah {0}</value>
+  </data>
+  <data name="Activity_FileDownloaded" xml:space="preserve">
+    <value>Mengunduh {0}</value>
+  </data>
+  <data name="Activity_AppLaunched" xml:space="preserve">
+    <value>Meluncurkan {0}</value>
+  </data>
+  <data name="Activity_CommandRun" xml:space="preserve">
+    <value>Menjalankan perintah {0}</value>
+  </data>
+  <data name="Home_WelcomeTitle" xml:space="preserve">
+    <value>Selamat Datang di RemEx</value>
+  </data>
+  <data name="Home_WelcomeIntro" xml:space="preserve">
+    <value>Kendalikan PC ini dari ponsel Anda — streaming desktop, jelajahi dan transfer file, luncurkan aplikasi, jalankan perintah, dan pantau sensor secara langsung. Pasangkan ponsel Anda di Pengaturan untuk memulai.</value>
+  </data>
+  <data name="Home_SearchPrompt" xml:space="preserve">
+    <value>Cari layar dan tindakan…</value>
+  </data>
+  <data name="Home_ScNav" xml:space="preserve">
+    <value>Ganti layar</value>
+  </data>
+  <data name="Home_ScSettings" xml:space="preserve">
+    <value>Personalisasi</value>
+  </data>
+  <data name="Home_ScClose" xml:space="preserve">
+    <value>Tutup pop-up</value>
+  </data>
+  <data name="Home_QsSensors" xml:space="preserve">
+    <value>Sensor</value>
+  </data>
+  <data name="Home_QsCommands" xml:space="preserve">
+    <value>Perintah</value>
+  </data>
+  <data name="Home_QsApps" xml:space="preserve">
+    <value>Aplikasi</value>
+  </data>
+  <data name="Home_QsProcesses" xml:space="preserve">
+    <value>Proses</value>
+  </data>
+  <data name="Home_QsFiles" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Home_QsLogs" xml:space="preserve">
+    <value>Log</value>
+  </data>
+  <data name="Home_QsPersonalize" xml:space="preserve">
+    <value>Personalisasi</value>
+  </data>
+  <data name="Home_QsAbout" xml:space="preserve">
+    <value>Tentang &amp; Bantuan</value>
+  </data>
+  <data name="Home_GitHubCard" xml:space="preserve">
+    <value>RemEx di GitHub</value>
+  </data>
+  <data name="Home_GitHubCardDesc" xml:space="preserve">
+    <value>Lihat kode sumber, laporkan masalah, atau beri bintang pada proyek ini.</value>
+  </data>
+  <data name="Home_PlayStoreCard" xml:space="preserve">
+    <value>Dapatkan aplikasi ponsel</value>
+  </data>
+  <data name="Home_PlayStoreCardDesc" xml:space="preserve">
+    <value>Unduh RemEx untuk Android di Google Play.</value>
+  </data>
+  <data name="Canvas_GraphRadial" xml:space="preserve">
+    <value>Radial ◔</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Nilai Besar 42</value>
+  </data>
+  <data name="Canvas_GraphValueSpark" xml:space="preserve">
+    <value>Nilai + Spark ⌇</value>
+  </data>
+  <data name="Canvas_GraphHue" xml:space="preserve">
+    <value>Denyut Warna ◐</value>
+  </data>
+  <data name="Canvas_GraphDual" xml:space="preserve">
+    <value>Metrik Ganda ⑂</value>
+  </data>
+  <data name="Canvas_SecondMetric" xml:space="preserve">
+    <value>Metrik Kedua</value>
+  </data>
+  <data name="Canvas_SecondMetricNone" xml:space="preserve">
+    <value>Hapus Metrik Kedua</value>
+  </data>
+  <data name="Canvas_ActionPin" xml:space="preserve">
+    <value>Sematkan</value>
+  </data>
+  <data name="Canvas_ActionRemove" xml:space="preserve">
+    <value>Hapus</value>
+  </data>
+  <data name="Canvas_ActionDone" xml:space="preserve">
+    <value>Selesai</value>
+  </data>
+  <data name="Canvas_SelectedLabel" xml:space="preserve">
+    <value>dipilih</value>
+  </data>
+  <data name="Canvas_CoachTitle" xml:space="preserve">
+    <value>Bangun dasbor Anda</value>
+  </data>
+  <data name="Canvas_CoachBody" xml:space="preserve">
+    <value>Ketuk tombol Sensor di atas untuk menambahkan kartu perangkat keras. Seret untuk mengatur, klik kanan kartu untuk mengubah tampilannya, dan Ctrl+klik kartu untuk memilih beberapa sekaligus.</value>
+  </data>
+  <data name="Canvas_CoachGotIt" xml:space="preserve">
+    <value>Mengerti</value>
+  </data>
+  <data name="Canvas_CoachReplayTooltip" xml:space="preserve">
+    <value>Putar ulang tips dasbor</value>
+  </data>
+  <data name="SecondMetric_Title" xml:space="preserve">
+    <value>Pilih Metrik Kedua</value>
+  </data>
+  <data name="SecondMetric_Header" xml:space="preserve">
+    <value>TUMPANGKAN SENSOR KEDUA PADA</value>
+  </data>
+  <data name="SecondMetric_Search" xml:space="preserve">
+    <value>Cari sensor…</value>
+  </data>
+  <data name="SecondMetric_SetBtn" xml:space="preserve">
+    <value>Atur</value>
+  </data>
+  <data name="FileTransfer_ToggleViewTooltip" xml:space="preserve">
+    <value>Beralih antara tampilan daftar dan ikon</value>
+  </data>
+  <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
+    <value>Ukuran ikon</value>
+  </data>
 </root>

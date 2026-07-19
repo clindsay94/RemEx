@@ -2918,15 +2918,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Splash_SkipHint" xml:space="preserve">
     <value>Натисніть будь-де, щоб пропустити</value>
   </data>
-  <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
-  </data>
-  <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
-  </data>
-  <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
-  </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Оновлення програми</value>
   </data>
@@ -2965,5 +2956,263 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Home_HwInfoCardDesc" xml:space="preserve">
     <value>Безкоштовно — забезпечує детальні апаратні датчики ПК у RemEx.</value>
+  </data>
+  <data name="Splash_Style_RemexCommand" xml:space="preserve">
+    <value>Оригінальне сканування</value>
+  </data>
+  <data name="Splash_Style_CosmicZoom" xml:space="preserve">
+    <value>Космічний зум</value>
+  </data>
+  <data name="Splash_Style_Pong" xml:space="preserve">
+    <value>Сигнальний Понг</value>
+  </data>
+  <data name="Activity_AppLaunched" xml:space="preserve">
+    <value>Запущено {0}</value>
+  </data>
+  <data name="Activity_CommandRun" xml:space="preserve">
+    <value>Виконано команду {0}</value>
+  </data>
+  <data name="Activity_FileDownloaded" xml:space="preserve">
+    <value>Завантажено {0}</value>
+  </data>
+  <data name="Activity_FileReceived" xml:space="preserve">
+    <value>Отримано {0} з телефону</value>
+  </data>
+  <data name="Activity_FileSent" xml:space="preserve">
+    <value>Надіслано {0} на телефон</value>
+  </data>
+  <data name="Activity_FileUploaded" xml:space="preserve">
+    <value>Вивантажено {0}</value>
+  </data>
+  <data name="Canvas_ActionDone" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Canvas_ActionPin" xml:space="preserve">
+    <value>Закріпити</value>
+  </data>
+  <data name="Canvas_ActionRemove" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
+  <data name="Canvas_CoachBody" xml:space="preserve">
+    <value>Натисніть кнопку «Датчики» вгорі, щоб додати апаратні картки. Перетягуйте, щоб упорядкувати, клацніть правою кнопкою на картці, щоб змінити її вигляд, і використовуйте Ctrl+клацання, щоб вибрати декілька карток одразу.</value>
+  </data>
+  <data name="Canvas_CoachGotIt" xml:space="preserve">
+    <value>Зрозуміло</value>
+  </data>
+  <data name="Canvas_CoachReplayTooltip" xml:space="preserve">
+    <value>Повторити підказки панелі</value>
+  </data>
+  <data name="Canvas_CoachTitle" xml:space="preserve">
+    <value>Створіть свою панель</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Велике значення 42</value>
+  </data>
+  <data name="Canvas_GraphDual" xml:space="preserve">
+    <value>Два показники ⑂</value>
+  </data>
+  <data name="Canvas_GraphHue" xml:space="preserve">
+    <value>Пульсація кольору ◐</value>
+  </data>
+  <data name="Canvas_GraphRadial" xml:space="preserve">
+    <value>Радіальний ◔</value>
+  </data>
+  <data name="Canvas_GraphValueSpark" xml:space="preserve">
+    <value>Значення + спарклайн ⌇</value>
+  </data>
+  <data name="Canvas_SecondMetric" xml:space="preserve">
+    <value>Другий показник</value>
+  </data>
+  <data name="Canvas_SecondMetricNone" xml:space="preserve">
+    <value>Очистити другий показник</value>
+  </data>
+  <data name="Canvas_SelectedLabel" xml:space="preserve">
+    <value>вибрано</value>
+  </data>
+  <data name="Custom_ContentFont" xml:space="preserve">
+    <value>Шрифт вмісту</value>
+  </data>
+  <data name="Custom_ContentFontTip" xml:space="preserve">
+    <value>Шрифт для основного тексту та вмісту — описів, підписів і простору датчиків. Дані з фіксованою шириною зберігають моноширинний шрифт.</value>
+  </data>
+  <data name="Custom_FontUnavailable" xml:space="preserve">
+    <value>Цей шрифт не вдалося завантажити на цьому ПК — можливо, він не встановлений: {0}. Натомість використовується стандартний шрифт.</value>
+  </data>
+  <data name="Custom_PageTitleFont" xml:space="preserve">
+    <value>Шрифт заголовків сторінок</value>
+  </data>
+  <data name="Custom_PageTitleFontTip" xml:space="preserve">
+    <value>Шрифт для великих заголовків сторінок. Включає дисплейні шрифти застосунку та будь-які шрифти, встановлені в цій системі.</value>
+  </data>
+  <data name="Custom_Typography" xml:space="preserve">
+    <value>ТИПОГРАФІКА</value>
+  </data>
+  <data name="Custom_UiScale" xml:space="preserve">
+    <value>Розмір інтерфейсу</value>
+  </data>
+  <data name="Custom_UiScaleTip" xml:space="preserve">
+    <value>Зробіть усе — текст і елементи керування — більшим чи меншим, від 85% до 130%.</value>
+  </data>
+  <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
+    <value>Розмір значків</value>
+  </data>
+  <data name="FileTransfer_ToggleViewTooltip" xml:space="preserve">
+    <value>Перемкнути між виглядом списку та значків</value>
+  </data>
+  <data name="Home_ClearActivity" xml:space="preserve">
+    <value>ОЧИСТИТИ</value>
+  </data>
+  <data name="Home_GitHubCard" xml:space="preserve">
+    <value>RemEx на GitHub</value>
+  </data>
+  <data name="Home_GitHubCardDesc" xml:space="preserve">
+    <value>Перегляньте вихідний код, повідомте про проблему або відзначте проєкт зіркою.</value>
+  </data>
+  <data name="Home_NoRecentActivity" xml:space="preserve">
+    <value>Ще немає активності. Запустіть застосунок, виконайте команду або перемістіть файл — і це з'явиться тут.</value>
+  </data>
+  <data name="Home_PlayStoreCard" xml:space="preserve">
+    <value>Отримати застосунок для телефону</value>
+  </data>
+  <data name="Home_PlayStoreCardDesc" xml:space="preserve">
+    <value>Завантажте RemEx для Android у Google Play.</value>
+  </data>
+  <data name="Home_QsAbout" xml:space="preserve">
+    <value>Про застосунок та довідка</value>
+  </data>
+  <data name="Home_QsApps" xml:space="preserve">
+    <value>Застосунки</value>
+  </data>
+  <data name="Home_QsCommands" xml:space="preserve">
+    <value>Команди</value>
+  </data>
+  <data name="Home_QsFiles" xml:space="preserve">
+    <value>Файли</value>
+  </data>
+  <data name="Home_QsLogs" xml:space="preserve">
+    <value>Логи</value>
+  </data>
+  <data name="Home_QsPersonalize" xml:space="preserve">
+    <value>Персоналізація</value>
+  </data>
+  <data name="Home_QsProcesses" xml:space="preserve">
+    <value>Процеси</value>
+  </data>
+  <data name="Home_QsSensors" xml:space="preserve">
+    <value>Датчики</value>
+  </data>
+  <data name="Home_RecentActivity" xml:space="preserve">
+    <value>// ОСТАННЯ_АКТИВНІСТЬ</value>
+  </data>
+  <data name="Home_ScClose" xml:space="preserve">
+    <value>Закрити спливаючі вікна</value>
+  </data>
+  <data name="Home_ScNav" xml:space="preserve">
+    <value>Перемикати екрани</value>
+  </data>
+  <data name="Home_ScSettings" xml:space="preserve">
+    <value>Персоналізація</value>
+  </data>
+  <data name="Home_SearchPrompt" xml:space="preserve">
+    <value>Пошук екранів і дій…</value>
+  </data>
+  <data name="Home_StatCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="Home_StatMemory" xml:space="preserve">
+    <value>ПАМ'ЯТЬ</value>
+  </data>
+  <data name="Home_StatUptime" xml:space="preserve">
+    <value>ЧАС РОБОТИ</value>
+  </data>
+  <data name="Home_WelcomeIntro" xml:space="preserve">
+    <value>Керуйте цим ПК з телефону — транслюйте робочий стіл, переглядайте та передавайте файли, запускайте застосунки, виконуйте команди й стежте за датчиками в реальному часі. Щоб почати, з'єднайте телефон у налаштуваннях.</value>
+  </data>
+  <data name="Home_WelcomeTitle" xml:space="preserve">
+    <value>Ласкаво просимо до RemEx</value>
+  </data>
+  <data name="Logs_CaptureLevel" xml:space="preserve">
+    <value>Захоплення:</value>
+  </data>
+  <data name="Logs_CaptureLevelTip" xml:space="preserve">
+    <value>Скільки деталей зберігається в пам'яті. Нижчий рівень залишає більше даних для фільтрації; фільтр відображення ніколи не відкидає захоплені записи.</value>
+  </data>
+  <data name="Logs_Export" xml:space="preserve">
+    <value>Експорт</value>
+  </data>
+  <data name="Logs_ExportAs" xml:space="preserve">
+    <value>Експортувати як:</value>
+  </data>
+  <data name="Logs_ExportTitle" xml:space="preserve">
+    <value>Експорт логів</value>
+  </data>
+  <data name="Logs_Preset" xml:space="preserve">
+    <value>Пресет:</value>
+  </data>
+  <data name="Logs_PresetAll" xml:space="preserve">
+    <value>Усі</value>
+  </data>
+  <data name="Logs_PresetConnection" xml:space="preserve">
+    <value>З'єднання та спарювання</value>
+  </data>
+  <data name="Logs_PresetErrors" xml:space="preserve">
+    <value>Помилки та попередження</value>
+  </data>
+  <data name="Logs_PresetFileTransfer" xml:space="preserve">
+    <value>Передача файлів</value>
+  </data>
+  <data name="Logs_PresetInput" xml:space="preserve">
+    <value>Введення та команди</value>
+  </data>
+  <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
+    <value>Віддалений робочий стіл</value>
+  </data>
+  <data name="Logs_PresetStartup" xml:space="preserve">
+    <value>Запуск та підвищення прав</value>
+  </data>
+  <data name="Logs_ScopeCurrentView" xml:space="preserve">
+    <value>Поточний вигляд</value>
+  </data>
+  <data name="Logs_ScopeErrorsOnly" xml:space="preserve">
+    <value>Тільки помилки</value>
+  </data>
+  <data name="Logs_ScopeEverything" xml:space="preserve">
+    <value>Усе захоплене</value>
+  </data>
+  <data name="Logs_ScopeWarningsPlus" xml:space="preserve">
+    <value>Попередження та помилки</value>
+  </data>
+  <data name="Logs_SearchWatermark" xml:space="preserve">
+    <value>Пошук у логах…</value>
+  </data>
+  <data name="Remote_CopyMac" xml:space="preserve">
+    <value>Копіювати</value>
+  </data>
+  <data name="Remote_MacCopied" xml:space="preserve">
+    <value>MAC-адресу скопійовано — вставте її в застосунок RemEx на телефоні.</value>
+  </data>
+  <data name="Remote_ThisPcMac" xml:space="preserve">
+    <value>MAC-АДРЕСА ЦЬОГО ПК</value>
+  </data>
+  <data name="Remote_WakeExplainer" xml:space="preserve">
+    <value>Wake-on-LAN дозволяє вашому телефону вмикати цей ПК через мережу — навіть коли він спить або повністю вимкнений. Це працює завдяки надсиланню невеликого «магічного пакета», який каже цьому комп'ютеру увімкнутися.</value>
+  </data>
+  <data name="Remote_WakeInstruction" xml:space="preserve">
+    <value>Щоб налаштувати: відкрийте застосунок RemEx на телефоні, перейдіть у Налаштування → Wake-on-LAN і введіть адресу вище. Після цього телефон зможе вмикати цей ПК, коли він у тій самій мережі.</value>
+  </data>
+  <data name="Remote_WakeTitle" xml:space="preserve">
+    <value>Увімкнути цей ПК з телефону</value>
+  </data>
+  <data name="SecondMetric_Header" xml:space="preserve">
+    <value>НАКЛАСТИ ДРУГИЙ ДАТЧИК НА</value>
+  </data>
+  <data name="SecondMetric_Search" xml:space="preserve">
+    <value>Пошук датчиків…</value>
+  </data>
+  <data name="SecondMetric_SetBtn" xml:space="preserve">
+    <value>Встановити</value>
+  </data>
+  <data name="SecondMetric_Title" xml:space="preserve">
+    <value>Виберіть другий показник</value>
   </data>
 </root>

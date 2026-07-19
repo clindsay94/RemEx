@@ -2965,4 +2965,253 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_HwInfoCardDesc" xml:space="preserve">
     <value>निःशुल्क — RemEx के लिए विस्तृत PC हार्डवेयर सेंसर को सक्षम करता है।</value>
   </data>
+  <data name="Remote_WakeTitle" xml:space="preserve">
+    <value>अपने फ़ोन से इस PC को जगाएं</value>
+  </data>
+  <data name="Remote_WakeExplainer" xml:space="preserve">
+    <value>Wake-on-LAN आपके फ़ोन को इस PC को अपने नेटवर्क पर चालू करने देता है — भले ही यह</value>
+  </data>
+  <data name="Remote_ThisPcMac" xml:space="preserve">
+    <value>इस PC का MAC पता</value>
+  </data>
+  <data name="Remote_CopyMac" xml:space="preserve">
+    <value>कॉपी</value>
+  </data>
+  <data name="Remote_MacCopied" xml:space="preserve">
+    <value>MAC पता कॉपी किया गया — इसे अपने फ़ोन पर RemEx ऐप में पेस्ट करें।</value>
+  </data>
+  <data name="Remote_WakeInstruction" xml:space="preserve">
+    <value>इसे सेट करने के लिए: अपने फ़ोन पर RemEx ऐप खोलें, सेटिंग्स → Wake-on-LAN पर जाएं।</value>
+  </data>
+  <data name="Custom_Typography" xml:space="preserve">
+    <value>टाइपोग्राफी</value>
+  </data>
+  <data name="Custom_PageTitleFont" xml:space="preserve">
+    <value>पेज शीर्षक फ़ॉन्ट</value>
+  </data>
+  <data name="Custom_PageTitleFontTip" xml:space="preserve">
+    <value>बड़े पेज शीर्षक के लिए फ़ॉन्ट। ऐप के डिस्प्ले फ़ॉन्ट और कोई भी इंस्टॉल किए गए फ़ॉन्ट शामिल हैं।</value>
+  </data>
+  <data name="Custom_ContentFont" xml:space="preserve">
+    <value>सामग्री फ़ॉन्ट</value>
+  </data>
+  <data name="Custom_ContentFontTip" xml:space="preserve">
+    <value>बॉडी और सामग्री पाठ के लिए फ़ॉन्ट — विवरण, लेबल, और सेंसर कार्यक्षेत्र।</value>
+  </data>
+  <data name="Custom_UiScale" xml:space="preserve">
+    <value>UI आकार</value>
+  </data>
+  <data name="Custom_UiScaleTip" xml:space="preserve">
+    <value>सब कुछ — पाठ और नियंत्रण — 85% से 130% तक बड़ा या छोटा करें।</value>
+  </data>
+  <data name="Custom_FontUnavailable" xml:space="preserve">
+    <value>यह फ़ॉन्ट इस PC पर लोड नहीं हो सका और शायद इंस्टॉल नहीं है: {0}। डिफ़ॉल्ट उपयोग किया जाएगा।</value>
+  </data>
+  <data name="Logs_Preset" xml:space="preserve">
+    <value>पूर्वनिर्धारित:</value>
+  </data>
+  <data name="Logs_SearchWatermark" xml:space="preserve">
+    <value>लॉग खोजें…</value>
+  </data>
+  <data name="Logs_CaptureLevel" xml:space="preserve">
+    <value>कैप्चर करें:</value>
+  </data>
+  <data name="Logs_CaptureLevelTip" xml:space="preserve">
+    <value>मेमोरी में कितना विवरण रखा जाता है। कम अधिक रखता है फ़िल्टरिंग के लिए; डिस्प्ले से पहले का आकार सीमित है।</value>
+  </data>
+  <data name="Logs_ExportAs" xml:space="preserve">
+    <value>इसे इस रूप में निर्यात करें:</value>
+  </data>
+  <data name="Logs_Export" xml:space="preserve">
+    <value>निर्यात</value>
+  </data>
+  <data name="Logs_ExportTitle" xml:space="preserve">
+    <value>लॉग निर्यात करें</value>
+  </data>
+  <data name="Logs_PresetAll" xml:space="preserve">
+    <value>सभी</value>
+  </data>
+  <data name="Logs_PresetErrors" xml:space="preserve">
+    <value>त्रुटियां &amp; चेतावनियां</value>
+  </data>
+  <data name="Logs_PresetConnection" xml:space="preserve">
+    <value>कनेक्शन &amp; पेयरिंग</value>
+  </data>
+  <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
+    <value>रिमोट डेस्कटॉप</value>
+  </data>
+  <data name="Logs_PresetFileTransfer" xml:space="preserve">
+    <value>फ़ाइल स्थानांतरण</value>
+  </data>
+  <data name="Logs_PresetInput" xml:space="preserve">
+    <value>इनपुट &amp; कमांड</value>
+  </data>
+  <data name="Logs_PresetStartup" xml:space="preserve">
+    <value>शुरुआत &amp; उन्नयन</value>
+  </data>
+  <data name="Logs_ScopeCurrentView" xml:space="preserve">
+    <value>वर्तमान दृश्य</value>
+  </data>
+  <data name="Logs_ScopeEverything" xml:space="preserve">
+    <value>सब कुछ कैप्चर किया गया</value>
+  </data>
+  <data name="Logs_ScopeWarningsPlus" xml:space="preserve">
+    <value>चेतावनियां &amp; त्रुटियां</value>
+  </data>
+  <data name="Logs_ScopeErrorsOnly" xml:space="preserve">
+    <value>केवल त्रुटियां</value>
+  </data>
+  <data name="Home_StatCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="Home_StatMemory" xml:space="preserve">
+    <value>मेमोरी</value>
+  </data>
+  <data name="Home_StatUptime" xml:space="preserve">
+    <value>अपटाइम</value>
+  </data>
+  <data name="Home_RecentActivity" xml:space="preserve">
+    <value>// हाल की गतिविधि</value>
+  </data>
+  <data name="Home_ClearActivity" xml:space="preserve">
+    <value>साफ़ करें</value>
+  </data>
+  <data name="Home_NoRecentActivity" xml:space="preserve">
+    <value>अभी तक कोई गतिविधि नहीं। कोई ऐप लॉन्च करें, कोई कमांड चलाएं, या कोई फ़ाइल स्थानांतरित करें और यह यहाँ दिखाई देगी।</value>
+  </data>
+  <data name="Activity_FileReceived" xml:space="preserve">
+    <value>फ़ोन से {0} प्राप्त किया गया</value>
+  </data>
+  <data name="Activity_FileSent" xml:space="preserve">
+    <value>फ़ोन को {0} भेजा गया</value>
+  </data>
+  <data name="Activity_FileUploaded" xml:space="preserve">
+    <value>{0} अपलोड किया गया</value>
+  </data>
+  <data name="Activity_FileDownloaded" xml:space="preserve">
+    <value>{0} डाउनलोड किया गया</value>
+  </data>
+  <data name="Activity_AppLaunched" xml:space="preserve">
+    <value>{0} लॉन्च किया गया</value>
+  </data>
+  <data name="Activity_CommandRun" xml:space="preserve">
+    <value>{0} कमांड चलाया गया</value>
+  </data>
+  <data name="Home_WelcomeTitle" xml:space="preserve">
+    <value>RemEx में स्वागत है</value>
+  </data>
+  <data name="Home_WelcomeIntro" xml:space="preserve">
+    <value>अपने फ़ोन से इस PC को नियंत्रित करें — डेस्कटॉप स्ट्रीम करें, फ़ाइलें ब्राउज़ और स्थानांतरित करें,</value>
+  </data>
+  <data name="Home_SearchPrompt" xml:space="preserve">
+    <value>स्क्रीन और क्रिया खोजें…</value>
+  </data>
+  <data name="Home_ScNav" xml:space="preserve">
+    <value>स्क्रीन स्विच करें</value>
+  </data>
+  <data name="Home_ScSettings" xml:space="preserve">
+    <value>व्यक्तिगत करें</value>
+  </data>
+  <data name="Home_ScClose" xml:space="preserve">
+    <value>पॉप-अप बंद करें</value>
+  </data>
+  <data name="Home_QsSensors" xml:space="preserve">
+    <value>सेंसर</value>
+  </data>
+  <data name="Home_QsCommands" xml:space="preserve">
+    <value>कमांड</value>
+  </data>
+  <data name="Home_QsApps" xml:space="preserve">
+    <value>ऐप्स</value>
+  </data>
+  <data name="Home_QsProcesses" xml:space="preserve">
+    <value>प्रक्रिया</value>
+  </data>
+  <data name="Home_QsFiles" xml:space="preserve">
+    <value>फ़ाइलें</value>
+  </data>
+  <data name="Home_QsLogs" xml:space="preserve">
+    <value>लॉग</value>
+  </data>
+  <data name="Home_QsPersonalize" xml:space="preserve">
+    <value>व्यक्तिगत करें</value>
+  </data>
+  <data name="Home_QsAbout" xml:space="preserve">
+    <value>के बारे में &amp; मदद</value>
+  </data>
+  <data name="Home_GitHubCard" xml:space="preserve">
+    <value>GitHub पर RemEx</value>
+  </data>
+  <data name="Home_GitHubCardDesc" xml:space="preserve">
+    <value>स्रोत देखें, समस्या रिपोर्ट करें, या प्रोजेक्ट को स्टार करें।</value>
+  </data>
+  <data name="Home_PlayStoreCard" xml:space="preserve">
+    <value>फ़ोन ऐप प्राप्त करें</value>
+  </data>
+  <data name="Home_PlayStoreCardDesc" xml:space="preserve">
+    <value>Google Play पर Android के लिए RemEx डाउनलोड करें।</value>
+  </data>
+  <data name="Canvas_GraphRadial" xml:space="preserve">
+    <value>रेडियल ◔</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>बड़ा मान 42</value>
+  </data>
+  <data name="Canvas_GraphValueSpark" xml:space="preserve">
+    <value>मान + स्पार्क ⌇</value>
+  </data>
+  <data name="Canvas_GraphHue" xml:space="preserve">
+    <value>ह्यू पल्स ◐</value>
+  </data>
+  <data name="Canvas_GraphDual" xml:space="preserve">
+    <value>दोहरा मीट्रिक ⑂</value>
+  </data>
+  <data name="Canvas_SecondMetric" xml:space="preserve">
+    <value>दूसरा मीट्रिक</value>
+  </data>
+  <data name="Canvas_SecondMetricNone" xml:space="preserve">
+    <value>दूसरा मीट्रिक साफ़ करें</value>
+  </data>
+  <data name="Canvas_ActionPin" xml:space="preserve">
+    <value>पिन करें</value>
+  </data>
+  <data name="Canvas_ActionRemove" xml:space="preserve">
+    <value>हटाएं</value>
+  </data>
+  <data name="Canvas_ActionDone" xml:space="preserve">
+    <value>हो गया</value>
+  </data>
+  <data name="Canvas_SelectedLabel" xml:space="preserve">
+    <value>चयनित</value>
+  </data>
+  <data name="Canvas_CoachTitle" xml:space="preserve">
+    <value>अपना डैशबोर्ड बनाएं</value>
+  </data>
+  <data name="Canvas_CoachBody" xml:space="preserve">
+    <value>हार्डवेयर कार्ड जोड़ने के लिए यहाँ सेंसर बटन पर टैप करें। व्यवस्थित करने के लिए खींचें, दाएँ-क्लिक करें</value>
+  </data>
+  <data name="Canvas_CoachGotIt" xml:space="preserve">
+    <value>समझ गया</value>
+  </data>
+  <data name="Canvas_CoachReplayTooltip" xml:space="preserve">
+    <value>डैशबोर्ड सुझावों को फिर से चलाएं</value>
+  </data>
+  <data name="SecondMetric_Title" xml:space="preserve">
+    <value>दूसरा मीट्रिक चुनें</value>
+  </data>
+  <data name="SecondMetric_Header" xml:space="preserve">
+    <value>दूसरा सेंसर ओवरले करें</value>
+  </data>
+  <data name="SecondMetric_Search" xml:space="preserve">
+    <value>सेंसर खोजें…</value>
+  </data>
+  <data name="SecondMetric_SetBtn" xml:space="preserve">
+    <value>सेट करें</value>
+  </data>
+  <data name="FileTransfer_ToggleViewTooltip" xml:space="preserve">
+    <value>सूची और आइकन दृश्य के बीच स्विच करें</value>
+  </data>
+  <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
+    <value>आइकन आकार</value>
+  </data>
 </root>

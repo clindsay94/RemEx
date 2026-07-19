@@ -2969,4 +2969,253 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_HwInfoCardDesc" xml:space="preserve">
     <value>Ücretsiz — RemEx için ayrıntılı PC donanım sensörlerini besler.</value>
   </data>
+  <data name="Activity_AppLaunched" xml:space="preserve">
+    <value>{0} başlatıldı</value>
+  </data>
+  <data name="Activity_CommandRun" xml:space="preserve">
+    <value>{0} komutu çalıştırıldı</value>
+  </data>
+  <data name="Activity_FileDownloaded" xml:space="preserve">
+    <value>{0} indirildi</value>
+  </data>
+  <data name="Activity_FileReceived" xml:space="preserve">
+    <value>Telefonda {0} alındı</value>
+  </data>
+  <data name="Activity_FileSent" xml:space="preserve">
+    <value>Telefona {0} gönderildi</value>
+  </data>
+  <data name="Activity_FileUploaded" xml:space="preserve">
+    <value>{0} yüklendi</value>
+  </data>
+  <data name="Canvas_ActionDone" xml:space="preserve">
+    <value>Tamamlandı</value>
+  </data>
+  <data name="Canvas_ActionPin" xml:space="preserve">
+    <value>Sabitle</value>
+  </data>
+  <data name="Canvas_ActionRemove" xml:space="preserve">
+    <value>Kaldır</value>
+  </data>
+  <data name="Canvas_CoachBody" xml:space="preserve">
+    <value>Donanım kartı eklemek için yukarıdaki Sensörler düğmesine dokunun. Düzenlemek için sürükleyin, görünümünü değiştirmek için bir kartı sağ tıklatın ve birden fazlasını seçmek için Ctrl+tıklayın.</value>
+  </data>
+  <data name="Canvas_CoachGotIt" xml:space="preserve">
+    <value>Anladım</value>
+  </data>
+  <data name="Canvas_CoachReplayTooltip" xml:space="preserve">
+    <value>Gösterge paneli ipuçlarını tekrarla</value>
+  </data>
+  <data name="Canvas_CoachTitle" xml:space="preserve">
+    <value>Gösterge panelinizi oluşturun</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Büyük Değer 42</value>
+  </data>
+  <data name="Canvas_GraphDual" xml:space="preserve">
+    <value>Çift Metrik ⑂</value>
+  </data>
+  <data name="Canvas_GraphHue" xml:space="preserve">
+    <value>Renk Atışı ◐</value>
+  </data>
+  <data name="Canvas_GraphRadial" xml:space="preserve">
+    <value>Radyal ◔</value>
+  </data>
+  <data name="Canvas_GraphValueSpark" xml:space="preserve">
+    <value>Değer + Spark ⌇</value>
+  </data>
+  <data name="Canvas_SecondMetric" xml:space="preserve">
+    <value>İkinci Metrik</value>
+  </data>
+  <data name="Canvas_SecondMetricNone" xml:space="preserve">
+    <value>İkinci Metriği Temizle</value>
+  </data>
+  <data name="Canvas_SelectedLabel" xml:space="preserve">
+    <value>seçili</value>
+  </data>
+  <data name="Custom_ContentFont" xml:space="preserve">
+    <value>İçerik Yazı Tipi</value>
+  </data>
+  <data name="Custom_ContentFontTip" xml:space="preserve">
+    <value>Metin gövdesi ve içeriği için yazı tipi — açıklamalar, etiketler ve sensör çalışma alanı. Sabit genişlikli veri okuyucuları monospace yazı tipini korur.</value>
+  </data>
+  <data name="Custom_FontUnavailable" xml:space="preserve">
+    <value>Bu yazı tipi bu bilgisayarda yüklenemedi ve yüklü olmayabilir: {0}. Bunun yerine varsayılan yazı tipi kullanılıyor.</value>
+  </data>
+  <data name="Custom_PageTitleFont" xml:space="preserve">
+    <value>Sayfa Başlığı Yazı Tipi</value>
+  </data>
+  <data name="Custom_PageTitleFontTip" xml:space="preserve">
+    <value>Büyük sayfa başlıkları için yazı tipi. Uygulamanın görüntü yazı tiplerini ve bu sistem üzerinde yüklü olan yazı tiplerini içerir.</value>
+  </data>
+  <data name="Custom_Typography" xml:space="preserve">
+    <value>TİPOGRAFİ</value>
+  </data>
+  <data name="Custom_UiScale" xml:space="preserve">
+    <value>Kullanıcı Arayüzü Boyutu</value>
+  </data>
+  <data name="Custom_UiScaleTip" xml:space="preserve">
+    <value>Her şeyi — metni ve denetimleri — daha büyük veya daha küçük yapın, %85 ile %130 arasında.</value>
+  </data>
+  <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
+    <value>Simge boyutu</value>
+  </data>
+  <data name="FileTransfer_ToggleViewTooltip" xml:space="preserve">
+    <value>Liste ve simge görünümü arasında geçiş yap</value>
+  </data>
+  <data name="Home_ClearActivity" xml:space="preserve">
+    <value>TEMİZLE</value>
+  </data>
+  <data name="Home_GitHubCard" xml:space="preserve">
+    <value>GitHub'da RemEx</value>
+  </data>
+  <data name="Home_GitHubCardDesc" xml:space="preserve">
+    <value>Kaynağı görüntüleyin, bir sorun bildirin veya projeyi yıldızlandırın.</value>
+  </data>
+  <data name="Home_NoRecentActivity" xml:space="preserve">
+    <value>Henüz aktivite yok. Bir uygulama başlatın, bir komut çalıştırın veya bir dosya taşıyın ve burada görünecektir.</value>
+  </data>
+  <data name="Home_PlayStoreCard" xml:space="preserve">
+    <value>Telefon uygulamasını al</value>
+  </data>
+  <data name="Home_PlayStoreCardDesc" xml:space="preserve">
+    <value>Google Play'den Android için RemEx indirin.</value>
+  </data>
+  <data name="Home_QsAbout" xml:space="preserve">
+    <value>Hakkında ve Yardım</value>
+  </data>
+  <data name="Home_QsApps" xml:space="preserve">
+    <value>Uygulamalar</value>
+  </data>
+  <data name="Home_QsCommands" xml:space="preserve">
+    <value>Komutlar</value>
+  </data>
+  <data name="Home_QsFiles" xml:space="preserve">
+    <value>Dosyalar</value>
+  </data>
+  <data name="Home_QsLogs" xml:space="preserve">
+    <value>Günlükler</value>
+  </data>
+  <data name="Home_QsPersonalize" xml:space="preserve">
+    <value>Kişiselleştir</value>
+  </data>
+  <data name="Home_QsProcesses" xml:space="preserve">
+    <value>İşlemler</value>
+  </data>
+  <data name="Home_QsSensors" xml:space="preserve">
+    <value>Sensörler</value>
+  </data>
+  <data name="Home_RecentActivity" xml:space="preserve">
+    <value>// SON_AKTİVİTE</value>
+  </data>
+  <data name="Home_ScClose" xml:space="preserve">
+    <value>Açılır menüleri kapat</value>
+  </data>
+  <data name="Home_ScNav" xml:space="preserve">
+    <value>Ekranları değiştir</value>
+  </data>
+  <data name="Home_ScSettings" xml:space="preserve">
+    <value>Kişiselleştir</value>
+  </data>
+  <data name="Home_SearchPrompt" xml:space="preserve">
+    <value>Ekranları ve işlemleri ara…</value>
+  </data>
+  <data name="Home_StatCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="Home_StatMemory" xml:space="preserve">
+    <value>BELLEK</value>
+  </data>
+  <data name="Home_StatUptime" xml:space="preserve">
+    <value>ÇALIŞMATivité</value>
+  </data>
+  <data name="Home_WelcomeIntro" xml:space="preserve">
+    <value>Bu bilgisayarı telefonunuzdan kontrol edin — masaüstünü akışa aktarın, dosyalara göz atıp aktarın, uygulamaları başlatın, komutları çalıştırın ve canlı sensörleri izleyin. Başlamak için Ayarlar'da telefonunuzu eşleştirin.</value>
+  </data>
+  <data name="Home_WelcomeTitle" xml:space="preserve">
+    <value>RemEx'e Hoş Geldiniz</value>
+  </data>
+  <data name="Logs_CaptureLevel" xml:space="preserve">
+    <value>Yakala:</value>
+  </data>
+  <data name="Logs_CaptureLevelTip" xml:space="preserve">
+    <value>Bellekte ne kadar ayrıntı tutulduğu. Daha düşük değer daha fazlasını tutar; görüntüleme filtresi asla yakalanmış girişleri silmez.</value>
+  </data>
+  <data name="Logs_Export" xml:space="preserve">
+    <value>Dışa Aktar</value>
+  </data>
+  <data name="Logs_ExportAs" xml:space="preserve">
+    <value>Dışa Aktar Olarak:</value>
+  </data>
+  <data name="Logs_ExportTitle" xml:space="preserve">
+    <value>Günlükleri Dışa Aktar</value>
+  </data>
+  <data name="Logs_Preset" xml:space="preserve">
+    <value>Ön Ayar:</value>
+  </data>
+  <data name="Logs_PresetAll" xml:space="preserve">
+    <value>Tümü</value>
+  </data>
+  <data name="Logs_PresetConnection" xml:space="preserve">
+    <value>Bağlantı ve Eşleştirme</value>
+  </data>
+  <data name="Logs_PresetErrors" xml:space="preserve">
+    <value>Hatalar ve Uyarılar</value>
+  </data>
+  <data name="Logs_PresetFileTransfer" xml:space="preserve">
+    <value>Dosya Aktarımı</value>
+  </data>
+  <data name="Logs_PresetInput" xml:space="preserve">
+    <value>Giriş ve Komutlar</value>
+  </data>
+  <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
+    <value>Uzak Masaüstü</value>
+  </data>
+  <data name="Logs_PresetStartup" xml:space="preserve">
+    <value>Başlangıç ve Yükseltme</value>
+  </data>
+  <data name="Logs_ScopeCurrentView" xml:space="preserve">
+    <value>Geçerli görünüm</value>
+  </data>
+  <data name="Logs_ScopeErrorsOnly" xml:space="preserve">
+    <value>Yalnızca hatalar</value>
+  </data>
+  <data name="Logs_ScopeEverything" xml:space="preserve">
+    <value>Yakalanan her şey</value>
+  </data>
+  <data name="Logs_ScopeWarningsPlus" xml:space="preserve">
+    <value>Uyarılar ve hatalar</value>
+  </data>
+  <data name="Logs_SearchWatermark" xml:space="preserve">
+    <value>Günlükleri ara…</value>
+  </data>
+  <data name="Remote_CopyMac" xml:space="preserve">
+    <value>Kopyala</value>
+  </data>
+  <data name="Remote_MacCopied" xml:space="preserve">
+    <value>MAC adresi kopyalandı — telefonunuzdaki RemEx uygulamasına yapıştırın.</value>
+  </data>
+  <data name="Remote_ThisPcMac" xml:space="preserve">
+    <value>BU PC'NİN MAC ADRESİ</value>
+  </data>
+  <data name="Remote_WakeExplainer" xml:space="preserve">
+    <value>Wake-on-LAN, telefonunuzun bu bilgisayarı ağ üzerinden uzaktan açmasını sağlar — hatta uyku veya tamamen kapalı olduğu zaman bile. "Sihirli paket" adlı küçük bir paket göndererek bu bilgisayara açılması talimatını verir.</value>
+  </data>
+  <data name="Remote_WakeInstruction" xml:space="preserve">
+    <value>Kurulum için: telefonunuzda RemEx uygulamasını açın, Ayarlar → Wake-on-LAN'a gidin ve yukarıdaki adresi girin. Telefonunuz daha sonra aynı ağdayken bu bilgisayarı istediği zaman uyandırabilir.</value>
+  </data>
+  <data name="Remote_WakeTitle" xml:space="preserve">
+    <value>Bu bilgisayarı telefonunuzdan uyandırın</value>
+  </data>
+  <data name="SecondMetric_Header" xml:space="preserve">
+    <value>İKİNCİ SENSÖRÜ ÜSTÜNE YERLEŞTİR</value>
+  </data>
+  <data name="SecondMetric_Search" xml:space="preserve">
+    <value>Sensörleri ara…</value>
+  </data>
+  <data name="SecondMetric_SetBtn" xml:space="preserve">
+    <value>Ayarla</value>
+  </data>
+  <data name="SecondMetric_Title" xml:space="preserve">
+    <value>İkinci Metriği Seçin</value>
+  </data>
 </root>

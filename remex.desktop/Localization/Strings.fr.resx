@@ -2965,4 +2965,253 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_HwInfoCardDesc" xml:space="preserve">
     <value>Gratuit — alimente les capteurs matériels détaillés du PC dans RemEx.</value>
   </data>
+  <data name="Activity_AppLaunched" xml:space="preserve">
+    <value>Lancé {0}</value>
+  </data>
+  <data name="Activity_CommandRun" xml:space="preserve">
+    <value>Commande {0} exécutée</value>
+  </data>
+  <data name="Activity_FileDownloaded" xml:space="preserve">
+    <value>Téléchargé {0}</value>
+  </data>
+  <data name="Activity_FileReceived" xml:space="preserve">
+    <value>Reçu {0} depuis le téléphone</value>
+  </data>
+  <data name="Activity_FileSent" xml:space="preserve">
+    <value>Envoyé {0} au téléphone</value>
+  </data>
+  <data name="Activity_FileUploaded" xml:space="preserve">
+    <value>Envoyé {0}</value>
+  </data>
+  <data name="Canvas_ActionDone" xml:space="preserve">
+    <value>Terminé</value>
+  </data>
+  <data name="Canvas_ActionPin" xml:space="preserve">
+    <value>Épingler</value>
+  </data>
+  <data name="Canvas_ActionRemove" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Canvas_CoachBody" xml:space="preserve">
+    <value>Appuyez sur le bouton Capteurs ici pour ajouter des cartes matérielles. Faites glisser pour arranger, clic droit sur une carte pour changer son apparence, et Ctrl+clic sur les cartes pour sélectionner plusieurs à la fois.</value>
+  </data>
+  <data name="Canvas_CoachGotIt" xml:space="preserve">
+    <value>Compris</value>
+  </data>
+  <data name="Canvas_CoachReplayTooltip" xml:space="preserve">
+    <value>Rejouer les conseils du tableau de bord</value>
+  </data>
+  <data name="Canvas_CoachTitle" xml:space="preserve">
+    <value>Construire votre tableau de bord</value>
+  </data>
+  <data name="Canvas_GraphBigValue" xml:space="preserve">
+    <value>Grande valeur 42</value>
+  </data>
+  <data name="Canvas_GraphDual" xml:space="preserve">
+    <value>Double métrique ⑂</value>
+  </data>
+  <data name="Canvas_GraphHue" xml:space="preserve">
+    <value>Impulsion de teinte ◐</value>
+  </data>
+  <data name="Canvas_GraphRadial" xml:space="preserve">
+    <value>Radial ◔</value>
+  </data>
+  <data name="Canvas_GraphValueSpark" xml:space="preserve">
+    <value>Valeur + Spark ⌇</value>
+  </data>
+  <data name="Canvas_SecondMetric" xml:space="preserve">
+    <value>Deuxième métrique</value>
+  </data>
+  <data name="Canvas_SecondMetricNone" xml:space="preserve">
+    <value>Effacer la deuxième métrique</value>
+  </data>
+  <data name="Canvas_SelectedLabel" xml:space="preserve">
+    <value>sélectionnés</value>
+  </data>
+  <data name="Custom_ContentFont" xml:space="preserve">
+    <value>Fonte du contenu</value>
+  </data>
+  <data name="Custom_ContentFontTip" xml:space="preserve">
+    <value>Fonte pour le texte du corps et du contenu — descriptions, étiquettes et l'espace de travail des capteurs. Les données à largeur fixe gardent leur fonte monospace.</value>
+  </data>
+  <data name="Custom_FontUnavailable" xml:space="preserve">
+    <value>Cette fonte n'a pas pu être chargée sur ce PC et peut ne pas être installée : {0}. La fonte par défaut est utilisée à la place.</value>
+  </data>
+  <data name="Custom_PageTitleFont" xml:space="preserve">
+    <value>Fonte du titre de page</value>
+  </data>
+  <data name="Custom_PageTitleFontTip" xml:space="preserve">
+    <value>Fonte pour les grands titres de page. Inclut les fontes d'affichage de l'application et toute fonte installée sur ce système.</value>
+  </data>
+  <data name="Custom_Typography" xml:space="preserve">
+    <value>TYPOGRAPHIE</value>
+  </data>
+  <data name="Custom_UiScale" xml:space="preserve">
+    <value>Taille de l'IU</value>
+  </data>
+  <data name="Custom_UiScaleTip" xml:space="preserve">
+    <value>Agrandissez ou réduisez tout — texte et contrôles — de 85 % à 130 %.</value>
+  </data>
+  <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
+    <value>Taille de l'icône</value>
+  </data>
+  <data name="FileTransfer_ToggleViewTooltip" xml:space="preserve">
+    <value>Basculer entre la vue liste et la vue icône</value>
+  </data>
+  <data name="Home_ClearActivity" xml:space="preserve">
+    <value>EFFACER</value>
+  </data>
+  <data name="Home_GitHubCard" xml:space="preserve">
+    <value>RemEx sur GitHub</value>
+  </data>
+  <data name="Home_GitHubCardDesc" xml:space="preserve">
+    <value>Voir le code source, signaler un problème ou étoiler le projet.</value>
+  </data>
+  <data name="Home_NoRecentActivity" xml:space="preserve">
+    <value>Pas d'activité pour le moment. Lancez une application, exécutez une commande ou déplacez un fichier et il apparaîtra ici.</value>
+  </data>
+  <data name="Home_PlayStoreCard" xml:space="preserve">
+    <value>Obtenir l'application téléphone</value>
+  </data>
+  <data name="Home_PlayStoreCardDesc" xml:space="preserve">
+    <value>Téléchargez RemEx pour Android sur Google Play.</value>
+  </data>
+  <data name="Home_QsAbout" xml:space="preserve">
+    <value>À propos et aide</value>
+  </data>
+  <data name="Home_QsApps" xml:space="preserve">
+    <value>Applications</value>
+  </data>
+  <data name="Home_QsCommands" xml:space="preserve">
+    <value>Commandes</value>
+  </data>
+  <data name="Home_QsFiles" xml:space="preserve">
+    <value>Fichiers</value>
+  </data>
+  <data name="Home_QsLogs" xml:space="preserve">
+    <value>Journaux</value>
+  </data>
+  <data name="Home_QsPersonalize" xml:space="preserve">
+    <value>Personnaliser</value>
+  </data>
+  <data name="Home_QsProcesses" xml:space="preserve">
+    <value>Processus</value>
+  </data>
+  <data name="Home_QsSensors" xml:space="preserve">
+    <value>Capteurs</value>
+  </data>
+  <data name="Home_RecentActivity" xml:space="preserve">
+    <value>// ACTIVITÉ_RÉCENTE</value>
+  </data>
+  <data name="Home_ScClose" xml:space="preserve">
+    <value>Fermer les pop-ups</value>
+  </data>
+  <data name="Home_ScNav" xml:space="preserve">
+    <value>Basculer les écrans</value>
+  </data>
+  <data name="Home_ScSettings" xml:space="preserve">
+    <value>Personnaliser</value>
+  </data>
+  <data name="Home_SearchPrompt" xml:space="preserve">
+    <value>Rechercher les écrans et actions…</value>
+  </data>
+  <data name="Home_StatCpu" xml:space="preserve">
+    <value>CPU</value>
+  </data>
+  <data name="Home_StatMemory" xml:space="preserve">
+    <value>MÉMOIRE</value>
+  </data>
+  <data name="Home_StatUptime" xml:space="preserve">
+    <value>DISPONIBILITÉ</value>
+  </data>
+  <data name="Home_WelcomeIntro" xml:space="preserve">
+    <value>Contrôlez ce PC depuis votre téléphone — diffusez le bureau, parcourez et transférez des fichiers, lancez des applications, exécutez des commandes et regardez les capteurs en direct. Associez votre téléphone dans Paramètres pour commencer.</value>
+  </data>
+  <data name="Home_WelcomeTitle" xml:space="preserve">
+    <value>Bienvenue sur RemEx</value>
+  </data>
+  <data name="Logs_CaptureLevel" xml:space="preserve">
+    <value>Capturer :</value>
+  </data>
+  <data name="Logs_CaptureLevelTip" xml:space="preserve">
+    <value>Le niveau de détail conservé en mémoire. Un niveau inférieur en conserve plus pour le filtrage ; le filtre d'affichage ne supprime jamais les entrées capturées.</value>
+  </data>
+  <data name="Logs_Export" xml:space="preserve">
+    <value>Exporter</value>
+  </data>
+  <data name="Logs_ExportAs" xml:space="preserve">
+    <value>Exporter en tant que :</value>
+  </data>
+  <data name="Logs_ExportTitle" xml:space="preserve">
+    <value>Exporter les journaux</value>
+  </data>
+  <data name="Logs_Preset" xml:space="preserve">
+    <value>Préréglage :</value>
+  </data>
+  <data name="Logs_PresetAll" xml:space="preserve">
+    <value>Tous</value>
+  </data>
+  <data name="Logs_PresetConnection" xml:space="preserve">
+    <value>Connexion et appairage</value>
+  </data>
+  <data name="Logs_PresetErrors" xml:space="preserve">
+    <value>Erreurs et avertissements</value>
+  </data>
+  <data name="Logs_PresetFileTransfer" xml:space="preserve">
+    <value>Transfert de fichiers</value>
+  </data>
+  <data name="Logs_PresetInput" xml:space="preserve">
+    <value>Entrée et commandes</value>
+  </data>
+  <data name="Logs_PresetRemoteDesktop" xml:space="preserve">
+    <value>Bureau à distance</value>
+  </data>
+  <data name="Logs_PresetStartup" xml:space="preserve">
+    <value>Démarrage et élévation</value>
+  </data>
+  <data name="Logs_ScopeCurrentView" xml:space="preserve">
+    <value>Vue actuelle</value>
+  </data>
+  <data name="Logs_ScopeErrorsOnly" xml:space="preserve">
+    <value>Erreurs seulement</value>
+  </data>
+  <data name="Logs_ScopeEverything" xml:space="preserve">
+    <value>Tout ce qui est capturé</value>
+  </data>
+  <data name="Logs_ScopeWarningsPlus" xml:space="preserve">
+    <value>Avertissements et erreurs</value>
+  </data>
+  <data name="Logs_SearchWatermark" xml:space="preserve">
+    <value>Rechercher dans les journaux…</value>
+  </data>
+  <data name="Remote_CopyMac" xml:space="preserve">
+    <value>Copier</value>
+  </data>
+  <data name="Remote_MacCopied" xml:space="preserve">
+    <value>Adresse MAC copiée — collez-la dans l'application RemEx sur votre téléphone.</value>
+  </data>
+  <data name="Remote_ThisPcMac" xml:space="preserve">
+    <value>ADRESSE MAC DE CE PC</value>
+  </data>
+  <data name="Remote_WakeExplainer" xml:space="preserve">
+    <value>Wake-on-LAN vous permet de basculer ce PC sur votre réseau — même quand il est en veille ou complètement éteint. Cela fonctionne en envoyant un petit « paquet magique » qui dit à cet ordinateur de s'allumer.</value>
+  </data>
+  <data name="Remote_WakeInstruction" xml:space="preserve">
+    <value>Pour le configurer : ouvrez l'application RemEx sur votre téléphone, allez dans Paramètres → Wake-on-LAN, et entrez l'adresse ci-dessus. Votre téléphone peut alors réveiller ce PC n'importe quand qu'il est sur le même réseau.</value>
+  </data>
+  <data name="Remote_WakeTitle" xml:space="preserve">
+    <value>Réveiller ce PC depuis votre téléphone</value>
+  </data>
+  <data name="SecondMetric_Header" xml:space="preserve">
+    <value>SUPERPOSER UN DEUXIÈME CAPTEUR SUR</value>
+  </data>
+  <data name="SecondMetric_Search" xml:space="preserve">
+    <value>Rechercher des capteurs…</value>
+  </data>
+  <data name="SecondMetric_SetBtn" xml:space="preserve">
+    <value>Définir</value>
+  </data>
+  <data name="SecondMetric_Title" xml:space="preserve">
+    <value>Choisir une deuxième métrique</value>
+  </data>
 </root>

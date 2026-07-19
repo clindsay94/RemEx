@@ -713,4 +713,60 @@ $line
     <string name="splash_term_pairing">pairing</string>
     <string name="splash_term_session_ready">session ready</string>
     <string name="personalization_splash_pong">Signal Pong</string>
+    <!-- Home Base coach marks (RemEx-km0i.10) -->
+    <string name="coach_title">Etrafında Gezinmek</string>
+    <string name="coach_hold_body">Bir kartı taşımak için basılı tutun, sonra sürükleyin.</string>
+    <string name="coach_menu_body">Kartları özelleştirin, geri alın veya üst menüden sıfırlayın.</string>
+    <string name="coach_add_body">+ düğmesiyle daha fazla sensör kartı ekleyin.</string>
+    <string name="coach_view_body">Bir kartın ızgarasına dokunarak görünümünü değiştirin.</string>
+    <string name="coach_group_body">Bir kartı tutun, sonra diğerlerine dokunarak grup olarak taşıyın.</string>
+    <string name="coach_select_body">Bir kartı seçmek için basılı tutun — yeniden şekillendirmek, sabitlemek veya kaldırmak için bir çubuk görünür (veya tüm grup).</string>
+    <string name="coach_next">İleri</string>
+    <string name="coach_got_it">Anladım</string>
+    <string name="coach_skip">Atla</string>
+    <string name="coach_replay">İpuçlarını Göster</string>
+    <string name="dashboard_custom_title_label">Kart başlığı</string>
+    <string name="dashboard_custom_title_hint">Sensör adını kullanmak için boş bırakın</string>
+    <string name="dashboard_show_value_overlay">Canlı değeri göster</string>
+    <plurals name="dashboard_selection_count">
+        <item quantity="one">%1$d seçili</item>
+        <item quantity="other">%1$d seçili</item>
+    </plurals>
+    <string name="cd_dashboard_pin_selection">Seçili kartları sabitle</string>
+    <string name="cd_dashboard_unpin_selection">Seçili kartları sabitlemeyi kaldır</string>
+    <string name="cd_dashboard_remove_selection">Seçili kartları kaldır</string>
+    <string name="cd_dashboard_reshape_selection">Seçili kartların şeklini değiştir</string>
+    <string name="cd_dashboard_exit_selection">Seçimden çık</string>
+    <string name="cd_open_view_picker">Ekran görünümünü seçin</string>
+    <string name="dashboard_view_picker_title">Bir görünüm seçin</string>
+    <string name="shape_picker_title">Bir şekil seçin</string>
+    <string name="dashboard_view_auto">Otomatik</string>
+    <string name="dashboard_view_big_value">Büyük değer</string>
+    <string name="dashboard_view_value_spark">Değer + sparkline</string>
+    <string name="dashboard_view_ring_gauge">Halka göstergesi</string>
+    <string name="dashboard_view_arc_gauge">Yay göstergesi</string>
+    <string name="dashboard_view_line">Çizgi</string>
+    <string name="dashboard_view_area">Alan</string>
+    <string name="dashboard_view_bar">Çubuk histogram</string>
+    <string name="dashboard_view_hue_pulse">Renk atışı</string>
+    <string name="dashboard_view_led_meter">LED göstergesi</string>
+    <string name="dashboard_view_dual_metric">Çift metrik</string>
+    <string name="dashboard_dual_metric_pick_secondary">İkinci bir metrik ekleyin</string>
+    <string name="cd_view_value">Büyük değer, %1$s</string>
+    <string name="cd_view_value_spark">Sparkline ile değer, %1$s</string>
+    <string name="cd_view_ring_gauge">Halka göstergesi, %1$s</string>
+    <string name="cd_view_arc_gauge">Yay göstergesi, %1$s</string>
+    <string name="cd_view_line">Çizgi grafik, %1$s</string>
+    <string name="cd_view_area">Alan grafik, %1$s</string>
+    <string name="cd_view_bar">Çubuk histogram, %1$s</string>
+    <string name="cd_view_hue_pulse">Parlayan yük döşemesi, %1$s</string>
+    <string name="cd_view_led_meter">LED göstergesi, %1$s</string>
+    <string name="cd_view_dual_metric">Çift metrik üst katmanı, %1$s</string>
+    <string name="personalization_shape_remote_desktop">Uzak Masaüstü</string>
+    <string name="personalization_shape_auto">Otomatik (kategori başına)</string>
+    <string name="personalization_shape_reset_default">Varsayılan şekile sıfırla</string>
+    <string name="shape_rounded_rectangle">Yuvarlak Dikdörtgen</string>
+    <!-- file_transfer_service_progress is intentionally not translated (locale-neutral) -->
+    <string name="file_transfer_service_progress" translatable="false">%1$d%% · %2$d/%3$d</string>
+    <string name="share_to_pc_skipped_unreadable">Okunamayan %1$d dosya atlandı — boş olabilir veya artık mevcut olmayabilir.</string>
 </resources>
