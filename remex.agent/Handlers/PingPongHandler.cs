@@ -321,9 +321,10 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.PairingPinRequest:
-                        // ASI-compliant PIN relay (RemEx-1t0b). Reply with the active PIN iff the
-                        // transport is trusted for auto-fetch (isTrustedForPinAutoFetch is computed at
-                        // the /ws map site — the same TransportTrust gate as GET /pairing-pin). The
+                        // ASI-compliant PIN relay (RemEx-1t0b) — the sole PIN auto-fetch path since the
+                        // GET /pairing-pin HTTP endpoint was retired (RemEx-0xp0). Reply with the active
+                        // PIN iff the transport is trusted for auto-fetch (isTrustedForPinAutoFetch is
+                        // computed at the /ws map site via TransportTrust.IsTrustedForPinAutoFetch). The
                         // handler only reads an already-active PIN; it never creates or mutates a
                         // session. We always reply, so the client's fetch never hangs — a pin-less
                         // response simply means the user enters the PIN manually.

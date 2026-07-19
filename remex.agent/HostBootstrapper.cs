@@ -305,90 +305,11 @@ public static class HostBootstrapper
             });
         });
 
-        // Returns the active pairing PIN so the local host UI/tray — or a phone reaching the host over
-        // an authenticated Tailscale tunnel — can auto-fill it for the user.
-        //
-        // INTENTIONAL: the Tailscale path exists specifically so someone connecting to their PC remotely
-        // (NOT on the same LAN, so they obviously can't see the PIN shown on the PC screen) can still
-        // pair. Over a Tailscale tunnel the transport is already mutually authenticated and encrypted, so
-        // auto-serving the PIN there is safe and is the only way a genuinely-remote user could ever read
-        // it. Do not "harden" this back to loopback-only without a replacement remote-pairing path — that
-        // is the regression this restores (RemEx-i9e).
-        //
-        // Gated to loopback OR a
-        // genuine Tailscale path (caller AND the host-side address both in the 100.64.0.0/10 /
-        // fd7a:115c:a1e0::/48 ranges; see TransportTrust): on those paths the channel is already
-        // mutually-authenticated and MITM-resistant, so relaying the PIN leaks nothing an attacker could
-        // use. On plain LAN/internet the PIN keeps its out-of-band, anti-MITM purpose and is never served.
-        // This only relays the PIN of an already-active session a human started at the PC, so it adds no
-        // remote-initiation capability. A disallowed caller gets a 404 (not a 403) so the endpoint is not
-        // advertised to network scanners.
-        app.MapGet("/pairing-pin", (HttpContext httpContext, IPairingService pairingService) =>
-        {
-            // Null remote/local (e.g. a non-IP transport) is treated as untrusted by TransportTrust, which
-            // also avoids the ArgumentNullException that IsLoopback(null) would throw.
-            var remoteIp = httpContext.Connection.RemoteIpAddress;
-            var localIp = httpContext.Connection.LocalIpAddress;
-            if (!Remex.Agent.Services.Security.TransportTrust.IsTrustedForPinAutoFetch(remoteIp, localIp))
-            {
-                return Results.NotFound();
-            }
-
-            if (pairingService.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs))
-            {
-                return Results.Ok(new { pin, expiresAtUnixMs });
-            }
-            return Results.NotFound(new { message = "No active pairing session." });
-        });
-
-        // Proactively starts a pairing session and returns the PIN immediately.
-        // Deliberately stays loopback-only — unlike /pairing-pin, which was widened to trusted Tailscale
-        // paths. This endpoint *creates* a session and discloses its PIN with no host-side consent, so a
-        // non-loopback caller (even over Tailscale) could otherwise begin pairing and read the PIN with
-        // nobody present at the PC, enabling remote takeover. The auto-fill flow only needs /pairing-pin
-        // (a human starts pairing at the PC; the phone reads the already-active PIN). If a genuine
-        // remote-provisioning flow is ever required, it must require an already-paired client token.
-        app.MapPost("/start-pairing", async (
-            HttpContext httpContext,
-            Remex.Agent.Services.Security.PairingService pairingService) =>
-        {
-            // A null RemoteIpAddress (e.g. a non-IP transport) is not loopback — reject it, and avoid
-            // the ArgumentNullException that IsLoopback(null) would otherwise throw inside the handler.
-            var remoteIp = httpContext.Connection.RemoteIpAddress;
-            if (remoteIp is null || !System.Net.IPAddress.IsLoopback(remoteIp))
-            {
-                return Results.NotFound();
-            }
-
-            // Defense-in-depth: even though this endpoint is loopback-only, the per-IP throttle
-            // bounds repeated session churn from any single source (loopback is never throttled).
-            // Resolved optionally so the endpoint still works before the DI registration lands;
-            // see the integration follow-up to register PairingThrottle as a singleton.
-            var pairingThrottle = httpContext.RequestServices
-                .GetService(typeof(Remex.Agent.Services.Security.PairingThrottle))
-                as Remex.Agent.Services.Security.PairingThrottle;
-            if (pairingThrottle is not null
-                && !pairingThrottle.TryRegisterAttempt(httpContext.Connection.RemoteIpAddress, out var retryAfter))
-            {
-                httpContext.Response.Headers.RetryAfter =
-                    ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString(System.Globalization.CultureInfo.InvariantCulture);
-                return Results.StatusCode(StatusCodes.Status429TooManyRequests);
-            }
-
-            try
-            {
-                var acquisition = await pairingService.AcquirePairingSessionAsync(CancellationToken.None);
-                if (pairingService.TryGetActivePinInfo(out var pin, out var expiresAtUnixMs))
-                {
-                    return Results.Ok(new { pin, expiresAtUnixMs, startedNew = acquisition.StartedNewSession });
-                }
-                return Results.Problem("Session created but PIN could not be read.");
-            }
-            catch (Exception ex)
-            {
-                return Results.Problem(ex.Message);
-            }
-        });
+        // NOTE: The former HTTP PIN endpoints (GET /pairing-pin, POST /start-pairing) were retired in
+        // 2.3.x+ (RemEx-0xp0). PIN auto-fetch now runs exclusively over the /ws pairing socket via
+        // pairing_pin_request, gated by the identical TransportTrust.IsTrustedForPinAutoFetch check (see
+        // the /ws map below). The only shipped client that used the HTTP path (Android ≤2.2.4) is past
+        // the fleet's minimum, so the trust-all HTTP surface Google Play ASI flagged is gone entirely.
 
         // Exposes the in-process log buffer for remote diagnostics.
         app.MapGet("/debug/logs", () =>
@@ -447,9 +368,10 @@ public static class HostBootstrapper
             var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
 
             // Whether this connection may auto-fetch the pairing PIN over /ws (pairing_pin_request).
-            // Computed here from the real Kestrel connection addresses using the *identical* gate as
-            // GET /pairing-pin (see the /pairing-pin map above), so the WS path is no more powerful
-            // than that endpoint. A null RemoteIpAddress (TestServer/in-process) fails closed.
+            // Computed here from the real Kestrel connection addresses via the same
+            // TransportTrust.IsTrustedForPinAutoFetch gate that the retired GET /pairing-pin endpoint
+            // used (RemEx-0xp0), so the WS path is exactly as powerful as that endpoint was — no more.
+            // A null RemoteIpAddress (TestServer/in-process) fails closed.
             var isTrustedForPinAutoFetch = Remex.Agent.Services.Security.TransportTrust
                 .IsTrustedForPinAutoFetch(remoteIp, context.Connection.LocalIpAddress);
 

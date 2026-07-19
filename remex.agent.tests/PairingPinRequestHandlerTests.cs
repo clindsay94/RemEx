@@ -10,7 +10,8 @@ namespace Remex.Agent.Tests;
 /// <summary>
 /// Gate behavior for <see cref="PairingHandler.HandlePairingPinRequestAsync"/> (RemEx-1t0b): the
 /// host relays the active PIN over /ws only when the transport is trusted, and the pin-less "deny"
-/// and "no session" responses must be indistinguishable (mirroring GET /pairing-pin's 404-for-both).
+/// and "no session" responses must be indistinguishable (the retired GET /pairing-pin endpoint
+/// returned 404 for both; this path preserves that indistinguishability — RemEx-0xp0).
 /// The handler only ever READS an active PIN via <see cref="PairingService.TryGetActivePinInfo"/> —
 /// it never creates or mutates a session.
 /// </summary>

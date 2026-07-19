@@ -29,6 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The "RAM Total" telemetry card no longer sits on "Collecting Data".** Neither producer was emitting a total-memory reading: HWiNFO frequently exposes no "Physical Memory Total" sensor, and the Windows WMI path emitted only used/available/load. The host now always stamps a `RamTotalGb` reading — Windows from `GlobalMemoryStatusEx.ullTotalPhys`, Linux from `/proc/meminfo` `MemTotal` — injected only when no producer already supplied one, so a real HWiNFO total still wins. Verified on-device alongside the `MetricKind` round-trip (RAM/CPU/GPU cards now read real %/GB, not the old `1089.0ms`). (`WindowsTelemetryService.cs`, `LinuxTelemetryService.cs`; RemEx-km0i.3.)
 
+### Removed
+
+- **Retired the deprecated HTTP pairing-PIN endpoints `GET /pairing-pin` and `POST /start-pairing`.** These were the trust-all HTTP surface Google Play's ASI scanner flagged; RemEx-1t0b (2.3.0) moved PIN auto-fetch onto the `/ws` `pairing_pin_request` message — gated by the **identical** `TransportTrust.IsTrustedForPinAutoFetch` check — but kept the HTTP endpoints one release so shipped Android apps ≤2.2.4 (versionCode ≤32) kept working. The fleet is now past that (versionCode ≥33), so the HTTP endpoints are deleted entirely. Remote first-time pairing over Tailscale is unaffected — the `/ws` path carries exactly the same capability. The single Android reference was already a documentation comment (the Kotlin caller was deleted in RemEx-1t0b); no client change is required. (`HostBootstrapper.cs`, `PairingHandler.cs`, `PingPongHandler.cs`, `PairingPinRequestHandlerTests.cs`; RemEx-0xp0.)
+- **Deleted the dead `PairingThrottle` class.** Its only call site was inside the now-removed `POST /start-pairing` handler, and it was never registered in DI — `GetService(typeof(PairingThrottle))` always returned `null`, so the per-IP throttle never actually ran. The active pairing brute-force defense is unchanged: `PairingService` still caps failed HMAC attempts at 5 per session with a ~120 s session lifetime. A genuine per-IP cross-session throttle on the `/ws` pairing path is filed as a follow-up. (`PairingThrottle.cs` (removed); RemEx-0xp0.)
+
+### Security
+
+- **The trust-all HTTP PIN surface is now fully gone from the host.** With `GET /pairing-pin` / `POST /start-pairing` removed, the only path that ever discloses an active pairing PIN is the `/ws` `pairing_pin_request` message, which fails closed on any non-loopback / non-Tailscale transport (`TransportTrust.IsTrustedForPinAutoFetch`) and can only *relay* an already-active PIN — it can never create a session. This eliminates the last endpoint an unauthenticated LAN/internet caller could probe for pairing state. (RemEx-0xp0.)
+
 ---
 
 ## [2.3.2] — 2026-07-18

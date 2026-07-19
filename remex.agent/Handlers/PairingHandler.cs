@@ -174,10 +174,11 @@ public sealed class PairingHandler
     /// <summary>
     /// Handles an incoming <c>pairing_pin_request</c>: relays the currently-active pairing PIN over
     /// the pairing <c>/ws</c> socket so the Android app can auto-fill it without a trust-all HTTP
-    /// fetch (ASI compliance, RemEx-1t0b). This path is deliberately no more powerful than
-    /// <c>GET /pairing-pin</c>: it is gated by the identical
+    /// fetch (ASI compliance, RemEx-1t0b). This is now the <em>only</em> PIN auto-fetch surface — the
+    /// former <c>GET /pairing-pin</c> HTTP endpoint was retired (RemEx-0xp0) — and it carries exactly
+    /// the capability that endpoint did: gated by the
     /// <see cref="TransportTrust.IsTrustedForPinAutoFetch"/> decision (computed at the <c>/ws</c> map
-    /// site and passed in as <paramref name="isTrustedForPinAutoFetch"/>), and it only ever
+    /// site and passed in as <paramref name="isTrustedForPinAutoFetch"/>), it only ever
     /// <em>reads</em> an already-active PIN via <see cref="PairingService.TryGetActivePinInfo"/> — it
     /// never creates, extends, or mutates a session (it does not touch
     /// <c>AcquirePairingSessionAsync</c>).
@@ -185,8 +186,9 @@ public sealed class PairingHandler
     /// <returns>
     /// A <c>pairing_pin_response</c> whose payload is the active PIN when trusted, or null when the
     /// transport is untrusted OR no session is active. The two pin-less cases are byte-identical by
-    /// design (mirrors the HTTP endpoint's 404-for-both), so a caller on an untrusted transport
-    /// cannot probe whether a pairing session exists.
+    /// design (the retired HTTP endpoint returned 404 for both; this preserves that
+    /// indistinguishability), so a caller on an untrusted transport cannot probe whether a pairing
+    /// session exists.
     /// </returns>
     public async Task<RemexMessage> HandlePairingPinRequestAsync(
         RemexMessage message, bool isTrustedForPinAutoFetch, CancellationToken ct)
