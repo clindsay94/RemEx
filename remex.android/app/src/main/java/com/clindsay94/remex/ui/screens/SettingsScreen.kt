@@ -6,8 +6,12 @@ import android.os.Parcelable
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -46,6 +50,7 @@ import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -495,7 +500,8 @@ private fun FileTransferSettingsTab() {
                     )
             ) {
                 Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(16.dp)
+                                .animateContentSize(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
@@ -531,39 +537,47 @@ private fun FileTransferSettingsTab() {
                         )
                     } else {
                         sharedFolderUris.forEach { uriString ->
-                            val uri = Uri.parse(uriString)
-                            val displayName = uri.lastPathSegment
-                                    ?.substringAfterLast('/')
-                                    ?.substringAfterLast(':')
-                                    ?: uriString
-                            Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                        Icons.Default.FolderOpen,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                        text = displayName,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.weight(1f),
-                                        maxLines = 1
-                                )
-                                IconButton(
-                                        onClick = {
-                                            scope.launch { settingsManager.removeSharedFolderUri(uriString) }
-                                        },
-                                        modifier = Modifier.size(32.dp)
+                            key(uriString) {
+                                val uri = Uri.parse(uriString)
+                                val displayName = uri.lastPathSegment
+                                        ?.substringAfterLast('/')
+                                        ?.substringAfterLast(':')
+                                        ?: uriString
+                                AnimatedVisibility(
+                                        visible = true,
+                                        enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()) +
+                                                expandVertically(MaterialTheme.motionScheme.fastSpatialSpec())
                                 ) {
-                                    Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = stringResource(R.string.settings_ft_remove_folder),
-                                            modifier = Modifier.size(16.dp)
-                                    )
+                                    Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                                Icons.Default.FolderOpen,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                                text = displayName,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                modifier = Modifier.weight(1f),
+                                                maxLines = 1
+                                        )
+                                        IconButton(
+                                                onClick = {
+                                                    scope.launch { settingsManager.removeSharedFolderUri(uriString) }
+                                                },
+                                                modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                    Icons.Default.Close,
+                                                    contentDescription = stringResource(R.string.settings_ft_remove_folder),
+                                                    modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
