@@ -458,6 +458,7 @@ internal fun ViewPickerCell(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     preview: @Composable () -> Unit
 ) {
     val borderColor by animateColorAsState(
@@ -471,7 +472,7 @@ internal fun ViewPickerCell(
         label = "viewPickerBorderWidth"
     )
     Column(
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .border(borderWidth, borderColor, RoundedCornerShape(12.dp))
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
@@ -559,11 +560,12 @@ fun DisplayModePickerSheet(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                     LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                        items(otherSensors) { candidate ->
+                        items(otherSensors, key = { it.id }) { candidate ->
                             Text(
                                 candidate.name,
                                 style = MaterialTheme.typography.bodyLarge,
                                 modifier = Modifier.fillMaxWidth()
+                                    .animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
                                     .clickable {
                                         view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                         onPickDisplayMode(cardId, TelemetryDisplayMode.DUAL_METRIC, candidate.id)
@@ -598,7 +600,7 @@ fun DisplayModePickerSheet(
                                 TelemetryViewDispatch(TelemetryDisplayMode.AUTO, sensor, history, null, emptyList(), Modifier.fillMaxSize())
                             }
                         }
-                        items(VIEW_CATALOG) { entry ->
+                        items(VIEW_CATALOG, key = { it.mode }) { entry ->
                             ViewPickerCell(
                                 label = stringResource(entry.labelRes),
                                 selected = currentMode == entry.mode,
@@ -609,7 +611,8 @@ fun DisplayModePickerSheet(
                                     } else {
                                         onPickDisplayMode(cardId, entry.mode, null)
                                     }
-                                }
+                                },
+                                modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
                             ) {
                                 TelemetryViewDispatch(entry.mode, sensor, history, null, emptyList(), Modifier.fillMaxSize())
                             }
