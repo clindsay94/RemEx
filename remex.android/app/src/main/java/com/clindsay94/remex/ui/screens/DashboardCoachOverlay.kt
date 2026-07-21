@@ -34,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -84,7 +83,7 @@ fun DashboardCoachOverlay(
     Box(
         modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.62f))
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.62f))
             // Swallow all touches so the canvas underneath can't be interacted with mid-hint; a scrim
             // tap intentionally does NOT dismiss (avoids losing the tutorial to a stray tap).
             .pointerInput(Unit) { detectTapGestures {} },
