@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
@@ -1217,6 +1218,15 @@ fun ConnectionScreenContent(
                                         modifier = Modifier.fillMaxWidth()
                                 ) {
                                         Column(modifier = Modifier.weight(1f)) {
+                                                val statusColor by animateColorAsState(
+                                                        targetValue =
+                                                                if (isConnected)
+                                                                        MaterialTheme.colorScheme.primary
+                                                                else
+                                                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        animationSpec = motionScheme.defaultEffectsSpec(),
+                                                        label = "connectionStatusColor"
+                                                )
                                                 Text(
                                                         text =
                                                                 stringResource(
@@ -1225,13 +1235,7 @@ fun ConnectionScreenContent(
                                                                         status
                                                                 ),
                                                         style = MaterialTheme.typography.bodyMedium,
-                                                        color =
-                                                                if (isConnected)
-                                                                        MaterialTheme.colorScheme
-                                                                                .primary
-                                                                else
-                                                                        MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
+                                                        color = statusColor
                                                 )
                                                 Text(
                                                         text = capabilitySummary,
@@ -1252,7 +1256,11 @@ fun ConnectionScreenContent(
                                                         ) != null
                                         }
 
-                                        if (isPaired) {
+                                        AnimatedVisibility(
+                                                visible = isPaired,
+                                                enter = expandVertically(motionScheme.fastSpatialSpec()) + fadeIn(motionScheme.fastEffectsSpec()),
+                                                exit = shrinkVertically(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec())
+                                        ) {
                                                 Row(
                                                         verticalAlignment =
                                                                 Alignment.CenterVertically,
