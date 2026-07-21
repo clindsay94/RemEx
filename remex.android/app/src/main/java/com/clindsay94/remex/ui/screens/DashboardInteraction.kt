@@ -1,6 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -33,7 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.pointerInput
@@ -85,6 +86,12 @@ fun DraggableDashboardCard(
     content: @Composable () -> Unit
 ) {
     val view = LocalView.current
+
+    val liftScale = animateFloatAsState(
+        targetValue = if (isDragging) 1.03f else 1f,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "cardLiftScale"
+    )
 
     val gestureModifier = if (selectionActive) {
         Modifier
@@ -140,7 +147,7 @@ fun DraggableDashboardCard(
     ) {
         Box(
             modifier = Modifier.fillMaxSize()
-                .then(if (isDragging) Modifier.scale(1.03f) else Modifier)
+                .graphicsLayer { scaleX = liftScale.value; scaleY = liftScale.value }
                 .padding(4.dp)
         ) {
             content()
