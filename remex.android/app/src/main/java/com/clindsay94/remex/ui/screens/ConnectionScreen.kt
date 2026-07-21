@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,6 +28,7 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -701,14 +703,18 @@ fun ConnectionScreenContent(
                                                                                         .onSurfaceVariant
                                                                 )
                                                         }
+                                                        val helpChevronRotation by animateFloatAsState(
+                                                                targetValue = if (showHelpSection) 180f else 0f,
+                                                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                                                                label = "helpChevronRotation"
+                                                        )
                                                         Icon(
-                                                                if (showHelpSection)
-                                                                        Icons.Default.ExpandLess
-                                                                else Icons.Default.ExpandMore,
+                                                                Icons.Default.ExpandMore,
                                                                 contentDescription = null,
                                                                 tint =
                                                                         MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
+                                                                                .onSurfaceVariant,
+                                                                modifier = Modifier.rotate(helpChevronRotation)
                                                         )
                                                 }
 
