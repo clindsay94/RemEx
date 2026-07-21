@@ -897,8 +897,7 @@ fun PersonalizationScreenContent(
                         val animatedShapePreset by
                                 animateFloatAsState(
                                         targetValue = sliderDisplayValue,
-                                        animationSpec =
-                                                androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                                        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
                                         label = "shape_morph_$label"
                                 )
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
