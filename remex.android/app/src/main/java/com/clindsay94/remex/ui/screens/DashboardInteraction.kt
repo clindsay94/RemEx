@@ -111,6 +111,11 @@ fun DraggableDashboardCard(
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "cardContainerAlpha"
     )
+    val elevation by animateDpAsState(
+        targetValue = if (isDragging) 8.dp else 1.dp,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "cardElevation"
+    )
 
     val gestureModifier = if (selectionActive) {
         Modifier
@@ -160,7 +165,7 @@ fun DraggableDashboardCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ),
         border = BorderStroke(selectionBorderWidth, selectionBorderColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDragging) 8.dp else 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Box(
             modifier = Modifier.fillMaxSize()
