@@ -23,7 +23,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -424,8 +423,17 @@ private fun QrScannerScreenPreview() {
             onBack = {},
             onGrantPermission = {},
             cameraView = {
-                Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-                    Text("Camera Preview Placeholder", color = Color.White)
+                // Design-time stand-in for the real AndroidView camera feed (QrScannerScreen.kt's
+                // production cameraView lambda). Never shown to a user — @Preview composables are
+                // stripped from release builds — so this text is intentionally not a stringResource.
+                Box(
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "[Preview] Camera feed placeholder",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         )
