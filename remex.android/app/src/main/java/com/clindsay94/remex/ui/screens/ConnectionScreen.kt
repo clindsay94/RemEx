@@ -297,7 +297,16 @@ fun ConnectionScreenContent(
                 },
                 snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
-                if (connectionPrefs == null || desktopPrefs == null) {
+                val prefsLoaded = connectionPrefs != null && desktopPrefs != null
+                AnimatedContent(
+                        targetState = prefsLoaded,
+                        transitionSpec = {
+                                val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                                fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                        },
+                        label = "connectionPrefsLoaded"
+                ) { loaded ->
+                if (!loaded) {
                         Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
@@ -1296,6 +1305,7 @@ fun ConnectionScreenContent(
                                         }
                                 }
                         }
+                }
                 }
         }
 }
