@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **The tutorial screen's welcome emoji and body text no longer ignore the in-app font-scale setting.** `TutorialPageContent` overrode two Material typography roles with hardcoded literals (`displayLarge.copy(fontSize = 64.sp)` on the emoji, `lineHeight = 24.sp` on the body), discarding the per-role scaling `typographyForFontFamily(fontFamilyKey, fontScale)` already applies. Both `Text`s now use their unmodified typography roles, so raising the font-scale preference to maximum visibly enlarges both. (`TutorialScreen.kt`; RemEx-ii9c.)
+- **The telemetry view-picker cell now announces its selected/unselected state to TalkBack.** `ViewPickerCell` (the mode picker in the sensor-card "change view" sheet) used a plain `clickable`, carrying no semantic role or selected state — screen readers announced it as a generic button regardless of which view was active. It now uses `Modifier.selectable(selected, role = Role.RadioButton, onClick)`, exposing `SemanticsProperties.Selected`, covered by a new Compose UI test (`ViewPickerCellTest`). (`TelemetryViews.kt`; RemEx-xo8b.)
 
 ## [2.4.0] — 2026-07-19
 
