@@ -27,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.foundation.shape.CircleShape
@@ -163,7 +164,8 @@ fun DraggableDashboardCard(
                         view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                         onTogglePin(card.id)
                     },
-                    modifier = Modifier.align(Alignment.BottomStart).padding(12.dp).size(24.dp)
+                    modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
+                        .minimumInteractiveComponentSize().size(24.dp)
                 ) {
                     Icon(
                         Icons.Default.PushPin,
