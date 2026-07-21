@@ -64,7 +64,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
@@ -393,7 +392,7 @@ private fun TutorialPageContent(
                 ) {
                     Text(
                         text = page.emoji,
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp)
+                        style = MaterialTheme.typography.displayLarge
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -414,8 +413,7 @@ private fun TutorialPageContent(
             text = stringResource(page.bodyRes),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            lineHeight = 24.sp
+            textAlign = TextAlign.Center
         )
 
         if (page.batteryAction && page.actionLabelRes != null) {
