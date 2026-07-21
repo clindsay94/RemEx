@@ -568,7 +568,6 @@ private fun CoachPanel(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
     ) {
         Column(
             Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
