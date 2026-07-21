@@ -510,6 +510,12 @@ private fun ProcessCard(
 
 @Composable
 private fun UsageIndicator(label: String, value: String, progress: Float, color: Color) {
+    val animatedProgress by
+            animateFloatAsState(
+                    targetValue = progress,
+                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                    label = "usageIndicatorProgress"
+            )
     Column {
         Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -531,7 +537,7 @@ private fun UsageIndicator(label: String, value: String, progress: Float, color:
         }
         Spacer(modifier = Modifier.height(2.dp))
         LinearProgressIndicator(
-                progress = { progress },
+                progress = { animatedProgress },
                 modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
                 color = color,
                 trackColor = color.copy(alpha = 0.1f),
