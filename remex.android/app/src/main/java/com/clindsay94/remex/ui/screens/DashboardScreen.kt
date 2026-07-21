@@ -11,6 +11,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -223,7 +225,11 @@ fun DashboardScreen(
                 // First-run coach marks (RemEx-km0i.10), mounted last = top of z-order. Suppressed while a
                 // card is lifted or a group is selected (locked decision #7); the scrim blocks input, so
                 // no bottom sheet can open underneath a live hint.
-                if (coachStep >= 0 && draggingCardId == null && selectedCardIds.isEmpty()) {
+                AnimatedVisibility(
+                        visible = coachStep >= 0 && draggingCardId == null && selectedCardIds.isEmpty(),
+                        enter = fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()),
+                        exit = fadeOut(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()),
+                ) {
                         DashboardCoachOverlay(
                                 step = coachStep,
                                 menuAnchor = menuAnchor,
