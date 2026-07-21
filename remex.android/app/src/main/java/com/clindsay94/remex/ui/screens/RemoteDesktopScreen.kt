@@ -157,8 +157,8 @@ data class RemoteDesktopUiState(
 private fun PlainAnimatedVisibility(
         visible: Boolean,
         modifier: Modifier = Modifier,
-        enter: androidx.compose.animation.EnterTransition = fadeIn(),
-        exit: androidx.compose.animation.ExitTransition = fadeOut(),
+        enter: androidx.compose.animation.EnterTransition = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+        exit: androidx.compose.animation.ExitTransition = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
         content: @Composable AnimatedVisibilityScope.() -> Unit
 ) {
         AnimatedVisibility(
@@ -2531,12 +2531,14 @@ fun RemoteDesktopScreenContent(
                                                                 },
                                                 enter =
                                                         slideInVertically(
+                                                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                                                                 initialOffsetY = { it }
-                                                        ) + fadeIn(),
+                                                        ) + fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
                                                 exit =
                                                         slideOutVertically(
+                                                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                                                                 targetOffsetY = { it }
-                                                        ) + fadeOut()
+                                                        ) + fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
                                         ) {
                                                 PcKeysBar(
                                                         modifierStates = modifierStates,
