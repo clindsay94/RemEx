@@ -1,11 +1,13 @@
 package com.clindsay94.remex.ui.screens
 
 import android.content.Context
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -314,6 +316,7 @@ fun PairingScreenContent(
     onCancel: () -> Unit,
     onSubmitPin: () -> Unit
 ) {
+    val motionScheme = MaterialTheme.motionScheme
     Scaffold(topBar = {
         RemexFlexibleTopBar(title = stringResource(R.string.pairing_title))
     }) {
@@ -340,7 +343,26 @@ fun PairingScreenContent(
 
             // Shown only when a trusted-transport auto-fetch came back empty: guide the
             // non-technical user to read the PIN off their PC and type it in.
-            if (state.autoPinFetchFailed) {
+            AnimatedVisibility(
+                    visible = state.autoPinFetchFailed,
+                    enter =
+                            expandVertically(
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                            ) +
+                                    fadeIn(
+                                            animationSpec =
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                    ),
+                    exit =
+                            shrinkVertically(
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                            ) +
+                                    fadeOut(
+                                            animationSpec =
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                    ),
+                    label = "autoPinFetchFailed"
+            ) {
                 Text(
                         text = stringResource(R.string.pairing_auto_pin_failed),
                         style = MaterialTheme.typography.bodySmall,
@@ -406,13 +428,22 @@ fun PairingScreenContent(
                         modifier = Modifier.weight(1f),
                         enabled = pin.length == 6 && !state.isLoading
                 ) {
-                    if (state.isLoading) {
-                        RemexLoadingIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text(stringResource(R.string.pairing_submit))
+                    AnimatedContent(
+                            targetState = state.isLoading,
+                            transitionSpec = {
+                                    val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                                    fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                            },
+                            label = "pairingSubmitContent"
+                    ) { loading ->
+                        if (loading) {
+                            RemexLoadingIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text(stringResource(R.string.pairing_submit))
+                        }
                     }
                 }
             }
