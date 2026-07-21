@@ -646,7 +646,9 @@ fun ConnectionScreenContent(
                                 Card(
                                         modifier =
                                                 Modifier.fillMaxWidth()
-                                                        .animateContentSize()
+                                                        .animateContentSize(
+                                                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                                                        )
                                                         .clickable {
                                                                 view.performHapticFeedback(
                                                                         HapticFeedbackConstants
