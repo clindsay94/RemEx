@@ -263,6 +263,8 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                                         center = Offset(cx, cy),
                                         style = Stroke(width = (3f + (1f - waveT) * 8f).dp.toPx())
                                 )
+                                // Second gold ring, layered under the brand-amber one above — part of the
+                                // splash's fixed, theme-independent palette (see SplashBrand.kt header).
                                 drawCircle(
                                         color = Color(0xFFFFD700).copy(alpha = shockOpacity * 0.3f),
                                         radius = shockRadius * 0.7f,
@@ -369,7 +371,9 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                         }
 
                         // Chromatic-aberration bloom shockwave on impact: three RGB-split
-                        // rings burst outward from the logo and fade in ~0.25s.
+                        // rings burst outward from the logo and fade in ~0.25s. The red/cyan/green
+                        // split is the effect itself, so these three colors are fixed by design —
+                        // part of the splash's theme-independent palette (see SplashBrand.kt header).
                         val bloomT = (elapsed - 1.8f) / 0.25f
                         if (bloomT in 0f..1f) {
                                 val bloomAlpha = (1f - bloomT) * 0.55f
