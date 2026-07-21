@@ -2,6 +2,7 @@ package com.clindsay94.remex.ui.screens
 
 import android.os.Build
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
@@ -373,12 +375,18 @@ private fun FilterSortSection(
                     onUpdateSortField(currentSortField) // same field → toggles descending
                 }
         ) {
+            val sortArrowRotation by
+                    animateFloatAsState(
+                            targetValue = if (sortDescending) 0f else 180f,
+                            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                            label = "sortArrowRotation"
+                    )
             Icon(
-                    imageVector =
-                            if (sortDescending) Icons.Default.ArrowDownward
-                            else Icons.Default.ArrowUpward,
-                    contentDescription = if (sortDescending) "Descending" else "Ascending",
-                    modifier = Modifier.size(20.dp)
+                    imageVector = Icons.Default.ArrowDownward,
+                    contentDescription =
+                            if (sortDescending) stringResource(R.string.sort_descending)
+                            else stringResource(R.string.sort_ascending),
+                    modifier = Modifier.size(20.dp).rotate(sortArrowRotation)
             )
         }
     }

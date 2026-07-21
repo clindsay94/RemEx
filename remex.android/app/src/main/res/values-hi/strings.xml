@@ -89,6 +89,8 @@
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>
     <string name="sort_pid">PID</string>
+    <string name="sort_descending">अवरोही</string>
+    <string name="sort_ascending">आरोही</string>
     <string name="task_manager_fetching">प्रोसेस प्राप्त की जा रही हैं…</string>
     <string name="task_manager_header_name">नाम</string>
     <string name="task_manager_header_cpu">CPU</string>

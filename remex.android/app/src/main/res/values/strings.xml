@@ -132,6 +132,8 @@
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>
     <string name="sort_pid">PID</string>
+    <string name="sort_descending">Descending</string>
+    <string name="sort_ascending">Ascending</string>
     <string name="task_manager_fetching">Fetching processes…</string>
     <string name="task_manager_retry">Retry</string>
     <string name="task_manager_dismiss">Dismiss</string>

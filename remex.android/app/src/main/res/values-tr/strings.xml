@@ -89,6 +89,8 @@
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>
     <string name="sort_pid">PID</string>
+    <string name="sort_descending">Azalan</string>
+    <string name="sort_ascending">Artan</string>
     <string name="task_manager_fetching">Fetching processes…</string>
     <string name="task_manager_header_name">Name</string>
     <string name="task_manager_header_cpu">CPU</string>
