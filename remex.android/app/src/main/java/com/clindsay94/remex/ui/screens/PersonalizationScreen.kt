@@ -1121,7 +1121,7 @@ private fun TonalRow(hct: Hct) {
             val animatedColor by
                     animateColorAsState(
                             targetValue = targetColor,
-                            animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+                            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
                             label = "TonalColorAnimation"
                     )
             Box(
@@ -1155,7 +1155,7 @@ private fun MiniCardPreview(
     val animatedColor by
             animateColorAsState(
                     targetValue = containerTarget,
-                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+                    animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
                     label = "MiniCardColorAnimation"
             )
 
