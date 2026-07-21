@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -129,7 +128,7 @@ fun DashboardCoachOverlay(
  */
 @Composable
 private fun HoldToLiftDemo(modifier: Modifier = Modifier) {
-    val motion = remember { MotionScheme.expressive() }
+    val motion = MaterialTheme.motionScheme
     val fingerScale = remember { Animatable(1.18f) }  // rest: in position, slightly larger
     val ripple = remember { Animatable(0f) }          // 0 → 1 press ripple bloom
     val cardLift = remember { Animatable(0f) }         // 0 resting → 1 lifted (scale + elevation)
@@ -218,7 +217,7 @@ private fun HoldToLiftDemo(modifier: Modifier = Modifier) {
  */
 @Composable
 private fun ViewPickerDemo(modifier: Modifier = Modifier) {
-    val motion = remember { MotionScheme.expressive() }
+    val motion = MaterialTheme.motionScheme
     val fingerScale = remember { Animatable(1.15f) }
     val gridPop = remember { Animatable(0f) }   // 0 hidden → 1 picker fully popped
 
@@ -309,7 +308,7 @@ private fun ViewPickerDemo(modifier: Modifier = Modifier) {
  */
 @Composable
 private fun GroupSelectDemo(modifier: Modifier = Modifier) {
-    val motion = remember { MotionScheme.expressive() }
+    val motion = MaterialTheme.motionScheme
     val fingerX = remember { Animatable(0f) }        // 0 over card A → 1 over card B
     val fingerScale = remember { Animatable(1.1f) }
     val selA = remember { Animatable(0f) }           // selection highlight per card
@@ -422,7 +421,7 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniSelectCard(
  */
 @Composable
 private fun SelectActionBarDemo(modifier: Modifier = Modifier) {
-    val motion = remember { MotionScheme.expressive() }
+    val motion = MaterialTheme.motionScheme
     val fingerScale = remember { Animatable(1.15f) }
     val sel = remember { Animatable(0f) }        // card selection highlight
     val barPop = remember { Animatable(0f) }     // action bar reveal
@@ -529,7 +528,7 @@ private fun DirectionalPointer(
     modifier: Modifier = Modifier,
 ) {
     if (anchor == Offset.Zero) return
-    val motion = remember { MotionScheme.expressive() }
+    val motion = MaterialTheme.motionScheme
     val pulse = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         while (true) {
