@@ -236,12 +236,20 @@ private fun ExpressiveSettingsRow(
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "settingsRowColor"
     )
-    val badgeColor =
-        if (selected) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.primaryContainer
-    val onBadgeColor =
-        if (selected) MaterialTheme.colorScheme.onPrimary
-        else MaterialTheme.colorScheme.onPrimaryContainer
+    val badgeColor by animateColorAsState(
+        targetValue =
+            if (selected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.primaryContainer,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "settingsRowBadgeColor"
+    )
+    val onBadgeColor by animateColorAsState(
+        targetValue =
+            if (selected) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onPrimaryContainer,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "settingsRowOnBadgeColor"
+    )
 
     Surface(
         onClick = {
