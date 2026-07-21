@@ -3,9 +3,12 @@ package com.clindsay94.remex.ui.screens
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -584,33 +587,44 @@ private fun LoadErrorBanner(
         onRetry: () -> Unit,
         onDismiss: () -> Unit,
 ) {
-    if (message.isNullOrBlank()) return
-    Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+    // Remembers the last non-blank message so the shrink-out exit animation still has text to
+    // show after the caller clears `message` to null/blank.
+    var lastMessage by remember { mutableStateOf(message ?: "") }
+    LaunchedEffect(message) {
+        if (!message.isNullOrBlank()) lastMessage = message
+    }
+    AnimatedVisibility(
+            visible = !message.isNullOrBlank(),
+            enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()),
+            exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec())
     ) {
-        Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
         ) {
-            Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(18.dp)
-            )
-            Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.weight(1f)
-            )
-            TextButton(onClick = onRetry) { Text(stringResource(R.string.task_manager_retry)) }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_manager_dismiss)) }
+            Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(18.dp)
+                )
+                Text(
+                        text = lastMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.task_manager_retry)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_manager_dismiss)) }
+            }
         }
     }
 }
