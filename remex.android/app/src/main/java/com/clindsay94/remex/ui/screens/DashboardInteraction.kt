@@ -1,6 +1,8 @@
 package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -33,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -93,6 +96,21 @@ fun DraggableDashboardCard(
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "cardLiftScale"
     )
+    val selectionBorderWidth by animateDpAsState(
+        targetValue = if (isSelected) 2.dp else 0.dp,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "cardSelectionBorderWidth"
+    )
+    val selectionBorderColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0f),
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "cardSelectionBorderColor"
+    )
+    val containerAlpha by animateFloatAsState(
+        targetValue = if (selectionActive && !isSelected) cardOpacity * 0.6f else cardOpacity,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "cardContainerAlpha"
+    )
 
     val gestureModifier = if (selectionActive) {
         Modifier
@@ -138,12 +156,10 @@ fun DraggableDashboardCard(
         modifier = modifier.then(gestureModifier),
         shape = cardShape(shapeIndex, cornerRadius),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                alpha = if (selectionActive && !isSelected) cardOpacity * 0.6f else cardOpacity
-            ),
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = containerAlpha),
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ),
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        border = BorderStroke(selectionBorderWidth, selectionBorderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isDragging) 8.dp else 1.dp)
     ) {
         Box(
