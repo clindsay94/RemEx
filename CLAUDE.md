@@ -24,7 +24,7 @@ To strictly conserve context window tokens and prevent context compaction loops,
 * **Indexed Storage for Heavy Data:** For massive test failures, access logs, or browser snapshots, use `ctx_index` or `fetch_and_index`. Store the data in the local SQLite FTS5 database and use `ctx_search` (BM25) to retrieve only the relevant lines you need.
 
 ### 4. Bulk Code Generation Workflow (`antigravity` & `agy-splitter`)
-When generating large scaffolds, boilerplates, or multi-file modules, DO NOT write the files directly using local LLM output tokens. Instead, delegate the heavy lifting to the Antigravity CLI (`agy`) powered by Gemini.
+When generating large scaffolds, boilerplates, or multi-file modules, DO NOT write the files directly using local LLM output tokens. Instead, delegate the heavy lifting to the Antigravity CLI (`agy`) powered by Gemini. (`agy`/`agy-splitter` are external global tools, not part of this repo — verify they are on PATH before relying on this workflow; if absent, fall back to writing files directly.)
 
 - **Command Shorthand:** `/bulk-write [generation requirements]` (Maps to `~/.claude/commands/bulk-write.md`)
 - **Execution Sequence:** When `/bulk-write` is invoked, you must execute the following via `ctx_execute`:
@@ -239,7 +239,28 @@ The target user **may not be technical**. Every user-facing element must be:
 - **Plain English** — no jargon, no abbreviations, no assumed knowledge in scripts, installers, UI tooltips, or error messages.
 - **Hand-holdy** — scripts print friendly status messages and tell the user exactly what to do when something fails. Always provide a "what to do next" step.
 - **Consistent** — `build-remex.ps1` is the canonical entry point for all major build/install operations. All major operations should be accessible from it, not buried in sub-scripts.
-- **Theme-safe** — any UI change must be verified across all four themes: CyberNOC, Monolith, SolarFlare, BaseDarkGlass. Each has distinct contrast ratios and background treatments; a change that looks fine on one can break another.
+- **Theme-safe** — every UI change must be verified across the theming axes of the platform it
+  touches. **The two platforms theme completely differently — do not apply one's axes to the other.**
+
+  - **PC only (`remex.desktop` / `remex.agent`)** — the four named themes **CyberNOC, Monolith,
+    SolarFlare, BaseDarkGlass**. Each has distinct contrast ratios and background treatments; a
+    change that looks fine on one can break another. **These four do not exist on Android.** The
+    only occurrences of the word "monolith" in `remex.android/` are comments about the former
+    monolithic `SplashScreen.kt` — unrelated. Never ask for four-theme verification of an Android
+    change; there is nothing to verify against and the instruction is pure noise.
+  - **Android only (`remex.android`)** — Material 3 dynamic theming, not named themes. `RemExTheme`
+    (`ui/theme/Theme.kt`) resolves a scheme from three mutually exclusive sources, and a change must
+    hold up under all of them:
+    1. **Custom seed** — `colorSchemeFromSeed(seedColor, darkTheme, themeStyle, themeContrast)`
+    2. **Dynamic color** — `dynamicDark/LightColorScheme(context)`, only when `dynamicColor` is on
+       AND `Build.VERSION.SDK_INT >= S`
+    3. **Static fallback** — `DarkColorScheme`/`LightColorScheme`, used on API < 31 or with dynamic
+       color off. This is a real shipping path, not dead code.
+
+    Orthogonal axes on top of that: `darkTheme` (light/dark/system), `themeStyle` (7 values —
+    `tonal_spot` default, plus expressive, vibrant, neutral, **monochrome**, fruit_salad, rainbow),
+    and `themeContrast` (0.0 → 1.0). Monochrome and contrast 1.0 are the harshest tests — a
+    hardcoded color literal that looks fine on the default scheme will fail there.
 
 ## Beads Issue Tracking (`bd`)
 
@@ -258,19 +279,17 @@ Beads is the task tracker for this repo. It replaces TODO lists, markdown task f
 <!-- agent-team:start -->
 ## Agent Team & Communication
 
-See global instructions: `~/.claude/CLAUDE.md`
+Global instructions: `~/.claude/AGENTS.md` (symlink to `~/.agents/AGENTS.md`) — project-agnostic environment facts and workflow rules only; this file wins on anything RemEx-specific.
 
-**Project-level coordination for RemEx 2.0:**
-- Root mission control: `AGENTS.md` in this repo — project rules, architecture, phase gates
-- Sub-project playbooks: `remex.core/AGENTS.md`, `remex.agent/AGENTS.md`, etc.
-
-Read the relevant sub-project `AGENTS.md` before touching files in that directory.
+**Project-level coordination:**
+- `AGENTS.md` in this repo — cross-agent rules, distilled carry-forward regression guards, beads workflow. There are NO sub-project AGENTS.md files; do not go looking for them.
+- Archived 2.0-era history: `docs/OLD DOCS/AGENTS-2.0-archive.md`.
 <!-- agent-team:end -->
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (15382 symbols, 31258 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (15432 symbols, 31381 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

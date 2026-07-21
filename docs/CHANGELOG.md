@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (docs/tooling)
+
+- **`AGENTS.md` rewritten lean (647 → 357 lines) with all 2.0-era history archived to `docs/OLD DOCS/AGENTS-2.0-archive.md`.** The frozen 2.0 Release Gate tables, closed-work narratives, and a duplicate machine-managed Beads block are gone from the live file; the durable do-not-regress rules embedded in those narratives (WinRT `FromAbi`/IID marshaling, `PrecisionPacer`/`DuplicationReinitThrottle` routing, `h264_nvenc_bgra`-only GPU encode, sender-scoped `OpenPipeWireRemote`, warm portal session, SurfaceView `Modifier.layout` invariant, and more) are distilled into a new "Carry-Forward Rules" section. (RemEx-79j3.)
+- **`CLAUDE.md` no longer instructs agents to read per-project `AGENTS.md` files that don't exist**, points global instructions at the real `~/.claude/AGENTS.md` (there is no global `CLAUDE.md`), and marks `agy`/`agy-splitter` as external tools to verify before use. (RemEx-79j3.)
+
 ### Fixed
 
 - **The tutorial screen's welcome emoji and body text no longer ignore the in-app font-scale setting.** `TutorialPageContent` overrode two Material typography roles with hardcoded literals (`displayLarge.copy(fontSize = 64.sp)` on the emoji, `lineHeight = 24.sp` on the body), discarding the per-role scaling `typographyForFontFamily(fontFamilyKey, fontScale)` already applies. Both `Text`s now use their unmodified typography roles, so raising the font-scale preference to maximum visibly enlarges both. (`TutorialScreen.kt`; RemEx-ii9c.)
@@ -547,4 +552,4 @@ Releases follow [Semantic Versioning](https://semver.org/):
 - **MINOR** version for new functionality (backwards compatible)
 - **PATCH** version for bug fixes
 
-See the entries above for the latest 2.0 release notes and support status.
+See the entries above for the latest release notes and support status (root `CHANGELOG.md` is the canonical, current changelog).
