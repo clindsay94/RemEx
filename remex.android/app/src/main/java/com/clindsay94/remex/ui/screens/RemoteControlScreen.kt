@@ -284,7 +284,8 @@ fun RemoteControlScreenContent(
                             onCancel = {
                                 activeConfirmationId = null
                                 timerInputs[cmdCard.id] = ""
-                            }
+                            },
+                            modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
                     )
                 }
             }
@@ -421,7 +422,8 @@ private fun CommandCard(
         onTimerTextChanged: (String) -> Unit,
         onPrimaryClick: () -> Unit,
         onConfirm: () -> Unit,
-        onCancel: () -> Unit
+        onCancel: () -> Unit,
+        modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     val localizedTitle = stringResource(card.titleRes)
@@ -430,7 +432,7 @@ private fun CommandCard(
     Card(
             // M3: animateContentSize replaces fixed height toggle for organic transitions
             modifier =
-                    Modifier.fillMaxWidth()
+                    modifier.fillMaxWidth()
                             .animateContentSize(
                                     animationSpec =
                                             MaterialTheme.motionScheme.fastSpatialSpec()
