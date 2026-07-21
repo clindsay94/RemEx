@@ -1,9 +1,15 @@
 package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -65,6 +71,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.telemetry.MetricKind
@@ -472,6 +479,7 @@ fun DisplayModePickerSheet(
     var awaitingSecondary by remember { mutableStateOf(false) }
     var titleDraft by remember(cardId) { mutableStateOf(currentTitle) }
     val focusManager = LocalFocusManager.current
+    val motionScheme = MaterialTheme.motionScheme
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         if (!awaitingSecondary) {
@@ -503,64 +511,84 @@ fun DisplayModePickerSheet(
                 )
             }
         }
-        if (awaitingSecondary) {
-            Text(
-                stringResource(R.string.dashboard_dual_metric_pick_secondary),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                items(otherSensors) { candidate ->
-                    Text(
-                        candidate.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                onPickDisplayMode(cardId, TelemetryDisplayMode.DUAL_METRIC, candidate.id)
-                            }
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
+        AnimatedContent(
+            targetState = awaitingSecondary,
+            transitionSpec = {
+                val spatialSpec = motionScheme.defaultSpatialSpec<IntOffset>()
+                val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                if (targetState) {
+                    (slideInHorizontally(spatialSpec) { it } + fadeIn(effectsSpec))
+                        .togetherWith(slideOutHorizontally(spatialSpec) { -it } + fadeOut(effectsSpec))
+                } else {
+                    (slideInHorizontally(spatialSpec) { -it } + fadeIn(effectsSpec))
+                        .togetherWith(slideOutHorizontally(spatialSpec) { it } + fadeOut(effectsSpec))
                 }
-            }
-        } else {
-            Text(
-                stringResource(R.string.dashboard_view_picker_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(96.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth().padding(16.dp)
-            ) {
-                item {
-                    ViewPickerCell(
-                        label = stringResource(R.string.dashboard_view_auto),
-                        selected = currentMode == TelemetryDisplayMode.AUTO,
-                        onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                            onPickDisplayMode(cardId, TelemetryDisplayMode.AUTO, null)
+            },
+            label = "secondarySensorPane"
+        ) { showSecondary ->
+            if (showSecondary) {
+                Column {
+                    Text(
+                        stringResource(R.string.dashboard_dual_metric_pick_secondary),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                        items(otherSensors) { candidate ->
+                            Text(
+                                candidate.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.fillMaxWidth()
+                                    .clickable {
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        onPickDisplayMode(cardId, TelemetryDisplayMode.DUAL_METRIC, candidate.id)
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                            )
                         }
-                    ) {
-                        TelemetryViewDispatch(TelemetryDisplayMode.AUTO, sensor, history, null, emptyList(), Modifier.fillMaxSize())
                     }
                 }
-                items(VIEW_CATALOG) { entry ->
-                    ViewPickerCell(
-                        label = stringResource(entry.labelRes),
-                        selected = currentMode == entry.mode,
-                        onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                            if (entry.mode == TelemetryDisplayMode.DUAL_METRIC) {
-                                awaitingSecondary = true
-                            } else {
-                                onPickDisplayMode(cardId, entry.mode, null)
+            } else {
+                Column {
+                    Text(
+                        stringResource(R.string.dashboard_view_picker_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(96.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp)
+                    ) {
+                        item {
+                            ViewPickerCell(
+                                label = stringResource(R.string.dashboard_view_auto),
+                                selected = currentMode == TelemetryDisplayMode.AUTO,
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    onPickDisplayMode(cardId, TelemetryDisplayMode.AUTO, null)
+                                }
+                            ) {
+                                TelemetryViewDispatch(TelemetryDisplayMode.AUTO, sensor, history, null, emptyList(), Modifier.fillMaxSize())
                             }
                         }
-                    ) {
-                        TelemetryViewDispatch(entry.mode, sensor, history, null, emptyList(), Modifier.fillMaxSize())
+                        items(VIEW_CATALOG) { entry ->
+                            ViewPickerCell(
+                                label = stringResource(entry.labelRes),
+                                selected = currentMode == entry.mode,
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    if (entry.mode == TelemetryDisplayMode.DUAL_METRIC) {
+                                        awaitingSecondary = true
+                                    } else {
+                                        onPickDisplayMode(cardId, entry.mode, null)
+                                    }
+                                }
+                            ) {
+                                TelemetryViewDispatch(entry.mode, sensor, history, null, emptyList(), Modifier.fillMaxSize())
+                            }
+                        }
                     }
                 }
             }
