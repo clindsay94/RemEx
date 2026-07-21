@@ -6,12 +6,14 @@ import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -120,6 +122,7 @@ fun ConnectionScreenContent(
         val view = LocalView.current
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
+        val motionScheme = MaterialTheme.motionScheme
 
         var hostInput by remember { mutableStateOf("") }
         var portInput by remember { mutableStateOf("") }
@@ -474,52 +477,63 @@ fun ConnectionScreenContent(
                                                         enabled = !isDiscovering,
                                                         modifier = Modifier.fillMaxWidth()
                                                 ) {
-                                                        if (isDiscovering) {
-                                                                RemexLoadingIndicator(
-                                                                        modifier =
-                                                                                Modifier.size(
-                                                                                        24.dp
-                                                                                ),
-                                                                        color =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onPrimary
-                                                                )
-                                                                Spacer(
-                                                                        modifier =
-                                                                                Modifier.width(8.dp)
-                                                                )
-                                                                Text(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .connection_searching
-                                                                        )
-                                                                )
-                                                        } else {
-                                                                Icon(
-                                                                        Icons.Default.Search,
-                                                                        contentDescription = null
-                                                                )
-                                                                Spacer(
-                                                                        modifier =
-                                                                                Modifier.width(8.dp)
-                                                                )
-                                                                Text(
-                                                                        if (discoveredHost != null
-                                                                        ) {
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .connection_found_host,
-                                                                                        discoveredHost
-                                                                                                .host
+                                                        AnimatedContent(
+                                                                targetState = isDiscovering,
+                                                                transitionSpec = {
+                                                                        val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                                                                        fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                                                                },
+                                                                label = "discoverButtonContent"
+                                                        ) { discovering ->
+                                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                        if (discovering) {
+                                                                                RemexLoadingIndicator(
+                                                                                        modifier =
+                                                                                                Modifier.size(
+                                                                                                        24.dp
+                                                                                                ),
+                                                                                        color =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onPrimary
+                                                                                )
+                                                                                Spacer(
+                                                                                        modifier =
+                                                                                                Modifier.width(8.dp)
+                                                                                )
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_searching
+                                                                                        )
                                                                                 )
                                                                         } else {
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .connection_discover_button
+                                                                                Icon(
+                                                                                        Icons.Default.Search,
+                                                                                        contentDescription = null
+                                                                                )
+                                                                                Spacer(
+                                                                                        modifier =
+                                                                                                Modifier.width(8.dp)
+                                                                                )
+                                                                                Text(
+                                                                                        if (discoveredHost != null
+                                                                                        ) {
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_found_host,
+                                                                                                        discoveredHost
+                                                                                                                .host
+                                                                                                )
+                                                                                        } else {
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_discover_button
+                                                                                                )
+                                                                                        }
                                                                                 )
                                                                         }
-                                                                )
+                                                                }
                                                         }
                                                 }
 
@@ -1161,13 +1175,22 @@ fun ConnectionScreenContent(
                                         modifier = Modifier.fillMaxWidth(),
                                         enabled = !isConnecting && hostInput.isNotEmpty()
                                 ) {
-                                        if (isConnecting) {
-                                                RemexLoadingIndicator(
-                                                        modifier = Modifier.size(24.dp),
-                                                        color = MaterialTheme.colorScheme.onPrimary
-                                                )
-                                        } else {
-                                                Text(stringResource(R.string.button_save_connect))
+                                        AnimatedContent(
+                                                targetState = isConnecting,
+                                                transitionSpec = {
+                                                        val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                                                        fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                                                },
+                                                label = "connectButtonContent"
+                                        ) { connecting ->
+                                                if (connecting) {
+                                                        RemexLoadingIndicator(
+                                                                modifier = Modifier.size(24.dp),
+                                                                color = MaterialTheme.colorScheme.onPrimary
+                                                        )
+                                                } else {
+                                                        Text(stringResource(R.string.button_save_connect))
+                                                }
                                         }
                                 }
 
