@@ -5,7 +5,11 @@ import com.clindsay94.remex.ui.components.hapticCommandSent
 import com.clindsay94.remex.ui.components.hapticCommandAcknowledged
 import com.clindsay94.remex.ui.components.hapticCommandFailed
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
@@ -421,6 +425,7 @@ private fun CommandCard(
 ) {
     val view = LocalView.current
     val localizedTitle = stringResource(card.titleRes)
+    val motionScheme = MaterialTheme.motionScheme
 
     Card(
             // M3: animateContentSize replaces fixed height toggle for organic transitions
@@ -446,64 +451,78 @@ private fun CommandCard(
                     contentDescription = localizedTitle,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Text(
-                    text =
-                            if (isAwaitingConfirmation)
-                                    stringResource(R.string.remote_control_confirm_choice)
-                            else localizedTitle,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-            )
-
-            if (isAwaitingConfirmation) {
-                OutlinedTextField(
-                        value = timerText,
-                        onValueChange = { value ->
-                            onTimerTextChanged(value.filter(Char::isDigit).take(6))
-                        },
-                        label = { Text(stringResource(R.string.remote_control_timer_label)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                )
-
-                Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // M3: error colors for destructive confirmation button
-                    Button(
-                            onClick = {
-                                view.hapticCommandAcknowledged()
-                                onConfirm()
-                            },
-                            colors =
-                                    ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.error,
-                                            contentColor = MaterialTheme.colorScheme.onError
-                                    ),
-                            modifier = Modifier.weight(1f)
-                    ) { Text(stringResource(R.string.button_confirm)) }
-                    TextButton(
-                            onClick = {
-                                view.hapticCommandFailed()
-                                onCancel()
-                            },
-                            modifier = Modifier.weight(1f)
-                    ) { Text(stringResource(R.string.button_cancel)) }
-                }
-            } else {
-                // M3: FilledTonalButton for lower-emphasis non-destructive actions
-                FilledTonalButton(
-                        onClick = {
-                            view.hapticCommandSent()
-                            onPrimaryClick()
-                        },
-                        modifier = Modifier.fillMaxWidth()
+            AnimatedContent(
+                    targetState = isAwaitingConfirmation,
+                    transitionSpec = {
+                        val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                        fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                    },
+                    label = "commandCardConfirmMode"
+            ) { awaitingConfirmation ->
+                Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                            if (card.requiresConfirmation) stringResource(R.string.button_select)
-                            else stringResource(R.string.button_run)
+                            text =
+                                    if (awaitingConfirmation)
+                                            stringResource(R.string.remote_control_confirm_choice)
+                                    else localizedTitle,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
                     )
+
+                    if (awaitingConfirmation) {
+                        OutlinedTextField(
+                                value = timerText,
+                                onValueChange = { value ->
+                                    onTimerTextChanged(value.filter(Char::isDigit).take(6))
+                                },
+                                label = { Text(stringResource(R.string.remote_control_timer_label)) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // M3: error colors for destructive confirmation button
+                            Button(
+                                    onClick = {
+                                        view.hapticCommandAcknowledged()
+                                        onConfirm()
+                                    },
+                                    colors =
+                                            ButtonDefaults.buttonColors(
+                                                    containerColor = MaterialTheme.colorScheme.error,
+                                                    contentColor = MaterialTheme.colorScheme.onError
+                                            ),
+                                    modifier = Modifier.weight(1f)
+                            ) { Text(stringResource(R.string.button_confirm)) }
+                            TextButton(
+                                    onClick = {
+                                        view.hapticCommandFailed()
+                                        onCancel()
+                                    },
+                                    modifier = Modifier.weight(1f)
+                            ) { Text(stringResource(R.string.button_cancel)) }
+                        }
+                    } else {
+                        // M3: FilledTonalButton for lower-emphasis non-destructive actions
+                        FilledTonalButton(
+                                onClick = {
+                                    view.hapticCommandSent()
+                                    onPrimaryClick()
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                    if (card.requiresConfirmation) stringResource(R.string.button_select)
+                                    else stringResource(R.string.button_run)
+                            )
+                        }
+                    }
                 }
             }
         }
