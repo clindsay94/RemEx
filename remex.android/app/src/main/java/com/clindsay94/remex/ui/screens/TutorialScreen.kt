@@ -3,6 +3,9 @@ package com.clindsay94.remex.ui.screens
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -177,6 +180,7 @@ fun TutorialScreenContent(
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(pageCount = { tutorialPages.size })
     val isLastPage = pagerState.currentPage == tutorialPages.size - 1
+    val motionScheme = MaterialTheme.motionScheme
 
     Column(
         modifier = Modifier
@@ -266,6 +270,10 @@ fun TutorialScreenContent(
         ) {
             AnimatedContent(
                 targetState = isLastPage,
+                transitionSpec = {
+                    val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                    fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                },
                 label = "buttonTransition"
             ) { lastPage ->
                 if (lastPage) {
