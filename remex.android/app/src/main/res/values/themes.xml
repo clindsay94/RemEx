@@ -9,5 +9,5 @@
         <item name="postSplashScreenTheme">@style/Theme.RemEx</item>
     </style>
 
-    <style name="Theme.RemEx" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.RemEx" parent="Theme.Material3.DayNight.NoActionBar" />
 </resources>
