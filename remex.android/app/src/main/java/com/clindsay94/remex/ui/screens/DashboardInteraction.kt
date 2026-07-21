@@ -334,7 +334,7 @@ fun DashboardSelectionActionBar(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(end = 8.dp)
             )
-            FilledTonalIconButton(onClick = { view.hapticCommandAcknowledged(); onTogglePin() }, modifier = Modifier.size(44.dp)) {
+            FilledTonalIconButton(onClick = { view.hapticCommandAcknowledged(); onTogglePin() }) {
                 Icon(
                     Icons.Default.PushPin,
                     contentDescription = stringResource(
@@ -343,17 +343,16 @@ fun DashboardSelectionActionBar(
                 )
             }
             Spacer(Modifier.width(4.dp))
-            FilledTonalIconButton(onClick = onReshape, modifier = Modifier.size(44.dp)) {
+            FilledTonalIconButton(onClick = onReshape) {
                 Icon(Icons.Default.Category, contentDescription = stringResource(R.string.cd_dashboard_reshape_selection))
             }
             Spacer(Modifier.width(4.dp))
-            FilledTonalIconButton(onClick = { view.hapticCommandAcknowledged(); onRemove() }, modifier = Modifier.size(44.dp)) {
+            FilledTonalIconButton(onClick = { view.hapticCommandAcknowledged(); onRemove() }) {
                 Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.cd_dashboard_remove_selection))
             }
             Spacer(Modifier.width(4.dp))
             FilledTonalIconButton(
-                onClick = { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP); onDone() },
-                modifier = Modifier.size(44.dp)
+                onClick = { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP); onDone() }
             ) {
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_dashboard_exit_selection))
             }
