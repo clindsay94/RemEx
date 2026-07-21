@@ -2311,14 +2311,14 @@ fun RemoteDesktopScreenContent(
                                         enter =
                                                 fadeIn(
                                                         animationSpec =
-                                                                androidx.compose.animation.core
-                                                                        .tween(durationMillis = 200)
+                                                                MaterialTheme.motionScheme
+                                                                        .fastEffectsSpec()
                                                 ),
                                         exit =
                                                 fadeOut(
                                                         animationSpec =
-                                                                androidx.compose.animation.core
-                                                                        .tween(durationMillis = 200)
+                                                                MaterialTheme.motionScheme
+                                                                        .fastEffectsSpec()
                                                 )
                                 ) {
                                         AssistChip(
