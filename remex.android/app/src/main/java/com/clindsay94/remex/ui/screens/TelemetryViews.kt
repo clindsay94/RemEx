@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -523,17 +524,22 @@ fun DisplayModePickerSheet(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
             )
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+                    .toggleable(
+                        value = currentShowValueOverlay,
+                        role = Role.Switch,
+                        onValueChange = { enabled ->
+                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                            onSetValueOverlay(cardId, enabled)
+                        }
+                    ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(stringResource(R.string.dashboard_show_value_overlay), style = MaterialTheme.typography.bodyMedium)
                 Switch(
                     checked = currentShowValueOverlay,
-                    onCheckedChange = { enabled ->
-                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                        onSetValueOverlay(cardId, enabled)
-                    }
+                    onCheckedChange = null
                 )
             }
         }

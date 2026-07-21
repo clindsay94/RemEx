@@ -29,6 +29,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -43,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.Canvas
@@ -2892,7 +2894,12 @@ fun RemoteDesktopScreenContent(
                                                 // Direct Touch toggle (full width — own row so it
                                                 // never collides with a slider beside it)
                                                 Row(
-                                                        modifier = Modifier.fillMaxWidth(),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                                .toggleable(
+                                                                        value = uiState.directTouch,
+                                                                        role = Role.Switch,
+                                                                        onValueChange = { onUpdateDirectTouch(it) }
+                                                                ),
                                                         horizontalArrangement =
                                                                 Arrangement.SpaceBetween,
                                                         verticalAlignment =
@@ -2925,9 +2932,7 @@ fun RemoteDesktopScreenContent(
                                                         Spacer(Modifier.width(16.dp))
                                                         Switch(
                                                                 checked = uiState.directTouch,
-                                                                onCheckedChange = {
-                                                                        onUpdateDirectTouch(it)
-                                                                }
+                                                                onCheckedChange = null
                                                         )
                                                 }
 

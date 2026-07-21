@@ -14,6 +14,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,6 +62,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -662,7 +664,22 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
 
             // Full-device browse.
             Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                            .toggleable(
+                                    value = fullBrowseRoot != null,
+                                    role = Role.Switch,
+                                    onValueChange = { enabled ->
+                                        if (enabled) {
+                                            fullBrowseLauncher.launch(null)
+                                        } else {
+                                            scope.launch {
+                                                val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
+                                                settingsManager.clearFullBrowseRootUri()
+                                                settingsManager.setFileTrustFullBrowse(dev, false)
+                                            }
+                                        }
+                                    }
+                            ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -679,17 +696,7 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
                 }
                 Switch(
                         checked = fullBrowseRoot != null,
-                        onCheckedChange = { enabled ->
-                            if (enabled) {
-                                fullBrowseLauncher.launch(null)
-                            } else {
-                                scope.launch {
-                                    val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
-                                    settingsManager.clearFullBrowseRootUri()
-                                    settingsManager.setFileTrustFullBrowse(dev, false)
-                                }
-                            }
-                        }
+                        onCheckedChange = null
                 )
             }
 
@@ -697,7 +704,17 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
 
             // Auto-accept incoming pushes.
             Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                            .toggleable(
+                                    value = autoAccept,
+                                    role = Role.Switch,
+                                    onValueChange = { enabled ->
+                                        scope.launch {
+                                            val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
+                                            settingsManager.setFileTrustAutoAccept(dev, enabled)
+                                        }
+                                    }
+                            ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -714,12 +731,7 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
                 }
                 Switch(
                         checked = autoAccept,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
-                                settingsManager.setFileTrustAutoAccept(dev, enabled)
-                            }
-                        }
+                        onCheckedChange = null
                 )
             }
         }
