@@ -2335,10 +2335,12 @@ fun RemoteDesktopScreenContent(
                                                         AssistChipDefaults.assistChipColors(
                                                                 containerColor =
                                                                         MaterialTheme.colorScheme
-                                                                                .scrim.copy(
+                                                                                .inverseSurface.copy(
                                                                                 alpha = 0.55f
                                                                         ),
-                                                                labelColor = Color.White
+                                                                labelColor =
+                                                                        MaterialTheme.colorScheme
+                                                                                .inverseOnSurface
                                                         ),
                                                 border = null
                                         )
