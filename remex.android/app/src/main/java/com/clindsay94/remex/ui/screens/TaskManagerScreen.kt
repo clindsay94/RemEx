@@ -8,6 +8,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
@@ -325,7 +327,11 @@ private fun SearchBar(query: String, onUpdateQuery: (String) -> Unit, shape: Sha
                 placeholder = { Text(stringResource(R.string.task_manager_search_hint)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
-                    if (query.isNotEmpty()) {
+                    AnimatedVisibility(
+                            visible = query.isNotEmpty(),
+                            enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                            exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
+                    ) {
                         IconButton(onClick = { onUpdateQuery("") }) {
                             Icon(
                                     Icons.Default.Close,
