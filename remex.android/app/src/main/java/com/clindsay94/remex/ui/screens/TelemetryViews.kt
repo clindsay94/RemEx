@@ -83,11 +83,34 @@ private fun cdView(context: android.content.Context, resId: Int, sensor: Telemet
 
 @Composable
 private fun CollectingData() {
-    Text(
-        text = stringResource(R.string.dashboard_collecting_data),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        RemexLoadingIndicator(modifier = Modifier.size(16.dp))
+        Text(
+            text = stringResource(R.string.dashboard_collecting_data),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * Swaps between [content] (the chart) and a motion-carrying [CollectingData] placeholder,
+ * fading through rather than the bare early-return/if-else pop each view previously did.
+ */
+@Composable
+private fun ChartOrCollecting(hasData: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val motionScheme = MaterialTheme.motionScheme
+    AnimatedContent(
+        targetState = hasData,
+        transitionSpec = {
+            val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+            fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+        },
+        modifier = modifier,
+        label = "chartOrCollecting"
+    ) { ready ->
+        if (ready) content() else CollectingData()
+    }
 }
 
 // ── The 10-view catalog ──────────────────────────────────────────────────────────────
@@ -124,9 +147,7 @@ fun ValueSparkView(sensor: TelemetrySensor?, history: List<Float>, modifier: Mod
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        if (history.size < 2) {
-            CollectingData()
-        } else {
+        ChartOrCollecting(hasData = history.size >= 2) {
             val s = rememberAutoscale(history)
             val c = MaterialTheme.colorScheme.primary
             Canvas(Modifier.fillMaxWidth().height(24.dp)) {
@@ -200,75 +221,78 @@ private fun BoxScope.ValueOverlayChip(sensor: TelemetrySensor?) {
 @Composable
 fun LineChartView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modifier = Modifier, showValue: Boolean = false) {
     val context = LocalContext.current
-    if (history.size < 2) { CollectingData(); return }
-    val s = rememberAutoscale(history)
-    val c = MaterialTheme.colorScheme.primary
-    Box(modifier) {
-        Canvas(
-            Modifier.fillMaxWidth().height(56.dp)
-                .semantics { contentDescription = cdView(context, R.string.cd_view_line, sensor) }
-        ) {
-            val stepX = size.width / (history.size - 1)
-            val p = Path()
-            history.forEachIndexed { i, v ->
-                val y = size.height - ((v - s.low) / s.range) * size.height
-                if (i == 0) p.moveTo(0f, y) else p.lineTo(i * stepX, y)
+    ChartOrCollecting(hasData = history.size >= 2, modifier = modifier) {
+        val s = rememberAutoscale(history)
+        val c = MaterialTheme.colorScheme.primary
+        Box {
+            Canvas(
+                Modifier.fillMaxWidth().height(56.dp)
+                    .semantics { contentDescription = cdView(context, R.string.cd_view_line, sensor) }
+            ) {
+                val stepX = size.width / (history.size - 1)
+                val p = Path()
+                history.forEachIndexed { i, v ->
+                    val y = size.height - ((v - s.low) / s.range) * size.height
+                    if (i == 0) p.moveTo(0f, y) else p.lineTo(i * stepX, y)
+                }
+                drawPath(p, c, style = Stroke(width = 4f, cap = StrokeCap.Round))
             }
-            drawPath(p, c, style = Stroke(width = 4f, cap = StrokeCap.Round))
+            if (showValue) ValueOverlayChip(sensor)
         }
-        if (showValue) ValueOverlayChip(sensor)
     }
 }
 
 @Composable
 fun AreaChartView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modifier = Modifier, showValue: Boolean = false) {
     val context = LocalContext.current
-    if (history.size < 2) { CollectingData(); return }
-    val s = rememberAutoscale(history)
-    val c = MaterialTheme.colorScheme.primary
-    Box(modifier) {
-        Canvas(
-            Modifier.fillMaxWidth().height(56.dp)
-                .semantics { contentDescription = cdView(context, R.string.cd_view_area, sensor) }
-        ) {
-            val stepX = size.width / (history.size - 1)
-            val p = Path().apply {
-                history.forEachIndexed { i, v ->
-                    val y = size.height - ((v - s.low) / s.range) * size.height
-                    if (i == 0) moveTo(0f, y) else lineTo(i * stepX, y)
+    ChartOrCollecting(hasData = history.size >= 2, modifier = modifier) {
+        val s = rememberAutoscale(history)
+        val c = MaterialTheme.colorScheme.primary
+        Box {
+            Canvas(
+                Modifier.fillMaxWidth().height(56.dp)
+                    .semantics { contentDescription = cdView(context, R.string.cd_view_area, sensor) }
+            ) {
+                val stepX = size.width / (history.size - 1)
+                val p = Path().apply {
+                    history.forEachIndexed { i, v ->
+                        val y = size.height - ((v - s.low) / s.range) * size.height
+                        if (i == 0) moveTo(0f, y) else lineTo(i * stepX, y)
+                    }
+                    lineTo(size.width, size.height); lineTo(0f, size.height); close()
                 }
-                lineTo(size.width, size.height); lineTo(0f, size.height); close()
+                drawPath(p, brush = Brush.verticalGradient(listOf(c.copy(alpha = 0.55f), c.copy(alpha = 0f))))
             }
-            drawPath(p, brush = Brush.verticalGradient(listOf(c.copy(alpha = 0.55f), c.copy(alpha = 0f))))
+            if (showValue) ValueOverlayChip(sensor)
         }
-        if (showValue) ValueOverlayChip(sensor)
     }
 }
 
 @Composable
 fun BarHistogramView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modifier = Modifier, showValue: Boolean = false) {
     val context = LocalContext.current
-    if (history.isEmpty()) { CollectingData(); return }
-    val s = rememberAutoscale(history)
-    val c = MaterialTheme.colorScheme.primary
-    Box(modifier) {
-        Canvas(
-            Modifier.fillMaxWidth().height(56.dp)
-                .semantics { contentDescription = cdView(context, R.string.cd_view_bar, sensor) }
-        ) {
-            val stepX = size.width / history.size
-            val barW = stepX * 0.7f
-            history.forEachIndexed { i, v ->
-                val h = ((v - s.low) / s.range) * size.height
-                drawRoundRect(
-                    color = c,
-                    topLeft = Offset(i * stepX + (stepX - barW) / 2f, size.height - h),
-                    size = Size(barW, h),
-                    cornerRadius = CornerRadius(3f, 3f)
-                )
+    ChartOrCollecting(hasData = history.isNotEmpty(), modifier = modifier) {
+        val s = rememberAutoscale(history)
+        val c = MaterialTheme.colorScheme.primary
+        Box {
+            Canvas(
+                Modifier.fillMaxWidth().height(56.dp)
+                    .semantics { contentDescription = cdView(context, R.string.cd_view_bar, sensor) }
+            ) {
+                val stepX = size.width / history.size
+                val barW = stepX * 0.7f
+                history.forEachIndexed { i, v ->
+                    val h = ((v - s.low) / s.range) * size.height
+                    drawRoundRect(
+                        color = c,
+                        topLeft = Offset(i * stepX + (stepX - barW) / 2f, size.height - h),
+                        size = Size(barW, h),
+                        cornerRadius = CornerRadius(3f, 3f)
+                    )
+                }
             }
+            if (showValue) ValueOverlayChip(sensor)
         }
-        if (showValue) ValueOverlayChip(sensor)
     }
 }
 
@@ -339,11 +363,11 @@ fun DualMetricOverlay(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    if (primaryHistory.size < 2) { CollectingData(); return }
+    ChartOrCollecting(hasData = primaryHistory.size >= 2, modifier = modifier) {
     val sPrimary = rememberAutoscale(primaryHistory)
     val primaryColor = MaterialTheme.colorScheme.primary
     val secondaryColor = MaterialTheme.colorScheme.tertiary
-    Box(modifier.semantics { contentDescription = cdView(context, R.string.cd_view_dual_metric, primary) }) {
+    Box(Modifier.semantics { contentDescription = cdView(context, R.string.cd_view_dual_metric, primary) }) {
         Canvas(Modifier.fillMaxWidth().height(56.dp)) {
             val stepX = size.width / (primaryHistory.size - 1)
             val areaPath = Path().apply {
@@ -378,6 +402,7 @@ fun DualMetricOverlay(
                 }
             }
         }
+    }
     }
 }
 
