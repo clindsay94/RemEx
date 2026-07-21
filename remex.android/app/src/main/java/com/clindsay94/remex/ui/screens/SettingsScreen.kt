@@ -201,7 +201,8 @@ private fun SettingsCategoryList(
                 ExpressiveSettingsRow(
                     category = category,
                     selected = category == selectedCategory,
-                    onClick = { onCategoryClick(category) }
+                    onClick = { onCategoryClick(category) },
+                    modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
                 )
             }
         }
@@ -217,7 +218,8 @@ private fun SettingsCategoryList(
 private fun ExpressiveSettingsRow(
     category: SettingsCategory,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     val interaction = remember { MutableInteractionSource() }
@@ -249,7 +251,7 @@ private fun ExpressiveSettingsRow(
         interactionSource = interaction,
         shape = MaterialTheme.shapes.large,
         color = containerColor,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .graphicsLayer { scaleX = scale; scaleY = scale }
     ) {
