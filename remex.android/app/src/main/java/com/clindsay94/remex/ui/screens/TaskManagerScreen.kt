@@ -2,7 +2,11 @@ package com.clindsay94.remex.ui.screens
 
 import android.os.Build
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -85,6 +89,8 @@ fun TaskManagerScreen(
     )
 }
 
+private enum class TaskManagerListState { DISCONNECTED, LOADING, LIST }
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TaskManagerScreenContent(
@@ -108,6 +114,7 @@ fun TaskManagerScreenContent(
         onClearLoadError: () -> Unit = {},
 ) {
     val view = LocalView.current
+    val motionScheme = MaterialTheme.motionScheme
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(killError) {
@@ -188,49 +195,69 @@ fun TaskManagerScreenContent(
                         onUpdateSortField = onUpdateSortField
                 )
 
-                if (!isConnected && processes.isEmpty()) {
-                    DisconnectedFullScreen(
-                            screenName = stringResource(R.string.screen_task_manager_title),
-                            onNavigateToConnection = onNavigateToConnection,
-                            modifier = Modifier.weight(1f)
-                    )
-                } else if (processes.isEmpty() && isRefreshing) {
-                    Box(
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            RemexLoadingIndicator()
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                    stringResource(R.string.task_manager_fetching),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                val listState =
+                        when {
+                            !isConnected && processes.isEmpty() -> TaskManagerListState.DISCONNECTED
+                            processes.isEmpty() && isRefreshing -> TaskManagerListState.LOADING
+                            else -> TaskManagerListState.LIST
+                        }
+                AnimatedContent(
+                        targetState = listState,
+                        transitionSpec = {
+                            val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                            fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                        },
+                        modifier = Modifier.weight(1f),
+                        label = "taskManagerListState"
+                ) { state ->
+                    when (state) {
+                        TaskManagerListState.DISCONNECTED -> {
+                            DisconnectedFullScreen(
+                                    screenName = stringResource(R.string.screen_task_manager_title),
+                                    onNavigateToConnection = onNavigateToConnection,
+                                    modifier = Modifier.fillMaxSize()
                             )
                         }
-                    }
-                } else {
-                    val maxRam = remember(processes) { processes.maxOfOrNull { it.ram } ?: 1.0 }
-                    val maxCpu = remember(processes) { processes.maxOfOrNull { it.cpu } ?: 1.0 }
-                    LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 80.dp)
-                    ) {
-                        items(processes, key = { it.id }) { process ->
-                            ProcessCard(
-                                    process = process,
-                                    maxRam = maxRam,
-                                    maxCpu = maxCpu,
-                                    shapePreset = shapePreset,
-                                    cornerRadius = cornerRadius,
-                                    onKill = { onKillProcess(process.id) },
-                                    modifier =
-                                            Modifier.animateItem(
-                                                    placementSpec =
-                                                            MaterialTheme.motionScheme
-                                                                    .fastSpatialSpec()
-                                            )
-                            )
+                        TaskManagerListState.LOADING -> {
+                            Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    RemexLoadingIndicator()
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                            stringResource(R.string.task_manager_fetching),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                        TaskManagerListState.LIST -> {
+                            val maxRam = remember(processes) { processes.maxOfOrNull { it.ram } ?: 1.0 }
+                            val maxCpu = remember(processes) { processes.maxOfOrNull { it.cpu } ?: 1.0 }
+                            LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(bottom = 80.dp)
+                            ) {
+                                items(processes, key = { it.id }) { process ->
+                                    ProcessCard(
+                                            process = process,
+                                            maxRam = maxRam,
+                                            maxCpu = maxCpu,
+                                            shapePreset = shapePreset,
+                                            cornerRadius = cornerRadius,
+                                            onKill = { onKillProcess(process.id) },
+                                            modifier =
+                                                    Modifier.animateItem(
+                                                            placementSpec =
+                                                                    MaterialTheme.motionScheme
+                                                                            .fastSpatialSpec()
+                                                    )
+                                    )
+                                }
+                            }
                         }
                     }
                 }
