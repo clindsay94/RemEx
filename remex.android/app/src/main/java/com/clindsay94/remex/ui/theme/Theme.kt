@@ -1,6 +1,8 @@
 package com.clindsay94.remex.ui.theme
 
 import android.annotation.SuppressLint
+import android.app.UiModeManager
+import android.content.Context
 import android.database.ContentObserver
 import android.os.Build
 import android.os.Handler
@@ -446,6 +448,27 @@ private fun rememberAnimatorDurationScale(): Float {
     return scale
 }
 
+/**
+ * System contrast (-1..1) from UiModeManager on API 34+, kept live via a
+ * ContrastChangeListener; 0 (default) below API 34. Lets the success palette track the SAME
+ * contrast source as the main scheme when dynamic color is active (RemEx-84dj).
+ */
+@Composable
+private fun rememberSystemContrast(): Float {
+    if (Build.VERSION.SDK_INT < 34) return 0f
+    val context = LocalContext.current
+    val uiModeManager = remember(context) {
+        context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
+    }
+    var contrast by remember { mutableFloatStateOf(uiModeManager.contrast) }
+    DisposableEffect(uiModeManager) {
+        val listener = UiModeManager.ContrastChangeListener { c -> contrast = c }
+        uiModeManager.addContrastChangeListener(context.mainExecutor, listener)
+        onDispose { uiModeManager.removeContrastChangeListener(listener) }
+    }
+    return contrast
+}
+
 // WARNING: This file imports com.google.android.material.color.utilities.* (Hct, Hct.from, etc.)
 // which are @RestrictTo(LIBRARY_GROUP) internals of the Material library. They are extremely
 // sensitive to material version bumps. Keep material version pinned to 1.14.0 in libs.versions.toml
@@ -514,8 +537,14 @@ fun RemExTheme(
         else -> LightColorScheme
     }
 
-    val customColors = remember(darkTheme, themeContrast) {
-        customColorsForScheme(darkTheme, themeContrast.toDouble())
+    // When dynamic color drives the main scheme, the success palette follows the SYSTEM
+    // contrast (the same source the dynamic scheme responds to); otherwise the app's
+    // themeContrast, matching the custom/static paths (RemEx-84dj).
+    val usesDynamicScheme = !themePalette.equals("custom", ignoreCase = true) &&
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val successContrast = if (usesDynamicScheme) rememberSystemContrast() else themeContrast
+    val customColors = remember(darkTheme, successContrast) {
+        customColorsForScheme(darkTheme, successContrast.toDouble())
     }
 
     val animatorDurationScale = rememberAnimatorDurationScale()
