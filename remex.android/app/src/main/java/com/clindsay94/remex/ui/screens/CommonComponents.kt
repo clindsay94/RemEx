@@ -59,7 +59,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -168,8 +167,7 @@ fun NotConnectedBanner(
                                 ) {
                                         Text(
                                                 stringResource(R.string.button_connect),
-                                                fontWeight = FontWeight.Bold,
-                                                style = MaterialTheme.typography.labelSmall
+                                                style = MaterialTheme.typography.labelSmallEmphasized
                                         )
                                 }
                         }
@@ -203,8 +201,7 @@ fun DisconnectedFullScreen(
                 Spacer(Modifier.height(24.dp))
                 Text(
                         stringResource(R.string.disconnected_requires_connection, screenName),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMediumEmphasized,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurface
                 )
@@ -359,8 +356,7 @@ fun RemexCircularWavyGauge(
                 )
                 Text(
                         text = centerLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMediumEmphasized,
                 )
         }
 }

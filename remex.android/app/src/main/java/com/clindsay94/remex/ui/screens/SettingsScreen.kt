@@ -63,7 +63,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -298,8 +297,7 @@ private fun ExpressiveSettingsRow(
             }
             Text(
                 text = stringResource(category.titleRes),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMediumEmphasized,
                 modifier = Modifier.weight(1f)
             )
             Icon(
@@ -382,8 +380,7 @@ private fun InputTab() {
                                                 ),
                                                 preferences.pointerSpeed
                                         ),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                         Slider(
                                 value = preferences.pointerSpeed,
@@ -411,8 +408,7 @@ private fun InputTab() {
                                                 ),
                                                 preferences.verticalScrollSensitivity
                                         ),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                         Slider(
                                 value = preferences.verticalScrollSensitivity,
@@ -443,8 +439,7 @@ private fun InputTab() {
                                                 ),
                                                 preferences.horizontalScrollSensitivity
                                         ),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                         Slider(
                                 value = preferences.horizontalScrollSensitivity,
@@ -508,8 +503,7 @@ private fun FileTransferSettingsTab() {
         ) {
             Text(
                     text = stringResource(R.string.settings_ft_shared_folders_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmallEmphasized,
                     color = MaterialTheme.colorScheme.primary
             )
 
@@ -657,8 +651,7 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
 
     Text(
             text = stringResource(R.string.settings_ft_access_title),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleSmallEmphasized,
             color = MaterialTheme.colorScheme.primary
     )
 

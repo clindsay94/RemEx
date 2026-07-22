@@ -48,7 +48,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -225,7 +224,7 @@ fun RemoteMouseScreenContent(
                     ) {
                         Text(
                                 stringResource(R.string.remote_mouse_left_click),
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                     }
                     Button(
@@ -245,7 +244,7 @@ fun RemoteMouseScreenContent(
                     ) {
                         Text(
                                 stringResource(R.string.remote_mouse_right_click),
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                     }
                 }

@@ -43,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
@@ -118,8 +117,7 @@ private fun PropertiesSheetContent(props: FileProperties, thumbnailBase64: Strin
         }
         Text(
             text = props.name,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleMediumEmphasized,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = if (thumb != null) 12.dp else 0.dp),
@@ -197,8 +195,7 @@ fun FileManagerDestinationSheet(
                 text = stringResource(
                     if (isMove) R.string.file_manager_move_here_title else R.string.file_manager_copy_here_title
                 ),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMediumEmphasized,
             )
             Text(
                 text = destinationPath,

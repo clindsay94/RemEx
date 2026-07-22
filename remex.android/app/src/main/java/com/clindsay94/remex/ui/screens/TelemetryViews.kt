@@ -146,7 +146,7 @@ fun ValueSparkView(sensor: TelemetrySensor?, history: List<Float>, modifier: Mod
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleLargeEmphasized)
         ChartOrCollecting(hasData = history.size >= 2) {
             val s = rememberAutoscale(history)
             val c = MaterialTheme.colorScheme.primary
@@ -197,7 +197,7 @@ fun ArcGaugeView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
             drawArc(track, 135f, 270f, false, style = stroke)
             drawArc(fill, 135f, 270f * fraction, false, style = stroke)
         }
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleMediumEmphasized)
     }
 }
 
@@ -211,8 +211,7 @@ private fun BoxScope.ValueOverlayChip(sensor: TelemetrySensor?) {
     ) {
         Text(
             formatSensor(sensor).text,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelSmallEmphasized,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
@@ -350,7 +349,7 @@ fun LedMeterView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
                 )
             }
         }
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Text(formatSensor(sensor).text, style = MaterialTheme.typography.labelLargeEmphasized)
     }
 }
 
@@ -396,9 +395,9 @@ fun DualMetricOverlay(
             modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
         ) {
             Column(Modifier.padding(4.dp)) {
-                Text(formatSensor(primary).text, style = MaterialTheme.typography.labelSmall, color = primaryColor, fontWeight = FontWeight.Bold)
+                Text(formatSensor(primary).text, style = MaterialTheme.typography.labelSmallEmphasized, color = primaryColor)
                 if (secondary != null) {
-                    Text(formatSensor(secondary).text, style = MaterialTheme.typography.labelSmall, color = secondaryColor, fontWeight = FontWeight.Bold)
+                    Text(formatSensor(secondary).text, style = MaterialTheme.typography.labelSmallEmphasized, color = secondaryColor)
                 }
             }
         }

@@ -34,7 +34,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -450,8 +449,7 @@ fun ConnectionScreenContent(
                                                                 ),
                                                                 style =
                                                                         MaterialTheme.typography
-                                                                                .titleSmall,
-                                                                fontWeight = FontWeight.SemiBold,
+                                                                                .titleSmallEmphasized,
                                                                 color =
                                                                         MaterialTheme.colorScheme
                                                                                 .onPrimaryContainer
@@ -697,9 +695,7 @@ fun ConnectionScreenContent(
                                                                         style =
                                                                                 MaterialTheme
                                                                                         .typography
-                                                                                        .titleSmall,
-                                                                        fontWeight =
-                                                                                FontWeight.SemiBold,
+                                                                                        .titleSmallEmphasized,
                                                                         color =
                                                                                 MaterialTheme
                                                                                         .colorScheme
@@ -1080,8 +1076,7 @@ fun ConnectionScreenContent(
                                                                 ),
                                                         style =
                                                                 MaterialTheme.typography
-                                                                        .titleMedium,
-                                                        fontWeight = FontWeight.SemiBold
+                                                                        .titleMediumEmphasized
                                                 )
 
                                                 Spacer(modifier = Modifier.height(8.dp))
@@ -1367,8 +1362,7 @@ private fun HelpStep(number: String, title: String, body: String?) {
                 headlineContent = {
                         Text(
                                 title,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold
+                                style = MaterialTheme.typography.bodyMediumEmphasized
                         )
                 },
                 supportingContent =
@@ -1390,9 +1384,8 @@ private fun HelpStep(number: String, title: String, body: String?) {
                                 Box(contentAlignment = Alignment.Center) {
                                         Text(
                                                 number,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onPrimary,
-                                                fontWeight = FontWeight.Bold
+                                                style = MaterialTheme.typography.labelSmallEmphasized,
+                                                color = MaterialTheme.colorScheme.onPrimary
                                         )
                                 }
                         }
@@ -1414,8 +1407,7 @@ private fun IpInstructionRow(
                 headlineContent = {
                         Text(
                                 platform,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.labelMediumEmphasized
                         )
                 },
                 supportingContent = {

@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.ui.screens.Breadcrumb
@@ -56,8 +55,7 @@ fun FileManagerBreadcrumbs(
             if (isLast) {
                 Text(
                     text = crumb.label,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.labelLargeEmphasized,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 8.dp),
                 )

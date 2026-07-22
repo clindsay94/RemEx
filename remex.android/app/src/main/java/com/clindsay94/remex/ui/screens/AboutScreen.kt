@@ -36,7 +36,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -158,8 +157,7 @@ fun AboutScreenContent(
                             trailingContent = {
                                 Text(
                                         BuildConfig.VERSION_NAME,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold
+                                        style = MaterialTheme.typography.bodyMediumEmphasized
                                 )
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -180,8 +178,7 @@ fun AboutScreenContent(
                             trailingContent = {
                                 Text(
                                         pcInfo,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold
+                                        style = MaterialTheme.typography.bodyMediumEmphasized
                                 )
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -205,8 +202,7 @@ fun AboutScreenContent(
                         )
                         Text(
                                 text = stringResource(R.string.about_whats_new_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.titleMediumEmphasized
                         )
                     }
                     WhatsNewEntry(
@@ -251,8 +247,7 @@ fun AboutScreenContent(
                 ) {
                     Text(
                             text = stringResource(R.string.about_github_star),
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold
+                            style = MaterialTheme.typography.bodyLargeEmphasized
                     )
                     Text(
                             text = stringResource(R.string.about_github_cat),
@@ -289,9 +284,8 @@ fun AboutScreenContent(
             // Footer
             Text(
                     text = stringResource(R.string.about_made_with),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelLargeEmphasized,
+                    color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -304,8 +298,7 @@ private fun WhatsNewEntry(version: String, body: String) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
                 text = version,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelLargeEmphasized,
                 color = MaterialTheme.colorScheme.primary
         )
         Text(

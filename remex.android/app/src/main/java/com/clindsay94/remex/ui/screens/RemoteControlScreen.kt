@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -226,8 +225,7 @@ fun RemoteControlScreenContent(
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text(
                             text = stringResource(R.string.remote_control_section_header),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            style = MaterialTheme.typography.headlineSmallEmphasized
                     )
 
                     Text(
@@ -405,8 +403,7 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
             )
             Text(
                     text = label,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmallEmphasized,
                     color = contentColor
             )
         }
@@ -470,8 +467,7 @@ private fun CommandCard(
                                     if (awaitingConfirmation)
                                             stringResource(R.string.remote_control_confirm_choice)
                                     else localizedTitle,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
+                            style = MaterialTheme.typography.titleSmallEmphasized
                     )
 
                     if (awaitingConfirmation) {

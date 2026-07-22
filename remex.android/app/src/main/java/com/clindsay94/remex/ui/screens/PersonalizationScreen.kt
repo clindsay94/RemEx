@@ -35,7 +35,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -728,10 +727,7 @@ fun PersonalizationScreenContent(
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
-                                    textStyle =
-                                            MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.Bold
-                                            )
+                                    textStyle = MaterialTheme.typography.bodyMediumEmphasized
                             )
                         }
                     }
@@ -943,15 +939,13 @@ fun PersonalizationScreenContent(
                             ) {
                                 Text(
                                         label,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold
+                                        style = MaterialTheme.typography.bodyMediumEmphasized
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                             shapeNameText,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.SemiBold
+                                            style = MaterialTheme.typography.labelSmallEmphasized,
+                                            color = MaterialTheme.colorScheme.primary
                                     )
                                     if (!isInherit) {
                                         IconButton(
@@ -1089,8 +1083,7 @@ private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vect
         )
         Text(
                 title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
+                style = MaterialTheme.typography.titleMediumEmphasized,
                 color = MaterialTheme.colorScheme.primary
         )
     }
@@ -1228,9 +1221,8 @@ private fun MiniCardPreview(
             }
             Text(
                     stringResource(R.string.personalization_preview),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = contentColor,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelSmallEmphasized,
+                    color = contentColor
             )
             Box(
                     modifier =

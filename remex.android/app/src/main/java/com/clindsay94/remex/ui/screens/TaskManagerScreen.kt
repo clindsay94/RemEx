@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -499,16 +498,14 @@ private fun ProcessCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                         text = process.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMediumEmphasized,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                 )
                 Text(
                         text = stringResource(R.string.task_manager_pid_label, process.id),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.labelSmallEmphasized,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                 )
             }
 
@@ -560,14 +557,12 @@ private fun UsageIndicator(label: String, value: String, progress: Float, color:
         ) {
             Text(
                     text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelSmallEmphasized,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                     text = value,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.labelSmallEmphasized,
                     color = color
             )
         }

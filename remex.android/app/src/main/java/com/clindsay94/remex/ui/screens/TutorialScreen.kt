@@ -409,8 +409,7 @@ private fun TutorialPageContent(
 
         Text(
             text = stringResource(page.titleRes),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineMediumEmphasized,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )

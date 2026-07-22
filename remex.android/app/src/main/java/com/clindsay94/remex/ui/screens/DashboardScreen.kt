@@ -867,8 +867,7 @@ fun DashboardScreenContent(
                                                                         ),
                                                                 style =
                                                                         MaterialTheme.typography
-                                                                                .titleLarge,
-                                                                fontWeight = FontWeight.Bold
+                                                                                .titleLargeEmphasized
                                                         )
                                                         Text(
                                                                 text =
@@ -931,8 +930,7 @@ fun DashboardScreenContent(
                                                                                         lastDrawerGroup = availableCard.group
                                                                                         Text(
                                                                                                 text = availableCard.group,
-                                                                                                style = MaterialTheme.typography.labelLarge,
-                                                                                                fontWeight = FontWeight.Bold,
+                                                                                                style = MaterialTheme.typography.labelLargeEmphasized,
                                                                                                 color = MaterialTheme.colorScheme.primary,
                                                                                                 modifier = Modifier.padding(top = 12.dp, bottom = 2.dp, start = 4.dp)
                                                                                         )
@@ -1378,8 +1376,7 @@ fun DashboardScreenContent(
                                                                         else draggingCard.title,
                                                                 style =
                                                                         MaterialTheme.typography
-                                                                                .bodyMedium,
-                                                                fontWeight = FontWeight.SemiBold
+                                                                                .bodyMediumEmphasized
                                                         )
                                                 }
                                         }
@@ -1734,8 +1731,7 @@ private fun WakeOnLanCard(onWake: () -> Unit) {
                         Spacer(Modifier.width(8.dp))
                         Text(
                                 stringResource(R.string.dashboard_wake_pc_button),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                 }
         }
@@ -1849,8 +1845,7 @@ private fun TelemetryCardContent(
                 ) {
                         Text(
                                 title,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelSmallEmphasized,
                                 maxLines = 1,
                                 overflow =
                                         androidx.compose.ui.text.style.TextOverflow

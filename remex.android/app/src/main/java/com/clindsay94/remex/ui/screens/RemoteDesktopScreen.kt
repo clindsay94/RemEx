@@ -189,8 +189,7 @@ private fun desktopPresetLabel(preset: DesktopPreset): String =
 private fun SettingsSectionHeader(text: String) {
         Text(
                 text = text,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelLargeEmphasized,
                 color = MaterialTheme.colorScheme.primary
         )
 }
@@ -209,8 +208,7 @@ private fun SettingSlider(
         Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                         label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.bodyMediumEmphasized,
                         maxLines = 1
                 )
                 Slider(
@@ -2682,8 +2680,7 @@ fun RemoteDesktopScreenContent(
                                                                 ),
                                                                 style =
                                                                         MaterialTheme.typography
-                                                                                .titleLarge,
-                                                                fontWeight = FontWeight.Bold
+                                                                                .titleLargeEmphasized
                                                         )
                                                         RemexTooltip(stringResource(R.string.cd_close_settings)) {
                                                                 IconButton(
@@ -2953,8 +2950,10 @@ fun RemoteDesktopScreenContent(
                                                                                 R.string
                                                                                         .remote_desktop_direct_touch_label
                                                                         ),
-                                                                        fontWeight =
-                                                                                FontWeight.SemiBold
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .bodyLargeEmphasized
                                                                 )
                                                                 Text(
                                                                         stringResource(
@@ -3096,8 +3095,7 @@ fun RemoteDesktopScreenContent(
                                                                 text = stringResource(R.string.remote_desktop_window_controls_header),
                                                                 style =
                                                                         MaterialTheme.typography
-                                                                                .titleMedium,
-                                                                fontWeight = FontWeight.Bold
+                                                                                .titleMediumEmphasized
                                                         )
                                                         Text(
                                                                 text =
@@ -3299,9 +3297,7 @@ fun RemoteDesktopScreenContent(
                                                                         style =
                                                                                 MaterialTheme
                                                                                         .typography
-                                                                                        .bodyMedium,
-                                                                        fontWeight =
-                                                                                FontWeight.SemiBold
+                                                                                        .bodyMediumEmphasized
                                                                 )
                                                                 Row(
                                                                         horizontalArrangement =

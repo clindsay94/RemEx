@@ -52,7 +52,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -211,8 +210,7 @@ fun AppLauncherScreenContent(
                         if (uiState.recentApps.isNotEmpty()) {
                             Text(
                                 text = stringResource(R.string.app_launcher_recent),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.titleSmallEmphasized,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(
                                     start = 16.dp, top = 12.dp, bottom = 8.dp
@@ -381,8 +379,7 @@ fun AppGridItem(
             // App name centered below icon — no executable path shown
             Text(
                 text = app.name,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelMediumEmphasized,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -455,8 +452,7 @@ private fun RecentAppCarousel(
                 }
                 Text(
                     text = app.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.labelMediumEmphasized,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
