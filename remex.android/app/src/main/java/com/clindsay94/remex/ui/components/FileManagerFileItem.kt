@@ -224,7 +224,7 @@ fun FileManagerGridItem(
                 Icon(
                     imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
                     contentDescription = null,
-                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(22.dp),
                 )
             } else if (showOverflow && entry.name != FileManagerLogic.PARENT_ENTRY) {
