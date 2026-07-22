@@ -32,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -62,7 +63,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun RemoteMouseScreen(
         onNavigateToConnection: () -> Unit = {},
@@ -136,6 +137,17 @@ fun RemoteMouseScreenContent(
                                         .focusRequester(focusRequester)
                 )
 
+                // Touch-down feedback: a pressed flag from onPress (which does not consume or
+                // alter tap/drag semantics) drives an animated tonal shift (RemEx-uba6).
+                var trackpadPressed by remember { mutableStateOf(false) }
+                val trackpadColor by animateColorAsState(
+                        targetValue =
+                                if (trackpadPressed)
+                                        MaterialTheme.colorScheme.surfaceContainerHighest
+                                else MaterialTheme.colorScheme.surfaceVariant,
+                        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+                        label = "trackpad_pressed"
+                )
                 Surface(
                         modifier =
                                 Modifier.weight(1f)
@@ -151,6 +163,14 @@ fun RemoteMouseScreenContent(
                                         }
                                         .pointerInput(Unit) {
                                             detectTapGestures(
+                                                    onPress = {
+                                                        trackpadPressed = true
+                                                        try {
+                                                            tryAwaitRelease()
+                                                        } finally {
+                                                            trackpadPressed = false
+                                                        }
+                                                    },
                                                     onTap = {
                                                         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                                         onMouseClick(1)
@@ -158,7 +178,7 @@ fun RemoteMouseScreenContent(
                                             )
                                         },
                         shape = cardShape(shapePreset, cornerRadius),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        color = trackpadColor,
                         tonalElevation = 4.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
