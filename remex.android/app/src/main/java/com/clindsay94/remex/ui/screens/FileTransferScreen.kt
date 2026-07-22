@@ -2,6 +2,10 @@ package com.clindsay94.remex.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +31,7 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -64,7 +69,7 @@ import com.clindsay94.remex.ui.components.FileManagerToolbar
 import com.clindsay94.remex.ui.components.RemexScreenHeader
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FileTransferScreen(
     onNavigateToConnection: () -> Unit = {},
@@ -273,62 +278,81 @@ fun FileTransferScreen(
                     onRefresh = vm::refresh,
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    when {
-                        isLoading && displayedEntries.isEmpty() -> {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                RemexLoadingIndicator(contained = true)
-                            }
-                        }
-                        remoteRoots.isEmpty() && volumes.isEmpty() -> {
-                            CenteredMessage(stringResource(R.string.file_transfer_no_shared_folders))
-                        }
-                        displayedEntries.isEmpty() -> {
-                            CenteredMessage(
-                                if (searchActive) stringResource(R.string.file_manager_no_results)
-                                else stringResource(R.string.file_transfer_empty)
-                            )
-                        }
-                        viewMode == FileViewMode.GRID -> {
-                            LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 100.dp), modifier = Modifier.fillMaxSize()) {
-                                items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
-                                    FileManagerGridItem(
-                                        entry = entry,
-                                        isSelectionMode = isSelectionMode,
-                                        isSelected = entry.name in selectedEntryNames,
-                                        thumbnailBase64 = thumbnails[entry.relativePath ?: FileManagerLogic.combinePath(remotePath, entry.name)],
-                                        showOverflow = entry.name != FileManagerLogic.PARENT_ENTRY,
-                                        onRequestThumbnail = { vm.requestThumbnail(entry) },
-                                        onTap = {
-                                            if (isSelectionMode) vm.toggleEntrySelection(entry)
-                                            else if (entry.isDirectory) vm.navigateInto(entry)
-                                            else vm.showProperties(entry)
-                                        },
-                                        onLongPress = { vm.enterSelectionMode(entry) },
-                                        onOverflow = { contextMenuEntry = entry },
-                                    )
+                    // The four body states (loading / no roots / empty / content) cross-fade through
+                    // AnimatedContent instead of hard-swapping. The key snapshots the entry list and
+                    // view mode so folder navigation and the LIST/GRID toggle both animate — and the
+                    // exiting copy keeps rendering ITS list from the key rather than live state.
+                    val bodyState = when {
+                        isLoading && displayedEntries.isEmpty() ->
+                            FileManagerBodyState(FileManagerBodyState.Kind.Loading, viewMode, emptyList())
+                        remoteRoots.isEmpty() && volumes.isEmpty() ->
+                            FileManagerBodyState(FileManagerBodyState.Kind.NoRoots, viewMode, emptyList())
+                        displayedEntries.isEmpty() ->
+                            FileManagerBodyState(FileManagerBodyState.Kind.Empty, viewMode, emptyList())
+                        else -> FileManagerBodyState(FileManagerBodyState.Kind.Content, viewMode, displayedEntries)
+                    }
+                    val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+                    AnimatedContent(
+                        targetState = bodyState,
+                        transitionSpec = { fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec) },
+                        modifier = Modifier.fillMaxSize(),
+                    ) { state ->
+                        when (state.kind) {
+                            FileManagerBodyState.Kind.Loading -> {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    RemexLoadingIndicator(contained = true)
                                 }
                             }
-                        }
-                        else -> {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
-                                    FileManagerListItem(
-                                        entry = entry,
-                                        isSelectionMode = isSelectionMode,
-                                        isSelected = entry.name in selectedEntryNames,
-                                        thumbnailBase64 = thumbnails[entry.relativePath ?: FileManagerLogic.combinePath(remotePath, entry.name)],
-                                        showDownload = true,
-                                        showOverflow = entry.name != FileManagerLogic.PARENT_ENTRY,
-                                        onRequestThumbnail = { vm.requestThumbnail(entry) },
-                                        onTap = {
-                                            if (isSelectionMode) vm.toggleEntrySelection(entry)
-                                            else vm.navigateInto(entry)
-                                        },
-                                        onLongPress = { vm.enterSelectionMode(entry) },
-                                        onDownload = { startDownload(entry) },
-                                        onOverflow = { contextMenuEntry = entry },
-                                    )
-                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            FileManagerBodyState.Kind.NoRoots -> {
+                                CenteredMessage(stringResource(R.string.file_transfer_no_shared_folders))
+                            }
+                            FileManagerBodyState.Kind.Empty -> {
+                                CenteredMessage(
+                                    if (searchActive) stringResource(R.string.file_manager_no_results)
+                                    else stringResource(R.string.file_transfer_empty)
+                                )
+                            }
+                            FileManagerBodyState.Kind.Content -> if (state.viewMode == FileViewMode.GRID) {
+                                LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 100.dp), modifier = Modifier.fillMaxSize()) {
+                                    items(state.entries, key = { it.relativePath ?: it.name }) { entry ->
+                                        FileManagerGridItem(
+                                            entry = entry,
+                                            isSelectionMode = isSelectionMode,
+                                            isSelected = entry.name in selectedEntryNames,
+                                            thumbnailBase64 = thumbnails[entry.relativePath ?: FileManagerLogic.combinePath(remotePath, entry.name)],
+                                            showOverflow = entry.name != FileManagerLogic.PARENT_ENTRY,
+                                            onRequestThumbnail = { vm.requestThumbnail(entry) },
+                                            onTap = {
+                                                if (isSelectionMode) vm.toggleEntrySelection(entry)
+                                                else if (entry.isDirectory) vm.navigateInto(entry)
+                                                else vm.showProperties(entry)
+                                            },
+                                            onLongPress = { vm.enterSelectionMode(entry) },
+                                            onOverflow = { contextMenuEntry = entry },
+                                        )
+                                    }
+                                }
+                            } else {
+                                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                    items(state.entries, key = { it.relativePath ?: it.name }) { entry ->
+                                        FileManagerListItem(
+                                            entry = entry,
+                                            isSelectionMode = isSelectionMode,
+                                            isSelected = entry.name in selectedEntryNames,
+                                            thumbnailBase64 = thumbnails[entry.relativePath ?: FileManagerLogic.combinePath(remotePath, entry.name)],
+                                            showDownload = true,
+                                            showOverflow = entry.name != FileManagerLogic.PARENT_ENTRY,
+                                            onRequestThumbnail = { vm.requestThumbnail(entry) },
+                                            onTap = {
+                                                if (isSelectionMode) vm.toggleEntrySelection(entry)
+                                                else vm.navigateInto(entry)
+                                            },
+                                            onLongPress = { vm.enterSelectionMode(entry) },
+                                            onDownload = { startDownload(entry) },
+                                            onOverflow = { contextMenuEntry = entry },
+                                        )
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                    }
                                 }
                             }
                         }
@@ -365,6 +389,19 @@ private fun DisconnectedContent(onNavigateToConnection: () -> Unit) {
             Button(onClick = onNavigateToConnection) { Text(stringResource(R.string.button_connect)) }
         }
     }
+}
+
+/**
+ * Snapshot key for the file-list region's AnimatedContent. Carrying the entry list in the key means
+ * a transition's exiting copy renders the folder it was showing (not live state), and folder
+ * navigation / LIST-GRID toggles each produce a distinct target state to cross-fade to.
+ */
+private data class FileManagerBodyState(
+    val kind: Kind,
+    val viewMode: FileViewMode,
+    val entries: List<RemoteFileEntry>,
+) {
+    enum class Kind { Loading, NoRoots, Empty, Content }
 }
 
 @Composable
