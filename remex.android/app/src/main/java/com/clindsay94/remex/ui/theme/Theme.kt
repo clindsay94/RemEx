@@ -57,19 +57,22 @@ import com.google.android.material.color.utilities.SchemeVibrant
 
 import com.clindsay94.remex.R
 
-// Standard M3 colors are already defined in Color.kt
+/**
+ * RemEx brand seed — the launcher/splash amber (see SplashBrand.Amber and
+ * ic_launcher_background's slate backdrop). The static fallback schemes below derive from it
+ * so pre-Android-S devices and dynamic-color-off users get a branded scheme instead of the
+ * Compose-template purple.
+ */
+private val BrandSeed = Color(0xFFFFB63D)
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+// Lazy is load-bearing: colorSchemeFromSeed reads top-level vals declared later in this file,
+// and Kotlin initializes top-level properties in file order — eager init here crashes the app
+// at class-load with an NPE inside the Material color utilities (verified on-device).
+// internal (not private) so FallbackSchemeBrandHueTest can assert the brand hue — the API<31
+// path these serve cannot be exercised on a modern emulator.
+internal val DarkColorScheme by lazy { colorSchemeFromSeed(BrandSeed, darkTheme = true) }
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-)
+internal val LightColorScheme by lazy { colorSchemeFromSeed(BrandSeed, darkTheme = false) }
 
 @Immutable
 data class CustomColors(
