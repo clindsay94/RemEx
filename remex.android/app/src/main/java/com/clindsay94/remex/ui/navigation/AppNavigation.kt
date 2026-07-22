@@ -227,7 +227,14 @@ private fun AppNavigationContent(
         val moreSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
 
         // Close more sheet on route change
-        LaunchedEffect(currentRoute) { showMoreSheet = false }
+        // Close the More sheet when the route changes underneath it (deep links, pairing
+        // navigation) — but let the hide animation finish before unmounting (RemEx-rzzo).
+        LaunchedEffect(currentRoute) {
+                if (showMoreSheet) {
+                        moreSheetState.hide()
+                        showMoreSheet = false
+                }
+        }
 
         LaunchedEffect(currentRoute, selectedPrimaryIndex) {
                 if (
@@ -677,13 +684,21 @@ private fun AppNavigationContent(
                                                 view.performHapticFeedback(
                                                         HapticFeedbackConstants.KEYBOARD_TAP
                                                 )
+                                                // Navigate only after the hide animation
+                                                // completes so the sheet slides out instead of
+                                                // being destroyed mid-animation (RemEx-rzzo).
                                                 scope
                                                         .launch { moreSheetState.hide() }
-                                                        .invokeOnCompletion {
+                                                        .invokeOnCompletion { cause ->
                                                                 if (!moreSheetState.isVisible)
                                                                         showMoreSheet = false
+                                                                // Only navigate when the hide ran
+                                                                // to completion — a preempted hide
+                                                                // (double-tap race) must not fire
+                                                                // a stale navigation.
+                                                                if (cause == null)
+                                                                        navigateTo(screen.route)
                                                         }
-                                                navigateTo(screen.route)
                                         },
                                         modifier =
                                                 Modifier.padding(
