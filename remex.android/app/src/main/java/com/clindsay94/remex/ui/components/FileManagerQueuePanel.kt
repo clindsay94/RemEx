@@ -1,5 +1,10 @@
 package com.clindsay94.remex.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +20,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,6 +29,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -41,6 +51,7 @@ import com.clindsay94.remex.ui.screens.RemexLinearWavyProgress
  * per-item pause / resume / cancel, plus a "Clear finished" action. Bound to [FileTransferEngine]'s
  * queue by the caller.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FileManagerQueuePanel(
     transfers: List<QueuedTransfer>,
@@ -50,14 +61,37 @@ fun FileManagerQueuePanel(
     onClearFinished: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (transfers.isEmpty()) return
+    // Keep the last non-empty queue around so the exit animation shrinks over real rows
+    // instead of recomposing to an empty "0 transfers" shell mid-departure.
+    var lastNonEmpty by remember { mutableStateOf(transfers) }
+    if (transfers.isNotEmpty()) lastNonEmpty = transfers
+    AnimatedVisibility(
+        visible = transfers.isNotEmpty(),
+        enter = expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+            fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+        exit = shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+            fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+        modifier = modifier,
+    ) {
+        QueuePanelContent(lastNonEmpty, onPause, onResume, onCancel, onClearFinished)
+    }
+}
+
+@Composable
+private fun QueuePanelContent(
+    transfers: List<QueuedTransfer>,
+    onPause: (String) -> Unit,
+    onResume: (String) -> Unit,
+    onCancel: (String) -> Unit,
+    onClearFinished: () -> Unit,
+) {
     val hasFinished = transfers.any {
         it.state == TransferState.Done || it.state == TransferState.Cancelled || it.state == TransferState.Failed
     }
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 3.dp,
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
