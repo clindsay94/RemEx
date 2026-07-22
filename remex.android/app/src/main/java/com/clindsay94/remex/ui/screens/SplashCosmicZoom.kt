@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import kotlin.math.PI
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -51,6 +52,11 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: () -> Unit) {
+        // Reduce motion: no starfield/zoom choreography — static terminal frame, finish now.
+        if (LocalReducedMotion.current) {
+                SplashReducedMotionFrame(onFinished, skipRequested, onSkipConsumed)
+                return
+        }
         val view = LocalView.current
         var elapsed by remember { mutableStateOf(0f) }
         var completed by remember { mutableStateOf(false) }

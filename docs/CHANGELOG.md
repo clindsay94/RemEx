@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The splash screens respect "Remove animations".** All three splash variants (RemexCommand's scanline/sweep/zoom, Pong's rally, CosmicZoom's starfield) gate on the new `LocalReducedMotion`: when set, they render a single static brand-mark frame and finish immediately instead of holding the user through several seconds of unskippable choreography on every cold start. Verified on an emulator — with animator scale 0, a cold start lands on the dashboard in under 3 seconds. (`SplashScreen.kt`, `SplashRemexCommand.kt`, `SplashPong.kt`, `SplashCosmicZoom.kt`; RemEx-n39x.)
 - **The app now honors the system "Remove animations" accessibility setting.** `RemExTheme` reads `Settings.Global.ANIMATOR_DURATION_SCALE` (kept live via a ContentObserver, so toggling the setting re-themes without a restart): at scale 0 the app-wide motion scheme switches from Expressive to the calmer non-bouncy Standard scheme, and a new `LocalReducedMotion` CompositionLocal is provided for screens with self-driven choreography (splash zooms, coach-mark loops) to suppress their motion — the splash bead RemEx-n39x consumes it next. Covered by a unit test asserting the scheme differs between scale 0 and 1. Reviewed by Opus kotlin-reviewer (PASS). (`Theme.kt`; RemEx-tej8.)
 
 ### Changed
