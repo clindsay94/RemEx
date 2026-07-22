@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -12,6 +13,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -86,6 +89,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -101,6 +106,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -134,6 +140,12 @@ private fun PlainAnimatedVisibility(
 
 /** One full breathe of the connection orb's glow (0.3 → 0.8 alpha, reversed). */
 private const val CONNECTION_GLOW_PULSE_MS = 1500
+
+/** Presence tracker for canvas cards (RemEx-1ymv): drives enter/exit animation. */
+private class DashboardCardPresence(
+        val state: MutableTransitionState<Boolean>,
+        var lastCard: HomeCardState,
+)
 
 private data class AvailableCardItem(val id: String, val title: String, val subtitle: String, val group: String = "")
 
@@ -648,7 +660,39 @@ fun DashboardScreenContent(
                                                                                         )
                                                                 }
                                         ) {
+                                                // ── Card presence tracking (RemEx-1ymv): cards animate in on add and out on
+                                                // removal. Exiting cards render a snapshot with all pointer input consumed at
+                                                // the Initial pass, so a vanishing card can never be grabbed; the drag/reorder
+                                                // logic in DashboardInteraction.kt is untouched.
+                                                val cardPresence = remember { mutableStateMapOf<String, DashboardCardPresence>() }
                                                 visibleCards.forEach { card ->
+                                                        val presence = cardPresence.getOrPut(card.id) {
+                                                                DashboardCardPresence(MutableTransitionState(false), card)
+                                                        }
+                                                        presence.lastCard = card
+                                                        presence.state.targetState = true
+                                                }
+                                                cardPresence.forEach { (id, presence) ->
+                                                        if (visibleCards.none { it.id == id }) presence.state.targetState = false
+                                                }
+                                                cardPresence.entries.toList().forEach { (id, presence) ->
+                                                        val s = presence.state
+                                                        if (s.isIdle && !s.currentState && !s.targetState) cardPresence.remove(id)
+                                                }
+                                                // Render order is z-order in this Box, so it must stay
+                                                // deterministic: exiting cards first (beneath the live
+                                                // layout), then visibleCards in their list order — the
+                                                // presence MAP is only the tracker, never the order.
+                                                val orderedPresence =
+                                                        cardPresence.entries
+                                                                .filter { entry -> visibleCards.none { it.id == entry.key } }
+                                                                .map { it.key to it.value } +
+                                                                visibleCards.mapNotNull { card ->
+                                                                        cardPresence[card.id]?.let { card.id to it }
+                                                                }
+                                                orderedPresence.forEach { (presenceId, presence) ->
+                                                        key(presenceId) {
+                                                        val card = presence.lastCard
                                                         val xPx = (card.xDp * density).roundToInt()
                                                         val yPx = (card.yDp * density).roundToInt()
                                                         val cardShapePreset =
@@ -658,6 +702,14 @@ fun DashboardScreenContent(
                                                                         telemetryCardShapePreset
                                                                 )
 
+                                                        androidx.compose.animation.AnimatedVisibility(
+                                                                visibleState = presence.state,
+                                                                enter = scaleIn(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+                                                                        fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+                                                                exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                                                                        fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                                                                modifier = Modifier.offset { IntOffset(xPx, yPx) },
+                                                        ) {
                                                         DraggableDashboardCard(
                                                                 card = card,
                                                                 selectionActive = selectedCardIds.isNotEmpty(),
@@ -680,11 +732,22 @@ fun DashboardScreenContent(
                                                                 onTogglePin = onTogglePin,
                                                                 onResize = onResizeCard,
                                                                 modifier =
-                                                                        Modifier.offset {
-                                                                                IntOffset(xPx, yPx)
-                                                                        }
+                                                                        Modifier
                                                                                 .width(card.widthDp.dp)
                                                                                 .height(card.heightDp.dp)
+                                                                                .then(
+                                                                                        if (!presence.state.targetState)
+                                                                                                Modifier.pointerInput(Unit) {
+                                                                                                        awaitPointerEventScope {
+                                                                                                                while (true) {
+                                                                                                                        awaitPointerEvent(
+                                                                                                                                PointerEventPass.Initial
+                                                                                                                        ).changes.forEach { it.consume() }
+                                                                                                                }
+                                                                                                        }
+                                                                                                }
+                                                                                        else Modifier
+                                                                                )
                                                         ) {
                                                                 when (card.type.name) {
                                                                         "PC_STATUS" -> {
@@ -761,6 +824,7 @@ fun DashboardScreenContent(
                                                                         }
                                                                 }
                                                         }
+                                                }
                                                 }
                                         }
                                 }
@@ -1183,7 +1247,8 @@ fun DashboardScreenContent(
                                                                                 R.string.button_done
                                                                         )
                                                                 )
-                                                        }
+                                                                }
+                                                }
                                                 }
                                         }
                                 }
