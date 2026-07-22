@@ -209,6 +209,7 @@ fun FileManagerDestinationSheet(
                             items(entries, key = { it.name }) { entry ->
                                 Row(
                                     modifier = Modifier
+                                        .animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
                                         .fillMaxWidth()
                                         .combinedClickable(onClick = { onNavigate(entry) })
                                         .padding(horizontal = 8.dp, vertical = 12.dp),
