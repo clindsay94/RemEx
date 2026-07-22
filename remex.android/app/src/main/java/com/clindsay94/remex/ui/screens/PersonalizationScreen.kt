@@ -1061,6 +1061,13 @@ private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vect
     }
 }
 
+/**
+ * Deliberately chips, not [SingleChoiceSegmentedButtonRow] (RemEx-0j8v): the only caller is the
+ * 5-option themeStyle group whose title-cased labels ("Fruit Salad", "Tonal Spot") wrap/clip at
+ * a 5-way split of phone width — the exact impractical case the bead's fallback clause names,
+ * confirmed by an Opus review of the attempted conversion. Revisit only if the option set
+ * shrinks to <=3 short labels.
+ */
 @Composable
 private fun SingleSelectChips(
         options: List<String>,
