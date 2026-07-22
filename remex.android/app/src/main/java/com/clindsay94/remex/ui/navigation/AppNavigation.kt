@@ -70,6 +70,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -378,8 +380,19 @@ private fun AppNavigationContent(
                                                                 if (screen == Screen.Dashboard &&
                                                                                 !isConnected
                                                                 ) {
+                                                                        // The badge is purely visual; expose the
+                                                                        // disconnected state it conveys to TalkBack.
+                                                                        val disconnectedLabel =
+                                                                                stringResource(
+                                                                                        R.string.status_disconnected
+                                                                                )
                                                                         BadgedBox(
-                                                                                badge = { Badge() }
+                                                                                badge = { Badge() },
+                                                                                modifier =
+                                                                                        Modifier.semantics {
+                                                                                                stateDescription =
+                                                                                                        disconnectedLabel
+                                                                                        },
                                                                         ) {
                                                                                 Icon(
                                                                                         imageVector =
@@ -496,8 +509,19 @@ private fun AppNavigationContent(
                                                                 if (screen == Screen.Dashboard &&
                                                                                 !isConnected
                                                                 ) {
+                                                                        // The badge is purely visual; expose the
+                                                                        // disconnected state it conveys to TalkBack.
+                                                                        val disconnectedLabel =
+                                                                                stringResource(
+                                                                                        R.string.status_disconnected
+                                                                                )
                                                                         BadgedBox(
-                                                                                badge = { Badge() }
+                                                                                badge = { Badge() },
+                                                                                modifier =
+                                                                                        Modifier.semantics {
+                                                                                                stateDescription =
+                                                                                                        disconnectedLabel
+                                                                                        },
                                                                         ) {
                                                                                 Icon(
                                                                                         imageVector =

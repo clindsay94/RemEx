@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **TalkBack now announces the disconnected state on the Dashboard navigation item.** The red dot `Badge` shown on the nav item when the PC is disconnected was purely visual, so screen-reader users got no indication of the state it conveys. Both the NavigationBar and NavigationRail badge sites now carry `Modifier.semantics { stateDescription }` sourced from the existing localized `status_disconnected` string (present in all 9 locales) — the state propagates into the nav item's merged semantics and TalkBack reads "Dashboard … Disconnected". Reviewed by Opus kotlin-reviewer (PASS), including verification of the semantics merge path through `NavigationBarItem`'s selectable node. (`AppNavigation.kt`; RemEx-8d9k.)
 - **Removed dead space below the bottom navigation bar.** `NavigationBar` was wrapped in a manual `Modifier.navigationBarsPadding()` on top of the inset M3's `NavigationBar` already consumes through its default `windowInsets`, so the system-bar inset was applied twice on both gesture-nav and 3-button devices. The manual padding is gone; verified with a screenshot on a 3-button-navigation emulator showing the nav items flush above the system bar. Reviewed by Opus kotlin-reviewer (PASS), which also confirmed no ancestor consumes the inset (ruling out the single-inset alternative). (`AppNavigation.kt`; RemEx-57og.)
 
 ### Fixed (file manager)
