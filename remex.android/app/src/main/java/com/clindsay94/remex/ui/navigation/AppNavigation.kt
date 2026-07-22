@@ -363,7 +363,7 @@ private fun AppNavigationContent(
                                         ) { it } +
                                                 fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
                         ) {
-                                NavigationBar(modifier = Modifier.navigationBarsPadding()) {
+                                NavigationBar {
                                         // Primary 4 nav items
                                         navItems.forEachIndexed { index, screen ->
                                                 val isSelected =
