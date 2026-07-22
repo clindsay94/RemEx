@@ -34,7 +34,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -206,7 +205,7 @@ fun ArcGaugeView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
 @Composable
 private fun BoxScope.ValueOverlayChip(sensor: TelemetrySensor?) {
     Surface(
-        shape = RoundedCornerShape(6.dp),
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
         modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
     ) {
@@ -312,7 +311,7 @@ fun HuePulseTile(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
     val tint = lerp(cool, warm, animatedFraction)
     Box(
         modifier = modifier.fillMaxSize()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(tint.copy(alpha = 0.28f))
             .semantics { contentDescription = cdView(context, R.string.cd_view_hue_pulse, sensor) },
         contentAlignment = Alignment.Center
@@ -392,7 +391,7 @@ fun DualMetricOverlay(
             }
         }
         Surface(
-            shape = RoundedCornerShape(6.dp),
+            shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
             modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
         ) {
@@ -474,8 +473,8 @@ internal fun ViewPickerCell(
     )
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .border(borderWidth, borderColor, RoundedCornerShape(12.dp))
+            .clip(MaterialTheme.shapes.medium)
+            .border(borderWidth, borderColor, MaterialTheme.shapes.medium)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

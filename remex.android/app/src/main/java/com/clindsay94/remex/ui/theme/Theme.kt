@@ -115,6 +115,13 @@ internal fun customColorsForScheme(darkTheme: Boolean, contrast: Double): Custom
     )
 }
 
+/**
+ * Squircle crop for app-icon-like previews (tutorial demo tiles, the About logo, Settings'
+ * app icon). Percent-based so it scales with the element; not part of the M3 dp scale, which
+ * is why it lives here as a named token rather than as per-site literals (RemEx-flro).
+ */
+val remexIconSquircle = RoundedCornerShape(percent = 30)
+
 val remexShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
     small = RoundedCornerShape(8.dp),

@@ -5,7 +5,6 @@ import android.net.Uri
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.remexIconSquircle
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
@@ -119,7 +119,7 @@ fun AboutScreenContent(
                     modifier =
                             Modifier.padding(top = 8.dp)
                                     .size(144.dp)
-                                    .clip(RoundedCornerShape(percent = 28))
+                                    .clip(remexIconSquircle)
                                     .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
             ) {

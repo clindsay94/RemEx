@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
@@ -178,7 +177,9 @@ private fun HoldToLiftDemo(modifier: Modifier = Modifier) {
                 .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape),
         )
 
-        // The sample card being lifted.
+        // The sample card being lifted. (Shape captured here: graphicsLayer lambdas run
+        // outside composition and cannot read MaterialTheme themselves.)
+        val liftedCardShape = MaterialTheme.shapes.large
         Box(
             Modifier
                 .size(120.dp, 84.dp)
@@ -187,10 +188,10 @@ private fun HoldToLiftDemo(modifier: Modifier = Modifier) {
                     scaleX = s; scaleY = s
                     translationX = dragX.value * nudge.toPx()
                     shadowElevation = cardLift.value * 28f
-                    shape = RoundedCornerShape(22.dp)
+                    shape = liftedCardShape
                     clip = true
                 }
-                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(22.dp)),
+                .background(MaterialTheme.colorScheme.primaryContainer, liftedCardShape),
         )
 
         // The finger, resting on the card — scales big → small (grab) → normal, and rides the drag.
@@ -245,7 +246,7 @@ private fun ViewPickerDemo(modifier: Modifier = Modifier) {
                 .align(Alignment.Center)
                 .offset(y = (-44).dp)
                 .size(120.dp, 74.dp)
-                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(20.dp)),
+                .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.large),
         ) {
             Icon(
                 Icons.Filled.GridView,
@@ -278,7 +279,7 @@ private fun ViewPickerDemo(modifier: Modifier = Modifier) {
                     alpha = s
                     transformOrigin = TransformOrigin(0.5f, 0f)
                 }
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.large)
                 .padding(10.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -290,7 +291,7 @@ private fun ViewPickerDemo(modifier: Modifier = Modifier) {
                                     .size(20.dp)
                                     .background(
                                         MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(6.dp),
+                                        MaterialTheme.shapes.small,
                                     ),
                             )
                         }
@@ -391,6 +392,7 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniSelectCard(
     dragFraction: Float,
     dragDistance: androidx.compose.ui.unit.Dp,
 ) {
+    val cardShape = MaterialTheme.shapes.large
     Box(
         Modifier
             .align(Alignment.Center)
@@ -401,14 +403,14 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniSelectCard(
                 scaleX = s; scaleY = s
                 translationX = dragFraction * dragDistance.toPx()
                 shadowElevation = lift * 20f
-                shape = RoundedCornerShape(16.dp)
+                shape = cardShape
                 clip = true
             }
-            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer, cardShape)
             .border(
                 width = 3.dp,
                 color = MaterialTheme.colorScheme.primary.copy(alpha = selected),
-                shape = RoundedCornerShape(16.dp),
+                shape = cardShape,
             ),
     )
 }
@@ -448,6 +450,7 @@ private fun SelectActionBarDemo(modifier: Modifier = Modifier) {
 
     Box(modifier.size(200.dp), contentAlignment = Alignment.Center) {
         // Selected sample card (upper).
+        val selectedCardShape = MaterialTheme.shapes.large
         Box(
             Modifier
                 .align(Alignment.Center)
@@ -456,14 +459,14 @@ private fun SelectActionBarDemo(modifier: Modifier = Modifier) {
                 .graphicsLayer {
                     val s = 1f + sel.value * 0.06f
                     scaleX = s; scaleY = s
-                    shape = RoundedCornerShape(20.dp)
+                    shape = selectedCardShape
                     clip = true
                 }
-                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer, selectedCardShape)
                 .border(
                     width = 3.dp,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = sel.value),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = selectedCardShape,
                 ),
         )
 
@@ -490,7 +493,7 @@ private fun SelectActionBarDemo(modifier: Modifier = Modifier) {
                     alpha = s
                     transformOrigin = TransformOrigin(0.5f, 0f)
                 }
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(24.dp))
+                .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.extraLarge)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -565,7 +568,7 @@ private fun CoachPanel(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 6.dp,
     ) {

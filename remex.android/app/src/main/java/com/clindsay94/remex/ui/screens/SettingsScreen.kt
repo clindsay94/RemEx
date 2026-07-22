@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
@@ -67,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.remexIconSquircle
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.FilePeerIdentity
@@ -278,7 +278,7 @@ private fun ExpressiveSettingsRow(
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(percent = 30))
+                    .clip(remexIconSquircle)
                     .background(badgeColor),
                 contentAlignment = Alignment.Center
             ) {

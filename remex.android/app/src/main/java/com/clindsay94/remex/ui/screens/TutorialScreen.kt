@@ -27,7 +27,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
@@ -67,6 +66,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.remexIconSquircle
 import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
@@ -356,7 +356,7 @@ private fun TutorialPageContent(
                 Box(
                     modifier = Modifier
                         .size(140.dp)
-                        .clip(RoundedCornerShape(percent = 30))
+                        .clip(remexIconSquircle)
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
@@ -373,7 +373,7 @@ private fun TutorialPageContent(
                 Box(
                     modifier = Modifier
                         .size(180.dp)
-                        .clip(RoundedCornerShape(percent = 35))
+                        .clip(remexIconSquircle)
                         .background(
                             MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
                         ),
@@ -392,7 +392,7 @@ private fun TutorialPageContent(
                 Box(
                     modifier = Modifier
                         .size(140.dp)
-                        .clip(RoundedCornerShape(percent = 35))
+                        .clip(remexIconSquircle)
                         .background(
                             MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
                         ),
