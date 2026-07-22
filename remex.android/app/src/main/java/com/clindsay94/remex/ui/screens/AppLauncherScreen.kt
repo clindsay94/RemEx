@@ -4,6 +4,10 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.ui.platform.LocalView
 import android.graphics.BitmapFactory
 import android.util.Base64
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -150,13 +154,27 @@ fun AppLauncherScreenContent(
             }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                if (!uiState.isConnected && uiState.apps.isEmpty()) {
+                // Disconnected / empty / apps cross-fade instead of hard-swapping (RemEx-svue);
+                // tile animateItem and press-spring behavior inside the grid is untouched.
+                val launcherBody = when {
+                    !uiState.isConnected && uiState.apps.isEmpty() -> AppLauncherBody.Disconnected
+                    uiState.apps.isEmpty() -> AppLauncherBody.Empty
+                    else -> AppLauncherBody.Apps
+                }
+                val bodyFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+                AnimatedContent(
+                    targetState = launcherBody,
+                    transitionSpec = { fadeIn(bodyFadeSpec) togetherWith fadeOut(bodyFadeSpec) },
+                    modifier = Modifier.fillMaxSize(),
+                    label = "launcher_body",
+                ) { body ->
+                if (body == AppLauncherBody.Disconnected) {
                     DisconnectedFullScreen(
                         screenName = stringResource(R.string.screen_app_launcher_title),
                         onNavigateToConnection = onNavigateToConnection,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxSize()
                     )
-                } else if (uiState.apps.isEmpty()) {
+                } else if (body == AppLauncherBody.Empty) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -231,6 +249,7 @@ fun AppLauncherScreenContent(
                             }
                         }
                     }
+                }
                 }
             }
         }
@@ -447,3 +466,6 @@ private fun RecentAppCarousel(
         }
     }
 }
+
+/** Which of the launcher's three body states is showing (drives the AnimatedContent swap). */
+private enum class AppLauncherBody { Disconnected, Empty, Apps }
