@@ -55,7 +55,7 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.ui.components.RemexScreenHeader
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.theme.cardShape
 import kotlin.math.sqrt
 import kotlinx.coroutines.Job
@@ -105,7 +105,7 @@ fun RemoteMouseScreenContent(
     var textValue by remember { mutableStateOf(TextFieldValue("")) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        RemexScreenHeader(title = stringResource(R.string.screen_remote_mouse_title))
+        RemexFlexibleTopBar(title = stringResource(R.string.screen_remote_mouse_title))
         Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)

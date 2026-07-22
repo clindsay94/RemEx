@@ -57,6 +57,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -70,7 +71,8 @@ import com.clindsay94.remex.ui.theme.remexIconSquircle
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.FilePeerIdentity
-import com.clindsay94.remex.ui.components.RemexScreenHeader
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -192,9 +194,14 @@ private fun SettingsCategoryList(
     selectedCategory: SettingsCategory?,
     onCategoryClick: (SettingsCategory) -> Unit
 ) {
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         topBar = {
-            RemexScreenHeader(title = stringResource(R.string.screen_settings_title))
+            RemexFlexibleTopBar(
+                title = stringResource(R.string.screen_settings_title),
+                scrollBehavior = topBarScrollBehavior,
+            )
         }
     ) { innerPadding ->
         LazyColumn(
@@ -337,9 +344,14 @@ private fun InputTab() {
                     initialValue = SettingsManager.RemoteDesktopPreferences()
             )
 
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         topBar = {
-            RemexScreenHeader(title = stringResource(R.string.settings_tab_input))
+            RemexFlexibleTopBar(
+                title = stringResource(R.string.settings_tab_input),
+                scrollBehavior = topBarScrollBehavior,
+            )
         }
     ) { innerPadding ->
         Column(
@@ -476,9 +488,14 @@ private fun FileTransferSettingsTab() {
         }
     }
 
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+            modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
             topBar = {
-                RemexScreenHeader(title = stringResource(R.string.settings_tab_file_transfer))
+                RemexFlexibleTopBar(
+                        title = stringResource(R.string.settings_tab_file_transfer),
+                        scrollBehavior = topBarScrollBehavior,
+                )
             }
     ) { innerPadding ->
         Column(
@@ -745,9 +762,14 @@ private fun HelpTab(onReplayTutorial: (() -> Unit)?, onNavigateToAbout: (() -> U
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
 
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         topBar = {
-            RemexScreenHeader(title = stringResource(R.string.settings_help_title))
+            RemexFlexibleTopBar(
+                title = stringResource(R.string.settings_help_title),
+                scrollBehavior = topBarScrollBehavior,
+            )
         }
     ) { innerPadding ->
         Column(

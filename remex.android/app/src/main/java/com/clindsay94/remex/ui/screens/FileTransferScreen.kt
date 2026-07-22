@@ -47,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,7 +67,8 @@ import com.clindsay94.remex.ui.components.FileManagerQuickAccess
 import com.clindsay94.remex.ui.components.FileManagerSelectionBar
 import com.clindsay94.remex.ui.components.FileManagerTextDialog
 import com.clindsay94.remex.ui.components.FileManagerToolbar
-import com.clindsay94.remex.ui.components.RemexScreenHeader
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -187,11 +189,14 @@ fun FileTransferScreen(
         )
     }
 
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         topBar = {
-            RemexScreenHeader(
+            RemexFlexibleTopBar(
                 title = stringResource(R.string.screen_file_transfer_title),
                 subtitle = "$rootLabel • $remotePath",
+                scrollBehavior = topBarScrollBehavior,
             )
         },
     ) { innerPadding ->

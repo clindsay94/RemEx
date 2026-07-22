@@ -92,6 +92,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius as GeoCornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -112,7 +113,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
-import com.clindsay94.remex.ui.components.RemexScreenHeader
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapesList
@@ -389,10 +391,15 @@ fun DashboardScreenContent(
         val hScrollState = rememberScrollState()
         val vScrollState = rememberScrollState()
 
+        val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
         Surface(modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                        RemexScreenHeader(
+                Column(
+                        modifier = Modifier.fillMaxSize()
+                                .nestedScroll(topBarScrollBehavior.nestedScrollConnection)
+                ) {
+                        RemexFlexibleTopBar(
                                 title = stringResource(R.string.screen_dashboard_title),
+                                scrollBehavior = topBarScrollBehavior,
                                 actions = {
                                         // Replay the first-run coach marks anytime; disabled mid-gesture
                                         // so it never fights an active lift/selection (RemEx-km0i.10).
