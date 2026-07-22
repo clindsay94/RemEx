@@ -381,35 +381,46 @@ private fun AppNavigationContent(
                                                         selected = isSelected,
                                                         onClick = { onNavItemClick(screen.route) },
                                                         icon = {
-                                                                // M3: Badge the Dashboard icon when
-                                                                // disconnected
-                                                                if (screen == Screen.Dashboard &&
-                                                                                !isConnected
-                                                                ) {
-                                                                        // The badge is purely visual; expose the
-                                                                        // disconnected state it conveys to TalkBack.
-                                                                        val disconnectedLabel =
-                                                                                stringResource(
-                                                                                        R.string.status_disconnected
-                                                                                )
-                                                                        BadgedBox(
-                                                                                badge = { Badge() },
-                                                                                modifier =
-                                                                                        Modifier.semantics {
+                                                                // A single BadgedBox keeps the icon identity
+                                                                // stable; the badge scales+fades in and out
+                                                                // (RemEx-pgzk). The TalkBack stateDescription
+                                                                // applies only while the badge shows (8d9k).
+                                                                val showDisconnectedBadge =
+                                                                        screen == Screen.Dashboard && !isConnected
+                                                                val disconnectedLabel =
+                                                                        stringResource(
+                                                                                R.string.status_disconnected
+                                                                        )
+                                                                BadgedBox(
+                                                                        badge = {
+                                                                                androidx.compose.animation.AnimatedVisibility(
+                                                                                        visible = showDisconnectedBadge,
+                                                                                        enter = scaleIn(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastSpatialSpec()
+                                                                                        ) + fadeIn(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastEffectsSpec()
+                                                                                        ),
+                                                                                        exit = scaleOut(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastSpatialSpec()
+                                                                                        ) + fadeOut(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastEffectsSpec()
+                                                                                        ),
+                                                                                ) {
+                                                                                        Badge()
+                                                                                }
+                                                                        },
+                                                                        modifier =
+                                                                                Modifier.semantics {
+                                                                                        if (showDisconnectedBadge) {
                                                                                                 stateDescription =
                                                                                                         disconnectedLabel
-                                                                                        },
-                                                                        ) {
-                                                                                Icon(
-                                                                                        imageVector =
-                                                                                                screen.icon,
-                                                                                        contentDescription =
-                                                                                                stringResource(
-                                                                                                        screen.titleRes
-                                                                                                ),
-                                                                                )
-                                                                        }
-                                                                } else {
+                                                                                        }
+                                                                                },
+                                                                ) {
                                                                         Icon(
                                                                                 imageVector =
                                                                                         screen.icon,
@@ -512,33 +523,46 @@ private fun AppNavigationContent(
                                                                                 index,
                                                         onClick = { onNavItemClick(screen.route) },
                                                         icon = {
-                                                                if (screen == Screen.Dashboard &&
-                                                                                !isConnected
-                                                                ) {
-                                                                        // The badge is purely visual; expose the
-                                                                        // disconnected state it conveys to TalkBack.
-                                                                        val disconnectedLabel =
-                                                                                stringResource(
-                                                                                        R.string.status_disconnected
-                                                                                )
-                                                                        BadgedBox(
-                                                                                badge = { Badge() },
-                                                                                modifier =
-                                                                                        Modifier.semantics {
+                                                                // A single BadgedBox keeps the icon identity
+                                                                // stable; the badge scales+fades in and out
+                                                                // (RemEx-pgzk). The TalkBack stateDescription
+                                                                // applies only while the badge shows (8d9k).
+                                                                val showDisconnectedBadge =
+                                                                        screen == Screen.Dashboard && !isConnected
+                                                                val disconnectedLabel =
+                                                                        stringResource(
+                                                                                R.string.status_disconnected
+                                                                        )
+                                                                BadgedBox(
+                                                                        badge = {
+                                                                                androidx.compose.animation.AnimatedVisibility(
+                                                                                        visible = showDisconnectedBadge,
+                                                                                        enter = scaleIn(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastSpatialSpec()
+                                                                                        ) + fadeIn(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastEffectsSpec()
+                                                                                        ),
+                                                                                        exit = scaleOut(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastSpatialSpec()
+                                                                                        ) + fadeOut(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastEffectsSpec()
+                                                                                        ),
+                                                                                ) {
+                                                                                        Badge()
+                                                                                }
+                                                                        },
+                                                                        modifier =
+                                                                                Modifier.semantics {
+                                                                                        if (showDisconnectedBadge) {
                                                                                                 stateDescription =
                                                                                                         disconnectedLabel
-                                                                                        },
-                                                                        ) {
-                                                                                Icon(
-                                                                                        imageVector =
-                                                                                                screen.icon,
-                                                                                        contentDescription =
-                                                                                                stringResource(
-                                                                                                        screen.titleRes
-                                                                                                ),
-                                                                                )
-                                                                        }
-                                                                } else {
+                                                                                        }
+                                                                                },
+                                                                ) {
                                                                         Icon(
                                                                                 imageVector =
                                                                                         screen.icon,
