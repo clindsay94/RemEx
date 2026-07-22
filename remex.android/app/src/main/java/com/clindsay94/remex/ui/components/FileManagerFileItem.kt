@@ -222,12 +222,20 @@ fun FileManagerGridItem(
                 }
             }
             if (isSelectionMode && entry.name != FileManagerLogic.PARENT_ENTRY) {
-                Icon(
-                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                    contentDescription = null,
-                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(22.dp),
-                )
+                // Translucent backing keeps the indicator readable over photo thumbnails,
+                // matching the overflow chip below.
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                ) {
+                    Icon(
+                        imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(2.dp).size(22.dp),
+                    )
+                }
             } else if (showOverflow && entry.name != FileManagerLogic.PARENT_ENTRY) {
                 // Per-item actions (download/rename/delete/pin) — the list view exposes these via its
                 // trailing overflow; the grid needs its own affordance or they were unreachable here.
