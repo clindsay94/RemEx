@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Bold text is now driven by named emphasized typography roles instead of 60+ ad-hoc weight overrides.** The same visual rank used to get a different weight on different screens (`titleMedium` was SemiBold in 6 places, Bold in 3, Black in 1). `typographyForFontFamily` now builds all 15 M3 `*Emphasized` roles with the app's canonical emphasis weight per role (majority-wins from the pre-migration inventory, ties resolved to SemiBold) — built alongside the base roles so they carry the user's font family and in-app scale, which `Typography.copy()` would otherwise silently drop. 63 call sites migrated to the emphasized roles; base roles are untouched, so plain text renders identically. 18 minority-weight sites shift slightly to their role's canonical weight (e.g. the Personalization section headers Black→SemiBold, WAKE PC Bold→SemiBold). Four deliberate literals remain (AC budget ≤5): two telemetry hero values and the connection orb label at display-weight Black, and one link `SpanStyle` — plus three dynamic-weight conditionals (lock-state chip, directory-vs-file rows) that can't be a single static role. Reviewed by Opus (round-2 PASS; round 1 caught three deeply-line-wrapped sites the migration script missed). (`Type.kt` + 21 screen/component files; RemEx-0855.)
+
 ### Changed (docs/tooling)
 
 - **`AGENTS.md` rewritten lean (647 → 357 lines) with all 2.0-era history archived to `docs/OLD DOCS/AGENTS-2.0-archive.md`.** The frozen 2.0 Release Gate tables, closed-work narratives, and a duplicate machine-managed Beads block are gone from the live file; the durable do-not-regress rules embedded in those narratives (WinRT `FromAbi`/IID marshaling, `PrecisionPacer`/`DuplicationReinitThrottle` routing, `h264_nvenc_bgra`-only GPU encode, sender-scoped `OpenPipeWireRemote`, warm portal session, SurfaceView `Modifier.layout` invariant, and more) are distilled into a new "Carry-Forward Rules" section. (RemEx-79j3.)
