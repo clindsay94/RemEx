@@ -9,11 +9,13 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview as CameraPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -322,93 +324,106 @@ fun QrScannerScreenContent(
                 )
             }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (hasCameraPermission) {
-                cameraView()
-
-                // Error message overlay
-                AnimatedVisibility(
-                        visible = errorMessage != null,
-                        modifier = Modifier.align(Alignment.Center),
-                        enter =
-                                expandVertically(
-                                        animationSpec =
-                                                MaterialTheme.motionScheme.fastSpatialSpec()
-                                ) +
-                                        fadeIn(
-                                                animationSpec =
-                                                        MaterialTheme.motionScheme
-                                                                .fastEffectsSpec()
-                                        ),
-                        exit =
-                                shrinkVertically(
-                                        animationSpec =
-                                                MaterialTheme.motionScheme.fastSpatialSpec()
-                                ) +
-                                        fadeOut(
-                                                animationSpec =
-                                                        MaterialTheme.motionScheme
-                                                                .fastEffectsSpec()
-                                        ),
-                        label = "qrError"
-                ) {
-                    Surface(
-                            shape = MaterialTheme.shapes.medium,
-                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
-                            modifier = Modifier.padding(32.dp)
-                    ) {
-                        Text(
-                                text = errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                }
-
-                // Scanning hint overlay
-                Box(
-                        modifier = Modifier.fillMaxSize().padding(bottom = 48.dp),
-                        contentAlignment = Alignment.BottomCenter
-                ) {
-                    Surface(
-                            shape = MaterialTheme.shapes.medium,
-                            color =
-                                    MaterialTheme.colorScheme.surfaceContainerHighest.copy(
-                                            alpha = 0.85f
-                                    ),
-                            modifier = Modifier.padding(horizontal = 32.dp)
-                    ) {
-                        Text(
-                                text = stringResource(R.string.qr_scanner_hint),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-                        )
-                    }
-                }
+        // Permission rationale and camera preview cross-fade instead of hard-swapping the
+        // moment the permission dialog is dismissed (this was the file's one bare body swap).
+        val permissionFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+        AnimatedContent(
+                targetState = hasCameraPermission,
+                transitionSpec = {
+                    fadeIn(permissionFadeSpec) togetherWith fadeOut(permissionFadeSpec)
+                },
+                modifier = Modifier.fillMaxSize().padding(padding),
+                label = "qrPermissionGate"
+        ) { cameraGranted ->
+            if (cameraGranted) {
+                QrCameraContent(errorMessage = errorMessage, cameraView = cameraView)
             } else {
-                // Permission denied / not yet granted
-                Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                            Icons.Default.CameraAlt,
-                            contentDescription = stringResource(R.string.cd_camera_icon),
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                            stringResource(R.string.qr_scanner_permission_required),
-                            style = MaterialTheme.typography.bodyLarge
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Button(onClick = onGrantPermission) {
-                        Text(stringResource(R.string.qr_scanner_grant_permission))
-                    }
-                }
+                QrPermissionRationale(onGrantPermission = onGrantPermission)
             }
+        }
+    }
+}
+
+@Composable
+private fun QrCameraContent(errorMessage: String?, cameraView: @Composable () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        cameraView()
+
+        // Error message overlay
+        AnimatedVisibility(
+                visible = errorMessage != null,
+                modifier = Modifier.align(Alignment.Center),
+                enter =
+                        expandVertically(
+                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                        ) +
+                                fadeIn(
+                                        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+                                ),
+                exit =
+                        shrinkVertically(
+                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                        ) +
+                                fadeOut(
+                                        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec()
+                                ),
+                label = "qrError"
+        ) {
+            Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
+                    modifier = Modifier.padding(32.dp)
+            ) {
+                Text(
+                        text = errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+
+        // Scanning hint overlay
+        Box(
+                modifier = Modifier.fillMaxSize().padding(bottom = 48.dp),
+                contentAlignment = Alignment.BottomCenter
+        ) {
+            Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(horizontal = 32.dp)
+            ) {
+                Text(
+                        text = stringResource(R.string.qr_scanner_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QrPermissionRationale(onGrantPermission: () -> Unit) {
+    // Permission denied / not yet granted
+    Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+                Icons.Default.CameraAlt,
+                contentDescription = stringResource(R.string.cd_camera_icon),
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+                stringResource(R.string.qr_scanner_permission_required),
+                style = MaterialTheme.typography.bodyLarge
+        )
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onGrantPermission) {
+            Text(stringResource(R.string.qr_scanner_grant_permission))
         }
     }
 }
