@@ -27,6 +27,7 @@ import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -102,8 +103,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius as GeoCornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size as GeoSize
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -113,7 +116,9 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
@@ -1736,6 +1741,49 @@ private fun WakeOnLanCard(onWake: () -> Unit) {
         }
 }
 
+/**
+ * Horizontal intrusion (px from each card edge) of the clipping shape into the title row's
+ * vertical band (RemEx-0ukf). Measured against the same path the card clips with, at the top
+ * and bottom of the band, worst case per side — so a title inset derived from this is exact
+ * for every shape and morph progress, including resized cards, with no per-shape constants.
+ * Returns 0f to 0f for the discrete rounded-rectangle preset (no polygon clipping).
+ */
+private fun titleBandIntrusion(
+        shapePreset: Float,
+        cardWidthPx: Int,
+        cardHeightPx: Int,
+        bandTopPx: Float,
+        bandBottomPx: Float,
+        density: Density
+): Pair<Float, Float> {
+        if (shapePreset >= 23.5f || cardWidthPx <= 0 || cardHeightPx <= 0) return 0f to 0f
+        val outline =
+                cardShape(shapePreset, 0)
+                        .createOutline(
+                                GeoSize(cardWidthPx.toFloat(), cardHeightPx.toFloat()),
+                                LayoutDirection.Ltr,
+                                density
+                        )
+        val path = (outline as? Outline.Generic)?.path ?: return 0f to 0f
+        val shapeRegion = android.graphics.Region()
+        shapeRegion.setPath(
+                path.asAndroidPath(),
+                android.graphics.Region(0, 0, cardWidthPx, cardHeightPx)
+        )
+        var left = 0f
+        var right = 0f
+        for (y in floatArrayOf(bandTopPx, bandBottomPx)) {
+                val yTop = y.toInt().coerceIn(0, cardHeightPx - 1)
+                val slice = android.graphics.Region(0, yTop, cardWidthPx, yTop + 1)
+                slice.op(shapeRegion, android.graphics.Region.Op.INTERSECT)
+                if (slice.isEmpty) continue
+                val b = slice.bounds
+                left = maxOf(left, b.left.toFloat())
+                right = maxOf(right, (cardWidthPx - b.right).toFloat())
+        }
+        return left to right
+}
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TelemetryCardContent(
@@ -1751,6 +1799,41 @@ private fun TelemetryCardContent(
         onOpenPicker: () -> Unit
 ) {
         val dynamicPadding = calculateAdaptivePadding(shapeIndex)
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val titleLineHeight = MaterialTheme.typography.labelSmall.lineHeight
+
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val contentWidthPx = constraints.maxWidth
+        val contentHeightPx = constraints.maxHeight
+        // Extra start/end inset for the title row (RemEx-0ukf): the uniform adaptive padding
+        // is measured at the card's widest band, but ellipse/hex/blob shapes intrude much
+        // further at the title row's height near the top. Measure the real intrusion at the
+        // title band against the clip path and pad only what the uniform inset doesn't cover.
+        // Rectangular presets measure zero intrusion, so their layout is untouched.
+        val (titleExtraStart, titleExtraEnd) =
+                remember(shapeIndex, contentWidthPx, contentHeightPx, dynamicPadding, titleLineHeight, density) {
+                        with(density) {
+                                // The Card's interior Box adds a 4dp frame around this content
+                                // (DashboardInteraction.kt), so the clip shape spans 8dp more
+                                // than our constraints in each dimension.
+                                val framePx = 4.dp.toPx()
+                                val paddingPx = dynamicPadding.toPx()
+                                val rowHeightPx = maxOf(24.dp.toPx(), titleLineHeight.toPx())
+                                val bandTop = framePx + paddingPx
+                                val (leftPx, rightPx) =
+                                        titleBandIntrusion(
+                                                shapePreset = shapeIndex,
+                                                cardWidthPx = (contentWidthPx + 2 * framePx).roundToInt(),
+                                                cardHeightPx = (contentHeightPx + 2 * framePx).roundToInt(),
+                                                bandTopPx = bandTop,
+                                                bandBottomPx = bandTop + rowHeightPx,
+                                                density = density
+                                        )
+                                val alreadyInset = framePx + paddingPx
+                                (leftPx - alreadyInset).coerceAtLeast(0f).toDp() to
+                                        (rightPx - alreadyInset).coerceAtLeast(0f).toDp()
+                        }
+                }
 
         Column(
                 modifier = Modifier.fillMaxSize().padding(dynamicPadding),
@@ -1758,7 +1841,9 @@ private fun TelemetryCardContent(
                 horizontalAlignment = Alignment.CenterHorizontally
         ) {
                 Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier =
+                                Modifier.fillMaxWidth()
+                                        .padding(start = titleExtraStart, end = titleExtraEnd),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -1800,6 +1885,7 @@ private fun TelemetryCardContent(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         showValueOverlay = showValueOverlay
                 )
+        }
         }
 }
 
