@@ -342,6 +342,11 @@ fun DashboardScreenContent(
                 }
 
         val density = androidx.compose.ui.platform.LocalDensity.current.density
+        // Scale-aware card bounds (RemEx-0i3x): labels grow with the system font scale, so
+        // rendered card bounds grow with it (capped at 1.3x). Positions and PERSISTED sizes
+        // are unchanged — only the rendered box scales, so layouts round-trip losslessly.
+        val cardFontScale =
+                androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.3f)
 
         var showCardDrawer by remember { mutableStateOf(false) }
         var pickerCardId by remember { mutableStateOf<String?>(null) }
@@ -693,8 +698,8 @@ fun DashboardScreenContent(
                                                 orderedPresence.forEach { (presenceId, presence) ->
                                                         key(presenceId) {
                                                         val card = presence.lastCard
-                                                        val xPx = (card.xDp * density).roundToInt()
-                                                        val yPx = (card.yDp * density).roundToInt()
+                                                        val xPx = (card.xDp * density * cardFontScale).roundToInt()
+                                                        val yPx = (card.yDp * density * cardFontScale).roundToInt()
                                                         val cardShapePreset =
                                                                 DashboardShapes.resolveShapeIndex(
                                                                         card,
@@ -720,7 +725,10 @@ fun DashboardScreenContent(
                                                                 cornerRadius = cornerRadius,
                                                                 cardOpacity = cardOpacity,
                                                                 shapeIndex = cardShapePreset,
-                                                                canvasScale = { canvasScaleState.floatValue },
+                                                                // cardFontScale folds into the same divisor the
+                                                                // drag math already uses for pinch zoom, so drag
+                                                                // deltas stay finger-accurate (RemEx-0i3x).
+                                                                canvasScale = { canvasScaleState.floatValue * cardFontScale },
                                                                 onBeginCardDrag = onBeginCardDrag,
                                                                 onDragCardBy = onDragCardBy,
                                                                 onEndCardDrag = onEndCardDrag,
@@ -733,8 +741,8 @@ fun DashboardScreenContent(
                                                                 onResize = onResizeCard,
                                                                 modifier =
                                                                         Modifier
-                                                                                .width(card.widthDp.dp)
-                                                                                .height(card.heightDp.dp)
+                                                                                .width(card.widthDp.dp * cardFontScale)
+                                                                                .height(card.heightDp.dp * cardFontScale)
                                                                                 .then(
                                                                                         if (!presence.state.targetState)
                                                                                                 Modifier.pointerInput(Unit) {

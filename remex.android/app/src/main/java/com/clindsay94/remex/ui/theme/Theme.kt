@@ -270,6 +270,7 @@ fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
     return MorphPolygonShape(morph, progress)
 }
 
+@Composable
 fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
     val shapeIndex = shapePreset.toInt()
     val progress = shapePreset - shapeIndex
@@ -308,7 +309,11 @@ fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
     val safety = currentSafety + (nextSafety - currentSafety) * progress
 
     // Base padding is 8dp, max padding for unsafe shapes is 24dp
-    return androidx.compose.ui.unit.lerp(24.dp, 8.dp, safety)
+    // Scale-aware (RemEx-0i3x): larger text must sit deeper inside unsafe shapes, so the
+    // inset grows with the effective font scale (capped so extreme scales don't hollow out
+    // the card interior entirely).
+    val fontScale = LocalDensity.current.fontScale.coerceIn(1f, 1.5f)
+    return androidx.compose.ui.unit.lerp(24.dp, 8.dp, safety) * fontScale
 }
 
 fun colorSchemeFromSeed(
