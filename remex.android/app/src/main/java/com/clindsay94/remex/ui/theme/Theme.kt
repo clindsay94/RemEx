@@ -91,19 +91,29 @@ val LocalCustomColors = staticCompositionLocalOf {
     )
 }
 
-private val DarkCustomColors = CustomColors(
-    success = Color(0xFF9CD67D),
-    onSuccess = Color(0xFF0C3900),
-    successContainer = Color(0xFF1F5107),
-    onSuccessContainer = Color(0xFFB8F397)
-)
-
-private val LightCustomColors = CustomColors(
-    success = Color(0xFF386A20),
-    onSuccess = Color(0xFFFFFFFF),
-    successContainer = Color(0xFFB8F397),
-    onSuccessContainer = Color(0xFF042100)
-)
+/**
+ * Success roles derived through the same DynamicScheme pipeline as [colorSchemeFromSeed]: a
+ * green tonal-spot scheme (seeded from the former hardcoded light success #386A20, so the hue
+ * family is unchanged) built for the current darkTheme + contrast. Its
+ * primary/onPrimary/primaryContainer/onPrimaryContainer become the four success roles, so
+ * success now tracks dark mode and the user's contrast setting like every other role instead
+ * of staying frozen at fixed hex values. Deliberately NOT seeded from the user's theme seed:
+ * success is a semantic color and must stay green.
+ *
+ * A function rather than top-level vals: Theme.kt top-level property init order is fragile
+ * (see the DarkColorScheme lazy note above) and callers cache via remember anyway.
+ */
+internal fun customColorsForScheme(darkTheme: Boolean, contrast: Double): CustomColors {
+    val successSeed = Hct.fromInt(0xFF386A20.toInt())
+    val scheme = SchemeTonalSpot(successSeed, darkTheme, contrast)
+    val m3 = MaterialDynamicColorsInstance
+    return CustomColors(
+        success = Color(m3.primary().getArgb(scheme)),
+        onSuccess = Color(m3.onPrimary().getArgb(scheme)),
+        successContainer = Color(m3.primaryContainer().getArgb(scheme)),
+        onSuccessContainer = Color(m3.onPrimaryContainer().getArgb(scheme)),
+    )
+}
 
 val remexShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
@@ -488,7 +498,9 @@ fun RemExTheme(
         else -> LightColorScheme
     }
 
-    val customColors = if (darkTheme) DarkCustomColors else LightCustomColors
+    val customColors = remember(darkTheme, themeContrast) {
+        customColorsForScheme(darkTheme, themeContrast.toDouble())
+    }
 
     val animatorDurationScale = rememberAnimatorDurationScale()
     CompositionLocalProvider(
