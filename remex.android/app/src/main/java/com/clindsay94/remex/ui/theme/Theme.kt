@@ -1,7 +1,11 @@
 package com.clindsay94.remex.ui.theme
 
 import android.annotation.SuppressLint
+import android.database.ContentObserver
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
@@ -16,7 +20,11 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Size
@@ -373,6 +381,46 @@ fun colorSchemeFromSeed(
     }
 }
 
+/**
+ * True when the system "Remove animations" accessibility setting is on (animator duration
+ * scale = 0). The theme already swaps to the calmer standard [MotionScheme] automatically;
+ * screens with self-driven choreography (splash zooms, coach-mark loops, infinite pulses)
+ * should additionally consult this and suppress or shorten that motion themselves.
+ */
+val LocalReducedMotion = staticCompositionLocalOf { false }
+
+/**
+ * Maps the system animator duration scale to the app-wide [MotionScheme]: expressive springs
+ * normally, the non-bouncy standard scheme when the user has disabled animations (scale = 0).
+ */
+internal fun motionSchemeForAnimatorScale(animatorDurationScale: Float): MotionScheme =
+    if (animatorDurationScale == 0f) MotionScheme.standard() else MotionScheme.expressive()
+
+/**
+ * Reads Settings.Global.ANIMATOR_DURATION_SCALE and stays current via a ContentObserver, so
+ * toggling "Remove animations" while the app is running re-themes without a restart.
+ */
+@Composable
+private fun rememberAnimatorDurationScale(): Float {
+    val context = LocalContext.current
+    fun read(): Float = Settings.Global.getFloat(
+        context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+    )
+    var scale by remember(context) { mutableFloatStateOf(read()) }
+    DisposableEffect(context) {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                scale = read()
+            }
+        }
+        context.contentResolver.registerContentObserver(
+            Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE), false, observer
+        )
+        onDispose { context.contentResolver.unregisterContentObserver(observer) }
+    }
+    return scale
+}
+
 // WARNING: This file imports com.google.android.material.color.utilities.* (Hct, Hct.from, etc.)
 // which are @RestrictTo(LIBRARY_GROUP) internals of the Material library. They are extremely
 // sensitive to material version bumps. Keep material version pinned to 1.14.0 in libs.versions.toml
@@ -439,14 +487,18 @@ fun RemExTheme(
 
     val customColors = if (darkTheme) DarkCustomColors else LightCustomColors
 
+    val animatorDurationScale = rememberAnimatorDurationScale()
     CompositionLocalProvider(
-        LocalCustomColors provides customColors
+        LocalCustomColors provides customColors,
+        LocalReducedMotion provides (animatorDurationScale == 0f),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = typography,
             shapes = remexShapes,
-            motionScheme = MotionScheme.expressive(),
+            motionScheme = remember(animatorDurationScale) {
+                motionSchemeForAnimatorScale(animatorDurationScale)
+            },
             content = content
         )
     }
