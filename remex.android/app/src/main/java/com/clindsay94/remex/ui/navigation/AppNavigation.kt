@@ -4,6 +4,7 @@ import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -245,21 +246,26 @@ private fun AppNavigationContent(
 
         // Back handler: show exit confirmation when at the primary root destination
         val isAtRoot = currentRoute == PrimaryNavRoute
-        var backProgress by remember { mutableStateOf(0f) }
-        var isBackGestureActive by remember { mutableStateOf(false) }
+        // Animatable rather than a raw Float: mid-gesture the value snaps to the finger, but a
+        // cancelled (or completed) gesture springs the shell home instead of jumping to identity
+        // in one frame (RemEx-gblj). The graphicsLayer gates read value > 0f so the return spring
+        // stays visible after the gesture itself has ended.
+        val backProgress = remember { Animatable(0f) }
+        val backReturnSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
 
         PredictiveBackHandler(enabled = isAtRoot) { backEventFlow ->
                 try {
-                        isBackGestureActive = true
                         backEventFlow.collect { event ->
-                                backProgress = event.progress
+                                backProgress.snapTo(event.progress)
                         }
                         showExitDialog = true
-                        isBackGestureActive = false
-                        backProgress = 0f
+                        backProgress.animateTo(0f, backReturnSpec)
                 } catch (e: CancellationException) {
-                        isBackGestureActive = false
-                        backProgress = 0f
+                        // onBackCancelled() cancels THIS coroutine too (androidx source: it
+                        // cancels both the event channel and the handler job), so the return
+                        // spring must run on the composition scope that survives the gesture.
+                        scope.launch { backProgress.animateTo(0f, backReturnSpec) }
+                        throw e
                 }
         }
 
@@ -321,11 +327,11 @@ private fun AppNavigationContent(
                         modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                        if (isBackGestureActive) {
-                                                scaleX = 1.0f - (backProgress * 0.08f)
-                                                scaleY = 1.0f - (backProgress * 0.08f)
-                                                translationX = backProgress * 48f * view.context.resources.displayMetrics.density
-                                                alpha = 1.0f - (backProgress * 0.2f)
+                                        if (backProgress.value > 0f) {
+                                                scaleX = 1.0f - (backProgress.value * 0.08f)
+                                                scaleY = 1.0f - (backProgress.value * 0.08f)
+                                                translationX = backProgress.value * 48f * view.context.resources.displayMetrics.density
+                                                alpha = 1.0f - (backProgress.value * 0.2f)
                                         }
                                 }
                 ) {
@@ -467,11 +473,11 @@ private fun AppNavigationContent(
                         modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                        if (isBackGestureActive) {
-                                                scaleX = 1.0f - (backProgress * 0.08f)
-                                                scaleY = 1.0f - (backProgress * 0.08f)
-                                                translationX = backProgress * 48f * view.context.resources.displayMetrics.density
-                                                alpha = 1.0f - (backProgress * 0.2f)
+                                        if (backProgress.value > 0f) {
+                                                scaleX = 1.0f - (backProgress.value * 0.08f)
+                                                scaleY = 1.0f - (backProgress.value * 0.08f)
+                                                translationX = backProgress.value * 48f * view.context.resources.displayMetrics.density
+                                                alpha = 1.0f - (backProgress.value * 0.2f)
                                         }
                                 }
                 ) {
