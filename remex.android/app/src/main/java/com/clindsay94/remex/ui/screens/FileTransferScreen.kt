@@ -3,6 +3,9 @@ package com.clindsay94.remex.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -253,7 +256,15 @@ fun FileTransferScreen(
                 )
             }
 
-            if (searchActive && searchTruncated) {
+            // The three stacked header notices grow/shrink instead of shoving the list in
+            // one frame (RemEx-z01v).
+            AnimatedVisibility(
+                visible = searchActive && searchTruncated,
+                enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+            ) {
                 Text(
                     text = stringResource(R.string.file_manager_search_truncated),
                     style = MaterialTheme.typography.labelSmall,
@@ -262,19 +273,36 @@ fun FileTransferScreen(
                 )
             }
 
-            if (statusText.isNotBlank()) {
+            // Remembers its last non-blank value so the shrink-out exit still has text.
+            var lastStatusText by remember { mutableStateOf(statusText) }
+            if (statusText.isNotBlank()) lastStatusText = statusText
+            AnimatedVisibility(
+                visible = statusText.isNotBlank(),
+                enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+            ) {
                 Text(
-                    text = statusText,
+                    text = lastStatusText,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 2.dp),
                 )
             }
 
-            if (isTransferring) {
-                RemexLinearWavyProgress(progress = transferProgress, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
-                OutlinedButton(onClick = vm::cancelLegacyTransfer, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.file_transfer_cancel))
+            AnimatedVisibility(
+                visible = isTransferring,
+                enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+            ) {
+                Column {
+                    RemexLinearWavyProgress(progress = transferProgress, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
+                    OutlinedButton(onClick = vm::cancelLegacyTransfer, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.file_transfer_cancel))
+                    }
                 }
             }
 
