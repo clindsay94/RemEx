@@ -24,6 +24,27 @@ fun getGoogleFontFamily(fontName: String): FontFamily {
     )
 }
 
+/**
+ * Ceiling for the COMBINED font scale (system accessibility scale x in-app scale). The in-app
+ * scale multiplies role sizes that are emitted in .sp, and .sp is scaled again by the system
+ * setting at render time — so system Largest (1.3) plus in-app max (1.4) used to compound to
+ * ~1.82x, clipping single-line ellipsized headers (RemEx-95ls). 1.6x is the largest combined
+ * scale the app's headers and chip labels survive without clipping.
+ */
+internal const val MAX_COMBINED_FONT_SCALE = 1.6f
+
+/**
+ * Clamps the in-app font-scale multiplier so system x app never exceeds
+ * [MAX_COMBINED_FONT_SCALE] — but never below 1.0: the app must reduce only its OWN
+ * contribution, never counteract the system accessibility setting (on API 34+ non-linear
+ * scaling the system alone can reach 2.0, and it wins).
+ */
+internal fun clampedAppFontScale(appFontScale: Float, systemFontScale: Float): Float {
+    if (systemFontScale <= 0f) return appFontScale
+    val ceiling = (MAX_COMBINED_FONT_SCALE / systemFontScale).coerceAtLeast(1f)
+    return appFontScale.coerceAtMost(ceiling)
+}
+
 // Set of Material typography styles to start with
 val Typography = Typography(
     bodyLarge = TextStyle(

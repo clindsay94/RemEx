@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -465,8 +466,12 @@ fun RemExTheme(
         else -> isSystemInDarkTheme()
     }
 
-    val typography = remember(fontFamilyKey, fontScale) {
-        typographyForFontFamily(fontFamilyKey, fontScale)
+    // Clamp the in-app scale so it cannot compound with the system font-size setting past
+    // MAX_COMBINED_FONT_SCALE (RemEx-95ls); the system's own scale is always fully honored.
+    val systemFontScale = LocalDensity.current.fontScale
+    val effectiveFontScale = clampedAppFontScale(fontScale, systemFontScale)
+    val typography = remember(fontFamilyKey, effectiveFontScale) {
+        typographyForFontFamily(fontFamilyKey, effectiveFontScale)
     }
 
     val seedColor = remember(themeSeedColor, themePalette, themeSeedChroma) {
