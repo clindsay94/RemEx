@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed (file manager)
 
 - **The file manager grid's unselected selection circle is no longer invisible.** In grid selection mode the `RadioButtonUnchecked` indicator was tinted `MaterialTheme.colorScheme.surface` — a container role nearly identical to the tile behind it — so unselected items showed no visible indicator at all. It now uses the content role `onSurfaceVariant`, matching the list view's indicator, which holds contrast across light/dark, all three scheme sources, monochrome, and contrast 1.0. Reviewed by Opus kotlin-reviewer (PASS). (`FileManagerFileItem.kt`; RemEx-n88y.)
+- **The file manager grid's overflow button now has a real 48x48dp touch target.** The per-item actions button (download/rename/delete/pin — the only way to reach them in grid view) was an `IconButton` forced to 28dp, well under the Material minimum. The decorative chip and button are now a single clickable `Surface` carrying `minimumInteractiveComponentSize()`, so the visual chip stays 28dp while the touch bounds meet 48dp — the same pattern as the dashboard pin toggle. Covered by a new Compose UI test (`FileManagerGridItemTest`) asserting both touch dimensions, run and passing on an API 37 emulator. Reviewed by Opus kotlin-reviewer (PASS). (`FileManagerFileItem.kt`; RemEx-7f31.)
 
 ### Changed
 

@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -230,12 +231,16 @@ fun FileManagerGridItem(
             } else if (showOverflow && entry.name != FileManagerLogic.PARENT_ENTRY) {
                 // Per-item actions (download/rename/delete/pin) — the list view exposes these via its
                 // trailing overflow; the grid needs its own affordance or they were unreachable here.
+                // The chip stays 28dp visually; minimumInteractiveComponentSize keeps the clickable
+                // bounds at the Material 48dp minimum (same pattern as the dashboard pin toggle).
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
-                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                    onClick = onOverflow,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                        .minimumInteractiveComponentSize().size(28.dp),
                 ) {
-                    IconButton(onClick = onOverflow, modifier = Modifier.size(28.dp)) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
                             Icons.Default.MoreVert,
                             contentDescription = stringResource(R.string.cd_more_options),
