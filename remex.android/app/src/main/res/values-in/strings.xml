@@ -316,6 +316,8 @@
     <string name="personalization_palette_strategy">Strategi Palet Dinamis</string>
     <string name="personalization_section_color">Studio Warna</string>
     <string name="personalization_palette_mode">Mode Palet</string>
+    <string name="personalization_dynamic_color">Warna dinamis</string>
+    <string name="personalization_dynamic_color_desc">Mewarnai aplikasi sesuai wallpaper Anda. Matikan untuk menggunakan palet RemEx.</string>
     <string name="personalization_hue_label">Hue: %1$d°</string>
     <string name="personalization_chroma_label">Vibrancy (Chroma): %1$d</string>
     <string name="personalization_contrast_label">Kontras: %1$s</string>

@@ -481,6 +481,8 @@
     <string name="personalization_palette_strategy">Dynamic Palette Strategy</string>
     <string name="personalization_section_color">Color Studio</string>
     <string name="personalization_palette_mode">Palette Mode</string>
+    <string name="personalization_dynamic_color">Dynamic color</string>
+    <string name="personalization_dynamic_color_desc">Color the app from your wallpaper. Turn off to use the RemEx palette.</string>
     <string name="personalization_hue_label">Hue: %1$d°</string>
     <string name="personalization_chroma_label">Vibrancy (Chroma): %1$d</string>
     <string name="personalization_contrast_label">Contrast: %1$s</string>

@@ -316,6 +316,8 @@
     <string name="personalization_palette_strategy">डायनेमिक पैलेट रणनीति</string>
     <string name="personalization_section_color">कलर स्टूडियो</string>
     <string name="personalization_palette_mode">पैलेट मोड</string>
+    <string name="personalization_dynamic_color">डायनैमिक रंग</string>
+    <string name="personalization_dynamic_color_desc">ऐप को आपके वॉलपेपर के रंगों से रंगता है। RemEx पैलेट उपयोग करने के लिए बंद करें।</string>
     <string name="personalization_hue_label">ह्यू (Hue): %1$d°</string>
     <string name="personalization_chroma_label">वाइब्रेंसी (Chroma): %1$d</string>
     <string name="personalization_contrast_label">कंट्रास्ट: %1$s</string>

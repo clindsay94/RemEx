@@ -88,6 +88,8 @@ class SettingsManager(val context: Context) {
                 val THEME_SEED_COLOR_KEY = stringPreferencesKey("theme_seed_color")
                 val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
                 val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
+                // Material You wallpaper-based color (API 31+); on by default (RemEx-9429).
+                val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
 
                 val MOUSE_FAB_X_KEY = floatPreferencesKey("mouse_fab_x")
                 val MOUSE_FAB_Y_KEY = floatPreferencesKey("mouse_fab_y")
@@ -135,6 +137,7 @@ class SettingsManager(val context: Context) {
                 val themeSeedColor: String = "#6750A4", // Default M3 Purple
                 val themeSeedChroma: Float = 48.0f,
                 val themeContrast: Float = 0.0f,
+                val dynamicColor: Boolean = true,
                 val fontFamily: String = "default",
                 val fontScale: Float = 1.0f,
                 val cardCornerRadius: Int = 20,
@@ -336,6 +339,7 @@ class SettingsManager(val context: Context) {
                                 themeSeedColor = preferences[THEME_SEED_COLOR_KEY] ?: "#6750A4",
                                 themeSeedChroma = preferences[THEME_SEED_CHROMA_KEY] ?: 48.0f,
                                 themeContrast = preferences[THEME_CONTRAST_KEY] ?: 0.0f,
+                                dynamicColor = preferences[DYNAMIC_COLOR_KEY] ?: true,
                                 fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
                                 fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
                                 cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: 20,
@@ -546,6 +550,16 @@ class SettingsManager(val context: Context) {
                                 remoteControlCardShapePreset
                         preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] = remoteMouseCardShapePreset
                         preferences[SPLASH_STYLE_KEY] = splashStyle
+                }
+        }
+
+        /**
+         * Persists the Material You dynamic-color toggle immediately — a switch flip should
+         * not ride the debounced personalization save path (RemEx-9429).
+         */
+        suspend fun setDynamicColor(enabled: Boolean) {
+                context.dataStore.edit { preferences ->
+                        preferences[DYNAMIC_COLOR_KEY] = enabled
                 }
         }
 

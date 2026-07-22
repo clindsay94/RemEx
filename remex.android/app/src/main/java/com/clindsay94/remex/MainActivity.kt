@@ -39,7 +39,8 @@ class MainActivity : ComponentActivity() {
                     themeSeedChroma = prefs.themeSeedChroma,
                     themeContrast = prefs.themeContrast,
                     fontFamilyKey = prefs.fontFamily,
-                    fontScale = prefs.fontScale
+                    fontScale = prefs.fontScale,
+                    dynamicColor = prefs.dynamicColor
                 ) {
                     AppNavigation()
                     // App-root overlay: mirrors an active file-sharing consent prompt as a dialog

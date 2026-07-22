@@ -291,6 +291,8 @@
     <string name="personalization_palette_strategy">Strategia palety dynamicznej</string>
     <string name="personalization_section_color">Studio kolorów</string>
     <string name="personalization_palette_mode">Tryb palety</string>
+    <string name="personalization_dynamic_color">Kolory dynamiczne</string>
+    <string name="personalization_dynamic_color_desc">Koloruje aplikację na podstawie tapety. Wyłącz, aby użyć palety RemEx.</string>
     <string name="personalization_hue_label">Odcień: %1$d°</string>
     <string name="personalization_chroma_label">Nasycenie (Chroma): %1$d</string>
     <string name="personalization_contrast_label">Kontrast: %1$s</string>

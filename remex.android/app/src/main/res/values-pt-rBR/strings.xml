@@ -316,6 +316,8 @@
     <string name="personalization_palette_strategy">Estratégia de Paleta Dinâmica</string>
     <string name="personalization_section_color">Estúdio de Cores</string>
     <string name="personalization_palette_mode">Modo de Paleta</string>
+    <string name="personalization_dynamic_color">Cores dinâmicas</string>
+    <string name="personalization_dynamic_color_desc">Colore o app com base no seu papel de parede. Desative para usar a paleta do RemEx.</string>
     <string name="personalization_hue_label">Matiz (Hue): %1$d°</string>
     <string name="personalization_chroma_label">Vibração (Chroma): %1$d</string>
     <string name="personalization_contrast_label">Contraste: %1$s</string>

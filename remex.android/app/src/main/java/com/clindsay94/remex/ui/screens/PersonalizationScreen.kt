@@ -85,6 +85,7 @@ fun PersonalizationScreen(
     PersonalizationScreenContent(
         settings = currentSettingsState,
         showHeader = showHeader,
+        onDynamicColorChange = viewModel::setDynamicColor,
         onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, remoteMouseCardShapePreset, splashStyle ->
             viewModel.save(
                 themeMode = themeMode,
@@ -143,6 +144,7 @@ private fun PersonalizationLoading(showHeader: Boolean) {
 fun PersonalizationScreenContent(
     settings: SettingsManager.PersonalizationPreferences,
     showHeader: Boolean,
+    onDynamicColorChange: (Boolean) -> Unit = {},
     onSave: (
         themeMode: String,
         themePalette: String,
@@ -169,6 +171,7 @@ fun PersonalizationScreenContent(
 
     var themeMode by remember { mutableStateOf(settings.themeMode) }
     var palette by remember { mutableStateOf(settings.themePalette) }
+    var dynamicColor by remember { mutableStateOf(settings.dynamicColor) }
     var themeStyle by remember { mutableStateOf(settings.themeStyle) }
     var seedColor by remember { mutableStateOf(settings.themeSeedColor) }
     var themeSeedChroma by remember { mutableFloatStateOf(settings.themeSeedChroma) }
@@ -552,6 +555,38 @@ fun PersonalizationScreenContent(
                             stringResource(R.string.personalization_section_color),
                             Icons.Default.Palette
                     )
+
+                    // Material You wallpaper color — only exists on API 31+, and the custom
+                    // palette branch in RemExTheme overrides it, so disable it there (RemEx-9429).
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                        stringResource(R.string.personalization_dynamic_color),
+                                        style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                        stringResource(
+                                                R.string.personalization_dynamic_color_desc
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                    checked = dynamicColor,
+                                    onCheckedChange = {
+                                        dynamicColor = it
+                                        onDynamicColorChange(it)
+                                    },
+                                    enabled = palette == "default"
+                            )
+                        }
+                    }
 
                     Text(
                             stringResource(R.string.personalization_palette_mode),
