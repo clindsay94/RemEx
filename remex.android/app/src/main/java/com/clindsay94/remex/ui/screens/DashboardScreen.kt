@@ -110,6 +110,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
@@ -130,6 +131,9 @@ private fun PlainAnimatedVisibility(
 ) {
         AnimatedVisibility(visible = visible, modifier = modifier, content = content)
 }
+
+/** One full breathe of the connection orb's glow (0.3 → 0.8 alpha, reversed). */
+private const val CONNECTION_GLOW_PULSE_MS = 1500
 
 private data class AvailableCardItem(val id: String, val title: String, val subtitle: String, val group: String = "")
 
@@ -1563,9 +1567,13 @@ private fun ConnectionOrbCard(
                         // Only run the infinite glow transition while its value is actually
                         // used (connected/connecting); when disconnected the orb is opaque and
                         // the animation would just burn battery. Conditional composable call is
-                        // fine here: the branch is keyed by stable state.
+                        // fine here: the branch is keyed by stable state. LinearEasing is the
+                        // M3-sanctioned curve for continuously-looping indicators; the duration
+                        // is the named token below. Under reduce motion the pulse is skipped
+                        // entirely and the glow holds at its midpoint (RemEx-bspj).
+                        val reducedMotion = LocalReducedMotion.current
                         val glowAlpha =
-                                if (isConnected || isConnecting) {
+                                if ((isConnected || isConnecting) && !reducedMotion) {
                                         val infiniteTransition =
                                                 rememberInfiniteTransition(label = "glow")
                                         infiniteTransition
@@ -1576,7 +1584,7 @@ private fun ConnectionOrbCard(
                                                                 infiniteRepeatable(
                                                                         animation =
                                                                                 tween(
-                                                                                        1500,
+                                                                                        CONNECTION_GLOW_PULSE_MS,
                                                                                         easing =
                                                                                                 LinearEasing
                                                                                 ),
@@ -1586,6 +1594,8 @@ private fun ConnectionOrbCard(
                                                         label = "glow_alpha"
                                                 )
                                                 .value
+                                } else if (isConnected || isConnecting) {
+                                        0.55f // steady midpoint of the 0.3–0.8 pulse
                                 } else 1f
 
                         Box(
