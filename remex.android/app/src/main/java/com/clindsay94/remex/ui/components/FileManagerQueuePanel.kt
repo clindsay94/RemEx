@@ -1,10 +1,12 @@
 package com.clindsay94.remex.ui.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -110,7 +112,12 @@ private fun QueuePanelContent(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
             LazyColumn(modifier = Modifier.heightIn(max = 220.dp)) {
                 items(transfers, key = { it.id }) { transfer ->
-                    TransferRow(transfer, onPause, onResume, onCancel)
+                    TransferRow(
+                        transfer, onPause, onResume, onCancel,
+                        modifier = Modifier.animateItem(
+                            placementSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                        ),
+                    )
                 }
             }
         }
@@ -123,20 +130,17 @@ private fun TransferRow(
     onPause: (String) -> Unit,
     onResume: (String) -> Unit,
     onCancel: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isDownload = transfer.mode == FileTransferModes.DOWNLOAD
     val fraction =
         if (transfer.size > 0) (transfer.bytesTransferred.toFloat() / transfer.size).coerceIn(0f, 1f) else 0f
-    val active = transfer.state == TransferState.Active ||
-        transfer.state == TransferState.Negotiating ||
-        transfer.state == TransferState.Queued ||
-        transfer.state == TransferState.Verifying
     val finished = transfer.state == TransferState.Done ||
         transfer.state == TransferState.Cancelled ||
         transfer.state == TransferState.Failed
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = modifier.fillMaxWidth().padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -164,26 +168,52 @@ private fun TransferRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (!finished) {
+            // Shrink+fade instead of deleting the bar in one frame and snapping row height.
+            AnimatedVisibility(
+                visible = !finished,
+                enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+            ) {
                 RemexLinearWavyProgress(progress = fraction, modifier = Modifier.fillMaxWidth().padding(top = 2.dp))
             }
         }
-        if (transfer.state == TransferState.Paused || transfer.state == TransferState.Failed) {
-            IconButton(onClick = { onResume(transfer.id) }) {
-                Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.file_manager_resume))
-            }
-        } else if (active) {
-            IconButton(onClick = { onPause(transfer.id) }) {
-                Icon(Icons.Default.Pause, contentDescription = stringResource(R.string.file_manager_pause))
-            }
-        }
-        if (!finished) {
-            IconButton(onClick = { onCancel(transfer.id) }) {
-                Icon(
-                    Icons.Default.Cancel,
-                    contentDescription = stringResource(R.string.file_transfer_cancel),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        // The pause/resume/cancel cluster swaps through AnimatedContent as the state
+        // machine advances; branches read the lambda's state so an exiting copy renders
+        // ITS state, not live state (RemEx-c6xp).
+        val actionFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+        AnimatedContent(
+            targetState = transfer.state,
+            transitionSpec = { fadeIn(actionFadeSpec) togetherWith fadeOut(actionFadeSpec) },
+            label = "transfer_actions",
+        ) { state ->
+            val stateActive = state == TransferState.Active ||
+                state == TransferState.Negotiating ||
+                state == TransferState.Queued ||
+                state == TransferState.Verifying
+            val stateFinished = state == TransferState.Done ||
+                state == TransferState.Cancelled ||
+                state == TransferState.Failed
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (state == TransferState.Paused || state == TransferState.Failed) {
+                    IconButton(onClick = { onResume(transfer.id) }) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.file_manager_resume))
+                    }
+                } else if (stateActive) {
+                    IconButton(onClick = { onPause(transfer.id) }) {
+                        Icon(Icons.Default.Pause, contentDescription = stringResource(R.string.file_manager_pause))
+                    }
+                }
+                if (!stateFinished) {
+                    IconButton(onClick = { onCancel(transfer.id) }) {
+                        Icon(
+                            Icons.Default.Cancel,
+                            contentDescription = stringResource(R.string.file_transfer_cancel),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
     }
