@@ -261,7 +261,7 @@ fun FileManagerGridItem(
                 // matching the overflow chip below.
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.surfaceBright,
                 ) {
                     SelectionIndicator(
                         isSelected = isSelected,
@@ -277,7 +277,7 @@ fun FileManagerGridItem(
                 // bounds at the Material 48dp minimum (same pattern as the dashboard pin toggle).
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.surfaceBright,
                     onClick = onOverflow,
                     modifier = Modifier.align(Alignment.TopEnd)
                         // Surface(onClick) sets no semantic role; announce as a button (RemEx-qluo).

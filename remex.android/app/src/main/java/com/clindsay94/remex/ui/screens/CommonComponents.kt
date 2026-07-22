@@ -311,10 +311,7 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
                 },
                 colors =
                         SuggestionChipDefaults.suggestionChipColors(
-                                containerColor =
-                                        MaterialTheme.colorScheme.surfaceContainerHighest.copy(
-                                                alpha = 0.92f
-                                        )
+                                containerColor = MaterialTheme.colorScheme.surfaceBright
                         )
         )
 }
