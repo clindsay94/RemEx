@@ -51,6 +51,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -284,19 +285,21 @@ fun FileTransferScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     // The four body states (loading / no roots / empty / content) cross-fade through
-                    // AnimatedContent instead of hard-swapping. The key snapshots the entry list and
-                    // view mode so folder navigation and the LIST/GRID toggle both animate — and the
-                    // exiting copy keeps rendering ITS list from the key rather than live state.
+                    // AnimatedContent, keyed on kind + view mode. Entry-list changes deliberately do
+                    // NOT re-key the region: rows animate individually via animateItem below
+                    // (RemEx-598q reconciling RemEx-h9rd), so folder navigation, sorting, searching
+                    // and renames animate per row while LIST/GRID and state-kind changes cross-fade.
                     val bodyState = when {
                         isLoading && displayedEntries.isEmpty() ->
-                            FileManagerBodyState(FileManagerBodyState.Kind.Loading, viewMode, emptyList())
+                            FileManagerBodyState(FileManagerBodyState.Kind.Loading, viewMode)
                         remoteRoots.isEmpty() && volumes.isEmpty() ->
-                            FileManagerBodyState(FileManagerBodyState.Kind.NoRoots, viewMode, emptyList())
+                            FileManagerBodyState(FileManagerBodyState.Kind.NoRoots, viewMode)
                         displayedEntries.isEmpty() ->
-                            FileManagerBodyState(FileManagerBodyState.Kind.Empty, viewMode, emptyList())
-                        else -> FileManagerBodyState(FileManagerBodyState.Kind.Content, viewMode, displayedEntries)
+                            FileManagerBodyState(FileManagerBodyState.Kind.Empty, viewMode)
+                        else -> FileManagerBodyState(FileManagerBodyState.Kind.Content, viewMode)
                     }
                     val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+                    val itemPlacementSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
                     AnimatedContent(
                         targetState = bodyState,
                         transitionSpec = { fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec) },
@@ -319,8 +322,13 @@ fun FileTransferScreen(
                             }
                             FileManagerBodyState.Kind.Content -> if (state.viewMode == FileViewMode.GRID) {
                                 LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 100.dp), modifier = Modifier.fillMaxSize()) {
-                                    items(state.entries, key = { it.relativePath ?: it.name }) { entry ->
+                                    items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
                                         FileManagerGridItem(
+                                            modifier = Modifier.animateItem(
+                                                fadeInSpec = effectsSpec,
+                                                placementSpec = itemPlacementSpec,
+                                                fadeOutSpec = effectsSpec,
+                                            ),
                                             entry = entry,
                                             isSelectionMode = isSelectionMode,
                                             isSelected = entry.name in selectedEntryNames,
@@ -339,8 +347,13 @@ fun FileTransferScreen(
                                 }
                             } else {
                                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                    items(state.entries, key = { it.relativePath ?: it.name }) { entry ->
+                                    items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
                                         FileManagerListItem(
+                                            modifier = Modifier.animateItem(
+                                                fadeInSpec = effectsSpec,
+                                                placementSpec = itemPlacementSpec,
+                                                fadeOutSpec = effectsSpec,
+                                            ),
                                             entry = entry,
                                             isSelectionMode = isSelectionMode,
                                             isSelected = entry.name in selectedEntryNames,
@@ -397,14 +410,14 @@ private fun DisconnectedContent(onNavigateToConnection: () -> Unit) {
 }
 
 /**
- * Snapshot key for the file-list region's AnimatedContent. Carrying the entry list in the key means
- * a transition's exiting copy renders the folder it was showing (not live state), and folder
- * navigation / LIST-GRID toggles each produce a distinct target state to cross-fade to.
+ * Key for the file-list region's AnimatedContent: state kind + view mode. The entry list is
+ * deliberately NOT part of the key — list changes animate per row via animateItem instead of
+ * cross-fading the whole region (RemEx-598q), and the exiting copy of a kind-change renders an
+ * empty list (invisible), so no stale-content artifact is possible.
  */
 private data class FileManagerBodyState(
     val kind: Kind,
     val viewMode: FileViewMode,
-    val entries: List<RemoteFileEntry>,
 ) {
     enum class Kind { Loading, NoRoots, Empty, Content }
 }
