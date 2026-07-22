@@ -4,9 +4,6 @@ import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -36,6 +33,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -72,6 +70,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -102,9 +101,6 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-// M3 Expressive motion easing curves
-private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
-private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
 private const val PrimaryNavRoute = "primary_nav"
 
 // Routes that suppress the navigation chrome (full-screen / flow screens)
@@ -166,6 +162,7 @@ fun AppNavigation() {
 @OptIn(
         ExperimentalMaterial3Api::class,
         ExperimentalMaterial3AdaptiveNavigationSuiteApi::class,
+        ExperimentalMaterial3ExpressiveApi::class,
 )
 @Composable
 private fun AppNavigationContent(
@@ -356,15 +353,15 @@ private fun AppNavigationContent(
                                 enter =
                                         slideInVertically(
                                                 animationSpec =
-                                                        tween(350, easing = EmphasizedDecelerate),
+                                                        MaterialTheme.motionScheme.defaultSpatialSpec(),
                                         ) { it } +
-                                                fadeIn(tween(350, easing = EmphasizedDecelerate)),
+                                                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
                                 exit =
                                         slideOutVertically(
                                                 animationSpec =
-                                                        tween(200, easing = EmphasizedAccelerate),
+                                                        MaterialTheme.motionScheme.fastSpatialSpec(),
                                         ) { it } +
-                                                fadeOut(tween(200, easing = EmphasizedAccelerate)),
+                                                fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
                         ) {
                                 NavigationBar(modifier = Modifier.navigationBarsPadding()) {
                                         // Primary 4 nav items
@@ -471,15 +468,15 @@ private fun AppNavigationContent(
                                 enter =
                                         slideInHorizontally(
                                                 animationSpec =
-                                                        tween(350, easing = EmphasizedDecelerate),
+                                                        MaterialTheme.motionScheme.defaultSpatialSpec(),
                                         ) { -it } +
-                                                fadeIn(tween(350, easing = EmphasizedDecelerate)),
+                                                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
                                 exit =
                                         slideOutHorizontally(
                                                 animationSpec =
-                                                        tween(200, easing = EmphasizedAccelerate),
+                                                        MaterialTheme.motionScheme.fastSpatialSpec(),
                                         ) { -it } +
-                                                fadeOut(tween(200, easing = EmphasizedAccelerate)),
+                                                fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
                         ) {
                                 NavigationRail(
                                         containerColor =
@@ -671,7 +668,7 @@ private fun AppNavigationContent(
 
 // ─── NavHost ─────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RemexNavHost(
         navController: androidx.navigation.NavHostController,
@@ -690,6 +687,15 @@ private fun RemexNavHost(
         pagerState: androidx.compose.foundation.pager.PagerState? = null,
         modifier: Modifier = Modifier,
 ) {
+        // NavHost's transition lambdas are NOT @Composable, so the motionScheme specs must be
+        // captured here in composable scope and closed over. Enters use the default (emphasized)
+        // tier, exits the fast tier — preserving the former slow-in / quick-out relationship.
+        val enterScaleSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+        val exitScaleSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+        val enterSlideSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+        val exitSlideSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+        val enterFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+        val exitFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
         NavHost(
                 navController = navController,
                 startDestination = startDestination,
@@ -698,32 +704,32 @@ private fun RemexNavHost(
                 enterTransition = {
                         scaleIn(
                                 initialScale = 0.94f,
-                                animationSpec = tween(350, easing = EmphasizedDecelerate),
-                        ) + fadeIn(tween(350, easing = EmphasizedDecelerate))
+                                animationSpec = enterScaleSpec,
+                        ) + fadeIn(enterFadeSpec)
                 },
                 exitTransition = {
                         scaleOut(
                                 targetScale = 1.06f,
-                                animationSpec = tween(200, easing = EmphasizedAccelerate),
-                        ) + fadeOut(tween(200, easing = EmphasizedAccelerate))
+                                animationSpec = exitScaleSpec,
+                        ) + fadeOut(exitFadeSpec)
                 },
                 popEnterTransition = {
                         scaleIn(
                                 initialScale = 1.06f,
-                                animationSpec = tween(350, easing = EmphasizedDecelerate),
-                        ) + fadeIn(tween(350, easing = EmphasizedDecelerate))
+                                animationSpec = enterScaleSpec,
+                        ) + fadeIn(enterFadeSpec)
                 },
                 popExitTransition = {
                         scaleOut(
                                 targetScale = 0.94f,
-                                animationSpec = tween(200, easing = EmphasizedAccelerate),
-                        ) + fadeOut(tween(200, easing = EmphasizedAccelerate))
+                                animationSpec = exitScaleSpec,
+                        ) + fadeOut(exitFadeSpec)
                 },
         ) {
                 composable(
                         Screen.Splash.route,
-                        enterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
-                        exitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
+                        enterTransition = { fadeIn(enterFadeSpec) },
+                        exitTransition = { fadeOut(exitFadeSpec) },
                 ) {
                         SplashScreen(
                                 splashStyle = splashStyle,
@@ -742,8 +748,8 @@ private fun RemexNavHost(
 
                 composable(
                         Screen.Tutorial.route,
-                        enterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
-                        exitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
+                        enterTransition = { fadeIn(enterFadeSpec) },
+                        exitTransition = { fadeOut(exitFadeSpec) },
                 ) {
                         TutorialScreen(
                                 onFinished = {
@@ -780,14 +786,14 @@ private fun RemexNavHost(
                         Screen.QrScanner.route,
                         // QR scanner enters from bottom — modal feel
                         enterTransition = {
-                                slideInVertically(tween(350, easing = EmphasizedDecelerate)) {
+                                slideInVertically(enterSlideSpec) {
                                         it
-                                } + fadeIn(tween(350, easing = EmphasizedDecelerate))
+                                } + fadeIn(enterFadeSpec)
                         },
                         exitTransition = {
-                                slideOutVertically(tween(250, easing = EmphasizedAccelerate)) {
+                                slideOutVertically(exitSlideSpec) {
                                         it
-                                } + fadeOut(tween(250, easing = EmphasizedAccelerate))
+                                } + fadeOut(exitFadeSpec)
                         },
                 ) {
                         QrScannerScreen(
@@ -810,10 +816,10 @@ private fun RemexNavHost(
                                 androidx.navigation.navArgument("port") { type = androidx.navigation.NavType.IntType }
                         ),
                         enterTransition = {
-                                slideInVertically(tween(350, easing = EmphasizedDecelerate)) { it } + fadeIn(tween(350, easing = EmphasizedDecelerate))
+                                slideInVertically(enterSlideSpec) { it } + fadeIn(enterFadeSpec)
                         },
                         exitTransition = {
-                                slideOutVertically(tween(250, easing = EmphasizedAccelerate)) { it } + fadeOut(tween(250, easing = EmphasizedAccelerate))
+                                slideOutVertically(exitSlideSpec) { it } + fadeOut(exitFadeSpec)
                         }
                 ) { backStackEntry ->
                         val host = backStackEntry.arguments?.getString("host") ?: ""
@@ -839,10 +845,10 @@ private fun RemexNavHost(
                 composable(
                         Screen.RemoteDesktop.route,
                         // Full-screen immersive — pure crossfade, no spatial motion
-                        enterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
-                        exitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
-                        popEnterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
-                        popExitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
+                        enterTransition = { fadeIn(enterFadeSpec) },
+                        exitTransition = { fadeOut(exitFadeSpec) },
+                        popEnterTransition = { fadeIn(enterFadeSpec) },
+                        popExitTransition = { fadeOut(exitFadeSpec) },
                 ) { RemoteDesktopScreen() }
 
                 composable(Screen.Personalization.route) { PersonalizationScreen() }
