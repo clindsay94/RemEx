@@ -40,6 +40,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -245,6 +248,8 @@ fun FileManagerGridItem(
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
                     onClick = onOverflow,
                     modifier = Modifier.align(Alignment.TopEnd)
+                        // Surface(onClick) sets no semantic role; announce as a button (RemEx-qluo).
+                        .semantics { role = Role.Button }
                         .minimumInteractiveComponentSize().size(28.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {

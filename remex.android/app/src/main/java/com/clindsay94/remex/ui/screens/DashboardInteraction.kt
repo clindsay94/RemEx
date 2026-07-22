@@ -44,6 +44,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.hapticCommandAcknowledged
@@ -185,6 +188,8 @@ fun DraggableDashboardCard(
                         onTogglePin(card.id)
                     },
                     modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
+                        // Surface(onClick) sets no semantic role; announce as a button (RemEx-qluo).
+                        .semantics { role = Role.Button }
                         .minimumInteractiveComponentSize().size(24.dp)
                 ) {
                     Icon(
