@@ -103,11 +103,13 @@ fun FileManagerToolbar(
                 placeholder = { Text(stringResource(R.string.file_manager_search_hint)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
-                    IconButton(onClick = {
-                        onSearchChange("")
-                        searchExpanded = false
-                    }) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.file_manager_search_close))
+                    RemexTooltip(stringResource(R.string.file_manager_search_close)) {
+                        IconButton(onClick = {
+                            onSearchChange("")
+                            searchExpanded = false
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.file_manager_search_close))
+                        }
                     }
                 },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -148,13 +150,17 @@ private fun ToolbarIconRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(0.dp),
     ) {
-        IconButton(onClick = onExpandSearch) {
-            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.file_manager_search))
+        RemexTooltip(stringResource(R.string.file_manager_search)) {
+            IconButton(onClick = onExpandSearch) {
+                Icon(Icons.Default.Search, contentDescription = stringResource(R.string.file_manager_search))
+            }
         }
 
         // Sort menu
-        IconButton(onClick = { onSortMenuOpenChange(true) }) {
-            Icon(Icons.Default.Sort, contentDescription = stringResource(R.string.file_manager_sort))
+        RemexTooltip(stringResource(R.string.file_manager_sort)) {
+            IconButton(onClick = { onSortMenuOpenChange(true) }) {
+                Icon(Icons.Default.Sort, contentDescription = stringResource(R.string.file_manager_sort))
+            }
         }
         DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { onSortMenuOpenChange(false) }) {
             SortMenuRow(R.string.file_manager_sort_name, SortField.NAME, sortOption, onSort) { onSortMenuOpenChange(false) }
@@ -162,22 +168,32 @@ private fun ToolbarIconRow(
             SortMenuRow(R.string.file_manager_sort_date, SortField.DATE, sortOption, onSort) { onSortMenuOpenChange(false) }
         }
 
-        IconButton(onClick = onToggleViewMode) {
-            Icon(
-                imageVector = if (viewMode == FileViewMode.LIST) Icons.Default.GridView else Icons.AutoMirrored.Filled.List,
-                contentDescription = stringResource(
-                    if (viewMode == FileViewMode.LIST) R.string.file_manager_view_grid else R.string.file_manager_view_list
-                ),
+        RemexTooltip(
+            stringResource(
+                if (viewMode == FileViewMode.LIST) R.string.file_manager_view_grid else R.string.file_manager_view_list
             )
+        ) {
+            IconButton(onClick = onToggleViewMode) {
+                Icon(
+                    imageVector = if (viewMode == FileViewMode.LIST) Icons.Default.GridView else Icons.AutoMirrored.Filled.List,
+                    contentDescription = stringResource(
+                        if (viewMode == FileViewMode.LIST) R.string.file_manager_view_grid else R.string.file_manager_view_list
+                    ),
+                )
+            }
         }
 
         Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
             if (canWrite) {
-                IconButton(onClick = onNewFolder) {
-                    Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(R.string.file_manager_new_folder))
+                RemexTooltip(stringResource(R.string.file_manager_new_folder)) {
+                    IconButton(onClick = onNewFolder) {
+                        Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(R.string.file_manager_new_folder))
+                    }
                 }
-                IconButton(onClick = onUpload) {
-                    Icon(Icons.Default.Upload, contentDescription = stringResource(R.string.file_transfer_upload))
+                RemexTooltip(stringResource(R.string.file_transfer_upload)) {
+                    IconButton(onClick = onUpload) {
+                        Icon(Icons.Default.Upload, contentDescription = stringResource(R.string.file_transfer_upload))
+                    }
                 }
             }
         }
@@ -234,32 +250,42 @@ fun FileManagerSelectionBar(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.file_transfer_cancel_selection))
+            RemexTooltip(stringResource(R.string.file_transfer_cancel_selection)) {
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.file_transfer_cancel_selection))
+                }
             }
             Text(
                 text = "$selectedCount ${stringResource(R.string.file_transfer_selected)}",
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = onSelectAll) {
-                Icon(Icons.Default.SelectAll, contentDescription = stringResource(R.string.file_transfer_select_all))
+            RemexTooltip(stringResource(R.string.file_transfer_select_all)) {
+                IconButton(onClick = onSelectAll) {
+                    Icon(Icons.Default.SelectAll, contentDescription = stringResource(R.string.file_transfer_select_all))
+                }
             }
             if (canWrite) {
-                IconButton(onClick = onCopy, enabled = selectedCount > 0) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.file_manager_copy))
+                RemexTooltip(stringResource(R.string.file_manager_copy)) {
+                    IconButton(onClick = onCopy, enabled = selectedCount > 0) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.file_manager_copy))
+                    }
                 }
-                IconButton(onClick = onMove, enabled = selectedCount > 0) {
-                    Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(R.string.file_manager_move))
+                RemexTooltip(stringResource(R.string.file_manager_move)) {
+                    IconButton(onClick = onMove, enabled = selectedCount > 0) {
+                        Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(R.string.file_manager_move))
+                    }
                 }
             }
             if (canDelete) {
-                IconButton(onClick = onDelete, enabled = selectedCount > 0) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.file_transfer_delete_selected),
-                        tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                RemexTooltip(stringResource(R.string.file_transfer_delete_selected)) {
+                    IconButton(onClick = onDelete, enabled = selectedCount > 0) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.file_transfer_delete_selected),
+                            tint = if (selectedCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.components.RemexTooltip
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -739,101 +740,113 @@ fun RemoteDesktopScreenContent(
                                                 )
                                         },
                                         actions = {
-                                                IconButton(
-                                                        onClick = { toggleRemoteKeyboard() }
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.Keyboard,
-                                                                contentDescription =
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .cd_show_keyboard
-                                                                        )
-                                                        )
+                                                RemexTooltip(stringResource(R.string.cd_show_keyboard)) {
+                                                        IconButton(
+                                                                onClick = { toggleRemoteKeyboard() }
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Keyboard,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .cd_show_keyboard
+                                                                                )
+                                                                )
+                                                        }
                                                 }
                                                 // Independent from the Keyboard button above: this
                                                 // toggles the PC-keys (modifier) bar on its own,
                                                 // surviving IME dismissal (RemEx-yi8o).
-                                                IconButton(
-                                                        onClick = {
-                                                                pcKeysBarVisible = !pcKeysBarVisible
-                                                        }
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.KeyboardCommandKey,
-                                                                contentDescription =
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .cd_show_pc_keys
-                                                                        ),
-                                                                tint =
-                                                                        if (pcKeysBarVisible)
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .primary
-                                                                        else
-                                                                                LocalContentColor
-                                                                                        .current
-                                                        )
-                                                }
-                                                IconButton(
-                                                        onClick = {
-                                                                inputResetTrigger++
-                                                                zoomFactor = 1f
-                                                                panOffsetX = 0f
-                                                                panOffsetY = 0f
-                                                        }
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.Refresh,
-                                                                contentDescription =
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .cd_reset_input
-                                                                        )
-                                                        )
-                                                }
-                                                IconButton(onClick = { showSettings = true }) {
-                                                        Icon(
-                                                                Icons.Default.Tune,
-                                                                contentDescription =
-                                                                        stringResource(
-                                                                                R.string.cd_settings
-                                                                        )
-                                                        )
-                                                }
-                                                IconButton(
-                                                        onClick = {
-                                                                onSetFullscreen(
-                                                                        !uiState.isFullscreen
-                                                                )
-                                                        }
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.Fullscreen,
-                                                                contentDescription =
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .cd_toggle_fullscreen
-                                                                        )
-                                                        )
-                                                }
-                                                if (uiState.isStreaming) {
+                                                RemexTooltip(stringResource(R.string.cd_show_pc_keys)) {
                                                         IconButton(
-                                                                onClick = { onStopStreaming() }
+                                                                onClick = {
+                                                                        pcKeysBarVisible = !pcKeysBarVisible
+                                                                }
                                                         ) {
                                                                 Icon(
-                                                                        Icons.Default.Stop,
+                                                                        Icons.Default.KeyboardCommandKey,
                                                                         contentDescription =
                                                                                 stringResource(
                                                                                         R.string
-                                                                                                .cd_stop
+                                                                                                .cd_show_pc_keys
                                                                                 ),
                                                                         tint =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .error
+                                                                                if (pcKeysBarVisible)
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .primary
+                                                                                else
+                                                                                        LocalContentColor
+                                                                                                .current
                                                                 )
+                                                        }
+                                                }
+                                                RemexTooltip(stringResource(R.string.cd_reset_input)) {
+                                                        IconButton(
+                                                                onClick = {
+                                                                        inputResetTrigger++
+                                                                        zoomFactor = 1f
+                                                                        panOffsetX = 0f
+                                                                        panOffsetY = 0f
+                                                                }
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Refresh,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .cd_reset_input
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                                RemexTooltip(stringResource(R.string.cd_settings)) {
+                                                        IconButton(onClick = { showSettings = true }) {
+                                                                Icon(
+                                                                        Icons.Default.Tune,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string.cd_settings
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                                RemexTooltip(stringResource(R.string.cd_toggle_fullscreen)) {
+                                                        IconButton(
+                                                                onClick = {
+                                                                        onSetFullscreen(
+                                                                                !uiState.isFullscreen
+                                                                        )
+                                                                }
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Fullscreen,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .cd_toggle_fullscreen
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                                if (uiState.isStreaming) {
+                                                        RemexTooltip(stringResource(R.string.cd_stop)) {
+                                                                IconButton(
+                                                                        onClick = { onStopStreaming() }
+                                                                ) {
+                                                                        Icon(
+                                                                                Icons.Default.Stop,
+                                                                                contentDescription =
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .cd_stop
+                                                                                        ),
+                                                                                tint =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .error
+                                                                        )
+                                                                }
                                                         }
                                                 } else {
                                                         IconButton(
@@ -2364,111 +2377,123 @@ fun RemoteDesktopScreenContent(
                                                 // Keyboard toggle in fullscreen — same robust re-invoke
                                                 // logic so the IME comes up every time without leaving
                                                 // immersive mode (RemEx-46q).
-                                                FilledTonalIconButton(
-                                                        onClick = { toggleRemoteKeyboard() },
-                                                        colors =
-                                                                toggleIconButtonColors(
-                                                                        isRemoteKeyboardOpen
+                                                RemexTooltip(stringResource(R.string.cd_show_keyboard)) {
+                                                        FilledTonalIconButton(
+                                                                onClick = { toggleRemoteKeyboard() },
+                                                                colors =
+                                                                        toggleIconButtonColors(
+                                                                                isRemoteKeyboardOpen
+                                                                        )
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Keyboard,
+                                                                        contentDescription =
+                                                                                stringResource(R.string.cd_show_keyboard)
                                                                 )
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.Keyboard,
-                                                                contentDescription =
-                                                                        stringResource(R.string.cd_show_keyboard)
-                                                        )
+                                                        }
                                                 }
                                                 // Independent from the Keyboard button above: toggles
                                                 // the PC-keys (modifier) bar on its own, surviving IME
                                                 // dismissal (RemEx-yi8o).
-                                                FilledTonalIconButton(
-                                                        onClick = {
-                                                                pcKeysBarVisible = !pcKeysBarVisible
-                                                        },
-                                                        colors = toggleIconButtonColors(pcKeysBarVisible)
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.KeyboardCommandKey,
-                                                                contentDescription =
-                                                                        stringResource(R.string.cd_show_pc_keys)
-                                                        )
+                                                RemexTooltip(stringResource(R.string.cd_show_pc_keys)) {
+                                                        FilledTonalIconButton(
+                                                                onClick = {
+                                                                        pcKeysBarVisible = !pcKeysBarVisible
+                                                                },
+                                                                colors = toggleIconButtonColors(pcKeysBarVisible)
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.KeyboardCommandKey,
+                                                                        contentDescription =
+                                                                                stringResource(R.string.cd_show_pc_keys)
+                                                                )
+                                                        }
                                                 }
                                                 // FPS overlay toggle — re-added to the fullscreen
                                                 // controls after the control-bar removal orphaned it
                                                 // (onToggleFpsOverlay had no caller). Fullscreen-only:
                                                 // no windowed-TopAppBar equivalent exists today.
-                                                FilledTonalIconButton(
-                                                        onClick = { onToggleFpsOverlay() },
-                                                        colors = toggleIconButtonColors(showFpsOverlay)
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.Speed,
-                                                                contentDescription =
-                                                                        stringResource(
-                                                                                R.string.remote_desktop_fps_overlay_btn
-                                                                        )
-                                                        )
+                                                RemexTooltip(stringResource(R.string.remote_desktop_fps_overlay_btn)) {
+                                                        FilledTonalIconButton(
+                                                                onClick = { onToggleFpsOverlay() },
+                                                                colors = toggleIconButtonColors(showFpsOverlay)
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Speed,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string.remote_desktop_fps_overlay_btn
+                                                                                )
+                                                                )
+                                                        }
                                                 }
                                                 // Settings button — open the (translucent) settings
                                                 // overlay without having to leave fullscreen first.
-                                                FilledTonalIconButton(
-                                                        onClick = { showSettings = true },
-                                                        colors =
-                                                                IconButtonDefaults
-                                                                        .filledTonalIconButtonColors(
-                                                                                containerColor =
-                                                                                        MaterialTheme
-                                                                                                .colorScheme
-                                                                                                .surfaceContainerHighest
-                                                                        )
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.Tune,
-                                                                contentDescription =
-                                                                        stringResource(R.string.cd_settings)
-                                                        )
-                                                }
-                                                FilledTonalIconButton(
-                                                        onClick = { onSetFullscreen(false) },
-                                                        colors =
-                                                                IconButtonDefaults
-                                                                        .filledTonalIconButtonColors(
-                                                                                containerColor =
-                                                                                        MaterialTheme
-                                                                                                .colorScheme
-                                                                                                .surfaceContainerHighest
-                                                                        )
-                                                ) {
-                                                        Icon(
-                                                                Icons.Default.FullscreenExit,
-                                                                contentDescription =
-                                                                        stringResource(
-                                                                                R.string.cd_exit_fullscreen
-                                                                        )
-                                                        )
-                                                }
-                                                if (uiState.isStreaming) {
+                                                RemexTooltip(stringResource(R.string.cd_settings)) {
                                                         FilledTonalIconButton(
-                                                                onClick = { onStopStreaming() },
+                                                                onClick = { showSettings = true },
                                                                 colors =
                                                                         IconButtonDefaults
                                                                                 .filledTonalIconButtonColors(
                                                                                         containerColor =
                                                                                                 MaterialTheme
                                                                                                         .colorScheme
-                                                                                                        .errorContainer
+                                                                                                        .surfaceContainerHighest
                                                                                 )
                                                         ) {
                                                                 Icon(
-                                                                        Icons.Default.Stop,
+                                                                        Icons.Default.Tune,
+                                                                        contentDescription =
+                                                                                stringResource(R.string.cd_settings)
+                                                                )
+                                                        }
+                                                }
+                                                RemexTooltip(stringResource(R.string.cd_exit_fullscreen)) {
+                                                        FilledTonalIconButton(
+                                                                onClick = { onSetFullscreen(false) },
+                                                                colors =
+                                                                        IconButtonDefaults
+                                                                                .filledTonalIconButtonColors(
+                                                                                        containerColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .surfaceContainerHighest
+                                                                                )
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.FullscreenExit,
                                                                         contentDescription =
                                                                                 stringResource(
-                                                                                        R.string.cd_stop
-                                                                                ),
-                                                                        tint =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onErrorContainer
+                                                                                        R.string.cd_exit_fullscreen
+                                                                                )
                                                                 )
+                                                        }
+                                                }
+                                                if (uiState.isStreaming) {
+                                                        RemexTooltip(stringResource(R.string.cd_stop)) {
+                                                                FilledTonalIconButton(
+                                                                        onClick = { onStopStreaming() },
+                                                                        colors =
+                                                                                IconButtonDefaults
+                                                                                        .filledTonalIconButtonColors(
+                                                                                                containerColor =
+                                                                                                        MaterialTheme
+                                                                                                                .colorScheme
+                                                                                                                .errorContainer
+                                                                                        )
+                                                                ) {
+                                                                        Icon(
+                                                                                Icons.Default.Stop,
+                                                                                contentDescription =
+                                                                                        stringResource(
+                                                                                                R.string.cd_stop
+                                                                                        ),
+                                                                                tint =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .onErrorContainer
+                                                                        )
+                                                                }
                                                         }
                                                 } else {
                                                         FilledTonalIconButton(
@@ -2644,17 +2669,19 @@ fun RemoteDesktopScreenContent(
                                                                                 .titleLarge,
                                                                 fontWeight = FontWeight.Bold
                                                         )
-                                                        IconButton(
-                                                                onClick = { showSettings = false }
-                                                        ) {
-                                                                Icon(
-                                                                        Icons.Default.Close,
-                                                                        contentDescription =
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .cd_close_settings
-                                                                                )
-                                                                )
+                                                        RemexTooltip(stringResource(R.string.cd_close_settings)) {
+                                                                IconButton(
+                                                                        onClick = { showSettings = false }
+                                                                ) {
+                                                                        Icon(
+                                                                                Icons.Default.Close,
+                                                                                contentDescription =
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .cd_close_settings
+                                                                                        )
+                                                                        )
+                                                                }
                                                         }
                                                 }
 
@@ -3608,14 +3635,16 @@ private fun PcKeysBar(
                                 }
                                 // Expand chevron — reveals the F-key/nav-key grid below
                                 // (RemEx-bct remnant).
-                                IconButton(onClick = onToggleExtraKeys) {
-                                        Icon(
-                                                if (extraKeysExpanded)
-                                                        Icons.Default.KeyboardArrowUp
-                                                else Icons.Default.KeyboardArrowDown,
-                                                contentDescription =
-                                                        stringResource(R.string.cd_more_keys)
-                                        )
+                                RemexTooltip(stringResource(R.string.cd_more_keys)) {
+                                        IconButton(onClick = onToggleExtraKeys) {
+                                                Icon(
+                                                        if (extraKeysExpanded)
+                                                                Icons.Default.KeyboardArrowUp
+                                                        else Icons.Default.KeyboardArrowDown,
+                                                        contentDescription =
+                                                                stringResource(R.string.cd_more_keys)
+                                                )
+                                        }
                                 }
                         }
                         if (extraKeysExpanded) {
