@@ -1,8 +1,10 @@
 package com.clindsay94.remex.ui.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -82,21 +84,37 @@ fun FileManagerPropertiesSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun PropertiesSheetContent(props: FileProperties, thumbnailBase64: String?) {
     val thumb = rememberThumbnail(thumbnailBase64)
     Column(modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
         if (thumb != null) {
-            Image(
-                bitmap = thumb,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 200.dp)
-                    .padding(top = 8.dp)
-                    .clip(MaterialTheme.shapes.medium),
-            )
+            // Expand-from-small entrance (RemEx-mgk1): a true shared-element transform from
+            // the grid tile is impossible — ModalBottomSheet lives in its own window and
+            // shared elements cannot cross window boundaries — so the thumbnail grows into
+            // place instead, suggesting continuity from the tile it came from.
+            val thumbEntrance = remember {
+                MutableTransitionState(false).apply { targetState = true }
+            }
+            androidx.compose.animation.AnimatedVisibility(
+                visibleState = thumbEntrance,
+                enter = scaleIn(
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                    initialScale = 0.6f,
+                ) + fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+            ) {
+                Image(
+                    bitmap = thumb,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp)
+                        .padding(top = 8.dp)
+                        .clip(MaterialTheme.shapes.medium),
+                )
+            }
         }
         Text(
             text = props.name,
