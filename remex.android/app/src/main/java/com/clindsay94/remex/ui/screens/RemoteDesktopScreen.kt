@@ -849,6 +849,9 @@ fun RemoteDesktopScreenContent(
                                                                 }
                                                         }
                                                 } else {
+                                                        RemexTooltip(
+                                                                stringResource(R.string.button_start_streaming)
+                                                        ) {
                                                         IconButton(
                                                                 onClick = { onStartStreaming() },
                                                                 enabled =
@@ -857,7 +860,11 @@ fun RemoteDesktopScreenContent(
                                                         ) {
                                                                 Icon(
                                                                         Icons.Default.PlayArrow,
-                                                                        contentDescription = null,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .button_start_streaming
+                                                                                ),
                                                                         tint =
                                                                                 if (uiState.capabilityState
                                                                                                 .supportsRemoteDesktop
@@ -870,6 +877,7 @@ fun RemoteDesktopScreenContent(
                                                                                                 .colorScheme
                                                                                                 .onSurfaceVariant
                                                                 )
+                                                        }
                                                         }
                                                 }
                                         }
@@ -2496,6 +2504,9 @@ fun RemoteDesktopScreenContent(
                                                                 }
                                                         }
                                                 } else {
+                                                        RemexTooltip(
+                                                                stringResource(R.string.button_start_streaming)
+                                                        ) {
                                                         FilledTonalIconButton(
                                                                 onClick = { onStartStreaming() },
                                                                 enabled = !uiState.streamRequested,
@@ -2510,12 +2521,17 @@ fun RemoteDesktopScreenContent(
                                                         ) {
                                                                 Icon(
                                                                         Icons.Default.PlayArrow,
-                                                                        contentDescription = null,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .button_start_streaming
+                                                                                ),
                                                                         tint =
                                                                                 MaterialTheme
                                                                                         .colorScheme
                                                                                         .onPrimaryContainer
                                                                 )
+                                                        }
                                                         }
                                                 }
                                         }
