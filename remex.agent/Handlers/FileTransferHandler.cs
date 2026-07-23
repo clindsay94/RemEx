@@ -103,8 +103,7 @@ public sealed class FileTransferHandler(
                 throw new UnauthorizedAccessException("A shared root is required for remote browsing.");
 
             IReadOnlyList<FileEntry> entries;
-            var isConfiguredRoot = (await fileTransferService.ListRootsAsync(ct)).Any(r => r.RootId == req.RootId);
-            if (isConfiguredRoot)
+            if (await IsConfiguredRootAsync(req.RootId, ct))
             {
                 entries = await fileTransferService.BrowseAsync(req.RootId, req.RelativePath ?? string.Empty, ct);
             }
@@ -113,10 +112,7 @@ public sealed class FileTransferHandler(
                 // Not a configured shared root: treat as a full-device VOLUME browse. Gated on this paired
                 // client holding a full-browse consent grant (re-verified here, never trusting RootId), and
                 // on RootId being a genuine mounted volume. BrowseVolumeAsync bounds navigation within it.
-                if (string.IsNullOrWhiteSpace(clientId) || !await fileTrustService.IsFullBrowseGrantedAsync(clientId, ct))
-                    throw new UnauthorizedAccessException("Full-device browsing has not been granted for this device.");
-                var volume = volumeEnumerator.Enumerate().FirstOrDefault(v => v.Id == req.RootId)
-                    ?? throw new UnauthorizedAccessException($"Unknown shared root '{req.RootId}'.");
+                var volume = await ResolveConsentedVolumeAsync(req.RootId, clientId, ct);
                 entries = await fileTransferService.BrowseVolumeAsync(volume.Path, req.RelativePath ?? string.Empty, ct);
             }
             response = new RemexMessage
@@ -153,7 +149,7 @@ public sealed class FileTransferHandler(
         await MessageSerializer.SendAsync(ws, response, ct);
     }
 
-    public async Task HandleFileTransferStartAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileTransferStartAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var start = message.FileTransferStart;
         if (start is null) return;
@@ -164,9 +160,24 @@ public sealed class FileTransferHandler(
                 throw new UnauthorizedAccessException("A shared root is required for file transfer operations.");
 
             var remoteRelativePath = start.RemoteRelativePath ?? string.Empty;
-            Stream stream = start.Direction == "upload"
-                ? await fileTransferService.OpenForWriteAsync(start.RemoteRootId, remoteRelativePath, start.TotalBytes, ct)
-                : await fileTransferService.OpenForReadAsync(start.RemoteRootId, remoteRelativePath, ct);
+            Stream stream;
+            if (start.Direction == "upload")
+            {
+                // Full browse never exposes write (RemEx-hb1t): no volume fallback here — an unconfigured
+                // RootId correctly falls straight through to OpenForWriteAsync's "Unknown shared root".
+                stream = await fileTransferService.OpenForWriteAsync(start.RemoteRootId, remoteRelativePath, start.TotalBytes, ct);
+            }
+            else if (await IsConfiguredRootAsync(start.RemoteRootId, ct))
+            {
+                stream = await fileTransferService.OpenForReadAsync(start.RemoteRootId, remoteRelativePath, ct);
+            }
+            else
+            {
+                // Download from a bare full-device-browsed volume (RemEx-39jw) — read-only, so this is safe
+                // to extend, unlike upload above.
+                var volume = await ResolveConsentedVolumeAsync(start.RemoteRootId, clientId, ct);
+                stream = await fileTransferService.OpenVolumeForReadAsync(volume.Path, remoteRelativePath, ct);
+            }
 
             var totalBytes = start.Direction == "download" && stream.CanSeek
                 ? stream.Length
@@ -391,7 +402,7 @@ public sealed class FileTransferHandler(
         await MessageSerializer.SendAsync(ws, response, ct);
     }
 
-    public async Task HandleFileHashRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileHashRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileHashRequest;
         if (req is null) return;
@@ -399,7 +410,10 @@ public sealed class FileTransferHandler(
         RemexMessage response;
         try
         {
-            var hash = await fileTransferService.ComputeSha256Async(req.RootId, req.RelativePath, ct);
+            var hash = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.ComputeSha256Async(req.RootId, req.RelativePath, ct)
+                : await fileTransferService.ComputeVolumeSha256Async(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, req.RelativePath, ct);
             response = new RemexMessage
             {
                 Type = MessageTypes.FileHashResponse,
@@ -662,7 +676,7 @@ public sealed class FileTransferHandler(
     /// <c>truncated</c> is set when the cap is hit. Search runs against a configured shared root (already
     /// gated by pairing), the same as browse — it is not consent-gated.
     /// </summary>
-    public async Task HandleFileSearchRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileSearchRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileSearchRequest;
         if (req is null) return;
@@ -670,8 +684,11 @@ public sealed class FileTransferHandler(
         RemexMessage response;
         try
         {
-            var entries = await fileTransferService.SearchAsync(
-                req.RootId, req.RelativePath ?? string.Empty, req.Query, req.MaxResults, ct);
+            var relativePath = req.RelativePath ?? string.Empty;
+            var entries = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.SearchAsync(req.RootId, relativePath, req.Query, req.MaxResults, ct)
+                : await fileTransferService.SearchVolumeAsync(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, relativePath, req.Query, req.MaxResults, ct);
 
             var effectiveCap = req.MaxResults <= 0
                 ? FileTransferLimits.SearchMaxResults
@@ -711,7 +728,7 @@ public sealed class FileTransferHandler(
     /// Handles a <c>file_metadata_request</c> (plan §1.2): detailed metadata for a single file/directory
     /// (size, timestamps, item count, MIME type, read-only).
     /// </summary>
-    public async Task HandleFileMetadataRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileMetadataRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileMetadataRequest;
         if (req is null) return;
@@ -719,7 +736,10 @@ public sealed class FileTransferHandler(
         RemexMessage response;
         try
         {
-            var meta = await fileTransferService.GetMetadataAsync(req.RootId, req.RelativePath, ct);
+            var meta = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.GetMetadataAsync(req.RootId, req.RelativePath, ct)
+                : await fileTransferService.GetVolumeMetadataAsync(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, req.RelativePath, ct);
             response = new RemexMessage
             {
                 Type = MessageTypes.FileMetadataResponse,
@@ -757,7 +777,7 @@ public sealed class FileTransferHandler(
     /// Handles a <c>file_thumbnail_request</c> (plan §1.2): a small base64 JPEG for an image (images only in
     /// v1). A missing thumbnail (unsupported type / undecodable) returns a null <c>jpegBase64</c>, not an error.
     /// </summary>
-    public async Task HandleFileThumbnailRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileThumbnailRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileThumbnailRequest;
         if (req is null) return;
@@ -766,7 +786,10 @@ public sealed class FileTransferHandler(
         try
         {
             var maxDim = req.MaxDim > 0 ? req.MaxDim : FileTransferLimits.ThumbnailDefaultMaxDim;
-            var jpegBase64 = await fileTransferService.GetThumbnailBase64Async(req.RootId, req.RelativePath, maxDim, ct);
+            var jpegBase64 = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.GetThumbnailBase64Async(req.RootId, req.RelativePath, maxDim, ct)
+                : await fileTransferService.GetVolumeThumbnailBase64Async(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, req.RelativePath, maxDim, ct);
             response = new RemexMessage
             {
                 Type = MessageTypes.FileThumbnailResponse,
@@ -792,6 +815,25 @@ public sealed class FileTransferHandler(
         }
 
         await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <summary>True when <paramref name="rootId"/> matches one of the pinned/configured shared roots.</summary>
+    private async Task<bool> IsConfiguredRootAsync(string rootId, CancellationToken ct)
+        => (await fileTransferService.ListRootsAsync(ct)).Any(r => r.RootId == rootId);
+
+    /// <summary>
+    /// Resolves a RootId that is NOT a configured shared root to a genuine, consent-granted mounted volume
+    /// (RemEx-39jw). Re-verifies the full-browse grant here — never trusts RootId alone — mirroring the
+    /// check <see cref="HandleFileBrowseRequestAsync"/> already performs. Used by the read-only volume ops
+    /// (download/hash/search/metadata/thumbnail); full browse never exposes write/delete (RemEx-hb1t), so
+    /// callers that need a writable root must reject an unconfigured RootId instead of calling this.
+    /// </summary>
+    private async Task<FileVolumeInfo> ResolveConsentedVolumeAsync(string rootId, string? clientId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(clientId) || !await fileTrustService.IsFullBrowseGrantedAsync(clientId, ct))
+            throw new UnauthorizedAccessException("Full-device browsing has not been granted for this device.");
+        return volumeEnumerator.Enumerate().FirstOrDefault(v => v.Id == rootId)
+            ?? throw new UnauthorizedAccessException($"Unknown shared root '{rootId}'.");
     }
 
     /// <summary>

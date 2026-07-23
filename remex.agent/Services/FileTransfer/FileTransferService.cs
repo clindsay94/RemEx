@@ -141,10 +141,21 @@ public sealed class FileTransferService : IFileTransferService
     }
 
     public Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct)
+        => OpenForReadCore(ResolvePath(rootId, relativePath), rootId, relativePath);
+
+    // Full-device read of a mounted volume (RemEx-39jw). Same consent/genuine-volume contract as
+    // BrowseVolumeAsync: the caller (FileTransferHandler) has already verified full-browse consent and that
+    // volumeAbsolutePath is a real enumerated volume. Read-only — there is deliberately no OpenVolumeForWriteAsync.
+    public Task<Stream> OpenVolumeForReadAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct)
     {
-        var resolved = ResolvePath(rootId, relativePath);
+        var resolved = FilePathValidation.ResolveWithinRoot(volumeAbsolutePath, relativePath, volumeAbsolutePath);
+        return OpenForReadCore(resolved, volumeAbsolutePath, relativePath);
+    }
+
+    private static Task<Stream> OpenForReadCore(string resolved, string rootDisplay, string relativePath)
+    {
         if (!File.Exists(resolved))
-            throw new FileNotFoundException($"File not found in shared root '{rootId}': {relativePath}");
+            throw new FileNotFoundException($"File not found in shared root '{rootDisplay}': {relativePath}");
         return Task.FromResult<Stream>(new FileStream(resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true));
     }
 
@@ -207,11 +218,20 @@ public sealed class FileTransferService : IFileTransferService
         return Task.CompletedTask;
     }
 
-    public async Task<string> ComputeSha256Async(string rootId, string relativePath, CancellationToken ct)
+    public Task<string> ComputeSha256Async(string rootId, string relativePath, CancellationToken ct)
+        => ComputeSha256Core(ResolvePath(rootId, relativePath), rootId, relativePath, ct);
+
+    /// <summary>Volume-mode counterpart of <see cref="ComputeSha256Async"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    public Task<string> ComputeVolumeSha256Async(string volumeAbsolutePath, string relativePath, CancellationToken ct)
     {
-        var resolved = ResolvePath(rootId, relativePath);
+        var resolved = FilePathValidation.ResolveWithinRoot(volumeAbsolutePath, relativePath, volumeAbsolutePath);
+        return ComputeSha256Core(resolved, volumeAbsolutePath, relativePath, ct);
+    }
+
+    private static async Task<string> ComputeSha256Core(string resolved, string rootDisplay, string relativePath, CancellationToken ct)
+    {
         if (!File.Exists(resolved))
-            throw new FileNotFoundException($"File not found in shared root '{rootId}': {relativePath}");
+            throw new FileNotFoundException($"File not found in shared root '{rootDisplay}': {relativePath}");
 
         using var sha = System.Security.Cryptography.SHA256.Create();
         await using var stream = new FileStream(resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true);
@@ -396,8 +416,21 @@ public sealed class FileTransferService : IFileTransferService
         string rootId, string relativePath, string query, int maxResults, CancellationToken ct)
     {
         var root = GetConfiguredRoot(rootId);
-        var rootPath = Path.GetFullPath(root.AbsolutePath);
-        var baseDir = FilePathValidation.ResolveWithinRoot(rootPath, relativePath, root.DisplayName);
+        return SearchCore(Path.GetFullPath(root.AbsolutePath), root.DisplayName, relativePath, query, maxResults, ct);
+    }
+
+    /// <summary>Volume-mode counterpart of <see cref="SearchAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    public Task<IReadOnlyList<FileSearchEntry>> SearchVolumeAsync(
+        string volumeAbsolutePath, string relativePath, string query, int maxResults, CancellationToken ct)
+    {
+        var rootPath = Path.GetFullPath(volumeAbsolutePath);
+        return SearchCore(rootPath, volumeAbsolutePath, relativePath, query, maxResults, ct);
+    }
+
+    private static Task<IReadOnlyList<FileSearchEntry>> SearchCore(
+        string rootPath, string rootDisplay, string relativePath, string query, int maxResults, CancellationToken ct)
+    {
+        var baseDir = FilePathValidation.ResolveWithinRoot(rootPath, relativePath, rootDisplay);
 
         var cap = maxResults <= 0
             ? FileTransferLimits.SearchMaxResults
@@ -414,7 +447,18 @@ public sealed class FileTransferService : IFileTransferService
     {
         var root = GetConfiguredRoot(rootId);
         var resolved = FilePathValidation.ResolveWithinRoot(root.AbsolutePath, relativePath, root.DisplayName);
+        return GetMetadataCore(resolved, root.DisplayName, relativePath);
+    }
 
+    /// <summary>Volume-mode counterpart of <see cref="GetMetadataAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    public Task<FileMetadata> GetVolumeMetadataAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct)
+    {
+        var resolved = FilePathValidation.ResolveWithinRoot(volumeAbsolutePath, relativePath, volumeAbsolutePath);
+        return GetMetadataCore(resolved, volumeAbsolutePath, relativePath);
+    }
+
+    private static Task<FileMetadata> GetMetadataCore(string resolved, string rootDisplay, string relativePath)
+    {
         if (Directory.Exists(resolved))
         {
             var dir = new DirectoryInfo(resolved);
@@ -455,16 +499,27 @@ public sealed class FileTransferService : IFileTransferService
             });
         }
 
-        throw new FileNotFoundException($"'{relativePath}' not found in root '{root.DisplayName}'.");
+        throw new FileNotFoundException($"'{relativePath}' not found in root '{rootDisplay}'.");
     }
 
-    public async Task<string?> GetThumbnailBase64Async(string rootId, string relativePath, int maxDim, CancellationToken ct)
+    public Task<string?> GetThumbnailBase64Async(string rootId, string relativePath, int maxDim, CancellationToken ct)
     {
         var root = GetConfiguredRoot(rootId);
         var resolved = FilePathValidation.ResolveWithinRoot(root.AbsolutePath, relativePath, root.DisplayName);
+        return GetThumbnailCore(resolved, root.DisplayName, relativePath, maxDim, ct);
+    }
 
+    /// <summary>Volume-mode counterpart of <see cref="GetThumbnailBase64Async"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    public Task<string?> GetVolumeThumbnailBase64Async(string volumeAbsolutePath, string relativePath, int maxDim, CancellationToken ct)
+    {
+        var resolved = FilePathValidation.ResolveWithinRoot(volumeAbsolutePath, relativePath, volumeAbsolutePath);
+        return GetThumbnailCore(resolved, volumeAbsolutePath, relativePath, maxDim, ct);
+    }
+
+    private async Task<string?> GetThumbnailCore(string resolved, string rootDisplay, string relativePath, int maxDim, CancellationToken ct)
+    {
         if (!File.Exists(resolved))
-            throw new FileNotFoundException($"File not found in shared root '{root.DisplayName}': {relativePath}");
+            throw new FileNotFoundException($"File not found in shared root '{rootDisplay}': {relativePath}");
 
         var effectiveMaxDim = maxDim <= 0 ? FileTransferLimits.ThumbnailDefaultMaxDim : maxDim;
         return await _thumbnailService.TryCreateThumbnailBase64Async(

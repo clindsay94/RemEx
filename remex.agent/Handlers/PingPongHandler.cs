@@ -368,7 +368,7 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.FileTransferStart:
-                        await fileTransferHandler.HandleFileTransferStartAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileTransferStartAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     case MessageTypes.FileTransferChunk:
@@ -388,7 +388,7 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.FileHashRequest:
-                        await fileTransferHandler.HandleFileHashRequestAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileHashRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     case MessageTypes.FileRootManageRequest:
@@ -412,15 +412,15 @@ public sealed class PingPongHandler(
 
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP3 ──
                     case MessageTypes.FileSearchRequest:
-                        await fileTransferHandler.HandleFileSearchRequestAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileSearchRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     case MessageTypes.FileMetadataRequest:
-                        await fileTransferHandler.HandleFileMetadataRequestAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileMetadataRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     case MessageTypes.FileThumbnailRequest:
-                        await fileTransferHandler.HandleFileThumbnailRequestAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileThumbnailRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP-jjdb: consent-response + push ──

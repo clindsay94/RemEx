@@ -275,16 +275,21 @@ public sealed class TransferSessionManagerTests
         public Task<IReadOnlyList<FileEntry>> BrowseAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<FileEntry>> BrowseVolumeAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
+        public Task<Stream> OpenVolumeForReadAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task DeleteAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task RenameAsync(string rootId, string relativePath, string newName, CancellationToken ct) => throw new NotSupportedException();
         public Task<string> ComputeSha256Async(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
+        public Task<string> ComputeVolumeSha256Async(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<FileSharedRoot>> AddRootFromPathAsync(string sourceRootId, string sourceRelativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<FileSharedRoot>> RemoveRootAsync(string rootId, CancellationToken ct) => throw new NotSupportedException();
         public Task CopyAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct) => throw new NotSupportedException();
         public Task MoveAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct) => throw new NotSupportedException();
         public Task CreateDirectoryAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<FileSearchEntry>> SearchAsync(string rootId, string relativePath, string query, int maxResults, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<FileSearchEntry>> SearchVolumeAsync(string volumeAbsolutePath, string relativePath, string query, int maxResults, CancellationToken ct) => throw new NotSupportedException();
         public Task<FileMetadata> GetMetadataAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
+        public Task<FileMetadata> GetVolumeMetadataAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<string?> GetThumbnailBase64Async(string rootId, string relativePath, int maxDim, CancellationToken ct) => throw new NotSupportedException();
+        public Task<string?> GetVolumeThumbnailBase64Async(string volumeAbsolutePath, string relativePath, int maxDim, CancellationToken ct) => throw new NotSupportedException();
     }
 }

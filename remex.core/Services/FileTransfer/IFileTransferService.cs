@@ -18,6 +18,29 @@ public interface IFileTransferService
     /// before calling this; the service enforces only path-escape safety and lists read-only.
     /// </summary>
     Task<IReadOnlyList<FileEntry>> BrowseVolumeAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct);
+
+    /// <summary>
+    /// Full-device READ of a file under a mounted <paramref name="volumeAbsolutePath"/>, for download/hash/
+    /// search/metadata/thumbnail — the read-only counterparts of <see cref="BrowseVolumeAsync"/>. Same
+    /// contract: the CALLER must have verified the client's full-browse consent grant and that the path is
+    /// a genuine volume. Full browse never exposes write/delete (RemEx-hb1t) — there are deliberately no
+    /// volume-mode equivalents of OpenForWriteAsync/DeleteAsync/RenameAsync/CopyAsync/MoveAsync/
+    /// CreateDirectoryAsync; those still require the folder to be pinned via <see cref="AddRootFromPathAsync"/>.
+    /// </summary>
+    Task<Stream> OpenVolumeForReadAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct);
+
+    /// <summary>Volume-mode counterpart of <see cref="ComputeSha256Async"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    Task<string> ComputeVolumeSha256Async(string volumeAbsolutePath, string relativePath, CancellationToken ct);
+
+    /// <summary>Volume-mode counterpart of <see cref="SearchAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    Task<IReadOnlyList<FileSearchEntry>> SearchVolumeAsync(string volumeAbsolutePath, string relativePath, string query, int maxResults, CancellationToken ct);
+
+    /// <summary>Volume-mode counterpart of <see cref="GetMetadataAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    Task<FileMetadata> GetVolumeMetadataAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct);
+
+    /// <summary>Volume-mode counterpart of <see cref="GetThumbnailBase64Async"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    Task<string?> GetVolumeThumbnailBase64Async(string volumeAbsolutePath, string relativePath, int maxDim, CancellationToken ct);
+
     Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct);
     Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct);
     Task DeleteAsync(string rootId, string relativePath, CancellationToken ct);
