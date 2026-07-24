@@ -1593,7 +1593,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
-    <value>Desktop Client</value>
+    <value>Bu PC'deki RemEx</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
     <value>Your PC</value>
