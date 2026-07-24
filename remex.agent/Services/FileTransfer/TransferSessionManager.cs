@@ -521,7 +521,7 @@ public sealed class TransferSessionManager : IDisposable
             existing.MarkSuperseded();
         _channels[key] = channel;
 
-        _logger.LogInformation("DIAG /ws/files channel loop STARTED for {ClientId} (wsState={State}).", key, ws.State);
+        _logger.LogInformation("DIAG /ws/files channel loop STARTED for {ClientId} (wsState={State}).", Remex.Agent.Services.Security.LogRedaction.RedactClientId(key), ws.State);
         var diagDataFrames = 0;
         try
         {
@@ -530,13 +530,13 @@ public sealed class TransferSessionManager : IDisposable
                 var frameBytes = await ReceiveBinaryAsync(ws, ct);
                 if (frameBytes is null)
                 {
-                    _logger.LogInformation("DIAG /ws/files recv returned null for {ClientId} after {N} data frame(s) (wsState={State}) — loop exiting.", key, diagDataFrames, ws.State);
+                    _logger.LogInformation("DIAG /ws/files recv returned null for {ClientId} after {N} data frame(s) (wsState={State}) — loop exiting.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(key), diagDataFrames, ws.State);
                     break; // socket closed or an oversize/protocol-invalid frame.
                 }
 
                 if (!FileFrameCodec.TryRead(frameBytes, out var envelope, out var payload) || envelope is null)
                 {
-                    _logger.LogWarning("Discarding malformed /ws/files frame ({Len} bytes) from {ClientId}.", frameBytes.Length, key);
+                    _logger.LogWarning("Discarding malformed /ws/files frame ({Len} bytes) from {ClientId}.", frameBytes.Length, Remex.Agent.Services.Security.LogRedaction.RedactClientId(key));
                     continue;
                 }
 
@@ -571,7 +571,7 @@ public sealed class TransferSessionManager : IDisposable
         }
         catch (WebSocketException ex)
         {
-            _logger.LogWarning(ex, "/ws/files channel error for {ClientId}.", key);
+            _logger.LogWarning(ex, "/ws/files channel error for {ClientId}.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(key));
         }
         finally
         {

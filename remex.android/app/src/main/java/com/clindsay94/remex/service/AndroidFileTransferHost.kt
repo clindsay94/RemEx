@@ -182,7 +182,7 @@ object AndroidFileTransferHost {
         val clientId = settingsManager.getOrCreateClientId()
         val spki =
             PinnedHostStore.getPin(context, host)?.takeIf { it.isNotBlank() } ?: return false
-        return FileTransferChannelClient.ensureConnected(host, port, clientId, spki)
+        return FileTransferChannelClient.ensureConnected(context, host, port, clientId, spki)
     }
 
     // ─────────────────────────────────────────────────────────────────────────

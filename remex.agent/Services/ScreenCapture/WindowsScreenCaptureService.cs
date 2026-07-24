@@ -139,7 +139,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     // session only when the device name differs, so this is cheap on the steady-state capture path.
     //
     // Diagnostics (RemEx-hvqv): WGC silently losing to DXGI/GDI used to be invisible — the only failure log
-    // here was at Debug, and the in-memory sink (/debug/logs) plus the Windows Event Log both floor above
+    // here was at Debug, and the in-memory sink (InMemoryLogSink) plus the Windows Event Log both floor above
     // Debug. We now log the selection OUTCOME at Information/Warning, de-duplicated via _lastWgcSelectionStateKey
     // so this per-frame hot path never floods, while making "why WGC isn't serving" visible in both sinks.
     private void EnsureWgcSelectedForActiveTarget()

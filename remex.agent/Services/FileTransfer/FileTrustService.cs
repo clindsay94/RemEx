@@ -154,7 +154,7 @@ public sealed class FileTrustService : IFileTrustService
         if (!string.IsNullOrWhiteSpace(clientId) && _trust.TryRemove(clientId, out _))
         {
             PersistToDisk();
-            _logger.LogInformation("Revoked all file-transfer trust for client {ClientId}.", clientId);
+            _logger.LogInformation("Revoked all file-transfer trust for client {ClientId}.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId));
         }
         return Task.CompletedTask;
     }

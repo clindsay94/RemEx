@@ -74,7 +74,7 @@ public sealed class PairedClientRegistry
         if (_pairedClients.TryAdd(clientId, string.Empty))
         {
             PersistToDisk();
-            _logger.LogInformation("Client {ClientId} registered as paired (presence only, no reconnect secret).", clientId);
+            _logger.LogInformation("Client {ClientId} registered as paired (presence only, no reconnect secret).", LogRedaction.RedactClientId(clientId));
         }
     }
 
@@ -95,7 +95,7 @@ public sealed class PairedClientRegistry
         var secretBase64 = Convert.ToBase64String(reconnectSecret);
         _pairedClients[clientId] = secretBase64;
         PersistToDisk();
-        _logger.LogInformation("Client {ClientId} registered as paired with a reconnect secret.", clientId);
+        _logger.LogInformation("Client {ClientId} registered as paired with a reconnect secret.", LogRedaction.RedactClientId(clientId));
     }
 
     /// <summary>
@@ -142,7 +142,7 @@ public sealed class PairedClientRegistry
         if (_pairedClients.TryRemove(clientId, out _))
         {
             PersistToDisk();
-            _logger.LogInformation("Client {ClientId} unregistered (pairing revoked).", clientId);
+            _logger.LogInformation("Client {ClientId} unregistered (pairing revoked).", LogRedaction.RedactClientId(clientId));
         }
     }
 

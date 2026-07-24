@@ -1,13 +1,17 @@
 package com.clindsay94.remex.service
 
+import android.content.Context
 import android.util.Base64
 import android.util.Log
+import com.clindsay94.remex.security.PinnedHostStore
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
 import kotlinx.coroutines.CompletableDeferred
@@ -18,6 +22,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
+import org.json.JSONObject
 
 /** A registered receiver of decoded binary frames for one transferId on the shared `/ws/files` socket. */
 interface FileFrameSink {
@@ -127,9 +132,11 @@ object FileTransferChannelClient : FileFrameChannel {
     /**
      * Ensures the socket is connected to `wss://<host>:<port>/ws/files?clientId=..&protocolVersion=3`,
      * SPKI-pinned to [spkiHash]. Idempotent: returns immediately when already open to the same host.
-     * Suspends until the WebSocket handshake completes (or fails). Returns true on success.
+     * Suspends until the WebSocket handshake AND the PAIR-1 reconnect-proof handshake complete (or
+     * fail). Returns true on success.
      */
     suspend fun ensureConnected(
+        context: Context,
         host: String,
         port: Int,
         clientId: String,
@@ -139,6 +146,19 @@ object FileTransferChannelClient : FileFrameChannel {
         if (openState && currentKey == key) return true
         // Tear down any prior socket to a different host before reconnecting.
         closeInternal()
+
+        // VULN-2 / RemEx-s032.2: the host now requires cryptographic proof-of-possession of the
+        // pairing-time reconnect secret on this channel before it will service any binary frame —
+        // Android is always non-loopback, so the challenge always arrives right after onOpen. Load
+        // the secret now (a suspend read) so the WebSocketListener callbacks below — which run
+        // synchronously off the OkHttp dispatcher, not a coroutine — can answer without blocking. A
+        // paired client with no stored secret predates PAIR-1 or lost it; fail fast instead of
+        // letting the host silently 1008-close the socket after its 10s challenge timeout.
+        val reconnectSecret = PinnedHostStore.getReconnectSecret(context, host)
+        if (reconnectSecret.isNullOrBlank()) {
+            Log.e(TAG, "No stored reconnect secret for $host; refusing /ws/files connect (re-pair required)")
+            return false
+        }
 
         val trustManager =
             try {
@@ -184,10 +204,57 @@ object FileTransferChannelClient : FileFrameChannel {
         val listener =
             object : WebSocketListener() {
                 override fun onOpen(ws: WebSocket, response: Response) {
-                    openState = true
-                    currentKey = key
-                    Log.i(TAG, "Binary /ws/files channel open to $host:$port")
-                    opened.complete(true)
+                    // Do NOT mark the channel ready here. The host holds the socket open but refuses
+                    // to service it until we answer its reconnect_challenge text frame below —
+                    // openState only flips true, and [opened] only completes, once the proof has been
+                    // sent (see onMessage(text)). This guarantees no binary sendFrame/sendData can
+                    // succeed before proof-of-possession is on the wire.
+                    Log.i(TAG, "Binary /ws/files socket accepted by $host:$port; awaiting reconnect challenge")
+                }
+
+                override fun onMessage(ws: WebSocket, text: String) {
+                    try {
+                        val challenge = JSONObject(text)
+                        if (challenge.optString("type") != "reconnect_challenge") {
+                            Log.w(TAG, "Ignoring unexpected /ws/files text frame (type=${challenge.optString("type")})")
+                            return
+                        }
+                        val nonce = challenge.getJSONObject("reconnectChallenge").getString("nonce")
+
+                        val mac = Mac.getInstance("HmacSHA256")
+                        mac.init(SecretKeySpec(Base64.decode(reconnectSecret, Base64.NO_WRAP), "HmacSHA256"))
+                        val proofHmac =
+                            Base64.encodeToString(mac.doFinal(Base64.decode(nonce, Base64.NO_WRAP)), Base64.NO_WRAP)
+
+                        val proof =
+                            JSONObject().apply {
+                                put("type", "reconnect_proof")
+                                put("protocolVersion", 2)
+                                put("clientId", clientId)
+                                put(
+                                    "reconnectProof",
+                                    JSONObject().apply {
+                                        put("proofHmac", proofHmac)
+                                        put("clientId", clientId)
+                                    },
+                                )
+                            }
+                        ws.send(proof.toString())
+
+                        // Proof is on the wire — only now is the channel actually usable.
+                        openState = true
+                        currentKey = key
+                        Log.i(TAG, "Binary /ws/files channel open to $host:$port (reconnect proof sent)")
+                        if (!opened.isCompleted) opened.complete(true)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to answer /ws/files reconnect challenge; closing", e)
+                        if (!opened.isCompleted) opened.complete(false)
+                        try {
+                            ws.close(1008, "bad reconnect challenge")
+                        } catch (closeError: Exception) {
+                            // best-effort
+                        }
+                    }
                 }
 
                 override fun onMessage(ws: WebSocket, bytes: ByteString) {
@@ -199,6 +266,10 @@ object FileTransferChannelClient : FileFrameChannel {
                 }
 
                 override fun onClosed(ws: WebSocket, code: Int, reason: String) {
+                    // Covers the case where the host 1008-closes the socket (proof rejected/timed
+                    // out) before onFailure would otherwise fire — callers awaiting [opened] must
+                    // not hang.
+                    if (!opened.isCompleted) opened.complete(false)
                     handleClosed()
                 }
 

@@ -452,8 +452,10 @@ public sealed class PairingService : IPairingService
 
         _clientPublicKeyBase64 = null;
 
-        _logger.LogInformation("Pairing session started. PIN: {Pin}, Expires at: {Expiry}",
-            _activePin, DateTimeOffset.FromUnixTimeMilliseconds(_expiresAtUnixMs));
+        // Never log the PIN value: the retained in-memory log buffer is a disclosure surface
+        // (VULN-1, RemEx-s032.1). The PIN is surfaced to the user via the PinDisplayed event below.
+        _logger.LogInformation("Pairing session started. PIN is displayed on the host screen (not logged). Expires at: {Expiry}.",
+            DateTimeOffset.FromUnixTimeMilliseconds(_expiresAtUnixMs));
 
         try { PinDisplayed?.Invoke(_activePin, _expiresAtUnixMs); }
         catch (Exception ex) { _logger.LogWarning(ex, "PinDisplayed handler threw."); }

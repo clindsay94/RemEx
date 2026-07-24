@@ -573,7 +573,7 @@ object FileTransferEngine {
         if (host.isBlank()) return false
         val clientId = settings.getOrCreateClientId()
         val spki = PinnedHostStore.getPin(appContext, host)?.takeIf { it.isNotBlank() } ?: return false
-        return FileTransferChannelClient.ensureConnected(host, port, clientId, spki)
+        return FileTransferChannelClient.ensureConnected(appContext, host, port, clientId, spki)
     }
 
     private fun downloadDir(): File = File(appContext.filesDir, "transfers/outgoing")

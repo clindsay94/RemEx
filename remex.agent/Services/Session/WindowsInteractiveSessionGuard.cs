@@ -47,11 +47,11 @@ public sealed class WindowsInteractiveSessionGuard : IInteractiveSessionGuard
                 // Prevent idle sleep / display-off while a client is connected. ES_CONTINUOUS makes the
                 // request sticky until we clear it on the last disconnect.
                 SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
-                _logger.LogInformation("Session guard: keeping the session awake for client {Client}.", clientId);
+                _logger.LogInformation("Session guard: keeping the session awake for client {Client}.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId));
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Session guard: failed to engage keep-awake for client {Client}.", clientId);
+                _logger.LogWarning(ex, "Session guard: failed to engage keep-awake for client {Client}.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId));
             }
         }
     }
@@ -69,11 +69,11 @@ public sealed class WindowsInteractiveSessionGuard : IInteractiveSessionGuard
             {
                 // Drop the keep-awake hold; normal idle sleep / display-off resumes.
                 SetThreadExecutionState(ES_CONTINUOUS);
-                _logger.LogInformation("Session guard: released keep-awake after client {Client} disconnected.", clientId);
+                _logger.LogInformation("Session guard: released keep-awake after client {Client} disconnected.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId));
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Session guard: failed to disengage keep-awake for client {Client}.", clientId);
+                _logger.LogWarning(ex, "Session guard: failed to disengage keep-awake for client {Client}.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId));
             }
         }
     }

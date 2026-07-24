@@ -283,16 +283,19 @@ public static class HostBootstrapper
 
         // --- Minimal API endpoints ---
 
-        // Health-check / discovery
-        app.MapGet("/", (IHostCapabilitiesProvider hostCapabilitiesProvider) => Results.Ok(new
+        // Minimal, unauthenticated health-check / discovery handshake. Deliberately does NOT expose
+        // host capabilities or the remote-desktop diagnostic report (OS, capture backend, capability
+        // and failure detail) to anonymous callers — that detail aids targeting and is delivered to
+        // paired clients over the authenticated /ws channel instead (VULN-6, RemEx-s032.6).
+        app.MapGet("/", () => Results.Ok(new
         {
             service = "Remex.Agent",
             status = "running",
-            capabilities = hostCapabilitiesProvider.GetCurrent(),
-            remoteDesktopDiagnostics = (object?)hostCapabilitiesProvider.GetWindowsRemoteDesktopDiagnosticReport()
-                ?? hostCapabilitiesProvider.GetLinuxPrerequisiteReport(),
         }));
 
+        // Serves only public-by-design pairing metadata (host id + certificate SPKI hash, which the
+        // client pins at pairing time) plus the listen port. No machine name or other identifying
+        // detail is exposed here (VULN-6 review, RemEx-s032.6).
         app.MapGet("/pairing-qr", (ICertificateService certService, IConfiguration config) =>
         {
             var port = int.Parse(config["Host:Port"] ?? "5005");
@@ -311,24 +314,15 @@ public static class HostBootstrapper
         // the /ws map below). The only shipped client that used the HTTP path (Android ≤2.2.4) is past
         // the fleet's minimum, so the trust-all HTTP surface Google Play ASI flagged is gone entirely.
 
-        // Exposes the in-process log buffer for remote diagnostics.
-        app.MapGet("/debug/logs", () =>
-        {
-            var entries = Remex.Core.Logging.InMemoryLogSink.GetEntries();
-            return Results.Ok(entries.Select(e => e.ToString()).ToArray());
-        });
-
-        // Serves the latest debug APK over HTTPS so remote users don't need the plain-HTTP server.
-        app.MapGet("/download/apk", async (HttpContext context) =>
-        {
-            var apkPath = @"Z:\RemEx\remex.android\app\build\outputs\apk\debug\RemEx-V2.0.0-debug.apk";
-            if (!File.Exists(apkPath))
-                return Results.NotFound(new { message = "APK not found on host." });
-            context.Response.Headers.ContentDisposition = "attachment; filename=\"RemEx-V2.0.0-debug.apk\"";
-            context.Response.ContentType = "application/vnd.android.package-archive";
-            await context.Response.SendFileAsync(apkPath);
-            return Results.Empty;
-        });
+        // NOTE: GET /debug/logs was REMOVED (VULN-1, RemEx-s032.1). It served the in-memory log buffer
+        // — which retained the live pairing PIN and full paired clientIds — to any network-reachable
+        // caller with no auth or loopback gate (Kestrel binds 0.0.0.0:5005). Diagnostics read the buffer
+        // in-process via InMemoryLogSink.GetEntries(); there is no remote consumer. Do NOT re-add a
+        // network-exposed log endpoint. Precedent: PAIR-5 (RemEx-a75) loopback-gated the pairing-PIN
+        // HTTP endpoints for the same reason.
+        //
+        // GET /download/apk was also REMOVED (VULN-6, RemEx-s032.6): dead dev-only code that served a
+        // hardcoded Z:\ debug-APK path and never shipped a real artifact in production.
 
         // WebSocket hub
         app.Map(RemexConstants.WebSocketPath, async (HttpContext context) =>
@@ -439,6 +433,23 @@ public static class HostBootstrapper
             {
                 using var ws = await context.WebSockets.AcceptWebSocketAsync();
 
+                // VULN-2 (RemEx-s032.2): a paired-registry presence check is NOT authentication. Before any
+                // screen-capture/PipeWire session starts, require the client to prove possession of its
+                // reconnect secret via the same PAIR-1 HMAC-over-nonce handshake /ws enforces. Loopback is
+                // pre-paired and skips this. A client that can't prove is closed before capture begins.
+                var isLoopbackDesktop = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
+                if (!isLoopbackDesktop
+                    && !await Remex.Agent.Services.Security.ChannelReconnectAuth.ChallengeAndVerifyAsync(
+                        ws, clientId, pairedClientRegistry, authLogger, context.RequestAborted))
+                {
+                    authLogger.LogWarning(
+                        "Rejected /ws/desktop from {RemoteIp} (clientIdPrefix={ClientIdPrefix}): proof-of-possession failed.",
+                        remoteIp, RedactClientId(clientId));
+                    await ws.CloseAsync(
+                        System.Net.WebSockets.WebSocketCloseStatus.PolicyViolation, "Proof-of-possession required.", context.RequestAborted);
+                    return;
+                }
+
                 // Track A: acquire the PipeWire lifetime (Linux only; returns null on other platforms).
                 // The cast guard keeps this code path CA1416-clean on Windows builds.
                 if (OperatingSystem.IsLinux())
@@ -523,6 +534,22 @@ public static class HostBootstrapper
             }
 
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
+
+            // VULN-2 (RemEx-s032.2): require reconnect proof-of-possession before any bulk file data flows,
+            // mirroring /ws/desktop and the /ws control channel. Loopback is pre-paired and skips this.
+            var isLoopbackFiles = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
+            if (!isLoopbackFiles
+                && !await Remex.Agent.Services.Security.ChannelReconnectAuth.ChallengeAndVerifyAsync(
+                    ws, clientId, pairedClientRegistry, authLogger, context.RequestAborted))
+            {
+                authLogger.LogWarning(
+                    "Rejected /ws/files from {RemoteIp} (clientIdPrefix={ClientIdPrefix}): proof-of-possession failed.",
+                    remoteIp, RedactClientId(clientId));
+                await ws.CloseAsync(
+                    System.Net.WebSockets.WebSocketCloseStatus.PolicyViolation, "Proof-of-possession required.", context.RequestAborted);
+                return;
+            }
+
             var sessions = context.RequestServices.GetRequiredService<TransferSessionManager>();
 
             // RunChannelAsync owns the socket for its lifetime: it services inbound data frames (writing to the
@@ -683,10 +710,7 @@ public static class HostBootstrapper
     }
 
     private static string RedactClientId(string clientId)
-    {
-        if (string.IsNullOrEmpty(clientId)) return "<empty>";
-        return clientId.Length <= 8 ? clientId : clientId[..8] + "…";
-    }
+        => Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId);
 
     private static void LogWindowsRemoteDesktopDiagnostics(ILogger logger, WindowsRemoteDesktopDiagnosticReport? diagnostics)
     {

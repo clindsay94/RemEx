@@ -241,6 +241,16 @@ public sealed class FileTransferService : IFileTransferService
 
     public Task<IReadOnlyList<FileSharedRoot>> AddRootFromPathAsync(string sourceRootId, string sourceRelativePath, CancellationToken ct)
     {
+        // Resolve the SOURCE (parent) root up front: a root derived from an existing shared root MUST
+        // inherit that parent's permission flags rather than being granted full read/write/delete. The
+        // old code hardcoded IsWritable/CanRename/CanMove/CanDelete = true, so a paired client could
+        // browse a read-only default root (Documents/Desktop/Pictures/Downloads), pick a subfolder, and
+        // re-pin it as a fully writable/deletable root — silently defeating the read-only designation and
+        // gaining overwrite/delete over the user's files there (VULN-4, RemEx-s032.4). Inheriting the
+        // parent flags keeps a read-only subtree read-only; capabilities may narrow along the derivation
+        // chain but never widen.
+        var parent = GetConfiguredRoot(sourceRootId);
+
         var absolutePath = ResolvePath(sourceRootId, sourceRelativePath);
         if (!Directory.Exists(absolutePath))
             throw new DirectoryNotFoundException($"Directory does not exist: {absolutePath}");
@@ -258,10 +268,15 @@ public sealed class FileTransferService : IFileTransferService
             RootId = rootId,
             DisplayName = displayName,
             AbsolutePath = absolutePath,
-            IsWritable = true,
-            CanRename = true,
-            CanMove = true,
-            CanDelete = true,
+            // Inherit the parent root's capability flags — never widen them. A writable parent yields a
+            // writable derived root; a read-only parent yields a read-only derived root.
+            IsWritable = parent.IsWritable,
+            CanRename = parent.CanRename,
+            CanMove = parent.CanMove,
+            CanDelete = parent.CanDelete,
+            // CanRemoveRoot is a UI/management flag (the user may un-share what they chose to share), not a
+            // filesystem-write capability, so a derived root is always individually removable. This grants
+            // no access to file contents and is safe to keep true even for a read-only subtree.
             CanRemoveRoot = true,
         });
 
