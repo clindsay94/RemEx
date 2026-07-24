@@ -414,6 +414,12 @@ object FileTransferEngine {
         try {
             // The PC sender's file_transfer_complete carries the authoritative full-file hash.
             val streamedOk = withTimeoutOrNull(TRANSFER_TIMEOUT_MS) { done.await() } ?: false
+            if (streamedOk) {
+                // The bar hits 100% here, but fsync + hash-wait + the full .part→SAF commit copy are
+                // still ahead — surface the same Verifying state uploads already use so big files
+                // don't sit on a frozen 100% Active bar (RemEx-hb1t.2).
+                updateState(t.id) { it.copy(state = TransferState.Verifying) }
+            }
             try { raf.fd.sync() } catch (e: Exception) {}
             raf.close()
             val expectedSha = awaitComplete(t.id)
