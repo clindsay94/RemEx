@@ -3214,4 +3214,16 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
     <value>आइकन आकार</value>
   </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>हटाएँ — क्या आप सुनिश्चित हैं?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>"{0}" स्थायी रूप से हटा दिया जाएगा। इसे पूर्ववत नहीं किया जा सकता।</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>{0} आइटम स्थायी रूप से हटा दिए जाएँगे ({1})। इसे पूर्ववत नहीं किया जा सकता।</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>हटाएँ</value>
+  </data>
 </root>

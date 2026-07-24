@@ -3217,4 +3217,16 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
     <value>Ukuran ikon</value>
   </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>Hapus — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>"{0}" akan dihapus secara permanen. Tindakan ini tidak dapat diurungkan.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>{0} item akan dihapus secara permanen ({1}). Tindakan ini tidak dapat diurungkan.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>Hapus</value>
+  </data>
 </root>

@@ -3241,4 +3241,16 @@ Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, et
   <data name="SecondMetric_SetBtn" xml:space="preserve">
     <value>Establecer</value>
   </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>Eliminar — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>Se eliminará permanentemente «{0}». Esta acción no se puede deshacer.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>Se eliminarán permanentemente {0} elementos ({1}). Esta acción no se puede deshacer.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
 </root>

@@ -3215,4 +3215,16 @@ Linux: ip addr  or  hostname -I</value>
   <data name="SecondMetric_Title" xml:space="preserve">
     <value>Wybierz drugi wskaźnik</value>
   </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>Usuwanie — czy na pewno?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>Element "{0}" zostanie trwale usunięty. Tej operacji nie można cofnąć.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>Elementy w liczbie {0} zostaną trwale usunięte ({1}). Tej operacji nie można cofnąć.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>Usuń</value>
+  </data>
 </root>

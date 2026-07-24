@@ -3215,4 +3215,16 @@ Linux: ip addr  or  hostname -I</value>
   <data name="SecondMetric_Title" xml:space="preserve">
     <value>Виберіть другий показник</value>
   </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>Видалити — ви впевнені?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>«{0}» буде видалено назавжди. Цю дію не можна скасувати.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>{0} елементів буде видалено назавжди ({1}). Цю дію не можна скасувати.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
 </root>

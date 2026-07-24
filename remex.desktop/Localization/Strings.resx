@@ -3220,4 +3220,16 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_CheckForUpdatesTooltip" xml:space="preserve">
     <value>Makes one anonymous request to GitHub at startup. No personal data is sent.</value>
   </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>Delete — Are you sure?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>This will permanently delete “{0}”. This cannot be undone.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>This will permanently delete {0} items ({1}). This cannot be undone.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>Delete</value>
+  </data>
 </root>

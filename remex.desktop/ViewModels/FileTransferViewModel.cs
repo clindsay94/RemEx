@@ -637,6 +637,12 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     // ─── Delete (single + multi) ────────────────────────────────────────────────
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
     [RelayCommand(CanExecute = nameof(CanDeleteRemote))]
     private async Task DeleteRemoteAsync()
     {
@@ -644,6 +650,21 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
         var toDelete = EffectiveSelection();
         if (toDelete.Count == 0) return;
+
+        // Remote deletes are permanent — confirm before touching anything (RemEx-07jx).
+        var previewNames = string.Join(", ", toDelete.Take(3).Select(e => e.Name))
+            + (toDelete.Count > 3 ? "…" : string.Empty);
+        var message = toDelete.Count == 1
+            ? string.Format(LocalizationService.Instance["Confirm_DeleteRemote_SingleFormat"], toDelete[0].Name)
+            : string.Format(LocalizationService.Instance["Confirm_DeleteRemote_MultipleFormat"], toDelete.Count, previewNames);
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_DeleteRemote_Title"],
+                message,
+                LocalizationService.Instance["Confirm_DeleteRemote_Btn"]))
+        {
+            return;
+        }
 
         try
         {

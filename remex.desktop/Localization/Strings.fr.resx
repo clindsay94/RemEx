@@ -3214,4 +3214,16 @@ Linux: ip addr  or  hostname -I</value>
   <data name="SecondMetric_Title" xml:space="preserve">
     <value>Choisir une deuxième métrique</value>
   </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>Supprimer — Êtes-vous sûr ?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>« {0} » sera supprimé définitivement. Cette action est irréversible.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>{0} éléments seront supprimés définitivement ({1}). Cette action est irréversible.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
 </root>

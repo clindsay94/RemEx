@@ -3218,4 +3218,16 @@ Linux: ip addr  or  hostname -I</value>
   <data name="SecondMetric_Title" xml:space="preserve">
     <value>İkinci Metriği Seçin</value>
   </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>Sil — Emin misiniz?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>"{0}" kalıcı olarak silinecek. Bu işlem geri alınamaz.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>{0} öğe kalıcı olarak silinecek ({1}). Bu işlem geri alınamaz.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>Sil</value>
+  </data>
 </root>
