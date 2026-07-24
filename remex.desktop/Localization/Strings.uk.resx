@@ -3230,4 +3230,19 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q12_Answer" xml:space="preserve">
     <value>Під час першого створення пари телефон запам'ятовує точний відбиток сертифіката безпеки цього ПК і надалі довіряє лише цьому сертифікату. Якщо сертифікат змінюється — наприклад, після перевстановлення RemEx, відновлення цього ПК з резервної копії або переходу на нове обладнання — телефон відхиляє з'єднання, замість того щоб довіритися можливому самозванцю. Це очікувана поведінка безпеки, а не помилка. Щоб виправити, видаліть (розірвіть пару) цей ПК на екрані «Підключення» у застосунку на телефоні, а потім створіть пару знову за допомогою QR-коду або нового 6-значного PIN-коду, показаного в цьому вікні.</value>
   </data>
+  <data name="A11y_Close" xml:space="preserve">
+    <value>Закрити</value>
+  </data>
+  <data name="A11y_Dismiss" xml:space="preserve">
+    <value>Відхилити</value>
+  </data>
+  <data name="A11y_MoveUp" xml:space="preserve">
+    <value>Перемістити вгору</value>
+  </data>
+  <data name="A11y_MoveDown" xml:space="preserve">
+    <value>Перемістити вниз</value>
+  </data>
+  <data name="A11y_SensorLibrary" xml:space="preserve">
+    <value>Бібліотека сенсорів</value>
+  </data>
 </root>

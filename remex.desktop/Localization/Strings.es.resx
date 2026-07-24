@@ -3255,4 +3255,19 @@ Chrome)</value>
   <data name="Faq_Q12_Answer" xml:space="preserve">
     <value>Cuando tu teléfono se empareja por primera vez, memoriza la huella exacta del certificado de seguridad de este PC y solo volverá a confiar en ese certificado. Si el certificado cambia — por ejemplo tras reinstalar RemEx, restaurar este PC desde una copia de seguridad o cambiar de hardware — el teléfono rechaza la conexión en lugar de confiar en un posible impostor. Es un comportamiento de seguridad esperado, no un error. Para solucionarlo, elimina (desempareja) este PC en la pantalla Conexión de la aplicación del teléfono y vuelve a emparejar con el código QR o el nuevo PIN de 6 dígitos que se muestra en esta ventana.</value>
   </data>
+  <data name="A11y_Close" xml:space="preserve">
+    <value>Cerrar</value>
+  </data>
+  <data name="A11y_Dismiss" xml:space="preserve">
+    <value>Descartar</value>
+  </data>
+  <data name="A11y_MoveUp" xml:space="preserve">
+    <value>Mover arriba</value>
+  </data>
+  <data name="A11y_MoveDown" xml:space="preserve">
+    <value>Mover abajo</value>
+  </data>
+  <data name="A11y_SensorLibrary" xml:space="preserve">
+    <value>Biblioteca de sensores</value>
+  </data>
 </root>

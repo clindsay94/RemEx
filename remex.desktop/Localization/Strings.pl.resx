@@ -3230,4 +3230,19 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q12_Answer" xml:space="preserve">
     <value>Przy pierwszym parowaniu telefon zapamiętuje dokładny odcisk certyfikatu bezpieczeństwa tego komputera i odtąd ufa wyłącznie temu certyfikatowi. Jeśli certyfikat się zmieni — na przykład po ponownej instalacji RemEx, przywróceniu komputera z kopii zapasowej lub przejściu na nowy sprzęt — telefon odrzuca połączenie, zamiast zaufać potencjalnemu oszustowi. To oczekiwane zachowanie zabezpieczeń, a nie błąd. Aby to naprawić, usuń (rozparuj) ten komputer na ekranie Połączenie w aplikacji na telefonie, a następnie sparuj ponownie, używając kodu QR lub nowego 6-cyfrowego PIN-u widocznego w tym oknie.</value>
   </data>
+  <data name="A11y_Close" xml:space="preserve">
+    <value>Zamknij</value>
+  </data>
+  <data name="A11y_Dismiss" xml:space="preserve">
+    <value>Odrzuć</value>
+  </data>
+  <data name="A11y_MoveUp" xml:space="preserve">
+    <value>Przenieś w górę</value>
+  </data>
+  <data name="A11y_MoveDown" xml:space="preserve">
+    <value>Przenieś w dół</value>
+  </data>
+  <data name="A11y_SensorLibrary" xml:space="preserve">
+    <value>Biblioteka czujników</value>
+  </data>
 </root>

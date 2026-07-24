@@ -102,7 +102,7 @@
 
                             <Grid RowDefinitions="*, Auto">
                                 <!-- Main Launch Button (Top Area) -->
-                                <Button Grid.Row="0" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
+                                <Button Grid.Row="0" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutomationProperties.Name="{Binding DisplayName}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
                                     <Grid RowDefinitions="*, Auto" HorizontalAlignment="Center">
                                         <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="HighQuality" />
 
@@ -113,13 +113,13 @@
                                 <!-- Action Toolbar (Bottom Area) -->
                                 <Border Grid.Row="1" Classes="card-actions" Background="{DynamicResource GlassOverlayBrush}" Padding="4,2">
                                     <Grid ColumnDefinitions="*, *, *, *">
-                                        <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}" AutomationProperties.Name="{local:Localize AppLauncher_MoveLeft}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" CommandParameter="{Binding}" />
 
-                                        <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveRight}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveRight}" AutomationProperties.Name="{local:Localize AppLauncher_MoveRight}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" CommandParameter="{Binding}" />
 
-                                        <Button Grid.Column="2" Content="✎" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="14" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Edit}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).EditAppCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="2" Content="✎" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="14" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Edit}" AutomationProperties.Name="{local:Localize AppLauncher_Edit}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).EditAppCommand}" CommandParameter="{Binding}" />
 
-                                        <Button Grid.Column="3" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="3" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Remove}" AutomationProperties.Name="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" />
                                     </Grid>
                                 </Border>
                             </Grid>

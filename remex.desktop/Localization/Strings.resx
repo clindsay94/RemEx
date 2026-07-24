@@ -3235,4 +3235,19 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q12_Answer" xml:space="preserve">
     <value>When your phone first pairs, it remembers this PC's exact security certificate fingerprint and will only ever trust that certificate again. If the certificate changes — for example after reinstalling RemEx, restoring this PC from a backup, or moving to new hardware — the phone refuses the connection instead of trusting a potential impostor. This is expected security behavior, not a bug. To fix it, remove (unpair) this PC in the phone app's Connection screen, then pair again with the QR code or new 6-digit PIN shown in this window.</value>
   </data>
+  <data name="A11y_Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="A11y_Dismiss" xml:space="preserve">
+    <value>Dismiss</value>
+  </data>
+  <data name="A11y_MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="A11y_MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="A11y_SensorLibrary" xml:space="preserve">
+    <value>Sensor library</value>
+  </data>
 </root>

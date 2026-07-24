@@ -3229,4 +3229,19 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q12_Answer" xml:space="preserve">
     <value>पहली बार पेयर करते समय, आपका फ़ोन इस PC के सुरक्षा प्रमाणपत्र का सटीक फ़िंगरप्रिंट याद रखता है और आगे केवल उसी प्रमाणपत्र पर भरोसा करता है। यदि प्रमाणपत्र बदल जाता है — उदाहरण के लिए RemEx को फिर से इंस्टॉल करने, इस PC को बैकअप से बहाल करने या नए हार्डवेयर पर जाने के बाद — तो फ़ोन किसी संभावित नक़ली PC पर भरोसा करने के बजाय कनेक्शन अस्वीकार कर देता है। यह अपेक्षित सुरक्षा व्यवहार है, कोई बग नहीं। इसे ठीक करने के लिए, फ़ोन ऐप की कनेक्शन स्क्रीन में इस PC को हटाएँ (अनपेयर करें), फिर इस विंडो में दिखाए गए QR कोड या नए 6-अंकों वाले PIN से दोबारा पेयर करें।</value>
   </data>
+  <data name="A11y_Close" xml:space="preserve">
+    <value>बंद करें</value>
+  </data>
+  <data name="A11y_Dismiss" xml:space="preserve">
+    <value>खारिज करें</value>
+  </data>
+  <data name="A11y_MoveUp" xml:space="preserve">
+    <value>ऊपर ले जाएँ</value>
+  </data>
+  <data name="A11y_MoveDown" xml:space="preserve">
+    <value>नीचे ले जाएँ</value>
+  </data>
+  <data name="A11y_SensorLibrary" xml:space="preserve">
+    <value>सेंसर लाइब्रेरी</value>
+  </data>
 </root>

@@ -3233,4 +3233,19 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q12_Answer" xml:space="preserve">
     <value>Telefonunuz ilk eşleştirmede bu PC'nin güvenlik sertifikasının tam parmak izini hatırlar ve bundan sonra yalnızca o sertifikaya güvenir. Sertifika değişirse — örneğin RemEx'i yeniden yükledikten, bu PC'yi yedekten geri yükledikten veya yeni donanıma geçtikten sonra — telefon olası bir sahtekâra güvenmek yerine bağlantıyı reddeder. Bu beklenen bir güvenlik davranışıdır, hata değildir. Düzeltmek için telefon uygulamasının Bağlantı ekranında bu PC'yi kaldırın (eşleştirmeyi kaldırın), ardından bu pencerede gösterilen QR kodu veya yeni 6 haneli PIN ile yeniden eşleştirin.</value>
   </data>
+  <data name="A11y_Close" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="A11y_Dismiss" xml:space="preserve">
+    <value>Yoksay</value>
+  </data>
+  <data name="A11y_MoveUp" xml:space="preserve">
+    <value>Yukarı taşı</value>
+  </data>
+  <data name="A11y_MoveDown" xml:space="preserve">
+    <value>Aşağı taşı</value>
+  </data>
+  <data name="A11y_SensorLibrary" xml:space="preserve">
+    <value>Sensör kitaplığı</value>
+  </data>
 </root>

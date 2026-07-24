@@ -3232,4 +3232,19 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q12_Answer" xml:space="preserve">
     <value>Saat pertama kali dipasangkan, ponsel Anda mengingat sidik jari sertifikat keamanan PC ini secara persis dan selanjutnya hanya akan memercayai sertifikat itu. Jika sertifikat berubah — misalnya setelah menginstal ulang RemEx, memulihkan PC ini dari cadangan, atau berpindah ke perangkat keras baru — ponsel menolak koneksi alih-alih memercayai peniru. Ini perilaku keamanan yang diharapkan, bukan bug. Untuk memperbaikinya, hapus (lepaskan pemasangan) PC ini di layar Koneksi aplikasi ponsel, lalu pasangkan lagi dengan kode QR atau PIN 6 digit baru yang ditampilkan di jendela ini.</value>
   </data>
+  <data name="A11y_Close" xml:space="preserve">
+    <value>Tutup</value>
+  </data>
+  <data name="A11y_Dismiss" xml:space="preserve">
+    <value>Tutup pesan</value>
+  </data>
+  <data name="A11y_MoveUp" xml:space="preserve">
+    <value>Pindahkan ke atas</value>
+  </data>
+  <data name="A11y_MoveDown" xml:space="preserve">
+    <value>Pindahkan ke bawah</value>
+  </data>
+  <data name="A11y_SensorLibrary" xml:space="preserve">
+    <value>Pustaka sensor</value>
+  </data>
 </root>

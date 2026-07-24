@@ -105,7 +105,7 @@
                     <Button Content="{local:Localize TrayFlyout_Home}" Classes="tray-btn" Command="{Binding NavigateToHomeCommand}" Click="OnOpenMainApp"/>
                     <Button Content="{local:Localize TrayFlyout_Workspace}" Classes="tray-btn" Command="{Binding NavigateToCanvasCommand}" Click="OnOpenMainApp"/>
                 </StackPanel>
-                <Button Grid.Column="1" Content="✕" Classes="tray-btn" Click="OnCloseFlyout" Padding="12,8"/>
+                <Button Grid.Column="1" Content="✕" Classes="tray-btn" AutomationProperties.Name="{local:Localize A11y_Close}" Click="OnCloseFlyout" Padding="12,8"/>
             </Grid>
         </Grid>
     </Border>
