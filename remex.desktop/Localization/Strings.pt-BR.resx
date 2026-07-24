@@ -1742,7 +1742,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Certifique-se de que o RemEx está em execução no seu PC.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Certifique-se de que o RemEx está em execução no seu PC.
+2. Both devices must be on the same Wi-Fi / LAN.
+3. Check if your router has 'AP/Client Isolation' enabled.
+4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -1788,7 +1791,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Como configurar o Tailscale para acesso remoto?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Instale o Tailscale no seu PC: tailscale.com/download (Windows) ou execute: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Faça login e conecte-se: siga as instruções do navegador (Windows) ou execute: sudo tailscale up (Linux).\n3. Instale o Tailscale no Android a partir da Play Store e faça login com a mesma conta.\n4. Encontre o IP do Tailscale do seu PC (começa com 100.x.y.z) no aplicativo Tailscale ou em login.tailscale.com.\n5. Insira esse IP na tela de conexão do RemEx — agora você pode se conectar com segurança de qualquer lugar.</value>
+    <value>1. Instale o Tailscale no seu PC: tailscale.com/download (Windows) ou execute: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Faça login e conecte-se: siga as instruções do navegador (Windows) ou execute: sudo tailscale up (Linux).
+3. Instale o Tailscale no Android a partir da Play Store e faça login com a mesma conta.
+4. Encontre o IP do Tailscale do seu PC (começa com 100.x.y.z) no aplicativo Tailscale ou em login.tailscale.com.
+5. Insira esse IP na tela de conexão do RemEx — agora você pode se conectar com segurança de qualquer lugar.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Desfazer</value>

@@ -1787,7 +1787,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Make sure RemEx is running on your PC.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. On Android 13+, allow Nearby Wi-Fi Devices; on Android 17+, allow Local Network access too.\n4. Check whether your router has AP/Client Isolation enabled.\n5. Corporate or guest networks often block mDNS discovery.</value>
+    <value>1. Make sure RemEx is running on your PC.
+2. Both devices must be on the same Wi-Fi / LAN.
+3. On Android 13+, allow Nearby Wi-Fi Devices; on Android 17+, allow Local Network access too.
+4. Check whether your router has AP/Client Isolation enabled.
+5. Corporate or guest networks often block mDNS discovery.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -1833,7 +1837,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>How do I set up Tailscale for remote access?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Install Tailscale on your PC: tailscale.com/download (Windows) or run: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Sign in and connect: follow the browser prompt (Windows) or run: sudo tailscale up (Linux).\n3. Install Tailscale on Android from the Play Store and sign in with the same account.\n4. Find your PC's Tailscale IP (starts with 100.x.y.z) in the Tailscale app or at login.tailscale.com.\n5. Enter that IP in RemEx's Connection screen — you can now connect securely from anywhere.</value>
+    <value>1. Install Tailscale on your PC: tailscale.com/download (Windows) or run: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Sign in and connect: follow the browser prompt (Windows) or run: sudo tailscale up (Linux).
+3. Install Tailscale on Android from the Play Store and sign in with the same account.
+4. Find your PC's Tailscale IP (starts with 100.x.y.z) in the Tailscale app or at login.tailscale.com.
+5. Enter that IP in RemEx's Connection screen — you can now connect securely from anywhere.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Undo</value>

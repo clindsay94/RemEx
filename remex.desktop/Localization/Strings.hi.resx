@@ -1742,7 +1742,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. सुनिश्चित करें कि RemEx आपके पीसी पर चल रहा है।\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. सुनिश्चित करें कि RemEx आपके पीसी पर चल रहा है।
+2. Both devices must be on the same Wi-Fi / LAN.
+3. Check if your router has 'AP/Client Isolation' enabled.
+4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -1788,7 +1791,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>रिमोट एक्सेस के लिए मैं Tailscale कैसे सेटअप करूँ?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. अपने पीसी पर Tailscale इंस्टॉल करें: tailscale.com/download (Windows) या रन करें: curl -fsSL https://tailscale.com/install.sh | sh (Linux)।\n2. साइन इन करें और कनेक्ट करें: ब्राउज़र प्रॉम्प्ट का पालन करें (Windows) या रन करें: sudo tailscale up (Linux)।\n3. Play Store से एंड्रॉइड पर Tailscale इंस्टॉल करें और उसी खाते से साइन इन करें।\n4. Tailscale ऐप में या login.tailscale.com पर अपने पीसी का Tailscale आईपी (100.x.y.z से शुरू होने वाला) ढूंढें।\n5. RemEx की कनेक्शन स्क्रीन में वह आईपी दर्ज करें — अब आप कहीं से भी सुरक्षित रूप से कनेक्ट कर सकते हैं।</value>
+    <value>1. अपने पीसी पर Tailscale इंस्टॉल करें: tailscale.com/download (Windows) या रन करें: curl -fsSL https://tailscale.com/install.sh | sh (Linux)।
+2. साइन इन करें और कनेक्ट करें: ब्राउज़र प्रॉम्प्ट का पालन करें (Windows) या रन करें: sudo tailscale up (Linux)।
+3. Play Store से एंड्रॉइड पर Tailscale इंस्टॉल करें और उसी खाते से साइन इन करें।
+4. Tailscale ऐप में या login.tailscale.com पर अपने पीसी का Tailscale आईपी (100.x.y.z से शुरू होने वाला) ढूंढें।
+5. RemEx की कनेक्शन स्क्रीन में वह आईपी दर्ज करें — अब आप कहीं से भी सुरक्षित रूप से कनेक्ट कर सकते हैं।</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>पूर्ववत करें</value>

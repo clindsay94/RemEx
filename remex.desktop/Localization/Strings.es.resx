@@ -1760,7 +1760,10 @@ Chrome)</value>
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Asegúrate de que RemEx se esté ejecutando en tu PC.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Asegúrate de que RemEx se esté ejecutando en tu PC.
+2. Both devices must be on the same Wi-Fi / LAN.
+3. Check if your router has 'AP/Client Isolation' enabled.
+4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -1806,7 +1809,11 @@ Chrome)</value>
     <value>¿Cómo configuro Tailscale para acceso remoto?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Instale Tailscale en su PC: tailscale.com/download (Windows) o ejecute: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Inicie sesión y conéctese: siga las instrucciones del navegador (Windows) o ejecute: sudo tailscale up (Linux).\n3. Instale Tailscale en Android desde Play Store e inicie sesión con la misma cuenta.\n4. Busque la IP de Tailscale de su PC (comienza con 100.x.y.z) en la aplicación Tailscale o en login.tailscale.com.\n5. Ingrese esa IP en la pantalla de conexión de RemEx; ahora puede conectarse de forma segura desde cualquier lugar.</value>
+    <value>1. Instale Tailscale en su PC: tailscale.com/download (Windows) o ejecute: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Inicie sesión y conéctese: siga las instrucciones del navegador (Windows) o ejecute: sudo tailscale up (Linux).
+3. Instale Tailscale en Android desde Play Store e inicie sesión con la misma cuenta.
+4. Busque la IP de Tailscale de su PC (comienza con 100.x.y.z) en la aplicación Tailscale o en login.tailscale.com.
+5. Ingrese esa IP en la pantalla de conexión de RemEx; ahora puede conectarse de forma segura desde cualquier lugar.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Deshacer</value>

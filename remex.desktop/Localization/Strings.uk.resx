@@ -1742,7 +1742,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Переконайтеся, що RemEx запущено на вашому ПК.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Переконайтеся, що RemEx запущено на вашому ПК.
+2. Both devices must be on the same Wi-Fi / LAN.
+3. Check if your router has 'AP/Client Isolation' enabled.
+4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -1788,7 +1791,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Як налаштувати Tailscale для віддаленого доступу?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Встановіть Tailscale на свій ПК: tailscale.com/download (Windows) або запустіть: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Увійдіть і підключіться: дотримуйтесь вказівок у браузері (Windows) або запустіть: sudo tailscale up (Linux).\n3. Встановіть Tailscale на Android з Play Store та увійдіть під тим самим обліковим записом.\n4. Знайдіть IP-адресу Tailscale вашого ПК (починається з 100.x.y.z) у додатку Tailscale або на login.tailscale.com.\n5. Введіть цю IP-адресу на екрані підключення RemEx — тепер ви можете безпечно підключатися з будь-якого місця.</value>
+    <value>1. Встановіть Tailscale на свій ПК: tailscale.com/download (Windows) або запустіть: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Увійдіть і підключіться: дотримуйтесь вказівок у браузері (Windows) або запустіть: sudo tailscale up (Linux).
+3. Встановіть Tailscale на Android з Play Store та увійдіть під тим самим обліковим записом.
+4. Знайдіть IP-адресу Tailscale вашого ПК (починається з 100.x.y.z) у додатку Tailscale або на login.tailscale.com.
+5. Введіть цю IP-адресу на екрані підключення RemEx — тепер ви можете безпечно підключатися з будь-якого місця.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Скасувати</value>

@@ -1742,7 +1742,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery isn't finding my PC. What should I check?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. PC'nizde RemEx'in çalıştığından emin olun.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. PC'nizde RemEx'in çalıştığından emin olun.
+2. Both devices must be on the same Wi-Fi / LAN.
+3. Check if your router has 'AP/Client Isolation' enabled.
+4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -1788,7 +1791,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Uzaktan erişim için Tailscale'i nasıl kurarım?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Bilgisayarınıza Tailscale yükleyin: tailscale.com/download (Windows) veya çalıştırın: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Giriş yapın ve bağlanın: tarayıcı istemini takip edin (Windows) veya çalıştırın: sudo tailscale up (Linux).\n3. Android için Play Store'dan Tailscale yükleyin ve aynı hesapla giriş yapın.\n4. Bilgisayarınızın Tailscale IP'sini (100.x.y.z ile başlar) Tailscale uygulamasında veya login.tailscale.com adresinde bulun.\n5. Bu IP'yi RemEx'in Bağlantı ekranına girin — artık her yerden güvenli bir şekilde bağlanabilirsiniz.</value>
+    <value>1. Bilgisayarınıza Tailscale yükleyin: tailscale.com/download (Windows) veya çalıştırın: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Giriş yapın ve bağlanın: tarayıcı istemini takip edin (Windows) veya çalıştırın: sudo tailscale up (Linux).
+3. Android için Play Store'dan Tailscale yükleyin ve aynı hesapla giriş yapın.
+4. Bilgisayarınızın Tailscale IP'sini (100.x.y.z ile başlar) Tailscale uygulamasında veya login.tailscale.com adresinde bulun.
+5. Bu IP'yi RemEx'in Bağlantı ekranına girin — artık her yerden güvenli bir şekilde bağlanabilirsiniz.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Geri Al</value>

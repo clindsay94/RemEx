@@ -1742,7 +1742,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery tidak menemukan PC saya. Apa yang harus diperiksa?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Pastikan RemEx berjalan di PC Anda.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Pastikan RemEx berjalan di PC Anda.
+2. Both devices must be on the same Wi-Fi / LAN.
+3. Check if your router has 'AP/Client Isolation' enabled.
+4. Corporate/guest networks often block discovery (mDNS).</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>Apa port default-nya?</value>
@@ -1788,7 +1791,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bagaimana cara mengatur Tailscale untuk akses jarak jauh?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Instal Tailscale di PC Anda: tailscale.com/download (Windows) atau jalankan: curl -fsSL https://scale.com/install.sh | sh (Linux).\n2. Masuk dan hubungkan: ikuti petunjuk browser (Windows) atau jalankan: sudo tailscale up (Linux).\n3. Instal Tailscale di Android dari Play Store dan masuk dengan akun yang sama.\n4. Temukan IP Tailscale PC Anda (dimulai dengan 100.x.y.z) di aplikasi Tailscale atau di login.tailscale.com.\n5. Masukkan IP tersebut di layar Koneksi RemEx — sekarang Anda dapat terhubung dengan aman dari mana saja.</value>
+    <value>1. Instal Tailscale di PC Anda: tailscale.com/download (Windows) atau jalankan: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Masuk dan hubungkan: ikuti petunjuk browser (Windows) atau jalankan: sudo tailscale up (Linux).
+3. Instal Tailscale di Android dari Play Store dan masuk dengan akun yang sama.
+4. Temukan IP Tailscale PC Anda (dimulai dengan 100.x.y.z) di aplikasi Tailscale atau di login.tailscale.com.
+5. Masukkan IP tersebut di layar Koneksi RemEx — sekarang Anda dapat terhubung dengan aman dari mana saja.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Batal</value>

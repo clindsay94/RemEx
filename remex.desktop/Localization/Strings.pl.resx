@@ -1547,7 +1547,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. Adres IP możesz też zobaczyć bezpośrednio w oknie RemEx na swoim komputerze.</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Upewnij się, że RemEx jest uruchomiony na Twoim komputerze.\n2. Oba urządzenia muszą być w tej samej sieci Wi-Fi / LAN.\n3. Sprawdź, czy Twój router nie ma włączonej opcji „izolacja AP/klienta”.\n4. Sieci firmowe/gościnne często blokują wykrywanie (mDNS).</value>
+    <value>1. Upewnij się, że RemEx jest uruchomiony na Twoim komputerze.
+2. Oba urządzenia muszą być w tej samej sieci Wi-Fi / LAN.
+3. Sprawdź, czy Twój router nie ma włączonej opcji „izolacja AP/klienta”.
+4. Sieci firmowe/gościnne często blokują wykrywanie (mDNS).</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
     <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. Aktywny port możesz zobaczyć w oknie RemEx na swoim komputerze.</value>
@@ -1572,7 +1575,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Jak skonfigurować Tailscale do zdalnego dostępu?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Zainstaluj Tailscale na komputerze: tailscale.com/download (Windows) lub uruchom: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Zaloguj się i połącz: postępuj zgodnie z instrukcją w przeglądarce (Windows) lub uruchom: sudo tailscale up (Linux).\n3. Zainstaluj Tailscale na Androidzie ze sklepu Play i zaloguj się na to samo konto.\n4. Znajdź adres IP Tailscale komputera (zaczynający się od 100.x.y.z) w aplikacji Tailscale lub na login.tailscale.com.\n5. Wpisz ten adres IP na ekranie połączenia RemEx — możesz teraz łączyć się bezpiecznie z dowolnego miejsca.</value>
+    <value>1. Zainstaluj Tailscale na komputerze: tailscale.com/download (Windows) lub uruchom: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Zaloguj się i połącz: postępuj zgodnie z instrukcją w przeglądarce (Windows) lub uruchom: sudo tailscale up (Linux).
+3. Zainstaluj Tailscale na Androidzie ze sklepu Play i zaloguj się na to samo konto.
+4. Znajdź adres IP Tailscale komputera (zaczynający się od 100.x.y.z) w aplikacji Tailscale lub na login.tailscale.com.
+5. Wpisz ten adres IP na ekranie połączenia RemEx — możesz teraz łączyć się bezpiecznie z dowolnego miejsca.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Cofnij</value>
