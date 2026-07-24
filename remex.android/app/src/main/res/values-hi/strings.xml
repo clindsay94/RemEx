@@ -51,7 +51,7 @@
     <string name="tutorial_page1_title">RemEx में आपका स्वागत है</string>
     <string name="tutorial_page1_body">RemEx आपका रिमोट पीसी प्रबंधन कमांड सेंटर है। अपने फोन से कंप्यूटर को नियंत्रित करें, ऐप्स लॉन्च करें, प्रदर्शन की निगरानी करें और अपना डेस्कटॉप भी देखें।\n\nआइए आपको कुछ त्वरित चरणों में कनेक्ट करते हैं।</string>
     <string name="tutorial_page2_title">पहले होस्ट इंस्टॉल करें</string>
-    <string name="tutorial_page2_body">कनेक्ट करने से पहले, आपके पीसी पर RemEx होस्ट चलना चाहिए।\n\n• विकल्प 1: डेस्कटॉप क्लाइंट (अनुशंसित) — होस्ट को बंडल करता है और सिस्टम ट्रे में चलता है।\n• विकल्प 2: स्टैंडअलोन होस्ट — केवल बैकग्राउंड सेवा, सर्वर के लिए आदर्श।\n\nGitHub से नवीनतम रिलीज़ डाउनलोड करें और पेयर करने से पहले इसे चलाएं।</string>
+    <string name="tutorial_page2_body">कनेक्ट करने से पहले, आपके पीसी पर RemEx ऐप चलना चाहिए।\n\nइंस्टॉल करने के लिए बस एक ही ऐप है — यह आपके पीसी में साइन इन करते ही अपने आप शुरू हो जाता है और आपके फ़ोन के कनेक्ट होने का इंतज़ार करता है।\n\nGitHub से नवीनतम रिलीज़ डाउनलोड करें और पेयर करने से पहले इसे चलाएं।</string>
     <string name="tutorial_page2_link_label">GitHub रिलीज़ से डाउनलोड करें</string>
     <string name="tutorial_page3_title">ऑटो-डिस्कवरी</string>
     <string name="tutorial_page3_body">कनेक्ट करने का सबसे आसान तरीका स्वचालित खोज है।\n\n1. सुनिश्चित करें कि आपके पीसी पर remex.agent चल रहा है\n2. सुनिश्चित करें कि आपका फोन और पीसी दोनों एक ही वाई-फाई नेटवर्क पर हैं\n3. कनेक्शन स्क्रीन पर \'स्वचालित रूप से खोजें\' पर टैप करें\n\nRemEx आपके स्थानीय नेटवर्क पर चल रहे होस्ट का पता लगाने के लिए mDNS का उपयोग करता है। आपके पीसी का आईपी और पोर्ट स्वचालित रूप से भर दिया जाएगा।</string>
@@ -217,7 +217,7 @@
     <string name="connection_host_settings">होस्ट सेटिंग्स</string>
     <string name="cd_dismiss_error">हटाएं</string>
     <string name="connection_auto_discover_title">LAN पर ऑटो-डिस्कवर</string>
-    <string name="connection_auto_discover_hint">सुनिश्चित करें कि आपका पीसी RemEx होस्ट ऐप चला रहा है और दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं।</string>
+    <string name="connection_auto_discover_hint">सुनिश्चित करें कि आपके पीसी पर RemEx ऐप चल रहा है और दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं।</string>
     <string name="connection_searching">आपका पीसी खोजा जा रहा है…</string>
     <string name="connection_found_host">मिला: %1$s — फिर से खोजें</string>
     <string name="connection_discover_button">स्वचालित रूप से खोजें</string>
@@ -225,7 +225,7 @@
     <string name="connection_scan_qr_code">QR कोड स्कैन करें</string>
     <string name="connection_help_title">मैन्युअल रूप से कैसे कनेक्ट करें</string>
     <string name="connection_help_step1_title">अपने पीसी पर RemEx होस्ट इंस्टॉल करें</string>
-    <string name="connection_help_step1_body">जिस पीसी को आप नियंत्रित करना चाहते हैं उस पर RemEx होस्ट इंस्टॉलर डाउनलोड करें और चलाएं। चलते समय यह आपके सिस्टम ट्रे में दिखाई देगा।</string>
+    <string name="connection_help_step1_body">जिस पीसी को आप नियंत्रित करना चाहते हैं उस पर RemEx ऐप इंस्टॉल करें। अपने फ़ोन से कनेक्ट करने से पहले इसे चालू रखें।</string>
     <string name="connection_help_step2_title">एक ही वाई-फाई से कनेक्ट करें</string>
     <string name="connection_help_step2_body">आपका फोन और पीसी एक ही स्थानीय नेटवर्क पर होने चाहिए। मोबाइल डेटा काम नहीं करेगा।</string>
     <string name="connection_help_step3_title">अपने पीसी का आईपी पता ढूँढें</string>
@@ -288,7 +288,7 @@
     <string name="faq_q1">मुझे अपने पीसी पर क्या चलाने की ज़रूरत है?</string>
     <string name="faq_a1">आपको अपने पीसी (Windows या Linux) पर remex.agent चलाने की ज़रूरत है। यह एकमात्र पीसी-साइड ऐप है — इससे अलग कोई डेस्कटॉप क्लाइंट नहीं है। remex.agent बैकग्राउंड होस्ट सेवा और "RemEx — Command Center" यूज़र इंटरफ़ेस को एक ही प्रोसेस में जोड़ता है, साइन इन करते ही अपने आप शुरू हो जाता है, और पोर्ट 5005 पर सुनता है।\n\nयह आत्मनिर्भर है (सभी रनटाइम शामिल हैं) — बस रिलीज़ फ़ोल्डर को निकालें और चलाएं, या अपने प्लेटफ़ॉर्म के लिए इंस्टॉलर का उपयोग करें। GitHub रिलीज़ पेज से डाउनलोड करें।</string>
     <string name="faq_q2">मैं अपने पीसी का आईपी पता कैसे ढूँढूँ?</string>
-    <string name="faq_a2">Windows:\nकमांड प्रॉम्प्ट खोलें और \'ipconfig\' टाइप करें। अपने सक्रिय नेटवर्क एडॉप्टर के तहत \'IPv4 Address\' लाइन देखें (जैसे 192.168.1.42)।\n\nmacOS:\nसिस्टम सेटिंग्स → नेटवर्क पर जाएं और कनेक्टेड इंटरफ़ेस देखें, या टर्मिनल खोलें और चलाएं: ipconfig getifaddr en0\n\nLinux:\nटर्मिनल खोलें और चलाएं: ip addr या hostname -I\n\nआप आईपी सीधे अपने पीसी पर RemEx — Command Center विंडो में भी देख सकते हैं।</string>
+    <string name="faq_a2">Windows:\nकमांड प्रॉम्प्ट खोलें और \'ipconfig\' टाइप करें। अपने सक्रिय नेटवर्क एडॉप्टर के तहत \'IPv4 Address\' लाइन देखें (जैसे 192.168.1.42)।\n\nLinux:\nटर्मिनल खोलें और चलाएं: ip addr या hostname -I\n\nआप आईपी सीधे अपने पीसी पर RemEx — Command Center विंडो में भी देख सकते हैं।</string>
     <string name="faq_q3">ऑटो-डिस्कवरी को मेरा पीसी नहीं मिल रहा है। मुझे क्या जांचना चाहिए?</string>
     <string name="faq_a3">1. सुनिश्चित करें कि आपके पीसी पर remex.agent वास्तव में चल रहा है — "RemEx — Command Center" विंडो या इसका ट्रे आइकॉन देखें।\n2. दोनों डिवाइस एक ही वाई-फाई / LAN नेटवर्क पर होने चाहिए।\n3. Android 13+ पर, NEARBY_WIFI_DEVICES अनुमति दी जानी चाहिए। Android 17+ पर, ACCESS_LOCAL_NETWORK अनुमति भी दी जानी चाहिए। जब आप \'स्वचालित रूप से खोजें\' पर टैप करेंगे तो RemEx इसके लिए संकेत देगा।\n4. कुछ राउटर में \'AP Isolation\' या \'Client Isolation\' सक्षम होता है, जो डिवाइस-टू-डिवाइस संचार को रोकता है। अपनी राउटर सेटिंग्स जांचें।\n5. कॉर्पोरेट या गेस्ट वाई-फाई नेटवर्क अक्सर mDNS ट्रैफ़िक को ब्लॉक कर देते हैं। इसके बजाय व्यक्तिगत या घरेलू नेटवर्क का उपयोग करने का प्रयास करें।</string>
     <string name="faq_q4">डिफ़ॉल्ट पोर्ट क्या है?</string>

@@ -51,7 +51,7 @@
     <string name="tutorial_page1_title">Ласкаво просимо до RemEx</string>
     <string name="tutorial_page1_body">RemEx — це ваш командний центр дистанційного керування ПК. Керуйте своїм комп\'ютером, запускайте додатки, стежте за продуктивністю та навіть переглядайте робочий стіл — усе з вашого телефону.\n\nДавайте підключимося за кілька швидких кроків.</string>
     <string name="tutorial_page2_title">Спочатку запустіть PC</string>
-    <string name="tutorial_page2_body">Для підключення вам потрібен запущений хост RemEx на вашому ПК.\n\n• Варіант 1: Настільний клієнт (Рекомендовано) — Містить хост та працює в системному треї.\n• Варіант 2: Автономний хост — Служба тільки у фоновому режимі, ідеально для серверів.\n\nЗавантажте останню версію з GitHub і запустіть її перед створенням пари.</string>
+    <string name="tutorial_page2_body">Перед підключенням на вашому ПК має працювати застосунок RemEx.\n\nПотрібно встановити лише один застосунок — він запускається автоматично після входу в систему на ПК і чекає на підключення вашого телефона.\n\nЗавантажте останню версію з GitHub і запустіть її перед створенням пари.</string>
     <string name="tutorial_page2_link_label">Завантажити з GitHub Releases</string>
     <string name="tutorial_page3_title">Автоматичне виявлення</string>
     <string name="tutorial_page3_body">Найпростіший спосіб підключення — це автоматичне виявлення.\n\n1. Переконайтеся, що remex.agent запущено на вашому ПК\n2. Переконайтеся, що ваш телефон і ПК знаходяться в одній мережі Wi-Fi\n3. Натисніть "Виявити автоматично" на екрані підключення\n\nRemEx використовує mDNS для виявлення запущених хостів у вашій локальній мережі. IP-адреса та порт вашого ПК будуть заповнені автоматично.</string>
@@ -116,7 +116,7 @@
     <string name="settings_tab_about">Про програму</string>
     <string name="settings_help_title">Help</string>
     <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
-    <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough that covers setup, auto-discovery, finding your IP, and connecting to your PC.</string>
+    <string name="settings_replay_tutorial_body">Перегляньте ще раз посібник із початку роботи: налаштування, створення пари за QR-кодом, підключення вручну та поради щодо щоденного використання.</string>
     <string name="settings_faq_hint">Have a question? Check the FAQ available from the overflow menu (⋮ → FAQ).</string>
     <string name="screen_app_launcher_title">App Launcher</string>
     <string name="app_launcher_no_apps">No apps found</string>
@@ -217,7 +217,7 @@
     <string name="connection_host_settings">PC Settings</string>
     <string name="cd_dismiss_error">Dismiss</string>
     <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
-    <string name="connection_auto_discover_hint">Make sure your PC is running the RemEx PC app and both devices are on the same Wi-Fi network.</string>
+    <string name="connection_auto_discover_hint">Переконайтеся, що застосунок RemEx запущено на вашому ПК і обидва пристрої підключені до однієї мережі Wi-Fi.</string>
     <string name="connection_searching">Пошук вашого ПК…</string>
     <string name="connection_found_host">Found: %1$s — Search Again</string>
     <string name="connection_discover_button">Discover Automatically</string>
@@ -225,7 +225,7 @@
     <string name="connection_scan_qr_code">Scan QR Code</string>
     <string name="connection_help_title">How to connect manually</string>
     <string name="connection_help_step1_title">Install RemEx PC on your PC</string>
-    <string name="connection_help_step1_body">Download and run the RemEx PC installer on the PC you want to control. It will appear in your system tray when running.</string>
+    <string name="connection_help_step1_body">Встановіть застосунок RemEx на ПК, яким хочете керувати. Залиште його запущеним, перш ніж підключатися з телефона.</string>
     <string name="connection_help_step2_title">Connect to the same Wi-Fi</string>
     <string name="connection_help_step2_body">Your phone and PC must be on the same local network. Mobile data will not work.</string>
     <string name="connection_help_step3_title">Find your PC\'s IP address</string>
@@ -288,7 +288,7 @@
     <string name="faq_q1">What do I need to run on my PC?</string>
     <string name="faq_a1">Вам потрібен запущений на ПК remex.agent (Windows або Linux). Це єдиний застосунок на стороні ПК — окремого десктопного клієнта не існує. remex.agent поєднує фонову службу хоста та інтерфейс \"RemEx — Command Center\" в одному процесі, запускається автоматично під час входу в систему та прослуховує порт 5005.\n\nВін самодостатній (усі середовища виконання включено) — просто розпакуйте папку релізу та запустіть, або скористайтеся інсталятором для вашої платформи. Завантажте зі сторінки релізів на GitHub.</string>
     <string name="faq_q2">How do I find my PC\'s IP address?</string>
-    <string name="faq_a2">Windows:\nВідкрийте командний рядок і введіть \'ipconfig\'. Знайдіть рядок \'IPv4 Address\' під активним мережевим адаптером (наприклад, 192.168.1.42).\n\nmacOS:\nПерейдіть у Системні налаштування → Мережа та подивіться на підключений інтерфейс, або відкрийте термінал і виконайте: ipconfig getifaddr en0\n\nLinux:\nВідкрийте термінал і виконайте: ip addr  або  hostname -I\n\nВи також можете побачити IP-адресу безпосередньо у вікні \"RemEx — Command Center\" на вашому ПК.</string>
+    <string name="faq_a2">Windows:\nВідкрийте командний рядок і введіть \'ipconfig\'. Знайдіть рядок \'IPv4 Address\' під активним мережевим адаптером (наприклад, 192.168.1.42).\n\nLinux:\nВідкрийте термінал і виконайте: ip addr  або  hostname -I\n\nВи також можете побачити IP-адресу безпосередньо у вікні \"RemEx — Command Center\" на вашому ПК.</string>
     <string name="faq_q3">Auto-discovery isn\'t finding my PC. What should I check?</string>
     <string name="faq_a3">1. Переконайтеся, що remex.agent дійсно запущено на вашому ПК — шукайте вікно \"RemEx — Command Center\" або його значок у треї.\n2. Обидва пристрої мають бути в одній мережі Wi-Fi / LAN.\n3. На Android 13+ має бути надано дозвіл NEARBY_WIFI_DEVICES. На Android 17+ також потрібно надати ACCESS_LOCAL_NETWORK. RemEx запитає ці дозволи, коли ви натиснете \'Автоматичний пошук\'.\n4. На деяких маршрутизаторах увімкнено \'AP Isolation\' або \'Client Isolation\', що блокує зв\'язок між пристроями. Перевірте налаштування маршрутизатора.\n5. Корпоративні або гостьові мережі Wi-Fi часто блокують трафік mDNS. Спробуйте скористатися особистою або домашньою мережею.</string>
     <string name="faq_q4">What is the default port?</string>

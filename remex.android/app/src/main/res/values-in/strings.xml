@@ -51,7 +51,7 @@
     <string name="tutorial_page1_title">Selamat Datang di RemEx</string>
     <string name="tutorial_page1_body">RemEx adalah pusat komando manajemen PC jarak jauh Anda. Kendalikan komputer, luncurkan aplikasi, pantau performa, dan bahkan lihat desktop Anda — semuanya dari ponsel Anda.\n\nMari hubungkan Anda dalam beberapa langkah cepat.</string>
     <string name="tutorial_page2_title">Instal PC Terlebih Dahulu</string>
-    <string name="tutorial_page2_body">Sebelum terhubung, PC Anda memerlukan PC RemEx yang berjalan.\n\n• Opsi 1: Klien Desktop (Direkomendasikan) — Membundel PC dan berjalan di baki sistem.\n• Opsi 2: PC Mandiri — Layanan latar belakang saja, ideal untuk PC.\n\nUnduh rilis terbaru dari GitHub dan jalankan sebelum menyandingkan.</string>
+    <string name="tutorial_page2_body">Sebelum terhubung, PC Anda memerlukan aplikasi RemEx yang berjalan.\n\nHanya ada satu aplikasi yang perlu diinstal — aplikasi ini mulai otomatis saat Anda masuk ke PC dan menunggu ponsel Anda terhubung.\n\nUnduh rilis terbaru dari GitHub dan jalankan sebelum menyandingkan.</string>
     <string name="tutorial_page2_link_label">Unduh dari Rilis GitHub</string>
     <string name="tutorial_page3_title">Penemuan Otomatis</string>
     <string name="tutorial_page3_body">Cara termudah untuk terhubung adalah penemuan otomatis.\n\n1. Pastikan remex.agent berjalan di PC Anda\n2. Pastikan ponsel dan PC Anda berada di jaringan Wi-Fi yang sama\n3. Ketuk \'Temukan Otomatis\' pada layar Koneksi\n\nRemEx menggunakan mDNS untuk mendeteksi host yang berjalan di jaringan lokal Anda. IP dan port PC Anda akan terisi secara otomatis.</string>
@@ -217,7 +217,7 @@
     <string name="connection_host_settings">Pengaturan PC</string>
     <string name="cd_dismiss_error">Tutup</string>
     <string name="connection_auto_discover_title">Temukan Otomatis di LAN</string>
-    <string name="connection_auto_discover_hint">Pastikan PC menjalankan aplikasi PC RemEx dan kedua perangkat berada di jaringan Wi-Fi yang sama.</string>
+    <string name="connection_auto_discover_hint">Pastikan aplikasi RemEx berjalan di PC Anda dan kedua perangkat berada di jaringan Wi-Fi yang sama.</string>
     <string name="connection_searching">Mencari PC Anda…</string>
     <string name="connection_found_host">Ditemukan: %1$s — Cari Lagi</string>
     <string name="connection_discover_button">Temukan Otomatis</string>
@@ -225,7 +225,7 @@
     <string name="connection_scan_qr_code">Pindai Kode QR</string>
     <string name="connection_help_title">Cara menghubungkan secara manual</string>
     <string name="connection_help_step1_title">Instal PC RemEx di PC Anda</string>
-    <string name="connection_help_step1_body">Unduh dan jalankan penginstal PC RemEx di PC yang ingin Anda kendalikan. Ini akan muncul di system tray saat berjalan.</string>
+    <string name="connection_help_step1_body">Instal aplikasi RemEx di PC yang ingin Anda kendalikan. Biarkan tetap berjalan sebelum Anda terhubung dari ponsel.</string>
     <string name="connection_help_step2_title">Hubungkan ke Wi-Fi yang sama</string>
     <string name="connection_help_step2_body">Ponsel dan PC harus berada di jaringan lokal yang sama. Data seluler tidak akan berfungsi.</string>
     <string name="connection_help_step3_title">Temukan alamat IP PC Anda</string>
@@ -288,7 +288,7 @@
     <string name="faq_q1">Apa yang perlu saya jalankan di PC?</string>
     <string name="faq_a1">Anda memerlukan remex.agent yang berjalan di PC Anda (Windows atau Linux). Ini satu-satunya aplikasi sisi PC — tidak ada klien desktop terpisah. remex.agent menggabungkan layanan host latar belakang dan antarmuka "RemEx — Command Center" dalam satu proses, dimulai secara otomatis saat Anda masuk, dan mendengarkan di port 5005.\n\nAplikasi ini mandiri (semua runtime disertakan) — cukup ekstrak folder rilis dan jalankan, atau gunakan installer untuk platform Anda. Unduh dari halaman rilis GitHub.</string>
     <string name="faq_q2">Bagaimana cara menemukan alamat IP PC saya?</string>
-    <string name="faq_a2">Windows:\nBuka Command Prompt dan ketik \'ipconfig\'. Cari baris \'IPv4 Address\' di bawah adaptor jaringan aktif Anda (misal 192.168.1.42).\n\nmacOS:\nBuka Pengaturan Sistem → Jaringan dan lihat antarmuka yang terhubung, atau buka Terminal dan jalankan: ipconfig getifaddr en0\n\nLinux:\nBuka terminal dan jalankan: ip addr atau hostname -I\n\nAnda juga dapat melihat IP secara langsung di jendela RemEx — Command Center di PC Anda.</string>
+    <string name="faq_a2">Windows:\nBuka Command Prompt dan ketik \'ipconfig\'. Cari baris \'IPv4 Address\' di bawah adaptor jaringan aktif Anda (misal 192.168.1.42).\n\nLinux:\nBuka terminal dan jalankan: ip addr atau hostname -I\n\nAnda juga dapat melihat IP secara langsung di jendela RemEx — Command Center di PC Anda.</string>
     <string name="faq_q3">Penemuan otomatis tidak menemukan PC saya. Apa yang harus saya periksa?</string>
     <string name="faq_a3">1. Pastikan remex.agent benar-benar berjalan di PC Anda — cari jendela "RemEx — Command Center" atau ikon baki sistemnya.\n2. Kedua perangkat harus berada di jaringan Wi-Fi / LAN yang sama.\n3. Di Android 13+, izin NEARBY_WIFI_DEVICES harus diberikan. Di Android 17+, izin ACCESS_LOCAL_NETWORK juga harus diberikan. RemEx akan meminta izin ini saat Anda mengetuk \'Temukan Otomatis\'.\n4. Beberapa router memiliki fitur \'AP Isolation\' atau \'Client Isolation\' yang aktif, yang memblokir komunikasi antar perangkat. Cek pengaturan router Anda.\n5. Jaringan Wi-Fi korporat atau tamu sering memblokir lalu lintas mDNS. Coba gunakan jaringan pribadi atau rumah.</string>
     <string name="faq_q4">Berapa port defaultnya?</string>

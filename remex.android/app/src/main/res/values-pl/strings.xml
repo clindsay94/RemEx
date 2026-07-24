@@ -47,7 +47,7 @@
     <string name="tutorial_page1_title">Witaj w RemEx</string>
     <string name="tutorial_page1_body">RemEx to Twoje centrum dowodzenia zdalnym zarządzaniem PC. Steruj komputerem, uruchamiaj aplikacje, monitoruj wydajność, a nawet wyświetlaj pulpit — wszystko z telefonu.\n\nPołączmy się w kilku prostych krokach.</string>
     <string name="tutorial_page2_title">Najpierw zainstaluj PC</string>
-    <string name="tutorial_page2_body">Zanim się połączysz, Twój komputer potrzebuje uruchomionego hosta RemEx.\n\n• Opcja 1: Klient desktopowy (Zalecany) — Zawiera hosta i działa w zasobniku systemowym.\n• Opcja 2: Samodzielny PC — Usługa działająca wyłącznie w tle, idealna dla serwerów.\n\nPobierz najnowsze wydanie z GitHuba i uruchom je przed parowaniem.</string>
+    <string name="tutorial_page2_body">Zanim się połączysz, na Twoim komputerze musi działać aplikacja RemEx.\n\nJest tylko jedna aplikacja do zainstalowania — uruchamia się automatycznie po zalogowaniu na komputerze i czeka na połączenie z telefonu.\n\nPobierz najnowsze wydanie z GitHuba i uruchom je przed parowaniem.</string>
     <string name="tutorial_page2_link_label">Pobierz z wydań GitHub</string>
     <string name="tutorial_page3_title">Automatyczne wykrywanie</string>
     <string name="tutorial_page3_body">Najłatwiejszym sposobem połączenia jest automatyczne wykrywanie.\n\n1. Upewnij się, że remex.agent jest uruchomiony na komputerze\n2. Upewnij się, że telefon i komputer są w tej samej sieci Wi-Fi\n3. Dotknij „Wykryj automatycznie” na ekranie połączenia\n\nRemEx używa mDNS do wykrywania uruchomionych hostów w sieci lokalnej. Adres IP i port Twojego komputera zostaną uzupełnione automatycznie.</string>
@@ -197,7 +197,7 @@
     <string name="connection_host_settings">Ustawienia hosta</string>
     <string name="cd_dismiss_error">Odrzuć</string>
     <string name="connection_auto_discover_title">Autowykrywanie w sieci LAN</string>
-    <string name="connection_auto_discover_hint">Upewnij się, że na PC działa aplikacja RemEx PC, a oba urządzenia są w tej samej sieci Wi-Fi.</string>
+    <string name="connection_auto_discover_hint">Upewnij się, że na komputerze działa aplikacja RemEx, a oba urządzenia są w tej samej sieci Wi-Fi.</string>
     <string name="connection_searching">Szukanie Twojego PC…</string>
     <string name="connection_found_host">Znaleziono: %1$s — Szukaj ponownie</string>
     <string name="connection_discover_button">Wykryj automatycznie</string>
@@ -205,7 +205,7 @@
     <string name="connection_scan_qr_code">Skanuj kod QR</string>
     <string name="connection_help_title">Jak połączyć się ręcznie</string>
     <string name="connection_help_step1_title">Zainstaluj RemEx PC na PC</string>
-    <string name="connection_help_step1_body">Pobierz i uruchom instalator RemEx PC na komputerze, którym chcesz sterować. Po uruchomieniu pojawi się w zasobniku systemowym.</string>
+    <string name="connection_help_step1_body">Zainstaluj aplikację RemEx na komputerze, którym chcesz sterować. Pozostaw ją uruchomioną, zanim połączysz się z telefonu.</string>
     <string name="connection_help_step2_title">Połącz z tą samą siecią Wi-Fi</string>
     <string name="connection_help_step2_body">Telefon i PC muszą znajdować się w tej samej sieci lokalnej. Dane mobilne nie będą działać.</string>
     <string name="connection_help_step3_title">Znajdź adres IP swojego komputera</string>
@@ -263,7 +263,7 @@
     <string name="faq_q1">Co muszę uruchomić na komputerze?</string>
     <string name="faq_a1">Na komputerze (Windows lub Linux) musi być uruchomiony remex.agent. To jedyna aplikacja po stronie komputera — nie istnieje osobny klient desktopowy. remex.agent łączy usługę hosta działającą w tle z interfejsem „RemEx — Command Center” w jednym procesie, uruchamia się automatycznie po zalogowaniu i nasłuchuje na porcie 5005.\n\nJest samowystarczalny (wszystkie środowiska uruchomieniowe w zestawie) — wystarczy rozpakować folder wydania i uruchomić, albo skorzystać z instalatora dla swojej platformy. Pobierz ze strony wydań GitHub.</string>
     <string name="faq_q2">Jak znaleźć adres IP mojego komputera?</string>
-    <string name="faq_a2">Windows:\nOtwórz Wiersz polecenia i wpisz „ipconfig”. Szukaj linii „IPv4 Address” pod aktywną kartą sieciową (np. 192.168.1.42).\n\nmacOS:\nPrzejdź do Ustawienia systemowe → Sieć i sprawdź połączony interfejs lub otwórz Terminal i uruchom: ipconfig getifaddr en0\n\nLinux:\nOtwórz terminal i uruchom: ip addr lub hostname -I\n\nAdres IP możesz również zobaczyć bezpośrednio w oknie „RemEx — Command Center” na komputerze.</string>
+    <string name="faq_a2">Windows:\nOtwórz Wiersz polecenia i wpisz „ipconfig”. Szukaj linii „IPv4 Address” pod aktywną kartą sieciową (np. 192.168.1.42).\n\nLinux:\nOtwórz terminal i uruchom: ip addr lub hostname -I\n\nAdres IP możesz również zobaczyć bezpośrednio w oknie „RemEx — Command Center” na komputerze.</string>
     <string name="faq_q3">Autowykrywanie nie znajduje mojego komputera. Co mam sprawdzić?</string>
     <string name="faq_a3">1. Upewnij się, że remex.agent rzeczywiście działa na komputerze — poszukaj okna „RemEx — Command Center” lub jego ikony w zasobniku systemowym.\n2. Oba urządzenia muszą znajdować się w tej samej sieci Wi-Fi / LAN.\n3. W systemie Android 13+ musi zostać przyznane uprawnienie NEARBY_WIFI_DEVICES. W systemie Android 17+ wymagane jest również uprawnienie ACCESS_LOCAL_NETWORK. RemEx poprosi o nie po dotknięciu „Wykryj automatycznie”.\n4. Niektóre routery mają włączoną funkcję „AP Isolation” lub „Client Isolation”, która blokuje komunikację między urządzeniami. Sprawdź ustawienia routera.\n5. Firmowe lub gościnne sieci Wi-Fi często blokują ruch mDNS. Spróbuj użyć sieci osobistej lub domowej.</string>
     <string name="faq_q4">Jaki jest domyślny port?</string>

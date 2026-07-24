@@ -51,7 +51,7 @@
     <string name="tutorial_page1_title">Welcome to RemEx</string>
     <string name="tutorial_page1_body">RemEx is your remote PC management command center. Control your computer, launch apps, monitor performance, and even view your desktop — all from your phone.\n\nLet\'s get you connected in a few quick steps.</string>
     <string name="tutorial_page2_title">Önce PC Yazılımını Kurun</string>
-    <string name="tutorial_page2_body">Bağlanmadan önce, bilgisayarınızda RemEx PC yazılımının çalışıyor olması gerekir.\n\n• Seçenek 1: Masaüstü İstemcisi (Önerilen) — PC yazılımını paket halinde sunar ve sistem tepsisinde çalışır.\n• Seçenek 2: Bağımsız PC — Sadece arka planda çalışan servis, sunucular için idealdir.\n\nGitHub\'dan en son sürümü indirin ve eşleştirmeden önce çalıştırın.</string>
+    <string name="tutorial_page2_body">Bağlanmadan önce, bilgisayarınızda RemEx uygulamasının çalışıyor olması gerekir.\n\nYüklemeniz gereken tek bir uygulama var — bilgisayarınızda oturum açtığınızda otomatik olarak başlar ve telefonunuzun bağlanmasını bekler.\n\nGitHub\'dan en son sürümü indirin ve eşleştirmeden önce çalıştırın.</string>
     <string name="tutorial_page2_link_label">GitHub Sürümlerinden İndir</string>
     <string name="tutorial_page3_title">Auto-Discovery</string>
     <string name="tutorial_page3_body">Bağlanmanın en kolay yolu otomatik bulmadır.\n\n1. Bilgisayarınızda remex.agent\'ın çalıştığından emin olun\n2. Telefonunuzun ve bilgisayarınızın aynı Wi-Fi ağında olduğundan emin olun\n3. Bağlantı ekranında \'Otomatik Keşfet\'e dokunun\n\nRemEx, yerel ağınızdaki çalışan sunucuları tespit etmek için mDNS kullanır. Bilgisayarınızın IP adresi ve bağlantı noktası otomatik olarak doldurulur.</string>
@@ -116,7 +116,7 @@
     <string name="settings_tab_about">About</string>
     <string name="settings_help_title">Help</string>
     <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
-    <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough that covers setup, auto-discovery, finding your IP, and connecting to your PC.</string>
+    <string name="settings_replay_tutorial_body">Kurulum, QR ile eşleştirme, elle bağlanma ve günlük kullanım ipuçları için başlangıç rehberini yeniden izleyin.</string>
     <string name="settings_faq_hint">Have a question? Check the FAQ available from the overflow menu (⋮ → FAQ).</string>
     <string name="screen_app_launcher_title">App Launcher</string>
     <string name="app_launcher_no_apps">No apps found</string>
@@ -217,7 +217,7 @@
     <string name="connection_host_settings">PC Settings</string>
     <string name="cd_dismiss_error">Dismiss</string>
     <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
-    <string name="connection_auto_discover_hint">Make sure your PC is running the RemEx PC app and both devices are on the same Wi-Fi network.</string>
+    <string name="connection_auto_discover_hint">RemEx uygulamasının bilgisayarınızda çalıştığından ve her iki cihazın da aynı Wi-Fi ağında olduğundan emin olun.</string>
     <string name="connection_searching">PC\'niz aranıyor…</string>
     <string name="connection_found_host">Found: %1$s — Search Again</string>
     <string name="connection_discover_button">Discover Automatically</string>
@@ -225,7 +225,7 @@
     <string name="connection_scan_qr_code">Scan QR Code</string>
     <string name="connection_help_title">How to connect manually</string>
     <string name="connection_help_step1_title">Install RemEx PC on your PC</string>
-    <string name="connection_help_step1_body">Download and run the RemEx PC installer on the PC you want to control. It will appear in your system tray when running.</string>
+    <string name="connection_help_step1_body">Kontrol etmek istediğiniz bilgisayara RemEx uygulamasını yükleyin. Telefonunuzdan bağlanmadan önce uygulamanın çalışır durumda olmasını sağlayın.</string>
     <string name="connection_help_step2_title">Connect to the same Wi-Fi</string>
     <string name="connection_help_step2_body">Your phone and PC must be on the same local network. Mobile data will not work.</string>
     <string name="connection_help_step3_title">Find your PC\'s IP address</string>
@@ -288,7 +288,7 @@
     <string name="faq_q1">What do I need to run on my PC?</string>
     <string name="faq_a1">Bilgisayarınızda (Windows veya Linux) remex.agent\'ın çalışıyor olması gerekir. PC tarafındaki tek uygulama budur — ayrı bir masaüstü istemcisi yoktur. remex.agent, arka plan barındırma hizmetini ve "RemEx — Command Center" arayüzünü tek bir işlemde birleştirir, oturum açtığınızda otomatik olarak başlar ve 5005 numaralı bağlantı noktasını dinler.\n\nKendi kendine yeterlidir (tüm çalışma zamanları dahildir) — yayın klasörünü çıkarıp çalıştırmanız ya da platformunuza uygun yükleyiciyi kullanmanız yeterlidir. GitHub sürümler sayfasından indirin.</string>
     <string name="faq_q2">How do I find my PC\'s IP address?</string>
-    <string name="faq_a2">Windows:\nKomut İstemi\'ni açın ve \'ipconfig\' yazın. Etkin ağ bağdaştırıcınızın altındaki \'IPv4 Address\' satırına bakın (örn. 192.168.1.42).\n\nmacOS:\nSistem Ayarları → Ağ bölümüne gidin ve bağlı arabirime bakın, veya Terminal\'i açıp şunu çalıştırın: ipconfig getifaddr en0\n\nLinux:\nBir terminal açın ve şunu çalıştırın: ip addr  veya  hostname -I\n\nIP adresini doğrudan bilgisayarınızdaki RemEx — Command Center penceresinde de görebilirsiniz.</string>
+    <string name="faq_a2">Windows:\nKomut İstemi\'ni açın ve \'ipconfig\' yazın. Etkin ağ bağdaştırıcınızın altındaki \'IPv4 Address\' satırına bakın (örn. 192.168.1.42).\n\nLinux:\nBir terminal açın ve şunu çalıştırın: ip addr  veya  hostname -I\n\nIP adresini doğrudan bilgisayarınızdaki RemEx — Command Center penceresinde de görebilirsiniz.</string>
     <string name="faq_q3">Auto-discovery isn\'t finding my PC. What should I check?</string>
     <string name="faq_a3">1. remex.agent\'ın bilgisayarınızda gerçekten çalıştığından emin olun — "RemEx — Command Center" penceresini veya sistem tepsisi simgesini arayın.\n2. Her iki cihaz da aynı Wi-Fi / LAN ağında olmalıdır.\n3. Android 13+ sürümlerinde NEARBY_WIFI_DEVICES izninin verilmiş olması gerekir. Android 17+ sürümlerinde ayrıca ACCESS_LOCAL_NETWORK izninin de verilmesi gerekir. \'Otomatik Keşfet\'e dokunduğunuzda RemEx bu izinleri isteyecektir.\n4. Bazı yönlendiricilerde cihazdan cihaza iletişimi engelleyen \'AP İzolasyonu\' veya \'İstemci İzolasyonu\' özelliği etkin olabilir. Yönlendirici ayarlarınızı kontrol edin.\n5. Kurumsal veya misafir Wi-Fi ağları genellikle mDNS trafiğini engeller. Bunun yerine kişisel bir ağ veya ev ağı kullanmayı deneyin.</string>
     <string name="faq_q4">What is the default port?</string>
