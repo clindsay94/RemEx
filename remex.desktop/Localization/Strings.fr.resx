@@ -2800,9 +2800,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Service_InstallingLinux" xml:space="preserve">
     <value>Installation du service systemd…</value>
   </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>L'installation du service a échoué.</value>
-  </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
     <value>Suppression du service systemd…</value>
   </data>
@@ -2814,9 +2811,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Service_LocatingHost" xml:space="preserve">
     <value>Localisation de Remex.PC...</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.PC.exe introuvable.</value>
   </data>
   <data name="Service_StartedMsg" xml:space="preserve">
     <value>Démarré.</value>
@@ -2857,20 +2851,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_HostBinaryPath" xml:space="preserve">
     <value>Chemin du binaire de l'hôte</value>
   </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Chemin vers Remex.PC.exe (laisser vide pour détection auto)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Chemin vers Remex.PC.exe. Laisser vide pour détection auto (même dossier, dossiers adjacents, etc.)</value>
-  </data>
   <data name="Shell_HostPathWatermark" xml:space="preserve">
     <value>Détection auto (ou définir chemin personnalisé)</value>
   </data>
   <data name="Tutorial_P3_Body2" xml:space="preserve">
     <value>Pour des instructions détaillées et le dépannage, voir le guide complet :</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Sélectionner Remex.PC.exe</value>
   </data>
   <data name="Nav_Commands" xml:space="preserve">
     <value>Commandes</value>

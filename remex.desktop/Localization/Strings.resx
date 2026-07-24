@@ -3064,9 +3064,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Service_InstallingLinux" xml:space="preserve">
     <value>Installing systemd service…</value>
   </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Service installation failed.</value>
-  </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
     <value>Removing systemd service…</value>
   </data>
@@ -3078,9 +3075,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Service_LocatingHost" xml:space="preserve">
     <value>Locating Remex.PC…</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.PC.exe not found.</value>
   </data>
   <data name="Service_StartedMsg" xml:space="preserve">
     <value>Started.</value>
@@ -3121,20 +3115,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_HostBinaryPath" xml:space="preserve">
     <value>PC Binary Path</value>
   </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Path to Remex.PC.exe (leave empty for auto-detection)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Path to Remex.PC.exe. Leave empty for auto-detection (same folder, sibling folders, etc.)</value>
-  </data>
   <data name="Shell_HostPathWatermark" xml:space="preserve">
     <value>Auto-detect (or set custom path)</value>
   </data>
   <data name="Tutorial_P3_Body2" xml:space="preserve">
     <value>The same release page also includes the Linux desktop client package if you want the full Avalonia UI on that machine.</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Select Remex.PC.exe</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
     <value>Original Scan</value>

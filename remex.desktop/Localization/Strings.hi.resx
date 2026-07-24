@@ -2800,9 +2800,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Service_InstallingLinux" xml:space="preserve">
     <value>Installing systemd service…</value>
   </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Service installation failed.</value>
-  </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
     <value>Removing systemd service…</value>
   </data>
@@ -2814,9 +2811,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Service_LocatingHost" xml:space="preserve">
     <value>Remex.PC खोजा जा रहा है…</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.PC.exe नहीं मिला।</value>
   </data>
   <data name="Service_StartedMsg" xml:space="preserve">
     <value>शुरू हो गया।</value>
@@ -2857,20 +2851,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_HostBinaryPath" xml:space="preserve">
     <value>होस्ट बाइनरी पथ</value>
   </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Remex.PC.exe का पथ (स्वतः पहचान के लिए खाली छोड़ दें)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Remex.PC.exe का पथ। स्वतः पहचान (समान फ़ोल्डर, सिबलिंग फ़ोल्डर, आदि) के लिए खाली छोड़ दें।</value>
-  </data>
   <data name="Shell_HostPathWatermark" xml:space="preserve">
     <value>स्वतः पहचानें (या कस्टम पथ सेट करें)</value>
   </data>
   <data name="Tutorial_P3_Body2" xml:space="preserve">
     <value>विस्तृत निर्देशों, कॉन्फ़िगरेशन विकल्पों और समस्या निवारण के लिए, पूरी गाइड देखें:</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Remex.PC.exe चुनें</value>
   </data>
   <data name="Nav_Commands" xml:space="preserve">
     <value>कमांड</value>

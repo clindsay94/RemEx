@@ -2585,9 +2585,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Service_LocatingHost" xml:space="preserve">
     <value>Lokalizowanie Remex.PC...</value>
   </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Nie znaleziono Remex.PC.exe.</value>
-  </data>
   <data name="Service_StartedMsg" xml:space="preserve">
     <value>Uruchomiono.</value>
   </data>
@@ -2615,20 +2612,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_HostBinaryPath" xml:space="preserve">
     <value>Ścieżka pliku hosta</value>
   </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Ścieżka do Remex.PC.exe (pozostaw puste dla autowykrywania)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Ścieżka do Remex.PC.exe. Pozostaw puste dla automatycznego wykrywania (ten sam folder, foldery sąsiednie itp.)</value>
-  </data>
   <data name="Shell_HostPathWatermark" xml:space="preserve">
     <value>Autowykrywanie (lub ustaw własną ścieżkę)</value>
   </data>
   <data name="Tutorial_P3_Body2" xml:space="preserve">
     <value>Szczegółowe instrukcje, opcje konfiguracji i rozwiązywanie problemów znajdziesz w pełnym przewodniku:</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Wybierz Remex.PC.exe</value>
   </data>
   <data name="Nav_Commands" xml:space="preserve">
     <value>Polecenia</value>
@@ -2938,9 +2926,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Service_InstallingLinux" xml:space="preserve">
     <value>Instalowanie usługi systemd…</value>
-  </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Instalacja usługi nie powiodła się.</value>
   </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
     <value>Usuwanie usługi systemd…</value>

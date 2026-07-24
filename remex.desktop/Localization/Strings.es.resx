@@ -2826,9 +2826,6 @@ Chrome)</value>
   <data name="Service_InstallingLinux" xml:space="preserve">
     <value>Instalando servicio systemd...</value>
   </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Fallo en la instalación del servicio.</value>
-  </data>
   <data name="Service_RemovingLinux" xml:space="preserve">
     <value>Eliminando servicio systemd...</value>
   </data>
@@ -2840,9 +2837,6 @@ Chrome)</value>
   </data>
   <data name="Service_LocatingHost" xml:space="preserve">
     <value>Localizando Remex.PC…</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>No se encontró Remex.PC.exe.</value>
   </data>
   <data name="Service_StartedMsg" xml:space="preserve">
     <value>Iniciado.</value>
@@ -2883,21 +2877,11 @@ Chrome)</value>
   <data name="Shell_HostBinaryPath" xml:space="preserve">
     <value>Ruta del Binario del PC</value>
   </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Ruta a Remex.PC.exe (dejar vacío para detección automática)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Ruta a Remex.PC.exe.
-Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, etc.)</value>
-  </data>
   <data name="Shell_HostPathWatermark" xml:space="preserve">
     <value>Autodetectar (o establecer ruta personalizada)</value>
   </data>
   <data name="Tutorial_P3_Body2" xml:space="preserve">
     <value>Para instrucciones detalladas, opciones de configuración y solución de problemas, consulta la guía completa:</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Seleccionar Remex.PC.exe</value>
   </data>
   <data name="Nav_Commands" xml:space="preserve">
     <value>Comandos</value>

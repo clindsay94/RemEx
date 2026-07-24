@@ -249,7 +249,6 @@ namespace Remex.Desktop.Localization {
         public static string Service_HostUnavailableHint => ResourceManager.GetString("Service_HostUnavailableHint", resourceCulture)!;
         public static string Service_Checking => ResourceManager.GetString("Service_Checking", resourceCulture)!;
         public static string Service_LocatingHost => ResourceManager.GetString("Service_LocatingHost", resourceCulture)!;
-        public static string Service_HostNotFound => ResourceManager.GetString("Service_HostNotFound", resourceCulture)!;
         public static string Service_StartedMsg => ResourceManager.GetString("Service_StartedMsg", resourceCulture)!;
         public static string Service_StartFailed => ResourceManager.GetString("Service_StartFailed", resourceCulture)!;
         public static string Service_StoppedMsg => ResourceManager.GetString("Service_StoppedMsg", resourceCulture)!;
@@ -347,8 +346,6 @@ namespace Remex.Desktop.Localization {
         public static string Shell_AutoSaveNote => ResourceManager.GetString("Shell_AutoSaveNote", resourceCulture)!;
         public static string Shell_FineTuning => ResourceManager.GetString("Shell_FineTuning", resourceCulture)!;
         public static string Shell_HostBinaryPath => ResourceManager.GetString("Shell_HostBinaryPath", resourceCulture)!;
-        public static string Shell_HostPathHint => ResourceManager.GetString("Shell_HostPathHint", resourceCulture)!;
-        public static string Shell_HostPathTooltip => ResourceManager.GetString("Shell_HostPathTooltip", resourceCulture)!;
         public static string Shell_HostPathWatermark => ResourceManager.GetString("Shell_HostPathWatermark", resourceCulture)!;
         public static string Shell_HostWatermark => ResourceManager.GetString("Shell_HostWatermark", resourceCulture)!;
         public static string Shell_Initializing => ResourceManager.GetString("Shell_Initializing", resourceCulture)!;
