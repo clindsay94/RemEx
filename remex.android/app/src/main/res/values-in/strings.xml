@@ -586,11 +586,11 @@ $line
     <string name="task_manager_host_unresponsive">PC tidak merespons permintaan daftar proses. Periksa apakah penyandingan selesai dan PC memiliki izin untuk membaca info proses.</string>
     <string name="task_manager_kill_failed_format">Gagal menghentikan proses %1$d</string>
     <string name="task_manager_retry">Coba lagi</string>
-    <string name="rd_err_capture_unavailable">Pengambilan layar tidak berfungsi di Your PC.</string>
-    <string name="rd_err_capture_stopped">Pengambilan layar berhenti setelah %1$d bingkai. Your PC mungkin terkunci atau keluar.</string>
+    <string name="rd_err_capture_unavailable">Pengambilan layar tidak berfungsi di PC Anda.</string>
+    <string name="rd_err_capture_stopped">Pengambilan layar berhenti setelah %1$d bingkai. PC Anda mungkin terkunci atau telah keluar.</string>
     <string name="rd_err_target_unavailable">Layar yang dipilih tidak lagi tersedia.</string>
     <string name="rd_err_target_switch_unsupported">Sesi ini tidak dapat mengganti layar saat streaming.</string>
-    <string name="rd_err_runtime_unavailable">Desktop jarak jauh tidak tersedia di Your PC saat ini.</string>
+    <string name="rd_err_runtime_unavailable">Desktop jarak jauh tidak tersedia di PC Anda saat ini.</string>
     <string name="cd_clear_search">Hapus pencarian</string>
     <string name="pairing_error_timeout">PC tidak merespons. Pastikan PC menyala dan terhubung ke jaringan yang sama, lalu coba lagi.</string>
     <string name="host_discovered_snackbar">PC ditemukan: %1$s</string>

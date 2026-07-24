@@ -586,11 +586,11 @@ $line
     <string name="task_manager_host_unresponsive">El PC no responde a las solicitudes de la lista de procesos. Verifique que se haya completado el emparejamiento y que el PC tenga permiso para leer la información del proceso.</string>
     <string name="task_manager_kill_failed_format">No se pudo finalizar el proceso %1$d</string>
     <string name="task_manager_retry">Reintentar</string>
-    <string name="rd_err_capture_unavailable">La captura de pantalla no funciona en el Your PC.</string>
-    <string name="rd_err_capture_stopped">La captura de pantalla se detuvo tras %1$d fotogramas. Es posible que el Your PC se haya bloqueado o cerrado sesión.</string>
+    <string name="rd_err_capture_unavailable">La captura de pantalla no funciona en tu PC.</string>
+    <string name="rd_err_capture_stopped">La captura de pantalla se detuvo tras %1$d fotogramas. Es posible que tu PC se haya bloqueado o se haya cerrado la sesión.</string>
     <string name="rd_err_target_unavailable">La pantalla seleccionada ya no está disponible.</string>
     <string name="rd_err_target_switch_unsupported">Esta sesión no puede cambiar de pantalla durante la transmisión.</string>
-    <string name="rd_err_runtime_unavailable">El escritorio remoto no está disponible en el Your PC en este momento.</string>
+    <string name="rd_err_runtime_unavailable">El escritorio remoto no está disponible en tu PC en este momento.</string>
     <string name="cd_clear_search">Borrar búsqueda</string>
     <string name="pairing_error_timeout">El PC no respondió. Comprueba que esté encendido y conectado a la misma red y vuelve a intentarlo.</string>
     <string name="host_discovered_snackbar">PC encontrado: %1$s</string>
