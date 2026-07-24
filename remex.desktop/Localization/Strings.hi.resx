@@ -1760,7 +1760,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Remote Desktop is laggy. What can I do?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
-    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
+    <value>• गुणवत्ता स्लाइडर कम करें।
+• लक्ष्य FPS घटाएँ — 15-20 आमतौर पर पर्याप्त है।
+• स्केल कम करें।
+• तेज़ लोकल नेटवर्क का उपयोग करें। 5 GHz वाई-फ़ाई या वायर्ड कनेक्शन सबसे अच्छा है — लैग का सबसे आम कारण यही है।
+• आपको स्क्रीन कैप्चर सेट अप करने की ज़रूरत नहीं है। RemEx अपने आप वह सबसे तेज़ तरीका चुन लेता है जो आपका पीसी समर्थित करता है।</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
     <value>What is Wake-on-LAN (WOL)?</value>

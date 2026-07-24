@@ -1778,7 +1778,11 @@ Chrome)</value>
     <value>Remote Desktop is laggy. What can I do?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
-    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
+    <value>• Baja el control deslizante de Calidad.
+• Reduce los FPS objetivo — 15-20 suele ser suficiente.
+• Baja la Escala.
+• Usa una red local rápida. Lo mejor es Wi-Fi de 5 GHz o cable — esta es la causa más común de los retrasos.
+• No necesitas configurar la captura de pantalla. RemEx elige automáticamente el método más rápido que admite tu PC.</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
     <value>What is Wake-on-LAN (WOL)?</value>

@@ -1760,7 +1760,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Desktop jarak jauh lambat. Apa yang bisa saya lakukan?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
-    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
+    <value>• Turunkan penggeser Kualitas.
+• Kurangi Target FPS — 15-20 biasanya sudah cukup.
+• Turunkan Skala.
+• Gunakan jaringan lokal yang cepat. Wi-Fi 5 GHz atau koneksi kabel adalah yang terbaik — ini penyebab lag yang paling umum.
+• Anda tidak perlu mengatur perekaman layar. RemEx otomatis memilih metode tercepat yang didukung PC Anda.</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
     <value>Apa itu Wake-on-LAN (WOL)?</value>

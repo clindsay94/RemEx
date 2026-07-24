@@ -1556,7 +1556,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
-    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
+    <value>• Zmniejsz suwak Jakości.
+• Zmniejsz docelową liczbę klatek (FPS) — zwykle wystarczy 15-20.
+• Zmniejsz Skalę.
+• Korzystaj z szybkiej sieci lokalnej. Najlepsze jest Wi-Fi 5 GHz lub połączenie przewodowe — to najczęstsza przyczyna opóźnień.
+• Nie musisz konfigurować przechwytywania ekranu. RemEx automatycznie wybiera najszybszą metodę obsługiwaną przez Twój komputer.</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
     <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
