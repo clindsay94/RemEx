@@ -201,7 +201,7 @@ fun AboutScreenContent(
                                 tint = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                                text = stringResource(R.string.about_whats_new_title),
+                                text = stringResource(R.string.about_whats_new_title, BuildConfig.VERSION_NAME),
                                 style = MaterialTheme.typography.titleMediumEmphasized
                         )
                     }
