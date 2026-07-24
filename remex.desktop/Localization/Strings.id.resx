@@ -846,7 +846,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
 4. Launch from your Android app!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
-    <value>Ini berfungsi bahkan dengan layanan mandiri Remex.PC — konfigurasikan aplikasi di klien desktop setidaknya satu kali.</value>
+    <value>Ponsel Anda hanya dapat memulai program yang Anda tambahkan di sini — demi keamanan, RemEx tidak akan menjalankan apa pun yang tidak ada dalam daftar ini.</value>
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">

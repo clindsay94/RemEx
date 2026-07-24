@@ -822,7 +822,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
 4. Launch from your Android app!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
-    <value>Działa to nawet z samodzielną usługą Remex.PC — skonfiguruj aplikacje w kliencie desktopowym przynajmniej raz.</value>
+    <value>Telefon może uruchamiać tylko programy dodane tutaj — ze względów bezpieczeństwa RemEx nie uruchomi niczego spoza tej listy.</value>
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">

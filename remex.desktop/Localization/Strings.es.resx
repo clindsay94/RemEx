@@ -852,7 +852,7 @@ Las apps deben configurarse aquí primero.</value>
 4. Launch from your Android app!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
-    <value>Esto funciona incluso con el servicio independiente Remex.PC; configura las apps en el cliente de escritorio al menos una vez.</value>
+    <value>Tu teléfono solo puede iniciar los programas que añadas aquí — por seguridad, RemEx no abrirá nada que no esté en esta lista.</value>
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">

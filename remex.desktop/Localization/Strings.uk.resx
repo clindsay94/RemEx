@@ -846,7 +846,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
 4. Launch from your Android app!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
-    <value>Це працює навіть із автономною службою Remex.PC — налаштуйте програми в десктопному клієнті хоча б один раз.</value>
+    <value>Ваш телефон може запускати лише програми, додані тут — з міркувань безпеки RemEx не запустить нічого поза цим списком.</value>
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">
