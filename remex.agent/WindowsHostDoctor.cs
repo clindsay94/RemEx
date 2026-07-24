@@ -22,7 +22,7 @@ internal static class WindowsHostDoctor
         Console.WriteLine($"  OS                  : {Environment.OSVersion.VersionString}");
 
         var sessionId = Process.GetCurrentProcess().SessionId;
-        Console.WriteLine($"  Session             : {(sessionId == 0 ? "Session 0 (service — no interactive desktop to capture)" : $"interactive (session {sessionId})")}");
+        Console.WriteLine($"  Session             : {(sessionId == 0 ? "Session 0 (non-interactive — no desktop to capture; RemEx should run in your signed-in session)" : $"interactive (session {sessionId})")}");
         Console.WriteLine("  Screen capture      : DXGI Desktop Duplication / GDI (built-in)   : OK");
         Console.WriteLine("  Input simulation    : SendInput (built-in)                        : OK");
 
@@ -51,8 +51,9 @@ internal static class WindowsHostDoctor
 
         Console.WriteLine("No portal/PipeWire setup is required on Windows. Remote desktop is supported.");
 
-        // Capture requires an interactive desktop; a service in Session 0 cannot stream, but that is by
-        // design (the agent runs in Session 0 for commands only; streaming is the logged-in GUI host).
+        // Capture requires an interactive desktop, and remex.agent always has one: it runs in the
+        // signed-in user's session (elevated, started by the logon task), not in Session 0. That is
+        // why capture and SendInput reach the user's desktop directly, with no session bridging.
         return 0;
     }
 

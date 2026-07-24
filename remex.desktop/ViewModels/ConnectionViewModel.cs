@@ -1450,9 +1450,10 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     return;
                 }
             }
-            // Fallback for single view / mobile (though this is track 1C desktop mostly)
-            // Just show it. Note: ShowDialog requires a window, mobile needs different navigation.
-            // But we're desktop client right now.
+            // Fallback when no owner window is available — a single-view (non-window) lifetime, or
+            // a null ShellViewModel / MainWindow. Not reachable in practice: this UI only runs as
+            // the PC's classic desktop app, where a MainWindow is always present by the time a PIN
+            // is requested. If it ever were taken, the method returns a null PIN.
         });
         return result;
     }

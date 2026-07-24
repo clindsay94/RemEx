@@ -26,9 +26,12 @@ public enum CaptureBackend
 }
 
 /// <summary>
-/// Reads the machine-wide capture-backend preference from the registry. The host runs as LocalSystem in
-/// Session 0, so config lives under <b>HKLM</b> (never HKCU/APPDATA — those belong to no real user here),
-/// matching the existing registry-backed host state (<c>PairedClientRegistry</c>, <c>StartupRegistrationService</c>).
+/// Reads the machine-wide capture-backend preference from the registry. Config lives under <b>HKLM</b>,
+/// not HKCU, so the preference is stable across logins and writable only by an elevated process — the
+/// host always runs elevated. (It originally had to be HKLM because the host ran as LocalSystem in Session 0,
+/// where HKCU belonged to no real user; that process model is gone, but machine-wide is still the right
+/// home for this.) Matches the other registry-backed host state (<c>PairedClientRegistry</c>,
+/// <c>StartupRegistrationService</c>).
 ///
 /// <para>
 /// Registry value: <c>HKLM\SOFTWARE\RemEx\Capture\Backend</c> (REG_SZ) = <c>Auto | Wgc | Dxgi | Gdi</c>

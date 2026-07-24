@@ -240,7 +240,7 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
 
                 var (_, output) = await RunCommandAsync("powershell.exe", $"-Command \"{powershellCmd}\"");
                 ServiceLogsText = string.IsNullOrWhiteSpace(output)
-                    ? "No background service event logs found for 'Remex.Agent' source.\nEnsure the service is installed and has run previously."
+                    ? "No Windows event log entries found for RemEx.\nThis is normal — RemEx only writes here for serious startup problems, so an empty list usually means nothing has gone wrong."
                     : output.Trim();
             }
             else if (OperatingSystem.IsLinux())

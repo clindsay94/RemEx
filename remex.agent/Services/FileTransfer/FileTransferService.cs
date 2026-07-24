@@ -38,7 +38,8 @@ public sealed class FileTransferService : IFileTransferService
     {
         _logger = logger;
         // Host-only store. Relocated to machine-wide ProgramData on Windows (unchanged elsewhere)
-        // so configured shared roots survive the host running as the LocalSystem service.
+        // so configured shared roots survive a change of signed-in user — originally, the host
+        // running as the LocalSystem service.
         var legacyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
         var baseFolder = RemexDataPaths.ResolveDirectory(legacyFolder);
         RemexDataPaths.TryMigrateWindowsFile("file_transfer_roots.json");

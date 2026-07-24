@@ -22,7 +22,8 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
     public DashboardProfileStorageService()
     {
         // Host-only store. Relocated to machine-wide ProgramData on Windows (unchanged elsewhere)
-        // so the layout survives the host running as the LocalSystem service vs. interactively.
+        // so the layout survives a change of signed-in user — originally, the host running as the
+        // LocalSystem service vs. interactively.
         var legacyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remex");
         var folder = RemexDataPaths.ResolveDirectory(legacyFolder);
         RemexDataPaths.TryMigrateWindowsFile("host_dashboard_layout.json");

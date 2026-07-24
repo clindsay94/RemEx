@@ -174,7 +174,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         // StopListening is invoked multiple times on shutdown: BackgroundService.StopAsync,
         // BackgroundService.Dispose, and this singleton's own Dispose (which also disposes _cts).
         // Once _cts is disposed there is nothing left to cancel — tolerate it so host shutdown
-        // completes and releases the listening port / named pipe (a throw here otherwise aborts the
+        // completes and releases the listening port (a throw here otherwise aborts the
         // remaining hosted-service teardown).
         try
         {

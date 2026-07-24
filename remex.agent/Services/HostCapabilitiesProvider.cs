@@ -168,7 +168,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             return windowsReport?.SupportsRemoteDesktopSession ?? isInteractiveSession
                 ? (true, windowsReport?.CaptureBackendDegradedReason)
                 : (false, windowsReport?.RemoteDesktopUnavailableReason
-                    ?? "Remote desktop requires an interactive logged-in user session. The service can stay online for commands, but a logged-in companion is required for screen streaming and input.");
+                    ?? "Remote desktop needs RemEx to be running inside a signed-in Windows session. RemEx normally starts on its own when you sign in — if you are seeing this, sign in and start RemEx from the Start menu.");
         }
 
         if (OperatingSystem.IsLinux())

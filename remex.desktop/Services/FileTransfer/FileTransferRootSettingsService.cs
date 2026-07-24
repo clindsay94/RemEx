@@ -21,8 +21,9 @@ public sealed class FileTransferRootSettingsService
     public FileTransferRootSettingsService()
     {
         // Mirror FileTransferService (the live host) EXACTLY: resolve the shared-roots store through
-        // RemexDataPaths so Settings writes the SAME file the host reads. On Windows the host runs as
-        // the LocalSystem service and reads C:\ProgramData\RemEx; writing to per-user
+        // RemexDataPaths so Settings writes the SAME file the host reads. On Windows that store is
+        // machine-wide at C:\ProgramData\RemEx (originally because the host ran as the LocalSystem
+        // service, and still so it survives a change of signed-in user); writing to per-user
         // LocalApplicationData here meant adding/removing a shared root in Settings never reached the
         // host after the one-time migration (RemEx-y8xy). Off Windows the legacy per-user folder is
         // returned verbatim, so behaviour there is unchanged.

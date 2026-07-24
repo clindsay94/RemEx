@@ -22,8 +22,9 @@ using Remex.Agent.Services.Input;
 namespace Remex.Agent;
 
 /// <summary>
-/// Encapsulates the Remex Host WebApplication setup so it can be started
-/// both as a standalone server and embedded inside the Desktop client.
+/// Encapsulates the host WebApplication setup. remex.agent is a single process that is both the
+/// host and the UI, so this runs in-process alongside the Avalonia app rather than as a separate
+/// server. Kept as a standalone entry point so the host can also be started headless for tests.
 /// </summary>
 public static class HostBootstrapper
 {

@@ -142,7 +142,7 @@ public record DashboardProfile
     /// <summary>Host screen capture target frames per second (5–360; 360 is the "Unlimited" ceiling — see <see cref="DesktopConfig.MaxTargetFps"/>).</summary>
     public int StreamFps { get; init; } = 30;
 
-    /// <summary>Host screen capture scale factor sent to the desktop client (0.25–1.0).</summary>
+    /// <summary>Host screen capture scale factor sent to the connected client (0.25–1.0).</summary>
     public double StreamScale { get; init; } = 1.0;
 
     /// <summary>Visual aesthetic and theme overrides.</summary>

@@ -218,14 +218,14 @@ public sealed class PairedClientRegistry
             File.Move(tempPath, _storePath, overwrite: true);
 
             // PAIR-4: the store now holds per-client reconnect secrets, so it is sensitive key
-            // material. Restrict it to the service identity (+ admins on Windows) on both OSes.
+            // material. Restrict it to the host's own account (+ LocalSystem and admins on Windows).
             RestrictStorePermissions(_storePath, _logger);
         }
     }
 
     /// <summary>
-    /// Hardens the on-disk permissions of the registry store so only the service identity can read
-    /// the reconnect secrets it now contains. Best-effort: a failure here is logged but never blocks
+    /// Hardens the on-disk permissions of the registry store so only the host's own elevated account
+    /// (plus LocalSystem and admins on Windows) can read the reconnect secrets it now contains. Best-effort: a failure here is logged but never blocks
     /// pairing persistence. Cross-platform — Windows ACL vs. Unix 0600 owner-only.
     /// </summary>
     internal static void RestrictStorePermissions(string path, ILogger logger)
@@ -263,7 +263,7 @@ public sealed class PairedClientRegistry
         var security = new System.Security.AccessControl.FileSecurity();
 
         // Disable inheritance so the broad ProgramData ACL does not leak access to the reconnect
-        // secrets; grant access only to the service identity, admins, and (when interactive) the user.
+        // secrets; grant access only to LocalSystem, admins, and the signed-in user the host runs as.
         security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
 
         var localSystem = new System.Security.Principal.SecurityIdentifier(
@@ -271,10 +271,11 @@ public sealed class PairedClientRegistry
         var administrators = new System.Security.Principal.SecurityIdentifier(
             System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid, null);
 
-        // Owner: prefer LocalSystem (the production service identity), but only when the process can
-        // actually assign it. Setting the owner to a principal other than yourself requires
-        // SeRestorePrivilege, which the host lacks when it runs interactively as the signed-in user
-        // rather than the LocalSystem service — there SetOwner(LocalSystem) throws
+        // Owner: prefer LocalSystem so the store stays owned by a machine principal rather than
+        // whichever user happened to pair first, but only when the process can actually assign it.
+        // Setting the owner to a principal other than yourself requires SeRestorePrivilege, which
+        // the host lacks in normal operation — it runs elevated in the signed-in user's session,
+        // not as LocalSystem — and there SetOwner(LocalSystem) throws
         // InvalidOperationException ("The security identifier is not allowed to be the owner of this
         // object"). The current user is always an assignable owner, so fall back to it. (RemEx-sgj)
         using var current = System.Security.Principal.WindowsIdentity.GetCurrent();
@@ -290,9 +291,10 @@ public sealed class PairedClientRegistry
             System.Security.AccessControl.FileSystemRights.FullControl,
             System.Security.AccessControl.AccessControlType.Allow));
 
-        // When the host runs interactively, the signed-in user owns this instance and must keep access
-        // to the store it just wrote; LocalSystem + Administrators still get full control so a later
-        // run as the Windows service can read it. (No extra rule when already running as LocalSystem.)
+        // The signed-in user owns this instance and must keep access to the store it just wrote;
+        // LocalSystem + Administrators still get full control so the store stays readable no matter
+        // which elevated account the host runs under. (No extra rule when already running as
+        // LocalSystem — which no longer happens in normal operation, but the branch is harmless.)
         if (!current.IsSystem && current.User != null)
         {
             security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
@@ -316,9 +318,10 @@ public sealed class PairedClientRegistry
         if (OperatingSystem.IsWindows())
         {
             // Machine-wide store (C:\ProgramData\RemEx) so pairing state survives the host
-            // running under a different account than the one that originally paired — most
-            // importantly the LocalSystem Windows Service vs. an interactive session. The TLS
-            // certificate already lives here (see CertificateService.GetCertificatePath), which
+            // running under a different account than the one that originally paired — a change of
+            // signed-in user, or historically the LocalSystem Windows Service vs. an interactive
+            // session. The TLS certificate already lives here (see
+            // CertificateService.GetCertificatePath), which
             // is why TLS/telemetry kept working after the switch to LocalSystem while the
             // per-user pairing registry was orphaned. Keeping the registry alongside the cert
             // means an account switch no longer makes previously-paired clients look unpaired.
@@ -358,8 +361,8 @@ public sealed class PairedClientRegistry
     /// <summary>
     /// One-time, best-effort migration: if the current (machine-wide) store does not yet exist but
     /// a legacy per-user store does and is readable by the current account, copy it forward so the
-    /// operator does not have to re-pair. In the common LocalSystem case the legacy file lives in a
-    /// user profile the service cannot see, so this is a no-op and a single re-pair is required.
+    /// operator does not have to re-pair. If the legacy file lives in a user profile the current
+    /// account cannot read, this is a no-op and a single re-pair is required.
     /// </summary>
     private void MigrateLegacyStoreIfNeeded()
         => TryMigrateLegacyStore(_storePath, GetLegacyStorePath(), _logger);

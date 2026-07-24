@@ -21,7 +21,7 @@ public enum FileTransferQueueKind
 
 /// <summary>
 /// A single entry in the local transfer queue (plan §1.4). Surfaced in the transfer-queue panel with its
-/// live state and progress. The desktop client drives the actual bytes over the existing (v2-compatible)
+/// live state and progress. The PC UI drives the actual bytes over the existing (v2-compatible)
 /// upload/download path; this item is the local, per-transfer view of that work.
 /// </summary>
 public sealed partial class FileTransferQueueItem : ObservableObject
@@ -101,7 +101,7 @@ public sealed partial class FileTransferQueueItem : ObservableObject
 /// <summary>
 /// Local, in-process transfer queue (plan §1.4): FIFO, one active transfer at a time. Persistence to
 /// <c>transfer_queue.json</c> and the binary <c>/ws/files</c> channel are the host-side responsibility
-/// (WP4); this queue drives the desktop client's transfers over the existing path and gives the UI a live,
+/// (WP4); this queue drives the PC UI's transfers over the existing path and gives the UI a live,
 /// cancellable view. UI mutations are marshalled through <see cref="_post"/> so it is safe from any thread
 /// and drivable synchronously in tests.
 /// </summary>
