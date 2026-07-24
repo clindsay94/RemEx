@@ -3232,4 +3232,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
     <value>Delete</value>
   </data>
+  <data name="Faq_Q12_Question" xml:space="preserve">
+    <value>My phone suddenly refuses to connect and asks to pair again. Why?</value>
+  </data>
+  <data name="Faq_Q12_Answer" xml:space="preserve">
+    <value>When your phone first pairs, it remembers this PC's exact security certificate fingerprint and will only ever trust that certificate again. If the certificate changes — for example after reinstalling RemEx, restoring this PC from a backup, or moving to new hardware — the phone refuses the connection instead of trusting a potential impostor. This is expected security behavior, not a bug. To fix it, remove (unpair) this PC in the phone app's Connection screen, then pair again with the QR code or new 6-digit PIN shown in this window.</value>
+  </data>
 </root>

@@ -3227,4 +3227,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
     <value>Usuń</value>
   </data>
+  <data name="Faq_Q12_Question" xml:space="preserve">
+    <value>Telefon nagle odmawia połączenia i prosi o ponowne sparowanie. Dlaczego?</value>
+  </data>
+  <data name="Faq_Q12_Answer" xml:space="preserve">
+    <value>Przy pierwszym parowaniu telefon zapamiętuje dokładny odcisk certyfikatu bezpieczeństwa tego komputera i odtąd ufa wyłącznie temu certyfikatowi. Jeśli certyfikat się zmieni — na przykład po ponownej instalacji RemEx, przywróceniu komputera z kopii zapasowej lub przejściu na nowy sprzęt — telefon odrzuca połączenie, zamiast zaufać potencjalnemu oszustowi. To oczekiwane zachowanie zabezpieczeń, a nie błąd. Aby to naprawić, usuń (rozparuj) ten komputer na ekranie Połączenie w aplikacji na telefonie, a następnie sparuj ponownie, używając kodu QR lub nowego 6-cyfrowego PIN-u widocznego w tym oknie.</value>
+  </data>
 </root>

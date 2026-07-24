@@ -3230,4 +3230,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
     <value>Sil</value>
   </data>
+  <data name="Faq_Q12_Question" xml:space="preserve">
+    <value>Telefonum aniden bağlanmayı reddediyor ve yeniden eşleştirme istiyor. Neden?</value>
+  </data>
+  <data name="Faq_Q12_Answer" xml:space="preserve">
+    <value>Telefonunuz ilk eşleştirmede bu PC'nin güvenlik sertifikasının tam parmak izini hatırlar ve bundan sonra yalnızca o sertifikaya güvenir. Sertifika değişirse — örneğin RemEx'i yeniden yükledikten, bu PC'yi yedekten geri yükledikten veya yeni donanıma geçtikten sonra — telefon olası bir sahtekâra güvenmek yerine bağlantıyı reddeder. Bu beklenen bir güvenlik davranışıdır, hata değildir. Düzeltmek için telefon uygulamasının Bağlantı ekranında bu PC'yi kaldırın (eşleştirmeyi kaldırın), ardından bu pencerede gösterilen QR kodu veya yeni 6 haneli PIN ile yeniden eşleştirin.</value>
+  </data>
 </root>

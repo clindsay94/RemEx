@@ -197,7 +197,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
 
     private void LoadFaq()
     {
-        for (int q = 1; q <= 11; q++)
+        for (int q = 1; q <= 12; q++)
         {
             FaqItems.Add(new FaqItem(
                 LocalizationService.Instance[$"Faq_Q{q}_Question"],

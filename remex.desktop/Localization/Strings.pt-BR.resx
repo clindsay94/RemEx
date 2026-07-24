@@ -3226,4 +3226,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
     <value>Excluir</value>
   </data>
+  <data name="Faq_Q12_Question" xml:space="preserve">
+    <value>Meu telefone de repente se recusa a conectar e pede para parear de novo. Por quê?</value>
+  </data>
+  <data name="Faq_Q12_Answer" xml:space="preserve">
+    <value>No primeiro pareamento, seu telefone memoriza a impressão digital exata do certificado de segurança deste PC e só voltará a confiar nesse certificado. Se o certificado mudar — por exemplo, após reinstalar o RemEx, restaurar este PC de um backup ou trocar de hardware — o telefone recusa a conexão em vez de confiar em um possível impostor. Esse é o comportamento de segurança esperado, não um bug. Para corrigir, remova (despareie) este PC na tela Conexão do aplicativo do telefone e pareie novamente com o código QR ou o novo PIN de 6 dígitos mostrado nesta janela.</value>
+  </data>
 </root>

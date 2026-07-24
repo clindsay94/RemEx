@@ -3226,4 +3226,10 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
     <value>Supprimer</value>
   </data>
+  <data name="Faq_Q12_Question" xml:space="preserve">
+    <value>Mon téléphone refuse soudainement de se connecter et demande un nouvel appairage. Pourquoi ?</value>
+  </data>
+  <data name="Faq_Q12_Answer" xml:space="preserve">
+    <value>Lors du premier appairage, votre téléphone mémorise l'empreinte exacte du certificat de sécurité de ce PC et ne fera plus jamais confiance qu'à ce certificat. Si le certificat change — par exemple après une réinstallation de RemEx, une restauration de ce PC depuis une sauvegarde ou un changement de matériel — le téléphone refuse la connexion au lieu de faire confiance à un éventuel imposteur. C'est un comportement de sécurité normal, pas un bug. Pour corriger cela, supprimez (désappairez) ce PC dans l'écran Connexion de l'application du téléphone, puis appairez à nouveau avec le code QR ou le nouveau PIN à 6 chiffres affiché dans cette fenêtre.</value>
+  </data>
 </root>
