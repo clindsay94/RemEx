@@ -1727,10 +1727,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Anda memerlukan RemEx yang berjalan di PC Anda — ini adalah satu aplikasi tunggal (remex.agent) yang berjalan dengan hak istimewa (elevated) di dalam sesi Anda yang sedang masuk dan otomatis dimulai saat Anda masuk. Unduh installer terbaru dari GitHub Releases, jalankan, dan aplikasi sudah siap sebelum Anda melakukan pairing.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>Bagaimana cara memasangkan ponsel atau PC kedua?</value>
+    <value>Bagaimana cara memasangkan ponsel saya?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
+    <value>Buka Pengaturan → Koneksi di jendela ini untuk menampilkan kode QR dan PIN pemasangan 6 digit. Di ponsel Anda, buka aplikasi RemEx dan pindai kode QR untuk penyiapan tercepat, atau masukkan PIN saat aplikasi memintanya. Pemasangan selalu dilakukan dari ponsel ke PC ini.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>Bagaimana cara menemukan alamat IP PC saya?</value>

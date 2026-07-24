@@ -1727,10 +1727,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>आपके पीसी पर RemEx चलना आवश्यक है — यह एक ही ऐप (remex.agent) है जो आपके साइन-इन सत्र में एलिवेटेड मोड में चलता है और साइन-इन पर स्वतः शुरू हो जाता है। GitHub Releases से नवीनतम इंस्टॉलर डाउनलोड करें, उसे चलाएं, और पेयर करने से पहले यह तैयार हो जाएगा।</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>How do I pair my phone or second PC?</value>
+    <value>मैं अपना फ़ोन कैसे पेयर करूँ?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
+    <value>QR कोड और 6-अंकों का पेयरिंग PIN दिखाने के लिए इस विंडो में सेटिंग्स → कनेक्शन खोलें। अपने फ़ोन पर RemEx ऐप खोलें और सबसे तेज़ सेटअप के लिए QR कोड स्कैन करें, या ऐप के पूछने पर PIN दर्ज करें। पेयरिंग हमेशा फ़ोन से इस PC की ओर होती है।</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>How do I find my PC's IP address?</value>

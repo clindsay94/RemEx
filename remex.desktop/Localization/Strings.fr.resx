@@ -1727,10 +1727,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Il vous faut RemEx en cours d'exécution sur votre PC — c'est une application unique (remex.agent) qui s'exécute avec des privilèges élevés dans votre session ouverte et démarre automatiquement à la connexion. Téléchargez le dernier installeur depuis les GitHub Releases, exécutez-le, et il est prêt avant même l'appairage.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>Comment appairer mon téléphone ou un deuxième PC ?</value>
+    <value>Comment appairer mon téléphone ?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
+    <value>Ouvrez Paramètres → Connexion dans cette fenêtre pour afficher un code QR et un PIN d'appairage à 6 chiffres. Sur votre téléphone, ouvrez l'application RemEx et scannez le code QR pour une configuration plus rapide, ou saisissez le PIN lorsque l'application le demande. L'appairage se fait toujours du téléphone vers ce PC.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>Comment trouver l'adresse IP de mon PC ?</value>

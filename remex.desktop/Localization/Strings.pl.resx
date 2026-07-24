@@ -1541,7 +1541,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Potrzebujesz uruchomionego RemEx na swoim komputerze — to pojedyncza aplikacja (remex.agent), która działa z podniesionymi uprawnieniami w Twojej zalogowanej sesji i uruchamia się automatycznie przy logowaniu. Pobierz najnowszy instalator ze strony GitHub Releases, uruchom go, a aplikacja będzie gotowa jeszcze przed parowaniem.</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
+    <value>Otwórz Ustawienia → Połączenie w tym oknie, aby wyświetlić kod QR i 6-cyfrowy PIN parowania. Na telefonie otwórz aplikację RemEx i zeskanuj kod QR, aby skonfigurować wszystko najszybciej, lub wpisz PIN, gdy aplikacja o niego poprosi. Parowanie zawsze odbywa się z telefonu do tego komputera.</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
     <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. Adres IP możesz też zobaczyć bezpośrednio w oknie RemEx na swoim komputerze.</value>
@@ -2901,7 +2901,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Co muszę uruchomić na moim komputerze?</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>Jak sparować mój telefon lub drugi komputer?</value>
+    <value>Jak sparować telefon?</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>Jak znaleźć adres IP mojego komputera?</value>

@@ -1727,10 +1727,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Você precisa do RemEx em execução no seu PC — é um único aplicativo (remex.agent) que roda elevado na sua sessão conectada e inicia automaticamente ao fazer login. Baixe o instalador mais recente na página de Releases do GitHub, execute-o, e ele estará pronto antes mesmo de você parear.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>How do I pair my phone or second PC?</value>
+    <value>Como pareio meu telefone?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
+    <value>Abra Configurações → Conexão nesta janela para mostrar um código QR e um PIN de pareamento de 6 dígitos. No seu telefone, abra o aplicativo RemEx e escaneie o código QR para a configuração mais rápida, ou digite o PIN quando o aplicativo pedir. O pareamento sempre acontece do telefone para este PC.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>How do I find my PC's IP address?</value>

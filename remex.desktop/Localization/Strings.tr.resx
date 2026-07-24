@@ -1727,10 +1727,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>PC'nizde RemEx'in çalışıyor olması gerekir — tek bir uygulamadır (remex.agent), oturum açtığınız hesapta yükseltilmiş yetkilerle çalışır ve oturum açıldığında otomatik olarak başlar. GitHub Releases sayfasından en son yükleyiciyi indirin, çalıştırın; eşleştirmeden önce hazır olacaktır.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>How do I pair my phone or second PC?</value>
+    <value>Telefonumu nasıl eşleştiririm?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
+    <value>QR kodu ve 6 haneli eşleştirme PIN'ini göstermek için bu pencerede Ayarlar → Bağlantı bölümünü açın. Telefonunuzda RemEx uygulamasını açın ve en hızlı kurulum için QR kodunu tarayın veya uygulama sorduğunda PIN'i girin. Eşleştirme her zaman telefondan bu PC'ye yapılır.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>How do I find my PC's IP address?</value>

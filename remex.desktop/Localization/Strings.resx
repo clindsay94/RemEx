@@ -1772,10 +1772,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>You need RemEx running on your PC — it's a single app (remex.agent) that runs elevated in your signed-in session and starts automatically at sign-in. Download the latest installer from GitHub Releases, run it, and it's ready before you pair.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>How do I pair my phone or second PC?</value>
+    <value>How do I pair my phone?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Use Settings → Connection on the desktop client to show a QR code or pairing PIN. Scan the QR code from Android for the fastest setup, or enter the 6-digit PIN manually when the app prompts for secure pairing.</value>
+    <value>Open Settings → Connection in this window to show a QR code and a 6-digit pairing PIN. On your phone, open the RemEx app and scan the QR code for the fastest setup, or enter the PIN when the app asks. Pairing always happens from the phone to this PC.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>How do I find my PC's IP address?</value>

@@ -1745,10 +1745,10 @@ Chrome)</value>
     <value>Necesitas RemEx ejecutándose en tu PC — es una única aplicación (remex.agent) que se ejecuta con privilegios elevados en tu sesión iniciada y se inicia automáticamente al iniciar sesión. Descarga el último instalador desde GitHub Releases, ejecútalo, y estará listo antes de emparejar.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>How do I pair my phone or second PC?</value>
+    <value>¿Cómo emparejo mi teléfono?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
+    <value>Abre Configuración → Conexión en esta ventana para mostrar un código QR y un PIN de emparejamiento de 6 dígitos. En tu teléfono, abre la aplicación RemEx y escanea el código QR para la configuración más rápida, o introduce el PIN cuando la aplicación lo pida. El emparejamiento siempre se hace desde el teléfono hacia este PC.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>How do I find my PC's IP address?</value>
