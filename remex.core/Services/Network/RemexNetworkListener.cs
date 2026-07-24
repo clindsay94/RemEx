@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Exceptions;
+using Remex.Core.Guards;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
 using Remex.Core.Services.Command;
@@ -59,10 +60,10 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         ICertificateService? certificateService = null,
         ICommandChannelAuthenticator? authenticator = null)
     {
-        _configuration = configuration;
-        _logger = logger;
-        _commandService = commandService;
-        _wakeOnLanService = wakeOnLanService;
+        _configuration = Guard.NotNull(configuration);
+        _logger = Guard.NotNull(logger);
+        _commandService = Guard.NotNull(commandService);
+        _wakeOnLanService = Guard.NotNull(wakeOnLanService);
         _certificateService = certificateService;
         _authenticator = authenticator;
         // Authentication is enforced application-side via _authenticator (paired-client identity);

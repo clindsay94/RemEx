@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
+using Remex.Core.Guards;
 using Remex.Core.Services.Network;
 
 namespace Remex.Agent.Services.Network;
@@ -11,7 +12,7 @@ public class ExternalNetworkListenerService : BackgroundService
 
     public ExternalNetworkListenerService(INetworkListener networkListener)
     {
-        _networkListener = networkListener;
+        _networkListener = Guard.NotNull(networkListener);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

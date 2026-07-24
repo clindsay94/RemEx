@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
@@ -84,12 +85,12 @@ public sealed class RemoteDesktopHandler : IDisposable
         IHostCapabilitiesProvider hostCapabilitiesProvider,
         Remex.Agent.Services.Session.IInteractiveSessionGuard sessionGuard)
     {
-        _logger = logger;
-        _screenCapture = screenCapture;
-        _inputSimulation = inputSimulation;
-        _windowControl = windowControl;
-        _hostCapabilitiesProvider = hostCapabilitiesProvider;
-        _sessionGuard = sessionGuard;
+        _logger = Guard.NotNull(logger);
+        _screenCapture = Guard.NotNull(screenCapture);
+        _inputSimulation = Guard.NotNull(inputSimulation);
+        _windowControl = Guard.NotNull(windowControl);
+        _hostCapabilitiesProvider = Guard.NotNull(hostCapabilitiesProvider);
+        _sessionGuard = Guard.NotNull(sessionGuard);
 
         // Start dedicated input processing thread
         _inputProcessingTask = Task.Factory.StartNew(ProcessInputQueue, TaskCreationOptions.LongRunning);

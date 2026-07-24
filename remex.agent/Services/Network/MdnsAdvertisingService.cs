@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Remex.Core;
+using Remex.Core.Guards;
 
 namespace Remex.Agent.Services.Network;
 
@@ -25,8 +26,8 @@ public class MdnsAdvertisingService : BackgroundService
 
     public MdnsAdvertisingService(ILogger<MdnsAdvertisingService> logger, IConfiguration configuration)
     {
-        _logger = logger;
-        _configuration = configuration;
+        _logger = Guard.NotNull(logger);
+        _configuration = Guard.NotNull(configuration);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

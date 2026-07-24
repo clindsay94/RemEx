@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using Remex.Core.Guards;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Agent.Services.Input;
@@ -38,8 +39,8 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         IScreenCaptureService screenCapture,
         IInputSimulationService inputSimulation)
     {
-        _screenCapture = screenCapture;
-        _inputSimulation = inputSimulation;
+        _screenCapture = Guard.NotNull(screenCapture);
+        _inputSimulation = Guard.NotNull(inputSimulation);
         _cached = new Lazy<HostCapabilities>(Build, isThreadSafe: true);
     }
 
