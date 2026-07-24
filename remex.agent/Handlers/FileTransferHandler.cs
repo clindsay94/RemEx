@@ -163,9 +163,14 @@ public sealed class FileTransferHandler(
             Stream stream;
             if (start.Direction == "upload")
             {
-                // Full browse never exposes write (RemEx-hb1t): no volume fallback here — an unconfigured
-                // RootId correctly falls straight through to OpenForWriteAsync's "Unknown shared root".
-                stream = await fileTransferService.OpenForWriteAsync(start.RemoteRootId, remoteRelativePath, start.TotalBytes, ct);
+                // Full browse never exposes write on the volume itself (RemEx-hb1t) — but when the target
+                // resolves inside a pinned shared root, re-express the request against that root so the
+                // same folder behaves identically however it was reached (RemEx-hb1t.3). Genuinely
+                // un-pinned targets still refuse.
+                var (writeRootId, writeRelativePath) = await IsConfiguredRootAsync(start.RemoteRootId, ct)
+                    ? (start.RemoteRootId, remoteRelativePath)
+                    : await RemapUnconfiguredWriteTargetAsync(start.RemoteRootId, remoteRelativePath, ct);
+                stream = await fileTransferService.OpenForWriteAsync(writeRootId, writeRelativePath, start.TotalBytes, ct);
             }
             else if (await IsConfiguredRootAsync(start.RemoteRootId, ct))
             {
@@ -349,26 +354,45 @@ public sealed class FileTransferHandler(
         RemexMessage response;
         try
         {
+            // Write-op parity with volume browsing (RemEx-hb1t.3): when the rootId isn't a pinned root,
+            // re-map the target(s) onto the pinned root that contains them — or refuse if none does.
+            var rootId = req.RootId;
+            var relativePath = req.RelativePath;
+            var destinationPath = req.DestinationPath;
+            if (!await IsConfiguredRootAsync(rootId, ct))
+            {
+                (rootId, relativePath) = await RemapUnconfiguredWriteTargetAsync(req.RootId, req.RelativePath, ct);
+                if (!string.IsNullOrWhiteSpace(destinationPath))
+                {
+                    // Copy/move destinations are relative to the same rootId — both endpoints must land in
+                    // the SAME pinned root, or a volume-mode request could hop across root boundaries.
+                    var (destRootId, destRelative) = await RemapUnconfiguredWriteTargetAsync(req.RootId, destinationPath, ct);
+                    if (destRootId != rootId)
+                        throw new UnauthorizedAccessException(UnpinnedWriteMessage);
+                    destinationPath = destRelative;
+                }
+            }
+
             switch (req.Operation)
             {
                 case FileManageOperations.Delete:
-                    await fileTransferService.DeleteAsync(req.RootId, req.RelativePath, ct);
+                    await fileTransferService.DeleteAsync(rootId, relativePath, ct);
                     break;
                 case FileManageOperations.Rename:
                     if (string.IsNullOrWhiteSpace(req.NewName))
                         throw new ArgumentException("NewName is required for rename.");
-                    await fileTransferService.RenameAsync(req.RootId, req.RelativePath, req.NewName, ct);
+                    await fileTransferService.RenameAsync(rootId, relativePath, req.NewName, ct);
                     break;
                 // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP3 ──
                 case FileManageOperations.Copy:
-                    if (string.IsNullOrWhiteSpace(req.DestinationPath))
+                    if (string.IsNullOrWhiteSpace(destinationPath))
                         throw new ArgumentException("DestinationPath is required for copy.");
-                    await fileTransferService.CopyAsync(req.RootId, req.RelativePath, req.DestinationPath, req.Overwrite, ct);
+                    await fileTransferService.CopyAsync(rootId, relativePath, destinationPath, req.Overwrite, ct);
                     break;
                 case FileManageOperations.Move:
-                    if (string.IsNullOrWhiteSpace(req.DestinationPath))
+                    if (string.IsNullOrWhiteSpace(destinationPath))
                         throw new ArgumentException("DestinationPath is required for move.");
-                    await fileTransferService.MoveAsync(req.RootId, req.RelativePath, req.DestinationPath, req.Overwrite, ct);
+                    await fileTransferService.MoveAsync(rootId, relativePath, destinationPath, req.Overwrite, ct);
                     break;
                 case FileManageOperations.Mkdir:
                     // Wire contract: RelativePath is the parent directory (empty = root) and NewName is the
@@ -376,8 +400,8 @@ public sealed class FileTransferHandler(
                     // name is validated here (rejects separators / "." / "..") before being combined.
                     if (!FilePathValidation.IsValidFileName(req.NewName, out var nameError))
                         throw new ArgumentException(nameError ?? "Invalid folder name.");
-                    var newDirRelativePath = CombineRelative(req.RelativePath, req.NewName!);
-                    await fileTransferService.CreateDirectoryAsync(req.RootId, newDirRelativePath, ct);
+                    var newDirRelativePath = CombineRelative(relativePath, req.NewName!);
+                    await fileTransferService.CreateDirectoryAsync(rootId, newDirRelativePath, ct);
                     break;
                 default:
                     throw new ArgumentException($"Unknown operation '{req.Operation}'.");
@@ -834,6 +858,27 @@ public sealed class FileTransferHandler(
             throw new UnauthorizedAccessException("Full-device browsing has not been granted for this device.");
         return volumeEnumerator.Enumerate().FirstOrDefault(v => v.Id == rootId)
             ?? throw new UnauthorizedAccessException($"Unknown shared root '{rootId}'.");
+    }
+
+    private const string UnpinnedWriteMessage =
+        "This folder isn't one of the PC's shared folders. On the PC, add it to RemEx's shared folders, then try again.";
+
+    /// <summary>
+    /// Write-op parity for full-device browsing (RemEx-hb1t.3). The rootId is NOT a configured root: if it
+    /// is a genuine mounted volume and the target resolves INSIDE a pinned shared root, re-express the
+    /// request as (pinned rootId, re-based relative path) — the exact reference the client could have used
+    /// directly, so nothing is widened and the pinned root's permission flags still gate the operation.
+    /// No full-browse consent is required for the mapped case (unlike <see cref="ResolveConsentedVolumeAsync"/>,
+    /// which grants volume-wide read): the mapped operation grants nothing the pinned rootId doesn't already.
+    /// Genuinely un-pinned targets refuse with a plain-English pointer to the shared-folders list.
+    /// </summary>
+    private async Task<(string RootId, string RelativePath)> RemapUnconfiguredWriteTargetAsync(
+        string rootId, string relativePath, CancellationToken ct)
+    {
+        var volume = volumeEnumerator.Enumerate().FirstOrDefault(v => v.Id == rootId)
+            ?? throw new UnauthorizedAccessException($"Unknown shared root '{rootId}'.");
+        return await fileTransferService.TryMapVolumePathToConfiguredRootAsync(volume.Path, relativePath, ct)
+            ?? throw new UnauthorizedAccessException(UnpinnedWriteMessage);
     }
 
     /// <summary>

@@ -41,6 +41,17 @@ public interface IFileTransferService
     /// <summary>Volume-mode counterpart of <see cref="GetThumbnailBase64Async"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
     Task<string?> GetVolumeThumbnailBase64Async(string volumeAbsolutePath, string relativePath, int maxDim, CancellationToken ct);
 
+    /// <summary>
+    /// Attempts to re-express a full-device volume path as an equivalent configured shared-root reference
+    /// (RemEx-hb1t.3). Resolves <paramref name="relativePath"/> within <paramref name="volumeAbsolutePath"/>
+    /// FIRST (collapsing '..' and enforcing the restricted-path denylist — raw input is never compared),
+    /// then returns the deepest configured root containing the resolved path, with the path re-based onto
+    /// that root: exactly the reference the client could have used directly, so the mapping never widens
+    /// access and the target root's own permission flags still apply. Null when the resolved path lies
+    /// outside every configured root.
+    /// </summary>
+    Task<(string RootId, string RelativePath)?> TryMapVolumePathToConfiguredRootAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct);
+
     Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct);
     Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct);
     Task DeleteAsync(string rootId, string relativePath, CancellationToken ct);

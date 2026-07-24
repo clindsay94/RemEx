@@ -109,6 +109,35 @@ public sealed class FileTransferService : IFileTransferService
         return Task.FromResult(EnumerateDirectory(dir));
     }
 
+    // Write-op parity for full-device browsing (RemEx-hb1t.3): the SAME physical folder must behave the
+    // same whether it was reached via its pinned rootId or via a volume browse. SECURITY: the relative
+    // path is resolved within the volume FIRST (collapses '..', restricted-path denylist) — raw client
+    // input is never prefix-compared. Deepest containing root wins so the most specific permission set
+    // applies. Comparison is ordinal-insensitive on Windows, ordinal on Linux (cross-platform parity).
+    public Task<(string RootId, string RelativePath)?> TryMapVolumePathToConfiguredRootAsync(
+        string volumeAbsolutePath, string relativePath, CancellationToken ct)
+    {
+        var resolved = FilePathValidation.ResolveWithinRoot(volumeAbsolutePath, relativePath, volumeAbsolutePath);
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+        foreach (var root in LoadConfiguredRoots()
+                     .OrderByDescending(r => Path.GetFullPath(r.AbsolutePath).Length))
+        {
+            var rootPath = Path.GetFullPath(root.AbsolutePath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (resolved.Equals(rootPath, comparison))
+                return Task.FromResult<(string, string)?>((root.RootId, string.Empty));
+
+            var rootWithSep = rootPath + Path.DirectorySeparatorChar;
+            if (resolved.StartsWith(rootWithSep, comparison))
+            {
+                var rebased = resolved[rootWithSep.Length..].Replace('\\', '/');
+                return Task.FromResult<(string, string)?>((root.RootId, rebased));
+            }
+        }
+
+        return Task.FromResult<(string, string)?>(null);
+    }
+
     // Shared, resilient directory listing. Entries whose metadata can't be read (locked/protected system
     // files, common when browsing a full volume) are skipped rather than failing the whole listing; an
     // unreadable *directory* still surfaces as an error to the caller.

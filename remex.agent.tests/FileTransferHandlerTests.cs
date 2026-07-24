@@ -65,6 +65,9 @@ public sealed class FileTransferHandlerTests : IDisposable
         var uploadStream = new MemoryStream();
         var fileService = new Mock<IFileTransferService>();
         fileService
+            .Setup(s => s.ListRootsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<FileSharedRoot> { new() { RootId = "root-1", DisplayName = "Root 1", IsWritable = true } });
+        fileService
             .Setup(s => s.OpenForWriteAsync("root-1", "upload/file.bin", data.Length, It.IsAny<CancellationToken>()))
             .ReturnsAsync(uploadStream);
 
@@ -674,7 +677,9 @@ public sealed class FileTransferHandlerTests : IDisposable
     // ──────────────────────────────────────────────────────────────────────────
 
     private (FileTransferHandler handler, VolumeEnumerator volumes, string baseTemp) CreateVolumeTestHandler(
-        string clientId, bool grantFullBrowse)
+        string clientId, bool grantFullBrowse,
+        Func<string, (string rootId, string displayName, string absolutePath,
+                bool isWritable, bool canRename, bool canMove, bool canDelete, bool canRemoveRoot)[]>? seedRoots = null)
     {
         var baseTemp = Path.Combine(Path.GetTempPath(), "remex-vol-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(baseTemp);
@@ -682,7 +687,9 @@ public sealed class FileTransferHandlerTests : IDisposable
 
         var configPath = Path.Combine(baseTemp, "roots.json");
         var service = new FileTransferService(NullLogger<FileTransferService>.Instance, configPath);
-        service.SeedRootsForTests(); // deliberately empty — forces every RootId below through the volume fallback
+        // Empty by default — forces every RootId below through the volume fallback. A test that needs a
+        // pinned root inside the temp area passes a factory keyed on baseTemp (RemEx-hb1t.3 parity tests).
+        service.SeedRootsForTests(seedRoots?.Invoke(baseTemp) ?? []);
 
         var registry = new PairedClientRegistry(
             NullLogger<PairedClientRegistry>.Instance, Path.Combine(baseTemp, "paired_clients.json"));
@@ -800,10 +807,12 @@ public sealed class FileTransferHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task Upload_ToFullDeviceVolume_StillThrowsUnknownSharedRoot()
+    public async Task Upload_ToUnpinnedVolumePath_RefusesWithSharedFolderHint()
     {
-        // Full browse never exposes write (RemEx-hb1t) — an unconfigured RootId must NOT get the
-        // volume fallback for uploads, unlike downloads above.
+        // Full browse never exposes write on the volume itself (RemEx-hb1t). Since RemEx-hb1t.3 an
+        // unconfigured RootId is re-mapped when the target sits inside a pinned root — but this target
+        // is genuinely un-pinned (empty roots list), so the upload must refuse, pointing the user at
+        // the shared-folders list.
         var (handler, _, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true);
         var volumeRoot = Path.GetPathRoot(baseTemp)!;
 
@@ -827,7 +836,50 @@ public sealed class FileTransferHandlerTests : IDisposable
         var end = ws.ReceivedMessages.LastOrDefault(m => m.Type == MessageTypes.FileTransferEnd)?.FileTransferEnd;
         Assert.NotNull(end);
         Assert.False(end!.Success);
-        Assert.Contains("Unknown shared root", end.ErrorMessage);
+        Assert.Contains("shared folders", end.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Upload_ToVolumePathInsidePinnedRoot_RemapsAndSucceeds()
+    {
+        // RemEx-hb1t.3 write-op parity: the SAME folder must accept an upload whether addressed by its
+        // pinned rootId or reached via a full-device volume browse. The volume-mode reference here
+        // resolves inside the pinned root, so the handler re-maps it and the write proceeds.
+        var (handler, volumes, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true,
+            temp => [("root-pinned", "Pinned", Path.Combine(temp, "pinned"), true, true, true, true, false)]);
+        var volumeRoot = Path.GetPathRoot(baseTemp)!;
+        Assert.Contains(volumes.Enumerate(), v => v.Id == volumeRoot); // sanity: host must expose this drive
+
+        var pinnedDir = Path.Combine(baseTemp, "pinned");
+        Directory.CreateDirectory(pinnedDir);
+
+        var relativePath = Path.GetRelativePath(volumeRoot, Path.Combine(pinnedDir, "incoming.bin")).Replace('\\', '/');
+        var ws = new FakeWebSocket();
+        await handler.HandleFileTransferStartAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferStart,
+            FileTransferStart = new FileTransferStart
+            {
+                TransferId = "tx-volume-upload-pinned",
+                Direction = "upload",
+                RemotePath = "incoming.bin",
+                RemoteRootId = volumeRoot,
+                RemoteRelativePath = relativePath,
+                FileName = "incoming.bin",
+                TotalBytes = 4,
+                Sha256Base64 = Convert.ToBase64String(new byte[32]),
+            }
+        }, ws, "client-a", CancellationToken.None);
+
+        var end = ws.ReceivedMessages.LastOrDefault(m => m.Type == MessageTypes.FileTransferEnd)?.FileTransferEnd;
+        Assert.Null(end); // no failure reply — the write stream opened inside the pinned root
+        Assert.True(File.Exists(Path.Combine(pinnedDir, "incoming.bin")));
+
+        await handler.HandleFileTransferCancelAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferCancel,
+            FileTransferCancel = new FileTransferCancel { TransferId = "tx-volume-upload-pinned" }
+        });
     }
 
     // ──────────────────────────────────────────────────────────────────────────

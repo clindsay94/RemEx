@@ -73,6 +73,123 @@ public sealed class FileTransferServiceSecurityTests : IDisposable
         Assert.True(derived.CanRemoveRoot);
     }
 
+    // ── RemEx-hb1t.3: volume-path → pinned-root re-mapping (write-op parity) ──
+    // The mapping must be resolve-first (no raw prefix compares), bounded exactly by the pinned root,
+    // and must return null — never a widened grant — for paths outside every configured root.
+
+    private (FileTransferService service, string baseTemp) CreateServiceForRemap()
+    {
+        var baseTemp = Path.Combine(Path.GetTempPath(), "remex-hb1t3-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(baseTemp);
+        _tempDirs.Add(baseTemp);
+        var service = new FileTransferService(NullLogger<FileTransferService>.Instance, Path.Combine(baseTemp, "roots.json"));
+        return (service, baseTemp);
+    }
+
+    [Fact]
+    public async Task TryMapVolumePath_InsidePinnedRoot_MapsToRootWithRebasedRelativePath()
+    {
+        var (service, baseTemp) = CreateServiceForRemap();
+        var pinned = Path.Combine(baseTemp, "volume", "pinned");
+        Directory.CreateDirectory(pinned);
+        service.SeedRootsForTests(("root-1", "Pinned", pinned, true, true, true, true, false));
+
+        var mapped = await service.TryMapVolumePathToConfiguredRootAsync(
+            Path.Combine(baseTemp, "volume"), "pinned/sub/file.txt", CancellationToken.None);
+
+        Assert.NotNull(mapped);
+        Assert.Equal("root-1", mapped.Value.RootId);
+        Assert.Equal("sub/file.txt", mapped.Value.RelativePath);
+    }
+
+    [Fact]
+    public async Task TryMapVolumePath_ExactlyThePinnedRoot_MapsWithEmptyRelativePath()
+    {
+        var (service, baseTemp) = CreateServiceForRemap();
+        var pinned = Path.Combine(baseTemp, "volume", "pinned");
+        Directory.CreateDirectory(pinned);
+        service.SeedRootsForTests(("root-1", "Pinned", pinned, true, true, true, true, false));
+
+        var mapped = await service.TryMapVolumePathToConfiguredRootAsync(
+            Path.Combine(baseTemp, "volume"), "pinned", CancellationToken.None);
+
+        Assert.NotNull(mapped);
+        Assert.Equal("root-1", mapped.Value.RootId);
+        Assert.Equal(string.Empty, mapped.Value.RelativePath);
+    }
+
+    [Fact]
+    public async Task TryMapVolumePath_OutsideEveryRoot_ReturnsNull()
+    {
+        var (service, baseTemp) = CreateServiceForRemap();
+        var pinned = Path.Combine(baseTemp, "volume", "pinned");
+        Directory.CreateDirectory(Path.Combine(baseTemp, "volume", "elsewhere"));
+        Directory.CreateDirectory(pinned);
+        service.SeedRootsForTests(("root-1", "Pinned", pinned, true, true, true, true, false));
+
+        var mapped = await service.TryMapVolumePathToConfiguredRootAsync(
+            Path.Combine(baseTemp, "volume"), "elsewhere/file.txt", CancellationToken.None);
+
+        Assert.Null(mapped);
+    }
+
+    [Fact]
+    public async Task TryMapVolumePath_SiblingWithRootNameAsPrefix_DoesNotFalseMatch()
+    {
+        // "pinned-extra" starts with "pinned" as a raw string — a prefix compare without the separator
+        // guard would wrongly map it into root-1. The resolve-then-compare must not.
+        var (service, baseTemp) = CreateServiceForRemap();
+        var pinned = Path.Combine(baseTemp, "volume", "pinned");
+        Directory.CreateDirectory(pinned);
+        Directory.CreateDirectory(Path.Combine(baseTemp, "volume", "pinned-extra"));
+        service.SeedRootsForTests(("root-1", "Pinned", pinned, true, true, true, true, false));
+
+        var mapped = await service.TryMapVolumePathToConfiguredRootAsync(
+            Path.Combine(baseTemp, "volume"), "pinned-extra/file.txt", CancellationToken.None);
+
+        Assert.Null(mapped);
+    }
+
+    [Fact]
+    public async Task TryMapVolumePath_DotDotIntoPinnedRoot_ResolvesBeforeComparing()
+    {
+        // The relative path detours through a sibling and back via '..'; resolve-first means the
+        // RESOLVED location (inside the pinned root) is what gets compared, not the raw string.
+        var (service, baseTemp) = CreateServiceForRemap();
+        var pinned = Path.Combine(baseTemp, "volume", "pinned");
+        Directory.CreateDirectory(pinned);
+        Directory.CreateDirectory(Path.Combine(baseTemp, "volume", "other"));
+        service.SeedRootsForTests(("root-1", "Pinned", pinned, true, true, true, true, false));
+
+        var mapped = await service.TryMapVolumePathToConfiguredRootAsync(
+            Path.Combine(baseTemp, "volume"), "other/../pinned/doc.txt", CancellationToken.None);
+
+        Assert.NotNull(mapped);
+        Assert.Equal("root-1", mapped.Value.RootId);
+        Assert.Equal("doc.txt", mapped.Value.RelativePath);
+    }
+
+    [Fact]
+    public async Task TryMapVolumePath_NestedRoots_DeepestRootWins()
+    {
+        // outer/ and outer/inner/ are both pinned; a path under inner must map to inner so the most
+        // specific permission set applies.
+        var (service, baseTemp) = CreateServiceForRemap();
+        var outer = Path.Combine(baseTemp, "volume", "outer");
+        var inner = Path.Combine(outer, "inner");
+        Directory.CreateDirectory(inner);
+        service.SeedRootsForTests(
+            ("root-outer", "Outer", outer, true, true, true, true, false),
+            ("root-inner", "Inner", inner, false, false, false, false, false));
+
+        var mapped = await service.TryMapVolumePathToConfiguredRootAsync(
+            Path.Combine(baseTemp, "volume"), "outer/inner/file.txt", CancellationToken.None);
+
+        Assert.NotNull(mapped);
+        Assert.Equal("root-inner", mapped.Value.RootId);
+        Assert.Equal("file.txt", mapped.Value.RelativePath);
+    }
+
     public void Dispose()
     {
         foreach (var dir in _tempDirs)
