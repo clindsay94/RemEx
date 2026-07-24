@@ -13,6 +13,8 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.Network;
 using Remex.Core.Models;
@@ -28,6 +30,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private readonly ShellViewModel _shell;
     private readonly RemoteDesktopService _desktopService;
     private readonly IImmersiveModeService? _immersiveMode;
+    private readonly ILogger<RemoteDesktopViewModel> _logger;
     private int _frameCount;
     private DateTime _fpsWindowStart = DateTime.UtcNow;
 
@@ -210,11 +213,16 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private readonly Dictionary<long, Bitmap> _cursorShapeCache = new();
     private readonly Dictionary<long, DesktopCursorShape> _cursorShapeInfoCache = new();
 
-    public RemoteDesktopViewModel(ConnectionViewModel connection, ShellViewModel shell, IImmersiveModeService? immersiveMode = null)
+    public RemoteDesktopViewModel(
+        ConnectionViewModel connection,
+        ShellViewModel shell,
+        IImmersiveModeService? immersiveMode = null,
+        ILogger<RemoteDesktopViewModel>? logger = null)
     {
         Connection = connection;
         _shell = shell;
         _immersiveMode = immersiveMode;
+        _logger = logger ?? NullLogger<RemoteDesktopViewModel>.Instance;
         _desktopService = new RemoteDesktopService();
         _desktopService.FrameReceived += OnFrameReceived;
         _desktopService.MetaReceived += OnMetaReceived;
@@ -745,9 +753,19 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             _consecutiveDecodeFailures++;
             if (_consecutiveDecodeFailures <= 3)
             {
+                // The frame size and exception type are diagnostics, not something a
+                // non-technical user can act on — they go to the log; the status bar gets
+                // a plain-English sentence with a next step. Logged on the same <= 3
+                // cadence as the status update so a sustained failure can't spam the log.
+                _logger.LogWarning(
+                    ex,
+                    "Remote desktop frame decode failed ({FrameBytes} bytes, consecutive failure {FailureCount})",
+                    jpegBytes.Length,
+                    _consecutiveDecodeFailures);
+
                 Dispatcher.UIThread.Post(() =>
                 {
-                    StatusText = string.Format(LocalizationService.Instance["Status_FrameDecodeErrorFormat"], jpegBytes.Length, ex.GetType().Name, ex.Message);
+                    StatusText = LocalizationService.Instance["Status_FrameDecodeError"];
                     HasStreamError = true;
                 });
             }

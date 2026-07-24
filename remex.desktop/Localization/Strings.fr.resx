@@ -578,8 +578,8 @@
   <data name="Status_Stopped" xml:space="preserve">
     <value>Arrêté</value>
   </data>
-  <data name="Status_FrameDecodeErrorFormat" xml:space="preserve">
-    <value>Erreur de décodage ({0} octets) : {1} : {2}</value>
+  <data name="Status_FrameDecodeError" xml:space="preserve">
+    <value>Impossible d'afficher l'écran distant : essayez de réduire la Qualité, ou déconnectez-vous puis reconnectez-vous.</value>
   </data>
 
   

@@ -2732,8 +2732,8 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Status_Stopped" xml:space="preserve">
     <value>Zatrzymano</value>
   </data>
-  <data name="Status_FrameDecodeErrorFormat" xml:space="preserve">
-    <value>Błąd dekodowania klatki ({0} bajtów): {1}: {2}</value>
+  <data name="Status_FrameDecodeError" xml:space="preserve">
+    <value>Nie można wyświetlić ekranu zdalnego — spróbuj obniżyć Jakość albo rozłącz się i połącz ponownie.</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
     <value>Nie pokazuj tego samouczka ponownie</value>

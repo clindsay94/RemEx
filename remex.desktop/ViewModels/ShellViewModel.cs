@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Remex.Desktop.Models;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.FileTransfer;
@@ -523,7 +524,14 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void NavigateToRemoteDesktop()
     {
-        _remoteDesktopViewModel ??= new RemoteDesktopViewModel(Connection, this, _immersiveMode);
+        // Hand-constructed rather than DI-resolved, so the logger has to be passed explicitly —
+        // the constructor's optional-logger default would silently degrade to NullLogger and
+        // discard every frame-decode diagnostic.
+        _remoteDesktopViewModel ??= new RemoteDesktopViewModel(
+            Connection,
+            this,
+            _immersiveMode,
+            _services.GetRequiredService<ILogger<RemoteDesktopViewModel>>());
         SetTransitionAndNavigate(5, _remoteDesktopViewModel);
     }
 
