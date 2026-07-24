@@ -10,6 +10,7 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 using Remex.Core.Models;
 using Remex.Core.Services;
 
@@ -58,7 +59,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
     public WindowsScreenCaptureService(ILogger<WindowsScreenCaptureService> logger, IWgcCaptureSource? wgc)
     {
-        _logger = logger;
+        _logger = Guard.NotNull(logger);
         _wgc = wgc;
         // Machine-wide backend preference, stored in HKLM (never HKCU) so it is shared regardless of
         // which user is signed in and survives across logins. Fails open to Auto.

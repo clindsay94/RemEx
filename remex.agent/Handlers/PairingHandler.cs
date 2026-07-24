@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Models.IPC;
@@ -26,10 +27,10 @@ public sealed class PairingHandler
         ICertificateService certificateService,
         PairedClientRegistry pairedClientRegistry)
     {
-        _logger = logger;
-        _pairingService = pairingService;
-        _certificateService = certificateService;
-        _pairedClientRegistry = pairedClientRegistry;
+        _logger = Guard.NotNull(logger);
+        _pairingService = Guard.NotNull(pairingService);
+        _certificateService = Guard.NotNull(certificateService);
+        _pairedClientRegistry = Guard.NotNull(pairedClientRegistry);
     }
 
     /// <summary>

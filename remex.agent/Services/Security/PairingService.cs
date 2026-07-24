@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 using Remex.Core.Services.Security;
 
 namespace Remex.Agent.Services.Security;
@@ -58,8 +59,8 @@ public sealed class PairingService : IPairingService
         ILogger<PairingService> logger,
         ICertificateService certificateService)
     {
-        _logger = logger;
-        _certificateService = certificateService;
+        _logger = Guard.NotNull(logger);
+        _certificateService = Guard.NotNull(certificateService);
     }
 
     public bool IsPairingActive =>
