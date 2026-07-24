@@ -1739,13 +1739,14 @@ Linux: ip addr  or  hostname -I</value>
     <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. Ви також можете побачити IP-адресу безпосередньо у вікні RemEx на вашому ПК.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
-    <value>Auto-discovery isn't finding my PC. What should I check?</value>
+    <value>Автоматичний пошук не знаходить мій ПК. Що перевірити?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Переконайтеся, що RemEx запущено на вашому ПК.
-2. Both devices must be on the same Wi-Fi / LAN.
-3. Check if your router has 'AP/Client Isolation' enabled.
-4. Corporate/guest networks often block discovery (mDNS).</value>
+2. Обидва пристрої мають бути в одній мережі Wi-Fi / LAN.
+3. В Android 13 і новіших дозвольте доступ до пристроїв поблизу. В Android 17 і новіших дозвольте також доступ до локальної мережі.
+4. Перевірте, чи не ввімкнено на маршрутизаторі ізоляцію AP/клієнта.
+5. Корпоративні або гостьові мережі часто блокують виявлення mDNS.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>

@@ -1739,13 +1739,14 @@ Linux: ip addr  or  hostname -I</value>
     <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. Você também pode ver o IP diretamente na janela do RemEx no seu PC.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
-    <value>Auto-discovery isn't finding my PC. What should I check?</value>
+    <value>A descoberta automática não encontra meu PC. O que devo verificar?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Certifique-se de que o RemEx está em execução no seu PC.
-2. Both devices must be on the same Wi-Fi / LAN.
-3. Check if your router has 'AP/Client Isolation' enabled.
-4. Corporate/guest networks often block discovery (mDNS).</value>
+2. Os dois dispositivos precisam estar na mesma rede Wi-Fi / LAN.
+3. No Android 13 ou superior, permita o acesso a Dispositivos por perto. No Android 17 ou superior, permita também o acesso à Rede local.
+4. Verifique se o seu roteador está com o isolamento de AP/cliente ativado.
+5. Redes corporativas ou de visitantes costumam bloquear a descoberta mDNS.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>

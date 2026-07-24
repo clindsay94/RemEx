@@ -1743,9 +1743,10 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Pastikan RemEx berjalan di PC Anda.
-2. Both devices must be on the same Wi-Fi / LAN.
-3. Check if your router has 'AP/Client Isolation' enabled.
-4. Corporate/guest networks often block discovery (mDNS).</value>
+2. Kedua perangkat harus berada di jaringan Wi-Fi / LAN yang sama.
+3. Di Android 13 ke atas, izinkan akses Perangkat di Sekitar. Di Android 17 ke atas, izinkan juga akses Jaringan Lokal.
+4. Periksa apakah router Anda mengaktifkan AP/Client Isolation.
+5. Jaringan perusahaan atau tamu sering memblokir penemuan mDNS.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>Apa port default-nya?</value>

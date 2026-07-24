@@ -1549,8 +1549,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Upewnij się, że RemEx jest uruchomiony na Twoim komputerze.
 2. Oba urządzenia muszą być w tej samej sieci Wi-Fi / LAN.
-3. Sprawdź, czy Twój router nie ma włączonej opcji „izolacja AP/klienta”.
-4. Sieci firmowe/gościnne często blokują wykrywanie (mDNS).</value>
+3. W Androidzie 13 i nowszym zezwól na dostęp do Urządzeń w pobliżu. W Androidzie 17 i nowszym zezwól także na dostęp do Sieci lokalnej.
+4. Sprawdź, czy Twój router nie ma włączonej opcji „izolacja AP/klienta”.
+5. Sieci firmowe/gościnne często blokują wykrywanie (mDNS).</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
     <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. Aktywny port możesz zobaczyć w oknie RemEx na swoim komputerze.</value>

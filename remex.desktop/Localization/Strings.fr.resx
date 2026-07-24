@@ -1743,9 +1743,10 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Assurez-vous que RemEx est en cours d'exécution sur votre PC.
-2. Both devices must be on the same Wi-Fi / LAN.
-3. Check if your router has 'AP/Client Isolation' enabled.
-4. Corporate/guest networks often block discovery (mDNS).</value>
+2. Les deux appareils doivent être sur le même réseau Wi-Fi / LAN.
+3. Sur Android 13 et versions ultérieures, autorisez les Appareils à proximité. Sur Android 17 et versions ultérieures, autorisez également l'accès au Réseau local.
+4. Vérifiez si votre routeur a l'isolation AP/client activée.
+5. Les réseaux d'entreprise ou invités bloquent souvent la découverte mDNS.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>Quel est le port par défaut ?</value>

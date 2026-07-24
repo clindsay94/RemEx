@@ -1739,13 +1739,14 @@ Linux: ip addr  or  hostname -I</value>
     <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. IP'yi doğrudan PC'nizdeki RemEx penceresinde de görebilirsiniz.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
-    <value>Auto-discovery isn't finding my PC. What should I check?</value>
+    <value>Otomatik keşif PC'mi bulamıyor. Neyi kontrol etmeliyim?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. PC'nizde RemEx'in çalıştığından emin olun.
-2. Both devices must be on the same Wi-Fi / LAN.
-3. Check if your router has 'AP/Client Isolation' enabled.
-4. Corporate/guest networks often block discovery (mDNS).</value>
+2. Her iki cihaz da aynı Wi-Fi / LAN ağında olmalıdır.
+3. Android 13 ve üzerinde Yakındaki cihazlar iznini verin. Android 17 ve üzerinde Yerel ağ erişimine de izin verin.
+4. Yönlendiricinizde AP/İstemci Yalıtımı özelliğinin açık olup olmadığını kontrol edin.
+5. Kurumsal veya misafir ağları genellikle mDNS keşfini engeller.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>

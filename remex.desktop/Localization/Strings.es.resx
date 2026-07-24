@@ -1757,13 +1757,14 @@ Chrome)</value>
     <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. También puedes ver la IP directamente en la ventana de RemEx en tu PC.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
-    <value>Auto-discovery isn't finding my PC. What should I check?</value>
+    <value>La detección automática no encuentra mi PC. ¿Qué debo comprobar?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Asegúrate de que RemEx se esté ejecutando en tu PC.
-2. Both devices must be on the same Wi-Fi / LAN.
-3. Check if your router has 'AP/Client Isolation' enabled.
-4. Corporate/guest networks often block discovery (mDNS).</value>
+2. Ambos dispositivos deben estar en la misma red Wi-Fi / LAN.
+3. En Android 13 o superior, permite el acceso a Dispositivos cercanos. En Android 17 o superior, permite también el acceso a la Red local.
+4. Comprueba si tu router tiene activado el aislamiento de AP/cliente.
+5. Las redes corporativas o de invitados suelen bloquear la detección mDNS.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>What is the default port?</value>
@@ -1809,11 +1810,11 @@ Chrome)</value>
     <value>¿Cómo configuro Tailscale para acceso remoto?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Instale Tailscale en su PC: tailscale.com/download (Windows) o ejecute: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
-2. Inicie sesión y conéctese: siga las instrucciones del navegador (Windows) o ejecute: sudo tailscale up (Linux).
-3. Instale Tailscale en Android desde Play Store e inicie sesión con la misma cuenta.
-4. Busque la IP de Tailscale de su PC (comienza con 100.x.y.z) en la aplicación Tailscale o en login.tailscale.com.
-5. Ingrese esa IP en la pantalla de conexión de RemEx; ahora puede conectarse de forma segura desde cualquier lugar.</value>
+    <value>1. Instala Tailscale en tu PC: tailscale.com/download (Windows) o ejecuta: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Inicia sesión y conéctate: sigue las instrucciones del navegador (Windows) o ejecuta: sudo tailscale up (Linux).
+3. Instala Tailscale en Android desde Play Store e inicia sesión con la misma cuenta.
+4. Busca la IP de Tailscale de tu PC (empieza por 100.x.y.z) en la aplicación Tailscale o en login.tailscale.com.
+5. Introduce esa IP en la pantalla de conexión de RemEx; ahora puedes conectarte de forma segura desde cualquier lugar.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Deshacer</value>
