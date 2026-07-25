@@ -514,11 +514,11 @@
     <string name="file_transfer_action_downloading">Завантаження</string>
     <string name="file_transfer_action_uploading">Відправлення</string>
     <string name="file_transfer_adding_shortcut">Додавання ярлика…</string>
-    <string name="file_transfer_browse_error">Помилка огляду: %1$s</string>
-    <string name="file_transfer_send_error">Помилка: %1$s</string>
+    <string name="file_transfer_browse_error">Не вдалося відкрити цю папку. Перевірте, чи ПК досі підключений і чи папка досі є спільною, а потім спробуйте ще раз.</string>
+    <string name="file_transfer_send_error">Не вдалося дістатися до вашого ПК. Перевірте, чи обидва пристрої підключені до однієї мережі, а потім спробуйте ще раз.</string>
 $line
     <string name="file_transfer_cancelled">Скасовано.</string>
-    <string name="file_transfer_delete_failed">Помилка видалення: %1$s</string>
+    <string name="file_transfer_delete_failed">Не вдалося видалити цей елемент. Перевірте, чи він не відкритий на ПК і чи папка є спільною, а потім спробуйте ще раз.</string>
     <string name="file_transfer_delete_timeout">Час видалення вичерпано.</string>
     <string name="file_transfer_deleted_multiple_failed">Видалено %1$d з %2$d елементів (%3$d не вдалося).</string>
     <string name="file_transfer_deleted_multiple_success">Видалено %1$d елементів.</string>
@@ -531,12 +531,12 @@ $line
     <string name="file_transfer_download_failed_sha256">Помилка завантаження: невідповідність SHA-256</string>
     <string name="file_transfer_downloading_single">Завантаження %1$s…</string>
     <string name="file_transfer_file_fallback">Файл</string>
-    <string name="file_transfer_pin_failed">Не вдалося закріпити: %1$s</string>
+    <string name="file_transfer_pin_failed">Не вдалося закріпити цю папку як ярлик. Спробуйте ще раз або виберіть іншу папку.</string>
     <string name="file_transfer_pin_timeout">Час очікування операції вичерпано.</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>
-    <string name="file_transfer_remove_failed">Не вдалося видалити: %1$s</string>
+    <string name="file_transfer_remove_failed">Не вдалося прибрати цей ярлик. Спробуйте ще раз.</string>
     <string name="file_transfer_removing_shortcut">Видалення ярлика…</string>
-    <string name="file_transfer_rename_failed">Не вдалося перейменувати: %1$s</string>
+    <string name="file_transfer_rename_failed">Не вдалося перейменувати цей елемент. Перевірте, чи нова назва не використовується і чи папка є спільною, а потім спробуйте ще раз.</string>
     <string name="file_transfer_rename_timeout">Час перейменування вичерпано.</string>
     <string name="file_transfer_renamed_success">Перейменовано.</string>
     <string name="file_transfer_renaming_single">Перейменування %1$s…</string>
@@ -544,11 +544,11 @@ $line
     <string name="file_transfer_shared_folders_unavailable">Спільні папки недоступні: %1$s</string>
     <string name="file_transfer_shortcut_added">Ярлик додано.</string>
     <string name="file_transfer_shortcut_removed">Ярлик видалено.</string>
-    <string name="file_transfer_transfer_failed">Помилка передачі: %1$s</string>
+    <string name="file_transfer_transfer_failed">Передавання не завершено. Перевірте, чи ПК досі підключений, а потім спробуйте ще раз.</string>
     <string name="file_transfer_unable_open_location">Не вдалося відкрити вибране місце збереження.</string>
     <string name="file_transfer_unknown_error">Невідома помилка.</string>
     <string name="file_transfer_upload_complete">Завантаження завершено.</string>
-    <string name="file_transfer_upload_failed">Помилка завантаження: %1$s</string>
+    <string name="file_transfer_upload_failed">Не вдалося надіслати файл. Перевірте, чи ПК досі підключений, а потім спробуйте ще раз.</string>
     <string name="file_transfer_uploading_single">Завантаження %1$s…</string>
     <string name="font_inter_premium">Inter (Преміум)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Технічний)</string>

@@ -514,11 +514,11 @@
     <string name="file_transfer_action_downloading">İndiriliyor</string>
     <string name="file_transfer_action_uploading">Yükleniyor</string>
     <string name="file_transfer_adding_shortcut">Kısayol ekleniyor…</string>
-    <string name="file_transfer_browse_error">Göz atma hatası: %1$s</string>
-    <string name="file_transfer_send_error">Hata: %1$s</string>
+    <string name="file_transfer_browse_error">Bu klasör açılamadı. Bilgisayarınızın hâlâ bağlı olduğundan ve klasörün hâlâ paylaşıldığından emin olun, ardından tekrar deneyin.</string>
+    <string name="file_transfer_send_error">Bilgisayarınıza ulaşılamadı. Her iki cihazın da aynı ağda olduğundan emin olun, ardından tekrar deneyin.</string>
 $line
     <string name="file_transfer_cancelled">İptal edildi.</string>
-    <string name="file_transfer_delete_failed">Silme başarısız: %1$s</string>
+    <string name="file_transfer_delete_failed">Bu öğe silinemedi. Bilgisayarınızda açık olmadığından ve klasörün paylaşıldığından emin olun, ardından tekrar deneyin.</string>
     <string name="file_transfer_delete_timeout">Silme işlemi zaman aşımına uğradı.</string>
     <string name="file_transfer_deleted_multiple_failed">%1$d / %2$d öğe silindi (%3$d başarısız).</string>
     <string name="file_transfer_deleted_multiple_success">%1$d öğe silindi.</string>
@@ -531,12 +531,12 @@ $line
     <string name="file_transfer_download_failed_sha256">İndirme başarısız: SHA-256 uyuşmazlığı</string>
     <string name="file_transfer_downloading_single">%1$s indiriliyor…</string>
     <string name="file_transfer_file_fallback">Dosya</string>
-    <string name="file_transfer_pin_failed">Sabitleme başarısız: %1$s</string>
+    <string name="file_transfer_pin_failed">Bu klasör kısayol olarak sabitlenemedi. Tekrar deneyin veya başka bir klasör seçin.</string>
     <string name="file_transfer_pin_timeout">İşlem zaman aşımına uğradı.</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>
-    <string name="file_transfer_remove_failed">Kaldırma başarısız: %1$s</string>
+    <string name="file_transfer_remove_failed">Bu kısayol kaldırılamadı. Tekrar deneyin.</string>
     <string name="file_transfer_removing_shortcut">Kısayol kaldırılıyor…</string>
-    <string name="file_transfer_rename_failed">Yeniden adlandırma başarısız: %1$s</string>
+    <string name="file_transfer_rename_failed">Bu öğe yeniden adlandırılamadı. Yeni adın kullanılmadığından ve klasörün paylaşıldığından emin olun, ardından tekrar deneyin.</string>
     <string name="file_transfer_rename_timeout">Yeniden adlandırma zaman aşımına uğradı.</string>
     <string name="file_transfer_renamed_success">Yeniden adlandırıldı.</string>
     <string name="file_transfer_renaming_single">%1$s yeniden adlandırılıyor…</string>
@@ -544,11 +544,11 @@ $line
     <string name="file_transfer_shared_folders_unavailable">Paylaşılan klasörler kullanılamıyor: %1$s</string>
     <string name="file_transfer_shortcut_added">Kısayol eklendi.</string>
     <string name="file_transfer_shortcut_removed">Kısayol kaldırıldı.</string>
-    <string name="file_transfer_transfer_failed">Aktarım başarısız: %1$s</string>
+    <string name="file_transfer_transfer_failed">Aktarım tamamlanmadı. Bilgisayarınızın hâlâ bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="file_transfer_unable_open_location">Seçilen kaydetme konumu açılamıyor.</string>
     <string name="file_transfer_unknown_error">Bilinmeyen hata.</string>
     <string name="file_transfer_upload_complete">Yükleme tamamlandı.</string>
-    <string name="file_transfer_upload_failed">Yükleme başarısız: %1$s</string>
+    <string name="file_transfer_upload_failed">Dosya gönderilemedi. Bilgisayarınızın hâlâ bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="file_transfer_uploading_single">%1$s yükleniyor…</string>
     <string name="font_inter_premium">Inter (Premium)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Teknik)</string>

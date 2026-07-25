@@ -441,8 +441,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_transfer_deleting_single, entry.name)
             val error = runManage(rootId, relative, FileManageOperations.DELETE)
+            if (error != null) Log.w(TAG, "Delete failed: $error")
             _statusText.value =
-                if (error != null) app().getString(R.string.file_transfer_delete_failed, error)
+                if (error != null) app().getString(R.string.file_transfer_delete_failed)
                 else app().getString(R.string.file_transfer_deleted_success)
             _isLoading.value = false
             if (error == null) browseRemote()
@@ -479,8 +480,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_transfer_renaming_single, entry.name)
             val error = runManage(rootId, relative, FileManageOperations.RENAME, newName = trimmed)
+            if (error != null) Log.w(TAG, "Rename failed: $error")
             _statusText.value =
-                if (error != null) app().getString(R.string.file_transfer_rename_failed, error)
+                if (error != null) app().getString(R.string.file_transfer_rename_failed)
                 else app().getString(R.string.file_transfer_renamed_success)
             _isLoading.value = false
             if (error == null) browseRemote()
@@ -638,7 +640,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
         val error = respObj.optMeaningfulString("errorMessage")
         if (error != null) {
-            _statusText.value = app().getString(failRes, error)
+            Log.w(TAG, "Root manage failed: $error")
+            _statusText.value = app().getString(failRes)
         } else {
             _statusText.value = app().getString(successRes)
             updateRootsFromResponse(respObj)
@@ -893,9 +896,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 Log.i(TAG, "Upload cancelled for $transferId")
             } catch (e: Exception) {
                 Log.e(TAG, "Upload failed", e)
-                val message = e.message ?: app().getString(R.string.file_transfer_unknown_error)
-                _statusText.value = app().getString(R.string.file_transfer_upload_failed, message)
-                FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_upload_failed, message))
+                _statusText.value = app().getString(R.string.file_transfer_upload_failed)
+                FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_upload_failed))
                 resetTransferState()
             }
         }
@@ -1024,7 +1026,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             // Surface a failed folder browse instead of silently showing an empty picker: without
             // this the copy/move destination sheet looked like an empty folder on any error.
             response.optMeaningfulString("errorMessage")?.let { error ->
-                _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+                Log.w(TAG, "Browse failed: $error")
+                _statusText.value = app().getString(R.string.file_transfer_browse_error)
                 _destinationEntries.value = emptyList()
                 return
             }
@@ -1043,7 +1046,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _isRefreshing.value = false
         val errorMessage = response.optMeaningfulString("errorMessage")
         if (errorMessage != null) {
-            _statusText.value = app().getString(R.string.file_transfer_browse_error, errorMessage)
+            Log.w(TAG, "Browse failed: $errorMessage")
+            _statusText.value = app().getString(R.string.file_transfer_browse_error)
             return
         }
         val path = response.optString("relativePath", _remotePath.value)
@@ -1091,7 +1095,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _fullBrowseGranted.value = response.optBoolean("fullBrowseGranted", false)
         val error = response.optMeaningfulString("errorMessage")
         if (error != null) {
-            _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+            Log.w(TAG, "Browse failed: $error")
+            _statusText.value = app().getString(R.string.file_transfer_browse_error)
         }
         val arr = response.optJSONArray("volumes") ?: JSONArray()
         val list = mutableListOf<RemoteVolume>()
@@ -1118,7 +1123,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _isLoading.value = false
         val error = response.optMeaningfulString("errorMessage")
         if (error != null) {
-            _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+            Log.w(TAG, "Browse failed: $error")
+            _statusText.value = app().getString(R.string.file_transfer_browse_error)
             return
         }
         _searchTruncated.value = response.optBoolean("truncated", false)
@@ -1146,7 +1152,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _propertiesLoading.value = false
         val error = response.optMeaningfulString("errorMessage")
         if (error != null) {
-            _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+            Log.w(TAG, "Browse failed: $error")
+            _statusText.value = app().getString(R.string.file_transfer_browse_error)
             _properties.value = null
             return
         }
@@ -1231,9 +1238,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             }
         } else {
             cleanupDownload(deletePartial = true)
-            val message = errorMessage ?: app().getString(R.string.file_transfer_unknown_error)
-            _statusText.value = app().getString(R.string.file_transfer_transfer_failed, message)
-            FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_transfer_failed, message))
+            Log.w(TAG, "Transfer failed: ${errorMessage ?: "no detail"}")
+            _statusText.value = app().getString(R.string.file_transfer_transfer_failed)
+            FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_transfer_failed))
         }
         resetTransferState()
     }
@@ -1339,7 +1346,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         } catch (e: Exception) {
             Log.e(TAG, "SendMessage failed", e)
             _statusText.value =
-                app().getString(R.string.file_transfer_send_error, e.message ?: "")
+                app().getString(R.string.file_transfer_send_error)
         }
     }
 }

@@ -483,11 +483,11 @@
     <string name="file_transfer_action_downloading">Pobieranie</string>
     <string name="file_transfer_action_uploading">Przesyłanie</string>
     <string name="file_transfer_adding_shortcut">Dodawanie skrótu…</string>
-    <string name="file_transfer_browse_error">Błąd przeglądania: %1$s</string>
-    <string name="file_transfer_send_error">Błąd: %1$s</string>
+    <string name="file_transfer_browse_error">Nie udało się otworzyć tego folderu. Sprawdź, czy komputer jest nadal połączony i czy folder jest nadal udostępniony, a następnie spróbuj ponownie.</string>
+    <string name="file_transfer_send_error">Nie udało się połączyć z komputerem. Sprawdź, czy oba urządzenia są w tej samej sieci, a następnie spróbuj ponownie.</string>
 $line
     <string name="file_transfer_cancelled">Anulowano.</string>
-    <string name="file_transfer_delete_failed">Usuwanie nie powiodło się: %1$s</string>
+    <string name="file_transfer_delete_failed">Nie udało się usunąć tego elementu. Sprawdź, czy nie jest otwarty na komputerze i czy folder jest udostępniony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_delete_timeout">Przekroczono limit czasu usuwania.</string>
     <string name="file_transfer_deleted_multiple_failed">Usunięto %1$d z %2$d elementów (niepowodzenie: %3$d).</string>
     <string name="file_transfer_deleted_multiple_success">Usunięto %1$d elementów.</string>
@@ -500,12 +500,12 @@ $line
     <string name="file_transfer_download_failed_sha256">Pobieranie nie powiodło się: niezgodność SHA-256</string>
     <string name="file_transfer_downloading_single">Pobieranie %1$s…</string>
     <string name="file_transfer_file_fallback">Plik</string>
-    <string name="file_transfer_pin_failed">Przypinanie nie powiodło się: %1$s</string>
+    <string name="file_transfer_pin_failed">Nie udało się przypiąć tego folderu jako skrótu. Spróbuj ponownie lub wybierz inny folder.</string>
     <string name="file_transfer_pin_timeout">Przekroczono limit czasu operacji.</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>
-    <string name="file_transfer_remove_failed">Usuwanie nie powiodło się: %1$s</string>
+    <string name="file_transfer_remove_failed">Nie udało się usunąć tego skrótu. Spróbuj ponownie.</string>
     <string name="file_transfer_removing_shortcut">Usuwanie skrótu…</string>
-    <string name="file_transfer_rename_failed">Zmiana nazwy nie powiodła się: %1$s</string>
+    <string name="file_transfer_rename_failed">Nie udało się zmienić nazwy tego elementu. Sprawdź, czy nowa nazwa nie jest już używana i czy folder jest udostępniony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_rename_timeout">Przekroczono limit czasu zmiany nazwy.</string>
     <string name="file_transfer_renamed_success">Nazwa zmieniona.</string>
     <string name="file_transfer_renaming_single">Zmiana nazwy %1$s…</string>
@@ -513,11 +513,11 @@ $line
     <string name="file_transfer_shared_folders_unavailable">Udostępnione foldery niedostępne: %1$s</string>
     <string name="file_transfer_shortcut_added">Dodano skrót.</string>
     <string name="file_transfer_shortcut_removed">Skrót usunięty.</string>
-    <string name="file_transfer_transfer_failed">Transfer nie powiódł się: %1$s</string>
+    <string name="file_transfer_transfer_failed">Transfer nie został ukończony. Sprawdź, czy komputer jest nadal połączony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_unable_open_location">Nie można otworzyć wybranej lokalizacji zapisu.</string>
     <string name="file_transfer_unknown_error">Nieznany błąd.</string>
     <string name="file_transfer_upload_complete">Przesyłanie zakończone.</string>
-    <string name="file_transfer_upload_failed">Przesyłanie nie powiodło się: %1$s</string>
+    <string name="file_transfer_upload_failed">Nie udało się wysłać pliku. Sprawdź, czy komputer jest nadal połączony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_uploading_single">Przesyłanie %1$s…</string>
     <string name="font_inter_premium">Inter (Premium)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Tech)</string>

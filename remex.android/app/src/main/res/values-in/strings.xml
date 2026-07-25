@@ -514,11 +514,11 @@
     <string name="file_transfer_action_downloading">Mengunduh</string>
     <string name="file_transfer_action_uploading">Mengunggah</string>
     <string name="file_transfer_adding_shortcut">Menambahkan pintasan…</string>
-    <string name="file_transfer_browse_error">Kesalahan penelusuran: %1$s</string>
-    <string name="file_transfer_send_error">Kesalahan: %1$s</string>
+    <string name="file_transfer_browse_error">Tidak dapat membuka folder tersebut. Pastikan PC Anda masih terhubung dan folder masih dibagikan, lalu coba lagi.</string>
+    <string name="file_transfer_send_error">Tidak dapat menjangkau PC Anda. Pastikan kedua perangkat berada di jaringan yang sama, lalu coba lagi.</string>
 $line
     <string name="file_transfer_cancelled">Dibatalkan.</string>
-    <string name="file_transfer_delete_failed">Gagal menghapus: %1$s</string>
+    <string name="file_transfer_delete_failed">Tidak dapat menghapus item tersebut. Pastikan item tidak sedang terbuka di PC Anda dan folder sudah dibagikan, lalu coba lagi.</string>
     <string name="file_transfer_delete_timeout">Waktu penghapusan habis.</string>
     <string name="file_transfer_deleted_multiple_failed">Dihapus %1$d dari %2$d item (%3$d gagal).</string>
     <string name="file_transfer_deleted_multiple_success">Berhasil menghapus %1$d item.</string>
@@ -531,12 +531,12 @@ $line
     <string name="file_transfer_download_failed_sha256">Unduhan gagal: ketidakcocokan SHA-256</string>
     <string name="file_transfer_downloading_single">Mengunduh %1$s…</string>
     <string name="file_transfer_file_fallback">Berkas</string>
-    <string name="file_transfer_pin_failed">Gagal menyematkan: %1$s</string>
+    <string name="file_transfer_pin_failed">Tidak dapat menyematkan folder tersebut sebagai pintasan. Coba lagi atau pilih folder lain.</string>
     <string name="file_transfer_pin_timeout">Operasi habis waktu.</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>
-    <string name="file_transfer_remove_failed">Gagal menghapus: %1$s</string>
+    <string name="file_transfer_remove_failed">Tidak dapat menghapus pintasan tersebut. Coba lagi.</string>
     <string name="file_transfer_removing_shortcut">Menghapus pintasan…</string>
-    <string name="file_transfer_rename_failed">Gagal mengganti nama: %1$s</string>
+    <string name="file_transfer_rename_failed">Tidak dapat mengganti nama item tersebut. Pastikan nama baru belum dipakai dan folder sudah dibagikan, lalu coba lagi.</string>
     <string name="file_transfer_rename_timeout">Waktu penggantian nama habis.</string>
     <string name="file_transfer_renamed_success">Berganti nama.</string>
     <string name="file_transfer_renaming_single">Mengganti nama %1$s…</string>
@@ -544,11 +544,11 @@ $line
     <string name="file_transfer_shared_folders_unavailable">Folder bersama tidak tersedia: %1$s</string>
     <string name="file_transfer_shortcut_added">Pintasan ditambahkan.</string>
     <string name="file_transfer_shortcut_removed">Pintasan dihapus.</string>
-    <string name="file_transfer_transfer_failed">Transfer gagal: %1$s</string>
+    <string name="file_transfer_transfer_failed">Transfer tidak selesai. Pastikan PC Anda masih terhubung, lalu coba lagi.</string>
     <string name="file_transfer_unable_open_location">Tidak dapat membuka lokasi penyimpanan yang dipilih.</string>
     <string name="file_transfer_unknown_error">Kesalahan tidak dikenal.</string>
     <string name="file_transfer_upload_complete">Unggahan selesai.</string>
-    <string name="file_transfer_upload_failed">Unggahan gagal: %1$s</string>
+    <string name="file_transfer_upload_failed">Tidak dapat mengirim file. Pastikan PC Anda masih terhubung, lalu coba lagi.</string>
     <string name="file_transfer_uploading_single">Mengunggah %1$s…</string>
     <string name="font_inter_premium">Inter (Premium)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Tech)</string>

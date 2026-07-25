@@ -514,11 +514,11 @@
     <string name="file_transfer_action_downloading">डाउनलोड किया जा रहा है</string>
     <string name="file_transfer_action_uploading">अपलोड किया जा रहा है</string>
     <string name="file_transfer_adding_shortcut">शॉर्टकट जोड़ा जा रहा है…</string>
-    <string name="file_transfer_browse_error">ब्राउज़ त्रुटि: %1$s</string>
-    <string name="file_transfer_send_error">त्रुटि: %1$s</string>
+    <string name="file_transfer_browse_error">वह फ़ोल्डर नहीं खोला जा सका। जांचें कि आपका पीसी अभी भी कनेक्ट है और फ़ोल्डर अभी भी साझा है, फिर दोबारा कोशिश करें।</string>
+    <string name="file_transfer_send_error">आपके पीसी तक नहीं पहुंच सके। जांचें कि दोनों डिवाइस एक ही नेटवर्क पर हैं, फिर दोबारा कोशिश करें।</string>
 $line
     <string name="file_transfer_cancelled">रद्द कर दिया गया।</string>
-    <string name="file_transfer_delete_failed">हटाना विफल: %1$s</string>
+    <string name="file_transfer_delete_failed">उस आइटम को हटाया नहीं जा सका। जांचें कि वह आपके पीसी पर खुला नहीं है और फ़ोल्डर साझा है, फिर दोबारा कोशिश करें।</string>
     <string name="file_transfer_delete_timeout">हटाने की समयावधि समाप्त।</string>
     <string name="file_transfer_deleted_multiple_failed">%1$d में से %2$d आइटम हटाए गए (%3$d विफल)।</string>
     <string name="file_transfer_deleted_multiple_success">%1$d आइटम हटाए गए।</string>
@@ -531,12 +531,12 @@ $line
     <string name="file_transfer_download_failed_sha256">डाउनलोड विफल: SHA-256 बेमेल</string>
     <string name="file_transfer_downloading_single">%1$s डाउनलोड किया जा रहा है…</string>
     <string name="file_transfer_file_fallback">फ़ाइल</string>
-    <string name="file_transfer_pin_failed">पिन विफल: %1$s</string>
+    <string name="file_transfer_pin_failed">उस फ़ोल्डर को शॉर्टकट के रूप में पिन नहीं किया जा सका। दोबारा कोशिश करें या कोई दूसरा फ़ोल्डर चुनें।</string>
     <string name="file_transfer_pin_timeout">ऑपरेशन का समय समाप्त हो गया।</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>
-    <string name="file_transfer_remove_failed">हटाना विफल: %1$s</string>
+    <string name="file_transfer_remove_failed">वह शॉर्टकट हटाया नहीं जा सका। दोबारा कोशिश करें।</string>
     <string name="file_transfer_removing_shortcut">शॉर्टकट हटाया जा रहा है…</string>
-    <string name="file_transfer_rename_failed">नाम बदलना विफल: %1$s</string>
+    <string name="file_transfer_rename_failed">उस आइटम का नाम नहीं बदला जा सका। जांचें कि नया नाम पहले से उपयोग में नहीं है और फ़ोल्डर साझा है, फिर दोबारा कोशिश करें।</string>
     <string name="file_transfer_rename_timeout">नाम बदलने की समयावधि समाप्त।</string>
     <string name="file_transfer_renamed_success">नाम बदल दिया गया।</string>
     <string name="file_transfer_renaming_single">%1$s का नाम बदला जा रहा है…</string>
@@ -544,11 +544,11 @@ $line
     <string name="file_transfer_shared_folders_unavailable">साझा किए गए फ़ोल्डर अनुपलब्ध हैं: %1$s</string>
     <string name="file_transfer_shortcut_added">शॉर्टकट जोड़ा गया।</string>
     <string name="file_transfer_shortcut_removed">शॉर्टकट हटा दिया गया।</string>
-    <string name="file_transfer_transfer_failed">स्थानांतरण विफल: %1$s</string>
+    <string name="file_transfer_transfer_failed">ट्रांसफ़र पूरा नहीं हुआ। जांचें कि आपका पीसी अभी भी कनेक्ट है, फिर दोबारा कोशिश करें।</string>
     <string name="file_transfer_unable_open_location">चयनित सहेजने का स्थान खोलने में असमर्थ।</string>
     <string name="file_transfer_unknown_error">अज्ञात त्रुटि।</string>
     <string name="file_transfer_upload_complete">अपलोड पूर्ण।</string>
-    <string name="file_transfer_upload_failed">अपलोड विफल: %1$s</string>
+    <string name="file_transfer_upload_failed">फ़ाइल नहीं भेजी जा सकी। जांचें कि आपका पीसी अभी भी कनेक्ट है, फिर दोबारा कोशिश करें।</string>
     <string name="file_transfer_uploading_single">%1$s अपलोड किया जा रहा है…</string>
     <string name="font_inter_premium">Inter (Premium)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Tech)</string>

@@ -514,11 +514,11 @@
     <string name="file_transfer_action_downloading">Téléchargement</string>
     <string name="file_transfer_action_uploading">Envoi</string>
     <string name="file_transfer_adding_shortcut">Ajout du raccourci…</string>
-    <string name="file_transfer_browse_error">Erreur de navigation : %1$s</string>
-    <string name="file_transfer_send_error">Erreur : %1$s</string>
+    <string name="file_transfer_browse_error">Impossible d\'ouvrir ce dossier. Vérifiez que votre PC est toujours connecté et que le dossier est toujours partagé, puis réessayez.</string>
+    <string name="file_transfer_send_error">Impossible de joindre votre PC. Vérifiez que les deux appareils sont sur le même réseau, puis réessayez.</string>
 $line
     <string name="file_transfer_cancelled">Annulé.</string>
-    <string name="file_transfer_delete_failed">Échec de suppression : %1$s</string>
+    <string name="file_transfer_delete_failed">Impossible de supprimer cet élément. Vérifiez qu\'il n\'est pas ouvert sur votre PC et que le dossier est partagé, puis réessayez.</string>
     <string name="file_transfer_delete_timeout">Délai de suppression dépassé.</string>
     <string name="file_transfer_deleted_multiple_failed">Suppression de %1$d sur %2$d éléments (%3$d échoués).</string>
     <string name="file_transfer_deleted_multiple_success">%1$d éléments supprimés.</string>
@@ -531,12 +531,12 @@ $line
     <string name="file_transfer_download_failed_sha256">Échec du téléchargement : incompatibilité SHA-256</string>
     <string name="file_transfer_downloading_single">Téléchargement de %1$s…</string>
     <string name="file_transfer_file_fallback">Fichier</string>
-    <string name="file_transfer_pin_failed">Échec d\'épinglage : %1$s</string>
+    <string name="file_transfer_pin_failed">Impossible d\'épingler ce dossier comme raccourci. Réessayez ou choisissez un autre dossier.</string>
     <string name="file_transfer_pin_timeout">Délai d\'opération dépassé.</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>
-    <string name="file_transfer_remove_failed">Échec du retrait : %1$s</string>
+    <string name="file_transfer_remove_failed">Impossible de supprimer ce raccourci. Réessayez.</string>
     <string name="file_transfer_removing_shortcut">Retrait du raccourci…</string>
-    <string name="file_transfer_rename_failed">Échec du renommage : %1$s</string>
+    <string name="file_transfer_rename_failed">Impossible de renommer cet élément. Vérifiez que le nouveau nom n\'est pas déjà utilisé et que le dossier est partagé, puis réessayez.</string>
     <string name="file_transfer_rename_timeout">Délai de renommage dépassé.</string>
     <string name="file_transfer_renamed_success">Renommé.</string>
     <string name="file_transfer_renaming_single">Renommage de %1$s…</string>
@@ -544,11 +544,11 @@ $line
     <string name="file_transfer_shared_folders_unavailable">Dossiers partagés indisponibles : %1$s</string>
     <string name="file_transfer_shortcut_added">Raccourci ajouté.</string>
     <string name="file_transfer_shortcut_removed">Raccourci retiré.</string>
-    <string name="file_transfer_transfer_failed">Échec de transfert : %1$s</string>
+    <string name="file_transfer_transfer_failed">Le transfert ne s\'est pas terminé. Vérifiez que votre PC est toujours connecté, puis réessayez.</string>
     <string name="file_transfer_unable_open_location">Impossible d\'ouvrir l\'emplacement d\'enregistrement sélectionné.</string>
     <string name="file_transfer_unknown_error">Erreur inconnue.</string>
     <string name="file_transfer_upload_complete">Envoi terminé.</string>
-    <string name="file_transfer_upload_failed">Échec de l\'envoi : %1$s</string>
+    <string name="file_transfer_upload_failed">Impossible d\'envoyer le fichier. Vérifiez que votre PC est toujours connecté, puis réessayez.</string>
     <string name="file_transfer_uploading_single">Envoi de %1$s…</string>
     <string name="font_inter_premium">Inter (Premium)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Technique)</string>

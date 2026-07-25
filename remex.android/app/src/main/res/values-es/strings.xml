@@ -514,11 +514,11 @@
     <string name="file_transfer_action_downloading">Descargando</string>
     <string name="file_transfer_action_uploading">Subiendo</string>
     <string name="file_transfer_adding_shortcut">Agregando acceso directo…</string>
-    <string name="file_transfer_browse_error">Error de exploración: %1$s</string>
-    <string name="file_transfer_send_error">Error: %1$s</string>
+    <string name="file_transfer_browse_error">No se pudo abrir esa carpeta. Comprueba que tu PC siga conectado y que la carpeta siga compartida, y vuelve a intentarlo.</string>
+    <string name="file_transfer_send_error">No se pudo contactar con tu PC. Comprueba que ambos dispositivos estén en la misma red y vuelve a intentarlo.</string>
 $line
     <string name="file_transfer_cancelled">Cancelado.</string>
-    <string name="file_transfer_delete_failed">Error al eliminar: %1$s</string>
+    <string name="file_transfer_delete_failed">No se pudo eliminar ese elemento. Comprueba que no esté abierto en tu PC y que la carpeta esté compartida, y vuelve a intentarlo.</string>
     <string name="file_transfer_delete_timeout">Tiempo de espera agotado al eliminar.</string>
     <string name="file_transfer_deleted_multiple_failed">Se eliminaron %1$d de %2$d elementos (%3$d fallidos).</string>
     <string name="file_transfer_deleted_multiple_success">Se eliminaron %1$d elementos.</string>
@@ -531,12 +531,12 @@ $line
     <string name="file_transfer_download_failed_sha256">Error de descarga: discrepancia de SHA-256</string>
     <string name="file_transfer_downloading_single">Descargando %1$s…</string>
     <string name="file_transfer_file_fallback">Archivo</string>
-    <string name="file_transfer_pin_failed">Error al fijar: %1$s</string>
+    <string name="file_transfer_pin_failed">No se pudo anclar esa carpeta como acceso directo. Vuelve a intentarlo o elige otra carpeta.</string>
     <string name="file_transfer_pin_timeout">La operación ha superado el tiempo de espera.</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>
-    <string name="file_transfer_remove_failed">Error al quitar: %1$s</string>
+    <string name="file_transfer_remove_failed">No se pudo quitar ese acceso directo. Vuelve a intentarlo.</string>
     <string name="file_transfer_removing_shortcut">Quitando acceso directo…</string>
-    <string name="file_transfer_rename_failed">Error al renombrar: %1$s</string>
+    <string name="file_transfer_rename_failed">No se pudo renombrar ese elemento. Comprueba que el nuevo nombre no esté en uso y que la carpeta esté compartida, y vuelve a intentarlo.</string>
     <string name="file_transfer_rename_timeout">Tiempo de espera agotado al renombrar.</string>
     <string name="file_transfer_renamed_success">Renombrado.</string>
     <string name="file_transfer_renaming_single">Renombrando %1$s…</string>
@@ -544,11 +544,11 @@ $line
     <string name="file_transfer_shared_folders_unavailable">Carpetas compartidas no disponibles: %1$s</string>
     <string name="file_transfer_shortcut_added">Acceso directo agregado.</string>
     <string name="file_transfer_shortcut_removed">Acceso directo quitado.</string>
-    <string name="file_transfer_transfer_failed">Error de transferencia: %1$s</string>
+    <string name="file_transfer_transfer_failed">La transferencia no se completó. Comprueba que tu PC siga conectado y vuelve a intentarlo.</string>
     <string name="file_transfer_unable_open_location">No se puede abrir la ubicación de guardado seleccionada.</string>
     <string name="file_transfer_unknown_error">Error desconocido.</string>
     <string name="file_transfer_upload_complete">Subida completada.</string>
-    <string name="file_transfer_upload_failed">Error al subir: %1$s</string>
+    <string name="file_transfer_upload_failed">No se pudo enviar el archivo. Comprueba que tu PC siga conectado y vuelve a intentarlo.</string>
     <string name="file_transfer_uploading_single">Subiendo %1$s…</string>
     <string name="font_inter_premium">Inter (Premium)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Técnico)</string>

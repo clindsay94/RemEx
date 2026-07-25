@@ -514,11 +514,11 @@
     <string name="file_transfer_action_downloading">Baixando</string>
     <string name="file_transfer_action_uploading">Enviando</string>
     <string name="file_transfer_adding_shortcut">Adicionando atalho…</string>
-    <string name="file_transfer_browse_error">Erro de navegação: %1$s</string>
-    <string name="file_transfer_send_error">Erro: %1$s</string>
+    <string name="file_transfer_browse_error">Não foi possível abrir essa pasta. Verifique se o seu PC ainda está conectado e se a pasta continua compartilhada e tente novamente.</string>
+    <string name="file_transfer_send_error">Não foi possível alcançar o seu PC. Verifique se os dois dispositivos estão na mesma rede e tente novamente.</string>
 $line
     <string name="file_transfer_cancelled">Cancelado.</string>
-    <string name="file_transfer_delete_failed">Falha ao excluir: %1$s</string>
+    <string name="file_transfer_delete_failed">Não foi possível excluir esse item. Verifique se ele não está aberto no seu PC e se a pasta está compartilhada e tente novamente.</string>
     <string name="file_transfer_delete_timeout">Tempo limite de exclusão atingido.</string>
     <string name="file_transfer_deleted_multiple_failed">Excluídos %1$d de %2$d itens (%3$d falharam).</string>
     <string name="file_transfer_deleted_multiple_success">%1$d itens excluídos.</string>
@@ -531,12 +531,12 @@ $line
     <string name="file_transfer_download_failed_sha256">Falha no download: divergência de SHA-256</string>
     <string name="file_transfer_downloading_single">Baixando %1$s…</string>
     <string name="file_transfer_file_fallback">Arquivo</string>
-    <string name="file_transfer_pin_failed">Falha ao fixar: %1$s</string>
+    <string name="file_transfer_pin_failed">Não foi possível fixar essa pasta como atalho. Tente novamente ou escolha outra pasta.</string>
     <string name="file_transfer_pin_timeout">Tempo limite de operação atingido.</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>
-    <string name="file_transfer_remove_failed">Falha ao remover: %1$s</string>
+    <string name="file_transfer_remove_failed">Não foi possível remover esse atalho. Tente novamente.</string>
     <string name="file_transfer_removing_shortcut">Removendo atalho…</string>
-    <string name="file_transfer_rename_failed">Falha ao renomear: %1$s</string>
+    <string name="file_transfer_rename_failed">Não foi possível renomear esse item. Verifique se o novo nome ainda não está em uso e se a pasta está compartilhada e tente novamente.</string>
     <string name="file_transfer_rename_timeout">Tempo limite de renomeação atingido.</string>
     <string name="file_transfer_renamed_success">Renomeado.</string>
     <string name="file_transfer_renaming_single">Renomeando %1$s…</string>
@@ -544,11 +544,11 @@ $line
     <string name="file_transfer_shared_folders_unavailable">Pastas compartilhadas indisponíveis: %1$s</string>
     <string name="file_transfer_shortcut_added">Atalho adicionado.</string>
     <string name="file_transfer_shortcut_removed">Atalho removido.</string>
-    <string name="file_transfer_transfer_failed">Falha na transferência: %1$s</string>
+    <string name="file_transfer_transfer_failed">A transferência não foi concluída. Verifique se o seu PC ainda está conectado e tente novamente.</string>
     <string name="file_transfer_unable_open_location">Não foi possível abrir o local de salvamento selecionado.</string>
     <string name="file_transfer_unknown_error">Erro desconhecido.</string>
     <string name="file_transfer_upload_complete">Envio concluído.</string>
-    <string name="file_transfer_upload_failed">Falha no envio: %1$s</string>
+    <string name="file_transfer_upload_failed">Não foi possível enviar o arquivo. Verifique se o seu PC ainda está conectado e tente novamente.</string>
     <string name="file_transfer_uploading_single">Enviando %1$s…</string>
     <string name="font_inter_premium">Inter (Premium)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Técnico)</string>
