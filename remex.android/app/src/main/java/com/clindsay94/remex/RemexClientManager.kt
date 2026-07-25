@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.RemexConnectionService
+import com.clindsay94.remex.ui.screens.PairingErrors
+import com.clindsay94.remex.ui.screens.PairingSurface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -334,27 +336,52 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                     Log.i("RemexManager", "Automatic pairing successful for $host")
                                 }
                             } else {
+                                // The native reason is a DIAGNOSTIC, not a message: it is always
+                                // English (Remex.Core is NativeAOT and cannot reach Android
+                                // resources) and it names ports, paths and cert internals. It goes
+                                // to the log; the cause code picks a translated sentence for the
+                                // user. (RemEx-6gkr)
+                                //
+                                // InlineConnect, NOT the pairing screen's wording: this failure
+                                // renders on ConnectionScreen, which has no Cancel button, and
+                                // connect() restarts pairing on every tap — so "retype the PIN and
+                                // tap Connect" is the recovery that works here.
+                                //
+                                // applicationContext because `settings.context` is whichever
+                                // context won the early-return in initialize() — usually
+                                // MainActivity, sometimes a widget's app context — and an Activity
+                                // there is retained for the process lifetime and may be long
+                                // destroyed. The app context is the one guaranteed to resolve the
+                                // current per-app locale, and is a no-op when it already is one.
+                                val failure = PairingErrors.parse(submitResult)
                                 Log.e(
                                         "RemexManager",
-                                        "Automatic pairing PIN submission failed: $submitResult"
+                                        "Automatic pairing PIN submission failed [${failure.code ?: "no code"}]: ${failure.detail}"
                                 )
-                                // Emit the cleaned native reason (localized on the native side)
-                                // instead of wrapping it in a hardcoded English prefix.
                                 _connectionError.tryEmit(
-                                        submitResult
-                                                .removePrefix("ERROR: ")
-                                                .ifBlank { "Pairing failed" }
+                                        context.applicationContext.getString(
+                                                PairingErrors.messageRes(
+                                                        failure.code,
+                                                        PairingSurface.InlineConnect
+                                                )
+                                        )
                                 )
                                 _isConnecting.value = false
                                 return
                             }
                         } else {
-                            Log.e("RemexManager", "Automatic pairing start failed: $pairResult")
+                            val failure = PairingErrors.parse(pairResult)
+                            Log.e(
+                                    "RemexManager",
+                                    "Automatic pairing start failed [${failure.code ?: "no code"}]: ${failure.detail}"
+                            )
                             _connectionError.tryEmit(
-                                    pairResult
-                                            .orEmpty()
-                                            .removePrefix("ERROR: ")
-                                            .ifBlank { "Pairing failed" }
+                                    context.applicationContext.getString(
+                                            PairingErrors.messageRes(
+                                                    failure.code,
+                                                    PairingSurface.InlineConnect
+                                            )
+                                    )
                             )
                             _isConnecting.value = false
                             return

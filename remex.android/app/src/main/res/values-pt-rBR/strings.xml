@@ -264,7 +264,7 @@
     <string name="pairing_auto_pin_failed">Não foi possível obter o PIN automaticamente — digite o PIN exibido no seu PC.</string>
     <string name="pairing_submit">Parear</string>
     <string name="pairing_cancel">Cancelar</string>
-    <string name="pairing_error_bad_pin">PIN incorreto ou pareamento expirado</string>
+    <string name="pairing_error_bad_pin">PIN incorreto ou pareamento expirado. Digite o PIN que aparece agora no seu PC e tente novamente.</string>
     <string name="pairing_error_cert_mismatch">O certificado de segurança deste PC mudou, então o seu celular não confia mais nele. Despareie este PC no seu celular e pareie novamente para aceitar o novo certificado.</string>
     <string name="qr_scanner_title">Escanear código QR</string>
     <string name="cd_back">Voltar</string>
@@ -425,7 +425,7 @@
     <string name="pairing_error_empty_response">Seu PC não enviou nenhum PIN. Verifique se o RemEx está aberto no PC e exibindo um PIN de pareamento e tente novamente.</string>
     <string name="pairing_error_reach_failed">Não foi possível alcançar o seu PC. Verifique se os dois dispositivos estão na mesma rede Wi-Fi e se o endereço do PC está correto e tente novamente.</string>
     <string name="pairing_error_start_failed">Não foi possível iniciar o pareamento: %1$s. Verifique se o RemEx está aberto no PC e tente novamente.</string>
-    <string name="pairing_error_verify_failed">Não foi possível concluir o pareamento: %1$s. Toque em Cancelar, obtenha um novo PIN no seu PC e pareie novamente.</string>
+    <string name="pairing_error_verify_failed">Não foi possível concluir o pareamento. Toque em Cancelar, obtenha um novo PIN no seu PC e pareie novamente.</string>
     <string name="pairing_error_save_failed">Falha ao salvar o PC fixado com segurança.</string>
     <string name="qr_error_missing_hash">O código QR não contém o hash do certificado do PC</string>
     <string name="qr_error_setup_failed">Falha na configuração do QR</string>

@@ -264,7 +264,7 @@
     <string name="pairing_auto_pin_failed">PIN अपने आप प्राप्त नहीं हो सका — अपने PC पर दिखाई गई PIN दर्ज करें.</string>
     <string name="pairing_submit">पेयर करें</string>
     <string name="pairing_cancel">रद्द करें</string>
-    <string name="pairing_error_bad_pin">पिन गलत है या पेयरिंग की समय-सीमा समाप्त हो गई</string>
+    <string name="pairing_error_bad_pin">पिन गलत है या पेयरिंग की समय-सीमा समाप्त हो गई। अपने पीसी पर अब दिख रहा पिन डालें और दोबारा कोशिश करें।</string>
     <string name="pairing_error_cert_mismatch">इस पीसी का सुरक्षा प्रमाणपत्र बदल गया है, इसलिए आपका फोन अब उस पर भरोसा नहीं करता। अपने फोन पर इस पीसी को अनपेयर करें, फिर नया प्रमाणपत्र स्वीकार करने के लिए दोबारा पेयर करें।</string>
     <string name="qr_scanner_title">QR कोड स्कैन करें</string>
     <string name="cd_back">वापस</string>
@@ -425,7 +425,7 @@
     <string name="pairing_error_empty_response">आपके पीसी ने कोई पिन नहीं भेजा। जांचें कि पीसी पर RemEx खुला है और पेयरिंग पिन दिखा रहा है, फिर दोबारा कोशिश करें।</string>
     <string name="pairing_error_reach_failed">आपके पीसी तक नहीं पहुंच सके। जांचें कि दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं और पीसी का पता सही है, फिर दोबारा कोशिश करें।</string>
     <string name="pairing_error_start_failed">पेयरिंग शुरू नहीं हो सकी: %1$s। जांचें कि पीसी पर RemEx खुला है, फिर दोबारा कोशिश करें।</string>
-    <string name="pairing_error_verify_failed">पेयरिंग पूरी नहीं हो सकी: %1$s। रद्द करें पर टैप करें, अपने पीसी से नया पिन लें, फिर दोबारा पेयर करें।</string>
+    <string name="pairing_error_verify_failed">पेयरिंग पूरी नहीं हो सकी। रद्द करें पर टैप करें, अपने पीसी से नया पिन लें, फिर दोबारा पेयर करें।</string>
     <string name="pairing_error_save_failed">पिन किए गए होस्ट को सुरक्षित रूप से सहेजने में विफल।</string>
     <string name="qr_error_missing_hash">क्यूआर कोड में होस्ट प्रमाणपत्र हैश गायब है</string>
     <string name="qr_error_setup_failed">क्यूआर सेटअप विफल रहा</string>

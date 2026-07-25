@@ -264,7 +264,7 @@
     <string name="pairing_auto_pin_failed">Tidak dapat mengambil PIN secara otomatis — masukkan PIN yang ditampilkan di PC Anda.</string>
     <string name="pairing_submit">Sandingkan</string>
     <string name="pairing_cancel">Batal</string>
-    <string name="pairing_error_bad_pin">PIN salah atau masa penyandingan telah berakhir</string>
+    <string name="pairing_error_bad_pin">PIN salah atau masa penyandingan telah berakhir. Masukkan PIN yang kini tampil di PC Anda, lalu coba lagi.</string>
     <string name="pairing_error_cert_mismatch">Sertifikat keamanan PC ini telah berubah, sehingga ponsel Anda tidak lagi mempercayainya. Lepas sandingan PC ini di ponsel Anda, lalu sandingkan lagi untuk menerima sertifikat baru.</string>
     <string name="qr_scanner_title">Pindai Kode QR</string>
     <string name="cd_back">Kembali</string>
@@ -425,7 +425,7 @@
     <string name="pairing_error_empty_response">PC Anda tidak mengirim PIN. Pastikan RemEx terbuka di PC dan menampilkan PIN penyandingan, lalu coba lagi.</string>
     <string name="pairing_error_reach_failed">Tidak dapat menjangkau PC Anda. Pastikan kedua perangkat berada di jaringan Wi-Fi yang sama dan alamat PC sudah benar, lalu coba lagi.</string>
     <string name="pairing_error_start_failed">Penyandingan tidak dapat dimulai: %1$s. Pastikan RemEx terbuka di PC, lalu coba lagi.</string>
-    <string name="pairing_error_verify_failed">Penyandingan tidak dapat diselesaikan: %1$s. Ketuk Batal, dapatkan PIN baru dari PC Anda, lalu sandingkan lagi.</string>
+    <string name="pairing_error_verify_failed">Penyandingan tidak dapat diselesaikan. Ketuk Batal, dapatkan PIN baru dari PC Anda, lalu sandingkan lagi.</string>
     <string name="pairing_error_save_failed">Gagal menyimpan PC yang dipinkan dengan aman.</string>
     <string name="qr_error_missing_hash">Kode QR tidak memiliki hash sertifikat PC</string>
     <string name="qr_error_setup_failed">Penyusunan QR gagal</string>

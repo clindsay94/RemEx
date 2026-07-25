@@ -105,34 +105,35 @@ class PairingViewModel : ViewModel() {
             return false
         }
 
-        // Surface the actual native error rather than masking it; this helps both the user
-        // and the developer reading logcat understand whether the PIN was wrong, the session
-        // expired, or the WebSocket dropped.
         val message =
                 when {
                     // Every reachable native SubmitPin failure lands here — wrong PIN, expired
                     // session, lost key state, confirm timeout, or an unexpected exception. All
-                    // five are developer-grade English with no recovery action, so wrap them in
-                    // a localized sentence that supplies one.
+                    // five are developer-grade English naming ports, paths and cert internals, so
+                    // the diagnostic is logged and the failure's cause code selects a localized
+                    // sentence for the user instead (RemEx-6gkr). Nothing logged it before, so
+                    // logcat gains what the screen loses.
                     //
-                    // The advice names Cancel FIRST on purpose. All five of these clear the
-                    // native pairing state, but Submit stays enabled here, so "get a fresh PIN
-                    // and try again" followed literally in place just hits "No active pairing
-                    // session" and repeats forever. Cancel is the only working recovery today.
+                    // Four of the five resolve to advice that names Cancel, because Submit stays
+                    // enabled here while re-using a session that is already unusable — so "get a
+                    // fresh PIN and try again", followed literally in place, just comes back "No
+                    // active pairing session" and repeats forever. See the dead-session note in
+                    // PairingErrors, which also explains why the connection screen needs the
+                    // opposite advice. The fifth, an unexpected exception, is unclassified and
+                    // falls to the generic message.
                     //
                     // Careful if the Submit predicate ever loosens: SubmitPairingPinNative has a
-                    // SIXTH error return, "PIN is required", and it is the one case that does NOT
-                    // clear pairing state — so "get a fresh PIN" would be wrong advice for it. It
-                    // is unreachable only because Submit requires exactly 6 digits.
-                    //
-                    // Localizing the detail itself needs a cause code from the native layer and
-                    // is tracked separately (RemEx-6gkr). The trailing period is trimmed because
-                    // the resource supplies its own terminator right after %1$s.
-                    result.startsWith("ERROR: ") ->
-                            context.getString(
-                                    R.string.pairing_error_verify_failed,
-                                    result.removePrefix("ERROR: ").trimEnd('.', ' ')
-                            )
+                    // SIXTH error return, "PIN is required" (ARG_MISSING), and it is the one case
+                    // that does NOT clear pairing state — so "get a fresh PIN" would be wrong
+                    // advice for it. It is unreachable only because Submit requires 6 digits.
+                    result.startsWith("ERROR: ") -> {
+                        val failure = parsePairingError(result)
+                        android.util.Log.w(
+                                "PairingViewModel",
+                                "PIN submission failed [${failure.code ?: "no code"}]: ${failure.detail}"
+                        )
+                        context.getString(pairingErrorMessageRes(failure.code))
+                    }
                     result.isBlank() -> context.getString(R.string.pairing_error_empty_response)
                     else -> {
                         android.util.Log.w("PairingViewModel", "Unknown pairing error: $result")
@@ -215,25 +216,28 @@ class PairingViewModel : ViewModel() {
                         autoPinFetchFailed = allowAutoPin && fetchedPin == null,
                 )
             } else {
-                // Every branch yields a COMPLETE, self-contained message, matching how
-                // submitPin() above builds its error. pairing_error_start_failed is used only
-                // for the raw native-error branch, where it supplies the "what to do next" the
-                // raw text has none of. reach_failed and unknown already carry their own advice,
-                // so nesting them inside start_failed would give the user two next steps, two
-                // sentence terminators, and — on the unknown branch — contradictory instructions
-                // (RemEx-meqm).
+                // Every branch yields a COMPLETE, self-contained message, matching how submitPin()
+                // above builds its error. Keep it that way: nesting one advice-bearing string
+                // inside another gave the user two next steps, two sentence terminators, and — on
+                // the unknown branch — contradictory instructions, which is why RemEx-meqm was
+                // reverted twice before landing. RemEx-6gkr then removed the last wrapper here: the
+                // cause code selects a single finished sentence instead, which orphaned
+                // pairing_error_start_failed. Removing it, along with pairing_error_generic (which
+                // was already unreferenced before this change), is RemEx-fegh — kept separate so
+                // the 9-locale parity sweep stands on its own.
                 val message =
                         when {
-                            result.startsWith("ERROR: ") ->
-                                    context.getString(
-                                            R.string.pairing_error_start_failed,
-                                            // The native detail is usually an exception message and
-                                            // ends in its own period, while the resource supplies a
-                                            // terminator immediately after %1$s. Trim so the user
-                                            // never sees ".." — or ".।" in Hindi, where the mixed
-                                            // pair is worse than the doubled one.
-                                            result.removePrefix("ERROR: ").trimEnd('.', ' ')
-                                    )
+                            result.startsWith("ERROR: ") -> {
+                                // Same as submitPin above: map the native cause code to a localized
+                                // sentence and log the diagnostic. This supersedes wrapping the raw
+                                // English detail in pairing_error_start_failed (RemEx-6gkr).
+                                val failure = parsePairingError(result)
+                                android.util.Log.w(
+                                        "PairingViewModel",
+                                        "Pairing start failed [${failure.code ?: "no code"}]: ${failure.detail}"
+                                )
+                                context.getString(pairingErrorMessageRes(failure.code))
+                            }
                             result.isBlank() -> context.getString(R.string.pairing_error_reach_failed)
                             else -> {
                                 android.util.Log.w("PairingViewModel", "Unknown pairing error: $result")
@@ -257,6 +261,16 @@ class PairingViewModel : ViewModel() {
         val pin = raw.substring(3).substringBefore("|")
         return pin.takeIf { it.length == 6 && it.all { c -> c.isDigit() } }
     }
+
+    // The failure parser and the code→string mapping live in [PairingErrors] rather than here,
+    // because RemexClientManager's auto-pair path needs them too and is not a ViewModel. These
+    // delegates keep the call sites above short and keep the unit tests bound to this surface.
+    internal fun parsePairingError(raw: String?): PairingFailure = PairingErrors.parse(raw)
+
+    // This ViewModel only ever backs the dedicated pairing screen, so it binds the surface here
+    // rather than making every call site restate it.
+    internal fun pairingErrorMessageRes(code: String?): Int =
+            PairingErrors.messageRes(code, PairingSurface.Dedicated)
 
     fun resetPairingState() {
         // Called when the user explicitly retries (taps Retry / Cancel + reopen).
