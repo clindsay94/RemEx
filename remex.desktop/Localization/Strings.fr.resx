@@ -3303,4 +3303,28 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>Éditeur : {0}</value>
   </data>
+  <data name="Canvas_Preset_Default" xml:space="preserve">
+    <value>Par défaut</value>
+  </data>
+  <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
+    <value>Magenta et cyan</value>
+  </data>
+  <data name="Canvas_Preset_SmokeGold" xml:space="preserve">
+    <value>Fumée et or</value>
+  </data>
+  <data name="Canvas_Preset_EmeraldNight" xml:space="preserve">
+    <value>Nuit émeraude</value>
+  </data>
+  <data name="Canvas_Preset_Sunset" xml:space="preserve">
+    <value>Coucher de soleil</value>
+  </data>
+  <data name="Canvas_Preset_Arctic" xml:space="preserve">
+    <value>Arctique</value>
+  </data>
+  <data name="Canvas_Preset_NeonPurple" xml:space="preserve">
+    <value>Violet néon</value>
+  </data>
+  <data name="Canvas_Preset_Monochrome" xml:space="preserve">
+    <value>Monochrome</value>
+  </data>
 </root>

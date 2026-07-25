@@ -3304,4 +3304,28 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>Wydawca: {0}</value>
   </data>
+  <data name="Canvas_Preset_Default" xml:space="preserve">
+    <value>Domyślny</value>
+  </data>
+  <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
+    <value>Magenta i cyjan</value>
+  </data>
+  <data name="Canvas_Preset_SmokeGold" xml:space="preserve">
+    <value>Dym i złoto</value>
+  </data>
+  <data name="Canvas_Preset_EmeraldNight" xml:space="preserve">
+    <value>Szmaragdowa noc</value>
+  </data>
+  <data name="Canvas_Preset_Sunset" xml:space="preserve">
+    <value>Zachód słońca</value>
+  </data>
+  <data name="Canvas_Preset_Arctic" xml:space="preserve">
+    <value>Arktyczny</value>
+  </data>
+  <data name="Canvas_Preset_NeonPurple" xml:space="preserve">
+    <value>Neonowy fiolet</value>
+  </data>
+  <data name="Canvas_Preset_Monochrome" xml:space="preserve">
+    <value>Monochromatyczny</value>
+  </data>
 </root>

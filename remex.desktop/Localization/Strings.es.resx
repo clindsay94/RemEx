@@ -3327,4 +3327,28 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="TaskMgr_PublisherFormat" xml:space="preserve">
     <value>Editor: {0}</value>
   </data>
+  <data name="Canvas_Preset_Default" xml:space="preserve">
+    <value>Predeterminado</value>
+  </data>
+  <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
+    <value>Magenta y cian</value>
+  </data>
+  <data name="Canvas_Preset_SmokeGold" xml:space="preserve">
+    <value>Humo y oro</value>
+  </data>
+  <data name="Canvas_Preset_EmeraldNight" xml:space="preserve">
+    <value>Noche esmeralda</value>
+  </data>
+  <data name="Canvas_Preset_Sunset" xml:space="preserve">
+    <value>Atardecer</value>
+  </data>
+  <data name="Canvas_Preset_Arctic" xml:space="preserve">
+    <value>Ártico</value>
+  </data>
+  <data name="Canvas_Preset_NeonPurple" xml:space="preserve">
+    <value>Púrpura neón</value>
+  </data>
+  <data name="Canvas_Preset_Monochrome" xml:space="preserve">
+    <value>Monocromo</value>
+  </data>
 </root>

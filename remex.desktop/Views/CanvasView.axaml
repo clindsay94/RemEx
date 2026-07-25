@@ -269,14 +269,14 @@
                                             </MenuItem>
                                             <MenuItem Header="{local:Localize Canvas_SecondMetric}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).ChooseSecondMetricCommand}" CommandParameter="{Binding}"/>
                                             <MenuItem Header="{local:Localize Canvas_ColorPreset}">
-                                                <MenuItem Header="Default" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Default"/>
-                                                <MenuItem Header="Magenta &amp; Cyan" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Magenta &amp; Cyan"/>
-                                                <MenuItem Header="Smoke &amp; Gold" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Smoke &amp; Gold"/>
-                                                <MenuItem Header="Emerald Night" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Emerald Night"/>
-                                                <MenuItem Header="Sunset" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Sunset"/>
-                                                <MenuItem Header="Arctic" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Arctic"/>
-                                                <MenuItem Header="Neon Purple" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Neon Purple"/>
-                                                <MenuItem Header="Monochrome" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Monochrome"/>
+                                                <MenuItem Header="{local:Localize Canvas_Preset_Default}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Default"/>
+                                                <MenuItem Header="{local:Localize Canvas_Preset_MagentaCyan}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Magenta &amp; Cyan"/>
+                                                <MenuItem Header="{local:Localize Canvas_Preset_SmokeGold}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Smoke &amp; Gold"/>
+                                                <MenuItem Header="{local:Localize Canvas_Preset_EmeraldNight}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Emerald Night"/>
+                                                <MenuItem Header="{local:Localize Canvas_Preset_Sunset}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Sunset"/>
+                                                <MenuItem Header="{local:Localize Canvas_Preset_Arctic}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Arctic"/>
+                                                <MenuItem Header="{local:Localize Canvas_Preset_NeonPurple}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Neon Purple"/>
+                                                <MenuItem Header="{local:Localize Canvas_Preset_Monochrome}" Command="{Binding Sensor.ApplyThemeCommand}" CommandParameter="Monochrome"/>
                                             </MenuItem>
                                             <MenuItem Header="{local:Localize Canvas_Rename}" Command="{Binding Sensor.BeginRenameCommand}"/>
                                             <MenuItem Header="{local:Localize Canvas_ShowValueOverlay}" ToggleType="CheckBox" IsChecked="{Binding Sensor.ShowValueOverlay, Mode=TwoWay}"/>
