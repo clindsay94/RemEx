@@ -21,7 +21,7 @@
     <string name="disconnected_requires_connection">%1$s requires a connected PC.</string>
     <string name="disconnected_connect_wifi">Connect to your PC over Wi-Fi to use this feature.</string>
     <string name="button_setup_connection">Set up connection</string>
-    <string name="button_cancel">Cancel</string>
+    <string name="button_cancel">Скасувати</string>
     <string name="button_confirm">Confirm</string>
     <string name="button_dismiss">Dismiss</string>
     <string name="button_done">Done</string>
@@ -389,7 +389,7 @@
     <string name="file_transfer_rename_title">Rename</string>
     <string name="file_transfer_rename_hint">New name</string>
     <string name="file_transfer_rename_confirm">Rename</string>
-    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_cancel">Скасувати</string>
     <string name="cd_more_options">More options</string>
     <string name="settings_ft_shared_folders_title">Android Shared Folders</string>
     <string name="settings_ft_shared_folders_desc">Add folders from this device to share with the PC. Your selections are saved and will be used automatically.</string>
