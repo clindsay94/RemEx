@@ -3256,4 +3256,43 @@ Windows: RemEx potrzebuje uprawnień administratora, ponieważ tylko administrat
     <value>Otwórz Ustawienia i wyłącz "Uruchom przy logowaniu". Większości osób to wystarczy: RemEx pozostaje zainstalowany i nadal możesz uruchomić go samodzielnie, a ponowne włączenie tej opcji przywraca automatyczny start.
 Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "RemEx" — zobaczysz je w Harmonogramie zadań w Bibliotece Harmonogramu zadań — a Linux używa wpisu autostartu w ~/.config/autostart/remex-agent.desktop. Jeśli RemEx kiedyś przestanie uruchamiać się po zalogowaniu, wyłącz i włącz to ustawienie, aby utworzyć je ponownie.</value>
   </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>Zakończyć proces "{0}" (PID {1})? Niezapisana praca w tym programie zostanie utracona.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>Usunąć "{0}" z programu uruchamiającego? Nie odinstaluje to programu.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>Zakończyć udostępnianie "{0}"? Telefon nie będzie już widzieć tego folderu. Pliki nie zostaną usunięte.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>Cofnąć dostęp dla {0}? Ten telefon utraci dostęp do plików, dopóki nie sparujesz go i nie zatwierdzisz ponownie.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>Zastąpić udostępnione foldery ustawieniami domyślnymi? Foldery, które dodałeś, przestaną być udostępniane. Pliki nie zostaną usunięte.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>Wyczyścić log diagnostyczny? Wpisy wyświetlane tutaj zostaną odrzucone. Pliki logów już zapisane na dysku nie zostaną zmienione.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Kończenie procesu — czy na pewno?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Usuwanie programu — czy na pewno?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Usuń</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Zakończenie udostępniania — czy na pewno?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Cofanie dostępu — czy na pewno?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Przywracanie ustawień domyślnych — czy na pewno?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Czyszczenie logów — czy na pewno?</value>
+  </data>
 </root>

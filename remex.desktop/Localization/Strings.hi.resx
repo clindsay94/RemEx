@@ -3255,4 +3255,43 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
     <value>सेटिंग्स खोलें और "लॉगिन पर शुरू करें" बंद कर दें। अधिकतर लोगों के लिए इतना ही ज़रूरी है: RemEx इंस्टॉल रहेगा और आप उसे जब चाहें खुद शुरू कर सकते हैं, और दोबारा चालू करने पर अपने आप शुरू होना बहाल हो जाता है।
 इस स्विच के पीछे, Windows पर RemEx "RemEx" नाम का एक Task Scheduler टास्क इस्तेमाल करता है — आप उसे Task Scheduler में Task Scheduler Library के अंदर देख सकते हैं — और Linux पर ~/.config/autostart/remex-agent.desktop में एक ऑटोस्टार्ट एंट्री। अगर कभी RemEx साइन इन पर शुरू होना बंद कर दे, तो यह सेटिंग बंद करके दोबारा चालू करें, इससे वह फिर बन जाएगी।</value>
   </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>"{0}" (PID {1}) बंद करें? उस प्रोग्राम में सहेजा न गया कोई भी काम खो जाएगा।</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>"{0}" को अपने लॉन्चर से हटाएं? इससे प्रोग्राम अनइंस्टॉल नहीं होगा।</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>"{0}" को साझा करना बंद करें? आपका फ़ोन अब यह फ़ोल्डर नहीं देखेगा। फ़ाइलें हटाई नहीं जाएंगी।</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>{0} की पहुंच निरस्त करें? जब तक आप उसे दोबारा पेयर करके अनुमति नहीं देते, वह फ़ोन फ़ाइलों तक नहीं पहुंच पाएगा।</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>अपने साझा फ़ोल्डरों को डिफ़ॉल्ट से बदलें? आपने जो फ़ोल्डर जोड़े थे, वे साझा नहीं रहेंगे। फ़ाइलें हटाई नहीं जाएंगी।</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>डायग्नोस्टिक लॉग साफ़ करें? यहां दिखाई गई प्रविष्टियां हटा दी जाएंगी। डिस्क पर पहले सहेजी गई लॉग फ़ाइलें प्रभावित नहीं होंगी।</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>प्रोसेस बंद करें — क्या आप निश्चित हैं?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>प्रोग्राम हटाएँ — क्या आप निश्चित हैं?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>हटाएँ</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>साझा करना बंद करें — क्या आप निश्चित हैं?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>पहुंच निरस्त करें — क्या आप निश्चित हैं?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>डिफ़ॉल्ट पुनर्स्थापित करें — क्या आप निश्चित हैं?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>लॉग साफ़ करें — क्या आप निश्चित हैं?</value>
+  </data>
 </root>

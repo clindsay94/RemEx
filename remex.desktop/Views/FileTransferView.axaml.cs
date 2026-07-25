@@ -87,14 +87,9 @@ public partial class FileTransferView : UserControl
 
         vm.SelectAllEntries = () => RemoteFileList.SelectAll();
 
-        vm.OnConfirmationRequested = async (title, message, confirmText) =>
-        {
-            var dialog = new ConfirmationDialog(title, message, confirmText);
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel is Window parentWindow)
-                return await dialog.ShowDialog<bool>(parentWindow);
-            return false;
-        };
+        // Was an inline lambda; moved to ConfirmationDialogHost when RemEx-6p1f needed the same one
+        // in four more views. Behaviour is identical, including returning false with no parent window.
+        vm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
 
         vm.PickUploadFileAsync = async options =>
         {

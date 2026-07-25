@@ -3255,4 +3255,43 @@ Windows : RemEx a besoin des droits administrateur, car seuls les administrateur
     <value>Ouvrez les Paramètres et désactivez « Lancer au démarrage ». C'est tout ce dont la plupart des utilisateurs ont besoin : RemEx reste installé et vous pouvez toujours le lancer vous-même, et le réactiver rétablit le démarrage automatique.
 Derrière cette option, Windows utilise une tâche du Planificateur de tâches nommée « RemEx » — visible dans le Planificateur de tâches, sous Bibliothèque du Planificateur de tâches — et Linux utilise une entrée de démarrage automatique dans ~/.config/autostart/remex-agent.desktop. Si RemEx cesse un jour de démarrer à l'ouverture de session, désactivez puis réactivez l'option pour la recréer.</value>
   </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>Terminer « {0} » (PID {1}) ? Tout travail non enregistré dans ce programme sera perdu.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>Supprimer « {0} » du lanceur ? Cela ne désinstalle pas le programme.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>Arrêter de partager « {0} » ? Votre téléphone ne verra plus ce dossier. Les fichiers ne sont pas supprimés.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>Révoquer l'accès de {0} ? Ce téléphone perdra l'accès aux fichiers tant que vous ne l'aurez pas couplé et autorisé de nouveau.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>Remplacer vos dossiers partagés par ceux par défaut ? Les dossiers que vous avez ajoutés ne seront plus partagés. Les fichiers ne sont pas supprimés.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>Effacer le journal de diagnostic ? Les entrées affichées ici seront supprimées. Les fichiers journaux déjà enregistrés sur le disque ne sont pas affectés.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Terminer le processus — Êtes-vous sûr ?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Supprimer le programme — Êtes-vous sûr ?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Arrêter le partage — Êtes-vous sûr ?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Révoquer l'accès — Êtes-vous sûr ?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Restaurer les valeurs par défaut — Êtes-vous sûr ?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Effacer les journaux — Êtes-vous sûr ?</value>
+  </data>
 </root>

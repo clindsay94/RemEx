@@ -521,11 +521,30 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         await SaveSharedRootsAsync(LocalizationService.Instance["Settings_FileTransferFolderAdded"]);
     }
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// Guards the three destructive Settings actions: restoring default shared folders, removing a
+    /// shared folder, and revoking a device's trust (RemEx-6p1f).
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
     [RelayCommand]
     private async Task RestoreDefaultSharedFoldersAsync()
     {
         if (!SupportsSharedFolderConfiguration)
             return;
+
+        // Silently discards every folder the user added to sharing, so confirm first (RemEx-6p1f).
+        // Fails CLOSED: with no dialog wired the current folder list is left alone.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_RestoreFolders_Title"],
+                LocalizationService.Instance["Confirm_RestoreFolders_Msg"],
+                LocalizationService.Instance["Settings_FileTransferRestoreDefaults"]))
+        {
+            return;
+        }
 
         try
         {
@@ -626,6 +645,22 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         if (sender is not FileTrustDeviceItem item || ResolveTrustService() is not { } service)
             return;
+
+        // One mis-click here severs that phone's file access until the user pairs and approves it
+        // again, so confirm first (RemEx-6p1f). The confirmation lives in this handler rather than
+        // in FileTrustDeviceItem.Revoke() because this is where the revocation actually happens —
+        // the item only raises the event. Fails CLOSED: with no dialog wired, trust is kept.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_RevokeTrust_Title"],
+                string.Format(
+                    LocalizationService.Instance["Confirm_RevokeTrust_Format"],
+                    item.ShortId),
+                LocalizationService.Instance["Settings_TrustRevoke"]))
+        {
+            return;
+        }
+
         try
         {
             await service.RevokeAsync(item.ClientId, CancellationToken.None);
@@ -816,6 +851,21 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         if (sender is not FileTransferSharedRootItem item)
             return;
+
+        // Removing a shared root revokes the phone's access to that whole folder tree, so confirm
+        // first (RemEx-6p1f). Same reasoning as trust revocation: the confirmation belongs in this
+        // handler, not in the item's Remove() command, because the removal happens here. Fails
+        // CLOSED: with no dialog wired the folder stays shared.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_RemoveSharedFolder_Title"],
+                string.Format(
+                    LocalizationService.Instance["Confirm_RemoveSharedFolder_Format"],
+                    item.DisplayName),
+                LocalizationService.Instance["Settings_FileTransferRemove"]))
+        {
+            return;
+        }
 
         UnsubscribeSharedRoot(item);
         SharedRoots.Remove(item);

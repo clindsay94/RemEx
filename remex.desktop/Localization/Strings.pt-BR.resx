@@ -3255,4 +3255,43 @@ Windows: o RemEx precisa de direitos de administrador, porque só administradore
     <value>Abra as Configurações e desative "Iniciar ao fazer login". Isso basta para a maioria: o RemEx continua instalado e você ainda pode abri-lo quando quiser, e reativar a opção restaura o início automático.
 Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada "RemEx" — você pode vê-la no Agendador de Tarefas, dentro da Biblioteca do Agendador de Tarefas — e o Linux usa uma entrada de autostart em ~/.config/autostart/remex-agent.desktop. Se algum dia o RemEx parar de iniciar ao entrar, desative e reative a opção para recriá-la.</value>
   </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>Encerrar "{0}" (PID {1})? Qualquer trabalho não salvo nesse programa será perdido.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>Remover "{0}" do seu lançador? Isso não desinstala o programa.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>Parar de compartilhar "{0}"? Seu telefone não verá mais esta pasta. Os arquivos não são excluídos.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>Revogar o acesso de {0}? Esse telefone perde o acesso aos arquivos até você pareá-lo e aprová-lo novamente.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>Substituir suas pastas compartilhadas pelas padrão? As pastas que você adicionou deixarão de ser compartilhadas. Os arquivos não são excluídos.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>Limpar o log de diagnóstico? As entradas listadas aqui serão descartadas. Os arquivos de log já gravados no disco não são afetados.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Encerrar Processo — Tem certeza?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Remover Programa — Tem certeza?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Remover</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Parar de Compartilhar — Tem certeza?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Revogar Acesso — Tem certeza?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Restaurar Padrões — Tem certeza?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Limpar Logs — Tem certeza?</value>
+  </data>
 </root>

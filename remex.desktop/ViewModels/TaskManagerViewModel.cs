@@ -119,10 +119,34 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         await _connection.RequestProcessListAsync();
     }
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
     private async Task KillProcessAsync(ProcessInfo? process)
     {
         if (process == null) return;
+
+        // Clear any previous failure before the dialog: cancelling this kill should not leave an
+        // unrelated earlier error on screen.
         KillError = null;
+
+        // Ending a process discards whatever that program had not saved, and there is no undo, so
+        // confirm first (RemEx-6p1f). Deliberately fails CLOSED: if no dialog is wired the process
+        // is left running, which is the safe outcome.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_KillProcess_Title"],
+                string.Format(
+                    LocalizationService.Instance["Confirm_KillProcess_Format"],
+                    process.Name,
+                    process.Id),
+                LocalizationService.Instance["TaskMgr_KillProcess"]))
+        {
+            return;
+        }
         var resp = await _connection.KillProcessWithResponseAsync(process.Id);
         if (!resp.Success)
         {

@@ -3259,4 +3259,43 @@ Windows: RemEx yönetici izni gerektirir, çünkü bu korumalı dosyayı yalnız
     <value>Ayarlar'ı açın ve "Giriş yapıldığında başlat" seçeneğini kapatın. Çoğu kişi için bu yeterlidir: RemEx kurulu kalır, istediğinizde kendiniz başlatabilirsiniz ve seçeneği yeniden açtığınızda otomatik başlatma geri gelir.
 Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi kullanır — Görev Zamanlayıcı'da Görev Zamanlayıcı Kitaplığı altında görebilirsiniz — Linux ise ~/.config/autostart/remex-agent.desktop konumundaki bir otomatik başlatma girdisini kullanır. RemEx bir gün oturum açıldığında başlamaz olursa, bu ayarı kapatıp yeniden açarak yeniden oluşturun.</value>
   </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>"{0}" (PID {1}) sonlandırılsın mı? O programdaki kaydedilmemiş çalışmalar kaybolur.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>"{0}" başlatıcınızdan kaldırılsın mı? Bu işlem programı bilgisayardan kaldırmaz.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>"{0}" paylaşımı durdurulsun mu? Telefonunuz bu klasörü artık görmez. Dosyalar silinmez.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>{0} için erişim iptal edilsin mi? O telefon, yeniden eşleştirip onaylayana kadar dosyalara erişemez.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>Paylaşılan klasörleriniz varsayılanlarla değiştirilsin mi? Eklediğiniz klasörler artık paylaşılmaz. Dosyalar silinmez.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>Tanılama günlüğü temizlensin mi? Burada listelenen kayıtlar silinir. Diske daha önce yazılmış günlük dosyaları etkilenmez.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Süreci Sonlandır — Emin misiniz?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Programı Kaldır — Emin misiniz?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Kaldır</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Paylaşımı Durdur — Emin misiniz?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Erişimi İptal Et — Emin misiniz?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Varsayılanları Geri Yükle — Emin misiniz?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Günlükleri Temizle — Emin misiniz?</value>
+  </data>
 </root>

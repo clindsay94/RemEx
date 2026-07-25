@@ -3256,4 +3256,43 @@ Windows: RemEx потрібні права адміністратора, бо ц
     <value>Відкрийте Налаштування й вимкніть "Запускати при вході". Для більшості цього достатньо: RemEx залишається встановленим, ви можете запускати його самостійно, а якщо знову увімкнете параметр, автоматичний запуск відновиться.
 За цим перемикачем Windows використовує завдання Планувальника завдань з назвою "RemEx" — його видно в Планувальнику завдань у Бібліотеці планувальника завдань — а Linux використовує запис автозапуску в ~/.config/autostart/remex-agent.desktop. Якщо колись RemEx перестане запускатися під час входу, вимкніть і знову увімкніть цей параметр, щоб його створити заново.</value>
   </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>Завершити «{0}» (PID {1})? Незбережену роботу в цій програмі буде втрачено.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>Видалити «{0}» із засобу запуску? Це не видаляє саму програму.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>Припинити надавати доступ до «{0}»? Ваш телефон більше не бачитиме цю папку. Самі файли не буде видалено.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>Відкликати доступ для {0}? Цей телефон втратить доступ до файлів, доки ви знову не виконаєте сполучення та не підтвердите його.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>Замінити ваші спільні папки стандартними? Папки, які ви додали, більше не надаватимуться. Самі файли не буде видалено.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>Очистити журнал діагностики? Показані тут записи буде відкинуто. Файли журналів, уже записані на диск, не зміняться.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Завершення процесу — ви впевнені?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Видалення програми — ви впевнені?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Припинення доступу — ви впевнені?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Відкликання доступу — ви впевнені?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Відновлення стандартних — ви впевнені?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Очищення логів — ви впевнені?</value>
+  </data>
 </root>

@@ -3261,4 +3261,43 @@ Windows: RemEx needs administrator rights, because only administrators can read 
     <value>Open Settings and turn off "Launch RemEx when you sign in". That is all most people need: RemEx stays installed and you can still start it yourself whenever you want, and switching it back on restores automatic startup.
 Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can see it in Task Scheduler under Task Scheduler Library — and Linux uses an autostart entry at ~/.config/autostart/remex-agent.desktop. If RemEx ever stops starting at sign-in, switch the setting off and back on to recreate it.</value>
   </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>End “{0}” (PID {1})? Any unsaved work in that program will be lost.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>Remove “{0}” from your launcher? This does not uninstall the program.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>Stop sharing “{0}”? Your phone will no longer see this folder. The files themselves are not deleted.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>Revoke access for {0}? That phone loses file access until you pair and approve it again.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>Replace your shared folders with the defaults? Folders you added will stop being shared. The files themselves are not deleted.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>Clear the diagnostic log? The entries listed here are discarded. Log files already written to disk are not affected.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Kill Process — Are you sure?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Remove Program — Are you sure?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Stop Sharing — Are you sure?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Revoke Access — Are you sure?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Restore Defaults — Are you sure?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Clear Logs — Are you sure?</value>
+  </data>
 </root>

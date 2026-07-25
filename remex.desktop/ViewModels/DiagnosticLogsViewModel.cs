@@ -139,9 +139,30 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         RebuildVisible();
     }
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
+    /// <summary>
+    /// Discards the in-memory diagnostic log. Async only so the confirmation can be awaited; the
+    /// MVVM Toolkit still generates <c>ClearLogsCommand</c>, so the existing binding is unaffected.
+    /// </summary>
     [RelayCommand]
-    public void ClearLogs()
+    public async Task ClearLogsAsync()
     {
+        // These entries are the only copy of anything not yet flushed to disk, and there is no undo,
+        // so confirm first (RemEx-6p1f). Fails CLOSED: with no dialog wired the log is kept.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_ClearLogs_Title"],
+                LocalizationService.Instance["Confirm_ClearLogs_Msg"],
+                LocalizationService.Instance["Logs_Clear"]))
+        {
+            return;
+        }
+
         InMemoryLogSink.Clear();
         _all.Clear();
         VisibleEntries.Clear();

@@ -29,6 +29,9 @@ public partial class SettingsView : UserControl
         if (DataContext is not SettingsViewModel vm)
             return;
 
+        // Guards restore-defaults, remove-shared-folder and revoke-trust (RemEx-6p1f).
+        vm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
+
         vm.PickSharedFolderAsync = async options =>
         {
             var topLevel = TopLevel.GetTopLevel(this);

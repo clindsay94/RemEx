@@ -3258,4 +3258,43 @@ Windows: RemEx memerlukan hak administrator, karena hanya administrator yang bis
     <value>Buka Pengaturan dan matikan "Jalankan saat masuk". Itu sudah cukup bagi hampir semua orang: RemEx tetap terpasang dan Anda masih bisa menjalankannya sendiri kapan saja, dan menyalakannya kembali memulihkan mulai otomatis.
 Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — bisa Anda lihat di Task Scheduler pada Task Scheduler Library — dan Linux memakai entri autostart di ~/.config/autostart/remex-agent.desktop. Jika suatu saat RemEx berhenti berjalan saat masuk, matikan lalu nyalakan lagi pengaturan itu untuk membuatnya ulang.</value>
   </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>Hentikan "{0}" (PID {1})? Pekerjaan yang belum disimpan di program itu akan hilang.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>Hapus "{0}" dari peluncur? Ini tidak menghapus instalasi program.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>Berhenti membagikan "{0}"? Ponsel Anda tidak akan melihat folder ini lagi. Berkasnya tidak dihapus.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>Cabut akses untuk {0}? Ponsel itu kehilangan akses berkas sampai Anda menyandingkan dan menyetujuinya lagi.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>Ganti folder bersama Anda dengan default? Folder yang Anda tambahkan tidak akan dibagikan lagi. Berkasnya tidak dihapus.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>Bersihkan log diagnostik? Entri yang ditampilkan di sini akan dibuang. Berkas log yang sudah tersimpan di disk tidak terpengaruh.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Hentikan Proses — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Hapus Program — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Hapus</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Berhenti Membagikan — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Cabut Akses — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Pulihkan Default — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Bersihkan Log — Apakah Anda yakin?</value>
+  </data>
 </root>

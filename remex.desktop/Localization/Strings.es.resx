@@ -3279,4 +3279,43 @@ Windows: RemEx necesita permisos de administrador, porque solo los administrador
     <value>Abre Configuración y desactiva "Iniciar al iniciar sesión". Eso es todo lo que necesita la mayoría: RemEx sigue instalado y puedes abrirlo tú cuando quieras, y si vuelves a activarlo se restaura el inicio automático.
 Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de tareas llamada "RemEx" —puedes verla en el Programador de tareas, dentro de la Biblioteca del Programador de tareas— y en Linux usa una entrada de inicio automático en ~/.config/autostart/remex-agent.desktop. Si algún día RemEx deja de iniciarse al iniciar sesión, desactiva el ajuste y vuelve a activarlo para recrearlo.</value>
   </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>¿Terminar «{0}» (PID {1})? Se perderá cualquier trabajo sin guardar de ese programa.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>¿Eliminar «{0}» del lanzador? Esto no desinstala el programa.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>¿Dejar de compartir «{0}»? Tu teléfono ya no verá esta carpeta. Los archivos no se eliminan.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>¿Revocar el acceso de {0}? Ese teléfono perderá el acceso a los archivos hasta que lo emparejes y lo apruebes de nuevo.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>¿Reemplazar tus carpetas compartidas por las predeterminadas? Las carpetas que añadiste dejarán de compartirse. Los archivos no se eliminan.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>¿Borrar el registro de diagnóstico? Las entradas mostradas aquí se descartarán. Los archivos de registro ya guardados en el disco no se ven afectados.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Terminar proceso — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Eliminar programa — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Dejar de compartir — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Revocar acceso — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Restaurar predeterminados — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Borrar registros — ¿Estás seguro?</value>
+  </data>
 </root>

@@ -163,11 +163,32 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
     [RelayCommand]
     private async Task RemoveAppAsync(AppEntry entry)
     {
         if (entry != null && Launchers.Contains(entry))
         {
+            // The card and its custom colour/icon are gone once removed, so confirm first
+            // (RemEx-6p1f). Fails CLOSED: with no dialog wired the card stays.
+            // Uses its own Btn key rather than AppLauncher_Remove, which is the ✕ button's TOOLTIP
+            // (AppLauncherView.axaml:110) — rewording a tooltip must not silently reword a dialog.
+            if (OnConfirmationRequested is null
+                || !await OnConfirmationRequested(
+                    LocalizationService.Instance["Confirm_RemoveApp_Title"],
+                    string.Format(
+                        LocalizationService.Instance["Confirm_RemoveApp_Format"],
+                        entry.DisplayName),
+                    LocalizationService.Instance["Confirm_RemoveApp_Btn"]))
+            {
+                return;
+            }
+
             Launchers.Remove(entry);
 
             if (Connection.IsConnected)

@@ -97,6 +97,9 @@ public partial class AppLauncherView : UserControl
 
         if (DataContext is AppLauncherViewModel viewModel)
         {
+            // Guards removing a launcher card (RemEx-6p1f).
+            viewModel.OnConfirmationRequested = ConfirmationDialogHost.For(this);
+
             viewModel.OnOpenAddProgramDialogRequested = async () =>
             {
                 var dialog = new AddProgramWindow();
