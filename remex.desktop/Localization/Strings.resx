@@ -3251,7 +3251,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Why does RemEx need special permission to run?</value>
   </data>
   <data name="Faq_Q13_Answer" xml:space="preserve">
-    <value>RemEx keeps a security certificate that your phone uses to recognize this PC. It is stored where nothing else can read it, so no other program — and nobody else signed in to this PC — can copy it and pretend to be your PC. If RemEx cannot read that file it will not finish starting up, so your phone cannot reach it even though it still shows as paired.
+    <value>RemEx keeps a security certificate that your phone uses to recognize this PC. It is stored where nothing else can read it, so no other program — and nobody else signed in to this PC — can copy it and pretend to be your PC. If RemEx cannot read that file it still opens but cannot accept connections, so your phone cannot reach it even though it still shows as paired.
 Windows: RemEx needs administrator rights, because only administrators can read that protected file. It normally starts with administrator rights on its own when you sign in, so this should be rare — but if your phone cannot connect, close RemEx, right-click it, choose "Run as administrator" and try again. Linux: RemEx does not need root, and you should never start it with sudo. The certificate sits in your own home folder, readable only by you. If your phone cannot connect, an old 'remex-host' install has probably left the certificate owned by root; run the RemEx installer again and it will repair that for you. Either way your paired phones keep working — the certificate itself never changes.</value>
   </data>
   <data name="Faq_Q14_Question" xml:space="preserve">
