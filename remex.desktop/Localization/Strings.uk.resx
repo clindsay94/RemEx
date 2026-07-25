@@ -1721,7 +1721,7 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
-    <value>What do I need to run on my PC?</value>
+    <value>Що потрібно запустити на моєму ПК?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
     <value>Вам потрібен запущений RemEx на вашому ПК — це єдиний застосунок (remex.agent), який працює з підвищеними правами у вашому активному сеансі та запускається автоматично при вході в систему. Завантажте останній інсталятор зі сторінки GitHub Releases, запустіть його — і все буде готово ще до з'єднання.</value>
@@ -1733,10 +1733,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Відкрийте Налаштування → Підключення в цьому вікні, щоб показати QR-код і 6-значний PIN-код для створення пари. На телефоні відкрийте застосунок RemEx і відскануйте QR-код для найшвидшого налаштування або введіть PIN-код, коли застосунок його запитає. Створення пари завжди відбувається з телефона на цей ПК.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
-    <value>How do I find my PC's IP address?</value>
+    <value>Як дізнатися IP-адресу мого ПК?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. Ви також можете побачити IP-адресу безпосередньо у вікні RemEx на вашому ПК.</value>
+    <value>Windows: 'ipconfig' у Командному рядку. macOS: Системні параметри → Мережа. Linux: 'ip addr' у терміналі. Ви також можете побачити IP-адресу безпосередньо у вікні RemEx на вашому ПК.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>Автоматичний пошук не знаходить мій ПК. Що перевірити?</value>
@@ -1749,19 +1749,19 @@ Linux: ip addr  or  hostname -I</value>
 5. Корпоративні або гостьові мережі часто блокують виявлення mDNS.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
-    <value>What is the default port?</value>
+    <value>Який порт використовується за замовчуванням?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. Ви можете побачити активний порт у вікні RemEx на вашому ПК.</value>
+    <value>Порт за замовчуванням — 5005. Якщо порт 5005 зайнятий, буде використано 5006. Ви можете побачити активний порт у вікні RemEx на вашому ПК.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
-    <value>Can I connect over the internet?</value>
+    <value>Чи можу я підключатися через інтернет?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
-    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+    <value>RemEx призначений для роботи в локальній мережі (LAN). Для безпечного віддаленого доступу з будь-якого місця радимо Tailscale — VPN на основі WireGuard®, який не потребує налаштування та з'єднує ваші пристрої без перенаправлення портів і без відкриття вашого ПК в інтернет. Перенаправлення портів не рекомендується з міркувань безпеки.</value>
   </data>
   <data name="Faq_Q7_Question" xml:space="preserve">
-    <value>Remote Desktop is laggy. What can I do?</value>
+    <value>Віддалений робочий стіл працює із затримкою. Що робити?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Зменште повзунок якості.
@@ -1771,22 +1771,22 @@ Linux: ip addr  or  hostname -I</value>
 • Вам не потрібно налаштовувати захоплення екрана. RemEx автоматично обирає найшвидший метод, який підтримує ваш ПК.</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
-    <value>What is Wake-on-LAN (WOL)?</value>
+    <value>Що таке Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.</value>
+    <value>Wake-on-LAN дає змогу вмикати ПК дистанційно. Увімкніть його в BIOS/UEFI та у властивостях мережевого адаптера. Потім введіть MAC-адресу вашого ПК на екрані Підключення.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
-    <value>How do I transfer files?</value>
+    <value>Як передавати файли?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+    <value>Відкрийте Передачу файлів на бічній панелі або через Палітру команд. Ви побачите лише теки, які надав ПК: до тек із правом запису можна надсилати файли, а з тек лише для читання — тільки отримувати їх.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
-    <value>Can I lock my PC remotely?</value>
+    <value>Чи можу я заблокувати ПК дистанційно?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+    <value>Так. Скористайтеся екраном Дистанційне керування або Палітрою команд на ПК, або додайте плитку швидких налаштувань Блокувати ПК на Android для доступу одним дотиком.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Як налаштувати Tailscale для віддаленого доступу?</value>

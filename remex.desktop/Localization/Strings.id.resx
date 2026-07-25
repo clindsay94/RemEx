@@ -1758,7 +1758,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bisakah saya terhubung melalui internet?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
-    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+    <value>RemEx dirancang untuk digunakan di jaringan lokal (LAN). Untuk akses jarak jauh yang aman dari mana saja, kami menyarankan Tailscale — VPN WireGuard® tanpa konfigurasi yang menghubungkan perangkat Anda tanpa penerusan port dan tanpa memaparkan PC Anda ke internet. Penerusan port tidak disarankan karena alasan keamanan.</value>
   </data>
   <data name="Faq_Q7_Question" xml:space="preserve">
     <value>Desktop jarak jauh lambat. Apa yang bisa saya lakukan?</value>
@@ -1780,13 +1780,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bagaimana cara mentransfer file?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+    <value>Buka Transfer File dari bilah sisi atau Palet Perintah. Anda hanya akan melihat folder yang dibagikan oleh PC: folder yang dapat ditulis menerima unggahan, sedangkan folder hanya-baca hanya mengizinkan unduhan.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Bisakah saya mengunci PC dari jarak jauh?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+    <value>Ya. Gunakan layar Kontrol Jarak Jauh atau Palet Perintah di PC, atau tambahkan tile Pengaturan Cepat Kunci PC di Android untuk akses sekali sentuh.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Bagaimana cara mengatur Tailscale untuk akses jarak jauh?</value>

@@ -1758,7 +1758,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Puis-je me connecter via Internet ?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
-    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+    <value>RemEx est conçu pour un usage sur le réseau local (LAN). Pour un accès distant sécurisé depuis n'importe où, nous recommandons Tailscale : un VPN WireGuard® sans configuration qui relie vos appareils sans redirection de ports et sans exposer votre PC à internet. La redirection de ports n'est pas recommandée pour des raisons de sécurité.</value>
   </data>
   <data name="Faq_Q7_Question" xml:space="preserve">
     <value>Le bureau distant est lent. Que puis-je faire ?</value>
@@ -1780,13 +1780,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Comment transférer des fichiers ?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+    <value>Ouvrez Transfert de fichiers depuis la barre latérale ou la Palette de Commandes. Vous ne verrez que les dossiers partagés par le PC : ceux autorisant l'écriture acceptent les envois, tandis que ceux en lecture seule ne permettent que les téléchargements.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Puis-je verrouiller mon PC à distance ?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+    <value>Oui. Utilisez l'écran Contrôle à Distance ou la Palette de Commandes sur le PC, ou ajoutez la tuile de Réglages rapides Verrouiller le PC sur Android pour un accès en un seul appui.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Comment configurer Tailscale pour un accès à distance ?</value>

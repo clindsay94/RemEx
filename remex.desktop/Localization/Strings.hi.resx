@@ -1721,7 +1721,7 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
-    <value>What do I need to run on my PC?</value>
+    <value>मुझे अपने पीसी पर क्या चलाना होगा?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
     <value>आपके पीसी पर RemEx चलना आवश्यक है — यह एक ही ऐप (remex.agent) है जो आपके साइन-इन सत्र में एलिवेटेड मोड में चलता है और साइन-इन पर स्वतः शुरू हो जाता है। GitHub Releases से नवीनतम इंस्टॉलर डाउनलोड करें, उसे चलाएं, और पेयर करने से पहले यह तैयार हो जाएगा।</value>
@@ -1733,10 +1733,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>QR कोड और 6-अंकों का पेयरिंग PIN दिखाने के लिए इस विंडो में सेटिंग्स → कनेक्शन खोलें। अपने फ़ोन पर RemEx ऐप खोलें और सबसे तेज़ सेटअप के लिए QR कोड स्कैन करें, या ऐप के पूछने पर PIN दर्ज करें। पेयरिंग हमेशा फ़ोन से इस PC की ओर होती है।</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
-    <value>How do I find my PC's IP address?</value>
+    <value>मैं अपने पीसी का IP पता कैसे ढूँढूँ?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. आप अपने पीसी पर RemEx विंडो में सीधे IP भी देख सकते हैं।</value>
+    <value>Windows: Command Prompt में 'ipconfig'. macOS: System Settings → Network. Linux: टर्मिनल में 'ip addr'. आप अपने पीसी पर RemEx विंडो में सीधे IP भी देख सकते हैं।</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>ऑटो-डिस्कवरी मेरा पीसी नहीं ढूँढ पा रही है। मुझे क्या जाँचना चाहिए?</value>
@@ -1749,19 +1749,19 @@ Linux: ip addr  or  hostname -I</value>
 5. कॉर्पोरेट या गेस्ट नेटवर्क अक्सर mDNS डिस्कवरी को ब्लॉक कर देते हैं।</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
-    <value>What is the default port?</value>
+    <value>डिफ़ॉल्ट पोर्ट कौन-सा है?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. आप अपने पीसी पर RemEx विंडो में सक्रिय पोर्ट देख सकते हैं।</value>
+    <value>डिफ़ॉल्ट पोर्ट 5005 है। अगर पोर्ट 5005 पहले से उपयोग में है, तो 5006 का उपयोग होगा। आप अपने पीसी पर RemEx विंडो में सक्रिय पोर्ट देख सकते हैं।</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
-    <value>Can I connect over the internet?</value>
+    <value>क्या मैं इंटरनेट के ज़रिए कनेक्ट कर सकता हूँ?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
-    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+    <value>RemEx स्थानीय नेटवर्क (LAN) पर उपयोग के लिए बनाया गया है। कहीं से भी सुरक्षित रिमोट एक्सेस के लिए हम Tailscale की सलाह देते हैं — एक बिना कॉन्फ़िगरेशन वाला WireGuard® VPN, जो पोर्ट फ़ॉरवर्डिंग के बिना और आपके पीसी को इंटरनेट पर उजागर किए बिना आपके डिवाइस को जोड़ता है। सुरक्षा कारणों से पोर्ट फ़ॉरवर्डिंग की सलाह नहीं दी जाती।</value>
   </data>
   <data name="Faq_Q7_Question" xml:space="preserve">
-    <value>Remote Desktop is laggy. What can I do?</value>
+    <value>रिमोट डेस्कटॉप में देरी हो रही है। मैं क्या कर सकता हूँ?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• गुणवत्ता स्लाइडर कम करें।
@@ -1771,22 +1771,22 @@ Linux: ip addr  or  hostname -I</value>
 • आपको स्क्रीन कैप्चर सेट अप करने की ज़रूरत नहीं है। RemEx अपने आप वह सबसे तेज़ तरीका चुन लेता है जो आपका पीसी समर्थित करता है।</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
-    <value>What is Wake-on-LAN (WOL)?</value>
+    <value>Wake-on-LAN (WOL) क्या है?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.</value>
+    <value>Wake-on-LAN से आप अपने पीसी को दूर से चालू कर सकते हैं। इसे अपने BIOS/UEFI और नेटवर्क अडैप्टर के गुणों में चालू करें। फिर कनेक्शन स्क्रीन में अपने पीसी का MAC पता डालें।</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
-    <value>How do I transfer files?</value>
+    <value>मैं फ़ाइलें कैसे स्थानांतरित करूँ?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+    <value>साइडबार या कमांड पैलेट से फ़ाइल स्थानांतरण खोलें। आपको केवल वे फ़ोल्डर दिखेंगे जिन्हें पीसी ने साझा किया है: जिनमें लिखने की अनुमति है वे अपलोड स्वीकार करते हैं, और केवल-पढ़ने वाले फ़ोल्डर से सिर्फ़ डाउनलोड किया जा सकता है।</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
-    <value>Can I lock my PC remotely?</value>
+    <value>क्या मैं अपने पीसी को दूर से लॉक कर सकता हूँ?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+    <value>हाँ। पीसी पर रिमोट कंट्रोल स्क्रीन या कमांड पैलेट का उपयोग करें, या Android पर एक ही टैप में लॉक करने के लिए पीसी लॉक करें क्विक सेटिंग्स टाइल जोड़ें।</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>रिमोट एक्सेस के लिए मैं Tailscale कैसे सेटअप करूँ?</value>

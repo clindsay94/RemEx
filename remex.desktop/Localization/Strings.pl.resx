@@ -1544,7 +1544,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Otwórz Ustawienia → Połączenie w tym oknie, aby wyświetlić kod QR i 6-cyfrowy PIN parowania. Na telefonie otwórz aplikację RemEx i zeskanuj kod QR, aby skonfigurować wszystko najszybciej, lub wpisz PIN, gdy aplikacja o niego poprosi. Parowanie zawsze odbywa się z telefonu do tego komputera.</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. Adres IP możesz też zobaczyć bezpośrednio w oknie RemEx na swoim komputerze.</value>
+    <value>Windows: 'ipconfig' w Wierszu polecenia. macOS: Ustawienia systemowe → Sieć. Linux: 'ip addr' w terminalu. Adres IP możesz też zobaczyć bezpośrednio w oknie RemEx na swoim komputerze.</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Upewnij się, że RemEx jest uruchomiony na Twoim komputerze.
@@ -1554,10 +1554,10 @@ Linux: ip addr  or  hostname -I</value>
 5. Sieci firmowe/gościnne często blokują wykrywanie (mDNS).</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. Aktywny port możesz zobaczyć w oknie RemEx na swoim komputerze.</value>
+    <value>Domyślny port to 5005. Jeśli port 5005 jest zajęty, zostanie użyty 5006. Aktywny port możesz zobaczyć w oknie RemEx na swoim komputerze.</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
-    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+    <value>RemEx jest przeznaczony do użytku w sieci lokalnej (LAN). Do bezpiecznego dostępu zdalnego z dowolnego miejsca polecamy Tailscale — niewymagającą konfiguracji sieć VPN WireGuard®, która łączy Twoje urządzenia bez przekierowywania portów i bez wystawiania komputera na internet. Przekierowywanie portów nie jest zalecane z powodów bezpieczeństwa.</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Zmniejsz suwak Jakości.
@@ -1567,10 +1567,10 @@ Linux: ip addr  or  hostname -I</value>
 • Nie musisz konfigurować przechwytywania ekranu. RemEx automatycznie wybiera najszybszą metodę obsługiwaną przez Twój komputer.</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+    <value>Otwórz Transfer plików z paska bocznego lub Palety poleceń. Zobaczysz tylko foldery udostępnione przez komputer: te z prawem zapisu przyjmują przesyłane pliki, a foldery tylko do odczytu pozwalają jedynie na pobieranie.</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+    <value>Tak. Użyj ekranu Zdalne sterowanie lub Palety poleceń na komputerze albo dodaj kafelek Szybkich ustawień Zablokuj komputer w Androidzie, aby zrobić to jednym dotknięciem.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Jak skonfigurować Tailscale do zdalnego dostępu?</value>

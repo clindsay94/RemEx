@@ -1739,7 +1739,7 @@ Chrome)</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
-    <value>What do I need to run on my PC?</value>
+    <value>¿Qué necesito ejecutar en mi PC?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
     <value>Necesitas RemEx ejecutándose en tu PC — es una única aplicación (remex.agent) que se ejecuta con privilegios elevados en tu sesión iniciada y se inicia automáticamente al iniciar sesión. Descarga el último instalador desde GitHub Releases, ejecútalo, y estará listo antes de emparejar.</value>
@@ -1751,10 +1751,10 @@ Chrome)</value>
     <value>Abre Configuración → Conexión en esta ventana para mostrar un código QR y un PIN de emparejamiento de 6 dígitos. En tu teléfono, abre la aplicación RemEx y escanea el código QR para la configuración más rápida, o introduce el PIN cuando la aplicación lo pida. El emparejamiento siempre se hace desde el teléfono hacia este PC.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
-    <value>How do I find my PC's IP address?</value>
+    <value>¿Cómo encuentro la dirección IP de mi PC?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. También puedes ver la IP directamente en la ventana de RemEx en tu PC.</value>
+    <value>Windows: 'ipconfig' en el Símbolo del sistema. macOS: Ajustes del Sistema → Red. Linux: 'ip addr' en el terminal. También puedes ver la IP directamente en la ventana de RemEx en tu PC.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
     <value>La detección automática no encuentra mi PC. ¿Qué debo comprobar?</value>
@@ -1767,19 +1767,19 @@ Chrome)</value>
 5. Las redes corporativas o de invitados suelen bloquear la detección mDNS.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
-    <value>What is the default port?</value>
+    <value>¿Cuál es el puerto predeterminado?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. Puedes ver el puerto activo en la ventana de RemEx en tu PC.</value>
+    <value>El puerto predeterminado es 5005. Si el puerto 5005 está ocupado, se usará el 5006. Puedes ver el puerto activo en la ventana de RemEx en tu PC.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
-    <value>Can I connect over the internet?</value>
+    <value>¿Puedo conectarme por internet?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
-    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+    <value>RemEx está diseñado para usarse en la red local (LAN). Para un acceso remoto seguro desde cualquier lugar, recomendamos Tailscale: una VPN WireGuard® sin configuración que conecta tus dispositivos sin abrir puertos ni exponer tu PC a internet. Abrir puertos en el router no se recomienda por motivos de seguridad.</value>
   </data>
   <data name="Faq_Q7_Question" xml:space="preserve">
-    <value>Remote Desktop is laggy. What can I do?</value>
+    <value>El Escritorio Remoto va con retraso. ¿Qué puedo hacer?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
     <value>• Baja el control deslizante de Calidad.
@@ -1789,22 +1789,22 @@ Chrome)</value>
 • No necesitas configurar la captura de pantalla. RemEx elige automáticamente el método más rápido que admite tu PC.</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
-    <value>What is Wake-on-LAN (WOL)?</value>
+    <value>¿Qué es Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.</value>
+    <value>Wake-on-LAN te permite encender tu PC de forma remota. Actívalo en la BIOS/UEFI y en las propiedades del adaptador de red. Después introduce la dirección MAC de tu PC en la pantalla Conexión.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
-    <value>How do I transfer files?</value>
+    <value>¿Cómo transfiero archivos?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+    <value>Abre Transferencia de archivos desde la barra lateral o la Paleta de Comandos. Solo verás las carpetas que el PC ha compartido: las que permiten escritura aceptan subidas y las de solo lectura únicamente permiten descargas.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
-    <value>Can I lock my PC remotely?</value>
+    <value>¿Puedo bloquear mi PC de forma remota?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+    <value>Sí. Usa la pantalla Control Remoto o la Paleta de Comandos en el PC, o añade el mosaico de Ajustes rápidos Bloquear PC en Android para hacerlo con un solo toque.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>¿Cómo configuro Tailscale para acceso remoto?</value>
