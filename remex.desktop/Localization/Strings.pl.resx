@@ -446,7 +446,7 @@
     <value>FPS: {0:F1}</value>
   </data>
   <data name="RemoteDesktop_QualityFormat" xml:space="preserve">
-    <value>Q: {0}</value>
+    <value>Jakość: {0}%</value>
   </data>
 
   
@@ -3294,5 +3294,14 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
     <value>Czyszczenie logów — czy na pewno?</value>
+  </data>
+  <data name="TaskMgr_PidFormat" xml:space="preserve">
+    <value>PID: {0}</value>
+  </data>
+  <data name="TaskMgr_PathFormat" xml:space="preserve">
+    <value>Ścieżka: {0}</value>
+  </data>
+  <data name="TaskMgr_PublisherFormat" xml:space="preserve">
+    <value>Wydawca: {0}</value>
   </data>
 </root>

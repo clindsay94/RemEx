@@ -446,7 +446,7 @@
     <value>FPS : {0:F1}</value>
   </data>
   <data name="RemoteDesktop_QualityFormat" xml:space="preserve">
-    <value>Q : {0}</value>
+    <value>Qualité : {0} %</value>
   </data>
 
   
@@ -3293,5 +3293,14 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
     <value>Effacer les journaux — Êtes-vous sûr ?</value>
+  </data>
+  <data name="TaskMgr_PidFormat" xml:space="preserve">
+    <value>PID : {0}</value>
+  </data>
+  <data name="TaskMgr_PathFormat" xml:space="preserve">
+    <value>Chemin : {0}</value>
+  </data>
+  <data name="TaskMgr_PublisherFormat" xml:space="preserve">
+    <value>Éditeur : {0}</value>
   </data>
 </root>

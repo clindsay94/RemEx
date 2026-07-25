@@ -3,7 +3,7 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:controls="using:Remex.Desktop.Controls"
     xmlns:models="using:Remex.Core.Models"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.RemoteDesktopView" x:DataType="vm:RemoteDesktopViewModel" Focusable="True">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services" x:Class="Remex.Desktop.Views.RemoteDesktopView" x:DataType="vm:RemoteDesktopViewModel" Focusable="True">
 
     <UserControl.Resources>
         <local:BoolToDoubleConverter x:Key="BoolToDoubleConverter"/>
@@ -310,9 +310,30 @@
         <Border Grid.Row="4" Background="{DynamicResource GlassBaseDarkBrush}" Padding="16 6" IsVisible="{Binding !IsFullScreen}">
             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="{Binding Resolution, StringFormat=Resolution: {0}}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
-                <TextBlock Grid.Column="2" Text="{Binding ActualFps, StringFormat=FPS: {0:F1}}" Foreground="{DynamicResource SystemSuccessBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
-                <TextBlock Grid.Column="3" Text="{Binding Quality, StringFormat=Q: {0}}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
+                <TextBlock Grid.Column="1" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                            <Binding Path="[RemoteDesktop_ResolutionFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                            <Binding Path="Resolution"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBlock Grid.Column="2" Foreground="{DynamicResource SystemSuccessBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                            <Binding Path="[RemoteDesktop_FpsFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                            <Binding Path="ActualFps"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBlock Grid.Column="3" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                            <Binding Path="[RemoteDesktop_QualityFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                            <Binding Path="Quality"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
                 <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" IsVisible="{Binding IsViewportZoomed}"/>
                 <Border Grid.Column="5" Width="8" Height="8" CornerRadius="4" IsVisible="{Binding IsStreaming}" Background="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
             </Grid>

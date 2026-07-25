@@ -446,7 +446,7 @@
     <value>FPS: {0:F1}</value>
   </data>
   <data name="RemoteDesktop_QualityFormat" xml:space="preserve">
-    <value>Q: {0}</value>
+    <value>Kualitas: {0}%</value>
   </data>
 
   
@@ -3296,5 +3296,14 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   </data>
   <data name="Confirm_ClearLogs_Title" xml:space="preserve">
     <value>Bersihkan Log — Apakah Anda yakin?</value>
+  </data>
+  <data name="TaskMgr_PidFormat" xml:space="preserve">
+    <value>PID: {0}</value>
+  </data>
+  <data name="TaskMgr_PathFormat" xml:space="preserve">
+    <value>Jalur: {0}</value>
+  </data>
+  <data name="TaskMgr_PublisherFormat" xml:space="preserve">
+    <value>Penerbit: {0}</value>
   </data>
 </root>

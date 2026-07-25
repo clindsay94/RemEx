@@ -2,7 +2,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Core.Models"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.TaskManagerView" x:DataType="vm:TaskManagerViewModel">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services" x:Class="Remex.Desktop.Views.TaskManagerView" x:DataType="vm:TaskManagerViewModel">
 
     <UserControl.Styles>
         <Style Selector="ListBoxItem">
@@ -66,11 +66,32 @@
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
                                         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
                                             <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                            <TextBlock Text="{Binding Id, StringFormat='PID: {0}'}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                            <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                                                        <Binding Path="[TaskMgr_PidFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                        <Binding Path="Id"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
                                         </StackPanel>
                                         <StackPanel Opacity="0.6" Spacing="1">
-                                            <TextBlock Text="{Binding FilePath, StringFormat='Path: {0}'}" IsVisible="{Binding FilePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis" />
-                                            <TextBlock Text="{Binding Publisher, StringFormat='Publisher: {0}'}" IsVisible="{Binding Publisher, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock IsVisible="{Binding FilePath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                                                        <Binding Path="[TaskMgr_PathFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                        <Binding Path="FilePath"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                            <TextBlock IsVisible="{Binding Publisher, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" FontSize="10" TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                                                        <Binding Path="[TaskMgr_PublisherFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                                        <Binding Path="Publisher"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
                                         </StackPanel>
                                     </StackPanel>
 
