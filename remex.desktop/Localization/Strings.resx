@@ -1762,7 +1762,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Linux &amp; New Identity</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>First-class Linux support with native PipeWire capture, full Wayland input injection, and systemd user service. New premium launcher icon, Cosmic Zoom boot animation, colorful ANSI startup banner, and canvas clipboard bitmap copy.</value>
+    <value>First-class Linux support with native PipeWire capture, full Wayland input injection, and autostart at sign-in. New premium launcher icon, Cosmic Zoom boot animation, colorful ANSI startup banner, and canvas clipboard bitmap copy.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

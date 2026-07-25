@@ -1684,22 +1684,22 @@ Linux: ip addr  or  hostname -I</value>
     <value>Close Overlays/Panels</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
-    <value>What's New?</value>
+    <value>O que há de novo?</value>
   </data>
   <data name="About_Faq" xml:space="preserve">
     <value>Frequently Asked Questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>Vídeo por hardware H.264</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>Área de trabalho remota com aceleração de hardware via NVENC, QSV, AMF ou VAAPI no PC. O Android decodifica com MediaCodec para entrega por GPU sem cópias. Volta automaticamente para MJPEG quando não há codificadores de hardware disponíveis.</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>Segurança e pareamento de dispositivos</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>Todo o tráfego agora é criptografado com TLS 1.3. O primeiro pareamento usa troca de chaves ECDH P-256 com um PIN de 6 dígitos — nenhuma chave em texto puro trafega. Depois o cliente fixa a impressão digital SHA-256 do certificado do PC para todas as conexões futuras.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Transferência de arquivos remota</value>
@@ -1714,10 +1714,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Material 3 Expressive com física de mola em todo o aplicativo — reordenação de listas, puxar para atualizar, blocos de aplicativos, medidores animados. 8 blocos de Configurações Rápidas para comandos de energia com um toque. Widgets redimensionáveis na tela inicial. Feedback háptico de dois estágios. SDK alvo 37 (Android 17).</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux e nova identidade</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Suporte de primeira classe ao Linux com captura nativa PipeWire, injeção completa de entrada no Wayland e início automático ao entrar. Novo ícone de launcher premium, animação de inicialização Cosmic Zoom, banner ANSI colorido na inicialização e cópia de bitmap para a área de transferência a partir do canvas.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

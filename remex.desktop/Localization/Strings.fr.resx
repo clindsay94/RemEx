@@ -1690,16 +1690,16 @@ Linux: ip addr  or  hostname -I</value>
     <value>Foire aux questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>Vidéo matérielle H.264</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>Bureau à distance accéléré par le matériel via NVENC, QSV, AMF ou VAAPI sur le PC. Android décode avec MediaCodec pour une livraison GPU sans copie. Bascule automatiquement sur MJPEG lorsque aucun encodeur matériel n'est disponible.</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>Sécurité et appairage des appareils</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>Tout le trafic est chiffré avec TLS 1.3. Le premier appairage utilise un échange de clés ECDH P-256 avec un code PIN à 6 chiffres : aucune clé en clair ne circule jamais. Le client épingle ensuite l'empreinte SHA-256 du certificat du PC pour toutes les connexions suivantes.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Transfert de fichiers à distance</value>
@@ -1714,10 +1714,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Material 3 Expressive avec physique de ressort partout — réorganisation des listes, glisser pour rafraîchir, tuiles d'application, jauges animées. 8 tuiles de paramètres rapides pour des commandes d'alimentation en un clic. Widgets d'accueil redimensionnables. Retour haptique à deux étapes. SDK cible 37 (Android 17).</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux et nouvelle identité</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Prise en charge Linux de premier ordre : capture PipeWire native, injection d'entrée Wayland complète et démarrage automatique à l'ouverture de session. Nouvelle icône de lanceur premium, animation de démarrage Cosmic Zoom, bannière ANSI colorée au démarrage et copie d'images bitmap dans le presse-papiers depuis le canevas.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

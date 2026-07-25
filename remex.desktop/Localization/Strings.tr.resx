@@ -1684,22 +1684,22 @@ Linux: ip addr  or  hostname -I</value>
     <value>Close Overlays/Panels</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
-    <value>What's New?</value>
+    <value>Neler yeni?</value>
   </data>
   <data name="About_Faq" xml:space="preserve">
     <value>Frequently Asked Questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>H.264 Donanım Videosu</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>Bilgisayarda NVENC, QSV, AMF veya VAAPI ile donanım hızlandırmalı uzak masaüstü. Android, kopyasız GPU teslimi için MediaCodec ile kod çözer. Donanım kodlayıcı bulunmadığında kendiliğinden MJPEG'e döner.</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>Güvenlik ve Cihaz Eşleştirme</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>Tüm trafik artık TLS 1.3 ile şifrelenir. İlk eşleştirmede 6 haneli PIN ile ECDH P-256 anahtar değişimi kullanılır — hiçbir anahtar düz metin olarak iletilmez. İstemci ardından sonraki tüm bağlantılar için bilgisayarın SHA-256 sertifika parmak izini sabitler.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Uzaktan Dosya Aktarımı</value>
@@ -1714,10 +1714,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Genelinde yay fiziği barındıran Material 3 Expressive — liste yeniden sıralama, yenilemek için kaydırma, uygulama döşemeleri, animasyonlu göstergeler. Tek dokunuşla güç komutları için 8 Hızlı Ayar döşemesi. Yeniden boyutlandırılabilir ana ekran widget'ları. İki aşamalı dokunsal geri bildirim. Hedef SDK 37 (Android 17).</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux ve Yeni Kimlik</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Birinci sınıf Linux desteği: yerel PipeWire yakalama, tam Wayland girdi enjeksiyonu ve oturum açıldığında kendiliğinden başlatma. Yeni premium başlatıcı simgesi, Cosmic Zoom açılış animasyonu, renkli ANSI başlangıç başlığı ve tuvalden panoya bitmap kopyalama.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

@@ -1701,22 +1701,22 @@ Chrome)</value>
     <value>Close Overlays/Panels</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
-    <value>What's New?</value>
+    <value>¿Qué hay de nuevo?</value>
   </data>
   <data name="About_Faq" xml:space="preserve">
     <value>Frequently Asked Questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>Vídeo por hardware H.264</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>Escritorio remoto acelerado por hardware mediante NVENC, QSV, AMF o VAAPI en el PC. Android decodifica con MediaCodec para una entrega por GPU sin copias. Vuelve automáticamente a MJPEG cuando no hay codificadores de hardware disponibles.</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>Seguridad y emparejamiento de dispositivos</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>Todo el tráfico está cifrado con TLS 1.3. El primer emparejamiento usa intercambio de claves ECDH P-256 con un PIN de 6 dígitos: nunca viajan claves en texto plano. Después el cliente fija la huella SHA-256 del certificado del PC para todas las conexiones futuras.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Transferencia de archivos remota</value>
@@ -1731,10 +1731,10 @@ Chrome)</value>
     <value>Material 3 Expressive con física de resorte en todo: reordenamiento de listas, deslizar para actualizar, mosaicos de aplicaciones, indicadores animados. 8 mosaicos de configuración rápida para comandos de energía con un toque. Widgets de pantalla de inicio redimensionables. Retroalimentación háptica de dos etapas. SDK de destino 37 (Android 17).</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux e identidad renovada</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Compatibilidad de primer nivel con Linux: captura nativa con PipeWire, inyección completa de entrada en Wayland e inicio automático al iniciar sesión. Nuevo icono de lanzador premium, animación de arranque Cosmic Zoom, banner ANSI de inicio a color y copia de mapas de bits al portapapeles desde el lienzo.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

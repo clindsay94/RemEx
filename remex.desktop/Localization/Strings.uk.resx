@@ -1684,22 +1684,22 @@ Linux: ip addr  or  hostname -I</value>
     <value>Close Overlays/Panels</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
-    <value>What's New?</value>
+    <value>Що нового?</value>
   </data>
   <data name="About_Faq" xml:space="preserve">
     <value>Frequently Asked Questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>Апаратне відео H.264</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>Віддалений робочий стіл з апаратним прискоренням через NVENC, QSV, AMF або VAAPI на ПК. Android декодує за допомогою MediaCodec для передавання через GPU без копіювання. За відсутності апаратних кодувальників автоматично повертається до MJPEG.</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>Безпека та спарювання пристроїв</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>Увесь трафік тепер шифрується за TLS 1.3. Перше спарювання використовує обмін ключами ECDH P-256 із 6-значним PIN-кодом — жодні ключі ніколи не передаються відкритим текстом. Далі клієнт закріплює SHA-256-відбиток сертифіката ПК для всіх наступних підключень.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Віддалена передача файлів</value>
@@ -1714,10 +1714,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Material 3 Expressive з фізикою пружин всюди — зміна черги списків, оновлення тягнучим рухом, плитки додатків, анімовані датчики. 8 плиток швидких налаштувань для керування живленням одним дотиком. Віджети домашнього екрана зі зміною розміру. Двохетапний тактильний відгук. Цільовий SDK 37 (Android 17).</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux і новий вигляд</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Першокласна підтримка Linux: власне захоплення через PipeWire, повне впровадження введення у Wayland і автозапуск під час входу. Нова преміальна іконка запуску, анімація завантаження Cosmic Zoom, кольоровий ANSI-банер під час запуску та копіювання зображення в буфер обміну з полотна.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

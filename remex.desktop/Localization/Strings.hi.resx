@@ -1684,22 +1684,22 @@ Linux: ip addr  or  hostname -I</value>
     <value>Close Overlays/Panels</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
-    <value>What's New?</value>
+    <value>नया क्या है?</value>
   </data>
   <data name="About_Faq" xml:space="preserve">
     <value>Frequently Asked Questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>H.264 हार्डवेयर वीडियो</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>पीसी पर NVENC, QSV, AMF या VAAPI के ज़रिए हार्डवेयर-त्वरित रिमोट डेस्कटॉप। Android शून्य-कॉपी GPU डिलीवरी के लिए MediaCodec से डिकोड करता है। हार्डवेयर एनकोडर उपलब्ध न होने पर यह अपने आप MJPEG पर आ जाता है।</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>सुरक्षा और डिवाइस पेयरिंग</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>सारा ट्रैफ़िक अब TLS 1.3 से एन्क्रिप्ट होता है। पहली बार पेयरिंग में 6 अंकों के PIN के साथ ECDH P-256 कुंजी विनिमय होता है — कोई कुंजी कभी प्लेन टेक्स्ट में नहीं जाती। इसके बाद क्लाइंट भविष्य के सभी कनेक्शनों के लिए पीसी के प्रमाणपत्र का SHA-256 फ़िंगरप्रिंट पिन कर लेता है।</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>रिमोट फ़ाइल ट्रांसफर</value>
@@ -1714,10 +1714,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>पूरे ऐप में स्प्रिंग फिजिक्स के साथ मटीरियल 3 एक्सप्रेसिव — लिस्ट रीऑर्डर, पुल-टू-रिफ्रेश, ऐप टाइल्स, एनिमेटेड गेज। एक-टैप पावर कमांड के लिए 8 क्विक सेटिंग्स टाइल्स। रीसाइज़ करने योग्य होम स्क्रीन विजेट। दो-चरणीय हैप्टिक फीडबैक। टारगेट SDK 37 (एंड्रॉइड 17)।</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux और नई पहचान</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Linux के लिए बेहतरीन समर्थन: नेटिव PipeWire कैप्चर, पूरा Wayland इनपुट इंजेक्शन और साइन इन पर अपने आप शुरू होना। नया प्रीमियम लॉन्चर आइकन, Cosmic Zoom बूट एनिमेशन, रंगीन ANSI स्टार्टअप बैनर और कैनवास से क्लिपबोर्ड पर बिटमैप कॉपी।</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">

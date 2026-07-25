@@ -1690,16 +1690,16 @@ Linux: ip addr  or  hostname -I</value>
     <value>Pertanyaan yang Sering Diajukan</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>Video Perangkat Keras H.264</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>Desktop jarak jauh dengan akselerasi perangkat keras melalui NVENC, QSV, AMF, atau VAAPI di PC. Android mendekode dengan MediaCodec untuk pengiriman GPU tanpa salinan. Otomatis kembali ke MJPEG bila encoder perangkat keras tidak tersedia.</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>Keamanan dan Pemasangan Perangkat</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>Semua lalu lintas kini dienkripsi dengan TLS 1.3. Pemasangan pertama memakai pertukaran kunci ECDH P-256 dengan PIN 6 digit — tidak ada kunci teks biasa yang pernah dikirim. Selanjutnya klien menyematkan sidik jari sertifikat SHA-256 milik PC untuk semua koneksi berikutnya.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Transfer File Jarak Jauh</value>
@@ -1714,10 +1714,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Material 3 Ekspresif dengan fisika pegas di seluruh aplikasi — penataan ulang daftar, tarik untuk menyegarkan, ubin aplikasi, pengukur animasi. 8 ubin Pengaturan Cepat untuk perintah daya sekali ketuk. Widget layar beranda yang dapat diubah ukurannya. Umpan balik haptik dua tahap. Target SDK 37 (Android 17).</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux dan Identitas Baru</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Dukungan Linux kelas satu dengan pengambilan PipeWire native, injeksi input Wayland lengkap, dan mulai otomatis saat masuk. Ikon peluncur premium baru, animasi boot Cosmic Zoom, banner ANSI berwarna saat mulai, dan salin bitmap ke papan klip dari kanvas.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
