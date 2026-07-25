@@ -18,11 +18,11 @@
         </Style>
         <!-- ═══ Sensor alert flash ═══ -->
         <Style Selector="ctrl|DraggableCard.alert-active">
-            <Setter Property="BorderBrush" Value="#FF4444"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect Color="#FF4444" BlurRadius="20" Opacity="0.85"/>
+                    <DropShadowEffect Color="{DynamicResource SystemError}" BlurRadius="20" Opacity="0.85"/>
                 </Setter.Value>
             </Setter>
         </Style>
@@ -127,11 +127,11 @@
             <Setter Property="Opacity" Value="0.85"/>
         </Style>
         <Style Selector="Button.card-action-danger">
-            <Setter Property="Background" Value="#3A1A1A"/>
-            <Setter Property="Foreground" Value="#FF6B6B"/>
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
         </Style>
         <Style Selector="Button.card-action-danger:pointerover">
-            <Setter Property="Background" Value="#4A2A2A"/>
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBackgroundHoverBrush}"/>
         </Style>
 
         <!-- ═══ Latency bar ═══ -->
@@ -158,7 +158,7 @@
                     <TextBlock Text="{local:Localize Canvas_Header}" FontFamily="{DynamicResource PageTitleFontFamily}" FontSize="28" FontWeight="Black" LetterSpacing="2" Foreground="{DynamicResource AccentPrimaryBrush}"/>
                 </Button>
                 <TextBlock Grid.Column="1" Text="{local:Localize Canvas_Header}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="3" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="#4ADE80" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding LayoutStatus}" FontSize="11" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <Button AutomationProperties.Name="{local:Localize Canvas_UndoTooltip}" Grid.Column="3" Classes="back-btn" Command="{Binding UndoCommand}" ToolTip.Tip="{local:Localize Canvas_UndoTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="&#8617;" FontSize="14" VerticalAlignment="Center"/>
@@ -219,7 +219,7 @@
                     <Button AutomationProperties.Name="{local:Localize Canvas_CopySnapshotTooltip}" Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="{local:Localize Canvas_CopySnapshotTooltip}" Padding="8,4">
                         <TextBlock Text="{local:Localize Canvas_Copy}" FontSize="12"/>
                     </Button>
-                    <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Foreground="#4ADE80" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
+                    <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Foreground="{DynamicResource SystemSuccessBrush}" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
                 </StackPanel>
             </Grid>
         </Border>

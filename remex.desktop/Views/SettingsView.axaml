@@ -205,7 +205,7 @@
                                     </StackPanel>
                                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsKeepSessionUnlockedEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                                 </Grid>
-                                <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedWarning}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" IsVisible="{Binding IsKeepSessionUnlockedEnabled}"/>
+                                <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedWarning}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SystemWarningBrush}" TextWrapping="Wrap" IsVisible="{Binding IsKeepSessionUnlockedEnabled}"/>
                             </StackPanel>
 
                             <!-- Fully exit the application (ends the process) -->

@@ -76,7 +76,7 @@
         <!-- Buttons -->
         <Grid Grid.Row="4" ColumnDefinitions="*,Auto,Auto,Auto">
             <Button Grid.Column="1" Content="{local:Localize Btn_Clear}" Command="{Binding ClearAlertCommand}"
-                    Classes="glass-button" Foreground="#FF6B6B"
+                    Classes="glass-button" Foreground="{DynamicResource SystemErrorBrush}"
                     MinWidth="72" Margin="0,0,8,0"/>
             <Button Grid.Column="2" Content="{local:Localize Btn_Cancel}" Command="{Binding CancelCommand}"
                     Classes="glass-button" MinWidth="80" Margin="0,0,8,0"/>

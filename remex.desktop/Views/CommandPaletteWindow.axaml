@@ -44,7 +44,7 @@
                         <Setter Property="Cursor" Value="Hand" />
                     </Style>
                     <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
-                        <Setter Property="Background" Value="#22FFFFFF" />
+                        <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}" />
                     </Style>
                     <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
                         <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />

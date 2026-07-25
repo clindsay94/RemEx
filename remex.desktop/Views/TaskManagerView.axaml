@@ -58,7 +58,7 @@
                             <Border Background="Transparent" Padding="20,16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
                                 <Border.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="{local:Localize TaskMgr_KillProcess}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}" Foreground="#FF6B6B" />
+                                        <MenuItem Header="{local:Localize TaskMgr_KillProcess}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}" Foreground="{DynamicResource SystemErrorBrush}" />
                                     </ContextMenu>
                                 </Border.ContextMenu>
 
@@ -87,7 +87,7 @@
                                     </StackPanel>
 
                                     <!-- Kill Button (visible only when row is selected) -->
-                                    <Button Grid.Column="2" Content="{local:Localize TaskMgr_KillProcess}" Margin="12,0,0,0" Padding="10,6" CornerRadius="8" Background="#3A1A1A" Foreground="#FF6B6B" FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" IsVisible="{Binding $parent[ListBoxItem].IsSelected}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}"/>
+                                    <Button Grid.Column="2" Content="{local:Localize TaskMgr_KillProcess}" Margin="12,0,0,0" Padding="10,6" CornerRadius="8" Background="{DynamicResource SystemErrorBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" FontSize="12" FontWeight="SemiBold" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" IsVisible="{Binding $parent[ListBoxItem].IsSelected}" Command="{Binding $parent[UserControl].((vm:TaskManagerViewModel)DataContext).KillProcessCommand}" CommandParameter="{Binding}"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>

@@ -39,9 +39,9 @@
             <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
         </Style>
         <Style Selector="Button.remote-btn-warn">
-            <Setter Property="Background" Value="#15FFD93D"/>
-            <Setter Property="Foreground" Value="#FFD93D"/>
-            <Setter Property="BorderBrush" Value="#FFD93D"/>
+            <Setter Property="Background" Value="{DynamicResource SystemWarningBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemWarningBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemWarningBrush}"/>
         </Style>
     </UserControl.Styles>
 
@@ -120,7 +120,7 @@
             </UniformGrid>
 
             <!-- ═══ Forced Controls ═══ -->
-            <TextBlock Text="{local:Localize Remote_Forced}" FontSize="11" FontWeight="SemiBold" Foreground="#FF6B6B" LetterSpacing="2"/>
+            <TextBlock Text="{local:Localize Remote_Forced}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SystemErrorBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="3" IsEnabled="{Binding Connection.IsConnected}">
                 <Button AutomationProperties.Name="{local:Localize Remote_ForceShutdown}" Classes="remote-btn remote-btn-danger" Command="{Binding ForceShutdownPcCommand}" Margin="0,0,4,0">
                     <StackPanel Spacing="10">
