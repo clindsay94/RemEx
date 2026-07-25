@@ -489,7 +489,7 @@
                                     <ListBox.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SensorActivationItem">
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,6">
-                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsActive}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <CheckBox AutomationProperties.Name="{Binding SensorName}" Grid.Column="0" IsChecked="{Binding IsActive}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding SensorName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                                 <Button AutomationProperties.Name="{local:Localize A11y_MoveUp}" Grid.Column="2" Classes="stage-mini-btn" Content="↑" Margin="6,0,4,0" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorUpCommand}" CommandParameter="{Binding}"/>
                                                 <Button AutomationProperties.Name="{local:Localize A11y_MoveDown}" Grid.Column="3" Classes="stage-mini-btn" Content="↓" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).MoveSensorDownCommand}" CommandParameter="{Binding}"/>

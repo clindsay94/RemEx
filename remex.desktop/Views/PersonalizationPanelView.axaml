@@ -199,7 +199,7 @@
                         <TextBlock Text="{local:Localize Custom_HardwareSyncTitle}" FontSize="14" FontWeight="SemiBold"/>
                         <TextBlock Text="{local:Localize Custom_HardwareSyncDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                     </StackPanel>
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SyncWithHardware}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left"/>
+                    <ToggleSwitch AutomationProperties.Name="{local:Localize Custom_HardwareSyncTitle}" Grid.Column="1" IsChecked="{Binding SyncWithHardware}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left"/>
                 </Grid>
             </StackPanel>
         </Border>

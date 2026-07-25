@@ -172,7 +172,7 @@
                                     <TextBlock Text="{local:Localize Settings_CloseToTray}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Text="{local:Localize Settings_CloseToTrayDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                 </StackPanel>
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsCloseToTrayEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_CloseToTray}" Grid.Column="1" IsChecked="{Binding IsCloseToTrayEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Automatic update check: query GitHub for a newer release on startup -->
@@ -181,7 +181,7 @@
                                     <TextBlock Text="{local:Localize Settings_CheckForUpdates}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Text="{local:Localize Settings_CheckForUpdatesDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                 </StackPanel>
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsCheckForUpdatesEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_CheckForUpdates}" Grid.Column="1" IsChecked="{Binding IsCheckForUpdatesEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Launch at Login behavior: run minimized on sign-in -->
@@ -190,7 +190,7 @@
                                     <TextBlock Text="{local:Localize Settings_LaunchAtLogin}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Text="{local:Localize Settings_LaunchAtLoginDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                 </StackPanel>
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsLaunchAtLoginEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_LaunchAtLogin}" Grid.Column="1" IsChecked="{Binding IsLaunchAtLoginEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
 
                             <!-- Keep session unlocked while a paired client is connected (opt-in unattended access) (RemEx-l6o) -->
@@ -200,7 +200,7 @@
                                         <TextBlock Text="{local:Localize Settings_KeepSessionUnlocked}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                         <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                                     </StackPanel>
-                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsKeepSessionUnlockedEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                    <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_KeepSessionUnlocked}" Grid.Column="1" IsChecked="{Binding IsKeepSessionUnlockedEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                                 </Grid>
                                 <TextBlock Text="{local:Localize Settings_KeepSessionUnlockedWarning}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource SystemWarningBrush}" TextWrapping="Wrap" IsVisible="{Binding IsKeepSessionUnlockedEnabled}"/>
                             </StackPanel>
@@ -231,7 +231,7 @@
                                     <TextBlock Text="{local:Localize Settings_SnapToGrid}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Text="{local:Localize Settings_SnapToGridDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
                                 </StackPanel>
-                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_SnapToGrid}" Grid.Column="1" IsChecked="{Binding IsSnapToGridEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
 
                             <StackPanel Spacing="8" IsEnabled="{Binding IsSnapToGridEnabled}" ToolTip.Tip="{local:Localize Settings_GridPlacementIncrementTooltip}">
@@ -254,7 +254,7 @@
                                 <ItemsControl ItemsSource="{Binding AvailableSensors}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SensorPinItem">
-                                            <CheckBox IsChecked="{Binding IsPinned}" Margin="0,4">
+                                            <CheckBox AutomationProperties.Name="{Binding SensorName}" IsChecked="{Binding IsPinned}" Margin="0,4">
                                                 <TextBlock Text="{Binding SensorName}" FontSize="13" VerticalAlignment="Center"/>
                                             </CheckBox>
                                         </DataTemplate>
@@ -306,7 +306,7 @@
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="24,0">
                                                 <TextBlock Text="{local:Localize Settings_FileTransferWritable}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                                <ToggleSwitch IsChecked="{Binding IsWritable}" OnContent="" OffContent=""/>
+                                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_FileTransferWritable}" IsChecked="{Binding IsWritable}" OnContent="" OffContent=""/>
                                             </StackPanel>
                                             <Button Grid.Column="2" Content="{local:Localize Settings_FileTransferRemove}" Command="{Binding RemoveCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" CornerRadius="8" Cursor="Hand"/>
                                         </Grid>
@@ -340,11 +340,11 @@
                                             </Grid>
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustFullBrowse}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding FullBrowseGranted}" OnContent="" OffContent=""/>
+                                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_TrustFullBrowse}" Grid.Column="1" IsChecked="{Binding FullBrowseGranted}" OnContent="" OffContent=""/>
                                             </Grid>
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <TextBlock Grid.Column="0" Text="{local:Localize Settings_TrustAutoAccept}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoAcceptIncoming}" OnContent="" OffContent=""/>
+                                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_TrustAutoAccept}" Grid.Column="1" IsChecked="{Binding AutoAcceptIncoming}" OnContent="" OffContent=""/>
                                             </Grid>
                                         </StackPanel>
                                     </Border>
