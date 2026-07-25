@@ -230,53 +230,10 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenAddProgramDialog()
     {
-        if (OperatingSystem.IsAndroid())
-        {
-            IsAndroidAddPanelOpen = !IsAndroidAddPanelOpen;
-        }
-        else
-        {
-            OnOpenAddProgramDialogRequested?.Invoke();
-        }
-    }
-
-    [ObservableProperty]
-    private bool _isAndroidAddPanelOpen;
-
-    [ObservableProperty]
-    private string _androidNewAppName = string.Empty;
-
-    [ObservableProperty]
-    private string _androidNewAppPath = string.Empty;
-
-    [RelayCommand]
-    private async Task SubmitAndroidNewAppAsync()
-    {
-        if (string.IsNullOrWhiteSpace(AndroidNewAppName) || string.IsNullOrWhiteSpace(AndroidNewAppPath))
-            return;
-
-        var entry = NormalizeEntry(new AppEntry(
-            Guid.NewGuid(),
-            AndroidNewAppName,
-            AndroidNewAppPath,
-            "#4A3AFF",
-            null
-        ));
-
-        if (Connection.IsConnected)
-        {
-            var msg = new RemexMessage { Type = MessageTypes.LauncherAdd, LauncherEntry = entry };
-            await Connection.SendAsync(msg);
-        }
-        else
-        {
-            Launchers.Add(entry);
-            await SaveLaunchersAsync();
-        }
-
-        AndroidNewAppName = string.Empty;
-        AndroidNewAppPath = string.Empty;
-        IsAndroidAddPanelOpen = false;
+        // The Android in-place add panel was unreachable in this assembly and was removed with
+        // the rest of the dead Android chrome (RemEx-f167), along with its backing properties
+        // and SubmitAndroidNewAppAsync. The desktop dialog is the only path.
+        OnOpenAddProgramDialogRequested?.Invoke();
     }
 
     /// <summary>

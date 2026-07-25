@@ -60,13 +60,11 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     /// <summary>Exposed for child VMs that need to read persisted settings (e.g. stream quality/FPS).</summary>
     public DashboardLayoutService LayoutService => _layoutService;
 
-    /// <summary>Helper property for Android-specific UI logic.</summary>
-    public bool IsAndroid => OperatingSystem.IsAndroid();
-
-    /// <summary>Helper property for Desktop-specific UI logic.</summary>
-    public bool IsDesktop => !OperatingSystem.IsAndroid();
-    public double CompactPaneLength => OperatingSystem.IsAndroid() ? 0 : 64;
-    public double OpenPaneLength => OperatingSystem.IsAndroid() ? 0 : 220;
+    // IsAndroid / IsDesktop removed with the dead Android chrome (RemEx-f167): remex.desktop
+    // targets net10.0, not net10.0-android, so OperatingSystem.IsAndroid() is never true here.
+    // The pane widths lost their unreachable zero-width Android branch for the same reason.
+    public double CompactPaneLength => 64;
+    public double OpenPaneLength => 220;
 
 
     /// <summary>Shared connection logic — injected into child VMs that need it.</summary>
@@ -454,19 +452,10 @@ public partial class ShellViewModel : ObservableObject, IDisposable
 
         TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
 
-        // Material 3 style:
-        // On Android, we use a consistent, professional transition.
-        // On Desktop, we can keep the variety.
-        if (OperatingSystem.IsAndroid())
-        {
-            // We'll use CrossFade (index 2) as it's the closest to M3 FadeThrough
-            // without complex shared-axis custom code.
-            TransitionType = 2;
-        }
-        else
-        {
-            TransitionType = _rng.Next(4);
-        }
+        // Desktop keeps the variety. The former Android branch (always CrossFade) was
+        // unreachable in this assembly and was removed with the rest of the dead Android
+        // chrome (RemEx-f167).
+        TransitionType = _rng.Next(4);
 
         ActiveNavIndex = targetIndex;
         CurrentView = viewModel;
