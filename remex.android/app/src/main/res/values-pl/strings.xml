@@ -336,7 +336,7 @@
     <string name="file_transfer_upload">Wyślij ↑</string>
     <string name="file_transfer_download">Pobierz ↓</string>
     <string name="file_transfer_cancel">Anuluj</string>
-    <string name="file_transfer_not_connected">Połącz się z hostem, aby przeglądać pliki zdalne.</string>
+    <string name="file_transfer_not_connected">Połącz się z komputerem, aby przeglądać pliki zdalne.</string>
     <string name="file_transfer_loading">Ładowanie…</string>
     <string name="file_transfer_empty">Nie znaleziono plików.</string>
     <string name="file_transfer_shared_folder">Folder udostępniony</string>
@@ -367,8 +367,8 @@
     <string name="dialog_cancel">Anuluj</string>
     <string name="cd_more_options">Więcej opcji</string>
     <string name="settings_ft_shared_folders_title">Udostępnione foldery Androida</string>
-    <string name="settings_ft_shared_folders_desc">Dodaj foldery z tego urządzenia do udostępnienia, gdy hostowanie na Androidzie jest włączone. Twoje wybory zostaną zapisane i użyte automatycznie, gdy funkcja będzie dostępna.</string>
-    <string name="settings_ft_active">Hostowanie na Androidzie pojawi się w przyszłej aktualizacji</string>
+    <string name="settings_ft_shared_folders_desc">Dodaj foldery z tego urządzenia, aby udostępnić je komputerowi. Twoje wybory są zapisywane i będą używane automatycznie.</string>
+    <string name="settings_ft_active">Udostępnione foldery są aktywne</string>
     <string name="settings_ft_no_folders">Nie dodano jeszcze żadnych folderów.</string>
     <string name="settings_ft_add_folder">Dodaj folder…</string>
     <string name="settings_ft_remove_folder">Usuń folder</string>

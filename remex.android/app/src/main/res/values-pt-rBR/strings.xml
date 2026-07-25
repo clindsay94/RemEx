@@ -392,8 +392,8 @@
     <string name="dialog_cancel">Cancelar</string>
     <string name="cd_more_options">Mais opções</string>
     <string name="settings_ft_shared_folders_title">Pastas Compartilhadas do Android</string>
-    <string name="settings_ft_shared_folders_desc">Adicione pastas deste dispositivo para compartilhar quando o modo PC do Android estiver ativado. Suas seleções serão salvas e usadas automaticamente assim que o recurso estiver disponível.</string>
-    <string name="settings_ft_active">Modo PC do Android em breve em uma atualização futura</string>
+    <string name="settings_ft_shared_folders_desc">Adicione pastas deste dispositivo para compartilhar com o PC. Suas seleções são salvas e serão usadas automaticamente.</string>
+    <string name="settings_ft_active">As pastas compartilhadas estão ativas</string>
     <string name="settings_ft_no_folders">Nenhuma pasta adicionada ainda.</string>
     <string name="settings_ft_add_folder">Adicionar pasta…</string>
     <string name="settings_ft_remove_folder">Remover pasta</string>

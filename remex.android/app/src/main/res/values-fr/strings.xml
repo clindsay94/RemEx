@@ -361,7 +361,7 @@
     <string name="file_transfer_upload">Téléverser ↑</string>
     <string name="file_transfer_download">Télécharger ↓</string>
     <string name="file_transfer_cancel">Annuler</string>
-    <string name="file_transfer_not_connected">Connectez-vous à un hôte pour parcourir les fichiers distants.</string>
+    <string name="file_transfer_not_connected">Connectez-vous à un PC pour parcourir les fichiers distants.</string>
     <string name="file_transfer_loading">Chargement…</string>
     <string name="file_transfer_empty">Aucun fichier trouvé.</string>
     <string name="file_transfer_shared_folder">Dossier partagé</string>
@@ -392,8 +392,8 @@
     <string name="dialog_cancel">Annuler</string>
     <string name="cd_more_options">Plus d\'options</string>
     <string name="settings_ft_shared_folders_title">Dossiers partagés Android</string>
-    <string name="settings_ft_shared_folders_desc">Ajoutez des dossiers de cet appareil à partager lorsque l\'hébergement Android est activé. Vos sélections sont enregistrées et seront utilisées automatiquement dès que la fonctionnalité sera disponible.</string>
-    <string name="settings_ft_active">L\'hébergement Android arrive dans une prochaine mise à jour</string>
+    <string name="settings_ft_shared_folders_desc">Ajoutez des dossiers de cet appareil à partager avec le PC. Vos sélections sont enregistrées et seront utilisées automatiquement.</string>
+    <string name="settings_ft_active">Les dossiers partagés sont actifs</string>
     <string name="settings_ft_no_folders">Aucun dossier ajouté pour le moment.</string>
     <string name="settings_ft_add_folder">Ajouter un dossier…</string>
     <string name="settings_ft_remove_folder">Supprimer le dossier</string>

@@ -392,8 +392,8 @@
     <string name="dialog_cancel">Batal</string>
     <string name="cd_more_options">Opsi lainnya</string>
     <string name="settings_ft_shared_folders_title">Folder Bersama Android</string>
-    <string name="settings_ft_shared_folders_desc">Tambahkan folder dari perangkat ini untuk dibagikan saat hosting Android diaktifkan. Pilihan Anda akan disimpan dan digunakan secara otomatis setelah fitur tersedia.</string>
-    <string name="settings_ft_active">Hosting Android akan hadir di pembaruan mendatang</string>
+    <string name="settings_ft_shared_folders_desc">Tambahkan folder dari perangkat ini untuk dibagikan dengan PC. Pilihan Anda disimpan dan akan digunakan secara otomatis.</string>
+    <string name="settings_ft_active">Folder bersama aktif</string>
     <string name="settings_ft_no_folders">Belum ada folder yang ditambahkan.</string>
     <string name="settings_ft_add_folder">Tambah folder…</string>
     <string name="settings_ft_remove_folder">Hapus folder</string>

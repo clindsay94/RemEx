@@ -392,8 +392,8 @@
     <string name="dialog_cancel">Cancelar</string>
     <string name="cd_more_options">Más opciones</string>
     <string name="settings_ft_shared_folders_title">Carpetas compartidas de Android</string>
-    <string name="settings_ft_shared_folders_desc">Añade carpetas de este dispositivo para compartir cuando el alojamiento de Android esté habilitado. Tus selecciones se guardarán y se usarán automáticamente una vez que la función esté disponible.</string>
-    <string name="settings_ft_active">El alojamiento de Android llegará en una futura actualización</string>
+    <string name="settings_ft_shared_folders_desc">Añade carpetas de este dispositivo para compartirlas con el PC. Tus selecciones se guardan y se usarán automáticamente.</string>
+    <string name="settings_ft_active">Las carpetas compartidas están activas</string>
     <string name="settings_ft_no_folders">Aún no se han añadido carpetas.</string>
     <string name="settings_ft_add_folder">Añadir carpeta…</string>
     <string name="settings_ft_remove_folder">Eliminar carpeta</string>
