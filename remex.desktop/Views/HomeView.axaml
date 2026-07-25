@@ -332,9 +332,9 @@
         <StackPanel Orientation="Horizontal" Spacing="24">
             <Grid>
                 <!-- Radar Sweep Animation -->
-                <Ellipse Width="48" Height="48" Stroke="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}" StrokeThickness="1" Opacity="0.2"/>
-                <Ellipse Width="48" Height="48" Fill="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}" Opacity="0.1"/>
-                <Ellipse Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Fill="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}">
+                <Ellipse Width="48" Height="48" Classes="status-ring" Classes.connected="{Binding Connection.IsConnected}" StrokeThickness="1" Opacity="0.2"/>
+                <Ellipse Width="48" Height="48" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}" Opacity="0.1"/>
+                <Ellipse Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
                     <Ellipse.Transitions>
                         <Transitions>
                             <BrushTransition Property="Fill" Duration="0:0:0.4"/>

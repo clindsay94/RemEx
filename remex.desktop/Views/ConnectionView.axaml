@@ -16,10 +16,7 @@
             <Border Classes="glass-card" Padding="24">
                 <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Ellipse Width="12" Height="12" VerticalAlignment="Center">
-                            <Ellipse.Fill>
-                                <SolidColorBrush Color="{Binding IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#4ADE80|#FF6B6B}"/>
-                            </Ellipse.Fill>
+                        <Ellipse Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding IsConnected}">
                         </Ellipse>
                         <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>

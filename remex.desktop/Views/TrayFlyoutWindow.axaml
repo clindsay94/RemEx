@@ -43,10 +43,7 @@
                     <TextBlock Text="{local:Localize Tray_LiveHeader}" FontFamily="{StaticResource Bungee_Shade}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4"/>
                     <TextBlock Text="{Binding Connection.StatusText}" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" FontWeight="SemiBold"/>
                 </StackPanel>
-                <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,0,0">
-                    <Ellipse.Fill>
-                        <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
-                    </Ellipse.Fill>
+                <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,0,0" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
                     <Ellipse.Transitions>
                         <Transitions>
                             <BrushTransition Property="Fill" Duration="0:0:0.4"/>
