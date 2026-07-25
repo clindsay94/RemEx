@@ -114,7 +114,7 @@
     <string name="wake_pc_failed">Failed to send wake signal</string>
     <string name="wake_pc_mac_not_configured">MAC address not configured — set it in Settings</string>
     <string name="wake_pc_lib_not_loaded">Cannot send wake signal</string>
-    <string name="pairing_error_unknown">An unexpected pairing error occurred.</string>
+    <string name="pairing_error_unknown">Pairing failed for an unexpected reason. Try again — if it keeps happening, unpair this PC on your phone and pair from scratch.</string>
 
     
     <string name="notification_channel_name">RemEx Connection</string>
@@ -390,7 +390,7 @@
     <string name="pairing_submit">Pair</string>
     <string name="pairing_cancel">Cancel</string>
     <string name="pairing_error_bad_pin">Incorrect PIN or pairing expired</string>
-    <string name="pairing_error_cert_mismatch">Certificate mismatch</string>
+    <string name="pairing_error_cert_mismatch">The security certificate on this PC has changed, so your phone no longer trusts it. Unpair this PC on your phone, then pair again to accept the new certificate.</string>
 
     
     <string name="qr_scanner_title">Scan QR Code</string>
@@ -631,10 +631,10 @@
     <string name="shape_soft_boom">Soft Boom</string>
     <string name="shape_pixel_circle">Pixel Circle</string>
     <string name="shape_rounded_rectangle">Rounded Rectangle</string>
-    <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>
-    <string name="pairing_error_start_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_malformed_response">Your PC replied, but the reply could not be read. Check the PC is running the same version of RemEx as your phone, then try pairing again.</string>
+    <string name="pairing_error_empty_response">Your PC did not send a PIN. Check RemEx is open on the PC and showing a pairing PIN, then try again.</string>
+    <string name="pairing_error_reach_failed">Could not reach your PC. Check both devices are on the same Wi-Fi network and that the PC address is correct, then try again.</string>
+    <string name="pairing_error_start_failed">Pairing could not start: %1$s. Check RemEx is open on the PC, then try again.</string>
     <string name="pairing_error_save_failed">Failed to save pinned PC securely.</string>
     <string name="qr_error_missing_hash">QR code is missing the PC certificate hash</string>
     <string name="qr_error_setup_failed">QR setup failed</string>

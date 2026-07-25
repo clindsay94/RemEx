@@ -265,7 +265,7 @@
     <string name="pairing_submit">Parear</string>
     <string name="pairing_cancel">Cancelar</string>
     <string name="pairing_error_bad_pin">PIN incorreto ou pareamento expirado</string>
-    <string name="pairing_error_cert_mismatch">O certificado não corresponde</string>
+    <string name="pairing_error_cert_mismatch">O certificado de segurança deste PC mudou, então o seu celular não confia mais nele. Despareie este PC no seu celular e pareie novamente para aceitar o novo certificado.</string>
     <string name="qr_scanner_title">Escanear código QR</string>
     <string name="cd_back">Voltar</string>
     <string name="qr_scanner_hint">Aponte a câmera para o código QR exibido no seu PC</string>
@@ -421,10 +421,10 @@
     <string name="shape_soft_burst">Explosão suave</string>
     <string name="shape_soft_boom">Estrondo suave</string>
     <string name="shape_pixel_circle">Círculo de pixel</string>
-    <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>
-    <string name="pairing_error_start_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_malformed_response">Seu PC respondeu, mas não foi possível ler a resposta. Verifique se o PC está com a mesma versão do RemEx que o seu celular e tente parear novamente.</string>
+    <string name="pairing_error_empty_response">Seu PC não enviou nenhum PIN. Verifique se o RemEx está aberto no PC e exibindo um PIN de pareamento e tente novamente.</string>
+    <string name="pairing_error_reach_failed">Não foi possível alcançar o seu PC. Verifique se os dois dispositivos estão na mesma rede Wi-Fi e se o endereço do PC está correto e tente novamente.</string>
+    <string name="pairing_error_start_failed">Não foi possível iniciar o pareamento: %1$s. Verifique se o RemEx está aberto no PC e tente novamente.</string>
     <string name="pairing_error_save_failed">Falha ao salvar o PC fixado com segurança.</string>
     <string name="qr_error_missing_hash">O código QR não contém o hash do certificado do PC</string>
     <string name="qr_error_setup_failed">Falha na configuração do QR</string>
@@ -612,7 +612,7 @@ $line
     <string name="wake_pc_mac_not_configured">Endereço MAC não configurado — defina nas Configurações</string>
     <string name="wake_pc_lib_not_loaded">Não é possível enviar o sinal de despertar</string>
     <string name="pairing_error_generic">Falha no pareamento — tente novamente</string>
-    <string name="pairing_error_unknown">Ocorreu um erro de pareamento inesperado.</string>
+    <string name="pairing_error_unknown">O pareamento falhou por um motivo inesperado. Tente novamente; se continuar acontecendo, despareie este PC no seu celular e pareie do zero.</string>
     <string name="splash_command_your">CONTROLE </string>
     <string name="splash_pc">SEU PC</string>
     <string name="splash_command_center">⚡ CENTRO DE COMANDO</string>

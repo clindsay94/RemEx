@@ -265,7 +265,7 @@
     <string name="pairing_submit">पेयर करें</string>
     <string name="pairing_cancel">रद्द करें</string>
     <string name="pairing_error_bad_pin">पिन गलत है या पेयरिंग की समय-सीमा समाप्त हो गई</string>
-    <string name="pairing_error_cert_mismatch">प्रमाणपत्र मेल नहीं खाता</string>
+    <string name="pairing_error_cert_mismatch">इस पीसी का सुरक्षा प्रमाणपत्र बदल गया है, इसलिए आपका फोन अब उस पर भरोसा नहीं करता। अपने फोन पर इस पीसी को अनपेयर करें, फिर नया प्रमाणपत्र स्वीकार करने के लिए दोबारा पेयर करें।</string>
     <string name="qr_scanner_title">QR कोड स्कैन करें</string>
     <string name="cd_back">वापस</string>
     <string name="qr_scanner_hint">अपने PC पर दिखाए गए QR कोड पर कैमरा पॉइंट करें</string>
@@ -421,10 +421,10 @@
     <string name="shape_soft_burst">सॉफ्ट बर्स्ट</string>
     <string name="shape_soft_boom">सॉफ्ट बूम</string>
     <string name="shape_pixel_circle">पिक्सेल सर्कल</string>
-    <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>
-    <string name="pairing_error_start_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_malformed_response">आपके पीसी ने जवाब दिया, लेकिन जवाब पढ़ा नहीं जा सका। जांचें कि पीसी पर RemEx का वही संस्करण चल रहा है जो आपके फोन पर है, फिर दोबारा पेयर करें।</string>
+    <string name="pairing_error_empty_response">आपके पीसी ने कोई पिन नहीं भेजा। जांचें कि पीसी पर RemEx खुला है और पेयरिंग पिन दिखा रहा है, फिर दोबारा कोशिश करें।</string>
+    <string name="pairing_error_reach_failed">आपके पीसी तक नहीं पहुंच सके। जांचें कि दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं और पीसी का पता सही है, फिर दोबारा कोशिश करें।</string>
+    <string name="pairing_error_start_failed">पेयरिंग शुरू नहीं हो सकी: %1$s। जांचें कि पीसी पर RemEx खुला है, फिर दोबारा कोशिश करें।</string>
     <string name="pairing_error_save_failed">पिन किए गए होस्ट को सुरक्षित रूप से सहेजने में विफल।</string>
     <string name="qr_error_missing_hash">क्यूआर कोड में होस्ट प्रमाणपत्र हैश गायब है</string>
     <string name="qr_error_setup_failed">क्यूआर सेटअप विफल रहा</string>
@@ -612,7 +612,7 @@ $line
     <string name="wake_pc_mac_not_configured">MAC पता कॉन्फ़िगर नहीं है — सेटिंग्स में सेट करें</string>
     <string name="wake_pc_lib_not_loaded">वेक सिग्नल नहीं भेजा जा सकता</string>
     <string name="pairing_error_generic">पेयरिंग विफल — कृपया पुनः प्रयास करें</string>
-    <string name="pairing_error_unknown">एक अप्रत्याशित पेयरिंग त्रुटि हुई।</string>
+    <string name="pairing_error_unknown">पेयरिंग किसी अनपेक्षित कारण से विफल रही। दोबारा कोशिश करें; अगर ऐसा होता रहे, तो अपने फोन पर इस पीसी को अनपेयर करें और शुरू से पेयर करें।</string>
     <string name="splash_command_your">अपने PC को </string>
     <string name="splash_pc">नियंत्रित करें</string>
     <string name="splash_command_center">⚡ नियंत्रण केंद्र</string>

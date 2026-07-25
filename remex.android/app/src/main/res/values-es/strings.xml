@@ -265,7 +265,7 @@
     <string name="pairing_submit">Emparejar</string>
     <string name="pairing_cancel">Cancelar</string>
     <string name="pairing_error_bad_pin">PIN incorrecto o emparejamiento caducado</string>
-    <string name="pairing_error_cert_mismatch">El certificado no coincide</string>
+    <string name="pairing_error_cert_mismatch">El certificado de seguridad de este PC ha cambiado, por lo que tu teléfono ya no confía en él. Desempareja este PC en tu teléfono y vuelve a emparejarlo para aceptar el nuevo certificado.</string>
     <string name="qr_scanner_title">Escanear código QR</string>
     <string name="cd_back">Atrás</string>
     <string name="qr_scanner_hint">Apunta la cámara al código QR mostrado en tu PC</string>
@@ -421,10 +421,10 @@
     <string name="shape_soft_burst">Explosión suave</string>
     <string name="shape_soft_boom">Estallido suave</string>
     <string name="shape_pixel_circle">Círculo de píxeles</string>
-    <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>
-    <string name="pairing_error_start_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_malformed_response">Tu PC respondió, pero no se pudo leer la respuesta. Comprueba que el PC tenga la misma versión de RemEx que tu teléfono y vuelve a intentar el emparejamiento.</string>
+    <string name="pairing_error_empty_response">Tu PC no envió ningún PIN. Comprueba que RemEx esté abierto en el PC y muestre un PIN de emparejamiento, y vuelve a intentarlo.</string>
+    <string name="pairing_error_reach_failed">No se pudo contactar con tu PC. Comprueba que ambos dispositivos estén en la misma red Wi-Fi y que la dirección del PC sea correcta, y vuelve a intentarlo.</string>
+    <string name="pairing_error_start_failed">No se pudo iniciar el emparejamiento: %1$s. Comprueba que RemEx esté abierto en el PC y vuelve a intentarlo.</string>
     <string name="pairing_error_save_failed">Error al guardar el PC fijado de forma segura.</string>
     <string name="qr_error_missing_hash">Al código QR le falta el hash del certificado del PC</string>
     <string name="qr_error_setup_failed">Fallo en la configuración del QR</string>
@@ -612,7 +612,7 @@ $line
     <string name="wake_pc_mac_not_configured">Dirección MAC no configurada — configúrala en Ajustes</string>
     <string name="wake_pc_lib_not_loaded">No se puede enviar la señal de encendido</string>
     <string name="pairing_error_generic">Error de emparejamiento — por favor, inténtalo de nuevo</string>
-    <string name="pairing_error_unknown">Se produjo un error de emparejamiento inesperado.</string>
+    <string name="pairing_error_unknown">El emparejamiento falló por un motivo inesperado. Vuelve a intentarlo; si sigue ocurriendo, desempareja este PC en tu teléfono y empareja desde cero.</string>
     <string name="splash_command_your">CONTROLA </string>
     <string name="splash_pc">TU PC</string>
     <string name="splash_command_center">⚡ CENTRO DE CONTROL</string>

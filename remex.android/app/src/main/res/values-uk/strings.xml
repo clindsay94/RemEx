@@ -265,7 +265,7 @@
     <string name="pairing_submit">Сполучити</string>
     <string name="pairing_cancel">Скасувати</string>
     <string name="pairing_error_bad_pin">Неправильний PIN-код або час сполучення вичерпано</string>
-    <string name="pairing_error_cert_mismatch">Сертифікат не збігається</string>
+    <string name="pairing_error_cert_mismatch">Сертифікат безпеки цього ПК змінився, тому телефон більше йому не довіряє. Скасуйте сполучення з цим ПК на телефоні, а потім виконайте сполучення знову, щоб прийняти новий сертифікат.</string>
     <string name="qr_scanner_title">Сканер QR</string>
     <string name="cd_back">Back</string>
     <string name="qr_scanner_hint">Наведіть камеру на QR-код, показаний на вашому ПК</string>
@@ -421,10 +421,10 @@
     <string name="shape_soft_burst">М\'який вибух</string>
     <string name="shape_soft_boom">М\'який бум</string>
     <string name="shape_pixel_circle">Піксельне коло</string>
-    <string name="pairing_error_malformed_response">Не вдалося дістатися до вашого ПК</string>
-    <string name="pairing_error_empty_response">Не вдалося дістатися до вашого ПК</string>
-    <string name="pairing_error_reach_failed">Не вдалося дістатися до вашого ПК</string>
-    <string name="pairing_error_start_failed">Не вдалося дістатися до вашого ПК</string>
+    <string name="pairing_error_malformed_response">Ваш ПК відповів, але відповідь не вдалося прочитати. Перевірте, чи на ПК працює та сама версія RemEx, що й на телефоні, а потім спробуйте виконати сполучення ще раз.</string>
+    <string name="pairing_error_empty_response">Ваш ПК не надіслав PIN-код. Перевірте, чи RemEx відкритий на ПК і показує PIN-код сполучення, а потім спробуйте ще раз.</string>
+    <string name="pairing_error_reach_failed">Не вдалося дістатися до вашого ПК. Перевірте, чи обидва пристрої підключені до однієї мережі Wi-Fi і чи правильна адреса ПК, а потім спробуйте ще раз.</string>
+    <string name="pairing_error_start_failed">Не вдалося розпочати сполучення: %1$s. Перевірте, чи RemEx відкритий на ПК, а потім спробуйте ще раз.</string>
     <string name="pairing_error_save_failed">Не вдалося безпечно зберегти закріплений хост.</string>
     <string name="qr_error_missing_hash">У QR-коді відсутній хеш сертифіката хоста</string>
     <string name="qr_error_setup_failed">Не вдалося налаштувати QR</string>
@@ -612,7 +612,7 @@ $line
     <string name="wake_pc_mac_not_configured">MAC-адресу не налаштовано — вкажіть у налаштуваннях</string>
     <string name="wake_pc_lib_not_loaded">Неможливо надіслати сигнал пробудження</string>
     <string name="pairing_error_generic">Не вдалося виконати сполучення — спробуйте ще раз</string>
-    <string name="pairing_error_unknown">Сталася неочікувана помилка сполучення.</string>
+    <string name="pairing_error_unknown">Сполучення не вдалося з неочікуваної причини. Спробуйте ще раз; якщо це повторюється, скасуйте сполучення з цим ПК на телефоні та виконайте його заново.</string>
     <string name="splash_command_your">КЕРУЙТЕ </string>
     <string name="splash_pc">СВОЇМ ПК</string>
     <string name="splash_command_center">⚡ ЦЕНТР КЕРУВАННЯ</string>

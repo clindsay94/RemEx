@@ -265,7 +265,7 @@
     <string name="pairing_submit">Coupler</string>
     <string name="pairing_cancel">Annuler</string>
     <string name="pairing_error_bad_pin">Code PIN incorrect ou couplage expiré</string>
-    <string name="pairing_error_cert_mismatch">Le certificat ne correspond pas</string>
+    <string name="pairing_error_cert_mismatch">Le certificat de sécurité de ce PC a changé, votre téléphone ne lui fait donc plus confiance. Découplez ce PC sur votre téléphone, puis couplez-le à nouveau pour accepter le nouveau certificat.</string>
     <string name="qr_scanner_title">Scanner le code QR</string>
     <string name="cd_back">Retour</string>
     <string name="qr_scanner_hint">Pointez l\'appareil photo vers le code QR affiché sur votre PC</string>
@@ -421,10 +421,10 @@
     <string name="shape_soft_burst">Explosion douce</string>
     <string name="shape_soft_boom">Boum doux</string>
     <string name="shape_pixel_circle">Cercle pixelisé</string>
-    <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>
-    <string name="pairing_error_start_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_malformed_response">Votre PC a répondu, mais la réponse est illisible. Vérifiez que le PC utilise la même version de RemEx que votre téléphone, puis relancez le couplage.</string>
+    <string name="pairing_error_empty_response">Votre PC n\'a pas envoyé de code PIN. Vérifiez que RemEx est ouvert sur le PC et affiche un code PIN de couplage, puis réessayez.</string>
+    <string name="pairing_error_reach_failed">Impossible de joindre votre PC. Vérifiez que les deux appareils sont sur le même réseau Wi-Fi et que l\'adresse du PC est correcte, puis réessayez.</string>
+    <string name="pairing_error_start_failed">Le couplage n\'a pas pu démarrer : %1$s. Vérifiez que RemEx est ouvert sur le PC, puis réessayez.</string>
     <string name="pairing_error_save_failed">Échec de l\'enregistrement sécurisé de l\'hôte épinglé.</string>
     <string name="qr_error_missing_hash">Le code QR ne contient pas le hachage du certificat de l\'hôte</string>
     <string name="qr_error_setup_failed">Échec de la configuration du QR</string>
@@ -612,7 +612,7 @@ $line
     <string name="wake_pc_mac_not_configured">Adresse MAC non configurée — à définir dans les paramètres</string>
     <string name="wake_pc_lib_not_loaded">Impossible d\'envoyer le signal de réveil</string>
     <string name="pairing_error_generic">Échec du couplage — veuillez réessayer</string>
-    <string name="pairing_error_unknown">Une erreur de couplage inattendue s\'est produite.</string>
+    <string name="pairing_error_unknown">Le couplage a échoué pour une raison inattendue. Réessayez ; si cela persiste, découplez ce PC sur votre téléphone puis couplez-le à nouveau depuis le début.</string>
     <string name="splash_command_your">CONTRÔLEZ </string>
     <string name="splash_pc">VOTRE PC</string>
     <string name="splash_command_center">⚡ CENTRE DE CONTRÔLE</string>

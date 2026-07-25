@@ -265,7 +265,7 @@
     <string name="pairing_submit">Sandingkan</string>
     <string name="pairing_cancel">Batal</string>
     <string name="pairing_error_bad_pin">PIN salah atau masa penyandingan telah berakhir</string>
-    <string name="pairing_error_cert_mismatch">Sertifikat tidak cocok</string>
+    <string name="pairing_error_cert_mismatch">Sertifikat keamanan PC ini telah berubah, sehingga ponsel Anda tidak lagi mempercayainya. Lepas sandingan PC ini di ponsel Anda, lalu sandingkan lagi untuk menerima sertifikat baru.</string>
     <string name="qr_scanner_title">Pindai Kode QR</string>
     <string name="cd_back">Kembali</string>
     <string name="qr_scanner_hint">Arahkan kamera ke kode QR yang ditampilkan di PC Anda</string>
@@ -421,10 +421,10 @@
     <string name="shape_soft_burst">Soft Burst</string>
     <string name="shape_soft_boom">Soft Boom</string>
     <string name="shape_pixel_circle">Pixel Circle</string>
-    <string name="pairing_error_malformed_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_empty_response">Couldn\'t reach your PC</string>
-    <string name="pairing_error_reach_failed">Couldn\'t reach your PC</string>
-    <string name="pairing_error_start_failed">Couldn\'t reach your PC</string>
+    <string name="pairing_error_malformed_response">PC Anda merespons, tetapi responsnya tidak dapat dibaca. Pastikan PC menjalankan versi RemEx yang sama dengan ponsel Anda, lalu coba sandingkan lagi.</string>
+    <string name="pairing_error_empty_response">PC Anda tidak mengirim PIN. Pastikan RemEx terbuka di PC dan menampilkan PIN penyandingan, lalu coba lagi.</string>
+    <string name="pairing_error_reach_failed">Tidak dapat menjangkau PC Anda. Pastikan kedua perangkat berada di jaringan Wi-Fi yang sama dan alamat PC sudah benar, lalu coba lagi.</string>
+    <string name="pairing_error_start_failed">Penyandingan tidak dapat dimulai: %1$s. Pastikan RemEx terbuka di PC, lalu coba lagi.</string>
     <string name="pairing_error_save_failed">Gagal menyimpan PC yang dipinkan dengan aman.</string>
     <string name="qr_error_missing_hash">Kode QR tidak memiliki hash sertifikat PC</string>
     <string name="qr_error_setup_failed">Penyusunan QR gagal</string>
@@ -612,7 +612,7 @@ $line
     <string name="wake_pc_mac_not_configured">Alamat MAC belum dikonfigurasi — atur di Pengaturan</string>
     <string name="wake_pc_lib_not_loaded">Tidak dapat mengirim sinyal bangun</string>
     <string name="pairing_error_generic">Penyandingan gagal — silakan coba lagi</string>
-    <string name="pairing_error_unknown">Terjadi kesalahan penyandingan yang tidak terduga.</string>
+    <string name="pairing_error_unknown">Penyandingan gagal karena alasan yang tidak terduga. Coba lagi; jika terus terjadi, lepas sandingan PC ini di ponsel Anda lalu sandingkan dari awal.</string>
     <string name="splash_command_your">KENDALIKAN </string>
     <string name="splash_pc">PC ANDA</string>
     <string name="splash_command_center">⚡ PUSAT KENDALI</string>

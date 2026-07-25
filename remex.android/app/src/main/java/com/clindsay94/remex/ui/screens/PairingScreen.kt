@@ -193,20 +193,32 @@ class PairingViewModel : ViewModel() {
                         autoPinFetchFailed = allowAutoPin && fetchedPin == null,
                 )
             } else {
+                // Every branch yields a COMPLETE, self-contained message, matching how
+                // submitPin() above builds its error. pairing_error_start_failed is used only
+                // for the raw native-error branch, where it supplies the "what to do next" the
+                // raw text has none of. reach_failed and unknown already carry their own advice,
+                // so nesting them inside start_failed would give the user two next steps, two
+                // sentence terminators, and — on the unknown branch — contradictory instructions
+                // (RemEx-meqm).
                 val message =
                         when {
-                            result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
+                            result.startsWith("ERROR: ") ->
+                                    context.getString(
+                                            R.string.pairing_error_start_failed,
+                                            // The native detail is usually an exception message and
+                                            // ends in its own period, while the resource supplies a
+                                            // terminator immediately after %1$s. Trim so the user
+                                            // never sees ".." — or ".।" in Hindi, where the mixed
+                                            // pair is worse than the doubled one.
+                                            result.removePrefix("ERROR: ").trimEnd('.', ' ')
+                                    )
                             result.isBlank() -> context.getString(R.string.pairing_error_reach_failed)
                             else -> {
                                 android.util.Log.w("PairingViewModel", "Unknown pairing error: $result")
                                 context.getString(R.string.pairing_error_unknown)
                             }
                         }
-                _uiState.value =
-                        PairingUiState(
-                                isLoading = false,
-                                pairingError = context.getString(R.string.pairing_error_start_failed, message)
-                        )
+                _uiState.value = PairingUiState(isLoading = false, pairingError = message)
             }
         }
     }
