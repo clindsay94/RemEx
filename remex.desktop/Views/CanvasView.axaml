@@ -7,6 +7,13 @@
     xmlns:ctrl="using:Remex.Desktop.Controls" x:Class="Remex.Desktop.Views.CanvasView" x:DataType="vm:CanvasDashboardViewModel">
 
     <UserControl.Styles>
+        <!-- Snapshot status line: success by default, error colour when the last attempt failed (RemEx-40x8). -->
+        <Style Selector="TextBlock.snapshot-status">
+            <Setter Property="Foreground" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <Style Selector="TextBlock.snapshot-status.failed">
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
         <Style Selector="ctrl|DraggableCard.selected">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
@@ -219,7 +226,7 @@
                     <Button AutomationProperties.Name="{local:Localize Canvas_CopySnapshotTooltip}" Classes="back-btn" Click="OnCopySnapshot" ToolTip.Tip="{local:Localize Canvas_CopySnapshotTooltip}" Padding="8,4">
                         <TextBlock Text="{local:Localize Canvas_Copy}" FontSize="12"/>
                     </Button>
-                    <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Foreground="{DynamicResource SystemSuccessBrush}" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
+                    <TextBlock Text="{Binding SnapshotStatus}" FontSize="10" Classes="snapshot-status" Classes.failed="{Binding !SnapshotSucceeded}" HorizontalAlignment="Center" IsVisible="{Binding HasSnapshotStatus}"/>
                 </StackPanel>
             </Grid>
         </Border>

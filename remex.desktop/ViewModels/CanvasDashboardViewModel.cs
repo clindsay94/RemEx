@@ -807,9 +807,23 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     public bool HasSnapshotStatus => !string.IsNullOrEmpty(SnapshotStatus);
 
-    /// <summary>Called by the view after a successful snapshot export or clipboard copy.</summary>
-    public void SetSnapshotStatus(string message)
+    /// <summary>
+    /// False when the last snapshot attempt failed, so the view can colour the status line as an
+    /// error instead of a success. Every message funnels through <see cref="SetSnapshotStatus"/>,
+    /// including the failure paths, so a single fixed colour there reported export and clipboard
+    /// failures in success green (RemEx-40x8).
+    /// </summary>
+    [ObservableProperty]
+    private bool _snapshotSucceeded = true;
+
+    /// <summary>
+    /// Called by the view after a snapshot export or clipboard copy, whether it succeeded or not.
+    /// Pass <paramref name="succeeded"/> false for failure messages so they are not shown in the
+    /// success colour. The message clears itself after 4 seconds.
+    /// </summary>
+    public void SetSnapshotStatus(string message, bool succeeded = true)
     {
+        SnapshotSucceeded = succeeded;
         SnapshotStatus = message;
         _ = Task.Delay(4000).ContinueWith(_ =>
             Dispatcher.UIThread.Post(() => SnapshotStatus = string.Empty));

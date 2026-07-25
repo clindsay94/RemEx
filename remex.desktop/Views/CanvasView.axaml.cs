@@ -303,7 +303,7 @@ public partial class CanvasView : UserControl
         }
         catch (Exception ex)
         {
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Export failed: {ex.Message}");
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Export failed: {ex.Message}", succeeded: false);
         }
     }
 
@@ -323,7 +323,7 @@ public partial class CanvasView : UserControl
             var topLevel = TopLevel.GetTopLevel(this);
             if (topLevel?.Clipboard is null)
             {
-                (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Clipboard unavailable");
+                (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Clipboard unavailable", succeeded: false);
                 return;
             }
 
@@ -334,7 +334,7 @@ public partial class CanvasView : UserControl
         }
         catch (Exception ex)
         {
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Copy failed: {ex.Message}");
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Copy failed: {ex.Message}", succeeded: false);
         }
     }
 }
