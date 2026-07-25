@@ -190,8 +190,8 @@
     <string name="remote_desktop_direct_touch_label">Mode tactile direct</string>
     <string name="remote_desktop_direct_touch_desc">Les positions tactiles correspondent directement aux coordonnées de l\u0027écran</string>
     <string name="remote_desktop_pointer_speed_label">Vitesse du curseur : %.1fx</string>
-    <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
-    <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
+    <string name="remote_desktop_v_scroll_sensitivity_label">Sensibilité du défilement vertical : %.1fx</string>
+    <string name="remote_desktop_h_scroll_sensitivity_label">Sensibilité du défilement horizontal : %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Appui = Clic • Appui long = Clic droit • 2 doigts = Défiler • Stylet = Absolu</string>
     <string name="screen_dashboard_title">Accueil RemEx</string>
     <string name="cd_reset_zoom">Réinitialiser le zoom</string>

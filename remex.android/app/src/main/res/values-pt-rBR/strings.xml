@@ -190,8 +190,8 @@
     <string name="remote_desktop_direct_touch_label">Modo toque direto</string>
     <string name="remote_desktop_direct_touch_desc">Posições de toque mapeiam diretamente para coordenadas da tela</string>
     <string name="remote_desktop_pointer_speed_label">Velocidade do cursor: %.1fx</string>
-    <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
-    <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
+    <string name="remote_desktop_v_scroll_sensitivity_label">Sensibilidade da rolagem vertical: %.1fx</string>
+    <string name="remote_desktop_h_scroll_sensitivity_label">Sensibilidade da rolagem horizontal: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Toque = Clique • Pressionar = Clique direito • 2 dedos = Rolar • Caneta = Absoluto</string>
     <string name="screen_dashboard_title">Base RemEx</string>
     <string name="cd_reset_zoom">Resetar zoom</string>

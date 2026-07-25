@@ -190,8 +190,8 @@
     <string name="remote_desktop_direct_touch_label">Mode sentuhan langsung</string>
     <string name="remote_desktop_direct_touch_desc">Posisi sentuhan dipetakan langsung ke koordinat layar</string>
     <string name="remote_desktop_pointer_speed_label">Kecepatan kursor: %.1fx</string>
-    <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
-    <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
+    <string name="remote_desktop_v_scroll_sensitivity_label">Sensitivitas gulir vertikal: %.1fx</string>
+    <string name="remote_desktop_h_scroll_sensitivity_label">Sensitivitas gulir horizontal: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Ketuk = Klik • Tekan lama = Klik kanan • 2 jari = Gulir • Pena = Absolut</string>
     <string name="screen_dashboard_title">Pusat RemEx</string>
     <string name="cd_reset_zoom">Reset zoom</string>

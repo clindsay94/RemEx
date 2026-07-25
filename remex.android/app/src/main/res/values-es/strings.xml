@@ -190,8 +190,8 @@
     <string name="remote_desktop_direct_touch_label">Modo toque directo</string>
     <string name="remote_desktop_direct_touch_desc">Las posiciones táctiles se mapean directamente a las coordenadas de la pantalla</string>
     <string name="remote_desktop_pointer_speed_label">Velocidad del cursor: %.1fx</string>
-    <string name="remote_desktop_v_scroll_sensitivity_label">Vertical Scroll Sensitivity: %.1fx</string>
-    <string name="remote_desktop_h_scroll_sensitivity_label">Horizontal Scroll Sensitivity: %.1fx</string>
+    <string name="remote_desktop_v_scroll_sensitivity_label">Sensibilidad de desplazamiento vertical: %.1fx</string>
+    <string name="remote_desktop_h_scroll_sensitivity_label">Sensibilidad de desplazamiento horizontal: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Tocar = Clic • Mantener = Clic derecho • 2 dedos = Desplazar • Lápiz = Absoluto</string>
     <string name="screen_dashboard_title">Panel de Control</string>
     <string name="cd_reset_zoom">Restablecer zoom</string>
