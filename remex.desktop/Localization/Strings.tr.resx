@@ -1613,49 +1613,49 @@ Linux: ip addr  or  hostname -I</value>
 
   
   <data name="Confirm_Shutdown_Title" xml:space="preserve">
-    <value>Shut Down — Are you sure?</value>
+    <value>Kapat — Emin misiniz?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>The remote PC will shut down. All unsaved work will be lost.</value>
+    <value>Uzaktaki bilgisayar kapatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
-    <value>Shut Down</value>
+    <value>Kapat</value>
   </data>
   <data name="Confirm_Restart_Title" xml:space="preserve">
-    <value>Restart — Are you sure?</value>
+    <value>Yeniden Başlat — Emin misiniz?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>The remote PC will restart. All unsaved work will be lost.</value>
+    <value>Uzaktaki bilgisayar yeniden başlatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
-    <value>Restart</value>
+    <value>Yeniden Başlat</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
-    <value>Force Shutdown — Are you sure?</value>
+    <value>Zorla Kapat — Emin misiniz?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>This will immediately shut down the remote PC. All unsaved work will be lost.</value>
+    <value>Bu, uzaktaki bilgisayarı hemen kapatacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
-    <value>Force Shutdown</value>
+    <value>Zorla Kapat</value>
   </data>
   <data name="Confirm_ForceRestart_Title" xml:space="preserve">
-    <value>Force Restart — Are you sure?</value>
+    <value>Zorla Yeniden Başlat — Emin misiniz?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>This will immediately restart the remote PC. All unsaved work will be lost.</value>
+    <value>Bu, uzaktaki bilgisayarı hemen yeniden başlatacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
-    <value>Force Restart</value>
+    <value>Zorla Yeniden Başlat</value>
   </data>
   <data name="Confirm_RebootUefi_Title" xml:space="preserve">
-    <value>Reboot to UEFI — Are you sure?</value>
+    <value>UEFI'ye Yeniden Başlat — Emin misiniz?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>The remote PC will restart and boot directly into UEFI firmware settings. All unsaved work will be lost.</value>
+    <value>Uzaktaki bilgisayar yeniden başlatılacak ve doğrudan UEFI donanım yazılımı ayarlarına açılacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
-    <value>Reboot to UEFI</value>
+    <value>UEFI'ye Yeniden Başlat</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
     <value>Pair with PC</value>
