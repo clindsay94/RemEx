@@ -662,7 +662,7 @@
     <value>इंटरैक्टिव होस्ट</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>सेवा होस्ट</value>
+    <value>बिना डेस्कटॉप सेशन वाला होस्ट</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
     <value>हेडलेस होस्ट</value>

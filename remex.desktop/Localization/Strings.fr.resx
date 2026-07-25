@@ -662,7 +662,7 @@
     <value>Hôte interactif</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Hôte service</value>
+    <value>Hôte sans session de bureau</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
     <value>Hôte sans interface</value>

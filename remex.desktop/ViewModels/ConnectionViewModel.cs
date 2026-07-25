@@ -507,6 +507,19 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     public bool SupportsRemoteDesktop => HostCapabilities?.SupportsRemoteDesktop ?? true;
 
+    /// <summary>
+    /// The localized label for how the host is running. Note that the wire value "service" is
+    /// legacy naming for a non-interactive/Session-0 Windows process, NOT a service install —
+    /// there is none (RemEx-9z0f). Exposed so callers show this instead of the raw wire token.
+    /// </summary>
+    public string HostRuntimeLabel => HostCapabilities?.RuntimeMode switch
+    {
+        "interactive" => LocalizationService.Instance["Status_InteractiveHost"],
+        "service" => LocalizationService.Instance["Status_ServiceHost"],
+        "headless" => LocalizationService.Instance["Status_HeadlessHost"],
+        _ => LocalizationService.Instance["Status_Host"]
+    };
+
     public string HostRuntimeSummary
     {
         get
@@ -516,13 +529,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 return IsConnected ? LocalizationService.Instance["Status_ConnectedToHost"] : LocalizationService.Instance["Status_HostNotConnected"];
             }
 
-            var runtimeLabel = HostCapabilities.RuntimeMode switch
-            {
-                "interactive" => LocalizationService.Instance["Status_InteractiveHost"],
-                "service" => LocalizationService.Instance["Status_ServiceHost"],
-                "headless" => LocalizationService.Instance["Status_HeadlessHost"],
-                _ => LocalizationService.Instance["Status_Host"]
-            };
+            var runtimeLabel = HostRuntimeLabel;
+
 
             return $"{runtimeLabel} on {HostCapabilities.Platform}";
         }

@@ -662,7 +662,7 @@
     <value>PC interativo</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>PC de serviço</value>
+    <value>PC sem sessão de área de trabalho</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
     <value>PC sem interface</value>

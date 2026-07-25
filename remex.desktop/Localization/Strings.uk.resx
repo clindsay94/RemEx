@@ -662,7 +662,7 @@
     <value>Інтерактивний хост</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Службовий хост</value>
+    <value>Хост без сеансу робочого стола</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
     <value>Безголовний хост</value>

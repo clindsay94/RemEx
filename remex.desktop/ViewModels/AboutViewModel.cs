@@ -234,7 +234,9 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         var caps = _connection.HostCapabilities;
         var version = caps.Version;
         var platform = caps.Platform;
-        var runtime = caps.RuntimeMode;
+        // Localized label, not the raw wire token: RuntimeMode "service" is legacy naming for a
+        // non-interactive Windows process, not a service install (RemEx-9z0f).
+        var runtime = _connection.HostRuntimeLabel;
 
         if (!string.IsNullOrEmpty(version) && version != "unknown")
         {

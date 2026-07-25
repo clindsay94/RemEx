@@ -707,7 +707,7 @@
     <value>Interactive PC</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Service PC</value>
+    <value>PC with no desktop session</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
     <value>Headless PC</value>

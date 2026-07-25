@@ -662,7 +662,7 @@
     <value>Etkileşimli PC</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>Hizmet hostu</value>
+    <value>Masaüstü oturumu olmayan PC</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
     <value>Arayüzsüz PC</value>

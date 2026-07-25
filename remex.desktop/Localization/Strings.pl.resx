@@ -641,7 +641,7 @@
     <value>PC interaktywny</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>PC usługi</value>
+    <value>PC bez sesji pulpitu</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
     <value>PC bezgłowy</value>
