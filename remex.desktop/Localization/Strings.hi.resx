@@ -1752,7 +1752,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>डिफ़ॉल्ट पोर्ट कौन-सा है?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>डिफ़ॉल्ट पोर्ट 5005 है। अगर पोर्ट 5005 पहले से उपयोग में है, तो 5006 का उपयोग होगा। आप अपने पीसी पर RemEx विंडो में सक्रिय पोर्ट देख सकते हैं।</value>
+    <value>डिफ़ॉल्ट पोर्ट 5005 है। अगर वह व्यस्त है, तो RemEx अगला खाली पोर्ट आज़माता है — 5006, 5007 और इसी तरह 5009 तक। आप अपने पीसी पर RemEx विंडो में सक्रिय पोर्ट देख सकते हैं।</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>क्या मैं इंटरनेट के ज़रिए कनेक्ट कर सकता हूँ?</value>

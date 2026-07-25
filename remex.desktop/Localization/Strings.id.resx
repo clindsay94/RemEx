@@ -1752,7 +1752,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Apa port default-nya?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>Port default adalah 5005. Jika port 5005 sudah digunakan, akan beralih ke 5006. Anda dapat melihat port aktif di jendela RemEx di PC Anda.</value>
+    <value>Port default adalah 5005. Jika sedang dipakai, RemEx mencoba port bebas berikutnya — 5006, 5007, dan seterusnya hingga 5009. Anda dapat melihat port aktif di jendela RemEx di PC Anda.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>Bisakah saya terhubung melalui internet?</value>

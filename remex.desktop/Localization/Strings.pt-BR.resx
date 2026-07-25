@@ -1752,7 +1752,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Qual é a porta padrão?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>A porta padrão é 5005. Se a porta 5005 estiver em uso, será usada a 5006. Você pode ver a porta ativa na janela do RemEx no seu PC.</value>
+    <value>A porta padrão é 5005. Se estiver em uso, o RemEx tenta a próxima porta livre — 5006, 5007 e assim por diante, até 5009. Você pode ver a porta ativa na janela do RemEx no seu PC.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>Posso conectar pela internet?</value>
