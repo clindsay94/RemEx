@@ -258,7 +258,7 @@
     <string name="button_save_connect">सेव और कनेक्ट</string>
     <string name="connection_status_label">स्थिति: %1$s</string>
     <string name="connection_paired">Paired</string>
-    <string name="connection_unpair">Unpair</string>
+    <string name="connection_unpair">अनपेयर करें</string>
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
     <string name="pairing_auto_pin_failed">PIN अपने आप प्राप्त नहीं हो सका — अपने PC पर दिखाई गई PIN दर्ज करें.</string>

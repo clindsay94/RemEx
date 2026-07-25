@@ -258,7 +258,7 @@
     <string name="button_save_connect">Guardar y Conectar</string>
     <string name="connection_status_label">Estado: %1$s</string>
     <string name="connection_paired">Paired</string>
-    <string name="connection_unpair">Unpair</string>
+    <string name="connection_unpair">Desemparejar</string>
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
     <string name="pairing_auto_pin_failed">No se pudo obtener el PIN automáticamente — escribe el PIN que aparece en tu PC.</string>

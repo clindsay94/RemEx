@@ -258,7 +258,7 @@
     <string name="button_save_connect">Simpan &amp; Hubungkan</string>
     <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Paired</string>
-    <string name="connection_unpair">Unpair</string>
+    <string name="connection_unpair">Lepaskan</string>
     <string name="pairing_title">Security Pairing</string>
     <string name="pairing_prompt">Enter the 6-digit PIN displayed on your PC</string>
     <string name="pairing_auto_pin_failed">Tidak dapat mengambil PIN secara otomatis — masukkan PIN yang ditampilkan di PC Anda.</string>
