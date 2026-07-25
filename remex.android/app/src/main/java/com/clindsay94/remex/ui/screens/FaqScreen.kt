@@ -68,7 +68,8 @@ private val faqItems =
                 FaqItem(questionRes = R.string.faq_q11, answerRes = R.string.faq_a11),
                 FaqItem(questionRes = R.string.faq_q12, answerRes = R.string.faq_a12),
                 FaqItem(questionRes = R.string.faq_q13, answerRes = R.string.faq_a13),
-                FaqItem(questionRes = R.string.faq_q14, answerRes = R.string.faq_a14)
+                FaqItem(questionRes = R.string.faq_q14, answerRes = R.string.faq_a14),
+                FaqItem(questionRes = R.string.faq_q15, answerRes = R.string.faq_a15)
         )
 
 @OptIn(ExperimentalMaterial3Api::class)

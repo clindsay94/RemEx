@@ -3276,4 +3276,11 @@ Chrome)</value>
     <value>RemEx guarda un certificado de seguridad que tu teléfono usa para reconocer este PC. Se almacena donde nada más puede leerlo, así que ningún otro programa —ni nadie más que inicie sesión en este PC— puede copiarlo y hacerse pasar por tu PC. Si RemEx no puede leer ese archivo, no termina de iniciarse, así que tu teléfono no puede alcanzarlo aunque siga apareciendo como emparejado.
 Windows: RemEx necesita permisos de administrador, porque solo los administradores pueden leer ese archivo protegido. Normalmente se inicia con permisos de administrador por sí solo al iniciar sesión, así que esto debería ser poco frecuente; pero si tu teléfono no puede conectarse, cierra RemEx, haz clic derecho, elige "Ejecutar como administrador" e inténtalo de nuevo. Linux: RemEx no necesita root y nunca deberías iniciarlo con sudo. El certificado está en tu propia carpeta personal y solo tú puedes leerlo. Si tu teléfono no puede conectarse, es probable que una instalación antigua de 'remex-host' haya dejado el certificado en manos de root; vuelve a ejecutar el instalador de RemEx y él lo repara por ti. En ambos casos tus teléfonos emparejados seguirán funcionando: el certificado en sí nunca cambia.</value>
   </data>
+  <data name="Faq_Q14_Question" xml:space="preserve">
+    <value>¿Cómo evito que RemEx se inicie automáticamente al iniciar sesión?</value>
+  </data>
+  <data name="Faq_Q14_Answer" xml:space="preserve">
+    <value>Abre Configuración y desactiva "Iniciar al iniciar sesión". Eso es todo lo que necesita la mayoría: RemEx sigue instalado y puedes abrirlo tú cuando quieras, y si vuelves a activarlo se restaura el inicio automático.
+Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de tareas llamada "RemEx" —puedes verla en el Programador de tareas, dentro de la Biblioteca del Programador de tareas— y en Linux usa una entrada de inicio automático en ~/.config/autostart/remex-agent.desktop. Si algún día RemEx deja de iniciarse al iniciar sesión, desactiva el ajuste y vuelve a activarlo para recrearlo.</value>
+  </data>
 </root>

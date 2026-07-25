@@ -3255,4 +3255,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>RemEx, telefonunuzun bu bilgisayarı tanımak için kullandığı bir güvenlik sertifikası tutar. Bu sertifika başka hiçbir şeyin okuyamayacağı bir yerde saklanır; böylece ne başka bir program ne de bu bilgisayarda oturum açan başka biri onu kopyalayıp sizin bilgisayarınızmış gibi davranabilir. RemEx bu dosyayı okuyamazsa başlatmayı tamamlayamaz; bu yüzden telefonunuz hâlâ eşleşmiş görünse bile ona ulaşamaz.
 Windows: RemEx yönetici izni gerektirir, çünkü bu korumalı dosyayı yalnızca yöneticiler okuyabilir. Oturum açtığınızda normalde kendiliğinden yönetici izniyle başlar, bu yüzden bu durum ender olmalıdır; ancak telefonunuz bağlanamıyorsa RemEx'i kapatın, sağ tıklayın, "Yönetici olarak çalıştır" seçin ve yeniden deneyin. Linux: RemEx'in root olması gerekmez ve onu asla sudo ile başlatmayın. Sertifika kendi ev klasörünüzdedir ve yalnızca siz okuyabilirsiniz. Telefonunuz bağlanamıyorsa, eski bir 'remex-host' kurulumu sertifikayı root'a ait bırakmış olabilir; RemEx yükleyicisini yeniden çalıştırın, bunu sizin için onarır. Her iki durumda da eşleşmiş telefonlarınız çalışmaya devam eder — sertifikanın kendisi hiç değişmez.</value>
   </data>
+  <data name="Faq_Q14_Question" xml:space="preserve">
+    <value>Oturum açtığımda RemEx'in kendiliğinden başlamasını nasıl engellerim?</value>
+  </data>
+  <data name="Faq_Q14_Answer" xml:space="preserve">
+    <value>Ayarlar'ı açın ve "Giriş yapıldığında başlat" seçeneğini kapatın. Çoğu kişi için bu yeterlidir: RemEx kurulu kalır, istediğinizde kendiniz başlatabilirsiniz ve seçeneği yeniden açtığınızda otomatik başlatma geri gelir.
+Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi kullanır — Görev Zamanlayıcı'da Görev Zamanlayıcı Kitaplığı altında görebilirsiniz — Linux ise ~/.config/autostart/remex-agent.desktop konumundaki bir otomatik başlatma girdisini kullanır. RemEx bir gün oturum açıldığında başlamaz olursa, bu ayarı kapatıp yeniden açarak yeniden oluşturun.</value>
+  </data>
 </root>

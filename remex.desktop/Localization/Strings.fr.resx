@@ -3251,4 +3251,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>RemEx conserve un certificat de sécurité que votre téléphone utilise pour reconnaître ce PC. Il est stocké à un endroit où rien d'autre ne peut le lire : aucun autre programme — et aucune autre personne connectée à ce PC — ne peut le copier et se faire passer pour votre PC. Si RemEx ne peut pas lire ce fichier, il ne termine pas son démarrage et votre téléphone ne peut donc pas l'atteindre, même s'il apparaît toujours comme appairé.
 Windows : RemEx a besoin des droits administrateur, car seuls les administrateurs peuvent lire ce fichier protégé. Il démarre normalement avec ces droits tout seul à votre ouverture de session, cela devrait donc être rare ; mais si votre téléphone ne peut pas se connecter, fermez RemEx, faites un clic droit, choisissez « Exécuter en tant qu'administrateur » et réessayez. Linux : RemEx n'a pas besoin de root et vous ne devez jamais le lancer avec sudo. Le certificat se trouve dans votre dossier personnel et vous seul pouvez le lire. Si votre téléphone ne peut pas se connecter, une ancienne installation 'remex-host' a probablement laissé le certificat appartenant à root ; relancez le programme d'installation de RemEx et il réparera cela pour vous. Dans les deux cas, vos téléphones appairés continuent de fonctionner : le certificat lui-même ne change jamais.</value>
   </data>
+  <data name="Faq_Q14_Question" xml:space="preserve">
+    <value>Comment empêcher RemEx de démarrer automatiquement à l'ouverture de session ?</value>
+  </data>
+  <data name="Faq_Q14_Answer" xml:space="preserve">
+    <value>Ouvrez les Paramètres et désactivez « Lancer au démarrage ». C'est tout ce dont la plupart des utilisateurs ont besoin : RemEx reste installé et vous pouvez toujours le lancer vous-même, et le réactiver rétablit le démarrage automatique.
+Derrière cette option, Windows utilise une tâche du Planificateur de tâches nommée « RemEx » — visible dans le Planificateur de tâches, sous Bibliothèque du Planificateur de tâches — et Linux utilise une entrée de démarrage automatique dans ~/.config/autostart/remex-agent.desktop. Si RemEx cesse un jour de démarrer à l'ouverture de session, désactivez puis réactivez l'option pour la recréer.</value>
+  </data>
 </root>

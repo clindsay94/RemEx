@@ -3252,4 +3252,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>RemEx przechowuje certyfikat bezpieczeństwa, po którym telefon rozpoznaje ten komputer. Jest on zapisany w miejscu, którego nie może odczytać nic innego, więc żaden inny program — ani nikt inny zalogowany na tym komputerze — nie może go skopiować i podszyć się pod Twój komputer. Jeśli RemEx nie może odczytać tego pliku, nie kończy uruchamiania, więc telefon nie może się z nim połączyć, mimo że nadal jest pokazywany jako sparowany.
 Windows: RemEx potrzebuje uprawnień administratora, ponieważ tylko administratorzy mogą odczytać ten chroniony plik. Zwykle sam uruchamia się z uprawnieniami administratora po zalogowaniu, więc powinno to być rzadkie; jeśli jednak telefon nie może się połączyć, zamknij RemEx, kliknij prawym przyciskiem, wybierz "Uruchom jako administrator" i spróbuj ponownie. Linux: RemEx nie potrzebuje roota i nigdy nie uruchamiaj go przez sudo. Certyfikat znajduje się w Twoim katalogu domowym i tylko Ty możesz go odczytać. Jeśli telefon nie może się połączyć, prawdopodobnie stara instalacja 'remex-host' pozostawiła certyfikat należący do roota; uruchom ponownie instalator RemEx, a on naprawi to za Ciebie. W obu przypadkach sparowane telefony działają dalej — sam certyfikat nigdy się nie zmienia.</value>
   </data>
+  <data name="Faq_Q14_Question" xml:space="preserve">
+    <value>Jak sprawić, żeby RemEx nie uruchamiał się automatycznie po zalogowaniu?</value>
+  </data>
+  <data name="Faq_Q14_Answer" xml:space="preserve">
+    <value>Otwórz Ustawienia i wyłącz "Uruchom przy logowaniu". Większości osób to wystarczy: RemEx pozostaje zainstalowany i nadal możesz uruchomić go samodzielnie, a ponowne włączenie tej opcji przywraca automatyczny start.
+Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "RemEx" — zobaczysz je w Harmonogramie zadań w Bibliotece Harmonogramu zadań — a Linux używa wpisu autostartu w ~/.config/autostart/remex-agent.desktop. Jeśli RemEx kiedyś przestanie uruchamiać się po zalogowaniu, wyłącz i włącz to ustawienie, aby utworzyć je ponownie.</value>
+  </data>
 </root>

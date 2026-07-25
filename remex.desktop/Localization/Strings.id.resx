@@ -3254,4 +3254,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>RemEx menyimpan sertifikat keamanan yang dipakai ponsel Anda untuk mengenali PC ini. Sertifikat itu disimpan di tempat yang tidak bisa dibaca hal lain, sehingga tidak ada program lain — dan tidak ada orang lain yang masuk ke PC ini — yang bisa menyalinnya dan berpura-pura menjadi PC Anda. Jika RemEx tidak bisa membaca berkas itu, RemEx tidak selesai dijalankan, sehingga ponsel Anda tidak bisa menjangkaunya meskipun masih tampak sudah dipasangkan.
 Windows: RemEx memerlukan hak administrator, karena hanya administrator yang bisa membaca berkas terlindungi itu. Biasanya RemEx berjalan dengan hak administrator secara otomatis saat Anda masuk, jadi ini seharusnya jarang terjadi; tetapi jika ponsel Anda tidak bisa terhubung, tutup RemEx, klik kanan, pilih "Run as administrator", lalu coba lagi. Linux: RemEx tidak memerlukan root dan jangan pernah menjalankannya dengan sudo. Sertifikat berada di folder rumah Anda sendiri dan hanya Anda yang bisa membacanya. Jika ponsel Anda tidak bisa terhubung, kemungkinan instalasi 'remex-host' lama meninggalkan sertifikat milik root; jalankan lagi penginstal RemEx dan itu akan memperbaikinya untuk Anda. Dalam kedua kasus, ponsel yang sudah dipasangkan tetap berfungsi — sertifikatnya sendiri tidak pernah berubah.</value>
   </data>
+  <data name="Faq_Q14_Question" xml:space="preserve">
+    <value>Bagaimana cara menghentikan RemEx berjalan otomatis saat saya masuk?</value>
+  </data>
+  <data name="Faq_Q14_Answer" xml:space="preserve">
+    <value>Buka Pengaturan dan matikan "Jalankan saat masuk". Itu sudah cukup bagi hampir semua orang: RemEx tetap terpasang dan Anda masih bisa menjalankannya sendiri kapan saja, dan menyalakannya kembali memulihkan mulai otomatis.
+Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — bisa Anda lihat di Task Scheduler pada Task Scheduler Library — dan Linux memakai entri autostart di ~/.config/autostart/remex-agent.desktop. Jika suatu saat RemEx berhenti berjalan saat masuk, matikan lalu nyalakan lagi pengaturan itu untuk membuatnya ulang.</value>
+  </data>
 </root>
