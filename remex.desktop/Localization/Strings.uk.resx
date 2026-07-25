@@ -3213,7 +3213,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Виберіть другий показник</value>
   </data>
   <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
-    <value>Видалити — ви впевнені?</value>
+    <value>Видалення — ви впевнені?</value>
   </data>
   <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
     <value>«{0}» буде видалено назавжди. Цю дію не можна скасувати.</value>

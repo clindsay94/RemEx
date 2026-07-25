@@ -626,16 +626,16 @@
     <value>रुक गया।</value>
   </data>
   <data name="Service_StopFailed" xml:space="preserve">
-    <value>रोकना विफल रहा — लॉग देखें。</value>
+    <value>रोकना विफल रहा — लॉग देखें।</value>
   </data>
   <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>क्रेडेंशियल अपडेट हो गए — बदलावों को लागू करने के लिए सेवा पुनः प्रारंभ करें。</value>
+    <value>क्रेडेंशियल अपडेट हो गए — बदलावों को लागू करने के लिए सेवा पुनः प्रारंभ करें।</value>
   </data>
   <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>विफल — लॉग देखें。</value>
+    <value>विफल — लॉग देखें।</value>
   </data>
   <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>अनइंस्टॉल विफल हो सकता है — लॉग देखें。</value>
+    <value>अनइंस्टॉल विफल हो सकता है — लॉग देखें।</value>
   </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>कनेक्शन रद्द कर दिया गया</value>
@@ -805,7 +805,7 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>HWInfo एकीकरण (अनुशंसित)</value>
   </data>
   <data name="Tutorial_P4_Body1" xml:space="preserve">
-    <value>विस्तृत हार्डवेयर निगरानी (300+ सेंसर) के लिए, HWiNFO64 इंस्टॉल करें — यह व्यक्तिगत उपयोग के लिए निःशुल्क है。</value>
+    <value>विस्तृत हार्डवेयर निगरानी (300+ सेंसर) के लिए, HWiNFO64 इंस्टॉल करें — यह व्यक्तिगत उपयोग के लिए निःशुल्क है।</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
     <value>1. Download from hwinfo.com
@@ -814,7 +814,7 @@ RemEx इस पीसी पर चलता है और आपका फ़�
 4. HWInfo must be running for RemEx to read its sensors</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
-    <value>⚠ HWInfo की साझा मेमोरी 12 घंटों (मुफ्त संस्करण) के बाद स्वतः अक्षम हो जाती है। इसे समय-समय पर पुनः सक्षम करें, या प्रो लाइसेंस पर विचार करें。</value>
+    <value>⚠ HWInfo की साझा मेमोरी 12 घंटों (मुफ्त संस्करण) के बाद स्वतः अक्षम हो जाती है। इसे समय-समय पर पुनः सक्षम करें, या प्रो लाइसेंस पर विचार करें।</value>
   </data>
 
   <data name="Tutorial_P5_Title" xml:space="preserve">
@@ -824,20 +824,20 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>RemEx दो टेलीमेट्री स्रोतों का समर्थन करता है:</value>
   </data>
   <data name="Tutorial_P5_HWInfo" xml:space="preserve">
-    <value>🟢 HWInfo: 300+ सेंसर — CPU तापमान, GPU घड़ियाँ, पंखे की गति, वोल्टेज, बिजली की खपत। HWInfo का चलना आवश्यक है。</value>
+    <value>🟢 HWInfo: 300+ सेंसर — CPU तापमान, GPU घड़ियाँ, पंखे की गति, वोल्टेज, बिजली की खपत। HWInfo का चलना आवश्यक है।</value>
   </data>
   <data name="Tutorial_P5_BuiltIn" xml:space="preserve">
-    <value>🪟 बिल्ट-इन: बुनियादी सेंसर — CPU उपयोग, RAM, डिस्क I/O, नेटवर्क दरें। हमेशा उपलब्ध, कोई अतिरिक्त सॉफ़्टवेयर नहीं。</value>
+    <value>🪟 बिल्ट-इन: बुनियादी सेंसर — CPU उपयोग, RAM, डिस्क I/O, नेटवर्क दरें। हमेशा उपलब्ध, कोई अतिरिक्त सॉफ़्टवेयर नहीं।</value>
   </data>
   <data name="Tutorial_P5_Body2" xml:space="preserve">
-    <value>सेटिंग्स → पिन किए गए सेंसर से अपने पसंदीदा सेंसर को होम स्क्रीन पर पिन करें。</value>
+    <value>सेटिंग्स → पिन किए गए सेंसर से अपने पसंदीदा सेंसर को होम स्क्रीन पर पिन करें।</value>
   </data>
 
   <data name="Tutorial_P6_Title" xml:space="preserve">
     <value>ऐप लॉन्चर सेटअप</value>
   </data>
   <data name="Tutorial_P6_Body1" xml:space="preserve">
-    <value>ऐप लॉन्चर आपको अपने फोन से अपने पीसी पर प्रोग्राम शुरू करने देता है। ऐप्स को पहले यहां कॉन्फ़िगर किया जाना चाहिए。</value>
+    <value>ऐप लॉन्चर आपको अपने फोन से अपने पीसी पर प्रोग्राम शुरू करने देता है। ऐप्स को पहले यहां कॉन्फ़िगर किया जाना चाहिए।</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
     <value>1. Navigate to the Launcher page (sidebar)
@@ -853,7 +853,7 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>अपना फोन कनेक्ट करना</value>
   </data>
   <data name="Tutorial_P7_Body1" xml:space="preserve">
-    <value>आपका Android ऐप mDNS का उपयोग करके इस पीसी को स्वचालित रूप से ढूंढता है। दोनों डिवाइस एक ही वाई-फ़ाई / LAN पर होने चाहिए。</value>
+    <value>आपका Android ऐप mDNS का उपयोग करके इस पीसी को स्वचालित रूप से ढूंढता है। दोनों डिवाइस एक ही वाई-फ़ाई / LAN पर होने चाहिए।</value>
   </data>
   <data name="Tutorial_P7_Body2" xml:space="preserve">
     <value>यदि स्वतः खोज काम नहीं करती है, तो अपने पीसी का IP मैन्युअल रूप से खोजें:</value>
@@ -863,7 +863,7 @@ RemEx इस पीसी पर चलता है और आपका फ़�
 Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
-    <value>Android ऐप की कनेक्शन सेटिंग्स में ws://&lt;IP&gt;:5005/ws दर्ज करें。</value>
+    <value>Android ऐप की कनेक्शन सेटिंग्स में ws://&lt;IP&gt;:5005/ws दर्ज करें।</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
@@ -1057,7 +1057,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>अक्षम करने के लिए खाली छोड़ दें</value>
   </data>
   <data name="Settings_AutoSaveHint" xml:space="preserve">
-    <value>बदलाव स्वतः सहेजे जाते हैं और रीस्टार्ट के बाद भी बने रहते हैं。</value>
+    <value>बदलाव स्वतः सहेजे जाते हैं और रीस्टार्ट के बाद भी बने रहते हैं।</value>
   </data>
   <data name="Settings_ConfigureLogin" xml:space="preserve">
     <value>⚙ लॉगिन कॉन्फ़िगर करें</value>
@@ -1111,7 +1111,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>भाषा</value>
   </data>
   <data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve">
-    <value>सेंसर खोजने के लिए पहले सेंसर वर्कस्पेस खोलें。</value>
+    <value>सेंसर खोजने के लिए पहले सेंसर वर्कस्पेस खोलें।</value>
   </data>
   <data name="Settings_PasswordWatermark" xml:space="preserve">
     <value>इस खाते के लिए विंडोज़ पासवर्ड</value>
@@ -1135,7 +1135,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>🗑 अनइंस्टॉल करें</value>
   </data>
   <data name="Settings_UsernameHint" xml:space="preserve">
-    <value>स्थानीय खातों के लिए .\Username का उपयोग करें। GLADOS-V3\Connor स्वतः .\Connor बन जाएगा。</value>
+    <value>स्थानीय खातों के लिए .\Username का उपयोग करें। GLADOS-V3\Connor स्वतः .\Connor बन जाएगा।</value>
   </data>
   <data name="Settings_UsernameWatermark" xml:space="preserve">
     <value>.\Username या MACHINE\Username</value>
@@ -2828,7 +2828,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>शुरू हो गया।</value>
   </data>
   <data name="Service_StartFailed" xml:space="preserve">
-    <value>शुरू करना विफल रहा — लॉग देखें。</value>
+    <value>शुरू करना विफल रहा — लॉग देखें।</value>
   </data>
   <data name="Tutorial_P2_Title" xml:space="preserve">
     <value>विंडोज़ सेवा के रूप में चलाएं</value>
@@ -2843,13 +2843,13 @@ Linux: ip addr  or  hostname -I</value>
 4. The service starts automatically on boot</value>
   </data>
   <data name="Tutorial_P2_Note" xml:space="preserve">
-    <value>सेवा आपके उपयोगकर्ता खाते के तहत चलती है ताकि यह स्क्रीन कैप्चर और ऐप लॉन्चिंग के लिए आपके डेस्कटॉप सत्र तक पहुंच सके。</value>
+    <value>सेवा आपके उपयोगकर्ता खाते के तहत चलती है ताकि यह स्क्रीन कैप्चर और ऐप लॉन्चिंग के लिए आपके डेस्कटॉप सत्र तक पहुंच सके।</value>
   </data>
   <data name="Tutorial_P3_Title" xml:space="preserve">
     <value>लिनक्स सेवा सेटअप</value>
   </data>
   <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>लिनक्स पर, स्वचालित स्टार्टअप के लिए RemEx होस्ट सिस्टमडी सेवा के रूप में चल सकता है。</value>
+    <value>लिनक्स पर, स्वचालित स्टार्टअप के लिए RemEx होस्ट सिस्टमडी सेवा के रूप में चल सकता है।</value>
   </data>
   <data name="Tutorial_P3_Steps" xml:space="preserve">
     <value>1. Download the latest Linux PC archive from GitHub Releases.
@@ -3212,7 +3212,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>आइकन आकार</value>
   </data>
   <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
-    <value>हटाएँ — क्या आप सुनिश्चित हैं?</value>
+    <value>हटाएँ — क्या आप निश्चित हैं?</value>
   </data>
   <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
     <value>"{0}" स्थायी रूप से हटा दिया जाएगा। इसे पूर्ववत नहीं किया जा सकता।</value>
