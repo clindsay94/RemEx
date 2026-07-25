@@ -786,9 +786,9 @@
     <value>RemEx'e Hoş Geldiniz</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx, bilgisayarınızı güvenli bir uzaktan komuta merkezine dönüştürür. Telefonunuzdan donanım sensörlerini izleyebilir, uygulamalar açabilir, dosya ve süreçleri yönetebilir ve masaüstünüzü canlı izleyebilirsiniz.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx bu bilgisayarda çalışır ve telefonunuz ona bağlanır. Her bağlantı TLS ve PIN ile eşleştirme koruması altındadır.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -798,7 +798,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Bu masaüstü uygulaması, otomatik olarak başlayan gömülü bir RemEx PC içerir. Android telefonunuz ona bağlanır — tersi değil.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Sürekli erişim için (oturum açmadığınızda bile), PC'u bir Windows hizmeti veya Linux PC'ı olarak yükleyebilirsiniz. Bu, telefonunuzun istediği zaman bağlanmasına olanak tanır.</value>
+    <value>RemEx, bu bilgisayarda oturum açtığınızda kendiliğinden başlar — Windows'ta bir oturum açma görevi, Linux'ta bir otomatik başlatma girdisi ile. Böylece oturumunuz açık olduğu sürece telefonunuz bağlanabilir. Ekran kilitliyken sensör izleme ve güç komutları çalışmayı sürdürür, ancak masaüstünü canlı izlemek veya denetlemek için oturumun kilidinin açık olması gerekir. Bilgisayar kapalıysa veya oturum kapatılmışsa, Wake-on-LAN ile uyandırın ve önce oturum açın.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -1877,13 +1877,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Günlükleri Temizle</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Arka Plan Servis Günlükleri</value>
+    <value>Sistem Olay Günlükleri</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Windows Olay Görüntüleyicisi veya Linux systemd günlüğünden alınan en son olay günlüğü sorgusu.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Servis Günlüklerini Sorgula</value>
+    <value>Sistem Olay Günlüklerini Sorgula</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Ekran</value>

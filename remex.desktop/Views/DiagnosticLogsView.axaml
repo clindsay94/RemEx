@@ -90,7 +90,7 @@
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 2: Service Logs -->
+                <!-- Tab 2: System Event Logs (key names still say Service for history) -->
                 <TabItem Header="{local:Localize Logs_ServiceTab}">
                     <Grid RowDefinitions="Auto,*" Margin="0,16,0,0">
                         <!-- Toolbar -->

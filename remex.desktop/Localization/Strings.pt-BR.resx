@@ -786,9 +786,9 @@
     <value>Bem-vindo ao RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>O RemEx transforma seu PC em um centro de comando remoto seguro. Pelo celular você pode acompanhar os sensores de hardware, abrir aplicativos, gerenciar arquivos e processos e transmitir sua área de trabalho.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+O RemEx roda neste PC e o seu celular se conecta a ele. Toda conexão é protegida com TLS e pareamento por PIN.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -798,7 +798,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Este aplicativo de desktop inclui um RemEx PC incorporado que inicia automaticamente. Seu telefone Android se conecta a ele — não o contrário.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Para acesso contínuo (mesmo sem estar logado), você pode instalar o PC como um serviço do Windows ou PC do Linux. Isso permite que seu telefone se conecte a qualquer momento.</value>
+    <value>O RemEx inicia automaticamente quando você entra neste PC — por uma tarefa de logon no Windows ou uma entrada de autostart no Linux. Assim seu celular pode conectar sempre que você estiver com a sessão aberta. O monitoramento de sensores e os comandos de energia continuam funcionando com a tela bloqueada, mas transmitir ou controlar a área de trabalho exige a sessão desbloqueada. Se o PC estiver desligado ou com a sessão encerrada, acorde-o com Wake-on-LAN e entre primeiro.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -1877,13 +1877,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Limpar logs</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Logs do serviço em segundo plano</value>
+    <value>Logs de eventos do sistema</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Última consulta de logs de eventos do Visualizador de Eventos do Windows ou do journal systemd do Linux.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Consultar logs de serviço</value>
+    <value>Consultar logs de eventos do sistema</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Tela</value>

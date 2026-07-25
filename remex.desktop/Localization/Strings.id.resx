@@ -786,9 +786,9 @@
     <value>Selamat Datang di RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx mengubah PC Anda menjadi pusat komando jarak jauh yang aman. Dari ponsel Anda dapat memantau sensor perangkat keras, menjalankan aplikasi, mengelola berkas dan proses, serta melakukan streaming desktop.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx berjalan di PC ini dan ponsel Anda terhubung ke sana. Setiap koneksi dilindungi TLS dan pemasangan dengan PIN.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -798,7 +798,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Aplikasi desktop ini mencakup RemEx PC tertanam yang mulai secara otomatis. Ponsel Android Anda terhubung kepadanya — bukan sebaliknya.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Untuk akses selalu aktif (bahkan saat Anda belum login), Anda dapat menginstal PC sebagai layanan Windows atau PC Linux. Ini memungkinkan ponsel Anda terhubung kapan saja.</value>
+    <value>RemEx berjalan otomatis saat Anda masuk ke PC ini — melalui tugas logon di Windows atau entri autostart di Linux. Jadi ponsel Anda dapat terhubung kapan saja selama Anda masuk. Pemantauan sensor dan perintah daya tetap berfungsi saat layar terkunci, tetapi untuk melakukan streaming atau mengendalikan desktop, sesi harus tidak terkunci. Jika PC dimatikan atau Anda keluar dari akun, bangunkan dengan Wake-on-LAN lalu masuk terlebih dahulu.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -1877,13 +1877,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bersihkan Log</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Log Layanan Latar Belakang</value>
+    <value>Log Peristiwa Sistem</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Kueri log peristiwa terbaru dari Windows Event Viewer atau Linux systemd journal.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Kueri Log Layanan</value>
+    <value>Kueri Log Peristiwa Sistem</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Tampilan</value>

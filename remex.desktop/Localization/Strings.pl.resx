@@ -762,9 +762,9 @@
     <value>Witaj w RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx zamienia Twój komputer w bezpieczne centrum zdalnego sterowania. Z telefonu możesz obserwować czujniki sprzętowe, uruchamiać aplikacje, zarządzać plikami i procesami oraz przesyłać obraz pulpitu.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx działa na tym komputerze, a telefon łączy się z nim. Każde połączenie jest chronione TLS-em i parowaniem za pomocą kodu PIN.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -774,7 +774,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Ta aplikacja desktopowa zawiera wbudowanego hosta RemEx, który uruchamia się automatycznie. Twój telefon z Androidem łączy się z nim — nie na odwrót.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Dla stałego dostępu (nawet gdy nie jesteś zalogowany), możesz zainstalować hosta jako usługę Windows lub demon Linux. Pozwala to telefonowi na połączenie w dowolnym momencie.</value>
+    <value>RemEx uruchamia się automatycznie, gdy zalogujesz się na tym komputerze — przez zadanie logowania w Windows lub wpis autostartu w Linuksie. Dzięki temu telefon może połączyć się w dowolnym momencie, gdy jesteś zalogowany. Monitorowanie czujników i polecenia zasilania działają także przy zablokowanym ekranie, ale przesyłanie obrazu pulpitu i zdalne sterowanie wymagają odblokowanej sesji. Jeśli komputer jest wyłączony lub nikt nie jest zalogowany, wybudź go przez Wake-on-LAN i najpierw się zaloguj.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -1661,13 +1661,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Wyczyść logi</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Logi usług w tle</value>
+    <value>Dziennik zdarzeń systemu</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Ostatnie zapytanie o logi zdarzeń z Podglądu zdarzeń systemu Windows lub dziennika systemd systemu Linux.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Pobierz logi usług</value>
+    <value>Pobierz dziennik zdarzeń systemu</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Ekran</value>

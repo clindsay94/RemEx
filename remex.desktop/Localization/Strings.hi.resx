@@ -786,9 +786,9 @@
     <value>RemEx में आपका स्वागत है</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx आपके पीसी को एक सुरक्षित रिमोट कमांड सेंटर बना देता है। अपने फ़ोन से आप हार्डवेयर सेंसर देख सकते हैं, ऐप्स खोल सकते हैं, फ़ाइलें और प्रोसेस प्रबंधित कर सकते हैं, और अपना डेस्कटॉप स्ट्रीम कर सकते हैं।
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx इस पीसी पर चलता है और आपका फ़ोन उससे कनेक्ट होता है। हर कनेक्शन TLS और PIN-आधारित पेयरिंग से सुरक्षित रहता है।</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -798,7 +798,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>इस डेस्कटॉप ऐप में एक एम्बेडेड RemEx होस्ट शामिल है जो स्वचालित रूप से शुरू होता है। आपका Android फोन इससे कनेक्ट होता है — इसका उल्टा नहीं।</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>हमेशा चालू (लॉग इन न होने पर भी) एक्सेस के लिए, आप होस्ट को विंडोज़ सेवा या लिनक्स डेमन के रूप में इंस्टॉल कर सकते हैं। यह आपके फोन को किसी भी समय कनेक्ट करने देता है।</value>
+    <value>जब आप इस पीसी में साइन इन करते हैं, RemEx अपने आप शुरू हो जाता है — Windows पर लॉगऑन टास्क के ज़रिए, Linux पर ऑटोस्टार्ट एंट्री के ज़रिए। इसलिए जब तक आप साइन इन हैं, आपका फ़ोन कभी भी कनेक्ट हो सकता है। स्क्रीन लॉक होने पर भी सेंसर मॉनिटरिंग और पावर कमांड काम करते रहते हैं, लेकिन डेस्कटॉप स्ट्रीम या नियंत्रित करने के लिए सेशन अनलॉक होना चाहिए। अगर पीसी बंद है या साइन आउट है, तो उसे Wake-on-LAN से जगाएँ और पहले साइन इन करें।</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -1877,13 +1877,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>लॉग साफ़ करें</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>पृष्ठभूमि सेवा लॉग</value>
+    <value>सिस्टम इवेंट लॉग</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>विंडोज इवेंट व्यूअर या लिनक्स सिस्टमडी जर्नल से नवीनतम इवेंट लॉग क्वेरी।</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>सेवा लॉग क्वेरी करें</value>
+    <value>सिस्टम इवेंट लॉग क्वेरी करें</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>डिस्प्ले</value>

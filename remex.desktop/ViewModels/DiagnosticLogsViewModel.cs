@@ -224,12 +224,15 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         return JsonSerializer.Serialize(payload, LogExportJsonContext.Default.ListLogEntryExport);
     }
 
-    // ─────────────────── Service logs tab (host background service — unchanged) ───────────────────
+    // ─── System event logs tab: entries RemEx wrote to the OS log, NOT a service. There is no
+    // RemEx service; remex.agent runs in the signed-in user's session. Windows reads the
+    // Application event log by source; the Linux branch still targets the retired remex-host
+    // unit and is tracked as RemEx-2vfx. ────────────────────────────────────────────────────────
 
     [RelayCommand]
     public async Task FetchServiceLogsAsync()
     {
-        ServiceLogsText = "Querying host background service logs...\n";
+        ServiceLogsText = "Reading system event log entries written by RemEx...\n";
         try
         {
             if (OperatingSystem.IsWindows())
@@ -250,12 +253,12 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
             }
             else
             {
-                ServiceLogsText = "Background service logs are only supported on Windows and Linux.";
+                ServiceLogsText = "System event logs are only available on Windows and Linux.";
             }
         }
         catch (Exception ex)
         {
-            ServiceLogsText = $"Failed to fetch service logs: {ex.Message}";
+            ServiceLogsText = $"Could not read the system event log: {ex.Message}";
         }
     }
 

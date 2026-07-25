@@ -786,9 +786,9 @@
     <value>Bienvenido a RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx convierte tu PC en un centro de mando remoto seguro. Desde tu teléfono puedes ver los sensores del hardware, abrir aplicaciones, gestionar archivos y procesos, y transmitir tu escritorio.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx se ejecuta en este PC y tu teléfono se conecta a él. Cada conexión está protegida con TLS y emparejamiento mediante PIN.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -799,8 +799,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
 Tu teléfono Android se conecta a él, no al revés.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Para acceso permanente (incluso sin haber iniciado sesión), puedes instalar el PC como un servicio de Windows o un demonio de Linux.
-Esto permite que tu teléfono se conecte en cualquier momento.</value>
+    <value>RemEx se inicia automáticamente cuando inicias sesión en este PC: mediante una tarea de inicio de sesión en Windows o una entrada de inicio automático en Linux. Así tu teléfono puede conectarse siempre que tengas la sesión iniciada. Los sensores y los comandos de energía siguen funcionando con la pantalla bloqueada, pero para transmitir o controlar el escritorio la sesión debe estar desbloqueada. Si el PC está apagado o con la sesión cerrada, enciéndelo con Wake-on-LAN e inicia sesión primero.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -1895,13 +1894,13 @@ Chrome)</value>
     <value>Borrar registros</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Registros del servicio en segundo plano</value>
+    <value>Registros de eventos del sistema</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Última consulta de registros de eventos del Visor de eventos de Windows o del diario systemd de Linux.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Consultar registros de servicio</value>
+    <value>Consultar registros de eventos del sistema</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Pantalla</value>

@@ -786,9 +786,9 @@
     <value>Bienvenue sur RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx transforme votre PC en centre de commande à distance sécurisé. Depuis votre téléphone, vous pouvez surveiller les capteurs matériels, lancer des applications, gérer des fichiers et des processus, et diffuser votre bureau.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx fonctionne sur ce PC et votre téléphone s'y connecte. Chaque connexion est protégée par TLS et un appairage par code PIN.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -798,7 +798,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Cette application de bureau inclut un hôte RemEx intégré qui démarre automatiquement. Votre téléphone Android s'y connecte — pas l'inverse.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Pour un accès permanent (même sans session ouverte), vous pouvez installer l'hôte en tant que service Windows ou démon Linux. Cela permet à votre téléphone de se connecter à tout moment.</value>
+    <value>RemEx démarre automatiquement à votre ouverture de session sur ce PC : via une tâche d'ouverture de session sous Windows, ou une entrée de démarrage automatique sous Linux. Votre téléphone peut donc se connecter dès que votre session est ouverte. La surveillance des capteurs et les commandes d'alimentation continuent de fonctionner écran verrouillé, mais diffuser ou contrôler le bureau exige une session déverrouillée. Si le PC est éteint ou la session fermée, réveillez-le avec Wake-on-LAN et ouvrez d'abord votre session.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -1877,13 +1877,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Effacer les journaux</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Journaux des services en arrière-plan</value>
+    <value>Journaux d'événements système</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Dernière requête de journaux d'événements depuis l'Observateur d'événements Windows ou le journal systemd Linux.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Interroger les journaux de service</value>
+    <value>Interroger les journaux d'événements système</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Affichage</value>

@@ -786,9 +786,9 @@
     <value>Ласкаво просимо до RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx перетворює ваш ПК на захищений центр дистанційного керування. З телефона ви можете спостерігати за датчиками обладнання, запускати програми, керувати файлами та процесами й транслювати робочий стіл.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx працює на цьому ПК, а телефон підключається до нього. Кожне з'єднання захищене TLS і спарюванням за PIN-кодом.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -798,7 +798,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Цей десктопний застосунок містить вбудований RemEx PC, який запускається автоматично. Ваш Android-телефон підключається до нього, а не навпаки.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Для постійного доступу (навіть коли ви не ввійшли в систему) ви можете встановити хост як службу Windows або демон Linux. Це дозволить вашому телефону підключатися в будь-який час.</value>
+    <value>RemEx запускається автоматично, коли ви входите на цей ПК — через завдання входу у Windows або запис автозапуску в Linux. Тому телефон може підключитися будь-коли, поки ви у системі. Моніторинг датчиків і команди живлення працюють і при заблокованому екрані, але для трансляції чи керування робочим столом сеанс має бути розблокований. Якщо ПК вимкнено або ніхто не ввійшов, увімкніть його через Wake-on-LAN і спершу увійдіть.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -1877,13 +1877,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Очистити логи</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Логи фонової служби</value>
+    <value>Журнал подій системи</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Останній запит логів подій з Windows Event Viewer або журналу systemd в Linux.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Запитати логи служби</value>
+    <value>Запитати журнал подій системи</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Екран</value>

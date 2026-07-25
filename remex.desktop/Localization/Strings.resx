@@ -831,9 +831,9 @@
     <value>Welcome to RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx turns your PC into a secure remote command center. From your phone you can monitor hardware sensors, launch apps, manage files and processes, and stream your desktop.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx runs on this PC and your phone connects to it. Every connection is protected with TLS plus PIN-based pairing.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -843,7 +843,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>This desktop app includes an embedded RemEx PC that starts automatically. Your Android phone connects to it — not the other way around.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>For always-on access (even when you're not logged in), you can install the PC as a Windows service or Linux PC. This lets your phone connect anytime.</value>
+    <value>RemEx starts automatically when you sign in to this PC — a logon task on Windows, an autostart entry on Linux — so your phone can connect whenever you are signed in. Sensor monitoring and power commands keep working when the screen locks, but streaming or controlling the desktop needs the session unlocked. If the PC is switched off or signed out, wake it with Wake-on-LAN and sign in first.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -1922,13 +1922,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Clear Logs</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Background Service Logs</value>
+    <value>System Event Logs</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Latest event logs query from Windows Event Viewer or Linux systemd journal.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Query Service Logs</value>
+    <value>Query System Event Logs</value>
   </data>
   <data name="Logs_Preset" xml:space="preserve">
     <value>Preset:</value>
