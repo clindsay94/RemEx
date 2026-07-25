@@ -79,7 +79,7 @@
     <string name="tutorial_page3_body">The easiest way to connect is automatic discovery.\n\n1. Make sure remex.agent is running on your PC\n2. Ensure both your phone and PC are on the same Wi-Fi network\n3. Tap \'Discover Automatically\' on the Connection screen\n\nRemEx uses mDNS to detect running hosts on your local network. Your PC\'s IP and port will be filled in automatically.</string>
 
     <string name="tutorial_page4_title">Finding Your IP Address</string>
-    <string name="tutorial_page4_body">If auto-discovery doesn\'t work, you can connect manually. First, find your PC\'s local IP address:\n\nWindows:\n  Open Command Prompt → type ipconfig\n  Look for \'IPv4 Address\' (e.g. 192.168.1.42)\n\nmacOS:\n  System Settings → Network, or run:\n  ipconfig getifaddr en0\n\nLinux:\n  Run ip addr or hostname -I\n\nYou can also see the IP address in the RemEx — Command Center window on your PC.</string>
+    <string name="tutorial_page4_body">If auto-discovery doesn\'t work, you can connect manually. First, find your PC\'s local IP address:\n\nWindows:\n  Open Command Prompt → type ipconfig\n  Look for \'IPv4 Address\' (e.g. 192.168.1.42)\n\nLinux:\n  Run ip addr or hostname -I\n\nYou can also see the IP address in the RemEx — Command Center window on your PC.</string>
 
     <string name="tutorial_page5_title">Manual Connection</string>
     <string name="tutorial_page5_body">Once you have your IP address:\n\n1. Go to the Connection screen (More → Settings → Connection)\n2. Enter your PC\'s IP address\n3. Enter the port (default is 5005)\n4. Tap \'Save &amp; Connect\'\n5. If prompted, enter the 6-digit PIN shown on your PC to finish secure pairing\n\nYour connection details are saved for next time.</string>
