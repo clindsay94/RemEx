@@ -1251,7 +1251,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Paylaşılan klasörler kullanılamıyor: {0}</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Tarama hatası: {0}</value>
+    <value>Bu klasör açılamadı. Bağlı cihazın hâlâ eşleştirilmiş olduğundan ve klasörün hâlâ paylaşıldığından emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>Dosya seçici kullanılamıyor.</value>
@@ -1324,7 +1324,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Silindi.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Silme başarısız: {0}</value>
+    <value>Bu öğe silinemedi. Cihazda açık olmadığından ve klasörün değişikliklere izin verdiğinden emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>{0} öğe siliniyor…</value>
@@ -1351,7 +1351,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Yeniden adlandırıldı.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Yeniden adlandırma başarısız: {0}</value>
+    <value>Bu öğe yeniden adlandırılamadı. Yeni adın kullanılmadığından ve klasörün değişikliklere izin verdiğinden emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Onayla</value>
@@ -1376,7 +1376,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>SHA-256 hesaplandı.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Karma başarısız: {0}</value>
+    <value>Bu dosya denetlenemedi. Bağlı cihazın hâlâ eşleştirilmiş olduğundan ve dosyanın hâlâ orada olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -2614,7 +2614,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>İlk {0} eşleşme gösteriliyor — daha fazlasını görmek için aramanızı daraltın.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Arama başarısız: {0}</value>
+    <value>Arama tamamlanamadı. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_SortLabel" xml:space="preserve">
     <value>Sırala</value>

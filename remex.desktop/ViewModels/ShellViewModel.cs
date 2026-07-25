@@ -535,7 +535,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public void NavigateToFileTransfer()
     {
         NotifyIfDisconnected(LocalizationService.Instance["Nav_Files"]);
-        _fileTransferViewModel ??= new FileTransferViewModel(Connection);
+        // Hand-constructed rather than DI-resolved, so the logger has to be passed explicitly —
+        // same reasoning as NavigateToRemoteDesktop above: the constructor default would
+        // degrade to no logger and discard every file-transfer failure diagnostic.
+        _fileTransferViewModel ??= new FileTransferViewModel(
+            Connection,
+            _services.GetRequiredService<ILogger<FileTransferViewModel>>());
         SetTransitionAndNavigate(7, _fileTransferViewModel);
     }
 

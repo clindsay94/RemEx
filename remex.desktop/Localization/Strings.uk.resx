@@ -1251,7 +1251,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Спільні папки недоступні: {0}</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Помилка перегляду: {0}</value>
+    <value>Не вдалося відкрити цю папку. Перевірте, чи підключений пристрій досі сполучено і чи папка досі є спільною, а потім спробуйте ще раз.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>Вибір файлу недоступний.</value>
@@ -1324,7 +1324,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Видалено.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Не вдалося видалити: {0}</value>
+    <value>Не вдалося видалити цей елемент. Перевірте, чи він не відкритий на пристрої і чи папка дозволяє зміни, а потім спробуйте ще раз.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>Видалення {0} елементів…</value>
@@ -1351,7 +1351,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Перейменовано.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Не вдалося перейменувати: {0}</value>
+    <value>Не вдалося перейменувати цей елемент. Перевірте, чи нова назва не використовується і чи папка дозволяє зміни, а потім спробуйте ще раз.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Підтвердити</value>
@@ -1376,7 +1376,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>SHA-256 обчислено.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Не вдалося обчислити хеш: {0}</value>
+    <value>Не вдалося перевірити цей файл. Переконайтеся, що підключений пристрій досі сполучено і файл досі існує, а потім спробуйте ще раз.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -2682,7 +2682,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Додано до черги передач.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Помилка пошуку: {0}</value>
+    <value>Не вдалося завершити пошук. Перевірте, чи підключений пристрій досі сполучено, а потім спробуйте ще раз.</value>
   </data>
   <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
     <value>Знайдено {0} результат(ів).</value>

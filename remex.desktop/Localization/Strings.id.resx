@@ -1251,7 +1251,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folder bersama tidak tersedia: {0}</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Kesalahan jelajah: {0}</value>
+    <value>Tidak dapat membuka folder tersebut. Pastikan perangkat yang terhubung masih disandingkan dan folder masih dibagikan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>Pemilih file tidak tersedia.</value>
@@ -1324,7 +1324,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Dihapus.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Penghapusan gagal: {0}</value>
+    <value>Tidak dapat menghapus item tersebut. Pastikan item tidak sedang terbuka di perangkat dan folder mengizinkan perubahan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>Menghapus {0} item…</value>
@@ -1351,7 +1351,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Nama diganti.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Penggantian nama gagal: {0}</value>
+    <value>Tidak dapat mengganti nama item tersebut. Pastikan nama baru belum dipakai dan folder mengizinkan perubahan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Konfirmasi</value>
@@ -1376,7 +1376,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>SHA-256 dihitung.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Hash gagal: {0}</value>
+    <value>Tidak dapat memeriksa file tersebut. Pastikan perangkat yang terhubung masih disandingkan dan file masih ada, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -2681,7 +2681,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Ditambahkan ke antrean transfer.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Pencarian gagal: {0}</value>
+    <value>Tidak dapat menyelesaikan pencarian. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
     <value>{0} hasil ditemukan.</value>

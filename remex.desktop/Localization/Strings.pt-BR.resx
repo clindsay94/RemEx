@@ -1251,7 +1251,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Pastas compartilhadas indisponíveis: {0}</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Erro ao navegar: {0}</value>
+    <value>Não foi possível abrir essa pasta. Verifique se o dispositivo conectado continua pareado e se a pasta continua compartilhada e tente novamente.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>Seletor de arquivos indisponível.</value>
@@ -1324,7 +1324,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Excluído.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Falha ao excluir: {0}</value>
+    <value>Não foi possível excluir esse item. Verifique se ele não está aberto no dispositivo e se a pasta permite alterações e tente novamente.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>Excluindo {0} itens…</value>
@@ -1351,7 +1351,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Renomeado.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Falha ao renomear: {0}</value>
+    <value>Não foi possível renomear esse item. Verifique se o novo nome ainda não está em uso e se a pasta permite alterações e tente novamente.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Confirmar</value>
@@ -1376,7 +1376,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>SHA-256 calculado.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Falha no hash: {0}</value>
+    <value>Não foi possível verificar esse arquivo. Confirme se o dispositivo conectado continua pareado e se o arquivo ainda existe e tente novamente.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -2681,7 +2681,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Adicionado à fila de transferências.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Falha na busca: {0}</value>
+    <value>Não foi possível concluir a busca. Verifique se o dispositivo conectado continua pareado e tente novamente.</value>
   </data>
   <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
     <value>{0} resultado(s) encontrado(s).</value>

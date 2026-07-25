@@ -1266,7 +1266,7 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
     <value>Carpetas compartidas no disponibles: {0}</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Error al explorar: {0}</value>
+    <value>No se pudo abrir esa carpeta. Comprueba que el dispositivo conectado siga emparejado y que la carpeta siga compartida, y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>Selector de archivos no disponible.</value>
@@ -1339,7 +1339,7 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
     <value>Eliminado.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Error al eliminar: {0}</value>
+    <value>No se pudo eliminar ese elemento. Comprueba que no esté abierto en el dispositivo y que la carpeta permita cambios, y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>Eliminando {0} elementos…</value>
@@ -1366,7 +1366,7 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
     <value>Nombre cambiado.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Error al cambiar el nombre: {0}</value>
+    <value>No se pudo renombrar ese elemento. Comprueba que el nuevo nombre no esté en uso y que la carpeta permita cambios, y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Confirmar</value>
@@ -1391,7 +1391,7 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
     <value>SHA-256 calculado.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Error al calcular el hash: {0}</value>
+    <value>No se pudo comprobar ese archivo. Asegúrate de que el dispositivo conectado siga emparejado y que el archivo siga ahí, y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -2540,7 +2540,7 @@ Chrome)</value>
     <value>Mostrando las primeras {0} coincidencias — refina tu búsqueda para ver más.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Error en la búsqueda: {0}</value>
+    <value>No se pudo completar la búsqueda. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_SortLabel" xml:space="preserve">
     <value>Ordenar</value>

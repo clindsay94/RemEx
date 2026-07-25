@@ -1206,7 +1206,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Foldery udostępnione niedostępne: {0}</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Błąd przeglądania: {0}</value>
+    <value>Nie udało się otworzyć tego folderu. Sprawdź, czy połączone urządzenie jest nadal sparowane i czy folder jest nadal udostępniony, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>Selektor plików niedostępny.</value>
@@ -1279,7 +1279,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Usunięto.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Usuwanie nie powiodło się: {0}</value>
+    <value>Nie udało się usunąć tego elementu. Sprawdź, czy nie jest otwarty na urządzeniu i czy folder pozwala na zmiany, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>Usuwanie {0} elementów…</value>
@@ -1306,7 +1306,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Zmieniono nazwę.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Zmiana nazwy nie powiodła się: {0}</value>
+    <value>Nie udało się zmienić nazwy tego elementu. Sprawdź, czy nowa nazwa nie jest już używana i czy folder pozwala na zmiany, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Potwierdź</value>
@@ -1331,7 +1331,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Obliczono SHA-256.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Obliczanie skrótu nie powiodło się: {0}</value>
+    <value>Nie udało się sprawdzić tego pliku. Upewnij się, że połączone urządzenie jest nadal sparowane i że plik nadal istnieje, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -2466,7 +2466,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Dodano do kolejki transferów.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Wyszukiwanie nie powiodło się: {0}</value>
+    <value>Nie udało się ukończyć wyszukiwania. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
     <value>Znaleziono {0} wynik(ów).</value>

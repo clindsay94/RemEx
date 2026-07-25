@@ -1251,7 +1251,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>साझा फ़ोल्डर अनुपलब्ध: {0}</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>ब्राउज़ त्रुटि: {0}</value>
+    <value>वह फ़ोल्डर नहीं खोला जा सका। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है और फ़ोल्डर अभी भी साझा है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>फ़ाइल पिकर उपलब्ध नहीं है।</value>
@@ -1324,7 +1324,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>हटाया गया।</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>हटाना विफल: {0}</value>
+    <value>उस आइटम को हटाया नहीं जा सका। जांचें कि वह डिवाइस पर खुला नहीं है और फ़ोल्डर में बदलाव की अनुमति है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>{0} आइटम हटाए जा रहे हैं…</value>
@@ -1351,7 +1351,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>नाम बदल दिया गया।</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>नाम बदलना विफल: {0}</value>
+    <value>उस आइटम का नाम नहीं बदला जा सका। जांचें कि नया नाम पहले से उपयोग में नहीं है और फ़ोल्डर में बदलाव की अनुमति है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>पुष्टि करें</value>
@@ -1376,7 +1376,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>SHA-256 की गणना हो गई।</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>हैश विफल: {0}</value>
+    <value>उस फ़ाइल की जांच नहीं हो सकी। सुनिश्चित करें कि कनेक्टेड डिवाइस अभी भी पेयर है और फ़ाइल अभी भी मौजूद है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -2681,7 +2681,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>स्थानांतरण कतार में जोड़ा गया।</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>खोज विफल: {0}</value>
+    <value>खोज पूरी नहीं हो सकी। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
     <value>{0} परिणाम मिले।</value>

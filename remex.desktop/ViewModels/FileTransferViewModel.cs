@@ -10,6 +10,8 @@ using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.FileTransfer;
 
@@ -36,6 +38,7 @@ public sealed record BreadcrumbSegment(string Label, string Path);
 public sealed partial class FileTransferViewModel : ObservableObject, IDisposable
 {
     private readonly ConnectionViewModel _connection;
+    private readonly ILogger<FileTransferViewModel> _logger;
     private readonly FileTransferClient _client;
 
     // Server-ordered snapshot of the current folder; the display list is a sorted projection of this.
@@ -58,9 +61,12 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     /// <summary>Wired by the view so the VM can select every entry in the list for a multi-select op.</summary>
     public Action? SelectAllEntries { get; set; }
 
-    public FileTransferViewModel(ConnectionViewModel connection)
+    public FileTransferViewModel(
+        ConnectionViewModel connection,
+        ILogger<FileTransferViewModel>? logger = null)
     {
         _connection = connection;
+        _logger = logger ?? NullLogger<FileTransferViewModel>.Instance;
         _client = new FileTransferClient(connection);
         TransferQueue = new FileTransferQueue();
         TransferQueue.Changed += OnQueueChanged;
@@ -283,7 +289,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_BrowseErrorFormat"], ex.Message);
+            _logger.LogWarning(ex, "Browsing the connected device failed");
+            StatusText = LocalizationService.Instance["FileTransfer_BrowseErrorFormat"];
         }
         finally
         {
@@ -470,7 +477,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_SearchFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Searching the connected device failed");
+            StatusText = LocalizationService.Instance["FileTransfer_SearchFailedFormat"];
         }
         finally
         {
@@ -687,7 +695,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_DeleteFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Deleting an item on the connected device failed");
+            StatusText = LocalizationService.Instance["FileTransfer_DeleteFailedFormat"];
         }
         finally
         {
@@ -852,7 +861,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_RenameFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Renaming an item on the connected device failed");
+            StatusText = LocalizationService.Instance["FileTransfer_RenameFailedFormat"];
         }
         finally
         {
@@ -1056,7 +1066,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_HashFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Verifying a transferred file hash failed");
+            StatusText = LocalizationService.Instance["FileTransfer_HashFailedFormat"];
         }
         finally
         {

@@ -1296,7 +1296,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Shared folders unavailable: {0}</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Browse error: {0}</value>
+    <value>Could not open that folder. Check the connected device is still paired and the folder is still shared, then try again.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>File picker unavailable.</value>
@@ -1369,7 +1369,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Deleted.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Delete failed: {0}</value>
+    <value>Could not delete that item. Check it is not open on the device and that the folder allows changes, then try again.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>Deleting {0} items…</value>
@@ -1396,7 +1396,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Renamed.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Rename failed: {0}</value>
+    <value>Could not rename that item. Check the new name is not already used and that the folder allows changes, then try again.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Confirm</value>
@@ -1421,7 +1421,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>SHA-256 computed.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Hash failed: {0}</value>
+    <value>Could not check that file. Make sure the connected device is still paired and the file is still there, then try again.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -2779,7 +2779,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Showing the first {0} matches — refine your search to see more.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Search failed: {0}</value>
+    <value>Could not finish the search. Check the connected device is still paired, then try again.</value>
   </data>
   <data name="FileTransfer_SortLabel" xml:space="preserve">
     <value>Sort</value>

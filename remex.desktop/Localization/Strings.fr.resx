@@ -1251,7 +1251,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Dossiers partagés indisponibles : {0}</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Erreur de navigation : {0}</value>
+    <value>Impossible d'ouvrir ce dossier. Vérifiez que l'appareil connecté est toujours couplé et que le dossier est toujours partagé, puis réessayez.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>Sélecteur de fichiers non disponible.</value>
@@ -1324,7 +1324,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Supprimé.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Échec de la suppression : {0}</value>
+    <value>Impossible de supprimer cet élément. Vérifiez qu'il n'est pas ouvert sur l'appareil et que le dossier autorise les modifications, puis réessayez.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>Suppression de {0} éléments…</value>
@@ -1351,7 +1351,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Renommé.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Échec du renommage : {0}</value>
+    <value>Impossible de renommer cet élément. Vérifiez que le nouveau nom n'est pas déjà utilisé et que le dossier autorise les modifications, puis réessayez.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Confirmer</value>
@@ -1376,7 +1376,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>SHA-256 calculé.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Échec du hachage : {0}</value>
+    <value>Impossible de vérifier ce fichier. Assurez-vous que l'appareil connecté est toujours couplé et que le fichier existe toujours, puis réessayez.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -2681,7 +2681,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Ajouté à la file d'attente des transferts.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Échec de la recherche : {0}</value>
+    <value>Impossible de terminer la recherche. Vérifiez que l'appareil connecté est toujours couplé, puis réessayez.</value>
   </data>
   <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
     <value>{0} résultat(s) trouvé(s).</value>
