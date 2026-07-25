@@ -227,12 +227,22 @@
              ConverterParameter, which DynamicResource could not reach. -->
         <Style Selector="Ellipse.status-dot">
             <Setter Property="Fill" Value="{DynamicResource SystemErrorBrush}"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Fill" Duration="0:0:0.4"/>
+            </Transitions>
+        </Setter>
         </Style>
         <Style Selector="Ellipse.status-dot.connected">
             <Setter Property="Fill" Value="{DynamicResource SystemSuccessBrush}"/>
         </Style>
         <Style Selector="Ellipse.status-ring">
             <Setter Property="Stroke" Value="{DynamicResource SystemErrorBrush}"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Stroke" Duration="0:0:0.4"/>
+            </Transitions>
+        </Setter>
         </Style>
         <Style Selector="Ellipse.status-ring.connected">
             <Setter Property="Stroke" Value="{DynamicResource SystemSuccessBrush}"/>
