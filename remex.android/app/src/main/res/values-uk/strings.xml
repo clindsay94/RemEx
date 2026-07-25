@@ -309,7 +309,7 @@
     <string name="personalization_appearance_studio">Appearance Studio</string>
     <string name="personalization_section_language">Language</string>
     <string name="personalization_app_language">App Language</string>
-    <string name="personalization_language_note">Changes the display language for this app. Some text may remain in English until translations are complete.</string>
+    <string name="personalization_language_note">Змінює мову застосунку та застосовується негайно. Деякий текст може залишатися англійською, доки переклади не буде завершено.</string>
     <string name="personalization_system_default">System Default</string>
     <string name="personalization_section_theme">Theme &amp; Strategy</string>
     <string name="personalization_display_mode">Display Mode</string>

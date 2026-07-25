@@ -253,7 +253,7 @@
     <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
     <string name="connection_desktop_defaults_title">Default Desktop Jarak Jauh</string>
     <string name="connection_quality_label">Kualitas: %1$d%%</string>
-    <string name="connection_fps_label">Target FPS: %1$d (maks 120)</string>
+    <string name="connection_fps_label">Target FPS: %1$d</string>
     <string name="connection_scale_label">Skala: %1$s</string>
     <string name="button_save_connect">Simpan &amp; Hubungkan</string>
     <string name="connection_status_label">Status: %1$s</string>
@@ -271,7 +271,7 @@
     <string name="qr_scanner_hint">Arahkan kamera ke kode QR yang ditampilkan di PC Anda</string>
     <string name="qr_scanner_permission_required">Izin kamera diperlukan untuk memindai kode QR</string>
     <string name="qr_scanner_grant_permission">Berikan Izin</string>
-    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx PC to 2.0.</string>
+    <string name="qr_error_old_format">Kode QR ini dibuat oleh RemEx PC versi lama. Perbarui PC dan buat kode QR RemEx 2.x yang baru.</string>
     <string name="qr_error_invalid">Invalid RemEx QR code</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
@@ -309,7 +309,7 @@
     <string name="personalization_appearance_studio">Studio Tampilan</string>
     <string name="personalization_section_language">Bahasa</string>
     <string name="personalization_app_language">Bahasa Aplikasi</string>
-    <string name="personalization_language_note">Mengubah bahasa tampilan untuk aplikasi ini. Beberapa teks mungkin tetap dalam bahasa Inggris hingga terjemahan selesai.</string>
+    <string name="personalization_language_note">Mengubah bahasa tampilan aplikasi ini dan langsung berlaku. Beberapa teks mungkin tetap dalam bahasa Inggris hingga terjemahan selesai.</string>
     <string name="personalization_system_default">Default Sistem</string>
     <string name="personalization_section_theme">Tema &amp; Strategi</string>
     <string name="personalization_display_mode">Mode Tampilan</string>

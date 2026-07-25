@@ -233,7 +233,7 @@
     <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
     <string name="connection_desktop_defaults_title">Domyślne ustawienia pulpitu zdalnego</string>
     <string name="connection_quality_label">Jakość: %1$d%%</string>
-    <string name="connection_fps_label">Docelowe FPS: %1$d (maks. 120)</string>
+    <string name="connection_fps_label">Docelowe FPS: %1$d</string>
     <string name="connection_scale_label">Skala: %1$s</string>
     <string name="button_save_connect">Zapisz i połącz</string>
     <string name="connection_status_label">Status: %1$s</string>
@@ -251,7 +251,7 @@
     <string name="qr_scanner_hint">Skieruj aparat na kod QR wyświetlony na komputerze</string>
     <string name="qr_scanner_permission_required">Uprawnienie do aparatu jest wymagane do skanowania kodów QR</string>
     <string name="qr_scanner_grant_permission">Udziel uprawnienia</string>
-    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx PC to 2.0.</string>
+    <string name="qr_error_old_format">Ten kod QR został wygenerowany przez starszą wersję RemEx PC. Zaktualizuj PC i wygeneruj nowy kod QR RemEx 2.x.</string>
     <string name="qr_error_invalid">Invalid RemEx QR code</string>
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
     <string name="about_github_star">Give my repository a star on Github</string>
@@ -284,7 +284,7 @@
     <string name="personalization_appearance_studio">Studio wyglądu</string>
     <string name="personalization_section_language">Język</string>
     <string name="personalization_app_language">Język aplikacji</string>
-    <string name="personalization_language_note">Zmienia język wyświetlania aplikacji. Niektóre teksty mogą pozostać w języku angielskim do czasu zakończenia tłumaczenia.</string>
+    <string name="personalization_language_note">Zmienia język wyświetlania aplikacji ze skutkiem natychmiastowym. Niektóre teksty mogą pozostać w języku angielskim do czasu zakończenia tłumaczenia.</string>
     <string name="personalization_system_default">Domyślny systemowy</string>
     <string name="personalization_section_theme">Motyw i Strategia</string>
     <string name="personalization_display_mode">Tryb wyświetlania</string>

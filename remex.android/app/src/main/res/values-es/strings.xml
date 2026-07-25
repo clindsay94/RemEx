@@ -253,7 +253,7 @@
     <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
     <string name="connection_desktop_defaults_title">Valores de Escritorio Remoto</string>
     <string name="connection_quality_label">Calidad: %1$d%%</string>
-    <string name="connection_fps_label">FPS Objetivo: %1$d (máx 120)</string>
+    <string name="connection_fps_label">FPS Objetivo: %1$d</string>
     <string name="connection_scale_label">Escala: %1$s</string>
     <string name="button_save_connect">Guardar y Conectar</string>
     <string name="connection_status_label">Estado: %1$s</string>
@@ -271,7 +271,7 @@
     <string name="qr_scanner_hint">Apunta la cámara al código QR mostrado en tu PC</string>
     <string name="qr_scanner_permission_required">Se necesita permiso de cámara para escanear códigos QR</string>
     <string name="qr_scanner_grant_permission">Conceder permiso</string>
-    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx PC to 2.0.</string>
+    <string name="qr_error_old_format">Este código QR fue generado por una versión anterior de RemEx PC. Actualiza el PC y genera un nuevo código QR de RemEx 2.x.</string>
     <string name="qr_error_invalid">Invalid RemEx QR code</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
@@ -309,7 +309,7 @@
     <string name="personalization_appearance_studio">Estudio de Apariencia</string>
     <string name="personalization_section_language">Idioma</string>
     <string name="personalization_app_language">Idioma de la App</string>
-    <string name="personalization_language_note">Cambia el idioma de la interfaz. Algunos textos pueden seguir en inglés hasta completar las traducciones.</string>
+    <string name="personalization_language_note">Cambia el idioma de la interfaz y se aplica de inmediato. Algunos textos pueden seguir en inglés hasta completar las traducciones.</string>
     <string name="personalization_system_default">Predeterminado del sistema</string>
     <string name="personalization_section_theme">Tema y Estrategia</string>
     <string name="personalization_display_mode">Modo de Visualización</string>

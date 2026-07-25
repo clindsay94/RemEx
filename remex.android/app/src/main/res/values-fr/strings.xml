@@ -253,7 +253,7 @@
     <string name="connection_hint_pairing_pin">Only needed for first-time pairing; leave empty if already paired</string>
     <string name="connection_desktop_defaults_title">Valeurs Bureau à Distance</string>
     <string name="connection_quality_label">Qualité : %1$d%%</string>
-    <string name="connection_fps_label">FPS Cible : %1$d (max 120)</string>
+    <string name="connection_fps_label">FPS Cible : %1$d</string>
     <string name="connection_scale_label">Échelle : %1$s</string>
     <string name="button_save_connect">Enregistrer et Connecter</string>
     <string name="connection_status_label">État : %1$s</string>
@@ -271,7 +271,7 @@
     <string name="qr_scanner_hint">Pointez l\'appareil photo vers le code QR affiché sur votre PC</string>
     <string name="qr_scanner_permission_required">L\'autorisation de la caméra est requise pour scanner les codes QR</string>
     <string name="qr_scanner_grant_permission">Accorder la permission</string>
-    <string name="qr_error_old_format">Old QR format detected. Please update your RemEx PC to 2.0.</string>
+    <string name="qr_error_old_format">Ce code QR a été généré par une version plus ancienne de RemEx PC. Mettez à jour le PC et générez un nouveau code QR RemEx 2.x.</string>
     <string name="qr_error_invalid">Invalid RemEx QR code</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
@@ -309,7 +309,7 @@
     <string name="personalization_appearance_studio">Studio d\'Apparence</string>
     <string name="personalization_section_language">Langue</string>
     <string name="personalization_app_language">Langue de l\'App</string>
-    <string name="personalization_language_note">Change la langue d\'affichage de cette application. Certains textes peuvent rester en anglais en attendant les traductions complètes.</string>
+    <string name="personalization_language_note">Change la langue d\'affichage de cette application, avec effet immédiat. Certains textes peuvent rester en anglais en attendant les traductions complètes.</string>
     <string name="personalization_system_default">Par défaut du système</string>
     <string name="personalization_section_theme">Thème et Stratégie</string>
     <string name="personalization_display_mode">Mode d\'Affichage</string>
