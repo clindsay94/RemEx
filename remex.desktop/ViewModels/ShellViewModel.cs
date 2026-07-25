@@ -590,10 +590,17 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop &&
             desktop.MainWindow is { } mainWindow)
         {
+            // Destructive palette entries confirm against the MAIN window, not the palette window:
+            // the palette closes before the dialog is shown, so parenting to it would leave the
+            // dialog owner-less mid-flight (RemEx-eifi).
+            vm.OnConfirmationRequested = Remex.Desktop.Views.ConfirmationDialogHost.For(mainWindow);
             window.ShowDialog(mainWindow);
         }
         else
         {
+            // No main window means no owner to host a confirmation, so OnConfirmationRequested stays
+            // null and the destructive entries decline — the same fail-closed outcome every other
+            // confirmed action has.
             window.Show();
         }
     }
