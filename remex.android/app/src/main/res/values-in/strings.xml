@@ -425,6 +425,7 @@
     <string name="pairing_error_empty_response">PC Anda tidak mengirim PIN. Pastikan RemEx terbuka di PC dan menampilkan PIN penyandingan, lalu coba lagi.</string>
     <string name="pairing_error_reach_failed">Tidak dapat menjangkau PC Anda. Pastikan kedua perangkat berada di jaringan Wi-Fi yang sama dan alamat PC sudah benar, lalu coba lagi.</string>
     <string name="pairing_error_start_failed">Penyandingan tidak dapat dimulai: %1$s. Pastikan RemEx terbuka di PC, lalu coba lagi.</string>
+    <string name="pairing_error_verify_failed">Penyandingan tidak dapat diselesaikan: %1$s. Ketuk Batal, dapatkan PIN baru dari PC Anda, lalu sandingkan lagi.</string>
     <string name="pairing_error_save_failed">Gagal menyimpan PC yang dipinkan dengan aman.</string>
     <string name="qr_error_missing_hash">Kode QR tidak memiliki hash sertifikat PC</string>
     <string name="qr_error_setup_failed">Penyusunan QR gagal</string>

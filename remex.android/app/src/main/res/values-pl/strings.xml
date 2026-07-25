@@ -718,6 +718,7 @@ $line
     <string name="pairing_error_empty_response">Komputer nie przesłał kodu PIN. Sprawdź, czy RemEx jest otwarty na komputerze i wyświetla kod PIN parowania, a następnie spróbuj ponownie.</string>
     <string name="pairing_error_reach_failed">Nie udało się połączyć z komputerem. Sprawdź, czy oba urządzenia są w tej samej sieci Wi-Fi i czy adres komputera jest poprawny, a następnie spróbuj ponownie.</string>
     <string name="pairing_error_start_failed">Nie udało się rozpocząć parowania: %1$s. Sprawdź, czy RemEx jest otwarty na komputerze, a następnie spróbuj ponownie.</string>
+    <string name="pairing_error_verify_failed">Nie udało się ukończyć parowania: %1$s. Dotknij Anuluj, uzyskaj nowy kod PIN na komputerze, a następnie sparuj ponownie.</string>
     <string name="cd_dashboard_exit_selection">Zakończ zaznaczanie</string>
     <string name="cd_dashboard_pin_selection">Przypnij zaznaczone karty</string>
     <string name="cd_dashboard_remove_selection">Usuń zaznaczone karty</string>

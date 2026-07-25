@@ -425,6 +425,7 @@
     <string name="pairing_error_empty_response">Votre PC n\'a pas envoyé de code PIN. Vérifiez que RemEx est ouvert sur le PC et affiche un code PIN de couplage, puis réessayez.</string>
     <string name="pairing_error_reach_failed">Impossible de joindre votre PC. Vérifiez que les deux appareils sont sur le même réseau Wi-Fi et que l\'adresse du PC est correcte, puis réessayez.</string>
     <string name="pairing_error_start_failed">Le couplage n\'a pas pu démarrer : %1$s. Vérifiez que RemEx est ouvert sur le PC, puis réessayez.</string>
+    <string name="pairing_error_verify_failed">Le couplage n\'a pas pu être terminé : %1$s. Appuyez sur Annuler, obtenez un nouveau code PIN sur le PC, puis couplez à nouveau.</string>
     <string name="pairing_error_save_failed">Échec de l\'enregistrement sécurisé de l\'hôte épinglé.</string>
     <string name="qr_error_missing_hash">Le code QR ne contient pas le hachage du certificat de l\'hôte</string>
     <string name="qr_error_setup_failed">Échec de la configuration du QR</string>

@@ -425,6 +425,7 @@
     <string name="pairing_error_empty_response">Bilgisayarınız bir PIN kodu göndermedi. Bilgisayarda RemEx uygulamasının açık olduğundan ve bir eşleştirme PIN kodu gösterdiğinden emin olun, ardından tekrar deneyin.</string>
     <string name="pairing_error_reach_failed">Bilgisayarınıza ulaşılamadı. Her iki cihazın da aynı Wi-Fi ağında olduğundan ve bilgisayar adresinin doğru olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="pairing_error_start_failed">Eşleştirme başlatılamadı: %1$s. Bilgisayarda RemEx uygulamasının açık olduğundan emin olun, ardından tekrar deneyin.</string>
+    <string name="pairing_error_verify_failed">Eşleştirme tamamlanamadı: %1$s. İptal düğmesine dokunun, bilgisayarınızdan yeni bir PIN kodu alın, ardından yeniden eşleştirin.</string>
     <string name="pairing_error_save_failed">Sabitlenmiş sunucuyu güvenli bir şekilde kaydetme başarısız oldu.</string>
     <string name="qr_error_missing_hash">QR kodunda sunucu sertifikası karması eksik</string>
     <string name="qr_error_setup_failed">QR kurulumu başarısız oldu</string>

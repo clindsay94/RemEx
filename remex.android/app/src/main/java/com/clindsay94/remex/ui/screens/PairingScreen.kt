@@ -110,7 +110,29 @@ class PairingViewModel : ViewModel() {
         // expired, or the WebSocket dropped.
         val message =
                 when {
-                    result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
+                    // Every reachable native SubmitPin failure lands here — wrong PIN, expired
+                    // session, lost key state, confirm timeout, or an unexpected exception. All
+                    // five are developer-grade English with no recovery action, so wrap them in
+                    // a localized sentence that supplies one.
+                    //
+                    // The advice names Cancel FIRST on purpose. All five of these clear the
+                    // native pairing state, but Submit stays enabled here, so "get a fresh PIN
+                    // and try again" followed literally in place just hits "No active pairing
+                    // session" and repeats forever. Cancel is the only working recovery today.
+                    //
+                    // Careful if the Submit predicate ever loosens: SubmitPairingPinNative has a
+                    // SIXTH error return, "PIN is required", and it is the one case that does NOT
+                    // clear pairing state — so "get a fresh PIN" would be wrong advice for it. It
+                    // is unreachable only because Submit requires exactly 6 digits.
+                    //
+                    // Localizing the detail itself needs a cause code from the native layer and
+                    // is tracked separately (RemEx-6gkr). The trailing period is trimmed because
+                    // the resource supplies its own terminator right after %1$s.
+                    result.startsWith("ERROR: ") ->
+                            context.getString(
+                                    R.string.pairing_error_verify_failed,
+                                    result.removePrefix("ERROR: ").trimEnd('.', ' ')
+                            )
                     result.isBlank() -> context.getString(R.string.pairing_error_empty_response)
                     else -> {
                         android.util.Log.w("PairingViewModel", "Unknown pairing error: $result")

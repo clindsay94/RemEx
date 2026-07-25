@@ -425,6 +425,7 @@
     <string name="pairing_error_empty_response">Tu PC no envió ningún PIN. Comprueba que RemEx esté abierto en el PC y muestre un PIN de emparejamiento, y vuelve a intentarlo.</string>
     <string name="pairing_error_reach_failed">No se pudo contactar con tu PC. Comprueba que ambos dispositivos estén en la misma red Wi-Fi y que la dirección del PC sea correcta, y vuelve a intentarlo.</string>
     <string name="pairing_error_start_failed">No se pudo iniciar el emparejamiento: %1$s. Comprueba que RemEx esté abierto en el PC y vuelve a intentarlo.</string>
+    <string name="pairing_error_verify_failed">No se pudo finalizar el emparejamiento: %1$s. Toca Cancelar, consigue un PIN nuevo en tu PC y vuelve a emparejar.</string>
     <string name="pairing_error_save_failed">Error al guardar el PC fijado de forma segura.</string>
     <string name="qr_error_missing_hash">Al código QR le falta el hash del certificado del PC</string>
     <string name="qr_error_setup_failed">Fallo en la configuración del QR</string>

@@ -635,6 +635,7 @@
     <string name="pairing_error_empty_response">Your PC did not send a PIN. Check RemEx is open on the PC and showing a pairing PIN, then try again.</string>
     <string name="pairing_error_reach_failed">Could not reach your PC. Check both devices are on the same Wi-Fi network and that the PC address is correct, then try again.</string>
     <string name="pairing_error_start_failed">Pairing could not start: %1$s. Check RemEx is open on the PC, then try again.</string>
+    <string name="pairing_error_verify_failed">Could not finish pairing: %1$s. Tap Cancel, get a fresh PIN from your PC, then pair again.</string>
     <string name="pairing_error_save_failed">Failed to save pinned PC securely.</string>
     <string name="qr_error_missing_hash">QR code is missing the PC certificate hash</string>
     <string name="qr_error_setup_failed">QR setup failed</string>
