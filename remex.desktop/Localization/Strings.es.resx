@@ -3270,4 +3270,11 @@ Chrome)</value>
   <data name="A11y_SensorLibrary" xml:space="preserve">
     <value>Biblioteca de sensores</value>
   </data>
+  <data name="Faq_Q13_Question" xml:space="preserve">
+    <value>¿Por qué RemEx necesita un permiso especial para funcionar?</value>
+  </data>
+  <data name="Faq_Q13_Answer" xml:space="preserve">
+    <value>RemEx guarda un certificado de seguridad que tu teléfono usa para reconocer este PC. Se almacena donde nada más puede leerlo, así que ningún otro programa —ni nadie más que inicie sesión en este PC— puede copiarlo y hacerse pasar por tu PC. Si RemEx no puede leer ese archivo, no termina de iniciarse, así que tu teléfono no puede alcanzarlo aunque siga apareciendo como emparejado.
+Windows: RemEx necesita permisos de administrador, porque solo los administradores pueden leer ese archivo protegido. Normalmente se inicia con permisos de administrador por sí solo al iniciar sesión, así que esto debería ser poco frecuente; pero si tu teléfono no puede conectarse, cierra RemEx, haz clic derecho, elige "Ejecutar como administrador" e inténtalo de nuevo. Linux: RemEx no necesita root y nunca deberías iniciarlo con sudo. El certificado está en tu propia carpeta personal y solo tú puedes leerlo. Si tu teléfono no puede conectarse, es probable que una instalación antigua de 'remex-host' haya dejado el certificado en manos de root; vuelve a ejecutar el instalador de RemEx y él lo repara por ti. En ambos casos tus teléfonos emparejados seguirán funcionando: el certificado en sí nunca cambia.</value>
+  </data>
 </root>

@@ -771,4 +771,6 @@ $line
         <item quantity="one">%1$d selecionado</item>
         <item quantity="other">%1$d selecionados</item>
     </plurals>
+    <string name="faq_q14">Meu celular diz que está pareado mas não conecta. Pode ser um problema de permissão no PC?</string>
+    <string name="faq_a14">Pode ser. Seu PC guarda um certificado de segurança que o celular usa para reconhecê-lo, em um lugar que nada mais consegue ler — é isso que impede outro programa de se passar pelo seu PC. Se o RemEx no PC não conseguir ler esse arquivo, ele não termina de iniciar, então seu celular não consegue alcançá-lo mesmo que continue aparecendo como pareado.\n\nEm um PC com Windows: o RemEx precisa de direitos de administrador para lê-lo. Feche o RemEx, clique com o botão direito e escolha \"Executar como administrador\", depois tente conectar novamente. Normalmente o RemEx já inicia com direitos de administrador sozinho quando você entra no PC, então isso deve ser raro.\n\nEm um PC com Linux: o RemEx não precisa de root — nunca o inicie com sudo. Isso quase sempre significa que uma instalação antiga do remex-host deixou o certificado pertencendo ao root. Execute o instalador do RemEx no PC novamente; ele conserta isso para você e seus celulares pareados continuam funcionando.</string>
 </resources>
