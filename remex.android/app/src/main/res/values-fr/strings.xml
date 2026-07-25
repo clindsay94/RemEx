@@ -120,7 +120,7 @@
     <string name="settings_faq_hint">Une question ? Consultez la FAQ disponible via le menu (⋮ → FAQ).</string>
     <string name="screen_app_launcher_title">Lanceur d\'Apps</string>
     <string name="app_launcher_no_apps">Aucune application trouvée</string>
-    <string name="button_fetch_from_host">Récupérer depuis l\'Hôte</string>
+    <string name="button_fetch_from_host">Récupérer depuis le PC</string>
     <string name="screen_remote_control_title">Télécommande</string>
     <string name="remote_control_section_header">Commandes Système</string>
     <string name="remote_control_description">Les actions critiques nécessitent une confirmation. Le délai optionnel règle les secondes de shutdown -t.</string>

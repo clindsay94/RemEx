@@ -106,7 +106,7 @@
     <string name="settings_faq_hint">Masz pytanie? Sprawdź sekcję FAQ dostępną w menu (⋮ → FAQ).</string>
     <string name="screen_app_launcher_title">Launcher aplikacji</string>
     <string name="app_launcher_no_apps">Nie znaleziono aplikacji</string>
-    <string name="button_fetch_from_host">Pobierz z Hosta</string>
+    <string name="button_fetch_from_host">Pobierz z komputera</string>
     <string name="screen_remote_control_title">Pilot zdalnego sterowania</string>
     <string name="remote_control_section_header">Polecenia systemowe</string>
     <string name="remote_control_description">Krytyczne akcje wymagają potwierdzenia. Opcjonalne opóźnienie ustawia sekundy polecenia shutdown -t.</string>

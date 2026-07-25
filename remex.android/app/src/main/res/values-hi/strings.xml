@@ -120,7 +120,7 @@
     <string name="settings_faq_hint">कोई सवाल है? ओवरफ्लो मेनू (⋮ → FAQ) से उपलब्ध FAQ देखें।</string>
     <string name="screen_app_launcher_title">ऐप लॉन्चर</string>
     <string name="app_launcher_no_apps">कोई ऐप नहीं मिला</string>
-    <string name="button_fetch_from_host">होस्ट से प्राप्त करें</string>
+    <string name="button_fetch_from_host">पीसी से प्राप्त करें</string>
     <string name="screen_remote_control_title">रिमोट कंट्रोल</string>
     <string name="remote_control_section_header">सिस्टम कमांड</string>
     <string name="remote_control_description">महत्वपूर्ण कार्यों के लिए पुष्टि की आवश्यकता होती है। वैकल्पिक देरी shutdown -t सेकंड सेट करती है।</string>
