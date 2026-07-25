@@ -61,9 +61,16 @@ public sealed class FileTransferClient : IDisposable
             FileRootsRequest = new FileRootsRequest()
         });
 
-        var response = await tcs.Task;
-        if (ReferenceEquals(_rootsWaiter, tcs))
-            _rootsWaiter = null;
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            if (ReferenceEquals(_rootsWaiter, tcs))
+                _rootsWaiter = null;
+        }
 
         // Capture the v3 capability handshake (additive field; null for v2 hosts). Roots are always
         // fetched first, so this doubles as the negotiation — no separate handshake message.
@@ -106,8 +113,15 @@ public sealed class FileTransferClient : IDisposable
             }
         });
 
-        var response = await tcs.Task;
-        _browseWaiters.TryRemove(requestId, out _);
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _browseWaiters.TryRemove(requestId, out _);
+        }
 
         if (response.FileBrowseResponse?.ErrorMessage is string err)
             throw new IOException($"Browse error: {err}");
@@ -128,8 +142,15 @@ public sealed class FileTransferClient : IDisposable
             FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "delete" }
         });
 
-        var response = await tcs.Task;
-        _manageWaiters.TryRemove(requestId, out _);
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ManageRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _manageWaiters.TryRemove(requestId, out _);
+        }
 
         if (response.FileManageResponse?.Success == false)
             throw new IOException($"Delete failed: {response.FileManageResponse.ErrorMessage}");
@@ -148,8 +169,15 @@ public sealed class FileTransferClient : IDisposable
             FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "rename", NewName = newName }
         });
 
-        var response = await tcs.Task;
-        _manageWaiters.TryRemove(requestId, out _);
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ManageRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _manageWaiters.TryRemove(requestId, out _);
+        }
 
         if (response.FileManageResponse?.Success == false)
             throw new IOException($"Rename failed: {response.FileManageResponse.ErrorMessage}");
@@ -163,6 +191,22 @@ public sealed class FileTransferClient : IDisposable
     /// without it the UI waited forever with IsLoading stuck on.
     /// </summary>
     private const int HashRequestTimeoutSeconds = 30;
+
+    /// <summary>
+    /// Bounds for awaiting a peer reply, in seconds, split by operation class rather than
+    /// shared. A single value would be wrong at both ends: too short turns a legitimate
+    /// recursive search or large delete into a false failure, too long leaves the UI
+    /// spinning on a control request. Before these existed every helper awaited its
+    /// TaskCompletionSource unbounded, so a peer with no handler for the request hung the
+    /// view model forever (RemEx-q2bu; RemEx-0e54 was one instance of it).
+    /// </summary>
+    private const int ControlRequestTimeoutSeconds = 30;
+
+    /// <inheritdoc cref="ControlRequestTimeoutSeconds"/>
+    private const int ManageRequestTimeoutSeconds = 60;
+
+    /// <inheritdoc cref="ControlRequestTimeoutSeconds"/>
+    private const int SearchRequestTimeoutSeconds = 120;
 
     public async Task<string> VerifyRemoteHashAsync(string rootId, string relativePath, CancellationToken ct)
     {
@@ -237,8 +281,25 @@ public sealed class FileTransferClient : IDisposable
             }
         });
 
-        var response = await tcs.Task;
-        _manageWaiters.TryRemove(requestId, out _);
+        // mkdir answers immediately, but copy and move stream the whole file before the peer
+        // replies, so their duration scales with FILE SIZE. A wall-clock bound on those would
+        // abort a large but healthy paste and — worse — reap the waiter, so the peer's eventual
+        // success reply is dropped and the user is told the paste failed while the file appears
+        // anyway. Those two need an idle watchdog rather than a deadline (RemEx-l519).
+        var scalesWithFileSize =
+            operation == FileManageOperations.Copy || operation == FileManageOperations.Move;
+
+        RemexMessage response;
+        try
+        {
+            response = scalesWithFileSize
+                ? await tcs.Task
+                : await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ManageRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _manageWaiters.TryRemove(requestId, out _);
+        }
 
         if (response.FileManageResponse?.Success == false)
             throw new IOException(response.FileManageResponse.ErrorMessage ?? $"{operation} failed.");
@@ -266,8 +327,15 @@ public sealed class FileTransferClient : IDisposable
             }
         });
 
-        var response = await tcs.Task;
-        _searchWaiters.TryRemove(requestId, out _);
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(SearchRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _searchWaiters.TryRemove(requestId, out _);
+        }
 
         if (response.FileSearchResponse?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
             throw new IOException($"Search error: {err}");
@@ -290,8 +358,15 @@ public sealed class FileTransferClient : IDisposable
             FileMetadataRequest = new FileMetadataRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath }
         });
 
-        var response = await tcs.Task;
-        _metadataWaiters.TryRemove(requestId, out _);
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _metadataWaiters.TryRemove(requestId, out _);
+        }
 
         if (response.FileMetadataResponse is not { } meta)
             throw new IOException("No metadata response received.");
@@ -314,8 +389,15 @@ public sealed class FileTransferClient : IDisposable
             FileThumbnailRequest = new FileThumbnailRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, MaxDim = maxDim }
         });
 
-        var response = await tcs.Task;
-        _thumbnailWaiters.TryRemove(requestId, out _);
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _thumbnailWaiters.TryRemove(requestId, out _);
+        }
 
         return response.FileThumbnailResponse?.JpegBase64;
     }
@@ -334,8 +416,15 @@ public sealed class FileTransferClient : IDisposable
             FileVolumesRequest = new FileVolumesRequest { RequestId = requestId }
         });
 
-        var response = await tcs.Task;
-        _volumesWaiters.TryRemove(requestId, out _);
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _volumesWaiters.TryRemove(requestId, out _);
+        }
 
         var resp = response.FileVolumesResponse;
         if (resp?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
@@ -356,8 +445,15 @@ public sealed class FileTransferClient : IDisposable
             FileRootManageRequest = new FileRootManageRequest { RequestId = requestId, Operation = "add", SourceRootId = sourceRootId, SourceRelativePath = sourceRelativePath }
         });
 
-        var response = await tcs.Task;
-        _rootManageWaiters.TryRemove(requestId, out _);
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _rootManageWaiters.TryRemove(requestId, out _);
+        }
 
         if (response.FileRootManageResponse?.ErrorMessage is string err)
             throw new IOException($"Add root failed: {err}");
@@ -378,8 +474,15 @@ public sealed class FileTransferClient : IDisposable
             FileRootManageRequest = new FileRootManageRequest { RequestId = requestId, Operation = "remove", RootId = rootId }
         });
 
-        var response = await tcs.Task;
-        _rootManageWaiters.TryRemove(requestId, out _);
+        RemexMessage response;
+        try
+        {
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            _rootManageWaiters.TryRemove(requestId, out _);
+        }
 
         if (response.FileRootManageResponse?.ErrorMessage is string err)
             throw new IOException($"Remove root failed: {err}");
