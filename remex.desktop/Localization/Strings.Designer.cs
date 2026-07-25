@@ -339,7 +339,6 @@ namespace Remex.Desktop.Localization {
         public static string Settings_SaveReconnectTooltip => ResourceManager.GetString("Settings_SaveReconnectTooltip", resourceCulture)!;
         public static string Settings_SnapToGridTooltip => ResourceManager.GetString("Settings_SnapToGridTooltip", resourceCulture)!;
         public static string Settings_Uninstall => ResourceManager.GetString("Settings_Uninstall", resourceCulture)!;
-        public static string Settings_UsernameHint => ResourceManager.GetString("Settings_UsernameHint", resourceCulture)!;
         public static string Settings_UsernameWatermark => ResourceManager.GetString("Settings_UsernameWatermark", resourceCulture)!;
         public static string Shell_AccessKeyWatermark => ResourceManager.GetString("Shell_AccessKeyWatermark", resourceCulture)!;
         public static string Shell_Atmosphere => ResourceManager.GetString("Shell_Atmosphere", resourceCulture)!;

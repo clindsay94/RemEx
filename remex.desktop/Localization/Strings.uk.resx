@@ -1134,9 +1134,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_Uninstall" xml:space="preserve">
     <value>🗑 Видалити</value>
   </data>
-  <data name="Settings_UsernameHint" xml:space="preserve">
-    <value>Використовуйте .\Ім'я_користувача для локальних облікових записів. GLADOS-V3\Connor автоматично стане .\Connor.</value>
-  </data>
   <data name="Settings_UsernameWatermark" xml:space="preserve">
     <value>.\Ім'я_користувача або MACHINE\Ім'я_користувача</value>
   </data>

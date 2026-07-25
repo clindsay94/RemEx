@@ -1149,10 +1149,6 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
   <data name="Settings_Uninstall" xml:space="preserve">
     <value>🗑 Desinstalar</value>
   </data>
-  <data name="Settings_UsernameHint" xml:space="preserve">
-    <value>Usa .\Usuario para cuentas locales.
-GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
-  </data>
   <data name="Settings_UsernameWatermark" xml:space="preserve">
     <value>.\Usuario o EQUIPO\Usuario</value>
   </data>

@@ -1179,9 +1179,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_Uninstall" xml:space="preserve">
     <value>🗑 Uninstall</value>
   </data>
-  <data name="Settings_UsernameHint" xml:space="preserve">
-    <value>Use .\Username for local accounts. GLADOS-V3\Connor will become .\Connor automatically.</value>
-  </data>
   <data name="Settings_UsernameWatermark" xml:space="preserve">
     <value>.\Username or MACHINE\Username</value>
   </data>

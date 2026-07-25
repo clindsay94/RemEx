@@ -1134,9 +1134,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_Uninstall" xml:space="preserve">
     <value>🗑 Kaldır</value>
   </data>
-  <data name="Settings_UsernameHint" xml:space="preserve">
-    <value>Yerel hesaplar için .\Kullaniciadi kullanın. GLADOS-V3\Connor otomatik olarak .\Connor olacaktır.</value>
-  </data>
   <data name="Settings_UsernameWatermark" xml:space="preserve">
     <value>.\Kullaniciadi veya MAKINE\Kullaniciadi</value>
   </data>

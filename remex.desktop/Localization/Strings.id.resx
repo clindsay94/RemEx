@@ -1134,9 +1134,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_Uninstall" xml:space="preserve">
     <value>🗑 Copot Pemasangan</value>
   </data>
-  <data name="Settings_UsernameHint" xml:space="preserve">
-    <value>Gunakan .\Nama pengguna untuk akun lokal. GLADOS-V3\Connor akan menjadi .\Connor secara otomatis.</value>
-  </data>
   <data name="Settings_UsernameWatermark" xml:space="preserve">
     <value>.\Nama pengguna atau MESIN\Nama pengguna</value>
   </data>

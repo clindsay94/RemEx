@@ -1094,9 +1094,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_Uninstall" xml:space="preserve">
     <value>🗑 Odinstaluj</value>
   </data>
-  <data name="Settings_UsernameHint" xml:space="preserve">
-    <value>Użyj .\NazwaUżytkownika dla kont lokalnych. GLADOS-V3\Connor zostanie automatycznie zamienione na .\Connor.</value>
-  </data>
   <data name="Settings_UsernameWatermark" xml:space="preserve">
     <value>.\NazwaUżytkownika lub MASZYNA\NazwaUżytkownika</value>
   </data>
