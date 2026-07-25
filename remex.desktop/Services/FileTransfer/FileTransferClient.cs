@@ -155,6 +155,15 @@ public sealed class FileTransferClient : IDisposable
             throw new IOException($"Rename failed: {response.FileManageResponse.ErrorMessage}");
     }
 
+    /// <summary>
+    /// Seconds to wait for a peer to answer a <see cref="MessageTypes.FileHashRequest"/>.
+    /// Deliberately generous: hashing is CPU-bound on the peer and a large file can take a
+    /// while. The bound exists to stop an indefinite hang, not to enforce responsiveness —
+    /// the Android client has no handler for this request at all today (RemEx-0e54), so
+    /// without it the UI waited forever with IsLoading stuck on.
+    /// </summary>
+    private const int HashRequestTimeoutSeconds = 30;
+
     public async Task<string> VerifyRemoteHashAsync(string rootId, string relativePath, CancellationToken ct)
     {
         var requestId = Guid.NewGuid().ToString("N");
@@ -162,14 +171,25 @@ public sealed class FileTransferClient : IDisposable
         _hashWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
+        RemexMessage response;
+        try
         {
-            Type = MessageTypes.FileHashRequest,
-            FileHashRequest = new FileHashRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath }
-        });
+            await _connection.SendAsync(new RemexMessage
+            {
+                Type = MessageTypes.FileHashRequest,
+                FileHashRequest = new FileHashRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath }
+            });
 
-        var response = await tcs.Task;
-        _hashWaiters.TryRemove(requestId, out _);
+            // Bounded wait, matching ConnectionViewModel's command pattern. A peer that never
+            // answers has to surface a failure the caller can show, not hang the view model.
+            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(HashRequestTimeoutSeconds), ct);
+        }
+        finally
+        {
+            // Reap the waiter on every exit. The previous code removed it only after a
+            // successful await, so each timeout or cancellation leaked an entry.
+            _hashWaiters.TryRemove(requestId, out _);
+        }
 
         if (response.FileHashResponse?.ErrorMessage is string err)
             throw new IOException($"Hash verification failed: {err}");
