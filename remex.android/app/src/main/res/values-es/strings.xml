@@ -230,7 +230,7 @@
     <string name="connection_help_step2_body">Tu móvil y el PC deben estar en la misma red local. Los datos móviles no funcionarán.</string>
     <string name="connection_help_step3_title">Busca la IP de tu PC</string>
     <string name="connection_help_step4_title">Introduce la IP y pulsa Guardar y Conectar</string>
-    <string name="connection_help_step4_body">El puerto por defecto es 5005. Si configuraste una clave de acceso en el PC, introdúcela también.</string>
+    <string name="connection_help_step4_body">El puerto por defecto es 5005. Si este dispositivo aún no está emparejado, introduce el PIN de 6 dígitos que se muestra en el PC para completar el emparejamiento seguro.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Abre el Símbolo del sistema y escribe: ipconfig\nBusca "Dirección IPv4" en tu adaptador Wi-Fi.</string>
     <string name="connection_platform_macos">macOS</string>

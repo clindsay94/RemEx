@@ -230,7 +230,7 @@
     <string name="connection_help_step2_body">Votre téléphone et votre PC doivent être sur le même réseau local. Les données mobiles ne fonctionneront pas.</string>
     <string name="connection_help_step3_title">Trouvez l\'IP de votre PC</string>
     <string name="connection_help_step4_title">Entrez l\'IP et appuyez sur Enregistrer et Connecter</string>
-    <string name="connection_help_step4_body">Le port par défaut est 5005. Si vous avez défini une clé d\'accès sur l\'hôte, entrez-la également ici.</string>
+    <string name="connection_help_step4_body">Le port par défaut est 5005. Si cet appareil n\'est pas encore couplé, saisissez le code PIN à 6 chiffres affiché sur le PC pour terminer le couplage sécurisé.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Ouvrez l\'invite de commande et tapez : ipconfig\nCherchez "Adresse IPv4" sous votre adaptateur Wi-Fi.</string>
     <string name="connection_platform_macos">macOS</string>

@@ -210,7 +210,7 @@
     <string name="connection_help_step2_body">Telefon i PC muszą znajdować się w tej samej sieci lokalnej. Dane mobilne nie będą działać.</string>
     <string name="connection_help_step3_title">Znajdź adres IP swojego komputera</string>
     <string name="connection_help_step4_title">Wprowadź poniżej IP i dotknij Zapisz i połącz</string>
-    <string name="connection_help_step4_body">Domyślny port to 5005. Jeśli w aplikacji hosta ustawiono klucz dostępu, wprowadź go również tutaj.</string>
+    <string name="connection_help_step4_body">Domyślny port to 5005. Jeśli to urządzenie nie jest jeszcze sparowane, wprowadź 6-cyfrowy kod PIN wyświetlany na komputerze, aby ukończyć bezpieczne parowanie.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Otwórz Wiersz polecenia i wpisz: ipconfig\nSzukaj „IPv4 Address” pod kartą Wi-Fi.</string>
     <string name="connection_platform_macos">macOS</string>

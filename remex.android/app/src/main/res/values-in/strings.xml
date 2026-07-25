@@ -230,7 +230,7 @@
     <string name="connection_help_step2_body">Ponsel dan PC harus berada di jaringan lokal yang sama. Data seluler tidak akan berfungsi.</string>
     <string name="connection_help_step3_title">Temukan alamat IP PC Anda</string>
     <string name="connection_help_step4_title">Masukkan IP di bawah dan ketuk Simpan &amp; Hubungkan</string>
-    <string name="connection_help_step4_body">Port default adalah 5005. Jika Anda mengatur kunci akses di aplikasi PC, masukkan juga di sini.</string>
+    <string name="connection_help_step4_body">Port default adalah 5005. Jika perangkat ini belum disandingkan, masukkan PIN 6 digit yang ditampilkan di PC untuk menyelesaikan penyandingan aman.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Buka Command Prompt dan ketik: ipconfig\nCari "IPv4 Address" di bawah adaptor Wi-Fi Anda.</string>
     <string name="connection_platform_macos">macOS</string>

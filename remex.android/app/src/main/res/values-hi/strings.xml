@@ -230,7 +230,7 @@
     <string name="connection_help_step2_body">आपका फोन और पीसी एक ही स्थानीय नेटवर्क पर होने चाहिए। मोबाइल डेटा काम नहीं करेगा।</string>
     <string name="connection_help_step3_title">अपने पीसी का आईपी पता ढूँढें</string>
     <string name="connection_help_step4_title">नीचे आईपी दर्ज करें और सेव और कनेक्ट पर टैप करें</string>
-    <string name="connection_help_step4_body">डिफ़ॉल्ट पोर्ट 5005 है। यदि आपने होस्ट ऐप में एक्सेस की (access key) सेट की है, तो उसे यहाँ भी दर्ज करें।</string>
+    <string name="connection_help_step4_body">डिफ़ॉल्ट पोर्ट 5005 है। यदि यह डिवाइस अभी तक पेयर नहीं हुआ है, तो सुरक्षित पेयरिंग पूरी करने के लिए पीसी पर प्रदर्शित 6-अंकीय पिन दर्ज करें।</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">कमांड प्रॉम्प्ट खोलें और टाइप करें: ipconfig\nअपने वाई-फाई एडॉप्टर के तहत "IPv4 Address" देखें।</string>
     <string name="connection_platform_macos">macOS</string>

@@ -230,7 +230,7 @@
     <string name="connection_help_step2_body">Seu celular e o PC devem estar na mesma rede local. Dados móveis (4G/5G) não funcionarão.</string>
     <string name="connection_help_step3_title">Encontre o endereço IP do seu PC</string>
     <string name="connection_help_step4_title">Insira o IP abaixo e toque em Salvar e Conectar</string>
-    <string name="connection_help_step4_body">A porta padrão é 5005. Se você definiu uma chave de acesso no app do PC, insira-a aqui também.</string>
+    <string name="connection_help_step4_body">A porta padrão é 5005. Se este dispositivo ainda não foi pareado, insira o PIN de 6 dígitos exibido no PC para concluir o pareamento seguro.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Abra o Prompt de Comando e digite: ipconfig\nProcure por \"Endereço IPv4\" sob o seu adaptador Wi-Fi.</string>
     <string name="connection_platform_macos">macOS</string>
