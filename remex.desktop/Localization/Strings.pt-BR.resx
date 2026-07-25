@@ -1696,7 +1696,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Segurança e pareamento de dispositivos</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Todo o tráfego agora é criptografado com TLS 1.3. O primeiro pareamento usa troca de chaves ECDH P-256 com um PIN de 6 dígitos — nenhuma chave em texto puro trafega. Depois o cliente fixa a impressão digital SHA-256 do certificado do PC para todas as conexões futuras.</value>
+    <value>Todo o tráfego é criptografado com TLS 1.3 quando o cliente tem suporte, e nunca abaixo de TLS 1.2. O primeiro pareamento usa troca de chaves ECDH P-256 com um PIN de 6 dígitos — nenhuma chave em texto puro trafega. Depois o cliente fixa a impressão digital SHA-256 do certificado do PC para todas as conexões futuras.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Transferência de arquivos remota</value>

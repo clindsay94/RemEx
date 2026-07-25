@@ -1696,7 +1696,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Sécurité et appairage des appareils</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Tout le trafic est chiffré avec TLS 1.3. Le premier appairage utilise un échange de clés ECDH P-256 avec un code PIN à 6 chiffres : aucune clé en clair ne circule jamais. Le client épingle ensuite l'empreinte SHA-256 du certificat du PC pour toutes les connexions suivantes.</value>
+    <value>Tout le trafic est chiffré avec TLS 1.3 lorsque le client le prend en charge, et jamais en dessous de TLS 1.2. Le premier appairage utilise un échange de clés ECDH P-256 avec un code PIN à 6 chiffres : aucune clé en clair ne circule jamais. Le client épingle ensuite l'empreinte SHA-256 du certificat du PC pour toutes les connexions suivantes.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Transfert de fichiers à distance</value>

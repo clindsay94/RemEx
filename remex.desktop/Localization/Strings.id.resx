@@ -1696,7 +1696,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Keamanan dan Pemasangan Perangkat</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Semua lalu lintas kini dienkripsi dengan TLS 1.3. Pemasangan pertama memakai pertukaran kunci ECDH P-256 dengan PIN 6 digit — tidak ada kunci teks biasa yang pernah dikirim. Selanjutnya klien menyematkan sidik jari sertifikat SHA-256 milik PC untuk semua koneksi berikutnya.</value>
+    <value>Semua lalu lintas dienkripsi dengan TLS 1.3 bila klien mendukungnya, dan tidak pernah di bawah TLS 1.2. Pemasangan pertama memakai pertukaran kunci ECDH P-256 dengan PIN 6 digit — tidak ada kunci teks biasa yang pernah dikirim. Selanjutnya klien menyematkan sidik jari sertifikat SHA-256 milik PC untuk semua koneksi berikutnya.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Transfer File Jarak Jauh</value>
