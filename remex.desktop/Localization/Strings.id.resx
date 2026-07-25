@@ -2168,10 +2168,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Radius sudut tombol jarak jauh dalam piksel</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>Sesuaikan tingkat transparansi efek latar belakang kaca</value>
+    <value>Sesuaikan tingkat opasitas efek latar belakang kaca</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
-    <value>Persentase transparansi kaca</value>
+    <value>Persentase opasitas kaca</value>
   </data>
   <data name="Custom_NeonGlowTooltip" xml:space="preserve">
     <value>Sesuaikan intensitas cahaya neon di sekitar tepi panel</value>
@@ -2273,10 +2273,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Radius sudut tombol jarak jauh dalam piksel</value>
   </data>
   <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Sesuaikan tingkat transparansi visual dari efek latar belakang glassmorphism premium</value>
+    <value>Sesuaikan tingkat opasitas visual dari efek latar belakang glassmorphism premium</value>
   </data>
   <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Persentase transparansi kaca es</value>
+    <value>Persentase opasitas kaca es</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Sesuaikan intensitas kilau aura neon aksen latar belakang di sekitar tepi panel</value>

@@ -466,7 +466,7 @@
     <value>Promień narożnika</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
-    <value>Przezroczystość szkła</value>
+    <value>Krycie szkła</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Siła poświaty</value>
@@ -1952,10 +1952,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Promień zaokrąglenia przycisku w pikselach</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>Dostosuj przezroczystość efektu szkła w tle</value>
+    <value>Dostosuj krycie efektu szkła w tle</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
-    <value>Procent przezroczystości efektu szkła</value>
+    <value>Procent krycia efektu szkła</value>
   </data>
   <data name="Custom_NeonGlowTooltip" xml:space="preserve">
     <value>Dostosuj intensywność poświaty neonowej wokół krawędzi panelu</value>
@@ -2057,10 +2057,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Promień zaokrąglenia rogu przycisku pilota w pikselach</value>
   </data>
   <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Dostosuj poziom przezroczystości efektu szkła akrylowego premium</value>
+    <value>Dostosuj poziom krycia efektu szkła akrylowego premium</value>
   </data>
   <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Procent przezroczystości szronionego szkła</value>
+    <value>Procent krycia szronionego szkła</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Dostosuj intensywność neonowej poświaty tła wokół krawędzi paneli</value>
@@ -2712,7 +2712,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Za darmo — zasila szczegółowe czujniki sprzętowe komputera w RemEx.</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Przezroczystość okna</value>
+    <value>Krycie okna</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
     <value>Dynamiczny</value>
@@ -2892,7 +2892,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Słownik: Dostosowanie</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Dostosuj motywy, strategię palety, czcionki, kształty kart i przezroczystość, aby dopasować sposób, w jaki monitorujesz i sterujesz swoim systemem.</value>
+    <value>Dostosuj motywy, strategię palety, czcionki, kształty kart i krycie, aby dopasować sposób, w jaki monitorujesz i sterujesz swoim systemem.</value>
   </data>
   <data name="Faq_Q1_Question" xml:space="preserve">
     <value>Co muszę uruchomić na moim komputerze?</value>

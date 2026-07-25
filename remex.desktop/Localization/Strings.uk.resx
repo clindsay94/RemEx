@@ -466,7 +466,7 @@
     <value>Радіус кута</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
-    <value>Прозорість скла</value>
+    <value>Непрозорість скла</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Window Opacity</value>
@@ -2168,7 +2168,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Радіус заокруглення кутів кнопок керування в пікселях</value>
   </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>Налаштувати рівень прозорості ефекту скла на фоні</value>
+    <value>Налаштувати рівень непрозорості ефекту скла на фоні</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
     <value>Відсоток непрозорості ефекту скла</value>
@@ -2273,10 +2273,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Радіус кута кнопок пульта в пікселях</value>
   </data>
   <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Налаштуйте рівень прозорості преміум-ефекту скломорфізму</value>
+    <value>Налаштуйте рівень непрозорості преміум-ефекту скломорфізму</value>
   </data>
   <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Відсоток матовості скла</value>
+    <value>Відсоток непрозорості скла</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Налаштуйте інтенсивність неонового світіння навколо країв панелі</value>

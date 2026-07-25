@@ -466,7 +466,7 @@
     <value>Köşe Yarıçapı</value>
   </data>
   <data name="Custom_GlassOpacity" xml:space="preserve">
-    <value>Cam Saydamlığı</value>
+    <value>Cam Opaklığı</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
     <value>Window Opacity</value>
