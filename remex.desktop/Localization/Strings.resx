@@ -1786,7 +1786,7 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Faq_Q4_Answer" xml:space="preserve">
     <value>1. Make sure RemEx is running on your PC.
 2. Both devices must be on the same Wi-Fi / LAN.
-3. On Android 13+, allow Nearby Wi-Fi Devices; on Android 17+, allow Local Network access too.
+3. On Android 13+, allow Nearby devices; on Android 17+, allow Local Network access too.
 4. Check whether your router has AP/Client Isolation enabled.
 5. Corporate or guest networks often block mDNS discovery.</value>
   </data>
