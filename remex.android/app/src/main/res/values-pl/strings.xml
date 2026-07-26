@@ -277,7 +277,7 @@
     <string name="faq_q8">Co to jest Wake-on-LAN (WOL)?</string>
     <string name="faq_a8">Wake-on-LAN pozwala na zdalne włączenie komputera poprzez wysłanie „magicznego pakietu” przez sieć.\n\nAby z niego skorzystać:\n1. Włącz WOL w ustawieniach BIOS/UEFI komputera.\n2. Włącz WOL we właściwościach karty sieciowej (Windows: Menedżer urządzeń → Karty sieciowe → Zarządzanie energią).\n3. Wprowadź adres MAC komputera na ekranie Połączenia.\n4. Użyj karty „Obudź PC” na pulpicie nawigacyjnym lub ekranie pilota.</string>
     <string name="faq_q9">Jak dostosować wygląd aplikacji?</string>
-    <string name="faq_a9">Otwórz zakładkę Więcej i dotknij Personalizacja (lub Ustawienia → Personalizacja).\n\nMożesz zmienić:\n• Paletę motywu i kolor bazowy\n• Promień zaokrąglenia kart i gotowe kształty\n• Rodzinę czcionek i skalę\n• Przezroczystość kart\n• Tryb motywu ciemny/jasny/systemowy\n• Język aplikacji (niezależny od języka systemu)</string>
+    <string name="faq_a9">Otwórz zakładkę Więcej i dotknij Personalizacja (lub Ustawienia → Personalizacja).\n\nMożesz zmienić:\n• Paletę motywu i kolor bazowy\n• Promień zaokrąglenia kart i gotowe kształty\n• Rodzinę czcionek i skalę\n• Krycie kart\n• Tryb motywu ciemny/jasny/systemowy\n• Język aplikacji (niezależny od języka systemu)</string>
     <string name="faq_q10">Czy mogę ponownie obejrzeć samouczek?</string>
     <string name="faq_a10">Tak! Otwórz zakładkę Więcej → Ustawienia → Pomoc. Znajdziesz tam opcję ponownego odtworzenia samouczka w dowolnym momencie.</string>
     <string name="screen_personalization_title">Personalizacja</string>
@@ -300,7 +300,7 @@
     <string name="personalization_manual_hex">Ręczny kod Hex</string>
     <string name="personalization_section_geometry">Ekspresyjna geometria</string>
     <string name="personalization_corner_base">Baza narożnika: %1$ddp</string>
-    <string name="personalization_card_opacity">Przezroczystość karty: %1$d%%</string>
+    <string name="personalization_card_opacity">Krycie karty: %1$d%%</string>
     <string name="personalization_shape_telemetry">Karty telemetrii</string>
     <string name="personalization_shape_app_launcher">Launcher aplikacji</string>
     <string name="personalization_shape_remote_commands">Polecenia zdalne</string>
