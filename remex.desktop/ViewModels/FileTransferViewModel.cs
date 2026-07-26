@@ -421,8 +421,19 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     public bool ShowSearchResults => IsSearchActive;
 
+    /// <summary>
+    /// Set only while <see cref="ClearSearch"/> resets <see cref="SearchQuery"/> to empty. Clearing
+    /// the query raises this view model's own change callback, which would call back into
+    /// <see cref="ClearSearch"/> and run the teardown twice; the flag makes that callback a no-op.
+    /// All three call sites run on the UI thread, so a plain field is sufficient here.
+    /// </summary>
+    private bool _isClearingSearch;
+
     partial void OnSearchQueryChanged(string value)
     {
+        if (_isClearingSearch)
+            return;
+
         // Debounced live search; empty query clears back to the folder view.
         _searchCts?.Cancel();
         if (string.IsNullOrWhiteSpace(value) || !SupportsSearch || SelectedRemoteRoot is null)
@@ -491,8 +502,17 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         _searchCts?.Cancel();
         _searchCts = null;
         if (SearchQuery.Length != 0)
-            _searchQuery = string.Empty;
-        OnPropertyChanged(nameof(SearchQuery));
+        {
+            _isClearingSearch = true;
+            try
+            {
+                SearchQuery = string.Empty;
+            }
+            finally
+            {
+                _isClearingSearch = false;
+            }
+        }
         IsSearchActive = false;
         SearchTruncated = false;
         SearchResults.Clear();

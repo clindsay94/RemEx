@@ -52,7 +52,7 @@ public partial class FileTransferView : UserControl
     private void OnDragOver(object? sender, DragEventArgs e)
     {
         // Only allow the drop when files are present and a writable folder is in view.
-        var canDrop = e.Data.Contains(DataFormats.Files)
+        var canDrop = e.DataTransfer.Contains(DataFormat.File)
             && DataContext is FileTransferViewModel { SelectedRemoteRoot.IsWritable: true };
         e.DragEffects = canDrop ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
@@ -63,7 +63,7 @@ public partial class FileTransferView : UserControl
         if (DataContext is not FileTransferViewModel vm)
             return;
 
-        var files = e.Data.GetFiles();
+        var files = e.DataTransfer.TryGetFiles();
         if (files is null)
             return;
 
