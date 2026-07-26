@@ -47,6 +47,14 @@ data class PairingUiState(
     // screen can prompt the user to type the PIN shown on the PC. Never set on untrusted transports
     // (where we deliberately never attempt an auto-fetch), so it doesn't nag in the normal manual case.
     val autoPinFetchFailed: Boolean = false,
+    // True once a native SubmitPin call has returned one of the five reachable "ERROR: " causes
+    // (wrong PIN, expired session, lost key state, confirm timeout, unexpected exception). Every one
+    // of those causes the native side to call ClearActivePairingState(), so the pairing session this
+    // screen was using is gone for good — re-submitting, with the same or a different PIN, can only
+    // repeat the same failure. Submit must stay disabled once this is true; only Cancel (which
+    // disposes this screen/ViewModel and lets the user start a fresh pairing attempt) still works.
+    // See RemEx-aor9.
+    val sessionDead: Boolean = false,
 )
 
 class PairingViewModel : ViewModel() {
@@ -140,7 +148,12 @@ class PairingViewModel : ViewModel() {
                         context.getString(R.string.pairing_error_unknown)
                     }
                 }
-        _uiState.value = PairingUiState(isLoading = false, pairingError = message)
+        // Every reachable "ERROR: " cause here clears the native pairing session
+        // (ClearActivePairingState()), so Submit must not stay enabled to invite a re-submit that can
+        // only repeat the same failure — see the sessionDead doc comment on PairingUiState.
+        val sessionDead = result.startsWith("ERROR: ")
+        _uiState.value =
+                PairingUiState(isLoading = false, pairingError = message, sessionDead = sessionDead)
         return false
     }
 
@@ -474,7 +487,11 @@ fun PairingScreenContent(
                 Button(
                         onClick = onSubmitPin,
                         modifier = Modifier.weight(1f),
-                        enabled = pin.length == 6 && !state.isLoading
+                        // sessionDead means the native pairing session this screen was using is
+                        // already gone (see PairingUiState doc comment) — re-enabling Submit here
+                        // would just offer a retry that repeats "No active pairing session" forever.
+                        // Cancel (always enabled above) is the only path that still works.
+                        enabled = pin.length == 6 && !state.isLoading && !state.sessionDead
                 ) {
                     AnimatedContent(
                             targetState = state.isLoading,
