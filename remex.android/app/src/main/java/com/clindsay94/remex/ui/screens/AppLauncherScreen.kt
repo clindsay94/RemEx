@@ -45,7 +45,11 @@ import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import android.graphics.Bitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -344,14 +348,7 @@ fun AppGridItem(
                 contentAlignment = Alignment.Center
             ) {
                 if (app.iconBase64 != null) {
-                    val bitmap = remember(app.iconBase64) {
-                        try {
-                            val imageBytes = Base64.decode(app.iconBase64, Base64.DEFAULT)
-                            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
+                    val bitmap = rememberAppIconBitmap(app.iconBase64)
                     if (bitmap != null) {
                         Image(
                             bitmap = bitmap.asImageBitmap(),
@@ -426,16 +423,7 @@ private fun RecentAppCarousel(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                val bitmap = remember(app.iconBase64) {
-                    app.iconBase64?.let {
-                        try {
-                            val bytes = Base64.decode(it, Base64.DEFAULT)
-                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
-                }
+                val bitmap = rememberAppIconBitmap(app.iconBase64)
                 if (bitmap != null) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
@@ -465,3 +453,26 @@ private fun RecentAppCarousel(
 
 /** Which of the launcher's three body states is showing (drives the AnimatedContent swap). */
 private enum class AppLauncherBody { Disconnected, Empty, Apps }
+
+/**
+ * Decodes an app icon's base64 payload off the main thread, returning `null` (and thus the
+ * fallback launch icon) for a missing or corrupt icon rather than crashing or leaving a blank tile.
+ */
+@Composable
+private fun rememberAppIconBitmap(iconBase64: String?): Bitmap? {
+    val state = produceState<Bitmap?>(initialValue = null, key1 = iconBase64) {
+        value = if (iconBase64 == null) {
+            null
+        } else {
+            withContext(Dispatchers.Default) {
+                try {
+                    val bytes = Base64.decode(iconBase64, Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        }
+    }
+    return state.value
+}
