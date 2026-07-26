@@ -466,7 +466,7 @@
     <value>Opacidad del Vidrio</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Window Opacity</value>
+    <value>Opacidad de la Ventana</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensidad del Brillo</value>
@@ -892,9 +892,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>La transferencia de archivos solo muestra las carpetas que el PC de tu PC ha compartido. Configúralas desde Configuración en el PC de escritorio para que tu teléfono vea las ubicaciones correctas.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. Abre Configuración → Carpetas compartidas en tu PC.
+2. Mantén RemEx Transfers con escritura habilitada para subidas rápidas de teléfono a PC.
+3. Deja las demás carpetas en solo lectura a menos que quieras que los dispositivos móviles las modifiquen.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>En tu teléfono, navega por una carpeta compartida, toca un archivo para descargarlo o sube archivos desde Android a cualquier carpeta con escritura habilitada.</value>
@@ -1152,9 +1152,9 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
     <value>Tu teléfono solo ve las carpetas de esta lista. Orienta las subidas habituales a una carpeta escribible como Transferencias RemEx, y deja todo lo demás en solo lectura a menos que quieras que los dispositivos móviles lo modifiquen.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. Añade las carpetas del PC que quieras que RemEx exponga.
+2. Activa las subidas solo para las carpetas que deban aceptar archivos de teléfono a PC.
+3. Abre Transferencia de archivos en tu teléfono y explora las carpetas compartidas desde allí.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Agregar carpeta</value>
@@ -1547,7 +1547,7 @@ Chrome)</value>
     <value>Glossary: File Transfer</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+    <value>Explora solo las carpetas que el PC ha compartido, sube archivos a ubicaciones con escritura habilitada y descarga archivos con verificación SHA-256.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
     <value>Glossary: Remote Desktop</value>
@@ -1993,6 +1993,9 @@ Chrome)</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Reiniciar PC</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Forzar Reinicio de PC</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Reiniciar PC a UEFI</value>
   </data>
@@ -2084,7 +2087,7 @@ Chrome)</value>
     <value>ABRIR_ESPACIO</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ SIN_DATOS ]</value>
+    <value>No hay sensores fijados aún</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>INICIALIZAR SENSORES</value>
@@ -2917,13 +2920,13 @@ Chrome)</value>
     <value>Haz clic en cualquier lugar para omitir</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
+    <value>Escaneo Original</value>
   </data>
   <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
+    <value>Zoom Cósmico</value>
   </data>
   <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
+    <value>Pong de Señal</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Actualización de software</value>

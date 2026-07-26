@@ -886,9 +886,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Transfer File hanya menampilkan folder yang telah dibagikan oleh Your PC Anda. Konfigurasikan dari Pengaturan di PC desktop agar ponsel Anda melihat lokasi yang tepat.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. Buka Pengaturan → Folder Bersama di PC Anda.
+2. Jaga agar RemEx Transfers tetap dapat ditulis untuk unggahan cepat dari ponsel ke PC.
+3. Biarkan folder lain hanya-baca kecuali Anda ingin perangkat seluler mengubahnya.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>Di ponsel Anda, jelajahi folder bersama, ketuk file untuk mengunduhnya, atau unggah dari Android ke folder yang dapat ditulis.</value>
@@ -1138,9 +1138,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Ponsel Anda hanya melihat folder yang tercantum di sini. Arahkan unggahan rutin ke folder yang dapat ditulis seperti RemEx Transfers, dan biarkan sisanya hanya-baca kecuali Anda ingin perangkat seluler mengubahnya.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. Tambahkan folder PC yang ingin Anda buat tersedia melalui RemEx.
+2. Aktifkan unggahan hanya untuk folder yang boleh menerima file dari ponsel ke PC.
+3. Buka Transfer File di ponsel Anda dan jelajahi folder bersama dari sana.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Tambah Folder</value>
@@ -1978,6 +1978,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Mulai Ulang PC</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Paksa Mulai Ulang PC</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Mulai Ulang PC ke UEFI</value>
   </data>
@@ -2069,7 +2072,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>BUKA_RUANG_KERJA</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ TIDAK_ADA_DATA ]</value>
+    <value>Belum ada sensor yang disematkan</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>INISIALISASI SENSOR</value>
@@ -2894,13 +2897,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Klik di mana saja untuk melewati</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
+    <value>Pindaian Asli</value>
   </data>
   <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
+    <value>Zoom Kosmik</value>
   </data>
   <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
+    <value>Pong Sinyal</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Pembaruan Perangkat Lunak</value>

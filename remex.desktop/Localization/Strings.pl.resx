@@ -846,9 +846,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Transfer plików wyświetla tylko foldery udostępnione przez hosta PC. Skonfiguruj je w Ustawieniach na hoście, aby telefon widział właściwe lokalizacje.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. Otwórz Ustawienia → Udostępnione foldery na PC.
+2. Pozostaw RemEx Transfers jako zapisywalny dla szybkich przesyłek telefon → PC.
+3. Pozostałe foldery zostaw jako tylko do odczytu, chyba że chcesz, aby urządzenia mobilne mogły je modyfikować.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>Na telefonie przeglądaj folder udostępniony, dotknij pliku, aby go pobrać, lub prześlij z Androida do dowolnego folderu z włączonymi zapisami.</value>
@@ -1762,6 +1762,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Restartuj komputer</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Wymuś restart komputera</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Restartuj komputer do UEFI</value>
   </data>
@@ -1853,7 +1856,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>OTWÓRZ_OBSZAR</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ BRAK_DANYCH ]</value>
+    <value>Brak przypiętych czujników</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>INICJUJ SENSORY</value>
@@ -2937,10 +2940,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Oryginalny skan</value>
   </data>
   <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
+    <value>Kosmiczny zoom</value>
   </data>
   <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
+    <value>Sygnałowy Pong</value>
   </data>
   <data name="Activity_AppLaunched" xml:space="preserve">
     <value>Uruchomiono {0}</value>

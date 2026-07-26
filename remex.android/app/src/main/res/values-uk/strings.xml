@@ -44,7 +44,7 @@
     <string name="tutorial_page2_body">Перед підключенням на вашому ПК має працювати застосунок RemEx.\n\nПотрібно встановити лише один застосунок — він запускається автоматично після входу в систему на ПК і чекає на підключення вашого телефона.\n\nЗавантажте останню версію з GitHub і запустіть її перед створенням пари.</string>
     <string name="tutorial_page2_link_label">Завантажити з GitHub Releases</string>
     <string name="tutorial_page3_title">Автоматичне виявлення</string>
-    <string name="tutorial_page3_body">Найпростіший спосіб підключення — це автоматичне виявлення.\n\n1. Переконайтеся, що remex.agent запущено на вашому ПК\n2. Переконайтеся, що ваш телефон і ПК знаходяться в одній мережі Wi-Fi\n3. Натисніть "Виявити автоматично" на екрані підключення\n\nRemEx використовує mDNS для виявлення запущених хостів у вашій локальній мережі. IP-адреса та порт вашого ПК будуть заповнені автоматично.</string>
+    <string name="tutorial_page3_body">Найпростіший спосіб підключення — це автоматичне виявлення.\n\n1. Переконайтеся, що remex.agent запущено на вашому ПК\n2. Переконайтеся, що ваш телефон і ПК знаходяться в одній мережі Wi-Fi\n3. Натисніть \"Виявити автоматично\" на екрані підключення\n\nRemEx використовує mDNS для виявлення запущених хостів у вашій локальній мережі. IP-адреса та порт вашого ПК будуть заповнені автоматично.</string>
     <string name="tutorial_page4_title">Як знайти свою IP-адресу</string>
     <string name="tutorial_page4_body">Якщо автоматичне виявлення не працює, ви можете підключитися вручну. Спочатку знайдіть локальну IP-адресу вашого ПК:\n\nWindows:\n  Відкрийте командний рядок → введіть ipconfig\n  Знайдіть \'IPv4-адреса\' (наприклад, 192.168.1.42)\n\nLinux:\n  Запустіть ip addr або hostname -I\n\nВи також можете побачити IP-адресу у вікні RemEx — Command Center на вашому ПК.</string>
     <string name="tutorial_page5_title">Ручне підключення</string>
@@ -255,7 +255,7 @@
     <string name="qr_error_old_format">Цей QR-код створено старішою версією RemEx PC. Оновіть застосунок на ПК і створіть новий QR-код RemEx 2.x.</string>
     <string name="qr_error_invalid">Недійсний QR-код RemEx</string>
     <string name="screen_faq_title">FAQ</string>
-    <string name="screen_about_title">About RemEx</string>
+    <string name="screen_about_title">Про RemEx</string>
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
     <string name="about_version_android">Версія Android: %1$s</string>
     <string name="about_version_pc">Версія ПК: %1$s</string>
@@ -690,9 +690,9 @@
     <string name="file_consent_expires_in">Спливає через %1$d с</string>
     <string name="personalization_splash_preview">Попередній перегляд анімації</string>
     <string name="personalization_splash_preview_close">Закрити перегляд</string>
-    <string name="splash_term_connect">connect</string>
-    <string name="splash_term_pairing">pairing</string>
-    <string name="splash_term_session_ready">session ready</string>
+    <string name="splash_term_connect">підключення</string>
+    <string name="splash_term_pairing">сполучення</string>
+    <string name="splash_term_session_ready">сесія готова</string>
     <string name="personalization_splash_pong">Signal Pong</string>
     <string name="file_transfer_service_progress">%1$d%% · %2$d/%3$d</string>
     <string name="file_manager_transfer_active">%1$s</string>

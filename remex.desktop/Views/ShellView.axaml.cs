@@ -28,13 +28,34 @@ public partial class ShellView : UserControl
             vm.BeginWelcomeSplash();
 
         var bootSplash = this.FindControl<Controls.Splash.SkiaSplashControl>("BootSplash");
-        if (bootSplash != null)
+        if (bootSplash != null && !_bootSplashHooked)
+        {
+            // Guarded because OnLoaded runs again on every reattach to the visual tree. Unguarded,
+            // each reattach added another SequenceCompleted handler and OnBootSequenceCompleted then
+            // ran once per attach - the same subscribe-without-unsubscribe shape RemEx-wcte fixed
+            // elsewhere in this file's neighbours.
+            _bootSplashHooked = true;
+
             bootSplash.SequenceCompleted += () =>
             {
                 if (DataContext is ShellViewModel vm2)
                     vm2.OnBootSequenceCompleted();
             };
+
+            // SkiaSplashControl.Dispose detaches the DispatcherTimer's Tick handler, without which the
+            // timer keeps a strong reference back into the control forever. It must be called on FINAL
+            // teardown only: OnDetachedFromVisualTree deliberately calls Stop() and not Dispose(),
+            // because the control can be reattached and OnAttachedToVisualTree resumes ticking through
+            // that same subscription. Disposing on unload would leave a reattached splash frozen, so the
+            // owning window's Closed event is the correct hook - it fires once, and only when the
+            // control genuinely will not come back. (RemEx-wcte: the Dispose existed but nothing called
+            // it, which made the fix dead code.)
+            if (TopLevel.GetTopLevel(this) is Window owner)
+                owner.Closed += (_, _) => bootSplash.Dispose();
+        }
     }
+
+    private bool _bootSplashHooked;
 
     private ShellViewModel? _previousVm;
 

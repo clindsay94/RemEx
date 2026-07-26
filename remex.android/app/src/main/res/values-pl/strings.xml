@@ -665,9 +665,9 @@
     <string name="file_consent_expires_in">Wygasa za %1$d s</string>
     <string name="personalization_splash_preview">Podgląd animacji</string>
     <string name="personalization_splash_preview_close">Zamknij podgląd</string>
-    <string name="splash_term_connect">connect</string>
-    <string name="splash_term_pairing">pairing</string>
-    <string name="splash_term_session_ready">session ready</string>
+    <string name="splash_term_connect">łączenie</string>
+    <string name="splash_term_pairing">parowanie</string>
+    <string name="splash_term_session_ready">sesja gotowa</string>
     <string name="personalization_splash_pong">Signal Pong</string>
     <string name="connection_required_context">Połączenie wymagane, aby uzyskać dostęp do tej funkcji.</string>
     <string name="exit_dialog_title">Wyjść z RemEx?</string>

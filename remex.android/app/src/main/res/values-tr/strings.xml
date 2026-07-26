@@ -187,7 +187,7 @@
     <string name="dashboard_card_drawer_title">Kart Çekmecesi</string>
     <string name="dashboard_card_drawer_hint">Kart yerleştirmek için işaretleyin, kaldırmak için işareti kaldırın veya bir kartı tuvale sürükleyin.</string>
     <string name="dashboard_drop_to_place">%1$s yerleştirmek için bırakın</string>
-    <string name="dashboard_host_online">PC ÇEVRİMİÇİ</string>
+    <string name="dashboard_host_online">BİLGİSAYAR ÇEVRİMİÇİ</string>
     <string name="dashboard_connecting">BAĞLANILIYOR…</string>
     <string name="dashboard_tap_to_connect">BAĞLANMAK İÇİN DOKUNUN</string>
     <string name="dashboard_wake_pc_button">BİLGİSAYARI UYANDIR</string>
@@ -255,7 +255,7 @@
     <string name="qr_error_old_format">Bu QR kodu daha eski bir RemEx PC tarafından oluşturulmuş. Bilgisayardaki uygulamayı güncelleyin ve yeni bir RemEx 2.x QR kodu oluşturun.</string>
     <string name="qr_error_invalid">Geçersiz RemEx QR kodu</string>
     <string name="screen_faq_title">FAQ</string>
-    <string name="screen_about_title">About RemEx</string>
+    <string name="screen_about_title">RemEx Hakkında</string>
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
     <string name="about_version_android">Android Sürümü: %1$s</string>
     <string name="about_version_pc">PC Sürümü: %1$s</string>
@@ -267,11 +267,11 @@
     <string name="cd_expand">Genişlet</string>
     <string name="faq_github_button">GitHub Sürümlerini Aç</string>
     <string name="faq_q1">Bilgisayarımda neyi çalıştırmam gerekiyor?</string>
-    <string name="faq_a1">Bilgisayarınızda (Windows veya Linux) remex.agent\'ın çalışıyor olması gerekir. PC tarafındaki tek uygulama budur — ayrı bir masaüstü istemcisi yoktur. remex.agent, arka plan barındırma hizmetini ve "RemEx — Command Center" arayüzünü tek bir işlemde birleştirir, oturum açtığınızda otomatik olarak başlar ve 5005 numaralı bağlantı noktasını dinler.\n\nKendi kendine yeterlidir (tüm çalışma zamanları dahildir) — yayın klasörünü çıkarıp çalıştırmanız ya da platformunuza uygun yükleyiciyi kullanmanız yeterlidir. GitHub sürümler sayfasından indirin.</string>
+    <string name="faq_a1">Bilgisayarınızda (Windows veya Linux) remex.agent\'ın çalışıyor olması gerekir. PC tarafındaki tek uygulama budur — ayrı bir masaüstü istemcisi yoktur. remex.agent, arka plan barındırma hizmetini ve \"RemEx — Command Center\" arayüzünü tek bir işlemde birleştirir, oturum açtığınızda otomatik olarak başlar ve 5005 numaralı bağlantı noktasını dinler.\n\nKendi kendine yeterlidir (tüm çalışma zamanları dahildir) — yayın klasörünü çıkarıp çalıştırmanız ya da platformunuza uygun yükleyiciyi kullanmanız yeterlidir. GitHub sürümler sayfasından indirin.</string>
     <string name="faq_q2">Bilgisayarımın IP adresini nasıl bulurum?</string>
     <string name="faq_a2">Windows:\nKomut İstemi\'ni açın ve \'ipconfig\' yazın. Etkin ağ bağdaştırıcınızın altındaki \'IPv4 Adresi\' satırına bakın (örn. 192.168.1.42).\n\nLinux:\nBir terminal açın ve şunu çalıştırın: ip addr  veya  hostname -I\n\nIP adresini doğrudan bilgisayarınızdaki RemEx — Command Center penceresinde de görebilirsiniz.</string>
     <string name="faq_q3">Otomatik keşif bilgisayarımı bulamıyor. Neyi kontrol etmeliyim?</string>
-    <string name="faq_a3">1. remex.agent\'ın bilgisayarınızda gerçekten çalıştığından emin olun — "RemEx — Command Center" penceresini veya sistem tepsisi simgesini arayın.\n2. Her iki cihaz da aynı Wi-Fi / LAN ağında olmalıdır.\n3. Android 13+ sürümlerinde NEARBY_WIFI_DEVICES izninin verilmiş olması gerekir. Android 17+ sürümlerinde ayrıca ACCESS_LOCAL_NETWORK izninin de verilmesi gerekir. \'Otomatik Keşfet\'e dokunduğunuzda RemEx bu izinleri isteyecektir.\n4. Bazı yönlendiricilerde cihazdan cihaza iletişimi engelleyen \'AP İzolasyonu\' veya \'İstemci İzolasyonu\' özelliği etkin olabilir. Yönlendirici ayarlarınızı kontrol edin.\n5. Kurumsal veya misafir Wi-Fi ağları genellikle mDNS trafiğini engeller. Bunun yerine kişisel bir ağ veya ev ağı kullanmayı deneyin.</string>
+    <string name="faq_a3">1. remex.agent\'ın bilgisayarınızda gerçekten çalıştığından emin olun — \"RemEx — Command Center\" penceresini veya sistem tepsisi simgesini arayın.\n2. Her iki cihaz da aynı Wi-Fi / LAN ağında olmalıdır.\n3. Android 13+ sürümlerinde NEARBY_WIFI_DEVICES izninin verilmiş olması gerekir. Android 17+ sürümlerinde ayrıca ACCESS_LOCAL_NETWORK izninin de verilmesi gerekir. \'Otomatik Keşfet\'e dokunduğunuzda RemEx bu izinleri isteyecektir.\n4. Bazı yönlendiricilerde cihazdan cihaza iletişimi engelleyen \'AP İzolasyonu\' veya \'İstemci İzolasyonu\' özelliği etkin olabilir. Yönlendirici ayarlarınızı kontrol edin.\n5. Kurumsal veya misafir Wi-Fi ağları genellikle mDNS trafiğini engeller. Bunun yerine kişisel bir ağ veya ev ağı kullanmayı deneyin.</string>
     <string name="faq_q4">Varsayılan bağlantı noktası nedir?</string>
     <string name="faq_a4">Varsayılan bağlantı noktası 5005\'tir. Bu bağlantı noktası zaten kullanımdaysa, remex.agent önce kendisinin eskimiş bir örneğinden bu bağlantı noktasını geri almaya çalışır; bu başarısız olursa, bir sonraki boş bağlantı noktasına (5006, 5007 ve bu şekilde 5009 dahil) geçer. Etkin bağlantı noktasını RemEx — Command Center penceresinde görebilirsiniz.\n\nBağlantı noktasını PC tarafında değiştirdiyseniz, bu uygulamadaki Bağlantı ekranında eşleşen bağlantı noktasını girdiğinizden emin olun.</string>
     <string name="faq_q5">Bilgisayarımla nasıl eşleştirme yaparım?</string>
@@ -691,9 +691,9 @@
     <string name="file_consent_expires_in">%1$d saniye içinde sona erer</string>
     <string name="personalization_splash_preview">Animasyonu Önizle</string>
     <string name="personalization_splash_preview_close">Önizlemeyi kapat</string>
-    <string name="splash_term_connect">connect</string>
-    <string name="splash_term_pairing">pairing</string>
-    <string name="splash_term_session_ready">session ready</string>
+    <string name="splash_term_connect">bağlanma</string>
+    <string name="splash_term_pairing">eşleştirme</string>
+    <string name="splash_term_session_ready">oturum hazır</string>
     <string name="personalization_splash_pong">Signal Pong</string>
     <!-- Home Base coach marks (RemEx-km0i.10) -->
     <string name="coach_title">Etrafında Gezinmek</string>

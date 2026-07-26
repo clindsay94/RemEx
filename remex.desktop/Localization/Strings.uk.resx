@@ -466,7 +466,7 @@
     <value>Непрозорість скла</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Window Opacity</value>
+    <value>Непрозорість вікна</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Сила свічення</value>
@@ -886,9 +886,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Передача файлів показує лише папки, якими поділився ваш PC-хост. Налаштуйте їх у Налаштуваннях на хості, щоб телефон бачив правильні розташування.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. Відкрийте Налаштування → Спільні папки на вашому PC.
+2. Залиште RemEx Transfers з доступом для запису для швидкого вивантаження з телефону на PC.
+3. Інші папки залиште лише для читання, якщо не хочете, щоб мобільні пристрої їх змінювали.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>На телефоні перегляньте спільну папку, торкніться файлу, щоб завантажити його, або вивантажте з Android до будь-якої папки з доступом для запису.</value>
@@ -1138,9 +1138,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Ваш телефон бачить лише папки, перелічені тут. Направте звичайні вивантаження до папки із доступом для запису, наприклад RemEx Transfers, а решту залиште лише для читання.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. Додайте папки PC, які RemEx має надавати в спільний доступ.
+2. Увімкніть вивантаження лише для папок, які мають приймати файли з телефону на PC.
+3. Відкрийте Передачу файлів на телефоні та переглядайте спільні папки звідти.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Додати папку</value>
@@ -1532,7 +1532,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: File Transfer</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+    <value>Переглядайте лише папки, якими поділився PC, вивантажуйте у папки з доступом для запису та завантажуйте файли з перевіркою SHA-256.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
     <value>Glossary: Remote Desktop</value>
@@ -1765,7 +1765,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Як передавати файли?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Відкрийте Передачу файлів на бічній панелі або через Палітру команд. Ви побачите лише теки, які надав ПК: до тек із правом запису можна надсилати файли, а з тек лише для читання — тільки отримувати їх.</value>
+    <value>Відкрийте Передачу файлів на бічній панелі або через Палітру команд. Ви побачите лише теки, які надав ПК: до тек із правом запису можна вивантажувати файли, а з тек лише для читання — тільки завантажувати їх.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Чи можу я заблокувати ПК дистанційно?</value>
@@ -1978,6 +1978,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Перезавантажити ПК</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Примусово перезавантажити ПК</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Перезавантажити ПК в UEFI</value>
   </data>
@@ -2069,7 +2072,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>ВІДКРИТИ_РОБОЧУ_ЗОНУ</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ НЕМАЄ_ДАНИХ ]</value>
+    <value>Немає закріплених датчиків</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>ІНІЦІАЛІЗУВАТИ СЕНСОРИ</value>

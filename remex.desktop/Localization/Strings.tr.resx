@@ -466,7 +466,7 @@
     <value>Cam Opaklığı</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Window Opacity</value>
+    <value>Pencere Opaklığı</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Parlaklık Gücü</value>
@@ -886,9 +886,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Dosya Aktarımı yalnızca Your PCunuzun paylaştığı klasörleri gösterir. Telefonunuzun doğru konumları görmesi için masaüstü hosttaki Ayarlar'dan yapılandırın.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. PC'nizde Ayarlar → Paylaşılan Klasörler'i açın.
+2. Telefondan PC'ye hızlı yüklemeler için RemEx Transfers'ı yazılabilir tutun.
+3. Mobil cihazların değiştirmesini istemediğiniz sürece diğer klasörleri salt okunur bırakın.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>Telefonunuzda paylaşılan bir klasöre göz atın, bir dosyaya dokunarak indirin veya Android'den yazılabilir herhangi bir klasöre yükleyin.</value>
@@ -1138,9 +1138,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Telefonunuz yalnızca burada listelenen klasörleri görür. Rutin yüklemeleri RemEx Transfers gibi yazılabilir bir klasöre yönlendirin ve geri kalanı, mobil cihazların değiştirmesini istemediğiniz sürece salt okunur bırakın.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. RemEx'in paylaşmasını istediğiniz PC klasörlerini ekleyin.
+2. Yüklemeleri yalnızca telefondan PC'ye dosya kabul etmesi gereken klasörler için açın.
+3. Telefonunuzda Dosya Aktarımı'nı açın ve paylaşılan klasörlere oradan göz atın.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Klasör Ekle</value>
@@ -1532,7 +1532,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: File Transfer</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+    <value>Yalnızca PC'nin paylaştığı klasörlere göz atın, yazılabilir konumlara yükleme yapın ve SHA-256 doğrulamasıyla dosya indirin.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
     <value>Glossary: Remote Desktop</value>
@@ -1978,6 +1978,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Bilgisayarı Yeniden Başlat</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Bilgisayarı Zorla Yeniden Başlat</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Bilgisayarı UEFI Modunda Yeniden Başlat</value>
   </data>
@@ -2069,7 +2072,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>ÇALIŞMA_ALANINI_AÇ</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ VERİ_AKIŞI_YOK ]</value>
+    <value>Henüz sabitlenmiş sensör yok</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>SENSÖRLERİ BAŞLAT</value>
@@ -2898,13 +2901,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Atlamak için herhangi bir yere tıklayın</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
+    <value>Orijinal Tarama</value>
   </data>
   <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
+    <value>Kozmik Yakınlaştırma</value>
   </data>
   <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
+    <value>Sinyal Pong</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Yazılım Güncellemesi</value>

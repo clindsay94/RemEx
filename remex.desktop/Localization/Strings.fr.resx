@@ -886,9 +886,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Le transfert de fichiers n'affiche que les dossiers que votre PC hôte a partagés. Configurez-les depuis Paramètres sur l'hôte de bureau pour que votre téléphone voie les bons emplacements.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. Ouvrez Paramètres → Dossiers partagés sur votre PC.
+2. Gardez RemEx Transfers accessible en écriture pour des envois rapides du téléphone vers le PC.
+3. Laissez les autres dossiers en lecture seule, sauf si vous voulez que les appareils mobiles puissent les modifier.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>Sur votre téléphone, parcourez un dossier partagé, appuyez sur un fichier pour le télécharger, ou envoyez un fichier depuis Android vers n'importe quel dossier accessible en écriture.</value>
@@ -1138,9 +1138,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Votre téléphone ne voit que les dossiers listés ici. Orientez les envois habituels vers un dossier accessible en écriture comme RemEx Transfers, et laissez le reste en lecture seule sauf si vous voulez que les appareils mobiles puissent le modifier.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. Ajoutez les dossiers du PC que vous voulez exposer via RemEx.
+2. Activez les envois uniquement pour les dossiers qui doivent accepter des fichiers du téléphone vers le PC.
+3. Ouvrez Transfert de fichiers sur votre téléphone et parcourez les dossiers partagés depuis là.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Ajouter un dossier</value>
@@ -1978,6 +1978,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Redémarrer le PC</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Forcer le redémarrage du PC</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Redémarrer le PC sur UEFI</value>
   </data>
@@ -2069,7 +2072,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>OUVRIR_ESPACE</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ PAS_DE_FLUX ]</value>
+    <value>Aucun capteur épinglé pour le moment</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>INITIALISER CAPTEURS</value>
@@ -2894,13 +2897,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Cliquez n'importe où pour passer</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
+    <value>Scan Original</value>
   </data>
   <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
+    <value>Zoom Cosmique</value>
   </data>
   <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
+    <value>Pong du Signal</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Mise à jour du logiciel</value>

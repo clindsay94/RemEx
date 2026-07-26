@@ -2077,6 +2077,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Restart PC</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Force Restart PC</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Restart PC to UEFI</value>
   </data>
@@ -2168,7 +2171,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>OPEN_WORKSPACE</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ NO_DATA_FEED ]</value>
+    <value>No pinned sensors yet</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>INITIALIZE SENSORS</value>

@@ -466,7 +466,7 @@
     <value>ग्लास अपारदर्शिता</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Window Opacity</value>
+    <value>विंडो अपारदर्शिता</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>ग्लो शक्ति</value>
@@ -886,9 +886,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>फ़ाइल स्थानांतरण केवल वे फ़ोल्डर दिखाता है जो आपके PC होस्ट ने साझा किए हैं। डेस्कटॉप होस्ट पर सेटिंग्स से इन्हें कॉन्फ़िगर करें ताकि आपका फ़ोन सही स्थान देख सके।</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. अपने PC पर सेटिंग्स → साझा फ़ोल्डर खोलें।
+2. फ़ोन से PC पर तेज़ अपलोड के लिए RemEx Transfers को लिखने योग्य रखें।
+3. अन्य फ़ोल्डर को केवल पढ़ने योग्य रहने दें जब तक कि आप न चाहें कि मोबाइल डिवाइस उन्हें बदलें।</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>अपने फ़ोन पर, एक साझा फ़ोल्डर ब्राउज़ करें, डाउनलोड करने के लिए किसी फ़ाइल पर टैप करें, या किसी भी लिखने योग्य फ़ोल्डर में Android से अपलोड करें।</value>
@@ -1138,9 +1138,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>आपका फ़ोन केवल यहाँ सूचीबद्ध फ़ोल्डर देखता है। नियमित अपलोड को एक लिखने योग्य फ़ोल्डर जैसे RemEx Transfers पर निर्देशित करें, और बाकी सब को केवल पढ़ने योग्य छोड़ें।</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. वे PC फ़ोल्डर जोड़ें जिन्हें आप RemEx के ज़रिए उपलब्ध कराना चाहते हैं।
+2. केवल उन फ़ोल्डर के लिए अपलोड चालू करें जिन्हें फ़ोन से PC फ़ाइलें स्वीकार करनी चाहिए।
+3. अपने फ़ोन पर फ़ाइल स्थानांतरण खोलें और वहां से साझा फ़ोल्डर ब्राउज़ करें।</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ फ़ोल्डर जोड़ें</value>
@@ -1532,7 +1532,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: File Transfer</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+    <value>केवल उन फ़ोल्डर को ब्राउज़ करें जिन्हें PC ने साझा किया है, लिखने योग्य स्थानों में अपलोड करें, और SHA-256 सत्यापन के साथ फ़ाइलें डाउनलोड करें।</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
     <value>Glossary: Remote Desktop</value>
@@ -1978,6 +1978,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>पीसी रीस्टार्ट करें</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>पीसी फोर्स रीस्टार्ट करें</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>पीसी को UEFI में रीस्टार्ट करें</value>
   </data>
@@ -2069,7 +2072,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>कार्यस्थान_खोलें</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ कोई डेटा नहीं ]</value>
+    <value>अभी तक कोई पिन किए गए सेंसर नहीं</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>सेंसर प्रारंभ करें</value>
@@ -2894,13 +2897,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>छोड़ने के लिए कहीं भी क्लिक करें</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
+    <value>मूल स्कैन</value>
   </data>
   <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
+    <value>कॉस्मिक ज़ूम</value>
   </data>
   <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
+    <value>सिग्नल पॉन्ग</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>सॉफ़्टवेयर अपडेट</value>

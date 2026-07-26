@@ -466,7 +466,7 @@
     <value>Opacidade do Vidro</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Window Opacity</value>
+    <value>Opacidade da Janela</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensidade do Brilho</value>
@@ -886,9 +886,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>A Transferência de Arquivos mostra apenas as pastas que o PC do seu PC compartilhou. Configure-as em Configurações no PC para que seu celular veja os locais corretos.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. Abra Configurações → Pastas Compartilhadas no seu PC.
+2. Mantenha RemEx Transfers gravável para uploads rápidos do celular para o PC.
+3. Deixe as outras pastas somente leitura, a menos que queira que dispositivos móveis possam modificá-las.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>No seu celular, navegue por uma pasta compartilhada, toque em um arquivo para baixá-lo ou envie do Android para qualquer pasta gravável.</value>
@@ -1138,9 +1138,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Seu celular só vê as pastas listadas aqui. Direcione uploads rotineiros para uma pasta gravável como RemEx Transfers, e deixe o restante somente leitura, a menos que queira que dispositivos móveis possam modificá-los.</value>
   </data>
   <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
+    <value>1. Adicione as pastas do PC que você quer que o RemEx exponha.
+2. Ative uploads apenas para as pastas que devem aceitar arquivos do celular para o PC.
+3. Abra Transferência de Arquivos no seu celular e navegue pelas pastas compartilhadas por lá.</value>
   </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Adicionar Pasta</value>
@@ -1532,7 +1532,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Glossary: File Transfer</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+    <value>Navegue apenas pelas pastas que o PC compartilhou, envie arquivos para locais graváveis e baixe arquivos com verificação SHA-256.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
     <value>Glossary: Remote Desktop</value>
@@ -1978,6 +1978,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Reiniciar PC</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Forçar Reinicialização do PC</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Reiniciar PC para UEFI</value>
   </data>
@@ -2069,7 +2072,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>ABRIR_ESPAÇO</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ SEM_FLUXO_DE_DADOS ]</value>
+    <value>Nenhum sensor fixado ainda</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>INICIALIZAR SENSORES</value>
@@ -2894,13 +2897,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Clique em qualquer lugar para pular</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
+    <value>Escaneamento Original</value>
   </data>
   <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
+    <value>Zoom Cósmico</value>
   </data>
   <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
+    <value>Pong de Sinal</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Atualização de software</value>

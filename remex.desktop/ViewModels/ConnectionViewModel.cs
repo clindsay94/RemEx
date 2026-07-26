@@ -469,6 +469,12 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     [RelayCommand]
     public async Task RestartAsync() => await SendCommandAsync("Restart");
 
+    // ForceRestart existed only on RemoteViewModel, bound straight from RemoteView.axaml, so the
+    // command palette - which wires exclusively through shell.Connection.* - had no way to reach it and
+    // was missing an action every other surface has. (RemEx-6cda.)
+    [RelayCommand]
+    public async Task ForceRestartAsync() => await SendCommandAsync("ForceRestart");
+
     [RelayCommand]
     public async Task RestartToUefiAsync() => await SendCommandAsync("RestartToUefi");
 
