@@ -35,6 +35,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -853,12 +857,24 @@ fun PersonalizationScreenContent(
                             valueRange = 4f..36f
                     )
 
+                    // A11y pairing for this label + Slider (RemEx-porq). TalkBack previously announced
+                    // a bare "0.55" - no unit, no meaning - while the human-readable "Card Opacity: 55%"
+                    // sat in a SEPARATE, unrelated semantics node.
+                    //
+                    // clearAndSetSemantics on the label rather than leaving it announceable: the Slider
+                    // now carries the same information, and an announceable label beside it would make
+                    // TalkBack say the percentage twice. The Text stays fully visible to sighted users;
+                    // only its semantics are removed.
+                    // Hoisted deliberately: semantics {} is not a composable scope, so stringResource
+                    // cannot be called inside it.
+                    val cardOpacityPercent = (cardOpacity * 100).roundToInt()
+                    val cardOpacityAccessibilityLabel = stringResource(R.string.cd_card_opacity)
+                    val cardOpacityPercentText =
+                            stringResource(R.string.cd_percent_value, cardOpacityPercent)
                     Text(
-                            stringResource(
-                                    R.string.personalization_card_opacity,
-                                    (cardOpacity * 100).roundToInt()
-                            ),
-                            style = MaterialTheme.typography.labelMedium
+                            stringResource(R.string.personalization_card_opacity, cardOpacityPercent),
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.clearAndSetSemantics {}
                     )
                     Slider(
                             value = cardOpacity,
@@ -866,7 +882,28 @@ fun PersonalizationScreenContent(
                             onValueChangeFinished = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                             },
-                            valueRange = 0.1f..1.0f
+                            valueRange = 0.1f..1.0f,
+                            // contentDescription names the control; stateDescription supplies the value.
+                            //
+                            // WHY THIS WORKS - get it right before copying this to the other sliders
+                            // (RemEx-qiz5). The "0.55" is NOT derived from ProgressBarRangeInfo: M3's own
+                            // sliderSemantics explicitly sets stateDescription = value.formatForSemantics()
+                            // (Slider.kt), which for 0.55 is the literal string "0.55". This override wins
+                            // because SliderImpl applies its semantics INNER to the modifier passed in,
+                            // and semantics collapse walks tail->head with a plain overwrite - so the
+                            // OUTERMOST stateDescription is the one announced.
+                            //
+                            // Do NOT "fix" a slider by overriding progressBarRangeInfo instead. That feeds
+                            // info.rangeInfo, the SeekBar role and TalkBack's adjust-gesture maths; it must
+                            // keep reporting the true 0.1-1.0 range or the slider stops being adjustable.
+                            // It is deliberately left intact here.
+                            modifier =
+                                    Modifier.semantics {
+                                        contentDescription =
+                                                cardOpacityAccessibilityLabel
+                                        stateDescription =
+                                                cardOpacityPercentText
+                                    }
                     )
 
                     val shapeConfigs =

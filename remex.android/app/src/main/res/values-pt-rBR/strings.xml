@@ -308,6 +308,8 @@
     <string name="personalization_section_geometry">Geometria Expressiva</string>
     <string name="personalization_corner_base">Base do Canto: %1$ddp</string>
     <string name="personalization_card_opacity">Opacidade do Card: %1$d%%</string>
+    <string name="cd_card_opacity">Opacidade do Card</string>
+    <string name="cd_percent_value">%1$d%%</string>
     <string name="personalization_shape_telemetry">Cards de Telemetria</string>
     <string name="personalization_shape_app_launcher">Lançador de Apps</string>
     <string name="personalization_shape_remote_commands">Comandos Remotos</string>

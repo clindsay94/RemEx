@@ -308,6 +308,8 @@
     <string name="personalization_section_geometry">Виразна геометрія</string>
     <string name="personalization_corner_base">Базовий радіус кутів: %1$ddp</string>
     <string name="personalization_card_opacity">Непрозорість картки: %1$d%%</string>
+    <string name="cd_card_opacity">Непрозорість картки</string>
+    <string name="cd_percent_value">%1$d%%</string>
     <string name="personalization_shape_telemetry">Картки телеметрії</string>
     <string name="personalization_shape_app_launcher">Запуск додатків</string>
     <string name="personalization_shape_remote_commands">Віддалені команди</string>

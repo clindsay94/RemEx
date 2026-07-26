@@ -308,6 +308,8 @@
     <string name="personalization_section_geometry">एक्सप्रेसिव ज्योमेट्री</string>
     <string name="personalization_corner_base">कॉर्नर बेस: %1$ddp</string>
     <string name="personalization_card_opacity">कार्ड अपारदर्शिता: %1$d%%</string>
+    <string name="cd_card_opacity">कार्ड अपारदर्शिता</string>
+    <string name="cd_percent_value">%1$d%%</string>
     <string name="personalization_shape_telemetry">टेलीमेट्री कार्ड्स</string>
     <string name="personalization_shape_app_launcher">ऐप लॉन्चर</string>
     <string name="personalization_shape_remote_commands">रिमोट कमांड्स</string>

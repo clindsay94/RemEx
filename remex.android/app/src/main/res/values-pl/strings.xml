@@ -287,6 +287,8 @@
     <string name="personalization_section_geometry">Ekspresyjna geometria</string>
     <string name="personalization_corner_base">Baza narożnika: %1$ddp</string>
     <string name="personalization_card_opacity">Krycie karty: %1$d%%</string>
+    <string name="cd_card_opacity">Krycie karty</string>
+    <string name="cd_percent_value">%1$d%%</string>
     <string name="personalization_shape_telemetry">Karty telemetrii</string>
     <string name="personalization_shape_app_launcher">Launcher aplikacji</string>
     <string name="personalization_shape_remote_commands">Polecenia zdalne</string>

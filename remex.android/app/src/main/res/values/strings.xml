@@ -475,6 +475,8 @@
     <string name="personalization_section_geometry">Expressive Geometry</string>
     <string name="personalization_corner_base">Corner Base: %1$ddp</string>
     <string name="personalization_card_opacity">Card Opacity: %1$d%%</string>
+    <string name="cd_card_opacity">Card Opacity</string>
+    <string name="cd_percent_value">%1$d%%</string>
     <string name="personalization_shape_telemetry">Telemetry Cards</string>
     <string name="personalization_shape_app_launcher">App Launcher</string>
     <string name="personalization_shape_remote_commands">Remote Commands</string>
