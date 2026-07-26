@@ -50,7 +50,7 @@
     <string name="tutorial_page5_title">Conexión Manual</string>
     <string name="tutorial_page5_body">Una vez tengas tu dirección IP:\n\n1. Ve a la pantalla de Conexión (Más → Ajustes → Conexión)\n2. Introduce la IP de tu PC\n3. Introduce el puerto (por defecto es 5005)\n4. Toca \'Guardar y Conectar\'\n5. Si se solicita, introduce el PIN de 6 dígitos mostrado en tu PC para completar el emparejamiento seguro\n\nLos datos de tu conexión se guardan para la próxima vez.</string>
     <string name="tutorial_page6_title">¡Todo listo!</string>
-    <string name="tutorial_page6_body">Ya estás listo para tomar el control.\n\nDesde el panel de control puedes monitorizar estadísticas del sistema, lanzar aplicaciones, gestionar tareas y transmitir tu escritorio de forma remota.\n\nVe a Personalización para ajustar tu tema, formas de tarjetas, fuentes y colores.\n\nConsulta las Preguntas Frecuentes en Ajustes si tienes problemas. ¡Disfruta de RemEx!</string>
+    <string name="tutorial_page6_body">Ya estás listo para tomar el control.\n\nDesde el panel de control puedes monitorizar estadísticas del sistema, lanzar aplicaciones, gestionar tareas, explorar carpetas compartidas y transmitir tu escritorio de forma remota.\n\nVe a Personalización para cambiar el idioma, el tema, las formas de las tarjetas y los colores.\n\nAbre las FAQ cuando quieras si necesitas ayuda con el emparejamiento, la transferencia de archivos o el ajuste del escritorio remoto.</string>
     <string name="tutorial_page_qr_title">Emparejamiento rápido con código QR</string>
     <string name="tutorial_page_qr_body">La forma más rápida de conectarse es escaneando un código QR.\n\n1. Abre la ventana de RemEx — Command Center en tu PC\n2. Ve a Ajustes → Conexión → Mostrar Código QR\n3. En tu teléfono, toca el icono QR en la pantalla de Conexión\n4. Escanea el código y confirma el PIN de emparejamiento si se solicita\n\nRemEx guarda los datos de la conexión segura automáticamente.</string>
     <string name="status_disconnected">Desconectado</string>
@@ -259,7 +259,7 @@
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
     <string name="about_version_android">Versión de Android: %1$s</string>
     <string name="about_version_pc">Versión de PC: %1$s</string>
-    <string name="about_github_star">Give my repository a star on Github</string>
+    <string name="about_github_star">Sigue a RemEx en GitHub</string>
     <string name="about_github_cat">(pls, they have my cat)</string>
     <string name="about_made_with">Hecho con ♥️ en Denver, Colorado</string>
     <string name="faq_header">Preguntas Frecuentes</string>
@@ -461,7 +461,7 @@
     <string name="sensor_gpu_temp">Temperatura de GPU</string>
     <string name="sensor_fallback_label">Sensor %1$d</string>
     <string name="about_android_client_label">Cliente de Android</string>
-    <string name="about_pc_host_label">PC de PC</string>
+    <string name="about_pc_host_label">Tu PC</string>
     <string name="about_status_unknown">Desconocido</string>
     <string name="about_view_github">Ver código fuente en GitHub</string>
     <string name="about_whats_new_1_label">Panel 2.0</string>
@@ -585,6 +585,9 @@
     <string name="remote_desktop_display_numbered">Pantalla %1$d</string>
     <string name="remote_desktop_display_both">Ambas pantallas</string>
     <string name="connection_error_cert_changed">La identidad de seguridad de este PC ha cambiado. Si reinstalaste RemEx, elimina el emparejamiento y vuelve a emparejar.</string>
+    <string name="connection_error_no_response">Error de conexión: no se recibió ninguna respuesta.</string>
+    <string name="connection_error_generic">Error de conexión.</string>
+    <string name="connection_error_native_missing">No se pudo iniciar el motor de conexión de RemEx. Intenta reiniciar la app; si esto sigue ocurriendo, reinstala RemEx.</string>
     <string name="connection_action_repair">Volver a emparejar</string>
     <string name="wake_pc_sent">Señal de encendido enviada</string>
     <string name="wake_pc_failed">Error al enviar la señal de encendido</string>

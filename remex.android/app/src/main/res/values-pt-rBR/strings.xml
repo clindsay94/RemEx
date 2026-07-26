@@ -50,7 +50,7 @@
     <string name="tutorial_page5_title">Conexão Manual</string>
     <string name="tutorial_page5_body">Assim que tiver o seu endereço IP:\n\n1. Vá para a tela de Conexão (Mais → Configurações → Conexão)\n2. Insira o endereço IP do seu PC\n3. Insira a porta (o padrão é 5005)\n4. Toque em \'Salvar e Conectar\'\n5. Se solicitado, insira o PIN de 6 dígitos exibido no seu PC para concluir o pareamento seguro\n\nOs dados da sua conexão são salvos para a próxima vez.</string>
     <string name="tutorial_page6_title">Está Tudo Pronto!</string>
-    <string name="tutorial_page6_body">Você está pronto para assumir o controle.\n\nNo painel, você pode monitorar estatísticas do sistema, iniciar apps, gerenciar tarefas e transmitir sua área de trabalho remotamente.\n\nVá em Personalização para customizar seu tema, formatos de cards, fontes e cores.\n\nConfira as Perguntas Frequentes (FAQ) nas Configurações se tiver qualquer problema. Aproveite o RemEx!</string>
+    <string name="tutorial_page6_body">Você está pronto para assumir o controle.\n\nNo painel, você pode monitorar estatísticas do sistema, iniciar apps, gerenciar tarefas, navegar por pastas compartilhadas e transmitir sua área de trabalho remotamente.\n\nVá em Personalização para mudar o idioma, o tema, os formatos de cards e as cores.\n\nAbra o FAQ a qualquer momento se precisar de ajuda com emparelhamento, transferência de arquivos ou ajuste da área de trabalho remota.</string>
     <string name="tutorial_page_qr_title">Pareamento Rápido com Código QR</string>
     <string name="tutorial_page_qr_body">A maneira mais rápida de se conectar é digitalizando um código QR.\n\n1. Abra a janela do RemEx — Command Center no seu PC\n2. Vá em Configurações → Conexão → Mostrar Código QR\n3. No seu celular, toque no ícone QR na tela de Conexão\n4. Digitalize o código e confirme o PIN de pareamento, se solicitado\n\nO RemEx salva os detalhes da conexão segura automaticamente.</string>
     <string name="status_disconnected">Desconectado</string>
@@ -259,7 +259,7 @@
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
     <string name="about_version_android">Versão do Android: %1$s</string>
     <string name="about_version_pc">Versão do PC: %1$s</string>
-    <string name="about_github_star">Give my repository a star on Github</string>
+    <string name="about_github_star">Siga o RemEx no GitHub</string>
     <string name="about_github_cat">(pls, they have my cat)</string>
     <string name="about_made_with">Feito com ♥️ em Denver, Colorado</string>
     <string name="faq_header">Perguntas Frequentes</string>
@@ -461,7 +461,7 @@
     <string name="sensor_gpu_temp">Temperatura do GPU</string>
     <string name="sensor_fallback_label">Sensor %1$d</string>
     <string name="about_android_client_label">Cliente Android</string>
-    <string name="about_pc_host_label">PC do PC</string>
+    <string name="about_pc_host_label">Seu PC</string>
     <string name="about_status_unknown">Desconhecido</string>
     <string name="about_view_github">Ver código-fonte no GitHub</string>
     <string name="about_whats_new_1_label">Painel 2.0</string>
@@ -585,6 +585,9 @@
     <string name="remote_desktop_display_numbered">Tela %1$d</string>
     <string name="remote_desktop_display_both">Ambas as telas</string>
     <string name="connection_error_cert_changed">A identidade de segurança deste PC mudou. Se você reinstalou o RemEx, remova o pareamento e pareie novamente.</string>
+    <string name="connection_error_no_response">Falha na conexão: nenhuma resposta recebida.</string>
+    <string name="connection_error_generic">Falha na conexão.</string>
+    <string name="connection_error_native_missing">Não foi possível iniciar o mecanismo de conexão do RemEx. Tente reiniciar o app; se isso continuar acontecendo, reinstale o RemEx.</string>
     <string name="connection_action_repair">Reparear</string>
     <string name="wake_pc_sent">Sinal de despertar enviado</string>
     <string name="wake_pc_failed">Falha ao enviar sinal de despertar</string>

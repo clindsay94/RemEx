@@ -40,7 +40,7 @@
     <string name="tutorial_next">आगे</string>
     <string name="tutorial_page1_title">RemEx में आपका स्वागत है</string>
     <string name="tutorial_page1_body">RemEx आपका रिमोट पीसी प्रबंधन कमांड सेंटर है। अपने फोन से कंप्यूटर को नियंत्रित करें, ऐप्स लॉन्च करें, प्रदर्शन की निगरानी करें और अपना डेस्कटॉप भी देखें।\n\nआइए आपको कुछ त्वरित चरणों में कनेक्ट करते हैं।</string>
-    <string name="tutorial_page2_title">पहले होस्ट इंस्टॉल करें</string>
+    <string name="tutorial_page2_title">पहले पीसी इंस्टॉल करें</string>
     <string name="tutorial_page2_body">कनेक्ट करने से पहले, आपके पीसी पर RemEx ऐप चलना चाहिए।\n\nइंस्टॉल करने के लिए बस एक ही ऐप है — यह आपके पीसी में साइन इन करते ही अपने आप शुरू हो जाता है और आपके फ़ोन के कनेक्ट होने का इंतज़ार करता है।\n\nGitHub से नवीनतम रिलीज़ डाउनलोड करें और पेयर करने से पहले इसे चलाएं।</string>
     <string name="tutorial_page2_link_label">GitHub रिलीज़ से डाउनलोड करें</string>
     <string name="tutorial_page3_title">ऑटो-डिस्कवरी</string>
@@ -50,7 +50,7 @@
     <string name="tutorial_page5_title">मैन्युअल कनेक्शन</string>
     <string name="tutorial_page5_body">एक बार जब आपके पास आईपी पता हो जाए:\n\n1. कनेक्शन स्क्रीन पर जाएं (अधिक → सेटिंग्स → कनेक्शन)\n2. अपने पीसी का आईपी पता दर्ज करें\n3. पोर्ट दर्ज करें (डिफ़ॉल्ट 5005 है)\n4. \'सेव और कनेक्ट\' पर टैप करें\n5. यदि पूछा जाए, तो सुरक्षित पेयरिंग पूरी करने के लिए अपने पीसी पर दिखाया गया 6 अंकों का पिन दर्ज करें\n\nआपकी कनेक्शन जानकारी अगली बार के लिए सहेज ली जाती है।</string>
     <string name="tutorial_page6_title">आप पूरी तरह तैयार हैं!</string>
-    <string name="tutorial_page6_body">अब आप नियंत्रण लेने के लिए तैयार हैं।\n\nडैशबोर्ड से आप सिस्टम आंकड़ों की निगरानी कर सकते हैं, ऐप्स लॉन्च कर सकते हैं, कार्यों का प्रबंधन कर सकते हैं और अपने डेस्कटॉप को रिमोट स्ट्रीम कर सकते हैं।\n\nअपने थीम, कार्ड आकार, फोंट और रंगों को कस्टमाइज़ करने के लिए पर्सनलाइजेशन पर जाएं।\n\nयदि आपको कोई समस्या आती है तो सेटिंग्स में एफएक्यू देखें। RemEx का आनंद लें!</string>
+    <string name="tutorial_page6_body">अब आप नियंत्रण लेने के लिए तैयार हैं।\n\nडैशबोर्ड से आप सिस्टम आंकड़ों की निगरानी कर सकते हैं, ऐप्स लॉन्च कर सकते हैं, कार्यों का प्रबंधन कर सकते हैं, शेयर्ड फ़ोल्डर ब्राउज़ कर सकते हैं और अपने डेस्कटॉप को रिमोट स्ट्रीम कर सकते हैं।\n\nभाषा, थीम, कार्ड आकार और रंग बदलने के लिए पर्सनलाइजेशन पर जाएं।\n\nपेयरिंग, फ़ाइल ट्रांसफर या रिमोट डेस्कटॉप ट्यूनिंग में मदद चाहिए तो कभी भी FAQ खोलें।</string>
     <string name="tutorial_page_qr_title">QR कोड से तुरंत पेयर करें</string>
     <string name="tutorial_page_qr_body">कनेक्ट करने का सबसे तेज़ तरीका QR कोड स्कैन करना है।\n\n1. अपने पीसी पर RemEx — Command Center विंडो खोलें\n2. सेटिंग्स → कनेक्शन → QR कोड दिखाएं पर जाएं\n3. अपने फ़ोन पर, कनेक्शन स्क्रीन पर QR आइकन पर टैप करें\n4. कोड स्कैन करें और यदि पूछा जाए तो पेयरिंग पिन की पुष्टि करें\n\nRemEx सुरक्षित कनेक्शन विवरण स्वचालित रूप से सेव कर लेता है।</string>
     <string name="status_disconnected">डिस्कनेक्ट हो गया</string>
@@ -196,7 +196,7 @@
     <string name="screen_connection_title">कनेक्शन</string>
     <string name="screen_splash_title">लोड हो रहा है</string>
     <string name="screen_tutorial_title">ट्यूटोरियल</string>
-    <string name="connection_host_settings">होस्ट सेटिंग्स</string>
+    <string name="connection_host_settings">पीसी सेटिंग्स</string>
     <string name="connection_auto_discover_title">LAN पर ऑटो-डिस्कवर</string>
     <string name="connection_auto_discover_hint">सुनिश्चित करें कि आपके पीसी पर RemEx ऐप चल रहा है और दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं।</string>
     <string name="connection_searching">आपका पीसी खोजा जा रहा है…</string>
@@ -205,7 +205,7 @@
     <string name="connection_host_found">पीसी मिल गया और नीचे फ़ील्ड भर दी गई हैं।</string>
     <string name="connection_scan_qr_code">QR कोड स्कैन करें</string>
     <string name="connection_help_title">मैन्युअल रूप से कैसे कनेक्ट करें</string>
-    <string name="connection_help_step1_title">अपने पीसी पर RemEx होस्ट इंस्टॉल करें</string>
+    <string name="connection_help_step1_title">अपने पीसी पर RemEx PC इंस्टॉल करें</string>
     <string name="connection_help_step1_body">जिस पीसी को आप नियंत्रित करना चाहते हैं उस पर RemEx ऐप इंस्टॉल करें। अपने फ़ोन से कनेक्ट करने से पहले इसे चालू रखें।</string>
     <string name="connection_help_step2_title">एक ही वाई-फाई से कनेक्ट करें</string>
     <string name="connection_help_step2_body">आपका फोन और पीसी एक ही स्थानीय नेटवर्क पर होने चाहिए। मोबाइल डेटा काम नहीं करेगा।</string>
@@ -219,7 +219,7 @@
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">एक टर्मिनल खोलें और टाइप करें: ip addr\nअपने नेटवर्क इंटरफ़ेस (जैसे wlan0 या eth0) पर inet एड्रेस देखें।</string>
     <string name="connection_or_enter_manually">या मैन्युअल रूप से दर्ज करें</string>
-    <string name="connection_label_host">होस्ट आईपी पता</string>
+    <string name="connection_label_host">पीसी आईपी पता</string>
     <string name="connection_hint_host">आपके पीसी का स्थानीय आईपी — इसे ipconfig (Win) या ip addr (Linux) के माध्यम से ढूँढें</string>
     <string name="connection_label_port">पोर्ट</string>
     <string name="connection_hint_port">डिफ़ॉल्ट: 5005</string>
@@ -259,7 +259,7 @@
     <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
     <string name="about_version_android">Android संस्करण: %1$s</string>
     <string name="about_version_pc">PC संस्करण: %1$s</string>
-    <string name="about_github_star">Give my repository a star on Github</string>
+    <string name="about_github_star">GitHub पर RemEx को फ़ॉलो करें</string>
     <string name="about_github_cat">(pls, they have my cat)</string>
     <string name="about_made_with">डेनवर, कोलोराडो में ♥️ के साथ बनाया गया</string>
     <string name="faq_header">अक्सर पूछे जाने वाले प्रश्न</string>
@@ -346,7 +346,7 @@
     <string name="file_transfer_loading">लोड हो रहा है…</string>
     <string name="file_transfer_empty">कोई फ़ाइल नहीं मिली।</string>
     <string name="file_transfer_shared_folder">शेयर्ड फ़ोल्डर</string>
-    <string name="file_transfer_no_shared_folders">यह होस्ट अभी तक कोई शेयर्ड फ़ोल्डर नहीं दिखा रहा है।</string>
+    <string name="file_transfer_no_shared_folders">यह पीसी अभी तक कोई शेयर्ड फ़ोल्डर नहीं दिखा रहा है।</string>
     <string name="file_transfer_select_root">रिमोट फ़ोल्डर चुनें</string>
     <string name="file_transfer_read_only_root">केवल पढ़ने के लिए</string>
     <string name="file_transfer_notification_channel_name">फ़ाइल ट्रांसफर</string>
@@ -406,8 +406,8 @@
     <string name="pairing_error_empty_response">आपके पीसी ने कोई पिन नहीं भेजा। जांचें कि पीसी पर RemEx खुला है और पेयरिंग पिन दिखा रहा है, फिर दोबारा कोशिश करें।</string>
     <string name="pairing_error_reach_failed">आपके पीसी तक नहीं पहुंच सके। जांचें कि दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं और पीसी का पता सही है, फिर दोबारा कोशिश करें।</string>
     <string name="pairing_error_verify_failed">पेयरिंग पूरी नहीं हो सकी। रद्द करें पर टैप करें, अपने पीसी से नया पिन लें, फिर दोबारा पेयर करें।</string>
-    <string name="pairing_error_save_failed">पिन किए गए होस्ट को सुरक्षित रूप से सहेजने में विफल।</string>
-    <string name="qr_error_missing_hash">क्यूआर कोड में होस्ट प्रमाणपत्र हैश गायब है</string>
+    <string name="pairing_error_save_failed">पिन किए गए पीसी को सुरक्षित रूप से सहेजने में विफल।</string>
+    <string name="qr_error_missing_hash">क्यूआर कोड में पीसी प्रमाणपत्र हैश गायब है</string>
     <string name="qr_error_setup_failed">क्यूआर सेटअप विफल रहा</string>
     <string name="remote_desktop_fps_overlay">%1$d एफपीएस</string>
     <string name="remote_desktop_fps_overlay_btn">एफपीएस</string>
@@ -461,7 +461,7 @@
     <string name="sensor_gpu_temp">जीपीयू तापमान</string>
     <string name="sensor_fallback_label">सेंसर %1$d</string>
     <string name="about_android_client_label">एंड्रॉइड क्लाइंट</string>
-    <string name="about_pc_host_label">पीसी होस्ट</string>
+    <string name="about_pc_host_label">आपका पीसी</string>
     <string name="about_status_unknown">अज्ञान</string>
     <string name="about_view_github">GitHub पर स्रोत कोड देखें</string>
     <string name="about_whats_new_1_label">डैशबोर्ड 2.0</string>
@@ -552,25 +552,25 @@
     <string name="rc_failed_mac_not_configured">विफल: सेटिंग्स में मैक एड्रेस कॉन्फ़िगर नहीं किया गया है</string>
     <string name="rc_success_format">सफलता: %1$s</string>
     <string name="remote_desktop_action_failed">डेस्कटॉप विंडो एक्शन विफल रहा</string>
-    <string name="remote_desktop_advanced_window_control_unavailable">इस होस्ट पर उन्नत विंडो नियंत्रण अनुपलब्ध है</string>
+    <string name="remote_desktop_advanced_window_control_unavailable">इस पीसी पर उन्नत विंडो नियंत्रण अनुपलब्ध है</string>
     <string name="remote_desktop_connection_lost">कनेक्शन टूट गया। फिर से कनेक्ट करने के लिए स्टार्ट पर टैप करें।</string>
     <string name="remote_desktop_cursor_size_label">कर्सर का आकार: %.1fx</string>
     <string name="remote_desktop_h_scroll_short">क्षैतिज स्क्रॉल: %.1fx</string>
     <string name="remote_desktop_metadata_unavailable">डेस्कटॉप विंडो मेटाडेटा अनुपलब्ध</string>
     <string name="remote_desktop_section_input">इनपुट और नियंत्रण</string>
     <string name="remote_desktop_section_stream">स्ट्रीम</string>
-    <string name="remote_desktop_unavailable_fallback">रिमोट डेस्कटॉप इस होस्ट पर अनुपलब्ध है</string>
+    <string name="remote_desktop_unavailable_fallback">रिमोट डेस्कटॉप इस पीसी पर अनुपलब्ध है</string>
     <string name="remote_desktop_untitled_window">(अनाम)</string>
     <string name="remote_desktop_v_scroll_short">लंबवत स्क्रॉल: %.1fx</string>
     <string name="task_manager_dismiss">खारिज करें</string>
-    <string name="task_manager_host_unresponsive">होस्ट प्रक्रिया सूची अनुरोधों का उत्तर नहीं दे रहा है। जांचें कि पेयरिंग पूर्ण है और होस्ट को प्रक्रिया जानकारी पढ़ने की अनुमति है।</string>
+    <string name="task_manager_host_unresponsive">पीसी प्रक्रिया सूची अनुरोधों का उत्तर नहीं दे रहा है। जांचें कि पेयरिंग पूर्ण है और पीसी को प्रक्रिया जानकारी पढ़ने की अनुमति है।</string>
     <string name="task_manager_kill_failed_format">प्रक्रिया %1$d को समाप्त करने में विफल</string>
     <string name="task_manager_retry">पुनः प्रयास करें</string>
-    <string name="rd_err_capture_unavailable">होस्ट पीसी पर स्क्रीन कैप्चर काम नहीं कर रहा है।</string>
-    <string name="rd_err_capture_stopped">%1$d फ़्रेम के बाद स्क्रीन कैप्चर रुक गया। हो सकता है कि होस्ट पीसी लॉक हो गया हो या साइन आउट हो गया हो।</string>
+    <string name="rd_err_capture_unavailable">आपके पीसी पर स्क्रीन कैप्चर काम नहीं कर रहा है।</string>
+    <string name="rd_err_capture_stopped">%1$d फ़्रेम के बाद स्क्रीन कैप्चर रुक गया। हो सकता है कि आपका पीसी लॉक हो गया हो या साइन आउट हो गया हो।</string>
     <string name="rd_err_target_unavailable">चयनित डिस्प्ले अब उपलब्ध नहीं है।</string>
     <string name="rd_err_target_switch_unsupported">यह सत्र स्ट्रीमिंग के दौरान डिस्प्ले नहीं बदल सकता।</string>
-    <string name="rd_err_runtime_unavailable">इस समय होस्ट पीसी पर रिमोट डेस्कटॉप उपलब्ध नहीं है।</string>
+    <string name="rd_err_runtime_unavailable">इस समय आपके पीसी पर रिमोट डेस्कटॉप उपलब्ध नहीं है।</string>
     <string name="cd_clear_search">खोज साफ़ करें</string>
     <string name="pairing_error_timeout">पीसी ने जवाब नहीं दिया। जांचें कि वह चालू है और उसी नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
     <string name="host_discovered_snackbar">पीसी मिला: %1$s</string>
@@ -585,6 +585,9 @@
     <string name="remote_desktop_display_numbered">डिस्प्ले %1$d</string>
     <string name="remote_desktop_display_both">दोनों स्क्रीन</string>
     <string name="connection_error_cert_changed">इस PC की सुरक्षा पहचान बदल गई है। यदि आपने RemEx को फिर से इंस्टॉल किया है, तो पेयरिंग हटाएं और फिर से पेयर करें।</string>
+    <string name="connection_error_no_response">कनेक्शन विफल: कोई जवाब नहीं मिला।</string>
+    <string name="connection_error_generic">कनेक्शन विफल।</string>
+    <string name="connection_error_native_missing">RemEx का कनेक्शन इंजन शुरू नहीं हो सका। ऐप को फिर से शुरू करने की कोशिश करें; अगर यह बार-बार हो, तो RemEx को फिर से इंस्टॉल करें।</string>
     <string name="connection_action_repair">फिर से पेयर करें</string>
     <string name="wake_pc_sent">वेक सिग्नल भेजा गया</string>
     <string name="wake_pc_failed">वेक सिग्नल भेजने में विफल</string>
@@ -673,7 +676,7 @@
     <string name="file_transfer_notification_open">खोलें</string>
     <!-- File sharing: access + consent (2.1, WP9) -->
     <string name="settings_ft_access_title">आपके PC से पहुँच</string>
-    <string name="settings_ft_access_desc">चुनें कि आपका युग्मित PC इस फ़ोन की फ़ाइलों के साथ क्या कर सकता है।</string>
+    <string name="settings_ft_access_desc">चुनें कि आपका पेयर किया गया PC इस फ़ोन की फ़ाइलों के साथ क्या कर सकता है।</string>
     <string name="settings_ft_full_browse_title">पूरे डिवाइस को ब्राउज़ करने की अनुमति दें</string>
     <string name="settings_ft_full_browse_desc">PC को आपके द्वारा चुने गए स्टोरेज फ़ोल्डर को ब्राउज़ करने दें। आप फ़ोल्डर चुनते हैं और इसे कभी भी बंद कर सकते हैं।</string>
     <string name="settings_ft_auto_accept_title">आने वाली फ़ाइलें स्वतः स्वीकार करें</string>

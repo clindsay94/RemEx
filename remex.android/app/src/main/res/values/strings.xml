@@ -98,6 +98,9 @@
 
     
     <string name="connection_error_cert_changed">This PC\'s security identity has changed. If you reinstalled RemEx on the PC, remove the pairing and pair again.</string>
+    <string name="connection_error_no_response">Connection failed: no response received.</string>
+    <string name="connection_error_generic">Connection failed.</string>
+    <string name="connection_error_native_missing">Couldn\'t start RemEx\'s connection engine. Try restarting the app; if this keeps happening, reinstall RemEx.</string>
     <string name="connection_action_repair">Re-pair</string>
     <string name="wake_pc_sent">Wake signal sent</string>
     <string name="wake_pc_failed">Failed to send wake signal</string>
