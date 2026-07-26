@@ -1737,7 +1737,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Quel est le port par défaut ?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>Le port par défaut est 5005. S'il est déjà utilisé, RemEx essaie le port libre suivant : 5006, 5007 et ainsi de suite jusqu'à 5009. Vous pouvez voir le port actif dans la fenêtre RemEx sur votre PC.</value>
+    <value>Le port par défaut est 5005. S'il est déjà utilisé, RemEx essaie d'abord de le récupérer auprès d'une instance obsolète de lui-même ; si cela échoue, il passe au port libre suivant : 5006, 5007 et ainsi de suite jusqu'à 5009. Vous pouvez voir le port actif dans la fenêtre RemEx sur votre PC.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>Puis-je me connecter via Internet ?</value>

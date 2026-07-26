@@ -1752,7 +1752,7 @@ Chrome)</value>
     <value>¿Cuál es el puerto predeterminado?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>El puerto predeterminado es 5005. Si está ocupado, RemEx usa el siguiente puerto libre: 5006, 5007 y así hasta 5009. Puedes ver el puerto activo en la ventana de RemEx en tu PC.</value>
+    <value>El puerto predeterminado es 5005. Si ese puerto ya está en uso, RemEx primero intenta recuperarlo de una instancia obsoleta de sí mismo; si eso falla, pasa al siguiente puerto libre: 5006, 5007 y así hasta 5009. Puedes ver el puerto activo en la ventana de RemEx en tu PC.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>¿Puedo conectarme por internet?</value>

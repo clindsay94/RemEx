@@ -1539,7 +1539,7 @@ Linux: ip addr  or  hostname -I</value>
 5. Sieci firmowe/gościnne często blokują wykrywanie (mDNS).</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>Domyślny port to 5005. Jeśli jest zajęty, RemEx próbuje kolejnego wolnego portu — 5006, 5007 i tak dalej, do 5009. Aktywny port możesz zobaczyć w oknie RemEx na swoim komputerze.</value>
+    <value>Domyślny port to 5005. Jeśli jest już zajęty, RemEx najpierw próbuje odzyskać go od nieaktywnej instancji samego siebie; jeśli się to nie uda, przechodzi do kolejnego wolnego portu — 5006, 5007 i tak dalej, do 5009. Aktywny port możesz zobaczyć w oknie RemEx na swoim komputerze.</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
     <value>RemEx jest przeznaczony do użytku w sieci lokalnej (LAN). Do bezpiecznego dostępu zdalnego z dowolnego miejsca polecamy Tailscale — niewymagającą konfiguracji sieć VPN WireGuard®, która łączy Twoje urządzenia bez przekierowywania portów i bez wystawiania komputera na internet. Przekierowywanie portów nie jest zalecane z powodów bezpieczeństwa.</value>

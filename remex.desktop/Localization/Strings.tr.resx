@@ -1737,7 +1737,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Varsayılan bağlantı noktası nedir?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>Varsayılan bağlantı noktası 5005'tir. Kullanımdaysa RemEx sıradaki boş bağlantı noktasını dener — 5006, 5007 ve bu şekilde 5009'a kadar. Etkin bağlantı noktasını PC'nizdeki RemEx penceresinde görebilirsiniz.</value>
+    <value>Varsayılan bağlantı noktası 5005'tir. Bu bağlantı noktası zaten kullanımdaysa RemEx önce kendisinin eski bir örneğinden bu bağlantı noktasını geri almayı dener; bu başarısız olursa sıradaki boş bağlantı noktasına geçer — 5006, 5007 ve bu şekilde 5009'a kadar. Etkin bağlantı noktasını PC'nizdeki RemEx penceresinde görebilirsiniz.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>İnternet üzerinden bağlanabilir miyim?</value>
