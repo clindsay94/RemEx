@@ -31,6 +31,7 @@
     
     <string name="banner_no_pc_connected">No PC connected — features are unavailable</string>
     <string name="button_connect">Connect</string>
+    <string name="button_reconnect">Reconnect</string>
     <string name="disconnected_requires_connection">%1$s requires a connected PC.</string>
     <string name="disconnected_connect_wifi">Connect to your PC over Wi-Fi to use this feature.</string>
     <string name="button_setup_connection">Set up connection</string>

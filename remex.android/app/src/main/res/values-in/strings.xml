@@ -17,6 +17,7 @@
     <string name="button_exit">Keluar</string>
     <string name="banner_no_pc_connected">Tidak ada PC terhubung — fitur tidak tersedia</string>
     <string name="button_connect">Hubungkan</string>
+    <string name="button_reconnect">Hubungkan ulang</string>
     <string name="disconnected_requires_connection">%1$s memerlukan PC yang terhubung.</string>
     <string name="disconnected_connect_wifi">Hubungkan ke PC Anda melalui Wi-Fi untuk menggunakan fitur ini.</string>
     <string name="button_setup_connection">Siapkan koneksi</string>

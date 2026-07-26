@@ -17,6 +17,7 @@
     <string name="button_exit">Вийти</string>
     <string name="banner_no_pc_connected">ПК не підключено — функції недоступні</string>
     <string name="button_connect">Підключитися</string>
+    <string name="button_reconnect">Підключитися знову</string>
     <string name="disconnected_requires_connection">%1$s потребує підключеного ПК.</string>
     <string name="disconnected_connect_wifi">Підключіться до ПК через Wi-Fi, щоб скористатися цією функцією.</string>
     <string name="button_setup_connection">Налаштувати підключення</string>

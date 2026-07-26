@@ -17,6 +17,7 @@
     <string name="button_exit">Salir</string>
     <string name="banner_no_pc_connected">Sin PC conectado — funciones no disponibles</string>
     <string name="button_connect">Conectar</string>
+    <string name="button_reconnect">Reconectar</string>
     <string name="disconnected_requires_connection">%1$s requiere un PC conectado.</string>
     <string name="disconnected_connect_wifi">Conéctate a tu PC por Wi-Fi para usar esta función.</string>
     <string name="button_setup_connection">Configurar conexión</string>

@@ -1484,9 +1484,41 @@ fun DashboardScreenContent(
                                                         )
                                                 },
                                                 text = {
+                                                        // This item ACTS - it calls onToggleConnection -
+                                                        // so it needs a verb, not the noun the card title
+                                                        // uses. It previously borrowed
+                                                        // dashboard_pc_status ("PC Status"), which reads
+                                                        // as a place to go rather than a thing to do, and
+                                                        // that key cannot simply be reworded because the
+                                                        // card title at the top of this file legitimately
+                                                        // needs the noun (RemEx-j8uo).
+                                                        //
+                                                        // RECONNECT, not Disconnect - onToggleConnection
+                                                        // is a misnomer. RemexClientManager
+                                                        // .toggleConnection is connect-ONLY, and this
+                                                        // client has no user-initiated disconnect at all
+                                                        // (_isConnected is set only by inbound native
+                                                        // callbacks). A "Disconnect" label would name an
+                                                        // action the code cannot perform, and since the
+                                                        // state never flips in response it would sit there
+                                                        // unchanged tap after tap. "Reconnect" describes
+                                                        // what actually happens when already connected:
+                                                        // connect() runs again and re-handshakes.
+                                                        // Missing-disconnect defect is filed separately.
+                                                        //
+                                                        // button_connect is shared with three other
+                                                        // sites, one of which uses it as a
+                                                        // contentDescription (AppLauncherScreen) - so a
+                                                        // reword aimed at a visible button would silently
+                                                        // change an accessibility label elsewhere. Kept
+                                                        // because "Connect" is the same imperative in the
+                                                        // same register at all four.
                                                         Text(
                                                                 stringResource(
-                                                                        R.string.dashboard_pc_status
+                                                                        if (isConnected)
+                                                                                R.string
+                                                                                        .button_reconnect
+                                                                        else R.string.button_connect
                                                                 )
                                                         )
                                                 }

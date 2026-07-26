@@ -17,6 +17,7 @@
     <string name="button_exit">Quitter</string>
     <string name="banner_no_pc_connected">Aucun PC connecté — les fonctionnalités sont indisponibles</string>
     <string name="button_connect">Connecter</string>
+    <string name="button_reconnect">Reconnecter</string>
     <string name="disconnected_requires_connection">%1$s nécessite un PC connecté.</string>
     <string name="disconnected_connect_wifi">Connectez-vous à votre PC via Wi-Fi pour utiliser cette fonctionnalité.</string>
     <string name="button_setup_connection">Configurer la connexion</string>

@@ -17,6 +17,7 @@
     <string name="button_exit">Çık</string>
     <string name="banner_no_pc_connected">Bağlı bilgisayar yok — özellikler kullanılamıyor</string>
     <string name="button_connect">Bağlan</string>
+    <string name="button_reconnect">Yeniden bağlan</string>
     <string name="disconnected_requires_connection">%1$s için bağlı bir bilgisayar gerekir.</string>
     <string name="disconnected_connect_wifi">Bu özelliği kullanmak için bilgisayarınıza Wi-Fi üzerinden bağlanın.</string>
     <string name="button_setup_connection">Bağlantıyı yapılandır</string>

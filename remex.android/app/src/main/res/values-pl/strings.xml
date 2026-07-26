@@ -13,6 +13,7 @@
     <string name="nav_more_label">Więcej</string>
     <string name="banner_no_pc_connected">Nie podłączono PC — funkcje są niedostępne</string>
     <string name="button_connect">Połącz</string>
+    <string name="button_reconnect">Połącz ponownie</string>
     <string name="disconnected_requires_connection">%1$s wymaga podłączonego komputera PC.</string>
     <string name="disconnected_connect_wifi">Połącz się z komputerem przez Wi-Fi, aby korzystać z tej funkcji.</string>
     <string name="button_setup_connection">Skonfiguruj połączenie</string>

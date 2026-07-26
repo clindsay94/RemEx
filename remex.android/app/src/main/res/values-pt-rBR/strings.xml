@@ -17,6 +17,7 @@
     <string name="button_exit">Sair</string>
     <string name="banner_no_pc_connected">Nenhum PC conectado — os recursos estão indisponíveis</string>
     <string name="button_connect">Conectar</string>
+    <string name="button_reconnect">Reconectar</string>
     <string name="disconnected_requires_connection">%1$s requer um PC conectado.</string>
     <string name="disconnected_connect_wifi">Conecte-se ao seu PC via Wi-Fi para usar este recurso.</string>
     <string name="button_setup_connection">Configurar conexão</string>
