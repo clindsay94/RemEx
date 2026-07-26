@@ -22,7 +22,7 @@ namespace Remex.Desktop.Controls.Splash;
 /// canvas so the pure-SkiaSharp variants (remex.branding) draw straight onto the render surface.
 /// Fixed brand palette by design (not theme-adaptive) — replaces the old BootSequenceControl.
 /// </summary>
-public sealed class SkiaSplashControl : Control
+public sealed class SkiaSplashControl : Control, IDisposable
 {
     public static readonly StyledProperty<string> SplashStyleProperty =
         AvaloniaProperty.Register<SkiaSplashControl, string>(nameof(SplashStyle), "RemexCommand");
@@ -179,6 +179,22 @@ public sealed class SkiaSplashControl : Control
         int plus = info.IndexOf('+');
         if (plus >= 0) info = info[..plus];
         return string.IsNullOrEmpty(info) ? "" : "v" + info;
+    }
+
+    /// <summary>
+    /// Stops the frame timer and detaches its Tick handler. Previously this control had no Dispose
+    /// at all: <c>_timer.Tick += OnTick</c> (constructor) was subscribed once but never had a matching
+    /// <c>-=</c> anywhere, so the DispatcherTimer kept a strong reference back into this control (via
+    /// OnTick's target) for as long as the timer object itself lived — a real leak for any host that
+    /// creates/replaces splash instances rather than keeping exactly one for the app's lifetime.
+    /// OnDetachedFromVisualTree deliberately still only calls Stop() (not this), because the control
+    /// can be reattached to the visual tree afterward and OnAttachedToVisualTree relies on the same
+    /// Tick subscription still being wired up to resume ticking.
+    /// </summary>
+    public void Dispose()
+    {
+        _timer.Stop();
+        _timer.Tick -= OnTick;
     }
 
     private static string SkipHint()

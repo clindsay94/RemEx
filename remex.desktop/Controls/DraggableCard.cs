@@ -119,6 +119,16 @@ public class DraggableCard : ContentControl
     {
         base.OnApplyTemplate(e);
 
+        // Detach from the previously-found thumb before rewiring. OnApplyTemplate can run
+        // more than once per control instance (e.g. a theme switch reapplies the template),
+        // and without this the old thumb kept firing OnResizeDragDelta/OnResizeDragCompleted
+        // alongside the new one, so a single resize drag double-applied its delta.
+        if (_resizeThumb != null)
+        {
+            _resizeThumb.DragDelta -= OnResizeDragDelta;
+            _resizeThumb.DragCompleted -= OnResizeDragCompleted;
+        }
+
         // Wire up the resize thumb if present in the template.
         _resizeThumb = e.NameScope.Find<Thumb>("PART_ResizeThumb");
         if (_resizeThumb != null)

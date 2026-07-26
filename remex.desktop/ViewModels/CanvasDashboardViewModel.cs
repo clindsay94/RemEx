@@ -1329,7 +1329,15 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             .ToList();
 
         foreach (var sensor in sensorVms)
+        {
             sensor.AlertTriggered -= OnSensorAlertTriggered;
+
+            // PropertyChanged is subscribed once per SensorViewModel at creation (line ~922) but was
+            // never detached here, so every sensor kept this view model alive for its own lifetime
+            // (a leak) and, on the reconnect/relabel path that recreates subscriptions, could leave
+            // OnSensorCustomizationChanged firing more than once per property change.
+            sensor.PropertyChanged -= OnSensorCustomizationChanged;
+        }
 
         _subscribedSensorNames.Clear();
     }
