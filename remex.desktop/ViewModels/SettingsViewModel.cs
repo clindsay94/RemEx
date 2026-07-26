@@ -867,9 +867,38 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             return;
         }
 
-        UnsubscribeSharedRoot(item);
-        SharedRoots.Remove(item);
-        OnPropertyChanged(nameof(HasSharedRoots));
+        try
+        {
+            // Re-find by RootId rather than trusting `item`'s object identity: while the
+            // confirmation dialog above was awaited, ReplaceSharedRoots may have rebuilt the whole
+            // collection (a host push or a savefile import), in which case `item` is a stale
+            // instance no longer present by reference and SharedRoots.Remove(item) would silently
+            // no-op. This is an access-REVOCATION path (a shared root grants the phone access to
+            // an entire folder tree), so we must not tell the user it was saved unless something
+            // was actually removed (RemEx-xqcx).
+            var current = SharedRoots.FirstOrDefault(root => root.RootId == item.RootId);
+            if (current is null)
+            {
+                // Already gone from the list - there is nothing to unsubscribe, remove, or save.
+                // Reporting "Saved" here would be a false confirmation of a revocation that never
+                // happened. No localized "already removed" string currently exists for this exact
+                // case, so we simply avoid the false-positive message rather than show nothing
+                // truthful; see handoff notes for the follow-up to add one.
+                return;
+            }
+
+            UnsubscribeSharedRoot(current);
+            SharedRoots.Remove(current);
+            OnPropertyChanged(nameof(HasSharedRoots));
+        }
+        catch (Exception ex)
+        {
+            // OnSharedRootRemoveRequested is async void (it must be, as an event handler), so an
+            // exception here would otherwise escape uncaught. SaveSharedRootsAsync below already
+            // has its own try/catch; this covers the unsubscribe/remove lines that ran before it.
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+            return;
+        }
 
         await SaveSharedRootsAsync(LocalizationService.Instance["Settings_FileTransferSaved"]);
     }
