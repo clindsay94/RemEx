@@ -146,7 +146,13 @@ object FileTransferEngine {
         sendControl(transferId, FileTransferControlActions.CANCEL)
         FileTransferChannelClient.unregisterSink(transferId)
         val t = _queue.value.firstOrNull { it.id == transferId }
-        if (t != null && t.state != TransferState.Done) discardEmptyDownloadTarget(t)
+        if (t != null && t.state != TransferState.Done) {
+            // Query + deleteDocument is ContentResolver I/O; cancel() is often invoked straight from a
+            // UI thread (or from a coroutine that is itself mid-cancellation), so hop onto the engine's
+            // own long-lived scope rather than a `withContext` that would silently no-op the cleanup if
+            // the caller's scope is already cancelled.
+            scope.launch { discardEmptyDownloadTarget(t) }
+        }
         updateState(transferId) { it.copy(state = TransferState.Cancelled) }
     }
 
