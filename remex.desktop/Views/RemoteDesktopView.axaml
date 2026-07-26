@@ -308,9 +308,35 @@
 
         <!-- ═══ STATUS BAR ═══ -->
         <Border Grid.Row="4" Background="{DynamicResource GlassBaseDarkBrush}" Padding="16 6" IsVisible="{Binding !IsFullScreen}">
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
-                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0">
+            <!-- Columns 1-5 are Auto, so they claim their full desired width and column 0 absorbs only
+                 what is left. Until RemEx-suc9.1 localized them the metrics were hardcoded English and
+                 always narrow; uk "Роздільна здатність: {0}" and pl "Rozdzielczość: {0}" are roughly twice
+                 that, so on a narrow window the Auto columns can take everything and StatusText does not
+                 merely clip - the TextBlock does not clip itself and nothing here sets ClipToBounds, so it
+                 was PAINTED OVER the Resolution metric. MinWidth on column 0 reserves a floor, and it only
+                 binds when space is genuinely tight, unlike a MaxWidth on the metrics which would
+                 ellipsize them even when there is room.
+
+                 WHAT PAYS FOR THE 140px, so nobody has to re-derive it: Auto columns are never shrunk
+                 below their children's desired width (Grid arranges Auto as Max(MinSizeForArrange, ...)),
+                 so once the total exceeds the available width the trailing columns are arranged OUTSIDE
+                 the Grid and clipped by the window - un-ellipsized. The streaming dot goes first, then the
+                 tail of Quality/FPS. That band was already broken before this change; the floor moves its
+                 onset from roughly a 490px view width to roughly 630px. Making the overflow band itself
+                 graceful needs the metric cluster in a horizontal ScrollViewer, or star-sized metric
+                 columns with their own floors - filed separately, deliberately not done here.
+                 (RemEx-9a46.) -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="140"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" TextTrimming="CharacterEllipsis">
                     <TextBlock.Text>
                         <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
                             <Binding Path="[RemoteDesktop_ResolutionFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
@@ -318,7 +344,7 @@
                         </MultiBinding>
                     </TextBlock.Text>
                 </TextBlock>
-                <TextBlock Grid.Column="2" Foreground="{DynamicResource SystemSuccessBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0">
+                <TextBlock Grid.Column="2" Foreground="{DynamicResource SystemSuccessBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" TextTrimming="CharacterEllipsis">
                     <TextBlock.Text>
                         <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
                             <Binding Path="[RemoteDesktop_FpsFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
@@ -326,7 +352,7 @@
                         </MultiBinding>
                     </TextBlock.Text>
                 </TextBlock>
-                <TextBlock Grid.Column="3" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0">
+                <TextBlock Grid.Column="3" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" TextTrimming="CharacterEllipsis">
                     <TextBlock.Text>
                         <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
                             <Binding Path="[RemoteDesktop_QualityFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
@@ -334,7 +360,7 @@
                         </MultiBinding>
                     </TextBlock.Text>
                 </TextBlock>
-                <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" IsVisible="{Binding IsViewportZoomed}"/>
+                <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" IsVisible="{Binding IsViewportZoomed}" TextTrimming="CharacterEllipsis"/>
                 <Border Grid.Column="5" Width="8" Height="8" CornerRadius="4" IsVisible="{Binding IsStreaming}" Background="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
             </Grid>
         </Border>
