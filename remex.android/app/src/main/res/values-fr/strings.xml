@@ -128,6 +128,7 @@
     <string name="rc_hibernate">Hiberner</string>
     <string name="rc_monitor_off">Éteindre l\'Écran</string>
     <string name="rc_logoff">Déconnexion</string>
+    <string name="rc_logoff_warning">Ferme vos programmes ouverts. Le PC reste allumé, mais RemEx ne pourra plus l\'atteindre tant que vous ne vous y reconnecterez pas.</string>
     <string name="rc_category_session">Session</string>
     <string name="rc_category_power">Alimentation</string>
     <string name="rc_category_energy">Énergie</string>

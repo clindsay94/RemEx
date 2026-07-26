@@ -128,6 +128,7 @@
     <string name="rc_hibernate">Гібернація</string>
     <string name="rc_monitor_off">Вимкнути монітор</string>
     <string name="rc_logoff">Вийти з системи</string>
+    <string name="rc_logoff_warning">Закриє відкриті програми. ПК залишиться увімкненим, але RemEx не зможе підключитися, доки ви не ввійдете в систему на ньому.</string>
     <string name="rc_category_session">Сеанс</string>
     <string name="rc_category_power">Живлення</string>
     <string name="rc_category_energy">Енергія</string>

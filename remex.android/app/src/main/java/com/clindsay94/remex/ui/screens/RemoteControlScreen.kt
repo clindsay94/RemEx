@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -45,7 +46,29 @@ private data class RemoteCommandCard(
         val action: String,
         val icon: ImageVector,
         val requiresConfirmation: Boolean,
-        val category: CommandCategory
+        val category: CommandCategory,
+        /**
+         * Optional short consequence shown only while the card is awaiting confirmation, for commands
+         * whose effect is not obvious. Note the confirm face REPLACES the card title with a generic
+         * "Confirm choice", so this text is the only place the action's effect appears — state the
+         * consequence first. Keep it to a sentence or two: these cards sit in a two-column grid, so
+         * roughly half the screen width, and every extra line pushes the buttons further down a card
+         * the grid does not scroll into view (RemEx-tgl1).
+         *
+         * `requiresConfirmation` must be true for this to ever render.
+         */
+        @param:StringRes val warningRes: Int? = null,
+        /**
+         * Whether the host honours a delay for this action. False hides the timer field in confirm
+         * mode, because offering one the host ignores is worse than offering none: the command would
+         * run immediately and still report success.
+         *
+         * SignOut is the case that matters — PingPongHandler's SIGNOUT branch never reads
+         * CommandParameters, and ISystemCommandService.SignOut() takes no delay, so nothing could
+         * honour it. Sleep/Hibernate/MonitorOff are equally delay-less but never show the field
+         * because they do not require confirmation.
+         */
+        val supportsDelay: Boolean = true
 )
 
 private val remoteCommandCards =
@@ -66,13 +89,27 @@ private val remoteCommandCards =
                         false,
                         CommandCategory.SESSION
                 ),
+                // Signing out closes every open program on the PC and discards unsaved work, exactly
+                // like Shutdown - so it confirms, like Shutdown. It previously did not, because this
+                // flag had been set from the CATEGORY rather than from destructiveness, and Sign Out
+                // sits in SESSION beside Wake and Lock, which are both harmless. Category stays
+                // SESSION (that grouping is correct); only the confirmation changes. (RemEx-awks.)
                 RemoteCommandCard(
                         "logoff",
                         R.string.rc_logoff,
                         "SignOut",
                         Icons.AutoMirrored.Filled.Logout,
-                        false,
-                        CommandCategory.SESSION
+                        true,
+                        CommandCategory.SESSION,
+                        // The consequence a phone user cannot see: the PC stays ON but becomes
+                        // unreachable, because remex.agent lives in the signed-in session and is
+                        // started by a per-user logon task. Whoever taps this is by definition not
+                        // sitting at the PC, so they need telling BEFORE, not after.
+                        warningRes = R.string.rc_logoff_warning,
+                        // The host signs out immediately and cannot delay it, so do not offer a timer
+                        // the command will ignore while still reporting success. Only surfaced at all
+                        // because requiresConfirmation now shows the confirm face for this card.
+                        supportsDelay = false
                 ),
                 RemoteCommandCard(
                         "shutdown",
@@ -471,15 +508,32 @@ private fun CommandCard(
                     )
 
                     if (awaitingConfirmation) {
-                        OutlinedTextField(
-                                value = timerText,
-                                onValueChange = { value ->
-                                    onTimerTextChanged(value.filter(Char::isDigit).take(6))
-                                },
-                                label = { Text(stringResource(R.string.remote_control_timer_label)) },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                        )
+                        // Consequence line, only for commands that declare one. Placed above the
+                        // timer field and the buttons so it is read before the destructive action is
+                        // reachable, not after it. Theme role rather than a literal colour, so it
+                        // survives monochrome and contrast 1.0. (RemEx-awks.)
+                        card.warningRes?.let { warningRes ->
+                            Text(
+                                    text = stringResource(warningRes),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                            )
+                        }
+
+                        if (card.supportsDelay) {
+                            OutlinedTextField(
+                                    value = timerText,
+                                    onValueChange = { value ->
+                                        onTimerTextChanged(value.filter(Char::isDigit).take(6))
+                                    },
+                                    label = {
+                                        Text(stringResource(R.string.remote_control_timer_label))
+                                    },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                            )
+                        }
 
                         Row(
                                 modifier = Modifier.fillMaxWidth(),

@@ -128,6 +128,7 @@
     <string name="rc_hibernate">Hazırda Beklet</string>
     <string name="rc_monitor_off">Monitörü Kapat</string>
     <string name="rc_logoff">Oturumu Kapat</string>
+    <string name="rc_logoff_warning">Açık programlarınızı kapatır. Bilgisayarınız açık kalır, ancak siz orada yeniden oturum açmadıkça RemEx ona ulaşamaz.</string>
     <string name="rc_category_session">Oturum</string>
     <string name="rc_category_power">Güç</string>
     <string name="rc_category_energy">Enerji</string>
