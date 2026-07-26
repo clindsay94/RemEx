@@ -524,7 +524,7 @@
     <string name="file_transfer_deleted_success">Eliminado.</string>
     <string name="file_transfer_deleting_multiple">Eliminando %1$d elementos…</string>
     <string name="file_transfer_deleting_single">Eliminando %1$s…</string>
-    <string name="file_transfer_download_complete">Subida completada.</string>
+    <string name="file_transfer_download_complete">Descarga completada.</string>
     <string name="file_transfer_download_failed">Error de descarga: %1$s</string>
     <string name="file_transfer_download_failed_integrity">Error de descarga: falló la comprobación de integridad.</string>
     <string name="file_transfer_download_failed_sha256">Error de descarga: discrepancia de SHA-256</string>

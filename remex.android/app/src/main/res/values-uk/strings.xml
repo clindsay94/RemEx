@@ -512,7 +512,7 @@
     <string name="faq_q13">RemEx раптово відмовляється підключатися / просить повторно виконати сполучення. Чому?</string>
     <string name="faq_a13">Під час першого сполучення ваш телефон запам\'ятовує точний відбиток сертифіката вашого ПК і надалі довірятиме лише саме цьому ПК. Якщо сертифікат змінюється — наприклад, після перевстановлення remex.agent, відновлення ПК з резервної копії або переходу на нове обладнання — телефон правильно відмовляється від підключення, замість того щоб довіряти самозванцю.\n\nЦе очікувана поведінка системи безпеки, а не помилка. Щоб виправити це, видаліть (скасуйте сполучення) ПК на екрані підключення, а потім виконайте сполучення знову за допомогою нового 6-значного PIN-коду, показаного на ПК.</string>
     <string name="file_transfer_action_downloading">Завантаження</string>
-    <string name="file_transfer_action_uploading">Відправлення</string>
+    <string name="file_transfer_action_uploading">Вивантаження</string>
     <string name="file_transfer_adding_shortcut">Додавання ярлика…</string>
     <string name="file_transfer_browse_error">Не вдалося відкрити цю папку. Перевірте, чи ПК досі підключений і чи папка досі є спільною, а потім спробуйте ще раз.</string>
     <string name="file_transfer_send_error">Не вдалося дістатися до вашого ПК. Перевірте, чи обидва пристрої підключені до однієї мережі, а потім спробуйте ще раз.</string>
@@ -546,9 +546,9 @@
     <string name="file_transfer_transfer_failed">Передавання не завершено. Перевірте, чи ПК досі підключений, а потім спробуйте ще раз.</string>
     <string name="file_transfer_unable_open_location">Не вдалося відкрити вибране місце збереження.</string>
     <string name="file_transfer_unknown_error">Невідома помилка.</string>
-    <string name="file_transfer_upload_complete">Завантаження завершено.</string>
+    <string name="file_transfer_upload_complete">Вивантаження завершено.</string>
     <string name="file_transfer_upload_failed">Не вдалося надіслати файл. Перевірте, чи ПК досі підключений, а потім спробуйте ще раз.</string>
-    <string name="file_transfer_uploading_single">Завантаження %1$s…</string>
+    <string name="file_transfer_uploading_single">Вивантаження %1$s…</string>
     <string name="font_inter_premium">Inter (Преміум)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Технічний)</string>
     <string name="font_lato">Lato</string>
