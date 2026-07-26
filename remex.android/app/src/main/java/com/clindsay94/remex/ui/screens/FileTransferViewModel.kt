@@ -1063,22 +1063,18 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         recomputeDisplayed()
     }
 
-    private fun parseEntries(arr: JSONArray?): List<RemoteFileEntry> {
-        val list = mutableListOf<RemoteFileEntry>()
-        if (arr == null) return list
-        for (i in 0 until arr.length()) {
-            val item = arr.getJSONObject(i)
-            list.add(
-                RemoteFileEntry(
-                    name = item.optString("name"),
-                    isDirectory = item.optBoolean("isDirectory"),
-                    sizeBytes = item.optLong("sizeBytes"),
-                    modifiedUnixMs = item.optLong("modifiedUnixMs"),
-                )
+    // Shared parse lives in FileManagerLogic (RemEx-4xhj) — ShareToPcViewModel consumes the same
+    // `entries` shape (folders only, for its destination picker). This screen additionally needs
+    // sizeBytes/modifiedUnixMs for the full listing, so it maps onto RemoteFileEntry itself.
+    private fun parseEntries(arr: JSONArray?): List<RemoteFileEntry> =
+        FileManagerLogic.parseFileEntries(arr).map {
+            RemoteFileEntry(
+                name = it.name,
+                isDirectory = it.isDirectory,
+                sizeBytes = it.sizeBytes,
+                modifiedUnixMs = it.modifiedUnixMs,
             )
         }
-        return list
-    }
 
     private fun handleManageResponse(obj: JSONObject) {
         val requestId = obj.optJSONObject("fileManageResponse")?.optString("requestId") ?: return
@@ -1257,22 +1253,21 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    private fun parseRoots(arr: JSONArray): List<RemoteSharedRoot> = buildList {
-        for (i in 0 until arr.length()) {
-            val item = arr.getJSONObject(i)
-            add(
-                RemoteSharedRoot(
-                    rootId = item.optString("rootId"),
-                    displayName = item.optString("displayName"),
-                    isWritable = item.optBoolean("isWritable"),
-                    canRename = item.optBoolean("canRename"),
-                    canMove = item.optBoolean("canMove"),
-                    canDelete = item.optBoolean("canDelete"),
-                    canRemoveRoot = item.optBoolean("canRemoveRoot"),
-                )
+    // Shared parse lives in FileManagerLogic (RemEx-4xhj) — ShareToPcViewModel consumes the same
+    // `roots` shape. Only the mapping to this screen's richer RemoteSharedRoot (canRename/canMove/
+    // canDelete/canRemoveRoot) stays here; error handling for the response stays in the caller.
+    private fun parseRoots(arr: JSONArray): List<RemoteSharedRoot> =
+        FileManagerLogic.parseSharedRoots(arr).map {
+            RemoteSharedRoot(
+                rootId = it.rootId,
+                displayName = it.displayName,
+                isWritable = it.isWritable,
+                canRename = it.canRename,
+                canMove = it.canMove,
+                canDelete = it.canDelete,
+                canRemoveRoot = it.canRemoveRoot,
             )
         }
-    }
 
     private fun cleanupDownload(deletePartial: Boolean) {
         val download = activeDownload ?: return

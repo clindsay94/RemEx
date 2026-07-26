@@ -1,13 +1,21 @@
 package com.clindsay94.remex.ui.screens
 
+import org.json.JSONArray
+
 /**
  * Pure, Android-free logic for the file-manager UI (plan WP7). Extracted so the state decisions the
  * [FileTransferViewModel] makes — sorting, breadcrumb parsing, selection reduction, path math — can be
  * unit-tested on the JVM without a live socket, DataStore, or Compose runtime (mirrors how
  * `TransferResumeLogic` isolates the resume arithmetic in WP5).
  *
- * Nothing here touches the wire: all protocol field names live in [FileTransferViewModel] and mirror
- * `remex.core` verbatim. This file only shuffles already-parsed domain objects.
+ * [parseSharedRoots]/[parseFileEntries] are the one exception to "nothing here touches the wire": they
+ * parse the raw `roots`/`entries` JSON arrays shared verbatim between `file_roots_response` and
+ * `file_browse_response` (see `remex.core`). [FileTransferViewModel] and
+ * `com.clindsay94.remex.share.ShareToPcViewModel` both consumed this exact shape independently
+ * (RemEx-4xhj); they now share the parse here and map the result onto their own screen-specific model
+ * (`RemoteSharedRoot`/`RemoteFileEntry` vs the Share screen's lighter `ShareRoot`/`ShareDirEntry`).
+ * `org.json` is plain old Java, so this stays JVM-testable without Robolectric (the app module adds the
+ * real `org.json:json` jar as a `testImplementation` for exactly this).
  */
 
 /** Sort field for the folder listing. */
@@ -51,6 +59,31 @@ data class FileManagerCapabilities(
 
 /** One tappable breadcrumb segment: a display [label] and the absolute [path] it navigates to. */
 data class Breadcrumb(val label: String, val path: String)
+
+/**
+ * Raw shape of one `roots` array item from `file_roots_response`, before a caller maps it onto its own
+ * screen-specific model. Mirrors `remex.core` `FileSharedRoot` fields verbatim.
+ */
+data class ParsedSharedRoot(
+    val rootId: String,
+    val displayName: String,
+    val isWritable: Boolean,
+    val canRename: Boolean,
+    val canMove: Boolean,
+    val canDelete: Boolean,
+    val canRemoveRoot: Boolean,
+)
+
+/**
+ * Raw shape of one `entries` array item from `file_browse_response`, before a caller maps it onto its
+ * own screen-specific model. Mirrors `remex.core` `FileEntry` fields verbatim.
+ */
+data class ParsedFileEntry(
+    val name: String,
+    val isDirectory: Boolean,
+    val sizeBytes: Long,
+    val modifiedUnixMs: Long,
+)
 
 /** Detailed metadata for the properties sheet. Mirrors `remex.core` `FileMetadataResponse`. */
 data class FileProperties(
@@ -144,6 +177,41 @@ object FileManagerLogic {
     fun isAtRoot(path: String): Boolean {
         val normalized = path.replace('\\', '/').trim('/')
         return normalized.isEmpty()
+    }
+
+    /** Parses a `file_roots_response` `roots` array into [ParsedSharedRoot]s. A null array yields empty. */
+    fun parseSharedRoots(arr: JSONArray?): List<ParsedSharedRoot> = buildList {
+        if (arr == null) return@buildList
+        for (i in 0 until arr.length()) {
+            val item = arr.getJSONObject(i)
+            add(
+                ParsedSharedRoot(
+                    rootId = item.optString("rootId"),
+                    displayName = item.optString("displayName"),
+                    isWritable = item.optBoolean("isWritable"),
+                    canRename = item.optBoolean("canRename"),
+                    canMove = item.optBoolean("canMove"),
+                    canDelete = item.optBoolean("canDelete"),
+                    canRemoveRoot = item.optBoolean("canRemoveRoot"),
+                )
+            )
+        }
+    }
+
+    /** Parses a `file_browse_response` `entries` array into [ParsedFileEntry]s. A null array yields empty. */
+    fun parseFileEntries(arr: JSONArray?): List<ParsedFileEntry> = buildList {
+        if (arr == null) return@buildList
+        for (i in 0 until arr.length()) {
+            val item = arr.getJSONObject(i)
+            add(
+                ParsedFileEntry(
+                    name = item.optString("name"),
+                    isDirectory = item.optBoolean("isDirectory"),
+                    sizeBytes = item.optLong("sizeBytes"),
+                    modifiedUnixMs = item.optLong("modifiedUnixMs"),
+                )
+            )
+        }
     }
 
     private val IMAGE_EXTENSIONS =

@@ -20,7 +20,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONArray
 import org.json.JSONObject
 
 /** A single item picked from the OS share sheet, resolved to a display name + size. */
@@ -252,18 +251,15 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun handleRoots(response: JSONObject?) {
         rootsLoaded = true
-        val arr = response?.optJSONArray("roots") ?: JSONArray()
-        val list = mutableListOf<ShareRoot>()
-        for (i in 0 until arr.length()) {
-            val item = arr.getJSONObject(i)
-            list.add(
-                ShareRoot(
-                    rootId = item.optString("rootId"),
-                    displayName = item.optString("displayName"),
-                    isWritable = item.optBoolean("isWritable"),
-                )
-            )
-        }
+        // Shared parse lives in FileManagerLogic (RemEx-4xhj) — mirrors FileTransferViewModel's
+        // parseRoots for the same `roots` shape; this screen only needs the lighter ShareRoot subset
+        // (no canRename/canMove/canDelete/canRemoveRoot). Unlike FileTransferViewModel, this screen has
+        // never surfaced `errorMessage` from the response — that's a pre-existing behavioural
+        // difference, kept as-is rather than accidentally added/removed by this dedup.
+        val list =
+            FileManagerLogic.parseSharedRoots(response?.optJSONArray("roots")).map {
+                ShareRoot(rootId = it.rootId, displayName = it.displayName, isWritable = it.isWritable)
+            }
         _roots.value = list
         // Auto-select the first writable root (or the first root) so a destination is ready to go.
         if (_selectedRootId.value == null) {
@@ -281,13 +277,12 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
         if (!FileManagerLogic.isAtRoot(_path.value)) {
             entries.add(ShareDirEntry(FileManagerLogic.PARENT_ENTRY, isParent = true))
         }
-        val arr = response.optJSONArray("entries") ?: JSONArray()
-        for (i in 0 until arr.length()) {
-            val e = arr.getJSONObject(i)
-            if (e.optBoolean("isDirectory")) {
-                entries.add(ShareDirEntry(e.optString("name"), isParent = false))
-            }
-        }
+        // Shared parse lives in FileManagerLogic (RemEx-4xhj) — mirrors FileTransferViewModel's
+        // parseEntries for the same `entries` shape; this screen's destination picker only shows
+        // directories (files aren't a valid drop target) and only needs the name.
+        FileManagerLogic.parseFileEntries(response.optJSONArray("entries"))
+            .filter { it.isDirectory }
+            .forEach { entries.add(ShareDirEntry(it.name, isParent = false)) }
         _folders.value = entries
     }
 
