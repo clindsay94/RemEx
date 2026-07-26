@@ -516,7 +516,6 @@
     <string name="file_transfer_adding_shortcut">Agregando acceso directo…</string>
     <string name="file_transfer_browse_error">No se pudo abrir esa carpeta. Comprueba que tu PC siga conectado y que la carpeta siga compartida, y vuelve a intentarlo.</string>
     <string name="file_transfer_send_error">No se pudo contactar con tu PC. Comprueba que ambos dispositivos estén en la misma red y vuelve a intentarlo.</string>
-$line
     <string name="file_transfer_cancelled">Cancelado.</string>
     <string name="file_transfer_delete_failed">No se pudo eliminar ese elemento. Comprueba que no esté abierto en tu PC y que la carpeta esté compartida, y vuelve a intentarlo.</string>
     <string name="file_transfer_delete_timeout">Tiempo de espera agotado al eliminar.</string>

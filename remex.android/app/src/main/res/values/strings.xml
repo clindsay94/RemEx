@@ -746,7 +746,6 @@
     <string name="file_transfer_shared_folders_unavailable">Shared folders unavailable: %1$s</string>
     <string name="file_transfer_browse_error">Could not open that folder. Check your PC is still connected and the folder is still shared, then try again.</string>
     <string name="file_transfer_send_error">Could not reach your PC. Check both devices are on the same network, then try again.</string>
-$line
     <string name="file_transfer_action_downloading">Downloading</string>
     <string name="file_transfer_action_uploading">Uploading</string>
     <string name="file_transfer_progress_status">%1$s... %2$s</string>

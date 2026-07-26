@@ -516,7 +516,6 @@
     <string name="file_transfer_adding_shortcut">शॉर्टकट जोड़ा जा रहा है…</string>
     <string name="file_transfer_browse_error">वह फ़ोल्डर नहीं खोला जा सका। जांचें कि आपका पीसी अभी भी कनेक्ट है और फ़ोल्डर अभी भी साझा है, फिर दोबारा कोशिश करें।</string>
     <string name="file_transfer_send_error">आपके पीसी तक नहीं पहुंच सके। जांचें कि दोनों डिवाइस एक ही नेटवर्क पर हैं, फिर दोबारा कोशिश करें।</string>
-$line
     <string name="file_transfer_cancelled">रद्द कर दिया गया।</string>
     <string name="file_transfer_delete_failed">उस आइटम को हटाया नहीं जा सका। जांचें कि वह आपके पीसी पर खुला नहीं है और फ़ोल्डर साझा है, फिर दोबारा कोशिश करें।</string>
     <string name="file_transfer_delete_timeout">हटाने की समयावधि समाप्त।</string>

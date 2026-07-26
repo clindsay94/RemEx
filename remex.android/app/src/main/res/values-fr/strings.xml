@@ -516,7 +516,6 @@
     <string name="file_transfer_adding_shortcut">Ajout du raccourci…</string>
     <string name="file_transfer_browse_error">Impossible d\'ouvrir ce dossier. Vérifiez que votre PC est toujours connecté et que le dossier est toujours partagé, puis réessayez.</string>
     <string name="file_transfer_send_error">Impossible de joindre votre PC. Vérifiez que les deux appareils sont sur le même réseau, puis réessayez.</string>
-$line
     <string name="file_transfer_cancelled">Annulé.</string>
     <string name="file_transfer_delete_failed">Impossible de supprimer cet élément. Vérifiez qu\'il n\'est pas ouvert sur votre PC et que le dossier est partagé, puis réessayez.</string>
     <string name="file_transfer_delete_timeout">Délai de suppression dépassé.</string>

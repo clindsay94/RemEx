@@ -485,7 +485,6 @@
     <string name="file_transfer_adding_shortcut">Dodawanie skrótu…</string>
     <string name="file_transfer_browse_error">Nie udało się otworzyć tego folderu. Sprawdź, czy komputer jest nadal połączony i czy folder jest nadal udostępniony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_send_error">Nie udało się połączyć z komputerem. Sprawdź, czy oba urządzenia są w tej samej sieci, a następnie spróbuj ponownie.</string>
-$line
     <string name="file_transfer_cancelled">Anulowano.</string>
     <string name="file_transfer_delete_failed">Nie udało się usunąć tego elementu. Sprawdź, czy nie jest otwarty na komputerze i czy folder jest udostępniony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_delete_timeout">Przekroczono limit czasu usuwania.</string>

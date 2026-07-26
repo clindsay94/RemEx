@@ -516,7 +516,6 @@
     <string name="file_transfer_adding_shortcut">Додавання ярлика…</string>
     <string name="file_transfer_browse_error">Не вдалося відкрити цю папку. Перевірте, чи ПК досі підключений і чи папка досі є спільною, а потім спробуйте ще раз.</string>
     <string name="file_transfer_send_error">Не вдалося дістатися до вашого ПК. Перевірте, чи обидва пристрої підключені до однієї мережі, а потім спробуйте ще раз.</string>
-$line
     <string name="file_transfer_cancelled">Скасовано.</string>
     <string name="file_transfer_delete_failed">Не вдалося видалити цей елемент. Перевірте, чи він не відкритий на ПК і чи папка є спільною, а потім спробуйте ще раз.</string>
     <string name="file_transfer_delete_timeout">Час видалення вичерпано.</string>

@@ -516,7 +516,6 @@
     <string name="file_transfer_adding_shortcut">Adicionando atalho…</string>
     <string name="file_transfer_browse_error">Não foi possível abrir essa pasta. Verifique se o seu PC ainda está conectado e se a pasta continua compartilhada e tente novamente.</string>
     <string name="file_transfer_send_error">Não foi possível alcançar o seu PC. Verifique se os dois dispositivos estão na mesma rede e tente novamente.</string>
-$line
     <string name="file_transfer_cancelled">Cancelado.</string>
     <string name="file_transfer_delete_failed">Não foi possível excluir esse item. Verifique se ele não está aberto no seu PC e se a pasta está compartilhada e tente novamente.</string>
     <string name="file_transfer_delete_timeout">Tempo limite de exclusão atingido.</string>

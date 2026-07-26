@@ -516,7 +516,6 @@
     <string name="file_transfer_adding_shortcut">Kısayol ekleniyor…</string>
     <string name="file_transfer_browse_error">Bu klasör açılamadı. Bilgisayarınızın hâlâ bağlı olduğundan ve klasörün hâlâ paylaşıldığından emin olun, ardından tekrar deneyin.</string>
     <string name="file_transfer_send_error">Bilgisayarınıza ulaşılamadı. Her iki cihazın da aynı ağda olduğundan emin olun, ardından tekrar deneyin.</string>
-$line
     <string name="file_transfer_cancelled">İptal edildi.</string>
     <string name="file_transfer_delete_failed">Bu öğe silinemedi. Bilgisayarınızda açık olmadığından ve klasörün paylaşıldığından emin olun, ardından tekrar deneyin.</string>
     <string name="file_transfer_delete_timeout">Silme işlemi zaman aşımına uğradı.</string>

@@ -516,7 +516,6 @@
     <string name="file_transfer_adding_shortcut">Menambahkan pintasan…</string>
     <string name="file_transfer_browse_error">Tidak dapat membuka folder tersebut. Pastikan PC Anda masih terhubung dan folder masih dibagikan, lalu coba lagi.</string>
     <string name="file_transfer_send_error">Tidak dapat menjangkau PC Anda. Pastikan kedua perangkat berada di jaringan yang sama, lalu coba lagi.</string>
-$line
     <string name="file_transfer_cancelled">Dibatalkan.</string>
     <string name="file_transfer_delete_failed">Tidak dapat menghapus item tersebut. Pastikan item tidak sedang terbuka di PC Anda dan folder sudah dibagikan, lalu coba lagi.</string>
     <string name="file_transfer_delete_timeout">Waktu penghapusan habis.</string>
