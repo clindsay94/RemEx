@@ -426,15 +426,25 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                             "RemexManager",
                             "InitRemex returned blank — possible native-side failure for $host:$port"
                     )
-                    _connectionError.tryEmit("Connection failed: no response received")
+                    _connectionError.tryEmit(
+                            context.applicationContext.getString(
+                                    R.string.connection_error_no_response
+                            )
+                    )
                     _isConnecting.value = false
                 } else {
                     val json = JSONObject(result)
                     if (!json.optBoolean("success", false)) {
                         // Surface the native failure reason instead of silently stopping the
-                        // spinner with no error shown to the user.
+                        // spinner with no error shown to the user. The native reason (like the
+                        // pairing diagnostics above) is always English and untranslatable at the
+                        // source, so only the fallback for a blank reason is localized here.
                         _connectionError.tryEmit(
-                                json.optString("reason").ifBlank { "Connection failed" }
+                                json.optString("reason").ifBlank {
+                                    context.applicationContext.getString(
+                                            R.string.connection_error_generic
+                                    )
+                                }
                         )
                         _isConnecting.value = false
                     }
@@ -443,8 +453,15 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 _isConnecting.value = false
             }
         } catch (e: UnsatisfiedLinkError) {
+            // "Native library not linked" is developer-grade diagnostic text; it must never reach
+            // the user card verbatim in any language, so the technical detail stays in the log and
+            // the user sees a plain, actionable message instead. (RemEx-hn05)
             Log.e("RemexManager", "JNI link failure during connect", e)
-            _connectionError.tryEmit("Native library not linked: ${e.message}")
+            _connectionError.tryEmit(
+                    settings.context.applicationContext.getString(
+                            R.string.connection_error_native_missing
+                    )
+            )
             _isConnecting.value = false
         } catch (e: Exception) {
             Log.e("RemexManager", "Connect failed", e)
