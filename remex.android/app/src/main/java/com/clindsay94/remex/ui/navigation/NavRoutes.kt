@@ -64,7 +64,7 @@ sealed class Screen(val route: String, @param:StringRes val titleRes: Int, val i
                 Screen("faq", R.string.screen_faq_title, Icons.AutoMirrored.Filled.HelpOutline)
         object About : Screen("about", R.string.screen_about_title, Icons.Default.Info)
         object QrScanner :
-                Screen("qr_scanner", R.string.screen_qr_scanner_title, Icons.Default.QrCodeScanner)
+                Screen("qr_scanner", R.string.qr_scanner_title, Icons.Default.QrCodeScanner)
         object Pairing :
                 Screen("pairing", R.string.pairing_title, Icons.Default.QrCodeScanner)
         object FileTransfer :

@@ -25,7 +25,6 @@
     <string name="snackbar_setup_connection">Set up connection</string>
     <string name="connection_required_context">Connection required to access this feature.</string>
     <string name="nav_more_label">More</string>
-    <string name="cd_settings_fab">Settings</string>
     <string name="exit_dialog_title">Exit RemEx?</string>
     <string name="exit_dialog_message">Are you sure you want to exit?</string>
     <string name="button_exit">Exit</string>
@@ -46,20 +45,11 @@
     <string name="cd_phone">Phone</string>
     <string name="cd_terminal">Terminal</string>
     <string name="cd_launch_icon">Launch</string>
-    <string name="cd_trackpad_icon">Trackpad</string>
     <string name="cd_monitor_icon">Monitor</string>
     <string name="cd_play_icon">Play</string>
     <string name="cd_camera_icon">Camera</string>
     <string name="cd_section_icon">Section Icon</string>
-    <string name="cd_card_enabled">Card Enabled</string>
-    <string name="cd_connection_icon">Connection</string>
     <string name="cd_error_icon">Error</string>
-    <string name="cd_wifi_icon">Wi-Fi</string>
-    <string name="cd_search_icon">Search</string>
-    <string name="cd_qr_scanner_icon">QR Scanner</string>
-    <string name="cd_success_icon">Success</string>
-    <string name="cd_help_icon">Help</string>
-    <string name="cd_expand_icon">Expand</string>
     <string name="cd_category_icon">Category</string>
     <string name="cd_resize_cards">Resize cards</string>
 
@@ -144,7 +134,6 @@
     <string name="task_manager_kill_message">Are you sure you want to terminate %1$s (PID: %2$d)?</string>
     <string name="button_kill">Kill</string>
     <string name="task_manager_pid_label">PID: %1$d</string>
-    <string name="cd_kill_process">Kill</string>
 
     
     <string name="screen_remote_mouse_title">Remote Mouse</string>
@@ -232,12 +221,6 @@
     <string name="remote_desktop_stopped">Stream Stopped</string>
     <string name="button_start_streaming">Start Streaming</string>
     <string name="cd_exit_fullscreen">Exit Fullscreen</string>
-    <string name="cd_zoom_in">Zoom In</string>
-    <string name="cd_zoom_out">Zoom Out</string>
-    <string name="cd_mouse_left">Left Click</string>
-    <string name="cd_mouse_middle">Middle Click</string>
-    <string name="cd_mouse_right">Right Click</string>
-    <string name="cd_expand_mouse_controls">Expand Mouse Controls</string>
     <string name="remote_desktop_config_title">Stream Configuration</string>
     <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
     <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
@@ -336,9 +319,7 @@
     <string name="screen_connection_title">Connection</string>
     <string name="screen_splash_title">Loading</string>
     <string name="screen_tutorial_title">Tutorial</string>
-    <string name="screen_qr_scanner_title">Scan QR Code</string>
     <string name="connection_host_settings">PC Settings</string>
-    <string name="cd_dismiss_error">Dismiss</string>
     <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
     <string name="connection_auto_discover_hint">Make sure the RemEx app is running on your PC and both devices are on the same Wi-Fi network.</string>
     <string name="connection_searching">Searching for your PC…</string>
@@ -772,7 +753,6 @@
     <string name="remote_desktop_display_primary">Primary display</string>
     <string name="remote_desktop_display_numbered">Display %1$d</string>
     <string name="remote_desktop_display_both">Both screens</string>
-    <string name="cd_display_picker_icon">Choose which display to view</string>
     
     <string name="rd_err_capture_unavailable">Screen capture isn’t working on your PC.</string>
     <string name="rd_err_capture_stopped">Screen capture stopped after %1$d frames. Your PC may have been locked or signed out.</string>
