@@ -3372,4 +3372,13 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="TaskManager_KillTargetChanged" xml:space="preserve">
     <value>कुछ भी बंद नहीं किया गया। आपके निर्णय लेते समय "{0}" (PID {1}) बंद हो गया, और वह PID अब किसी दूसरे प्रोग्राम का हो सकता है। सूची ताज़ा कर दी गई है — प्रोग्राम फिर से खोजें और दोबारा कोशिश करें।</value>
   </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>साइन आउट — क्या आप निश्चित हैं?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>रिमोट पीसी पर खुला सब कुछ बंद हो जाएगा और बिना सहेजा गया काम खो जाएगा। पीसी चालू रहेगा, लेकिन RemEx का कनेक्शन टूट जाएगा और जब तक कोई पीसी पर स्वयं साइन इन नहीं करता, तब तक दोबारा कनेक्ट नहीं हो पाएगा।</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>साइन आउट करें</value>
+  </data>
 </root>

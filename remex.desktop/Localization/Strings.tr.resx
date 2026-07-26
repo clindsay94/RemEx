@@ -3376,4 +3376,13 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="TaskManager_KillTargetChanged" xml:space="preserve">
     <value>"{0}" (PID {1}) siz karar verirken kapandı, bu yüzden hiçbir şey sonlandırılmadı. O PID artık başka bir programa ait olabilir. Liste yenilendi — programı yeniden bulup tekrar deneyin.</value>
   </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>Oturumu Kapat — Emin misiniz?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>Uzaktaki bilgisayarda açık olan her şey kapatılacak ve kaydedilmemiş çalışmalar kaybolacak. Bilgisayar açık kalır, ancak RemEx bağlantısı kesilir ve biri bilgisayarda oturum açmadıkça ona yeniden ulaşamaz.</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>Oturumu Kapat</value>
+  </data>
 </root>

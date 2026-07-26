@@ -3375,4 +3375,13 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="TaskManager_KillTargetChanged" xml:space="preserve">
     <value>Tidak ada yang dihentikan. "{0}" (PID {1}) tertutup saat Anda memutuskan, dan PID itu kini mungkin milik program lain. Daftar telah disegarkan — cari programnya lagi lalu coba sekali lagi.</value>
   </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>Keluar — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>Semua yang terbuka di PC jarak jauh akan ditutup dan pekerjaan yang belum disimpan akan hilang. PC tetap menyala, tetapi RemEx akan terputus dan tidak dapat menjangkaunya lagi sampai seseorang masuk di PC itu sendiri.</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>Keluar</value>
+  </data>
 </root>

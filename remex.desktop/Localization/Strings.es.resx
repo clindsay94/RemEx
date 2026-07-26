@@ -3396,4 +3396,13 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="TaskManager_KillTargetChanged" xml:space="preserve">
     <value>No se terminó nada. «{0}» (PID {1}) se cerró mientras decidías, y ese PID puede pertenecer ahora a otro programa. La lista se actualizó: busca el programa de nuevo e inténtalo otra vez.</value>
   </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>Cerrar sesión — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>Todo lo que esté abierto en el PC remoto se cerrará y se perderá el trabajo no guardado. El PC seguirá encendido, pero RemEx se desconectará y no podrá volver a conectarse hasta que alguien inicie sesión en el propio PC.</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>Cerrar sesión</value>
+  </data>
 </root>

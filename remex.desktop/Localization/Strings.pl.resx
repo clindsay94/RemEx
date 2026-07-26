@@ -3373,4 +3373,13 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="TaskManager_KillTargetChanged" xml:space="preserve">
     <value>Nic nie zostało zakończone. Proces "{0}" (PID {1}) zakończył się w trakcie podejmowania decyzji, a ten PID może teraz należeć do innego programu. Lista została odświeżona — znajdź program ponownie i spróbuj jeszcze raz.</value>
   </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>Wylogowanie — czy na pewno?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>Wszystko otwarte na zdalnym komputerze zostanie zamknięte, a niezapisana praca utracona. Komputer pozostanie włączony, ale RemEx rozłączy się i nie będzie mógł go osiągnąć, dopóki ktoś nie zaloguje się na samym komputerze.</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>Wyloguj</value>
+  </data>
 </root>

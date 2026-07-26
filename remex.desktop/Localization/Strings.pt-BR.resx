@@ -3372,4 +3372,13 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="TaskManager_KillTargetChanged" xml:space="preserve">
     <value>Nada foi encerrado. "{0}" (PID {1}) foi fechado enquanto você decidia, e esse PID pode agora pertencer a outro programa. A lista foi atualizada — encontre o programa novamente e tente de novo.</value>
   </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>Sair — Tem certeza?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>Tudo o que estiver aberto no PC remoto será fechado e o trabalho não salvo será perdido. O PC continuará ligado, mas o RemEx será desconectado e não conseguirá acessá-lo novamente até que alguém faça login no próprio PC.</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>Sair</value>
+  </data>
 </root>

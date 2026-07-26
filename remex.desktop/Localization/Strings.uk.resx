@@ -3373,4 +3373,13 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="TaskManager_KillTargetChanged" xml:space="preserve">
     <value>Нічого не завершено. «{0}» (PID {1}) закрилася, поки ви вирішували, і цей PID тепер може належати іншій програмі. Список оновлено — знайдіть програму знову та повторіть спробу.</value>
   </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>Вихід із системи — ви впевнені?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>Усе відкрите на віддаленому ПК буде закрито, а незбережену роботу втрачено. ПК залишиться увімкненим, але RemEx від'єднається й не зможе знову до нього підключитися, доки хтось не увійде в систему на самому ПК.</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>Вийти</value>
+  </data>
 </root>

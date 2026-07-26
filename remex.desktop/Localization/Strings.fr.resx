@@ -3372,4 +3372,13 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="TaskManager_KillTargetChanged" xml:space="preserve">
     <value>Rien n'a été terminé. « {0} » (PID {1}) s'est fermé pendant que vous décidiez, et ce PID peut désormais appartenir à un autre programme. La liste a été actualisée : retrouvez le programme et réessayez.</value>
   </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>Déconnexion — Êtes-vous sûr ?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>Tout ce qui est ouvert sur le PC distant sera fermé et le travail non enregistré sera perdu. Le PC restera allumé, mais RemEx sera déconnecté et ne pourra plus l'atteindre tant que personne ne se connectera sur le PC lui-même.</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>Déconnexion</value>
+  </data>
 </root>
