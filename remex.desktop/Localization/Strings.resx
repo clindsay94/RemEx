@@ -3382,7 +3382,7 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
     <value>Sign Out — Are you sure?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Everything open on the remote PC will close and unsaved work will be lost. The PC stays on, but RemEx will disconnect and cannot reach it again until someone signs in on the PC itself.</value>
+    <value>Everything open on the remote PC will close and unsaved work will be lost. The PC stays on, but RemEx will disconnect and cannot reach it again until you sign in on the PC itself.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Sign Out</value>

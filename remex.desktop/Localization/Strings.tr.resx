@@ -3380,7 +3380,7 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
     <value>Oturumu Kapat — Emin misiniz?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Uzaktaki bilgisayarda açık olan her şey kapatılacak ve kaydedilmemiş çalışmalar kaybolacak. Bilgisayar açık kalır, ancak RemEx bağlantısı kesilir ve biri bilgisayarda oturum açmadıkça ona yeniden ulaşamaz.</value>
+    <value>Uzaktaki bilgisayarda açık olan her şey kapatılacak ve kaydedilmemiş çalışmalar kaybolacak. Bilgisayar açık kalır, ancak RemEx bağlantısı kesilir ve siz bilgisayarda yeniden oturum açmadıkça ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Oturumu Kapat</value>

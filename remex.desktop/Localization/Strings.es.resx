@@ -3400,7 +3400,7 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
     <value>Cerrar sesión — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Todo lo que esté abierto en el PC remoto se cerrará y se perderá el trabajo no guardado. El PC seguirá encendido, pero RemEx se desconectará y no podrá volver a conectarse hasta que alguien inicie sesión en el propio PC.</value>
+    <value>Todo lo que esté abierto en el PC remoto se cerrará y se perderá el trabajo no guardado. El PC seguirá encendido, pero RemEx se desconectará y no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Cerrar sesión</value>

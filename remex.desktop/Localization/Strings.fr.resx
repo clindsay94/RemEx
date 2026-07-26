@@ -3376,7 +3376,7 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
     <value>Déconnexion — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Tout ce qui est ouvert sur le PC distant sera fermé et le travail non enregistré sera perdu. Le PC restera allumé, mais RemEx sera déconnecté et ne pourra plus l'atteindre tant que personne ne se connectera sur le PC lui-même.</value>
+    <value>Tout ce qui est ouvert sur le PC distant sera fermé et le travail non enregistré sera perdu. Le PC restera allumé, mais RemEx sera déconnecté et ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Déconnexion</value>

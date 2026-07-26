@@ -3377,7 +3377,7 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
     <value>Wylogowanie — czy na pewno?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Wszystko otwarte na zdalnym komputerze zostanie zamknięte, a niezapisana praca utracona. Komputer pozostanie włączony, ale RemEx rozłączy się i nie będzie mógł go osiągnąć, dopóki ktoś nie zaloguje się na samym komputerze.</value>
+    <value>Wszystko otwarte na zdalnym komputerze zostanie zamknięte, a niezapisana praca utracona. Komputer pozostanie włączony, ale RemEx rozłączy się i nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Wyloguj</value>

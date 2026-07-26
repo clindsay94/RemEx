@@ -3379,7 +3379,7 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
     <value>Keluar — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_SignOut_Message" xml:space="preserve">
-    <value>Semua yang terbuka di PC jarak jauh akan ditutup dan pekerjaan yang belum disimpan akan hilang. PC tetap menyala, tetapi RemEx akan terputus dan tidak dapat menjangkaunya lagi sampai seseorang masuk di PC itu sendiri.</value>
+    <value>Semua yang terbuka di PC jarak jauh akan ditutup dan pekerjaan yang belum disimpan akan hilang. PC tetap menyala, tetapi RemEx akan terputus dan tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Keluar</value>
