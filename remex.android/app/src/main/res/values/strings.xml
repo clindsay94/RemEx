@@ -192,7 +192,7 @@
     
     <string name="screen_remote_desktop_title">Remote Desktop</string>
     <string name="cd_show_keyboard">Show Keyboard</string>
-    <string name="cd_key_escape">Escape</string>
+    <string name="cd_key_escape">Esc (Escape)</string>
     <string name="cd_key_tab">Tab</string>
     <string name="cd_key_backspace">Backspace</string>
     <string name="cd_key_enter">Enter</string>
@@ -200,17 +200,17 @@
     <string name="cd_key_arrow_up">Up arrow</string>
     <string name="cd_key_arrow_down">Down arrow</string>
     <string name="cd_key_arrow_right">Right arrow</string>
-    <string name="cd_key_delete">Delete</string>
+    <string name="cd_key_delete">Del (Delete)</string>
     <string name="cd_key_windows">Windows key</string>
-    <string name="cd_key_ctrl">Control</string>
+    <string name="cd_key_ctrl">Ctrl (Control)</string>
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift</string>
     <string name="cd_key_altgr">AltGr</string>
     <string name="cd_key_home">Home</string>
     <string name="cd_key_end">End</string>
-    <string name="cd_key_pageup">Page Up</string>
-    <string name="cd_key_pagedown">Page Down</string>
-    <string name="cd_key_insert">Insert</string>
+    <string name="cd_key_pageup">PgUp (Page Up)</string>
+    <string name="cd_key_pagedown">PgDn (Page Down)</string>
+    <string name="cd_key_insert">Ins (Insert)</string>
     <string name="cd_more_keys">More keys</string>
     <string name="cd_show_pc_keys">Show PC keys</string>
     <string name="cd_move_pc_keys">Move PC keys bar</string>

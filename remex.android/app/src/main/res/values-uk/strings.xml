@@ -134,7 +134,7 @@
     <string name="rc_category_energy">Енергія</string>
     <string name="screen_remote_desktop_title">Віддалений робочий стіл</string>
     <string name="cd_show_keyboard">Показати клавіатуру</string>
-    <string name="cd_key_escape">Escape</string>
+    <string name="cd_key_escape">Esc (Escape)</string>
     <string name="cd_key_tab">Tab</string>
     <string name="cd_key_backspace">Backspace</string>
     <string name="cd_key_enter">Enter</string>
@@ -142,7 +142,7 @@
     <string name="cd_key_arrow_up">Стрілка вгору</string>
     <string name="cd_key_arrow_down">Стрілка вниз</string>
     <string name="cd_key_arrow_right">Стрілка вправо</string>
-    <string name="cd_key_delete">Delete</string>
+    <string name="cd_key_delete">Del (Delete)</string>
     <string name="cd_key_windows">Клавіша Windows</string>
     <string name="cd_key_ctrl">Ctrl</string>
     <string name="cd_key_alt">Alt</string>
@@ -150,9 +150,9 @@
     <string name="cd_key_altgr">AltGr</string>
     <string name="cd_key_home">Home</string>
     <string name="cd_key_end">End</string>
-    <string name="cd_key_pageup">Page Up</string>
-    <string name="cd_key_pagedown">Page Down</string>
-    <string name="cd_key_insert">Insert</string>
+    <string name="cd_key_pageup">PgUp (Page Up)</string>
+    <string name="cd_key_pagedown">PgDn (Page Down)</string>
+    <string name="cd_key_insert">Ins (Insert)</string>
     <string name="cd_more_keys">Більше клавіш</string>
     <string name="cd_show_pc_keys">Показати клавіші ПК</string>
     <string name="cd_move_pc_keys">Перемістити панель клавіш ПК</string>

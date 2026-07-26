@@ -134,7 +134,7 @@
     <string name="rc_category_energy">Enerji</string>
     <string name="screen_remote_desktop_title">Uzak Masaüstü</string>
     <string name="cd_show_keyboard">Klavyeyi Göster</string>
-    <string name="cd_key_escape">Escape</string>
+    <string name="cd_key_escape">Esc (Escape)</string>
     <string name="cd_key_tab">Tab</string>
     <string name="cd_key_backspace">Geri al</string>
     <string name="cd_key_enter">Enter</string>
@@ -142,7 +142,7 @@
     <string name="cd_key_arrow_up">Yukarı ok</string>
     <string name="cd_key_arrow_down">Aşağı ok</string>
     <string name="cd_key_arrow_right">Sağ ok</string>
-    <string name="cd_key_delete">Delete</string>
+    <string name="cd_key_delete">Del (Delete)</string>
     <string name="cd_key_windows">Windows tuşu</string>
     <string name="cd_key_ctrl">Ctrl</string>
     <string name="cd_key_alt">Alt</string>
@@ -150,9 +150,9 @@
     <string name="cd_key_altgr">AltGr</string>
     <string name="cd_key_home">Home</string>
     <string name="cd_key_end">End</string>
-    <string name="cd_key_pageup">Page Up</string>
-    <string name="cd_key_pagedown">Page Down</string>
-    <string name="cd_key_insert">Insert</string>
+    <string name="cd_key_pageup">PgUp (Page Up)</string>
+    <string name="cd_key_pagedown">PgDn (Page Down)</string>
+    <string name="cd_key_insert">Ins (Insert)</string>
     <string name="cd_more_keys">Diğer tuşlar</string>
     <string name="cd_show_pc_keys">PC tuşlarını göster</string>
     <string name="cd_move_pc_keys">PC tuş çubuğunu taşı</string>
