@@ -3328,4 +3328,43 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Монохромний</value>
   </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
+  <data name="Custom_BgType_Acrylic" xml:space="preserve">
+    <value>Acrylic</value>
+  </data>
+  <data name="Custom_BgType_Glass" xml:space="preserve">
+    <value>Скло</value>
+  </data>
+  <data name="Custom_BgType_Gradient" xml:space="preserve">
+    <value>Градієнт</value>
+  </data>
+  <data name="Custom_BgType_Wallpaper" xml:space="preserve">
+    <value>Шпалери</value>
+  </data>
+  <data name="Custom_BgType_Solid" xml:space="preserve">
+    <value>Суцільний колір</value>
+  </data>
+  <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
+    <value>Tonal Spot</value>
+  </data>
+  <data name="Custom_Scheme_Vibrant" xml:space="preserve">
+    <value>Яскрава</value>
+  </data>
+  <data name="Custom_Scheme_Expressive" xml:space="preserve">
+    <value>Виразна</value>
+  </data>
+  <data name="Custom_Scheme_Rainbow" xml:space="preserve">
+    <value>Веселка</value>
+  </data>
+  <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
+    <value>Фруктовий салат</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>За вмістом</value>
+  </data>
+  <data name="Custom_Scheme_Spritz" xml:space="preserve">
+    <value>Spritz</value>
+  </data>
 </root>

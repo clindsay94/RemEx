@@ -3327,4 +3327,43 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monocromático</value>
   </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
+  <data name="Custom_BgType_Acrylic" xml:space="preserve">
+    <value>Acrylic</value>
+  </data>
+  <data name="Custom_BgType_Glass" xml:space="preserve">
+    <value>Vidro</value>
+  </data>
+  <data name="Custom_BgType_Gradient" xml:space="preserve">
+    <value>Gradiente</value>
+  </data>
+  <data name="Custom_BgType_Wallpaper" xml:space="preserve">
+    <value>Papel de parede</value>
+  </data>
+  <data name="Custom_BgType_Solid" xml:space="preserve">
+    <value>Cor sólida</value>
+  </data>
+  <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
+    <value>Tonal Spot</value>
+  </data>
+  <data name="Custom_Scheme_Vibrant" xml:space="preserve">
+    <value>Vibrante</value>
+  </data>
+  <data name="Custom_Scheme_Expressive" xml:space="preserve">
+    <value>Expressivo</value>
+  </data>
+  <data name="Custom_Scheme_Rainbow" xml:space="preserve">
+    <value>Arco-íris</value>
+  </data>
+  <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
+    <value>Salada de frutas</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Com base no conteúdo</value>
+  </data>
+  <data name="Custom_Scheme_Spritz" xml:space="preserve">
+    <value>Spritz</value>
+  </data>
 </root>

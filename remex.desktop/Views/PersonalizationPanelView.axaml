@@ -2,7 +2,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Desktop.Models"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services"
     x:Class="Remex.Desktop.Views.PersonalizationPanelView" x:DataType="vm:CustomizationViewModel">
 
     <UserControl.Styles>
@@ -166,7 +166,20 @@
                 <TextBlock Text="{local:Localize Custom_Atmosphere}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                 <Grid ColumnDefinitions="*,2*">
                     <TextBlock Text="{local:Localize Custom_BackgroundMode}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" ItemsSource="{Binding AvailableBackgroundTypes}" HorizontalAlignment="Left" Width="160"/>
+                    <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" ItemsSource="{Binding AvailableBackgroundTypes}" HorizontalAlignment="Left" Width="160">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_BgType_">
+                                            <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                            <Binding/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                 </Grid>
                 <Grid ColumnDefinitions="*,2*" IsVisible="{Binding IsGlassModeSelected}">
                     <TextBlock Text="{local:Localize Custom_AppWindowOpacity}" VerticalAlignment="Center"/>
@@ -177,7 +190,20 @@
                 </Grid>
                 <Grid ColumnDefinitions="*,2*">
                     <TextBlock Text="{local:Localize Custom_SchemeVariant}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="1" SelectedItem="{Binding SchemeVariant}" ItemsSource="{Binding AvailableSchemeVariants}" HorizontalAlignment="Left" Width="160"/>
+                    <ComboBox Grid.Column="1" SelectedItem="{Binding SchemeVariant}" ItemsSource="{Binding AvailableSchemeVariants}" HorizontalAlignment="Left" Width="160">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_Scheme_">
+                                            <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                            <Binding/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                 </Grid>
 
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_WelcomeSplashTooltip}">

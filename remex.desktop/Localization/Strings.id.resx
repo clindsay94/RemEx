@@ -3330,4 +3330,43 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monokrom</value>
   </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
+  <data name="Custom_BgType_Acrylic" xml:space="preserve">
+    <value>Acrylic</value>
+  </data>
+  <data name="Custom_BgType_Glass" xml:space="preserve">
+    <value>Kaca</value>
+  </data>
+  <data name="Custom_BgType_Gradient" xml:space="preserve">
+    <value>Gradien</value>
+  </data>
+  <data name="Custom_BgType_Wallpaper" xml:space="preserve">
+    <value>Wallpaper</value>
+  </data>
+  <data name="Custom_BgType_Solid" xml:space="preserve">
+    <value>Warna Solid</value>
+  </data>
+  <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
+    <value>Tonal Spot</value>
+  </data>
+  <data name="Custom_Scheme_Vibrant" xml:space="preserve">
+    <value>Cerah</value>
+  </data>
+  <data name="Custom_Scheme_Expressive" xml:space="preserve">
+    <value>Ekspresif</value>
+  </data>
+  <data name="Custom_Scheme_Rainbow" xml:space="preserve">
+    <value>Pelangi</value>
+  </data>
+  <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
+    <value>Salad Buah</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Berdasarkan Konten</value>
+  </data>
+  <data name="Custom_Scheme_Spritz" xml:space="preserve">
+    <value>Spritz</value>
+  </data>
 </root>

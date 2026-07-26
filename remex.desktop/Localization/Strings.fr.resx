@@ -3327,4 +3327,43 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monochrome</value>
   </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
+  <data name="Custom_BgType_Acrylic" xml:space="preserve">
+    <value>Acrylic</value>
+  </data>
+  <data name="Custom_BgType_Glass" xml:space="preserve">
+    <value>Verre</value>
+  </data>
+  <data name="Custom_BgType_Gradient" xml:space="preserve">
+    <value>Dégradé</value>
+  </data>
+  <data name="Custom_BgType_Wallpaper" xml:space="preserve">
+    <value>Fond d'écran</value>
+  </data>
+  <data name="Custom_BgType_Solid" xml:space="preserve">
+    <value>Couleur unie</value>
+  </data>
+  <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
+    <value>Tonal Spot</value>
+  </data>
+  <data name="Custom_Scheme_Vibrant" xml:space="preserve">
+    <value>Éclatant</value>
+  </data>
+  <data name="Custom_Scheme_Expressive" xml:space="preserve">
+    <value>Expressif</value>
+  </data>
+  <data name="Custom_Scheme_Rainbow" xml:space="preserve">
+    <value>Arc-en-ciel</value>
+  </data>
+  <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
+    <value>Salade de fruits</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>D'après le contenu</value>
+  </data>
+  <data name="Custom_Scheme_Spritz" xml:space="preserve">
+    <value>Spritz</value>
+  </data>
 </root>

@@ -3351,4 +3351,43 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monocromo</value>
   </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
+  <data name="Custom_BgType_Acrylic" xml:space="preserve">
+    <value>Acrylic</value>
+  </data>
+  <data name="Custom_BgType_Glass" xml:space="preserve">
+    <value>Vidrio</value>
+  </data>
+  <data name="Custom_BgType_Gradient" xml:space="preserve">
+    <value>Degradado</value>
+  </data>
+  <data name="Custom_BgType_Wallpaper" xml:space="preserve">
+    <value>Fondo de pantalla</value>
+  </data>
+  <data name="Custom_BgType_Solid" xml:space="preserve">
+    <value>Color sólido</value>
+  </data>
+  <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
+    <value>Tonal Spot</value>
+  </data>
+  <data name="Custom_Scheme_Vibrant" xml:space="preserve">
+    <value>Vibrante</value>
+  </data>
+  <data name="Custom_Scheme_Expressive" xml:space="preserve">
+    <value>Expresivo</value>
+  </data>
+  <data name="Custom_Scheme_Rainbow" xml:space="preserve">
+    <value>Arcoíris</value>
+  </data>
+  <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
+    <value>Ensalada de frutas</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Según el contenido</value>
+  </data>
+  <data name="Custom_Scheme_Spritz" xml:space="preserve">
+    <value>Spritz</value>
+  </data>
 </root>

@@ -3328,4 +3328,43 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="Canvas_Preset_Monochrome" xml:space="preserve">
     <value>Monochromatyczny</value>
   </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
+  <data name="Custom_BgType_Acrylic" xml:space="preserve">
+    <value>Acrylic</value>
+  </data>
+  <data name="Custom_BgType_Glass" xml:space="preserve">
+    <value>Szkło</value>
+  </data>
+  <data name="Custom_BgType_Gradient" xml:space="preserve">
+    <value>Gradient</value>
+  </data>
+  <data name="Custom_BgType_Wallpaper" xml:space="preserve">
+    <value>Tapeta</value>
+  </data>
+  <data name="Custom_BgType_Solid" xml:space="preserve">
+    <value>Kolor jednolity</value>
+  </data>
+  <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
+    <value>Tonal Spot</value>
+  </data>
+  <data name="Custom_Scheme_Vibrant" xml:space="preserve">
+    <value>Żywy</value>
+  </data>
+  <data name="Custom_Scheme_Expressive" xml:space="preserve">
+    <value>Ekspresyjny</value>
+  </data>
+  <data name="Custom_Scheme_Rainbow" xml:space="preserve">
+    <value>Tęcza</value>
+  </data>
+  <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
+    <value>Sałatka owocowa</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Na podstawie zawartości</value>
+  </data>
+  <data name="Custom_Scheme_Spritz" xml:space="preserve">
+    <value>Spritz</value>
+  </data>
 </root>
