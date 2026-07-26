@@ -2133,28 +2133,53 @@ fun RemoteDesktopScreenContent(
                                                 }
                                         } else {
                                                 if (safeFrame != null && !safeFrame.isRecycled) {
-                                                        // Force Image to redraw when frame changes by using
-                                                        // key(timestamp)
-                                                        key(currentFrameTimestamp) {
-                                                                Image(
-                                                                        bitmap = safeFrame.asImageBitmap(),
-                                                                        contentDescription =
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .cd_remote_desktop_frame
-                                                                                ),
-                                                                        modifier =
-                                                                                Modifier.fillMaxSize()
-                                                                                        .graphicsLayer {
-                                                                                                scaleX = zoomFactor
-                                                                                                scaleY = zoomFactor
-                                                                                                translationX =
-                                                                                                        panOffsetX
-                                                                                                translationY =
-                                                                                                        panOffsetY
-                                                                                        },
-                                                                        contentScale = ContentScale.Fit
-                                                                )
+                                                        // RemEx-ki0t: this used to be
+                                                        // key(currentFrameTimestamp) { Image(...) }, which forced
+                                                        // Compose to tear down and rebuild the ENTIRE Image node
+                                                        // (layout + graphicsLayer + modifier chain) on every
+                                                        // incoming MJPEG frame just to force a redraw. A Canvas
+                                                        // node is a stable call site (no key wrapper), so it is
+                                                        // reused across frames — only the draw phase below reads
+                                                        // the new bitmap and repaints; the graphicsLayer transform
+                                                        // and layout stay intact. contentRect() is the app's own
+                                                        // letterbox calculation, already documented (above) as
+                                                        // producing the same fitted rect ContentScale.Fit did, so
+                                                        // input mapping/cursor overlay stay pixel-aligned with what
+                                                        // is actually drawn.
+                                                        val frameDescription =
+                                                                stringResource(R.string.cd_remote_desktop_frame)
+                                                        Canvas(
+                                                                modifier =
+                                                                        Modifier.fillMaxSize()
+                                                                                .semantics {
+                                                                                        contentDescription =
+                                                                                                frameDescription
+                                                                                }
+                                                                                .graphicsLayer {
+                                                                                        scaleX = zoomFactor
+                                                                                        scaleY = zoomFactor
+                                                                                        translationX = panOffsetX
+                                                                                        translationY = panOffsetY
+                                                                                }
+                                                        ) {
+                                                                val rect = contentRect()
+                                                                if (rect.w > 0f && rect.h > 0f) {
+                                                                        drawImage(
+                                                                                image = safeFrame.asImageBitmap(),
+                                                                                dstOffset =
+                                                                                        IntOffset(
+                                                                                                rect.x.roundToInt(),
+                                                                                                rect.y.roundToInt()
+                                                                                        ),
+                                                                                dstSize =
+                                                                                        IntSize(
+                                                                                                rect.w.roundToInt()
+                                                                                                        .coerceAtLeast(1),
+                                                                                                rect.h.roundToInt()
+                                                                                                        .coerceAtLeast(1)
+                                                                                        )
+                                                                        )
+                                                                }
                                                         }
                                                 }
                                         }
