@@ -149,9 +149,6 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>Endereço do PC</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>Chave de Acesso</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Salvar &amp; Reconectar</value>
   </data>
@@ -912,9 +909,6 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>Deixe em branco para desativar</value>
-  </data>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>ATMOSFERA</value>
   </data>
@@ -1050,12 +1044,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>Chave de autenticação opcional — deve corresponder à chave definida no PC. Deixe em branco se não configurado.</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>Deixe em branco para desativar</value>
-  </data>
   <data name="Settings_AutoSaveHint" xml:space="preserve">
     <value>As alterações são salvas automaticamente e persistem após reinicializações.</value>
   </data>
@@ -1593,7 +1581,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>RemEx neste PC</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>Your PC</value>
+    <value>Seu PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ Considere dar uma estrela no GitHub!</value>
@@ -2271,12 +2259,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
     <value>Raio do canto do botão remoto em pixels</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Ajustar o nível de opacidade visual do efeito de glassmorphism premium</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Porcentagem de opacidade do vidro fosco</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Ajustar a intensidade do brilho da aura neon de fundo ao redor das bordas dos painéis</value>

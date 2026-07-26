@@ -564,7 +564,6 @@
     <string name="wake_pc_failed">Nie udało się wysłać sygnału wybudzania</string>
     <string name="wake_pc_mac_not_configured">Adres MAC nie skonfigurowany — ustaw w Ustawieniach</string>
     <string name="wake_pc_lib_not_loaded">Nie można wysłać sygnału wybudzania</string>
-    <string name="pairing_error_generic">Parowanie nie powiodło się — spróbuj ponownie</string>
     <string name="pairing_error_unknown">Parowanie nie powiodło się z nieoczekiwanego powodu. Spróbuj ponownie; jeśli problem się powtarza, usuń sparowanie tego komputera na telefonie i sparuj od nowa.</string>
     <string name="splash_command_your">KONTROLUJ </string>
     <string name="splash_pc">SWÓJ KOMPUTER</string>
@@ -696,7 +695,6 @@
     <string name="pairing_error_malformed_response">Komputer odpowiedział, ale nie udało się odczytać odpowiedzi. Sprawdź, czy na komputerze działa ta sama wersja RemEx co na telefonie, a następnie sparuj ponownie.</string>
     <string name="pairing_error_empty_response">Komputer nie przesłał kodu PIN. Sprawdź, czy RemEx jest otwarty na komputerze i wyświetla kod PIN parowania, a następnie spróbuj ponownie.</string>
     <string name="pairing_error_reach_failed">Nie udało się połączyć z komputerem. Sprawdź, czy oba urządzenia są w tej samej sieci Wi-Fi i czy adres komputera jest poprawny, a następnie spróbuj ponownie.</string>
-    <string name="pairing_error_start_failed">Nie udało się rozpocząć parowania: %1$s. Sprawdź, czy RemEx jest otwarty na komputerze, a następnie spróbuj ponownie.</string>
     <string name="pairing_error_verify_failed">Nie udało się ukończyć parowania. Dotknij Anuluj, uzyskaj nowy kod PIN na komputerze, a następnie sparuj ponownie.</string>
     <string name="cd_dashboard_exit_selection">Zakończ zaznaczanie</string>
     <string name="cd_dashboard_pin_selection">Przypnij zaznaczone karty</string>

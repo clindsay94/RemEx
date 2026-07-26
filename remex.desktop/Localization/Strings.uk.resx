@@ -149,9 +149,6 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>Адреса хоста</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>Ключ доступу</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Зберегти &amp; Перепідключити</value>
   </data>
@@ -912,9 +909,6 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>Залиште порожнім, щоб вимкнути</value>
-  </data>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>АТМОСФЕРА</value>
   </data>
@@ -1050,12 +1044,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>Додатковий ключ автентифікації — має збігатися з ключем, встановленим на хості. Залиште порожнім, якщо не налаштовано.</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>Залиште порожнім, щоб вимкнути</value>
-  </data>
   <data name="Settings_AutoSaveHint" xml:space="preserve">
     <value>Зміни зберігаються автоматично та залишаються після перезавантаження.</value>
   </data>
@@ -1593,7 +1581,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>RemEx на цьому ПК</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>Your PC</value>
+    <value>Ваш ПК</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ Розгляньте можливість поставити зірочку на GitHub!</value>
@@ -2271,12 +2259,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
     <value>Радіус кута кнопок пульта в пікселях</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Налаштуйте рівень непрозорості преміум-ефекту скломорфізму</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Відсоток непрозорості скла</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Налаштуйте інтенсивність неонового світіння навколо країв панелі</value>

@@ -405,7 +405,6 @@
     <string name="pairing_error_malformed_response">Bilgisayarınız yanıt verdi ancak yanıt okunamadı. Bilgisayardaki RemEx sürümünün telefonunuzdakiyle aynı olduğundan emin olun, ardından yeniden eşleştirmeyi deneyin.</string>
     <string name="pairing_error_empty_response">Bilgisayarınız bir PIN kodu göndermedi. Bilgisayarda RemEx uygulamasının açık olduğundan ve bir eşleştirme PIN kodu gösterdiğinden emin olun, ardından tekrar deneyin.</string>
     <string name="pairing_error_reach_failed">Bilgisayarınıza ulaşılamadı. Her iki cihazın da aynı Wi-Fi ağında olduğundan ve bilgisayar adresinin doğru olduğundan emin olun, ardından tekrar deneyin.</string>
-    <string name="pairing_error_start_failed">Eşleştirme başlatılamadı: %1$s. Bilgisayarda RemEx uygulamasının açık olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="pairing_error_verify_failed">Eşleştirme tamamlanamadı. İptal düğmesine dokunun, bilgisayarınızdan yeni bir PIN kodu alın, ardından yeniden eşleştirin.</string>
     <string name="pairing_error_save_failed">Sabitlenmiş sunucuyu güvenli bir şekilde kaydetme başarısız oldu.</string>
     <string name="qr_error_missing_hash">QR kodunda sunucu sertifikası karması eksik</string>
@@ -591,7 +590,6 @@
     <string name="wake_pc_failed">Uyandırma sinyali gönderilemedi</string>
     <string name="wake_pc_mac_not_configured">MAC adresi yapılandırılmadı — Ayarlar\'dan ayarlayın</string>
     <string name="wake_pc_lib_not_loaded">Uyandırma sinyali gönderilemiyor</string>
-    <string name="pairing_error_generic">Eşleştirme başarısız — lütfen tekrar deneyin</string>
     <string name="pairing_error_unknown">Eşleştirme beklenmeyen bir nedenle başarısız oldu. Tekrar deneyin; sorun sürerse telefonunuzda bu bilgisayarın eşleştirmesini kaldırın ve baştan eşleştirin.</string>
     <string name="splash_command_your">PC\'NİZİ </string>
     <string name="splash_pc">YÖNETİN</string>

@@ -6,6 +6,7 @@ using Avalonia.Styling;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
 using System;
+using System.Diagnostics;
 
 namespace Remex.Desktop.Services;
 
@@ -54,6 +55,15 @@ public class ThemeService : IDisposable
             if (Enum.TryParse<AppTheme>(settings.ThemeId, true, out var themeEnum))
             {
                 ApplyBaseThemeInternal(themeEnum);
+            }
+            else
+            {
+                // An unrecognized theme id (typo'd/renamed preset, stale saved settings, etc.) must
+                // never leave the app with no base theme applied. Log it so the gap is findable, and
+                // fall back to the known-good default rather than silently doing nothing.
+                Trace.TraceWarning(
+                    $"ThemeService.ApplyCustomization: unknown theme preset '{settings.ThemeId}' — falling back to {nameof(AppTheme.Dynamic)}.");
+                ApplyBaseThemeInternal(AppTheme.Dynamic);
             }
 
             // ── Batch resource updates ──────────────────────────────────────

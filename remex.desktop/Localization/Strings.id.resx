@@ -149,9 +149,6 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>Alamat PC</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>Kunci Akses</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Simpan &amp; Hubungkan Ulang</value>
   </data>
@@ -912,9 +909,6 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>Kosongkan untuk menonaktifkan</value>
-  </data>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>ATMOSFER</value>
   </data>
@@ -1050,12 +1044,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>Kunci autentikasi opsional — harus cocok dengan kunci yang diatur pada PC. Biarkan kosong jika tidak dikonfigurasi.</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>Kosongkan untuk menonaktifkan</value>
-  </data>
   <data name="Settings_AutoSaveHint" xml:space="preserve">
     <value>Perubahan disimpan secara otomatis dan bertahan setelah restart.</value>
   </data>
@@ -1593,7 +1581,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>RemEx di PC ini</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>Your PC</value>
+    <value>PC Anda</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ Pertimbangkan untuk memberi bintang di GitHub!</value>
@@ -2271,12 +2259,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
     <value>Radius sudut tombol jarak jauh dalam piksel</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Sesuaikan tingkat opasitas visual dari efek latar belakang glassmorphism premium</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Persentase opasitas kaca es</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Sesuaikan intensitas kilau aura neon aksen latar belakang di sekitar tepi panel</value>

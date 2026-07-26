@@ -405,7 +405,6 @@
     <string name="pairing_error_malformed_response">PC Anda merespons, tetapi responsnya tidak dapat dibaca. Pastikan PC menjalankan versi RemEx yang sama dengan ponsel Anda, lalu coba sandingkan lagi.</string>
     <string name="pairing_error_empty_response">PC Anda tidak mengirim PIN. Pastikan RemEx terbuka di PC dan menampilkan PIN penyandingan, lalu coba lagi.</string>
     <string name="pairing_error_reach_failed">Tidak dapat menjangkau PC Anda. Pastikan kedua perangkat berada di jaringan Wi-Fi yang sama dan alamat PC sudah benar, lalu coba lagi.</string>
-    <string name="pairing_error_start_failed">Penyandingan tidak dapat dimulai: %1$s. Pastikan RemEx terbuka di PC, lalu coba lagi.</string>
     <string name="pairing_error_verify_failed">Penyandingan tidak dapat diselesaikan. Ketuk Batal, dapatkan PIN baru dari PC Anda, lalu sandingkan lagi.</string>
     <string name="pairing_error_save_failed">Gagal menyimpan PC yang dipinkan dengan aman.</string>
     <string name="qr_error_missing_hash">Kode QR tidak memiliki hash sertifikat PC</string>
@@ -462,7 +461,7 @@
     <string name="sensor_gpu_temp">Suhu GPU</string>
     <string name="sensor_fallback_label">Sensor %1$d</string>
     <string name="about_android_client_label">Klien Android</string>
-    <string name="about_pc_host_label">Your PC</string>
+    <string name="about_pc_host_label">PC Anda</string>
     <string name="about_status_unknown">Tidak Diketahui</string>
     <string name="about_view_github">Lihat Kode Sumber di GitHub</string>
     <string name="about_whats_new_1_label">Dasbor 2.0</string>
@@ -591,7 +590,6 @@
     <string name="wake_pc_failed">Gagal mengirim sinyal bangun</string>
     <string name="wake_pc_mac_not_configured">Alamat MAC belum dikonfigurasi — atur di Pengaturan</string>
     <string name="wake_pc_lib_not_loaded">Tidak dapat mengirim sinyal bangun</string>
-    <string name="pairing_error_generic">Penyandingan gagal — silakan coba lagi</string>
     <string name="pairing_error_unknown">Penyandingan gagal karena alasan yang tidak terduga. Coba lagi; jika terus terjadi, lepas sandingan PC ini di ponsel Anda lalu sandingkan dari awal.</string>
     <string name="splash_command_your">KENDALIKAN </string>
     <string name="splash_pc">PC ANDA</string>

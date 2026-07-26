@@ -405,7 +405,6 @@
     <string name="pairing_error_malformed_response">आपके पीसी ने जवाब दिया, लेकिन जवाब पढ़ा नहीं जा सका। जांचें कि पीसी पर RemEx का वही संस्करण चल रहा है जो आपके फोन पर है, फिर दोबारा पेयर करें।</string>
     <string name="pairing_error_empty_response">आपके पीसी ने कोई पिन नहीं भेजा। जांचें कि पीसी पर RemEx खुला है और पेयरिंग पिन दिखा रहा है, फिर दोबारा कोशिश करें।</string>
     <string name="pairing_error_reach_failed">आपके पीसी तक नहीं पहुंच सके। जांचें कि दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं और पीसी का पता सही है, फिर दोबारा कोशिश करें।</string>
-    <string name="pairing_error_start_failed">पेयरिंग शुरू नहीं हो सकी: %1$s। जांचें कि पीसी पर RemEx खुला है, फिर दोबारा कोशिश करें।</string>
     <string name="pairing_error_verify_failed">पेयरिंग पूरी नहीं हो सकी। रद्द करें पर टैप करें, अपने पीसी से नया पिन लें, फिर दोबारा पेयर करें।</string>
     <string name="pairing_error_save_failed">पिन किए गए होस्ट को सुरक्षित रूप से सहेजने में विफल।</string>
     <string name="qr_error_missing_hash">क्यूआर कोड में होस्ट प्रमाणपत्र हैश गायब है</string>
@@ -591,7 +590,6 @@
     <string name="wake_pc_failed">वेक सिग्नल भेजने में विफल</string>
     <string name="wake_pc_mac_not_configured">MAC पता कॉन्फ़िगर नहीं है — सेटिंग्स में सेट करें</string>
     <string name="wake_pc_lib_not_loaded">वेक सिग्नल नहीं भेजा जा सकता</string>
-    <string name="pairing_error_generic">पेयरिंग विफल — कृपया पुनः प्रयास करें</string>
     <string name="pairing_error_unknown">पेयरिंग किसी अनपेक्षित कारण से विफल रही। दोबारा कोशिश करें; अगर ऐसा होता रहे, तो अपने फोन पर इस पीसी को अनपेयर करें और शुरू से पेयर करें।</string>
     <string name="splash_command_your">अपने PC को </string>
     <string name="splash_pc">नियंत्रित करें</string>

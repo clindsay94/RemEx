@@ -149,9 +149,6 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>होस्ट पता</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>एक्सेस कुंजी</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>सहेजें &amp; पुनः कनेक्ट करें</value>
   </data>
@@ -912,9 +909,6 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>अक्षम करने के लिए खाली छोड़ दें</value>
-  </data>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>वातावरण</value>
   </data>
@@ -1050,12 +1044,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>वैकल्पिक प्रमाणीकरण कुंजी — होस्ट पर सेट की गई कुंजी से मेल खानी चाहिए। कॉन्फ़िगर नहीं होने पर खाली छोड़ दें।</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>अक्षम करने के लिए खाली छोड़ दें</value>
-  </data>
   <data name="Settings_AutoSaveHint" xml:space="preserve">
     <value>बदलाव स्वतः सहेजे जाते हैं और रीस्टार्ट के बाद भी बने रहते हैं।</value>
   </data>
@@ -1593,7 +1581,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>इस PC पर RemEx</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>Your PC</value>
+    <value>आपका PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ GitHub पर स्टार देने पर विचार करें!</value>
@@ -2271,12 +2259,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
     <value>रिमोट बटन कॉर्नर त्रिज्या पिक्सेल में</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>प्रीमियम ग्लासमोर्फिज़्म पृष्ठभूमि प्रभाव के विज़ुअल अपारदर्शिता स्तर को समायोजित करें</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>ग्लास फ़्रॉस्टिंग अपारदर्शिता प्रतिशत</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>पैनल किनारों के आसपास पृष्ठभूमि एक्सेंट नियॉन आभा चमक तीव्रता को समायोजित करें</value>

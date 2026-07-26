@@ -405,7 +405,6 @@
     <string name="pairing_error_malformed_response">Seu PC respondeu, mas não foi possível ler a resposta. Verifique se o PC está com a mesma versão do RemEx que o seu celular e tente parear novamente.</string>
     <string name="pairing_error_empty_response">Seu PC não enviou nenhum PIN. Verifique se o RemEx está aberto no PC e exibindo um PIN de pareamento e tente novamente.</string>
     <string name="pairing_error_reach_failed">Não foi possível alcançar o seu PC. Verifique se os dois dispositivos estão na mesma rede Wi-Fi e se o endereço do PC está correto e tente novamente.</string>
-    <string name="pairing_error_start_failed">Não foi possível iniciar o pareamento: %1$s. Verifique se o RemEx está aberto no PC e tente novamente.</string>
     <string name="pairing_error_verify_failed">Não foi possível concluir o pareamento. Toque em Cancelar, obtenha um novo PIN no seu PC e pareie novamente.</string>
     <string name="pairing_error_save_failed">Falha ao salvar o PC fixado com segurança.</string>
     <string name="qr_error_missing_hash">O código QR não contém o hash do certificado do PC</string>
@@ -591,7 +590,6 @@
     <string name="wake_pc_failed">Falha ao enviar sinal de despertar</string>
     <string name="wake_pc_mac_not_configured">Endereço MAC não configurado — defina nas Configurações</string>
     <string name="wake_pc_lib_not_loaded">Não é possível enviar o sinal de despertar</string>
-    <string name="pairing_error_generic">Falha no pareamento — tente novamente</string>
     <string name="pairing_error_unknown">O pareamento falhou por um motivo inesperado. Tente novamente; se continuar acontecendo, despareie este PC no seu celular e pareie do zero.</string>
     <string name="splash_command_your">CONTROLE </string>
     <string name="splash_pc">SEU PC</string>

@@ -149,9 +149,6 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>Adresse de l'hôte</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>Clé d'accès</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Enregistrer et reconnecter</value>
   </data>
@@ -912,9 +909,6 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>Laisser vide pour désactiver</value>
-  </data>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>ATMOSPHÈRE</value>
   </data>
@@ -1050,12 +1044,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>Clé d'authentification optionnelle — doit correspondre à la clé définie sur l'hôte. Laisser vide si non configuré.</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>Laisser vide pour désactiver</value>
-  </data>
   <data name="Settings_AutoSaveHint" xml:space="preserve">
     <value>Les modifications sont enregistrées automatiquement et persistent au redémarrage.</value>
   </data>
@@ -2271,12 +2259,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
     <value>Rayon d'angle des boutons à distance en pixels</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Ajuster le niveau d'opacité visuelle de l'effet de néomorphisme de verre premium</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Pourcentage d'opacité de l'effet de verre</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Ajuster l'intensité de la lueur de l'aura de néon en arrière-plan autour des bords des panneaux</value>

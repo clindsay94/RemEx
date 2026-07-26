@@ -405,7 +405,6 @@
     <string name="pairing_error_malformed_response">Tu PC respondió, pero no se pudo leer la respuesta. Comprueba que el PC tenga la misma versión de RemEx que tu teléfono y vuelve a intentar el emparejamiento.</string>
     <string name="pairing_error_empty_response">Tu PC no envió ningún PIN. Comprueba que RemEx esté abierto en el PC y muestre un PIN de emparejamiento, y vuelve a intentarlo.</string>
     <string name="pairing_error_reach_failed">No se pudo contactar con tu PC. Comprueba que ambos dispositivos estén en la misma red Wi-Fi y que la dirección del PC sea correcta, y vuelve a intentarlo.</string>
-    <string name="pairing_error_start_failed">No se pudo iniciar el emparejamiento: %1$s. Comprueba que RemEx esté abierto en el PC y vuelve a intentarlo.</string>
     <string name="pairing_error_verify_failed">No se pudo finalizar el emparejamiento. Toca Cancelar, consigue un PIN nuevo en tu PC y vuelve a emparejar.</string>
     <string name="pairing_error_save_failed">Error al guardar el PC fijado de forma segura.</string>
     <string name="qr_error_missing_hash">Al código QR le falta el hash del certificado del PC</string>
@@ -591,7 +590,6 @@
     <string name="wake_pc_failed">Error al enviar la señal de encendido</string>
     <string name="wake_pc_mac_not_configured">Dirección MAC no configurada — configúrala en Ajustes</string>
     <string name="wake_pc_lib_not_loaded">No se puede enviar la señal de encendido</string>
-    <string name="pairing_error_generic">Error de emparejamiento — por favor, inténtalo de nuevo</string>
     <string name="pairing_error_unknown">El emparejamiento falló por un motivo inesperado. Vuelve a intentarlo; si sigue ocurriendo, desempareja este PC en tu teléfono y empareja desde cero.</string>
     <string name="splash_command_your">CONTROLA </string>
     <string name="splash_pc">TU PC</string>

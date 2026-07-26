@@ -18,7 +18,6 @@
     <string name="splash_term_connect">connect</string>
     <string name="splash_term_pairing">pairing</string>
     <string name="splash_term_session_ready">session ready</string>
-    <string name="pairing_error_generic">Pairing failed — please try again</string>
 
     
     <string name="snackbar_no_pc_connected">No PC connected</string>
@@ -615,7 +614,6 @@
     <string name="pairing_error_malformed_response">Your PC replied, but the reply could not be read. Check the PC is running the same version of RemEx as your phone, then try pairing again.</string>
     <string name="pairing_error_empty_response">Your PC did not send a PIN. Check RemEx is open on the PC and showing a pairing PIN, then try again.</string>
     <string name="pairing_error_reach_failed">Could not reach your PC. Check both devices are on the same Wi-Fi network and that the PC address is correct, then try again.</string>
-    <string name="pairing_error_start_failed">Pairing could not start: %1$s. Check RemEx is open on the PC, then try again.</string>
     <string name="pairing_error_verify_failed">Could not finish pairing. Tap Cancel, get a fresh PIN from your PC, then pair again.</string>
     <string name="pairing_error_save_failed">Failed to save pinned PC securely.</string>
     <string name="qr_error_missing_hash">QR code is missing the PC certificate hash</string>

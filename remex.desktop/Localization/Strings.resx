@@ -167,9 +167,6 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>PC Address</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>Access Key</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Save &amp; Reconnect</value>
   </data>
@@ -957,9 +954,6 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>Leave empty to disable</value>
-  </data>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>ATMOSPHERE</value>
   </data>
@@ -1095,12 +1089,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>Optional authentication key — must match the key set on the PC. Leave empty if not configured.</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>Leave empty to disable</value>
-  </data>
   <data name="Settings_AutoSaveHint" xml:space="preserve">
     <value>Changes are saved automatically and persist across restarts.</value>
   </data>
@@ -2469,12 +2457,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
     <value>Remote button corner radius in pixels</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Adjust visual opacity blend level of premium glassmorphism background effect</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Glass frosting opacity percentage</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Adjust background accent neon aura glow intensity around panel edges</value>

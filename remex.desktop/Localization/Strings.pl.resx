@@ -149,9 +149,6 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>Adres hosta</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>Klucz dostępu</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Zapisz &amp; Połącz ponownie</value>
   </data>
@@ -872,9 +869,6 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>Pozostaw puste, aby wyłączyć</value>
-  </data>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>ATMOSFERA</value>
   </data>
@@ -1010,12 +1004,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>Opcjonalny klucz uwierzytelniania — musi być zgodny z kluczem ustawionym na hoście. Pozostaw puste, jeśli nie skonfigurowano.</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>Pozostaw puste, aby wyłączyć</value>
-  </data>
   <data name="Settings_AutoSaveHint" xml:space="preserve">
     <value>Zmiany są zapisywane automatycznie i pozostają po restarcie.</value>
   </data>
@@ -1485,7 +1473,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>RemEx na tym komputerze</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>Your PC</value>
+    <value>Twój komputer</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ Rozważ danie gwiazdki na GitHubie!</value>
@@ -2055,12 +2043,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
     <value>Promień zaokrąglenia rogu przycisku pilota w pikselach</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Dostosuj poziom krycia efektu szkła akrylowego premium</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Procent krycia szronionego szkła</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Dostosuj intensywność neonowej poświaty tła wokół krawędzi paneli</value>

@@ -149,9 +149,6 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>PC Adresi</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>Erişim Anahtarı</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Kaydet &amp; Yeniden Bağlan</value>
   </data>
@@ -912,9 +909,6 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>Devre dışı bırakmak için boş bırakın</value>
-  </data>
   <data name="Shell_Atmosphere" xml:space="preserve">
     <value>ATMOSFER</value>
   </data>
@@ -1050,12 +1044,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>İsteğe bağlı kimlik doğrulama anahtarı — PC üzerinde ayarlanan anahtarla eşleşmelidir. Yapılandırılmamışsa boş bırakın.</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>Devre dışı bırakmak için boş bırakın</value>
-  </data>
   <data name="Settings_AutoSaveHint" xml:space="preserve">
     <value>Değişiklikler otomatik olarak kaydedilir ve yeniden başlatmalarda korunur.</value>
   </data>
@@ -1593,7 +1581,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bu PC'deki RemEx</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>Your PC</value>
+    <value>PC'niz</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ GitHub'da bir yıldız vermeyi düşünün!</value>
@@ -2271,12 +2259,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
     <value>Piksel cinsinden uzaktan kumanda düğmesi köşe yarıçapı</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Premium cam tasarımı arka plan efektinin görsel opaklık düzeyini ayarlayın</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Buzlu cam opaklık yüzdesi</value>
   </data>
   <data name="Tooltip_GlowStrength" xml:space="preserve">
     <value>Panel kenarlarındaki arka plan vurgulu neon aura parlaklık yoğunluğunu ayarlayın</value>
