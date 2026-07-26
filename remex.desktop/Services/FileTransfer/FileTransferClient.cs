@@ -475,60 +475,72 @@ public sealed class FileTransferClient : IDisposable
 
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        // Send Start with empty hash — hash is computed incrementally and sent in End
-        await _connection.SendAsync(new RemexMessage
+        // Registration through the final await is wrapped in try/finally so a throw from ANY of
+        // the sends below (Start, a chunk, or End) — not just the request/response shape
+        // SendAndAwaitReplyAsync covers — still reaps both dictionaries. Upload streams N chunks
+        // before its single reply, so it cannot adopt SendAndAwaitReplyAsync directly, but it must
+        // reap on every exit path the same way (RemEx-w9lj): before this fix, a mid-transfer send
+        // failure left the waiter and progress reporter stranded forever.
+        try
         {
-            Type = MessageTypes.FileTransferStart,
-            FileTransferStart = new FileTransferStart
-            {
-                TransferId = transferId,
-                Direction = "upload",
-                RemotePath = remoteRelativePath,
-                RemoteRootId = remoteRootId,
-                RemoteRelativePath = remoteRelativePath,
-                FileName = Path.GetFileName(localPath),
-                TotalBytes = totalBytes,
-                Sha256Base64 = string.Empty
-            }
-        });
-
-        const int chunkSize = 65536;
-        var buffer = new byte[chunkSize];
-        int read;
-        long offset = 0;
-
-        using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-
-        while ((read = await fileStream.ReadAsync(buffer.AsMemory(0, chunkSize), ct)) > 0)
-        {
-            hasher.AppendData(buffer, 0, read);
+            // Send Start with empty hash — hash is computed incrementally and sent in End
             await _connection.SendAsync(new RemexMessage
             {
-                Type = MessageTypes.FileTransferChunk,
-                FileTransferChunk = new FileTransferChunk
+                Type = MessageTypes.FileTransferStart,
+                FileTransferStart = new FileTransferStart
                 {
                     TransferId = transferId,
-                    Offset = offset,
-                    DataBase64 = Convert.ToBase64String(buffer.AsSpan(0, read))
+                    Direction = "upload",
+                    RemotePath = remoteRelativePath,
+                    RemoteRootId = remoteRootId,
+                    RemoteRelativePath = remoteRelativePath,
+                    FileName = Path.GetFileName(localPath),
+                    TotalBytes = totalBytes,
+                    Sha256Base64 = string.Empty
                 }
             });
-            offset += read;
+
+            const int chunkSize = 65536;
+            var buffer = new byte[chunkSize];
+            int read;
+            long offset = 0;
+
+            using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+
+            while ((read = await fileStream.ReadAsync(buffer.AsMemory(0, chunkSize), ct)) > 0)
+            {
+                hasher.AppendData(buffer, 0, read);
+                await _connection.SendAsync(new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferChunk,
+                    FileTransferChunk = new FileTransferChunk
+                    {
+                        TransferId = transferId,
+                        Offset = offset,
+                        DataBase64 = Convert.ToBase64String(buffer.AsSpan(0, read))
+                    }
+                });
+                offset += read;
+            }
+
+            var sha256Base64 = Convert.ToBase64String(hasher.GetCurrentHash());
+
+            await _connection.SendAsync(new RemexMessage
+            {
+                Type = MessageTypes.FileTransferEnd,
+                FileTransferEnd = new FileTransferEnd { TransferId = transferId, Success = true, Sha256Base64 = sha256Base64 }
+            });
+
+            var result = await tcs.Task;
+
+            if (result.FileTransferEnd?.Success == false)
+                throw new IOException($"Upload failed: {result.FileTransferEnd.ErrorMessage}");
         }
-
-        var sha256Base64 = Convert.ToBase64String(hasher.GetCurrentHash());
-
-        await _connection.SendAsync(new RemexMessage
+        finally
         {
-            Type = MessageTypes.FileTransferEnd,
-            FileTransferEnd = new FileTransferEnd { TransferId = transferId, Success = true, Sha256Base64 = sha256Base64 }
-        });
-
-        var result = await tcs.Task;
-        _transferEndWaiters.TryRemove(transferId, out _);
-        _progressReporters.TryRemove(transferId, out _);
-
-        if (result.FileTransferEnd?.Success == false)
-            throw new IOException($"Upload failed: {result.FileTransferEnd.ErrorMessage}");
+            _transferEndWaiters.TryRemove(transferId, out _);
+            _progressReporters.TryRemove(transferId, out _);
+        }
     }
 
     public async Task DownloadAsync(string remoteRootId, string remoteRelativePath, string localPath, IProgress<double>? progress, CancellationToken ct)
@@ -563,51 +575,72 @@ public sealed class FileTransferClient : IDisposable
                 await fileStream.WriteAsync(data);
         }, ct);
 
-        await _connection.SendAsync(new RemexMessage
+        // Registration through the final await is wrapped in try/finally so a throw from EITHER
+        // send (Start here — download has no per-chunk send, chunks arrive via OnFileTransferMessage)
+        // or from awaiting tcs.Task still reaps all FOUR dictionaries, not just the two upload uses.
+        // Download hands off to a channel/writer task rather than a simple request/response, so it
+        // cannot adopt SendAndAwaitReplyAsync directly, but must reap on every exit path the same
+        // way (RemEx-w9lj): before this fix, a failed Start send left the transfer-end waiter,
+        // progress reporter, channel, and hasher all stranded forever, and the writer task blocked
+        // on the channel with nothing left to complete it.
+        try
         {
-            Type = MessageTypes.FileTransferStart,
-            FileTransferStart = new FileTransferStart
+            await _connection.SendAsync(new RemexMessage
             {
-                TransferId = transferId,
-                Direction = "download",
-                RemotePath = remoteRelativePath,
-                RemoteRootId = remoteRootId,
-                RemoteRelativePath = remoteRelativePath,
-                FileName = Path.GetFileName(remoteRelativePath),
-                TotalBytes = 0,
-                Sha256Base64 = string.Empty
+                Type = MessageTypes.FileTransferStart,
+                FileTransferStart = new FileTransferStart
+                {
+                    TransferId = transferId,
+                    Direction = "download",
+                    RemotePath = remoteRelativePath,
+                    RemoteRootId = remoteRootId,
+                    RemoteRelativePath = remoteRelativePath,
+                    FileName = Path.GetFileName(remoteRelativePath),
+                    TotalBytes = 0,
+                    Sha256Base64 = string.Empty
+                }
+            });
+
+            var result = await tcs.Task;
+
+            // Signal the consumer that no more chunks are coming, then wait for all writes to
+            // complete before the fileStream is disposed — prevents ObjectDisposedException on
+            // pending writes.
+            channel.Writer.TryComplete();
+            try { await writeTask; } catch (OperationCanceledException) { }
+
+            if (result.FileTransferEnd?.Success == false)
+            {
+                try { File.Delete(localPath); } catch { /* best-effort */ }
+                throw new IOException($"Download failed: {result.FileTransferEnd.ErrorMessage}");
             }
-        });
 
-        var result = await tcs.Task;
-
-        // Signal the consumer that no more chunks are coming, then wait for all writes to complete
-        // before the fileStream is disposed — prevents ObjectDisposedException on pending writes.
-        channel.Writer.TryComplete();
-        try { await writeTask; } catch (OperationCanceledException) { }
-
-        _downloadChannels.TryRemove(transferId, out _);
-        _transferEndWaiters.TryRemove(transferId, out _);
-        _progressReporters.TryRemove(transferId, out _);
-        _downloadHashers.TryRemove(transferId, out _);
-
-        if (result.FileTransferEnd?.Success == false)
-        {
-            hasher.Dispose();
-            try { File.Delete(localPath); } catch { /* best-effort */ }
-            throw new IOException($"Download failed: {result.FileTransferEnd.ErrorMessage}");
+            // Verify the host-supplied SHA-256 against the bytes we actually received.
+            // Master plan §996 calls this out as the recommended download-side parity
+            // with upload integrity verification.
+            var expectedHash = result.FileTransferEnd?.Sha256Base64;
+            var actualHash = Convert.ToBase64String(hasher.GetHashAndReset());
+            if (!string.IsNullOrEmpty(expectedHash) && expectedHash != actualHash)
+            {
+                try { File.Delete(localPath); } catch { /* best-effort */ }
+                throw new IOException("Download failed: SHA-256 integrity check failed.");
+            }
         }
-
-        // Verify the host-supplied SHA-256 against the bytes we actually received.
-        // Master plan §996 calls this out as the recommended download-side parity
-        // with upload integrity verification.
-        var expectedHash = result.FileTransferEnd?.Sha256Base64;
-        var actualHash = Convert.ToBase64String(hasher.GetHashAndReset());
-        hasher.Dispose();
-        if (!string.IsNullOrEmpty(expectedHash) && expectedHash != actualHash)
+        finally
         {
-            try { File.Delete(localPath); } catch { /* best-effort */ }
-            throw new IOException("Download failed: SHA-256 integrity check failed.");
+            // Unblock the writer task even when we got here via a throw before the normal
+            // TryComplete()/await above ran (e.g. SendAsync or tcs.Task faulted), then reap every
+            // dictionary this transfer touched. Any writer-task fault surfaced here is swallowed
+            // deliberately — it is cleanup for a background task, not the caller-visible error,
+            // which (if any) already propagated out of the try block above.
+            channel.Writer.TryComplete();
+            try { await writeTask; } catch { /* cleanup only; real errors already propagated above */ }
+
+            _downloadChannels.TryRemove(transferId, out _);
+            _transferEndWaiters.TryRemove(transferId, out _);
+            _progressReporters.TryRemove(transferId, out _);
+            _downloadHashers.TryRemove(transferId, out _);
+            hasher.Dispose();
         }
     }
 
