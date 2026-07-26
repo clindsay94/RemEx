@@ -832,22 +832,6 @@ fun ConnectionScreenContent(
                                                                                         platform =
                                                                                                 stringResource(
                                                                                                         R.string
-                                                                                                                .connection_platform_macos
-                                                                                                ),
-                                                                                        icon =
-                                                                                                Icons.Default
-                                                                                                        .Laptop,
-                                                                                        instruction =
-                                                                                                stringResource(
-                                                                                                        R.string
-                                                                                                                .connection_ip_macos
-                                                                                                )
-                                                                                )
-                                                                                HorizontalDivider()
-                                                                                IpInstructionRow(
-                                                                                        platform =
-                                                                                                stringResource(
-                                                                                                        R.string
                                                                                                                 .connection_platform_linux
                                                                                                 ),
                                                                                         icon =
