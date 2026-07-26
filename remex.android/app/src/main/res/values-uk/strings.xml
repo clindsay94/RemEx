@@ -84,7 +84,7 @@
     <string name="notification_text_connecting">Підтримання підключення</string>
     <string name="screen_task_manager_title">Диспетчер завдань</string>
     <string name="task_manager_search_hint">Пошук за назвою процесу або PID</string>
-    <string name="sort_by">Sort by:</string>
+    <string name="sort_by">Сортувати за:</string>
     <string name="sort_name">Назва</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>

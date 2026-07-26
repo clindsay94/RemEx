@@ -84,7 +84,7 @@
     <string name="notification_text_connecting">Mempertahankan koneksi</string>
     <string name="screen_task_manager_title">Manajer Tugas</string>
     <string name="task_manager_search_hint">Cari nama proses atau PID</string>
-    <string name="sort_by">Sort by:</string>
+    <string name="sort_by">Urutkan menurut:</string>
     <string name="sort_name">Nama</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>

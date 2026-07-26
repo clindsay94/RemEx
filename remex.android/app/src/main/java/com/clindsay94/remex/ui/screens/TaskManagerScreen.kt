@@ -375,10 +375,26 @@ private fun FilterSortSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // CAPPED, not weighted. A Row measures non-weighted children first at their full intrinsic
+        // width, so an unbounded label took whatever it wanted and the chips absorbed the entire
+        // shortfall — clipping mid-glyph, since their default overflow is Clip. Invisible while this
+        // string was hardcoded English at ~48dp; localizing it made the label up to 2.5x wider
+        // (RemEx-0pxq).
+        //
+        // widthIn rather than weight(fill = false): giving BOTH children a weight makes totalWeight
+        // 2, and RowColumnMeasurePolicy computes each share up front with no redistribution pass —
+        // so a fill = false label shrinks to intrinsic while the chip row, whose weight defaults to
+        // fill = true, stays PINNED at its 50% share. The label's unused half is not handed back, it
+        // is simply lost, which cost English chips ~84dp and left dead space at the row's end. With
+        // only one weighted child the chip row gets the whole true remainder, so English is
+        // unchanged and only the long locales are capped.
         Text(
                 text = stringResource(R.string.sort_by),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.widthIn(max = 120.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
         )
         // M3 Expressive ToggleButtons in a plain Row. NOTE: we deliberately do NOT use the
         // Expressive ButtonGroup — its measure policy crashes in material3 1.5.0-alpha20
@@ -399,7 +415,7 @@ private fun FilterSortSection(
                         contentPadding =
                                 androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
                 ) {
-                    Text(label, maxLines = 1)
+                    Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

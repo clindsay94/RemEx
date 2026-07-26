@@ -84,7 +84,7 @@
     <string name="notification_text_connecting">Manteniendo la conexión</string>
     <string name="screen_task_manager_title">Administrador de Tareas</string>
     <string name="task_manager_search_hint">Buscar nombre de proceso o PID</string>
-    <string name="sort_by">Sort by:</string>
+    <string name="sort_by">Ordenar por:</string>
     <string name="sort_name">Nombre</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>

@@ -73,7 +73,7 @@
     <string name="capability_desktop_unavailable">pulpit niedostępny</string>
     <string name="screen_task_manager_title">Menedżer zadań</string>
     <string name="task_manager_search_hint">Szukaj nazwy procesu lub PID</string>
-    <string name="sort_by">Sort by:</string>
+    <string name="sort_by">Sortuj według:</string>
     <string name="sort_name">Nazwa</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>

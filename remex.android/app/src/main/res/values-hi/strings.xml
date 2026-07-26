@@ -84,7 +84,7 @@
     <string name="notification_text_connecting">कनेक्शन बनाए रखा जा रहा है</string>
     <string name="screen_task_manager_title">टास्क मैनेजर</string>
     <string name="task_manager_search_hint">प्रोसेस नाम या PID खोजें</string>
-    <string name="sort_by">Sort by:</string>
+    <string name="sort_by">क्रमबद्ध करें:</string>
     <string name="sort_name">नाम</string>
     <string name="sort_cpu">CPU</string>
     <string name="sort_ram">RAM</string>
