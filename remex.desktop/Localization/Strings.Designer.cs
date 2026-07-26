@@ -88,7 +88,6 @@ namespace Remex.Desktop.Localization {
         public static string Settings_SavedStatus => ResourceManager.GetString("Settings_SavedStatus", resourceCulture)!;
         public static string Settings_Connection => ResourceManager.GetString("Settings_Connection", resourceCulture)!;
         public static string Settings_HostAddress => ResourceManager.GetString("Settings_HostAddress", resourceCulture)!;
-        public static string Settings_AccessKey => ResourceManager.GetString("Settings_AccessKey", resourceCulture)!;
         public static string Settings_SaveReconnect => ResourceManager.GetString("Settings_SaveReconnect", resourceCulture)!;
         public static string Settings_RemoteDesktop => ResourceManager.GetString("Settings_RemoteDesktop", resourceCulture)!;
         public static string Settings_StreamFpsDesc => ResourceManager.GetString("Settings_StreamFpsDesc", resourceCulture)!;
@@ -320,8 +319,6 @@ namespace Remex.Desktop.Localization {
         public static string Service_BtnInstall => ResourceManager.GetString("Service_BtnInstall", resourceCulture)!;
         public static string Service_BtnLogin => ResourceManager.GetString("Service_BtnLogin", resourceCulture)!;
         public static string Service_BtnRemove => ResourceManager.GetString("Service_BtnRemove", resourceCulture)!;
-        public static string Settings_AccessKeyTooltip => ResourceManager.GetString("Settings_AccessKeyTooltip", resourceCulture)!;
-        public static string Settings_AccessKeyWatermark => ResourceManager.GetString("Settings_AccessKeyWatermark", resourceCulture)!;
         public static string Settings_AutoSaveHint => ResourceManager.GetString("Settings_AutoSaveHint", resourceCulture)!;
         public static string Settings_ConfigureLogin => ResourceManager.GetString("Settings_ConfigureLogin", resourceCulture)!;
         public static string Settings_DiscoverTooltip => ResourceManager.GetString("Settings_DiscoverTooltip", resourceCulture)!;
@@ -340,7 +337,6 @@ namespace Remex.Desktop.Localization {
         public static string Settings_SnapToGridTooltip => ResourceManager.GetString("Settings_SnapToGridTooltip", resourceCulture)!;
         public static string Settings_Uninstall => ResourceManager.GetString("Settings_Uninstall", resourceCulture)!;
         public static string Settings_UsernameWatermark => ResourceManager.GetString("Settings_UsernameWatermark", resourceCulture)!;
-        public static string Shell_AccessKeyWatermark => ResourceManager.GetString("Shell_AccessKeyWatermark", resourceCulture)!;
         public static string Shell_Atmosphere => ResourceManager.GetString("Shell_Atmosphere", resourceCulture)!;
         public static string Shell_AutoSaveNote => ResourceManager.GetString("Shell_AutoSaveNote", resourceCulture)!;
         public static string Shell_FineTuning => ResourceManager.GetString("Shell_FineTuning", resourceCulture)!;
