@@ -3372,4 +3372,10 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>Could not end “{0}” (PID {1}). Nothing was changed. Refresh the list and try again.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>Nothing was ended. “{0}” (PID {1}) closed while you were deciding, and that PID may now belong to a different program. The list has been refreshed — find the program again and try once more.</value>
+  </data>
 </root>

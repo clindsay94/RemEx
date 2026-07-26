@@ -3366,4 +3366,10 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>Impossible de terminer « {0} » (PID {1}). Rien n'a été modifié. Actualisez la liste et réessayez.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>Rien n'a été terminé. « {0} » (PID {1}) s'est fermé pendant que vous décidiez, et ce PID peut désormais appartenir à un autre programme. La liste a été actualisée : retrouvez le programme et réessayez.</value>
+  </data>
 </root>

@@ -3369,4 +3369,10 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>Tidak dapat menghentikan "{0}" (PID {1}). Tidak ada yang berubah. Segarkan daftar lalu coba lagi.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>Tidak ada yang dihentikan. "{0}" (PID {1}) tertutup saat Anda memutuskan, dan PID itu kini mungkin milik program lain. Daftar telah disegarkan — cari programnya lagi lalu coba sekali lagi.</value>
+  </data>
 </root>

@@ -3367,4 +3367,10 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>Не вдалося завершити «{0}» (PID {1}). Нічого не змінено. Оновіть список і повторіть спробу.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>Нічого не завершено. «{0}» (PID {1}) закрилася, поки ви вирішували, і цей PID тепер може належати іншій програмі. Список оновлено — знайдіть програму знову та повторіть спробу.</value>
+  </data>
 </root>

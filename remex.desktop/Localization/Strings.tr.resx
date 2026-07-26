@@ -3370,4 +3370,10 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>"{0}" (PID {1}) sonlandırılamadı. Hiçbir şey değişmedi. Listeyi yenileyip tekrar deneyin.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>"{0}" (PID {1}) siz karar verirken kapandı, bu yüzden hiçbir şey sonlandırılmadı. O PID artık başka bir programa ait olabilir. Liste yenilendi — programı yeniden bulup tekrar deneyin.</value>
+  </data>
 </root>

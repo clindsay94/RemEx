@@ -3366,4 +3366,10 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>"{0}" (PID {1}) बंद नहीं किया जा सका। कुछ भी नहीं बदला। सूची ताज़ा करें और फिर कोशिश करें।</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>कुछ भी बंद नहीं किया गया। आपके निर्णय लेते समय "{0}" (PID {1}) बंद हो गया, और वह PID अब किसी दूसरे प्रोग्राम का हो सकता है। सूची ताज़ा कर दी गई है — प्रोग्राम फिर से खोजें और दोबारा कोशिश करें।</value>
+  </data>
 </root>

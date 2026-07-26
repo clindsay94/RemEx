@@ -3366,4 +3366,10 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>Não foi possível encerrar "{0}" (PID {1}). Nada foi alterado. Atualize a lista e tente novamente.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>Nada foi encerrado. "{0}" (PID {1}) foi fechado enquanto você decidia, e esse PID pode agora pertencer a outro programa. A lista foi atualizada — encontre o programa novamente e tente de novo.</value>
+  </data>
 </root>

@@ -3390,4 +3390,10 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>No se pudo terminar «{0}» (PID {1}). No se cambió nada. Actualiza la lista e inténtalo de nuevo.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>No se terminó nada. «{0}» (PID {1}) se cerró mientras decidías, y ese PID puede pertenecer ahora a otro programa. La lista se actualizó: busca el programa de nuevo e inténtalo otra vez.</value>
+  </data>
 </root>

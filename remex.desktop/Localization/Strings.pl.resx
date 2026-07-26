@@ -3367,4 +3367,10 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="Custom_Scheme_Spritz" xml:space="preserve">
     <value>Spritz</value>
   </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>Nie udało się zakończyć procesu "{0}" (PID {1}). Nic nie zostało zmienione. Odśwież listę i spróbuj ponownie.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>Nic nie zostało zakończone. Proces "{0}" (PID {1}) zakończył się w trakcie podejmowania decyzji, a ten PID może teraz należeć do innego programu. Lista została odświeżona — znajdź program ponownie i spróbuj jeszcze raz.</value>
+  </data>
 </root>

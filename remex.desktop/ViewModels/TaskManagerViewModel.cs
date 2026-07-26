@@ -125,6 +125,53 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     /// </summary>
     public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
 
+    /// <summary>
+    /// True when <paramref name="current"/> still contains the very process the user confirmed, so
+    /// it is safe to act on <paramref name="confirmed"/>.<see cref="ProcessInfo.Id"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Extracted and <c>internal</c> so the safety decision can be unit-tested directly; a PID-reuse
+    /// race is not something to verify by hand.
+    /// </para>
+    /// <para>
+    /// Fails CLOSED - anything short of an exact match reports "not present" and leaves the process
+    /// running, because ending the wrong program has no undo. Comparisons are case-SENSITIVE on
+    /// purpose: both sides come from the same host enumeration, so their casing is stable and a
+    /// case-only difference means something genuinely changed. Ignoring case could only ever turn a
+    /// mismatch into a match, which is the unsafe direction, and it would be plainly wrong on Linux,
+    /// where two paths differing only in case are two different files.
+    /// </para>
+    /// <para>
+    /// <see cref="ProcessInfo"/> carries no start time, so Id + Name + FilePath is the strongest
+    /// identity available. That still cannot distinguish a relaunch of the SAME program which happens
+    /// to be handed the SAME PID; closing that needs the host to verify the name at kill time, which
+    /// is filed separately. This check removes the dangerous case - killing an UNRELATED program -
+    /// not every conceivable one.
+    /// </para>
+    /// </remarks>
+    internal static bool ConfirmedTargetStillPresent(ProcessInfo confirmed, IReadOnlyList<ProcessInfo> current)
+    {
+        var match = current.FirstOrDefault(
+            p => p.Id == confirmed.Id && string.Equals(p.Name, confirmed.Name, StringComparison.Ordinal));
+        if (match is null)
+        {
+            return false;
+        }
+
+        // FilePath is empty when the host could not read it (access denied is common for processes
+        // worth protecting), so it can only be compared when BOTH sides have one. Demanding equality
+        // against an empty value would refuse every kill of a protected process.
+        if (confirmed.FilePath.Length > 0
+            && match.FilePath.Length > 0
+            && !string.Equals(match.FilePath, confirmed.FilePath, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     private async Task KillProcessAsync(ProcessInfo? process)
     {
         if (process == null) return;
@@ -147,11 +194,46 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         {
             return;
         }
+
+        // The dialog can sit open indefinitely while polling keeps REPLACING _lastRawProcesses
+        // underneath, so by the time the user confirms, the captured PID may belong to a completely
+        // different program - operating systems reuse PIDs freely, and the confirmation added by
+        // RemEx-6p1f is what opened this window (the previous no-prompt behaviour acted at once).
+        // Re-verify the target still matches what the dialog actually named before sending anything
+        // (RemEx-2s91).
+        //
+        // There is no concurrent access here to defend against, so do NOT "harden" this with a lock
+        // or Interlocked - that would only obscure why it is already safe. Connection_ProcessListReceived
+        // writes _lastRawProcesses exclusively via Dispatcher.UIThread.Post, and this continuation also
+        // runs on the UI thread: Avalonia never captures a SynchronizationContext (docs/ASYNC_GUIDELINES.md,
+        // which is also why ConfigureAwait is banned repo-wide), so the code after the dialog's await
+        // resumes on the thread that completed it - the UI thread driving the dialog. Single-threaded
+        // access, not a race won by a lucky read. It also assigns a whole new list rather than mutating
+        // this one, so even a hypothetical cross-thread reader could not see a half-updated collection.
+        if (!ConfirmedTargetStillPresent(process, _lastRawProcesses))
+        {
+            KillError = string.Format(
+                LocalizationService.Instance["TaskManager_KillTargetChanged"],
+                process.Name,
+                process.Id);
+            await RefreshProcessesAsync();
+            return;
+        }
+
         var resp = await _connection.KillProcessWithResponseAsync(process.Id);
         if (!resp.Success)
         {
+            // TaskManager_KillFailed existed in no .resx file at all, and LocalizationService's
+            // indexer ends in "?? key", so this branch used to render the literal developer string
+            // "TaskManager_KillFailed" on screen - in every language, English included. The old call
+            // also passed process.Id into a format string that had no placeholder, so even had the
+            // key existed the PID would have been dropped. Both are fixed here rather than deferred:
+            // it is the same error surface this bead is extending (RemEx-2s91).
             KillError = string.IsNullOrWhiteSpace(resp.Message)
-                ? string.Format(LocalizationService.Instance["TaskManager_KillFailed"], process.Id)
+                ? string.Format(
+                    LocalizationService.Instance["TaskManager_KillFailed"],
+                    process.Name,
+                    process.Id)
                 : resp.Message;
             System.Diagnostics.Debug.WriteLine($"Kill process failed: {KillError}");
         }
