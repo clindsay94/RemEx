@@ -48,6 +48,36 @@ public sealed class FileTransferClient : IDisposable
         _connection.FileTransferMessageReceived += OnFileTransferMessage;
     }
 
+    /// <summary>
+    /// Sends <paramref name="request"/> and awaits the reply on <paramref name="tcs"/>, bounded by
+    /// <paramref name="timeout"/> when given (unbounded when null, for operations whose duration
+    /// scales with data size — see <see cref="ManageAsync"/>). <paramref name="removeWaiter"/> is
+    /// invoked on every exit path via <c>finally</c>, including when <c>SendAsync</c> itself throws.
+    /// Every request/response helper in this class registers its waiter before sending; without this,
+    /// a send failure (e.g. the socket dropped mid-request) left the waiter registered forever with
+    /// nobody left to complete it, so any later caller awaiting that request id — or GC pressure from
+    /// the leaked dictionary entries — hung or degraded silently (RemEx-jxmf).
+    /// </summary>
+    private async Task<RemexMessage> SendAndAwaitReplyAsync(
+        RemexMessage request,
+        TaskCompletionSource<RemexMessage> tcs,
+        Action removeWaiter,
+        TimeSpan? timeout,
+        CancellationToken ct)
+    {
+        try
+        {
+            await _connection.SendAsync(request);
+            return timeout.HasValue
+                ? await tcs.Task.WaitAsync(timeout.Value, ct)
+                : await tcs.Task;
+        }
+        finally
+        {
+            removeWaiter();
+        }
+    }
+
     public async Task<IReadOnlyList<FileSharedRoot>> ListRemoteRootsAsync(CancellationToken ct)
     {
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -55,22 +85,20 @@ public sealed class FileTransferClient : IDisposable
 
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileRootsRequest,
-            FileRootsRequest = new FileRootsRequest()
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            if (ReferenceEquals(_rootsWaiter, tcs))
-                _rootsWaiter = null;
-        }
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileRootsRequest,
+                FileRootsRequest = new FileRootsRequest()
+            },
+            tcs,
+            () =>
+            {
+                if (ReferenceEquals(_rootsWaiter, tcs))
+                    _rootsWaiter = null;
+            },
+            TimeSpan.FromSeconds(ControlRequestTimeoutSeconds),
+            ct);
 
         // Capture the v3 capability handshake (additive field; null for v2 hosts). Roots are always
         // fetched first, so this doubles as the negotiation — no separate handshake message.
@@ -101,27 +129,22 @@ public sealed class FileTransferClient : IDisposable
 
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileBrowseRequest,
-            FileBrowseRequest = new FileBrowseRequest
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
             {
-                RequestId = requestId,
-                Path = relativePath,
-                RootId = rootId,
-                RelativePath = relativePath,
-            }
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _browseWaiters.TryRemove(requestId, out _);
-        }
+                Type = MessageTypes.FileBrowseRequest,
+                FileBrowseRequest = new FileBrowseRequest
+                {
+                    RequestId = requestId,
+                    Path = relativePath,
+                    RootId = rootId,
+                    RelativePath = relativePath,
+                }
+            },
+            tcs,
+            () => _browseWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ControlRequestTimeoutSeconds),
+            ct);
 
         if (response.FileBrowseResponse?.ErrorMessage is string err)
             throw new IOException($"Browse error: {err}");
@@ -136,21 +159,16 @@ public sealed class FileTransferClient : IDisposable
         _manageWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileManageRequest,
-            FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "delete" }
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ManageRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _manageWaiters.TryRemove(requestId, out _);
-        }
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileManageRequest,
+                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "delete" }
+            },
+            tcs,
+            () => _manageWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ManageRequestTimeoutSeconds),
+            ct);
 
         if (response.FileManageResponse?.Success == false)
             throw new IOException($"Delete failed: {response.FileManageResponse.ErrorMessage}");
@@ -163,21 +181,16 @@ public sealed class FileTransferClient : IDisposable
         _manageWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileManageRequest,
-            FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "rename", NewName = newName }
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ManageRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _manageWaiters.TryRemove(requestId, out _);
-        }
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileManageRequest,
+                FileManageRequest = new FileManageRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, Operation = "rename", NewName = newName }
+            },
+            tcs,
+            () => _manageWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ManageRequestTimeoutSeconds),
+            ct);
 
         if (response.FileManageResponse?.Success == false)
             throw new IOException($"Rename failed: {response.FileManageResponse.ErrorMessage}");
@@ -215,25 +228,21 @@ public sealed class FileTransferClient : IDisposable
         _hashWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        RemexMessage response;
-        try
-        {
-            await _connection.SendAsync(new RemexMessage
+        // Bounded wait, matching ConnectionViewModel's command pattern. A peer that never
+        // answers has to surface a failure the caller can show, not hang the view model.
+        // The waiter is reaped on every exit (including a throw from SendAsync itself) by
+        // SendAndAwaitReplyAsync — the previous code removed it only after a successful
+        // await, so each timeout, cancellation, or send failure leaked an entry.
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
             {
                 Type = MessageTypes.FileHashRequest,
                 FileHashRequest = new FileHashRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath }
-            });
-
-            // Bounded wait, matching ConnectionViewModel's command pattern. A peer that never
-            // answers has to surface a failure the caller can show, not hang the view model.
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(HashRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            // Reap the waiter on every exit. The previous code removed it only after a
-            // successful await, so each timeout or cancellation leaked an entry.
-            _hashWaiters.TryRemove(requestId, out _);
-        }
+            },
+            tcs,
+            () => _hashWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(HashRequestTimeoutSeconds),
+            ct);
 
         if (response.FileHashResponse?.ErrorMessage is string err)
             throw new IOException($"Hash verification failed: {err}");
@@ -266,21 +275,6 @@ public sealed class FileTransferClient : IDisposable
         _manageWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileManageRequest,
-            FileManageRequest = new FileManageRequest
-            {
-                RequestId = requestId,
-                RootId = rootId,
-                RelativePath = relativePath,
-                Operation = operation,
-                NewName = newName,
-                DestinationPath = destinationPath,
-                Overwrite = overwrite,
-            }
-        });
-
         // mkdir answers immediately, but copy and move stream the whole file before the peer
         // replies, so their duration scales with FILE SIZE. A wall-clock bound on those would
         // abort a large but healthy paste and — worse — reap the waiter, so the peer's eventual
@@ -289,17 +283,25 @@ public sealed class FileTransferClient : IDisposable
         var scalesWithFileSize =
             operation == FileManageOperations.Copy || operation == FileManageOperations.Move;
 
-        RemexMessage response;
-        try
-        {
-            response = scalesWithFileSize
-                ? await tcs.Task
-                : await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ManageRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _manageWaiters.TryRemove(requestId, out _);
-        }
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileManageRequest,
+                FileManageRequest = new FileManageRequest
+                {
+                    RequestId = requestId,
+                    RootId = rootId,
+                    RelativePath = relativePath,
+                    Operation = operation,
+                    NewName = newName,
+                    DestinationPath = destinationPath,
+                    Overwrite = overwrite,
+                }
+            },
+            tcs,
+            () => _manageWaiters.TryRemove(requestId, out _),
+            scalesWithFileSize ? null : TimeSpan.FromSeconds(ManageRequestTimeoutSeconds),
+            ct);
 
         if (response.FileManageResponse?.Success == false)
             throw new IOException(response.FileManageResponse.ErrorMessage ?? $"{operation} failed.");
@@ -314,28 +316,23 @@ public sealed class FileTransferClient : IDisposable
         _searchWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileSearchRequest,
-            FileSearchRequest = new FileSearchRequest
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
             {
-                RequestId = requestId,
-                RootId = rootId,
-                RelativePath = relativePath,
-                Query = query,
-                MaxResults = maxResults,
-            }
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(SearchRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _searchWaiters.TryRemove(requestId, out _);
-        }
+                Type = MessageTypes.FileSearchRequest,
+                FileSearchRequest = new FileSearchRequest
+                {
+                    RequestId = requestId,
+                    RootId = rootId,
+                    RelativePath = relativePath,
+                    Query = query,
+                    MaxResults = maxResults,
+                }
+            },
+            tcs,
+            () => _searchWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(SearchRequestTimeoutSeconds),
+            ct);
 
         if (response.FileSearchResponse?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
             throw new IOException($"Search error: {err}");
@@ -352,21 +349,16 @@ public sealed class FileTransferClient : IDisposable
         _metadataWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileMetadataRequest,
-            FileMetadataRequest = new FileMetadataRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath }
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _metadataWaiters.TryRemove(requestId, out _);
-        }
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileMetadataRequest,
+                FileMetadataRequest = new FileMetadataRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath }
+            },
+            tcs,
+            () => _metadataWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ControlRequestTimeoutSeconds),
+            ct);
 
         if (response.FileMetadataResponse is not { } meta)
             throw new IOException("No metadata response received.");
@@ -383,21 +375,16 @@ public sealed class FileTransferClient : IDisposable
         _thumbnailWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileThumbnailRequest,
-            FileThumbnailRequest = new FileThumbnailRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, MaxDim = maxDim }
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _thumbnailWaiters.TryRemove(requestId, out _);
-        }
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileThumbnailRequest,
+                FileThumbnailRequest = new FileThumbnailRequest { RequestId = requestId, RootId = rootId, RelativePath = relativePath, MaxDim = maxDim }
+            },
+            tcs,
+            () => _thumbnailWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ControlRequestTimeoutSeconds),
+            ct);
 
         return response.FileThumbnailResponse?.JpegBase64;
     }
@@ -410,21 +397,16 @@ public sealed class FileTransferClient : IDisposable
         _volumesWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileVolumesRequest,
-            FileVolumesRequest = new FileVolumesRequest { RequestId = requestId }
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _volumesWaiters.TryRemove(requestId, out _);
-        }
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileVolumesRequest,
+                FileVolumesRequest = new FileVolumesRequest { RequestId = requestId }
+            },
+            tcs,
+            () => _volumesWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ControlRequestTimeoutSeconds),
+            ct);
 
         var resp = response.FileVolumesResponse;
         if (resp?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
@@ -439,21 +421,16 @@ public sealed class FileTransferClient : IDisposable
         _rootManageWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileRootManageRequest,
-            FileRootManageRequest = new FileRootManageRequest { RequestId = requestId, Operation = "add", SourceRootId = sourceRootId, SourceRelativePath = sourceRelativePath }
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _rootManageWaiters.TryRemove(requestId, out _);
-        }
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileRootManageRequest,
+                FileRootManageRequest = new FileRootManageRequest { RequestId = requestId, Operation = "add", SourceRootId = sourceRootId, SourceRelativePath = sourceRelativePath }
+            },
+            tcs,
+            () => _rootManageWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ControlRequestTimeoutSeconds),
+            ct);
 
         if (response.FileRootManageResponse?.ErrorMessage is string err)
             throw new IOException($"Add root failed: {err}");
@@ -468,21 +445,16 @@ public sealed class FileTransferClient : IDisposable
         _rootManageWaiters[requestId] = tcs;
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
-        await _connection.SendAsync(new RemexMessage
-        {
-            Type = MessageTypes.FileRootManageRequest,
-            FileRootManageRequest = new FileRootManageRequest { RequestId = requestId, Operation = "remove", RootId = rootId }
-        });
-
-        RemexMessage response;
-        try
-        {
-            response = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(ControlRequestTimeoutSeconds), ct);
-        }
-        finally
-        {
-            _rootManageWaiters.TryRemove(requestId, out _);
-        }
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileRootManageRequest,
+                FileRootManageRequest = new FileRootManageRequest { RequestId = requestId, Operation = "remove", RootId = rootId }
+            },
+            tcs,
+            () => _rootManageWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ControlRequestTimeoutSeconds),
+            ct);
 
         if (response.FileRootManageResponse?.ErrorMessage is string err)
             throw new IOException($"Remove root failed: {err}");
