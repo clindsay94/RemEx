@@ -162,8 +162,8 @@
     <string name="remote_desktop_h_scroll_sensitivity_label">Sensibilidad de desplazamiento horizontal: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Tocar = Clic • Mantener = Clic derecho • 2 dedos = Desplazar • Lápiz = Absoluto</string>
     <string name="screen_dashboard_title">Panel de Control</string>
-    <string name="cd_reset_zoom">Restablecer zoom</string>
-    <string name="cd_customize_cards">Personalizar tarjetas</string>
+    <string name="dashboard_menu_reset_zoom">Restablecer zoom</string>
+    <string name="dashboard_menu_customize_cards">Personalizar tarjetas</string>
     <string name="dashboard_pc_status">Estado del PC</string>
     <string name="dashboard_pc_status_subtitle">Orbe de estado de conexión</string>
     <string name="dashboard_wake_pc">Encender PC</string>

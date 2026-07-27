@@ -228,8 +228,8 @@
 
     
     <string name="screen_dashboard_title">RemEx Home Base</string>
-    <string name="cd_reset_zoom">Reset zoom</string>
-    <string name="cd_customize_cards">Customize cards</string>
+    <string name="dashboard_menu_reset_zoom">Reset zoom</string>
+    <string name="dashboard_menu_customize_cards">Customize cards</string>
     <string name="dashboard_menu_lock_layout">Lock layout</string>
     <string name="dashboard_menu_unlock_layout">Unlock layout</string>
     <string name="dashboard_menu_clear_cards">Clear all cards</string>

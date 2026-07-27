@@ -149,8 +149,8 @@
     <string name="remote_desktop_pointer_speed_label">Szybkość kursora: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Dotknięcie = Kliknięcie • Przytrzymanie = Prawy klik • 2 palce = Przewijanie • Rysik = Absolutny</string>
     <string name="screen_dashboard_title">RemEx - Strona główna</string>
-    <string name="cd_reset_zoom">Resetuj zoom</string>
-    <string name="cd_customize_cards">Dostosuj karty</string>
+    <string name="dashboard_menu_reset_zoom">Resetuj zoom</string>
+    <string name="dashboard_menu_customize_cards">Dostosuj karty</string>
     <string name="dashboard_pc_status">Status PC</string>
     <string name="dashboard_pc_status_subtitle">Orb statusu połączenia</string>
     <string name="dashboard_wake_pc">Obudź PC</string>

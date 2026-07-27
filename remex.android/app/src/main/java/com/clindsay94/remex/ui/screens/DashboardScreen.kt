@@ -521,7 +521,7 @@ fun DashboardScreenContent(
                                                                         Text(
                                                                                 stringResource(
                                                                                         R.string
-                                                                                                .cd_customize_cards
+                                                                                                .dashboard_menu_customize_cards
                                                                                 )
                                                                         )
                                                                 },
@@ -576,7 +576,7 @@ fun DashboardScreenContent(
                                                                         Text(
                                                                                 stringResource(
                                                                                         R.string
-                                                                                                .cd_reset_zoom
+                                                                                                .dashboard_menu_reset_zoom
                                                                                 )
                                                                         )
                                                                 },
@@ -1538,7 +1538,7 @@ fun DashboardScreenContent(
                                                 text = {
                                                         Text(
                                                                 stringResource(
-                                                                        R.string.cd_customize_cards
+                                                                        R.string.dashboard_menu_customize_cards
                                                                 )
                                                         )
                                                 }
@@ -1558,7 +1558,7 @@ fun DashboardScreenContent(
                                                         )
                                                 },
                                                 text = {
-                                                        Text(stringResource(R.string.cd_reset_zoom))
+                                                        Text(stringResource(R.string.dashboard_menu_reset_zoom))
                                                 }
                                         )
                                 }

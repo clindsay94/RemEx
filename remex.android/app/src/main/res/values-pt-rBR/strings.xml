@@ -162,8 +162,8 @@
     <string name="remote_desktop_h_scroll_sensitivity_label">Sensibilidade da rolagem horizontal: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Toque = Clique • Pressionar = Clique direito • 2 dedos = Rolar • Caneta = Absoluto</string>
     <string name="screen_dashboard_title">Base RemEx</string>
-    <string name="cd_reset_zoom">Resetar zoom</string>
-    <string name="cd_customize_cards">Customizar cards</string>
+    <string name="dashboard_menu_reset_zoom">Resetar zoom</string>
+    <string name="dashboard_menu_customize_cards">Customizar cards</string>
     <string name="dashboard_pc_status">Status do PC</string>
     <string name="dashboard_pc_status_subtitle">Orbe de status da conexão</string>
     <string name="dashboard_wake_pc">Ligar PC (Wake PC)</string>

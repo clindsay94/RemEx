@@ -162,8 +162,8 @@
     <string name="remote_desktop_h_scroll_sensitivity_label">Чутливість горизонтального прокручування: %.1fx</string>
     <string name="remote_desktop_controls_hint_v2">Дотик = Клік • Довге натискання = Права кнопка • 2 пальці = Прокручування • Стилус = Абсолютно</string>
     <string name="screen_dashboard_title">Головна панель RemEx</string>
-    <string name="cd_reset_zoom">Скинути масштаб</string>
-    <string name="cd_customize_cards">Налаштувати картки</string>
+    <string name="dashboard_menu_reset_zoom">Скинути масштаб</string>
+    <string name="dashboard_menu_customize_cards">Налаштувати картки</string>
     <string name="dashboard_pc_status">Стан ПК</string>
     <string name="dashboard_pc_status_subtitle">Індикатор стану підключення</string>
     <string name="dashboard_wake_pc">Пробудити ПК</string>
