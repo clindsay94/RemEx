@@ -137,7 +137,11 @@ class FileHostHandlerTest {
     private fun rootDescriptor() =
         RootDescriptor("root1", "Shared", true, true, true, true, false)
 
-    private fun build(root: FakeNode, granted: Boolean = false): Triple<FileHostHandler, CapturingSender, FakeMutator> {
+    private fun build(
+        root: FakeNode,
+        granted: Boolean = false,
+        pushConsent: PushConsentRegistry = PushConsentRegistry(),
+    ): Triple<FileHostHandler, CapturingSender, FakeMutator> {
         val provider = FakeRoots(granted, listOf(rootDescriptor()))
         val facade = FakeFacade(root, listOf(rootDescriptor()))
         val sender = CapturingSender()
@@ -151,6 +155,7 @@ class FileHostHandlerTest {
                 rootMutator = mutator,
                 stagingDir = tmp.newFolder("staging"),
                 scope = CoroutineScope(Dispatchers.Unconfined),
+                pushConsent = pushConsent,
             )
         return Triple(handler, sender, mutator)
     }
@@ -306,5 +311,72 @@ class FileHostHandlerTest {
     fun unknownMessage_isNotConsumed() = runBlocking {
         val (h, _, _) = build(sampleTree())
         assertFalse(h.handleControlMessage("""{"type":"telemetry"}"""))
+    }
+
+    // -- Push consent gate (RemEx-z6lh) -------------------------------------------
+
+    private fun offer(transferId: String, mode: String) = """
+        {"type":"file_transfer_offer","fileTransferOffer":{
+          "transferId":"$transferId","mode":"$mode","destRoot":"root1",
+          "destRelativePath":"Docs","fileName":"pushed.txt","size":5}}
+    """.trimIndent()
+
+    /**
+     * The defect: a paired PC could skip file_push_offer entirely, invent a transfer id, and land
+     * files in a writable shared root with no consent prompt ever shown.
+     */
+    @Test
+    fun pushOffer_withAnIdTheUserNeverAccepted_isRefused() = runBlocking {
+        val (h, sender, _) = build(sampleTree(), granted = true)
+
+        h.handleControlMessage(offer("forged-id", FileTransferModes.PUSH))
+
+        val msg = sender.last()
+        assertEquals("file_transfer_ready", msg.getString("type"))
+        val payload = msg.getJSONObject("fileTransferReady")
+        assertFalse(payload.getBoolean("accepted"))
+        assertTrue(payload.getString("declineReason").contains("not accepted"))
+    }
+
+    /** The id the device minted after the user tapped Accept is honoured. */
+    @Test
+    fun pushOffer_withAConsentedId_isAccepted() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(listOf("minted-id"))
+        val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
+
+        h.handleControlMessage(offer("minted-id", FileTransferModes.PUSH))
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertTrue(payload.getBoolean("accepted"))
+    }
+
+    /**
+     * An UPLOAD must NOT be gated. It targets a folder the user already shared for writing, so the
+     * share is the consent -- gating it would have broken every ordinary upload, which is the
+     * failure a too-broad fix would produce here.
+     */
+    @Test
+    fun uploadOffer_isNotSubjectToPushConsent() = runBlocking {
+        val (h, sender, _) = build(sampleTree(), granted = true)
+
+        h.handleControlMessage(offer("no-grant-needed", FileTransferModes.UPLOAD))
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertTrue(payload.getBoolean("accepted"))
+    }
+
+    /** A finished push cannot be replayed as a fresh one under the same id. */
+    @Test
+    fun completingAPush_releasesItsGrant() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(listOf("once-only"))
+        val (h, _, _) = build(sampleTree(), granted = true, pushConsent = consent)
+
+        h.handleControlMessage(
+            """{"type":"file_transfer_complete","fileTransferComplete":{"transferId":"once-only"}}"""
+        )
+
+        assertFalse(consent.isGranted("once-only"))
     }
 }

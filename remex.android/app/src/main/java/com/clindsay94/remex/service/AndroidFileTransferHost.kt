@@ -58,6 +58,12 @@ object AndroidFileTransferHost {
 
     private var hostHandler: FileHostHandler? = null
 
+    /**
+     * Shared with [hostHandler] so the ids minted by an accepted push offer are the same ids the
+     * offer handler will accept. Owned here because consent is obtained here (RemEx-z6lh).
+     */
+    private val pushConsent = PushConsentRegistry()
+
     private class TransferState(
         val transferId: String,
         val direction: String,
@@ -166,6 +172,7 @@ object AndroidFileTransferHost {
             rootMutator = mutator,
             stagingDir = stagingDir(),
             scope = scope,
+            pushConsent = pushConsent,
         )
     }
 
@@ -220,7 +227,15 @@ object AndroidFileTransferHost {
                 put("accepted", decision.granted)
                 if (decision.granted) {
                     val ids = JSONArray()
-                    repeat(fileCount) { ids.put(UUID.randomUUID().toString().replace("-", "")) }
+                    val minted = ArrayList<String>(fileCount)
+                    repeat(fileCount) {
+                        val id = UUID.randomUUID().toString().replace("-", "")
+                        minted.add(id)
+                        ids.put(id)
+                    }
+                    // Record BEFORE replying: the PC may negotiate the first file the instant this
+                    // response lands, and an offer arriving before the grant would be refused.
+                    pushConsent.grant(minted)
                     put("transferIds", ids)
                 }
             }
