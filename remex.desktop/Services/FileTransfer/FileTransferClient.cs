@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Channels;
@@ -26,6 +28,25 @@ public sealed class FileTransferClient : IDisposable
     private readonly ConcurrentDictionary<string, IProgress<double>?> _progressReporters = new();
     private readonly ConcurrentDictionary<string, Channel<byte[]>> _downloadChannels = new();
     private readonly ConcurrentDictionary<string, IncrementalHash> _downloadHashers = new();
+
+    /// <summary>
+    /// Last-activity timestamp per live transfer, feeding the idle watchdog.
+    /// </summary>
+    /// <remarks>
+    /// The value is a <see cref="StrongBox{T}"/> rather than a bare <c>long</c> so the receive path
+    /// can update it through <c>TryGetValue</c>, which cannot insert. Writing via the indexer would
+    /// let a chunk arriving AFTER the transfer's <c>finally</c> has reaped re-insert an entry that
+    /// nothing ever removes - and that is the ordinary cancelled-download path, because the peer
+    /// keeps streaming until it has processed the cancel. A late write into a box no longer in the
+    /// dictionary is harmless and collectible.
+    /// <para>
+    /// Timestamps come from <see cref="Stopwatch.GetTimestamp"/>, not the wall clock: a forward
+    /// system-clock correction larger than the idle limit - an NTP sync after boot, a VM resume, or
+    /// the RTC-in-local-time correction a dual-boot machine makes, which this project explicitly
+    /// targets - would otherwise fail a perfectly healthy transfer instantly.
+    /// </para>
+    /// </remarks>
+    private readonly ConcurrentDictionary<string, StrongBox<long>> _transferLastActivity = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _manageWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _hashWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _rootManageWaiters = new();
@@ -75,6 +96,67 @@ public sealed class FileTransferClient : IDisposable
         finally
         {
             removeWaiter();
+        }
+    }
+
+    /// <summary>Records that something arrived for <paramref name="transferId"/>, if it is still live.</summary>
+    private void MarkTransferActivity(string transferId)
+    {
+        // TryGetValue, never the indexer - see the remarks on _transferLastActivity.
+        if (_transferLastActivity.TryGetValue(transferId, out var lastActivity))
+            Volatile.Write(ref lastActivity.Value, Stopwatch.GetTimestamp());
+    }
+
+    /// <summary>
+    /// Awaits a transfer's end message, failing only if the peer goes silent for
+    /// <see cref="TransferIdleTimeoutSeconds"/>.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately NOT <c>tcs.Task.WaitAsync(timeout)</c>, which is what every control request in
+    /// this class uses. A total-duration bound is the wrong instrument for a wait whose length is
+    /// proportional to file size — see <see cref="TransferIdleTimeoutSeconds"/>. The deadline is
+    /// recomputed from the last observed activity on each pass, so it slides forward for as long as
+    /// the transfer is making progress and only bites on genuine silence.
+    /// <para>
+    /// Cancellation arrives through the caller's <c>ct.Register</c>, which completes the TCS, so the
+    /// cancelled path returns through the normal completion branch rather than through the timer.
+    /// </para>
+    /// </remarks>
+    private async Task<RemexMessage> AwaitTransferEndAsync(
+        TaskCompletionSource<RemexMessage> tcs,
+        StrongBox<long> lastActivity,
+        CancellationToken ct)
+    {
+        var idleLimit = TimeSpan.FromSeconds(TransferIdleTimeoutSeconds);
+
+        while (true)
+        {
+            // Load-bearing, not defensive. Cancellation completes the TCS *and* cancels the linked
+            // timer, so WhenAny may legitimately return either. If it returns the timer, without
+            // this guard the next pass would build an already-cancelled delay that completes
+            // instantly, and the loop would spin a core until the idle deadline expired.
+            ct.ThrowIfCancellationRequested();
+
+            var remaining = idleLimit - Stopwatch.GetElapsedTime(Volatile.Read(ref lastActivity.Value));
+
+            if (remaining <= TimeSpan.Zero)
+            {
+                throw new TimeoutException(
+                    "The transfer stopped responding: nothing was received for " +
+                    $"{TransferIdleTimeoutSeconds} seconds.");
+            }
+
+            // Linked source so the pending timer is cancelled the moment the wait resolves,
+            // rather than being left to run out on its own once per idle window.
+            using var timerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            var completed = await Task.WhenAny(tcs.Task, Task.Delay(remaining, timerCts.Token));
+            timerCts.Cancel();
+
+            if (ReferenceEquals(completed, tcs.Task))
+                return await tcs.Task;
+
+            // The timer won, but activity may have landed while it was running: loop and
+            // re-measure rather than failing on the strength of a stale deadline.
         }
     }
 
@@ -220,6 +302,20 @@ public sealed class FileTransferClient : IDisposable
 
     /// <inheritdoc cref="ControlRequestTimeoutSeconds"/>
     private const int SearchRequestTimeoutSeconds = 120;
+
+    /// <summary>
+    /// How long a file transfer may go with NO sign of life from the peer before it is failed.
+    /// </summary>
+    /// <remarks>
+    /// This is an IDLE bound, not a total-duration one, and the difference is the whole point.
+    /// Upload and download last as long as the file is big, so any wall-clock deadline either
+    /// aborts a large healthy transfer or is so generous it never fires — and aborting also reaps
+    /// the waiter, so the peer's eventual success reply is dropped and the user is told the
+    /// transfer failed while the file appears anyway. Measuring silence instead is size-independent:
+    /// a 40 GB transfer that is still moving never trips it, and a peer that dies mid-file trips it
+    /// in two minutes. (RemEx-l519.)
+    /// </remarks>
+    private const int TransferIdleTimeoutSeconds = 120;
 
     public async Task<string> VerifyRemoteHashAsync(string rootId, string relativePath, CancellationToken ct)
     {
@@ -472,6 +568,8 @@ public sealed class FileTransferClient : IDisposable
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         _transferEndWaiters[transferId] = tcs;
         _progressReporters[transferId] = progress;
+        var lastActivity = new StrongBox<long>(Stopwatch.GetTimestamp());
+        _transferLastActivity[transferId] = lastActivity;
 
         using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
 
@@ -521,6 +619,12 @@ public sealed class FileTransferClient : IDisposable
                     }
                 });
                 offset += read;
+
+                // Our own send counts as activity too. The peer only reports progress every
+                // ProgressChunkInterval chunks, so a file smaller than that interval draws no
+                // peer traffic at all - without this the watchdog for a small upload would be
+                // measured from registration rather than from the last thing that happened.
+                Volatile.Write(ref lastActivity.Value, Stopwatch.GetTimestamp());
             }
 
             var sha256Base64 = Convert.ToBase64String(hasher.GetCurrentHash());
@@ -531,7 +635,7 @@ public sealed class FileTransferClient : IDisposable
                 FileTransferEnd = new FileTransferEnd { TransferId = transferId, Success = true, Sha256Base64 = sha256Base64 }
             });
 
-            var result = await tcs.Task;
+            var result = await AwaitTransferEndAsync(tcs, lastActivity, ct);
 
             if (result.FileTransferEnd?.Success == false)
                 throw new IOException($"Upload failed: {result.FileTransferEnd.ErrorMessage}");
@@ -540,6 +644,7 @@ public sealed class FileTransferClient : IDisposable
         {
             _transferEndWaiters.TryRemove(transferId, out _);
             _progressReporters.TryRemove(transferId, out _);
+            _transferLastActivity.TryRemove(transferId, out _);
         }
     }
 
@@ -549,6 +654,8 @@ public sealed class FileTransferClient : IDisposable
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         _transferEndWaiters[transferId] = tcs;
         _progressReporters[transferId] = progress;
+        var lastActivity = new StrongBox<long>(Stopwatch.GetTimestamp());
+        _transferLastActivity[transferId] = lastActivity;
 
         using var reg = ct.Register(() =>
         {
@@ -601,7 +708,7 @@ public sealed class FileTransferClient : IDisposable
                 }
             });
 
-            var result = await tcs.Task;
+            var result = await AwaitTransferEndAsync(tcs, lastActivity, ct);
 
             // Signal the consumer that no more chunks are coming, then wait for all writes to
             // complete before the fileStream is disposed — prevents ObjectDisposedException on
@@ -640,6 +747,7 @@ public sealed class FileTransferClient : IDisposable
             _transferEndWaiters.TryRemove(transferId, out _);
             _progressReporters.TryRemove(transferId, out _);
             _downloadHashers.TryRemove(transferId, out _);
+            _transferLastActivity.TryRemove(transferId, out _);
             hasher.Dispose();
         }
     }
@@ -658,6 +766,11 @@ public sealed class FileTransferClient : IDisposable
                 break;
 
             case MessageTypes.FileTransferChunk when message.FileTransferChunk is { } chunk:
+                // Every chunk is proof of life for the idle watchdog (RemEx-l519). Order relative
+                // to the channel lookup does not matter: _downloadChannels is populated before the
+                // Start send and removed only in the finally, so for the whole life of the wait
+                // both entries exist or neither does.
+                MarkTransferActivity(chunk.TransferId);
                 if (_downloadChannels.TryGetValue(chunk.TransferId, out var ch))
                 {
                     var bytes = Convert.FromBase64String(chunk.DataBase64);
@@ -668,6 +781,10 @@ public sealed class FileTransferClient : IDisposable
                 break;
 
             case MessageTypes.FileTransferProgress when message.FileTransferProgress is { } prog:
+                // The only proof of life an UPLOAD gets: the PC sends chunks but receives nothing
+                // back until the end, so without this the watchdog would have to guess. The host
+                // emits one of these every ProgressChunkInterval chunks while receiving.
+                MarkTransferActivity(prog.TransferId);
                 if (_progressReporters.TryGetValue(prog.TransferId, out var reporter) && prog.TotalBytes > 0)
                     reporter?.Report((double)prog.BytesTransferred / prog.TotalBytes);
                 break;
