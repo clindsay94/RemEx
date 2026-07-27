@@ -62,7 +62,11 @@
 
         <!-- ═══ Settings overlay panel ═══ -->
         <Style Selector="Border.settings-overlay">
-            <Setter Property="RenderTransform" Value="translateX(420px)"/>
+            <!-- Must clear the panel's full width. It is Width=440 with MaxWidth=460, so the old
+                 420px left up to 40px of it still inside the viewport - invisible only because
+                 Opacity is 0, which means it was still hit-testable and still being composited.
+                 460 matches the widest the panel can be (RemEx-vm0j). -->
+            <Setter Property="RenderTransform" Value="translateX(460px)"/>
             <Setter Property="Opacity" Value="0"/>
             <Setter Property="IsHitTestVisible" Value="False"/>
             <Setter Property="Transitions">
