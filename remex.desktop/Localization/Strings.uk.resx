@@ -599,7 +599,7 @@
     <value>Почати ✓</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
-    <value>Don't show this tutorial again</value>
+    <value>Більше не показувати цей посібник</value>
   </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
@@ -628,10 +628,10 @@ RemEx працює на цьому ПК, а телефон підключаєт�
     <value>Для детального моніторингу обладнання (понад 300 датчиків) встановіть HWiNFO64 — програма безкоштовна для особистого користування.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
-    <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+    <value>1. Завантажте з hwinfo.com
+2. Запустіть HWInfo → Settings (⚙) → Main Settings
+3. Позначте «Shared Memory Support» → OK
+4. HWInfo має бути запущений, щоб RemEx читав його датчики</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
     <value>⚠ Спільна пам'ять (Shared Memory) у HWInfo автоматично вимикається через 12 годин (у безкоштовній версії). Періодично вмикайте її знову або розгляньте можливість придбання ліцензії Pro.</value>
@@ -660,10 +660,10 @@ RemEx працює на цьому ПК, а телефон підключаєт�
     <value>Запуск програм дозволяє запускати програми на вашому ПК з телефону. Додатки спершу потрібно налаштувати тут.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value>
+    <value>1. Перейдіть на сторінку Запуску програм (бічна панель)
+2. Натисніть «+ Додати програму»
+3. Виберіть файл .exe або ярлик
+4. Запускайте зі свого застосунку Android!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
     <value>Ваш телефон може запускати лише програми, додані тут — з міркувань безпеки RemEx не запустить нічого поза цим списком.</value>
@@ -679,28 +679,28 @@ RemEx працює на цьому ПК, а телефон підключаєт�
     <value>Якщо автоматичне виявлення не працює, знайдіть IP-адресу вашого ПК вручну:</value>
   </data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve">
-    <value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value>
+    <value>Windows: CMD → ipconfig → «IPv4-адреса»
+Linux: ip addr  або  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
     <value>Введіть ws://&lt;IP&gt;:5005/ws у налаштуваннях підключення Android-додатку.</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>QR Code Pairing</value>
+    <value>Створення пари через QR-код</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
-    <value>The fastest way to connect your phone is by scanning a QR code. The PC generates a pairing code that contains everything your mobile app needs.</value>
+    <value>Найшвидший спосіб під'єднати телефон — відсканувати QR-код. Комп'ютер створює код пари, який містить усе потрібне мобільному застосунку.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the PC
-2. Click "Show QR Code"
-3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
-5. Point your camera at the code — you'll connect automatically!</value>
+    <value>1. Відкрийте Налаштування → З'єднання на комп'ютері
+2. Натисніть «Показати QR-код»
+3. Відкрийте мобільний застосунок RemEx
+4. Торкніться значка сканера QR на екрані з'єднання
+5. Наведіть камеру на код — з'єднання встановиться автоматично!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
-    <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
+    <value>Жодного набору тексту, жодних IP-адрес — просто відскануйте та користуйтеся. Дані з'єднання зберігаються, тож сканувати потрібно лише раз.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
     <value>Передача файлів і спільні папки</value>
@@ -1107,52 +1107,52 @@ Linux: ip addr  or  hostname -I</value>
     <value>Пропустити посібник — ви можете переглянути його пізніше в Налаштуваннях</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
-    <value>Glossary: Command Palette</value>
+    <value>Глосарій: Палітра команд</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Press Ctrl+Shift+P to jump to screens, trigger quick actions, and search the command center instantly.</value>
+    <value>Натисніть Ctrl+Shift+P, щоб перейти до екранів, виконати швидкі дії та миттєво шукати в центрі команд.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glossary: App Launcher</value>
+    <value>Глосарій: Запуск програм</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Launch curated apps and scripts on the PC. Configure entries once on the PC, then start them remotely from RemEx.</value>
+    <value>Запускайте вибрані програми та скрипти на комп'ютері. Налаштуйте записи один раз на комп'ютері, а потім запускайте їх віддалено з RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glossary: Task Manager</value>
+    <value>Глосарій: Диспетчер завдань</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
-    <value>Inspect running PC processes, sort by usage, and end stuck tasks without leaving your chair.</value>
+    <value>Переглядайте процеси, що виконуються на комп'ютері, сортуйте їх за навантаженням і завершуйте завислі завдання, не встаючи з крісла.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Glossary: Sensor Canvas</value>
+    <value>Глосарій: Полотно датчиків</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
+    <value>Створіть стіну живої телеметрії, закріплюючи датчики, змінюючи розмір карток і розташовуючи їх на вільному полотні.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glossary: File Transfer</value>
+    <value>Глосарій: Передавання файлів</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>Переглядайте лише папки, якими поділився PC, вивантажуйте у папки з доступом для запису та завантажуйте файли з перевіркою SHA-256.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
-    <value>Glossary: Remote Desktop</value>
+    <value>Глосарій: Віддалений робочий стіл</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Stream your PC screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+    <value>Транслюйте екран комп'ютера з налаштовуваними якістю, масштабом і частотою кадрів, щоб збалансувати чіткість і трафік.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
-    <value>Glossary: Quick Settings</value>
+    <value>Глосарій: Швидкі налаштування</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Body" xml:space="preserve">
-    <value>On Android, add RemEx tiles to Quick Settings for instant actions like Lock, Sleep, Restart, or Wake-on-LAN.</value>
+    <value>На Android додайте плитки RemEx до Швидких налаштувань для миттєвих дій, як-от Блокування, Сон, Перезавантаження або Wake-on-LAN.</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Glossary: Customization</value>
+    <value>Глосарій: Налаштування вигляду</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
+    <value>Налаштуйте теми, стратегію палітри, шрифти, форми карток і прозорість під свій спосіб стеження та керування.</value>
   </data>
 
   

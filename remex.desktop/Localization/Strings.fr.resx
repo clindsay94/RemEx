@@ -628,10 +628,10 @@ RemEx fonctionne sur ce PC et votre téléphone s'y connecte. Chaque connexion e
     <value>Pour un monitoring matériel détaillé (plus de 300 capteurs), installez HWiNFO64 — c'est gratuit pour un usage personnel.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
-    <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+    <value>1. Téléchargez-le depuis hwinfo.com
+2. Lancez HWInfo → Settings (⚙) → Main Settings
+3. Cochez « Shared Memory Support » → OK
+4. HWInfo doit rester ouvert pour que RemEx lise ses capteurs</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
     <value>⚠ La mémoire partagée d'HWInfo se désactive après 12h (version gratuite). Réactivez-la périodiquement, ou passez à la licence Pro.</value>
@@ -660,10 +660,10 @@ RemEx fonctionne sur ce PC et votre téléphone s'y connecte. Chaque connexion e
     <value>Le lanceur d'apps vous permet de démarrer des programmes sur votre PC depuis votre téléphone. Les apps doivent être configurées ici d'abord.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value>
+    <value>1. Ouvrez la page Lanceur (barre latérale)
+2. Cliquez sur « + Ajouter un programme »
+3. Sélectionnez le .exe ou le raccourci
+4. Lancez-le depuis votre application Android !</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
     <value>Votre téléphone ne peut démarrer que les programmes que vous ajoutez ici — par sécurité, RemEx ne lancera rien qui ne figure pas dans cette liste.</value>
@@ -679,8 +679,8 @@ RemEx fonctionne sur ce PC et votre téléphone s'y connecte. Chaque connexion e
     <value>Si l'auto-découverte échoue, trouvez l'IP de votre PC manuellement :</value>
   </data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve">
-    <value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value>
+    <value>Windows : CMD → ipconfig → « Adresse IPv4 »
+Linux : ip addr  ou  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
     <value>Entrez ws://&lt;IP&gt;:5005/ws dans les paramètres de connexion de l'app Android.</value>
@@ -693,11 +693,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>La façon la plus rapide de connecter votre téléphone est de scanner un QR code. L'hôte génère un code d'appairage qui contient tout ce dont votre application mobile a besoin.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the PC
-2. Click "Show QR Code"
-3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
-5. Point your camera at the code — you'll connect automatically!</value>
+    <value>1. Ouvrez Paramètres → Connexion sur le PC
+2. Cliquez sur « Afficher le code QR »
+3. Ouvrez l'application mobile RemEx
+4. Touchez l'icône du scanner QR sur l'écran de connexion
+5. Pointez l'appareil photo vers le code : la connexion se fait automatiquement !</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
     <value>Pas de saisie, pas d'adresses IP — scannez et c'est parti. Les détails de connexion sont sauvegardés afin que vous n'ayez à scanner qu'une seule fois.</value>

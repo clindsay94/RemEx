@@ -628,10 +628,10 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>विस्तृत हार्डवेयर निगरानी (300+ सेंसर) के लिए, HWiNFO64 इंस्टॉल करें — यह व्यक्तिगत उपयोग के लिए निःशुल्क है।</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
-    <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+    <value>1. hwinfo.com से डाउनलोड करें
+2. HWInfo चलाएँ → Settings (⚙) → Main Settings
+3. 'Shared Memory Support' चुनें → OK
+4. RemEx को सेंसर पढ़ने के लिए HWInfo चालू रहना चाहिए</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
     <value>⚠ HWInfo की साझा मेमोरी 12 घंटों (मुफ्त संस्करण) के बाद स्वतः अक्षम हो जाती है। इसे समय-समय पर पुनः सक्षम करें, या प्रो लाइसेंस पर विचार करें।</value>
@@ -660,10 +660,10 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>ऐप लॉन्चर आपको अपने फोन से अपने पीसी पर प्रोग्राम शुरू करने देता है। ऐप्स को पहले यहां कॉन्फ़िगर किया जाना चाहिए।</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value>
+    <value>1. लॉन्चर पेज पर जाएँ (साइडबार)
+2. '+ प्रोग्राम जोड़ें' पर क्लिक करें
+3. .exe या शॉर्टकट चुनें
+4. अपने Android ऐप से चलाएँ!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
     <value>आपका फ़ोन केवल वही प्रोग्राम शुरू कर सकता है जो आप यहाँ जोड़ते हैं — सुरक्षा के लिए, RemEx इस सूची से बाहर कुछ भी नहीं चलाएगा।</value>
@@ -679,28 +679,28 @@ RemEx इस पीसी पर चलता है और आपका फ़�
     <value>यदि स्वतः खोज काम नहीं करती है, तो अपने पीसी का IP मैन्युअल रूप से खोजें:</value>
   </data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve">
-    <value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value>
+    <value>Windows: CMD → ipconfig → 'IPv4 पता'
+Linux: ip addr  या  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
     <value>Android ऐप की कनेक्शन सेटिंग्स में ws://&lt;IP&gt;:5005/ws दर्ज करें।</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>QR Code Pairing</value>
+    <value>QR कोड से पेयरिंग</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
-    <value>The fastest way to connect your phone is by scanning a QR code. The PC generates a pairing code that contains everything your mobile app needs.</value>
+    <value>अपना फ़ोन जोड़ने का सबसे तेज़ तरीका QR कोड स्कैन करना है। PC एक पेयरिंग कोड बनाता है जिसमें वह सब कुछ होता है जो आपके मोबाइल ऐप को चाहिए।</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the PC
-2. Click "Show QR Code"
-3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
-5. Point your camera at the code — you'll connect automatically!</value>
+    <value>1. PC पर सेटिंग्स → कनेक्शन खोलें
+2. "QR कोड दिखाएँ" पर क्लिक करें
+3. RemEx मोबाइल ऐप खोलें
+4. कनेक्शन स्क्रीन पर QR स्कैनर आइकन टैप करें
+5. कैमरे को कोड की ओर करें — कनेक्शन अपने आप हो जाएगा!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
-    <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
+    <value>कुछ टाइप करने या IP पता डालने की ज़रूरत नहीं — बस स्कैन करें और चल पड़ें। कनेक्शन विवरण सहेजे जाते हैं, इसलिए आपको केवल एक बार स्कैन करना होगा।</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
     <value>फ़ाइल स्थानांतरण और साझा फ़ोल्डर</value>
@@ -1107,52 +1107,52 @@ Linux: ip addr  or  hostname -I</value>
     <value>ट्यूटोरियल छोड़ें — आप इसे सेटिंग्स से फिर से चला सकते हैं</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
-    <value>Glossary: Command Palette</value>
+    <value>शब्दावली: कमांड पैलेट</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Press Ctrl+Shift+P to jump to screens, trigger quick actions, and search the command center instantly.</value>
+    <value>स्क्रीन के बीच जाने, त्वरित क्रियाएँ चलाने और कमांड सेंटर में तुरंत खोजने के लिए Ctrl+Shift+P दबाएँ।</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glossary: App Launcher</value>
+    <value>शब्दावली: ऐप लॉन्चर</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Launch curated apps and scripts on the PC. Configure entries once on the PC, then start them remotely from RemEx.</value>
+    <value>PC पर चुनी हुई ऐप्स और स्क्रिप्ट चलाएँ। प्रविष्टियाँ PC पर एक बार सेट करें, फिर उन्हें RemEx से दूर से शुरू करें।</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glossary: Task Manager</value>
+    <value>शब्दावली: टास्क मैनेजर</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
-    <value>Inspect running PC processes, sort by usage, and end stuck tasks without leaving your chair.</value>
+    <value>PC पर चल रही प्रक्रियाएँ देखें, उपयोग के अनुसार क्रमबद्ध करें और अटके हुए कार्य अपनी कुर्सी से उठे बिना बंद करें।</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Glossary: Sensor Canvas</value>
+    <value>शब्दावली: सेंसर कैनवास</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
+    <value>सेंसर पिन करके, कार्ड का आकार बदलकर और उन्हें मुक्त कैनवास पर व्यवस्थित करके एक लाइव टेलीमेट्री वॉल बनाएँ।</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glossary: File Transfer</value>
+    <value>शब्दावली: फ़ाइल स्थानांतरण</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>केवल उन फ़ोल्डर को ब्राउज़ करें जिन्हें PC ने साझा किया है, लिखने योग्य स्थानों में अपलोड करें, और SHA-256 सत्यापन के साथ फ़ाइलें डाउनलोड करें।</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
-    <value>Glossary: Remote Desktop</value>
+    <value>शब्दावली: रिमोट डेस्कटॉप</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Stream your PC screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+    <value>अपनी PC स्क्रीन को समायोज्य गुणवत्ता, स्केल और FPS के साथ स्ट्रीम करें ताकि स्पष्टता और बैंडविड्थ के बीच संतुलन बना रहे।</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
-    <value>Glossary: Quick Settings</value>
+    <value>शब्दावली: क्विक सेटिंग्स</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Body" xml:space="preserve">
-    <value>On Android, add RemEx tiles to Quick Settings for instant actions like Lock, Sleep, Restart, or Wake-on-LAN.</value>
+    <value>Android पर, Lock, Sleep, Restart या Wake-on-LAN जैसी तुरंत क्रियाओं के लिए क्विक सेटिंग्स में RemEx टाइलें जोड़ें।</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Glossary: Customization</value>
+    <value>शब्दावली: अनुकूलन</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
+    <value>थीम, पैलेट रणनीति, फ़ॉन्ट, कार्ड आकार और अपारदर्शिता को अपनी निगरानी और नियंत्रण की शैली के अनुसार समायोजित करें।</value>
   </data>
 
   

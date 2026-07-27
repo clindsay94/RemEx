@@ -604,10 +604,10 @@ RemEx działa na tym komputerze, a telefon łączy się z nim. Każde połączen
     <value>Dla szczegółowego monitorowania sprzętu (ponad 300 czujników), zainstaluj HWiNFO64 — jest darmowy do użytku osobistego.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
-    <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+    <value>1. Pobierz z hwinfo.com
+2. Uruchom HWInfo → Settings (⚙) → Main Settings
+3. Zaznacz „Shared Memory Support” → OK
+4. HWInfo musi być uruchomiony, aby RemEx odczytywał jego czujniki</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
     <value>⚠ Pamięć współdzielona HWiNFO wyłącza się automatycznie po 12 godzinach (wersja darmowa). Włączaj ją okresowo lub rozważ licencję Pro.</value>
@@ -636,10 +636,10 @@ RemEx działa na tym komputerze, a telefon łączy się z nim. Każde połączen
     <value>Launcher aplikacji pozwala uruchamiać programy na komputerze z telefonu. Aplikacje muszą być najpierw tutaj skonfigurowane.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value>
+    <value>1. Przejdź do strony Menu programów (pasek boczny)
+2. Kliknij „+ Dodaj program”
+3. Wskaż plik .exe lub skrót
+4. Uruchom go z aplikacji na Androida!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
     <value>Telefon może uruchamiać tylko programy dodane tutaj — ze względów bezpieczeństwa RemEx nie uruchomi niczego spoza tej listy.</value>
@@ -655,8 +655,8 @@ RemEx działa na tym komputerze, a telefon łączy się z nim. Każde połączen
     <value>Jeśli autowykrywanie nie działa, znajdź IP komputera ręcznie:</value>
   </data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve">
-    <value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value>
+    <value>Windows: CMD → ipconfig → „Adres IPv4”
+Linux: ip addr  lub  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
     <value>Wprowadź ws://&lt;IP&gt;:5005/ws w ustawieniach połączenia aplikacji na Androidzie.</value>

@@ -599,7 +599,7 @@
     <value>Başla ✓</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
-    <value>Don't show this tutorial again</value>
+    <value>Bu eğitimi bir daha gösterme</value>
   </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
@@ -628,10 +628,10 @@ RemEx bu bilgisayarda çalışır ve telefonunuz ona bağlanır. Her bağlantı 
     <value>Ayrıntılı donanım izleme (300+ sensör) için HWiNFO64 yükleyin — kişisel kullanım için ücretsizdir.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
-    <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+    <value>1. hwinfo.com adresinden indirin
+2. HWInfo'yu çalıştırın → Settings (⚙) → Main Settings
+3. 'Shared Memory Support' seçeneğini işaretleyin → OK
+4. RemEx'in sensörleri okuyabilmesi için HWInfo açık kalmalıdır</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
     <value>⚠ HWInfo'nun Paylaşılan Belleği 12 saat sonra otomatik olarak devre dışı bırakılır (ücretsiz sürüm). Periyodik olarak yeniden etkinleştirin veya Pro lisansını düşünün.</value>
@@ -660,10 +660,10 @@ RemEx bu bilgisayarda çalışır ve telefonunuz ona bağlanır. Her bağlantı 
     <value>Uygulama Başlatıcı, bilgisayarınızdaki programları telefonunuzdan başlatmanızı sağlar. Uygulamalar önce burada yapılandırılmalıdır.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value>
+    <value>1. Başlatıcı sayfasına gidin (kenar çubuğu)
+2. '+ Program Ekle' düğmesine tıklayın
+3. .exe dosyasına veya kısayola göz atın
+4. Android uygulamanızdan başlatın!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
     <value>Telefonunuz yalnızca burada eklediğiniz programları başlatabilir — güvenlik için RemEx bu listede olmayan hiçbir şeyi çalıştırmaz.</value>
@@ -679,28 +679,28 @@ RemEx bu bilgisayarda çalışır ve telefonunuz ona bağlanır. Her bağlantı 
     <value>Otomatik keşif çalışmazsa, bilgisayarınızın IP'sini manuel olarak bulun:</value>
   </data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve">
-    <value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value>
+    <value>Windows: CMD → ipconfig → 'IPv4 Adresi'
+Linux: ip addr  veya  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
     <value>Android uygulamasının bağlantı ayarlarına ws://&lt;IP&gt;:5005/ws girin.</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>QR Code Pairing</value>
+    <value>QR Kodu ile Eşleştirme</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
-    <value>The fastest way to connect your phone is by scanning a QR code. The PC generates a pairing code that contains everything your mobile app needs.</value>
+    <value>Telefonunuzu bağlamanın en hızlı yolu bir QR kodu taramaktır. Bilgisayar, mobil uygulamanızın ihtiyaç duyduğu her şeyi içeren bir eşleştirme kodu oluşturur.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the PC
-2. Click "Show QR Code"
-3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
-5. Point your camera at the code — you'll connect automatically!</value>
+    <value>1. Bilgisayarda Ayarlar → Bağlantı bölümünü açın
+2. "QR Kodunu Göster" düğmesine tıklayın
+3. RemEx mobil uygulamasını açın
+4. Bağlantı ekranındaki QR tarayıcı simgesine dokunun
+5. Kamerayı koda doğrultun — bağlantı otomatik kurulur!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
-    <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
+    <value>Yazmak yok, IP adresi yok — sadece tarayın ve başlayın. Bağlantı bilgileri kaydedilir, bu yüzden yalnızca bir kez taramanız yeterlidir.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
     <value>Dosya Aktarımı &amp; Paylaşılan Klasörler</value>
@@ -1107,52 +1107,52 @@ Linux: ip addr  or  hostname -I</value>
     <value>Öğreticiyi atla — Ayarlar'dan tekrar izleyebilirsiniz</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
-    <value>Glossary: Command Palette</value>
+    <value>Sözlük: Komut Paleti</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Press Ctrl+Shift+P to jump to screens, trigger quick actions, and search the command center instantly.</value>
+    <value>Ekranlar arasında geçmek, hızlı eylemleri çalıştırmak ve komut merkezinde anında arama yapmak için Ctrl+Shift+P tuşlarına basın.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glossary: App Launcher</value>
+    <value>Sözlük: Uygulama Başlatıcı</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Launch curated apps and scripts on the PC. Configure entries once on the PC, then start them remotely from RemEx.</value>
+    <value>Bilgisayarda seçtiğiniz uygulamaları ve betikleri çalıştırın. Girişleri bilgisayarda bir kez ayarlayın, sonra RemEx'ten uzaktan başlatın.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glossary: Task Manager</value>
+    <value>Sözlük: Görev Yöneticisi</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
-    <value>Inspect running PC processes, sort by usage, and end stuck tasks without leaving your chair.</value>
+    <value>Bilgisayarda çalışan işlemleri inceleyin, kullanıma göre sıralayın ve takılan görevleri yerinizden kalkmadan sonlandırın.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Glossary: Sensor Canvas</value>
+    <value>Sözlük: Sensör Tuvali</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
+    <value>Sensörleri sabitleyerek, kartları yeniden boyutlandırarak ve serbest tuvalde düzenleyerek canlı bir telemetri duvarı oluşturun.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glossary: File Transfer</value>
+    <value>Sözlük: Dosya Aktarımı</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
     <value>Yalnızca PC'nin paylaştığı klasörlere göz atın, yazılabilir konumlara yükleme yapın ve SHA-256 doğrulamasıyla dosya indirin.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
-    <value>Glossary: Remote Desktop</value>
+    <value>Sözlük: Uzak Masaüstü</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Stream your PC screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+    <value>Netlik ile bant genişliği arasında denge kurabilmek için bilgisayar ekranınızı ayarlanabilir kalite, ölçek ve FPS ile aktarın.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
-    <value>Glossary: Quick Settings</value>
+    <value>Sözlük: Hızlı Ayarlar</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Body" xml:space="preserve">
-    <value>On Android, add RemEx tiles to Quick Settings for instant actions like Lock, Sleep, Restart, or Wake-on-LAN.</value>
+    <value>Android'de Kilitle, Uyku, Yeniden Başlat veya Wake-on-LAN gibi anlık eylemler için Hızlı Ayarlar'a RemEx kutucukları ekleyin.</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Glossary: Customization</value>
+    <value>Sözlük: Kişiselleştirme</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
+    <value>Temaları, palet stratejisini, yazı tiplerini, kart biçimlerini ve saydamlığı izleme ve denetleme tarzınıza göre ayarlayın.</value>
   </data>
 
   

@@ -628,10 +628,10 @@ RemEx berjalan di PC ini dan ponsel Anda terhubung ke sana. Setiap koneksi dilin
     <value>Untuk pemantauan perangkat keras terperinci (300+ sensor), instal HWiNFO64 — gratis untuk penggunaan pribadi.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
-    <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+    <value>1. Unduh dari hwinfo.com
+2. Jalankan HWInfo → Settings (⚙) → Main Settings
+3. Centang 'Shared Memory Support' → OK
+4. HWInfo harus tetap berjalan agar RemEx dapat membaca sensornya</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
     <value>⚠ Memori Bersama (Shared Memory) HWInfo otomatis dinonaktifkan setelah 12 jam (versi gratis). Aktifkan kembali secara berkala, atau pertimbangkan lisensi Pro.</value>
@@ -660,10 +660,10 @@ RemEx berjalan di PC ini dan ponsel Anda terhubung ke sana. Setiap koneksi dilin
     <value>Peluncur Aplikasi memungkinkan Anda memulai program di PC dari ponsel Anda. Aplikasi harus dikonfigurasi di sini terlebih dahulu.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value>
+    <value>1. Buka halaman Peluncur (bilah sisi)
+2. Klik '+ Tambah Program'
+3. Telusuri ke file .exe atau pintasan
+4. Jalankan dari aplikasi Android Anda!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
     <value>Ponsel Anda hanya dapat memulai program yang Anda tambahkan di sini — demi keamanan, RemEx tidak akan menjalankan apa pun yang tidak ada dalam daftar ini.</value>
@@ -679,8 +679,8 @@ RemEx berjalan di PC ini dan ponsel Anda terhubung ke sana. Setiap koneksi dilin
     <value>Jika penemuan otomatis tidak berfungsi, temukan IP PC Anda secara manual:</value>
   </data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve">
-    <value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value>
+    <value>Windows: CMD → ipconfig → 'Alamat IPv4'
+Linux: ip addr  atau  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
     <value>Masukkan ws://&lt;IP&gt;:5005/ws di pengaturan koneksi aplikasi Android.</value>
@@ -693,11 +693,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Cara tercepat untuk menghubungkan ponsel Anda adalah dengan memindai kode QR. PC menghasilkan kode pairing yang berisi semua yang dibutuhkan aplikasi mobile Anda.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the PC
-2. Click "Show QR Code"
-3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
-5. Point your camera at the code — you'll connect automatically!</value>
+    <value>1. Buka Pengaturan → Koneksi di PC
+2. Klik "Tampilkan Kode QR"
+3. Buka aplikasi seluler RemEx
+4. Ketuk ikon pemindai QR di layar koneksi
+5. Arahkan kamera ke kode — sambungan terjadi otomatis!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
     <value>Tanpa mengetik, tanpa alamat IP — cukup pindai dan mulai. Detail koneksi disimpan sehingga Anda hanya perlu memindai sekali.</value>
