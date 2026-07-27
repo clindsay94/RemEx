@@ -198,7 +198,16 @@ fun FileTransferScreen(
         topBar = {
             RemexFlexibleTopBar(
                 title = stringResource(R.string.screen_file_transfer_title),
-                subtitle = "$rootLabel • $remotePath",
+                // Name the read-only state next to the folder it applies to, so a user looking at
+                // greyed-out upload and new-folder buttons has the reason on screen (RemEx-dc57).
+                // Note this passes selectedRoot?.isWritable, NOT canWrite - see the rule in
+                // buildLocationSubtitle for why the difference matters.
+                subtitle = FileManagerLogic.buildLocationSubtitle(
+                    rootLabel = rootLabel,
+                    path = remotePath,
+                    selectedRootIsWritable = selectedRoot?.isWritable,
+                    readOnlyLabel = stringResource(R.string.file_transfer_read_only_root),
+                ),
                 scrollBehavior = topBarScrollBehavior,
             )
         },

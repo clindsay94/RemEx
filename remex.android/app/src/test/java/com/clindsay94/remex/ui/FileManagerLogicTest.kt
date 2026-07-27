@@ -205,4 +205,44 @@ class FileManagerLogicTest {
     fun parseFileEntries_nullArray_yieldsEmptyList() {
         assertTrue(FileManagerLogic.parseFileEntries(null).isEmpty())
     }
+
+    // ── Header subtitle: the read-only marker (RemEx-dc57) ────────────────────
+
+    @Test
+    fun subtitle_marksASelectedReadOnlyRoot() {
+        val subtitle = FileManagerLogic.buildLocationSubtitle(
+            rootLabel = "Camera",
+            path = "/DCIM",
+            selectedRootIsWritable = false,
+            readOnlyLabel = "Read-only",
+        )
+        assertEquals("Camera • /DCIM • Read-only", subtitle)
+    }
+
+    @Test
+    fun subtitle_omitsMarker_forAWritableRoot() {
+        val subtitle = FileManagerLogic.buildLocationSubtitle(
+            rootLabel = "Downloads",
+            path = "/",
+            selectedRootIsWritable = true,
+            readOnlyLabel = "Read-only",
+        )
+        assertEquals("Downloads • /", subtitle)
+    }
+
+    /**
+     * The case the screen's own canWrite flag gets wrong: it is false both for a read-only root
+     * and for no selection at all, so driving the marker from it would label the empty "/"
+     * placeholder "Read-only" - untrue of anything, and shown before the user has chosen a folder.
+     */
+    @Test
+    fun subtitle_omitsMarker_whenNoRootIsSelected() {
+        val subtitle = FileManagerLogic.buildLocationSubtitle(
+            rootLabel = "/",
+            path = "/",
+            selectedRootIsWritable = null,
+            readOnlyLabel = "Read-only",
+        )
+        assertEquals("/ • /", subtitle)
+    }
 }

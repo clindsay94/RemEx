@@ -154,6 +154,26 @@ object FileManagerLogic {
         return crumbs
     }
 
+    /**
+     * Builds the file-manager header subtitle, appending the read-only marker when — and only
+     * when — a selected root actually is read-only.
+     *
+     * [selectedRootIsWritable] is deliberately nullable, and that is the whole reason this is a
+     * function rather than a string template at the call site. The screen's `canWrite` flag is
+     * false in TWO different situations: a read-only root is selected, and nothing is selected at
+     * all. Driving the marker from it would label the empty "/" placeholder "Read-only", which is
+     * not true of anything. Null means no root is selected and must produce no marker.
+     * (RemEx-dc57.)
+     */
+    fun buildLocationSubtitle(
+        rootLabel: String,
+        path: String,
+        selectedRootIsWritable: Boolean?,
+        readOnlyLabel: String,
+    ): String =
+        if (selectedRootIsWritable == false) "$rootLabel • $path • $readOnlyLabel"
+        else "$rootLabel • $path"
+
     /** Adds or removes [name] from the current multi-select set. */
     fun toggleSelection(current: Set<String>, name: String): Set<String> =
         if (name in current) current - name else current + name
