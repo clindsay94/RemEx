@@ -143,7 +143,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<FileTransferSharedRootItem> SharedRoots { get; } = new();
 
-    public bool SupportsSharedFolderConfiguration => !OperatingSystem.IsAndroid();
+    /// <summary>Always true on this platform; see the note on <see cref="SupportsTrustManagement"/>.</summary>
+    public bool SupportsSharedFolderConfiguration => true;
 
     public bool HasSharedRoots => SharedRoots.Count > 0;
 
@@ -157,8 +158,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<FileTrustDeviceItem> TrustedDevices { get; } = new();
 
-    /// <summary>True when the trust-management UI should be shown (embedded host present, not Android).</summary>
-    public bool SupportsTrustManagement => !OperatingSystem.IsAndroid() && ResolveTrustService() is not null;
+    /// <summary>
+    /// True when the trust-management UI should be shown, i.e. an embedded host is present.
+    /// </summary>
+    /// <remarks>
+    /// The "and not Android" half of this condition is gone because it could never be false:
+    /// remex.desktop targets net10.0, not net10.0-android, so <c>OperatingSystem.IsAndroid()</c>
+    /// is unreachable here (RemEx-f167). Kept as a property rather than inlined at the call site
+    /// because it gates a whole Settings section and the binding needs a name.
+    /// </remarks>
+    public bool SupportsTrustManagement => ResolveTrustService() is not null;
 
     public bool HasTrustedDevices => TrustedDevices.Count > 0;
 

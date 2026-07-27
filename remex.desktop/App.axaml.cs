@@ -104,9 +104,7 @@ public partial class App : Application
     {
         try
         {
-            var baseFolder = OperatingSystem.IsAndroid()
-                ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
-                : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var baseFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var filePath = Path.Combine(baseFolder, "Remex", "dashboard_layout.json");
 
             if (!File.Exists(filePath)) return;
@@ -210,12 +208,6 @@ public partial class App : Application
             }
 
             _ = viewModel.Connection.AutoConnectAsync();
-
-            if (OperatingSystem.IsAndroid())
-            {
-                viewModel.Connection.TelemetryReceived += (t) => TriggerPlatformWidgetUpdate();
-                viewModel.Connection.ProcessListReceived += (p) => TriggerPlatformWidgetUpdate();
-            }
 
             // P8-G: keep tray icon tooltip in sync with live sensor readings
             viewModel.Connection.TelemetryReceived += telemetry =>
