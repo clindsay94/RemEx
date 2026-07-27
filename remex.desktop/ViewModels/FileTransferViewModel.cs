@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
@@ -72,6 +73,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         TransferQueue.Changed += OnQueueChanged;
         TransferQueue.ItemCompleted += OnTransferCompleted;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
 
         // These two properties are created once and only ever mutated, never reassigned, so
         // CollectionChanged really is a complete signal that their counts moved. That is worth
@@ -1242,8 +1244,19 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     // ─── Lifecycle ───────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// <see cref="RemoteRootHint"/> resolves its text from <see cref="LocalizationService"/> at
+    /// get-time, so a language switch changes what it would return without anything on this
+    /// view-model changing - and therefore without a notification. Re-raise it explicitly.
+    /// </summary>
+    private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e) =>
+        Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(RemoteRootHint)));
+
     public void Dispose()
     {
+        // Not optional: LocalizationService.Instance is a process-lifetime singleton, so staying
+        // subscribed would pin this view-model for the life of the app.
+        LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         TransferQueue.Changed -= OnQueueChanged;
         TransferQueue.Dispose();

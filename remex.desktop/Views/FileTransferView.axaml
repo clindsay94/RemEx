@@ -97,6 +97,7 @@
 
                 <!-- Row 0: Root selector + search + volumes -->
                 <Border Grid.Row="0" Padding="12,10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Background="{DynamicResource GlassBaseDarkBrush}">
+                    <StackPanel Spacing="6">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                         <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_SharedFolderLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                         <ComboBox Grid.Column="1" ItemsSource="{Binding RemoteRoots}" SelectedItem="{Binding SelectedRemoteRoot}" MinWidth="180" HorizontalAlignment="Stretch">
@@ -115,6 +116,12 @@
                         <Button Grid.Column="3" Content="🖴" Classes="icon-btn" Command="{Binding LoadVolumesCommand}" ToolTip.Tip="{local:Localize FileTransfer_VolumesTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_VolumesTooltip}" IsVisible="{Binding SupportsFullBrowse}" Margin="6,0,0,0"/>
                         <Button Grid.Column="4" Content="↺" Classes="icon-btn" Command="{Binding LoadRemoteRootsCommand}" ToolTip.Tip="{local:Localize FileTransfer_ReloadTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ReloadTooltip}" Margin="4,0,0,0"/>
                     </Grid>
+                    <!-- Explains WHY upload is unavailable on a read-only root, which is otherwise
+                         only discoverable by trying it and failing. Bound rather than declared and
+                         unused: the property and its three localized strings already existed (RemEx-4p27). -->
+                    <TextBlock Text="{Binding RemoteRootHint}" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextMutedBrush}"/>
+                    </StackPanel>
                 </Border>
 
                 <!-- Row 1: Breadcrumbs + navigation -->
