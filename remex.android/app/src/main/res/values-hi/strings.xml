@@ -59,7 +59,6 @@
     <string name="status_native_lib_not_loaded">नेटिव लाइब्रेरी लोड नहीं हुई</string>
     <string name="error_no_host_found">नेटवर्क पर कोई RemEx पीसी नहीं मिला</string>
     <string name="error_discovery_failed">खोज विफल रही: %1$s</string>
-    <string name="permission_local_network_rationale">RemEx को वाई-फाई पर आपके पीसी को खोजने और उससे कनेक्ट करने के लिए लोकल नेटवर्क अनुमति की आवश्यकता है। इसके बिना, Android 17 और उसके बाद के वर्ज़न पर खोज और कनेक्शन काम नहीं करेगा। जारी रखने के लिए सेटिंग्स में यह अनुमति दें।</string>
     <string name="error_local_network_permission_denied">लोकल नेटवर्क एक्सेस से इनकार कर दिया गया था। RemEx Android 17+ पर इस अनुमति के बिना आपके पीसी से कनेक्ट नहीं हो सकता है। कृपया इसे ऐप सेटिंग्स में दें।</string>
     <string name="capability_desktop_available">डेस्कटॉप उपलब्ध</string>
     <string name="capability_desktop_unavailable">डेस्कटॉप अनुपलब्ध</string>
@@ -79,9 +78,6 @@
     <string name="sort_descending">अवरोही</string>
     <string name="sort_ascending">आरोही</string>
     <string name="task_manager_fetching">प्रोसेस प्राप्त की जा रही हैं…</string>
-    <string name="task_manager_header_name">नाम</string>
-    <string name="task_manager_header_cpu">CPU</string>
-    <string name="task_manager_header_ram">RAM</string>
     <string name="task_manager_kill_title">प्रोसेस बंद करें?</string>
     <string name="task_manager_kill_message">क्या आप वाकई %1$s (PID: %2$d) को समाप्त करना चाहते हैं?</string>
     <string name="button_kill">बंद करें</string>
@@ -166,7 +162,6 @@
     <string name="remote_desktop_quality_label">गुणवत्ता: %1$d%%</string>
     <string name="remote_desktop_fps_label">लक्ष्य FPS: %1$d</string>
     <string name="remote_desktop_fps_unlimited_label">लक्ष्य FPS: असीमित</string>
-    <string name="remote_desktop_controls_hint">पेन = एब्सोल्यूट • 2 उंगलियां = स्क्रॉल • लॉन्ग प्रेस = राइट क्लिक</string>
     <string name="remote_desktop_direct_touch_label">डायरेक्ट टच मोड</string>
     <string name="remote_desktop_direct_touch_desc">टच पोजीशन सीधे स्क्रीन कोऑर्डिनेट्स पर मैप होती हैं</string>
     <string name="remote_desktop_pointer_speed_label">कर्सर स्पीड: %.1fx</string>
@@ -209,8 +204,6 @@
     <string name="connection_help_step4_body">डिफ़ॉल्ट पोर्ट 5005 है। यदि यह डिवाइस अभी तक पेयर नहीं हुआ है, तो सुरक्षित पेयरिंग पूरी करने के लिए पीसी पर प्रदर्शित 6-अंकीय पिन दर्ज करें।</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">कमांड प्रॉम्प्ट खोलें और टाइप करें: ipconfig\nअपने वाई-फाई एडॉप्टर के तहत \"IPv4 Address\" देखें।</string>
-    <string name="connection_platform_macos">macOS</string>
-    <string name="connection_ip_macos">सिस्टम सेटिंग्स → नेटवर्क → आपका वाई-फाई → विवरण पर जाएं।\nया टर्मिनल खोलें और टाइप करें: ipconfig getifaddr en0</string>
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">एक टर्मिनल खोलें और टाइप करें: ip addr\nअपने नेटवर्क इंटरफ़ेस (जैसे wlan0 या eth0) पर inet एड्रेस देखें।</string>
     <string name="connection_or_enter_manually">या मैन्युअल रूप से दर्ज करें</string>
@@ -330,15 +323,12 @@
     <string name="tile_monitor_off_label">मॉनिटर बंद करें</string>
     <string name="tile_wol_label">वेक ऑन लैन</string>
     <string name="screen_file_transfer_title">फ़ाइल ट्रांसफर</string>
-    <string name="file_transfer_browse">ब्राउज़ करें</string>
     <string name="file_transfer_upload">अपलोड ↑</string>
     <string name="file_transfer_download">डाउनलोड ↓</string>
     <string name="file_transfer_cancel">रद्द करें</string>
     <string name="file_transfer_not_connected">रिमोट फ़ाइलें ब्राउज़ करने के लिए किसी पीसी से कनेक्ट करें।</string>
     <string name="file_transfer_empty">कोई फ़ाइल नहीं मिली।</string>
-    <string name="file_transfer_shared_folder">शेयर्ड फ़ोल्डर</string>
     <string name="file_transfer_no_shared_folders">यह पीसी अभी तक कोई शेयर्ड फ़ोल्डर नहीं दिखा रहा है।</string>
-    <string name="file_transfer_select_root">रिमोट फ़ोल्डर चुनें</string>
     <string name="file_transfer_read_only_root">केवल पढ़ने के लिए</string>
     <string name="file_transfer_notification_channel_name">फ़ाइल ट्रांसफर</string>
     <string name="file_transfer_notification_channel_description">अपलोड और डाउनलोड की प्रगति दिखाता है।</string>
@@ -402,7 +392,6 @@
     <string name="qr_error_setup_failed">क्यूआर सेटअप विफल रहा</string>
     <string name="remote_desktop_fps_overlay">%1$d एफपीएस</string>
     <string name="remote_desktop_fps_overlay_btn">एफपीएस</string>
-    <string name="remote_desktop_presets_label">प्रीसेट्स</string>
     <string name="remote_desktop_preset_unlimited">असीमित</string>
     <string name="remote_desktop_preset_smooth_sharp">स्मूथ और शार्प</string>
     <string name="remote_desktop_preset_balanced">संतुलित</string>
@@ -411,12 +400,6 @@
     <string name="remote_desktop_preset_unlimited_info">क्वालिटी या फ्रेमरेट की कोई सीमा नहीं — यह आपके डिवाइस और कनेक्शन की पूरी क्षमता का उपयोग करता है। प्रदर्शन अलग-अलग हो सकता है।</string>
     <string name="remote_desktop_preset_unlimited_overflow_warning">असीमित मोड बहुत अधिक बैंडविड्थ और बैटरी की खपत कर सकता है, और यदि आपका नेटवर्क या PC इसका सामना नहीं कर पाता है तो इसमें रुकावट आ सकती है। यदि ऐसा होता है, तो स्मूथ और शार्प मोड आज़माएं।</string>
     <string name="remote_desktop_scale_label">रिज़ॉल्यूशन स्केल: %1$d%%</string>
-    <string name="remote_desktop_left_initial">बा</string>
-    <string name="remote_desktop_left_btn">बायें</string>
-    <string name="remote_desktop_middle_initial">म</string>
-    <string name="remote_desktop_middle_btn">मध्य</string>
-    <string name="remote_desktop_right_initial">दा</string>
-    <string name="remote_desktop_right_btn">दायें</string>
     <string name="remote_desktop_window_controls_header">विंडो नियंत्रण</string>
     <string name="remote_desktop_backend">बैकएंड: %1$s</string>
     <string name="remote_desktop_search_windows_label">विंडोज़ खोजें</string>
@@ -496,7 +479,6 @@
     <string name="file_transfer_deleting_multiple">%1$d आइटम हटाए जा रहे हैं…</string>
     <string name="file_transfer_deleting_single">%1$s हटाया जा रहा है…</string>
     <string name="file_transfer_download_complete">डाउनलोड पूर्ण।</string>
-    <string name="file_transfer_download_failed">डाउनलोड विफल: %1$s</string>
     <string name="file_transfer_download_failed_integrity">डाउनलोड विफल: अखंडता जांच विफल।</string>
     <string name="file_transfer_download_failed_sha256">डाउनलोड विफल: SHA-256 बेमेल</string>
     <string name="file_transfer_downloading_single">%1$s डाउनलोड किया जा रहा है…</string>

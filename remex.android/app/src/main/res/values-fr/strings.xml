@@ -59,7 +59,6 @@
     <string name="status_native_lib_not_loaded">Bibliothèque native non chargée</string>
     <string name="error_no_host_found">Aucun PC RemEx trouvé sur le réseau</string>
     <string name="error_discovery_failed">Échec de la découverte : %1$s</string>
-    <string name="permission_local_network_rationale">RemEx a besoin de l\'autorisation Réseau Local pour trouver et se connecter à votre PC via Wi-Fi. Sans cela, la découverte et la connexion ne fonctionneront pas sur Android 17 et versions ultérieures. Accordez cette autorisation dans les Paramètres pour continuer.</string>
     <string name="error_local_network_permission_denied">L\'accès au Réseau Local a été refusé. RemEx ne peut pas se connecter à votre PC sans cette autorisation sur Android 17+. Veuillez l\'accorder dans les Paramètres de l\'application.</string>
     <string name="capability_desktop_available">bureau disponible</string>
     <string name="capability_desktop_unavailable">bureau indisponible</string>
@@ -79,9 +78,6 @@
     <string name="sort_descending">Décroissant</string>
     <string name="sort_ascending">Croissant</string>
     <string name="task_manager_fetching">Récupération des processus…</string>
-    <string name="task_manager_header_name">Nom</string>
-    <string name="task_manager_header_cpu">CPU</string>
-    <string name="task_manager_header_ram">RAM</string>
     <string name="task_manager_kill_title">Terminer le processus ?</string>
     <string name="task_manager_kill_message">Voulez-vous vraiment terminer %1$s (PID : %2$d) ?</string>
     <string name="button_kill">Terminer</string>
@@ -166,7 +162,6 @@
     <string name="remote_desktop_quality_label">Qualité : %1$d%%</string>
     <string name="remote_desktop_fps_label">FPS Cible : %1$d</string>
     <string name="remote_desktop_fps_unlimited_label">FPS Cible : Illimité</string>
-    <string name="remote_desktop_controls_hint">Stylet = Absolu • 2 Doigts = Défilement • Appui Long = Clic Droit</string>
     <string name="remote_desktop_direct_touch_label">Mode tactile direct</string>
     <string name="remote_desktop_direct_touch_desc">Les positions tactiles correspondent directement aux coordonnées de l\u0027écran</string>
     <string name="remote_desktop_pointer_speed_label">Vitesse du curseur : %.1fx</string>
@@ -209,8 +204,6 @@
     <string name="connection_help_step4_body">Le port par défaut est 5005. Si cet appareil n\'est pas encore couplé, saisissez le code PIN à 6 chiffres affiché sur le PC pour terminer le couplage sécurisé.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Ouvrez l\'invite de commande et tapez : ipconfig\nCherchez \"Adresse IPv4\" sous votre adaptateur Wi-Fi.</string>
-    <string name="connection_platform_macos">macOS</string>
-    <string name="connection_ip_macos">Allez dans Réglages Système → Réseau → Wi-Fi → Détails.\nOu ouvrez le Terminal et tapez : ipconfig getifaddr en0</string>
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">Ouvrez un terminal et tapez : ip addr\nCherchez l\'adresse inet sur votre interface réseau (ex. wlan0 ou eth0).</string>
     <string name="connection_or_enter_manually">Ou entrer manuellement</string>
@@ -330,15 +323,12 @@
     <string name="tile_monitor_off_label">Éteindre l\'écran</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
     <string name="screen_file_transfer_title">Transfert de fichiers</string>
-    <string name="file_transfer_browse">Parcourir</string>
     <string name="file_transfer_upload">Téléverser ↑</string>
     <string name="file_transfer_download">Télécharger ↓</string>
     <string name="file_transfer_cancel">Annuler</string>
     <string name="file_transfer_not_connected">Connectez-vous à un PC pour parcourir les fichiers distants.</string>
     <string name="file_transfer_empty">Aucun fichier trouvé.</string>
-    <string name="file_transfer_shared_folder">Dossier partagé</string>
     <string name="file_transfer_no_shared_folders">Ce PC n\'expose pas encore de dossiers partagés.</string>
-    <string name="file_transfer_select_root">Sélectionnez un dossier distant</string>
     <string name="file_transfer_read_only_root">Lecture seule</string>
     <string name="file_transfer_notification_channel_name">Transferts de fichiers</string>
     <string name="file_transfer_notification_channel_description">Affiche la progression des téléversements et téléchargements.</string>
@@ -402,7 +392,6 @@
     <string name="qr_error_setup_failed">Échec de la configuration du QR</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
-    <string name="remote_desktop_presets_label">Préréglages</string>
     <string name="remote_desktop_preset_unlimited">Illimité</string>
     <string name="remote_desktop_preset_smooth_sharp">Fluide et net</string>
     <string name="remote_desktop_preset_balanced">Équilibré</string>
@@ -411,12 +400,6 @@
     <string name="remote_desktop_preset_unlimited_info">Aucune limite de qualité ou de fréquence d\'images — utilise tout ce que votre appareil et votre connexion peuvent supporter. Les performances peuvent varier.</string>
     <string name="remote_desktop_preset_unlimited_overflow_warning">Le mode Illimité peut consommer beaucoup de bande passante et de batterie, et peut provoquer des saccades si votre réseau ou votre PC ne suit pas. Essayez Fluide et net si cela se produit.</string>
     <string name="remote_desktop_scale_label">Échelle de résolution : %1$d%%</string>
-    <string name="remote_desktop_left_initial">G</string>
-    <string name="remote_desktop_left_btn">Gauche</string>
-    <string name="remote_desktop_middle_initial">M</string>
-    <string name="remote_desktop_middle_btn">Milieu</string>
-    <string name="remote_desktop_right_initial">D</string>
-    <string name="remote_desktop_right_btn">Droite</string>
     <string name="remote_desktop_window_controls_header">Contrôles de fenêtre</string>
     <string name="remote_desktop_backend">Moteur : %1$s</string>
     <string name="remote_desktop_search_windows_label">Rechercher des fenêtres</string>
@@ -496,7 +479,6 @@
     <string name="file_transfer_deleting_multiple">Suppression de %1$d éléments…</string>
     <string name="file_transfer_deleting_single">Suppression de %1$s…</string>
     <string name="file_transfer_download_complete">Téléchargement terminé.</string>
-    <string name="file_transfer_download_failed">Échec du téléchargement : %1$s</string>
     <string name="file_transfer_download_failed_integrity">Échec du téléchargement : échec du contrôle d\'intégrité.</string>
     <string name="file_transfer_download_failed_sha256">Échec du téléchargement : incompatibilité SHA-256</string>
     <string name="file_transfer_downloading_single">Téléchargement de %1$s…</string>

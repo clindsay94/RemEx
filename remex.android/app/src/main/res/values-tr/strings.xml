@@ -59,7 +59,6 @@
     <string name="status_native_lib_not_loaded">Yerel kitaplık yüklenmedi</string>
     <string name="error_no_host_found">Ağda RemEx çalıştıran bir PC bulunamadı</string>
     <string name="error_discovery_failed">Keşif başarısız: %1$s</string>
-    <string name="permission_local_network_rationale">RemEx\'in Wi-Fi üzerinden bilgisayarınızı bulması ve bağlanması için Yerel Ağ iznine ihtiyacı vardır. Bu izin olmadan, keşif ve bağlantı çalışmayacaktır. Devam etmek için Ayarlar\'dan bu izni verin.</string>
     <string name="error_local_network_permission_denied">Yerel Ağ erişimi reddedildi. Android 17+ sürümlerinde RemEx bu izin olmadan bilgisayarınıza bağlanamaz. Lütfen Uygulama Ayarları\'ndan izin verin.</string>
     <string name="capability_desktop_available">masaüstü kullanılabilir</string>
     <string name="capability_desktop_unavailable">masaüstü kullanılamıyor</string>
@@ -79,9 +78,6 @@
     <string name="sort_descending">Azalan</string>
     <string name="sort_ascending">Artan</string>
     <string name="task_manager_fetching">İşlemler alınıyor…</string>
-    <string name="task_manager_header_name">Ad</string>
-    <string name="task_manager_header_cpu">CPU</string>
-    <string name="task_manager_header_ram">RAM</string>
     <string name="task_manager_kill_title">İşlem sonlandırılsın mı?</string>
     <string name="task_manager_kill_message">%1$s (PID: %2$d) işlemini sonlandırmak istediğinizden emin misiniz?</string>
     <string name="button_kill">Sonlandır</string>
@@ -166,7 +162,6 @@
     <string name="remote_desktop_quality_label">Kalite: %1$d%%</string>
     <string name="remote_desktop_fps_label">Hedef FPS: %1$d</string>
     <string name="remote_desktop_fps_unlimited_label">Hedef FPS: Sınırsız</string>
-    <string name="remote_desktop_controls_hint">Kalem = Mutlak • 2 Parmak = Kaydırma • Uzun Basma = Sağ Tık</string>
     <string name="remote_desktop_direct_touch_label">Doğrudan Dokunma Modu</string>
     <string name="remote_desktop_direct_touch_desc">Dokunma konumları, Trackpad hareketi yerine doğrudan ekran koordinatlarına eşlenir</string>
     <string name="remote_desktop_pointer_speed_label">İmleç Hızı: %.1fx</string>
@@ -209,8 +204,6 @@
     <string name="connection_help_step4_body">Varsayılan bağlantı noktası 5005. Bu cihaz henüz eşleştirilmediyse, güvenli eşleştirmeyi tamamlamak için bilgisayarda gösterilen 6 haneli PIN kodunu girin.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Komut İstemi uygulamasını açın ve şunu yazın: ipconfig\nWi-Fi bağdaştırıcınızın altındaki \"IPv4 Adresi\" satırına bakın.</string>
-    <string name="connection_platform_macos">macOS</string>
-    <string name="connection_ip_macos">Sistem Ayarları → Ağ → Wi-Fi → Ayrıntılar yolunu izleyin.\nVeya Terminal\'i açıp şunu yazın: ipconfig getifaddr en0</string>
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">Bir terminal açın ve şunu yazın: ip addr\nAğ arayüzünüzdeki (örneğin wlan0 veya eth0) inet adresine bakın.</string>
     <string name="connection_or_enter_manually">Ya da elle girin</string>
@@ -330,15 +323,12 @@
     <string name="tile_monitor_off_label">Monitörü Kapat</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
     <string name="screen_file_transfer_title">Dosya Aktarımı</string>
-    <string name="file_transfer_browse">Göz at</string>
     <string name="file_transfer_upload">Yükle ↑</string>
     <string name="file_transfer_download">İndir ↓</string>
     <string name="file_transfer_cancel">İptal</string>
     <string name="file_transfer_not_connected">Uzak dosyalara göz atmak için bir bilgisayara bağlanın.</string>
     <string name="file_transfer_empty">Dosya bulunamadı.</string>
-    <string name="file_transfer_shared_folder">Paylaşılan klasör</string>
     <string name="file_transfer_no_shared_folders">Bu bilgisayar henüz paylaşılan klasör sunmuyor.</string>
-    <string name="file_transfer_select_root">Uzak bir klasör seçin</string>
     <string name="file_transfer_read_only_root">Salt okunur</string>
     <string name="file_transfer_notification_channel_name">Dosya aktarımları</string>
     <string name="file_transfer_notification_channel_description">Yükleme ve indirme işlemlerinin ilerlemesini gösterir.</string>
@@ -402,7 +392,6 @@
     <string name="qr_error_setup_failed">QR kurulumu başarısız oldu</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
-    <string name="remote_desktop_presets_label">Ön ayarlar</string>
     <string name="remote_desktop_preset_unlimited">Sınırsız</string>
     <string name="remote_desktop_preset_smooth_sharp">Akıcı ve Keskin</string>
     <string name="remote_desktop_preset_balanced">Dengeli</string>
@@ -411,12 +400,6 @@
     <string name="remote_desktop_preset_unlimited_info">Kalite veya kare hızı sınırı yok — cihazınızın ve bağlantınızın kaldırabileceği her şeyi kullanır. Performans değişiklik gösterebilir.</string>
     <string name="remote_desktop_preset_unlimited_overflow_warning">Sınırsız modu çok fazla bant genişliği ve pil tüketebilir; ağınız veya bilgisayarınız yetişemezse takılmalar olabilir. Böyle bir durumda Akıcı ve Keskin modunu deneyin.</string>
     <string name="remote_desktop_scale_label">Çözünürlük ölçeği: %1$d%%</string>
-    <string name="remote_desktop_left_initial">S</string>
-    <string name="remote_desktop_left_btn">Sol</string>
-    <string name="remote_desktop_middle_initial">O</string>
-    <string name="remote_desktop_middle_btn">Orta</string>
-    <string name="remote_desktop_right_initial">S</string>
-    <string name="remote_desktop_right_btn">Sağ</string>
     <string name="remote_desktop_window_controls_header">Pencere kontrolleri</string>
     <string name="remote_desktop_backend">Arka uç: %1$s</string>
     <string name="remote_desktop_search_windows_label">Pencereleri ara</string>
@@ -496,7 +479,6 @@
     <string name="file_transfer_deleting_multiple">%1$d öğe siliniyor…</string>
     <string name="file_transfer_deleting_single">%1$s yeniden adlandırılıyor…</string>
     <string name="file_transfer_download_complete">İndirme tamamlandı.</string>
-    <string name="file_transfer_download_failed">İndirme başarısız: %1$s</string>
     <string name="file_transfer_download_failed_integrity">İndirme başarısız: bütünlük kontrolü başarısız oldu.</string>
     <string name="file_transfer_download_failed_sha256">İndirme başarısız: SHA-256 uyuşmazlığı</string>
     <string name="file_transfer_downloading_single">%1$s indiriliyor…</string>

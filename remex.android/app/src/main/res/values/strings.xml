@@ -88,7 +88,6 @@
     <string name="error_no_host_found">No RemEx PC found on the network</string>
     <string name="error_discovery_failed">Discovery failed: %1$s</string>
     
-    <string name="permission_local_network_rationale">RemEx needs the Local Network permission to find and connect to your PC on Wi-Fi. Without it, discovery and connection will not work on Android 17 and later. Grant this permission in Settings to continue.</string>
     <string name="error_local_network_permission_denied">Local Network access was denied. RemEx cannot connect to your PC without this permission on Android 17+. Please grant it in App Settings.</string>
     <string name="capability_desktop_available">desktop available</string>
     <string name="capability_desktop_unavailable">desktop unavailable</string>
@@ -126,9 +125,6 @@
     <string name="task_manager_fetching">Fetching processes…</string>
     <string name="task_manager_retry">Retry</string>
     <string name="task_manager_dismiss">Dismiss</string>
-    <string name="task_manager_header_name">Name</string>
-    <string name="task_manager_header_cpu">CPU</string>
-    <string name="task_manager_header_ram">RAM</string>
     <string name="task_manager_kill_title">Kill Process?</string>
     <string name="task_manager_kill_message">Are you sure you want to terminate %1$s (PID: %2$d)?</string>
     <string name="button_kill">Kill</string>
@@ -224,7 +220,6 @@
     <string name="remote_desktop_quality_label">Quality: %1$d%%</string>
     <string name="remote_desktop_fps_label">Target FPS: %1$d</string>
     <string name="remote_desktop_fps_unlimited_label">Target FPS: Unlimited</string>
-    <string name="remote_desktop_controls_hint">Pen = Absolute • 2 Fingers = Scroll • Long Press = Right Click</string>
     <string name="remote_desktop_direct_touch_label">Direct Touch Mode</string>
     <string name="remote_desktop_direct_touch_desc">Touch positions map directly to screen coordinates instead of trackpad movement</string>
     <string name="remote_desktop_pointer_speed_label">Cursor Speed: %.1fx</string>
@@ -334,8 +329,6 @@
     <string name="connection_help_step4_body">The default port is 5005. If this device is not paired yet, enter the 6-digit PIN shown by the PC to complete secure pairing.</string>
     <string name="connection_platform_windows">Windows</string>
     <string name="connection_ip_windows">Open Command Prompt and type: ipconfig\nLook for \"IPv4 Address\" under your Wi-Fi adapter.</string>
-    <string name="connection_platform_macos">macOS</string>
-    <string name="connection_ip_macos">Go to System Settings → Network → your Wi-Fi → Details.\nOr open Terminal and type: ipconfig getifaddr en0</string>
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">Open a terminal and type: ip addr\nLook for the inet address on your network interface (e.g. wlan0 or eth0).</string>
     <string name="connection_or_enter_manually">Or enter manually</string>
@@ -512,15 +505,12 @@
 
     
     <string name="screen_file_transfer_title">File Transfer</string>
-    <string name="file_transfer_browse">Browse</string>
     <string name="file_transfer_upload">Upload ↑</string>
     <string name="file_transfer_download">Download ↓</string>
     <string name="file_transfer_cancel">Cancel</string>
     <string name="file_transfer_not_connected">Connect to a PC to browse remote files.</string>
     <string name="file_transfer_empty">No files found.</string>
-    <string name="file_transfer_shared_folder">Shared folder</string>
     <string name="file_transfer_no_shared_folders">This PC is not exposing any shared folders yet.</string>
-    <string name="file_transfer_select_root">Select a remote folder</string>
     <string name="file_transfer_read_only_root">Read-only</string>
     <string name="file_transfer_notification_channel_name">File transfers</string>
     <string name="file_transfer_notification_channel_description">Shows progress for uploads and downloads.</string>
@@ -614,7 +604,6 @@
     <string name="qr_error_setup_failed">QR setup failed</string>
     <string name="remote_desktop_fps_overlay">%1$d FPS</string>
     <string name="remote_desktop_fps_overlay_btn">FPS</string>
-    <string name="remote_desktop_presets_label">Presets</string>
     <string name="remote_desktop_preset_unlimited">Unlimited</string>
     <string name="remote_desktop_preset_smooth_sharp">Smooth &amp; Sharp</string>
     <string name="remote_desktop_preset_balanced">Balanced</string>
@@ -623,12 +612,6 @@
     <string name="remote_desktop_preset_unlimited_info">No quality or framerate cap — uses everything your device and connection can handle. Performance may vary.</string>
     <string name="remote_desktop_preset_unlimited_overflow_warning">Unlimited can use a lot of bandwidth and battery, and may stutter if your network or PC can\'t keep up. Try Smooth &amp; Sharp if that happens.</string>
     <string name="remote_desktop_scale_label">Resolution scale: %1$d%%</string>
-    <string name="remote_desktop_left_initial">L</string>
-    <string name="remote_desktop_left_btn">Left</string>
-    <string name="remote_desktop_middle_initial">M</string>
-    <string name="remote_desktop_middle_btn">Middle</string>
-    <string name="remote_desktop_right_initial">R</string>
-    <string name="remote_desktop_right_btn">Right</string>
     <string name="remote_desktop_window_controls_header">Window controls</string>
     <string name="remote_desktop_backend">Backend: %1$s</string>
     <string name="remote_desktop_search_windows_label">Search windows</string>
@@ -707,7 +690,6 @@
     <string name="file_transfer_uploading_single">Uploading %1$s…</string>
     <string name="file_transfer_downloading_single">Downloading %1$s…</string>
     <string name="file_transfer_upload_failed">Could not send the file. Check your PC is still connected, then try again.</string>
-    <string name="file_transfer_download_failed">Download failed: %1$s</string>
     <string name="file_transfer_download_failed_integrity">Download failed: integrity check failed.</string>
     <string name="file_transfer_download_failed_sha256">Download failed: SHA-256 mismatch</string>
     <string name="file_transfer_download_complete">Download complete.</string>
