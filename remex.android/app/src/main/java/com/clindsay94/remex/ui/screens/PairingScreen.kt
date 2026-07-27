@@ -458,7 +458,7 @@ fun PairingScreenContent(
                 ) {
                     Icon(
                             Icons.Default.ErrorOutline,
-                            contentDescription = stringResource(R.string.cd_error_icon),
+                            contentDescription = null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                             tint = MaterialTheme.colorScheme.error
                     )
                     Spacer(Modifier.width(8.dp))

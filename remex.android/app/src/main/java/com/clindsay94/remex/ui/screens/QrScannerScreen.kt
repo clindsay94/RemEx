@@ -412,7 +412,7 @@ private fun QrPermissionRationale(onGrantPermission: () -> Unit) {
     ) {
         Icon(
                 Icons.Default.CameraAlt,
-                contentDescription = stringResource(R.string.cd_camera_icon),
+                contentDescription = null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
         )

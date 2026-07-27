@@ -22,13 +22,6 @@
     <string name="cd_refresh">Odśwież</string>
     <string name="cd_phone">Telefon</string>
     <string name="cd_terminal">Terminal</string>
-    <string name="cd_launch_icon">Uruchom</string>
-    <string name="cd_monitor_icon">Monitor</string>
-    <string name="cd_play_icon">Odtwórz</string>
-    <string name="cd_camera_icon">Kamera</string>
-    <string name="cd_section_icon">Ikona sekcji</string>
-    <string name="cd_error_icon">Błąd</string>
-    <string name="cd_category_icon">Kategoria</string>
     <string name="cd_resize_cards">Zmień rozmiar kart</string>
     <string name="tutorial_skip">Pomiń</string>
     <string name="tutorial_get_started">Rozpocznij</string>

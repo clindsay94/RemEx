@@ -185,7 +185,7 @@ fun AppLauncherScreenContent(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 Icons.AutoMirrored.Filled.Launch,
-                                contentDescription = stringResource(R.string.cd_launch_icon),
+                                contentDescription = null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                                 modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )

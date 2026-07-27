@@ -2273,9 +2273,7 @@ fun RemoteDesktopScreenContent(
                                                 Icon(
                                                         imageVector = Icons.Default.Monitor,
                                                         contentDescription =
-                                                                stringResource(
-                                                                        R.string.cd_monitor_icon
-                                                                ),
+                                                                null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                                                         modifier = Modifier.size(64.dp),
                                                         tint =
                                                                 MaterialTheme.colorScheme
@@ -2323,10 +2321,7 @@ fun RemoteDesktopScreenContent(
                                                                 Icon(
                                                                         Icons.Default.PlayArrow,
                                                                         contentDescription =
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .cd_play_icon
-                                                                                ),
+                                                                                null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                                                                         modifier =
                                                                                 Modifier.size(18.dp)
                                                                 )

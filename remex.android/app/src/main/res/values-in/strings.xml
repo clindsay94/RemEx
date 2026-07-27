@@ -25,13 +25,6 @@
     <string name="cd_refresh">Segarkan</string>
     <string name="cd_phone">Ponsel</string>
     <string name="cd_terminal">Terminal</string>
-    <string name="cd_launch_icon">Luncurkan</string>
-    <string name="cd_monitor_icon">Monitor</string>
-    <string name="cd_play_icon">Putar</string>
-    <string name="cd_camera_icon">Kamera</string>
-    <string name="cd_section_icon">Ikon bagian</string>
-    <string name="cd_error_icon">Kesalahan</string>
-    <string name="cd_category_icon">Kategori</string>
     <string name="cd_resize_cards">Ubah ukuran kartu</string>
     <string name="tutorial_skip">Lewati</string>
     <string name="tutorial_get_started">Mulai</string>

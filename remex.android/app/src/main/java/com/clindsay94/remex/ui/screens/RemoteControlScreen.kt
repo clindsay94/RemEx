@@ -457,7 +457,7 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
         ) {
             Icon(
                     imageVector = icon,
-                    contentDescription = stringResource(R.string.cd_category_icon),
+                    contentDescription = null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                     tint = contentColor,
                     modifier = Modifier.size(20.dp)
             )

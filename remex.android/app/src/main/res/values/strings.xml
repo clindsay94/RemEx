@@ -41,13 +41,6 @@
     <string name="cd_refresh">Refresh</string>
     <string name="cd_phone">Phone</string>
     <string name="cd_terminal">Terminal</string>
-    <string name="cd_launch_icon">Launch</string>
-    <string name="cd_monitor_icon">Monitor</string>
-    <string name="cd_play_icon">Play</string>
-    <string name="cd_camera_icon">Camera</string>
-    <string name="cd_section_icon">Section Icon</string>
-    <string name="cd_error_icon">Error</string>
-    <string name="cd_category_icon">Category</string>
     <string name="cd_resize_cards">Resize cards</string>
 
     

@@ -25,13 +25,6 @@
     <string name="cd_refresh">Оновити</string>
     <string name="cd_phone">Телефон</string>
     <string name="cd_terminal">Термінал</string>
-    <string name="cd_launch_icon">Запустити</string>
-    <string name="cd_monitor_icon">Монітор</string>
-    <string name="cd_play_icon">Відтворити</string>
-    <string name="cd_camera_icon">Камера</string>
-    <string name="cd_section_icon">Значок розділу</string>
-    <string name="cd_error_icon">Помилка</string>
-    <string name="cd_category_icon">Категорія</string>
     <string name="cd_resize_cards">Змінити розмір карток</string>
     <string name="tutorial_skip">Пропустити</string>
     <string name="tutorial_get_started">Розпочати</string>

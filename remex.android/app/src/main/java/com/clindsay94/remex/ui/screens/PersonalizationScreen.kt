@@ -1176,7 +1176,7 @@ private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vect
     ) {
         Icon(
                 icon,
-                contentDescription = stringResource(R.string.cd_section_icon),
+                contentDescription = null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
         )

@@ -25,13 +25,6 @@
     <string name="cd_refresh">रिफ्रेश करें</string>
     <string name="cd_phone">फ़ोन</string>
     <string name="cd_terminal">टर्मिनल</string>
-    <string name="cd_launch_icon">लॉन्च करें</string>
-    <string name="cd_monitor_icon">मॉनिटर</string>
-    <string name="cd_play_icon">चलाएं</string>
-    <string name="cd_camera_icon">कैमरा</string>
-    <string name="cd_section_icon">अनुभाग आइकन</string>
-    <string name="cd_error_icon">त्रुटि</string>
-    <string name="cd_category_icon">श्रेणी</string>
     <string name="cd_resize_cards">कार्ड का आकार बदलें</string>
     <string name="tutorial_skip">छोड़ें</string>
     <string name="tutorial_get_started">शुरू करें</string>

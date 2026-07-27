@@ -25,13 +25,6 @@
     <string name="cd_refresh">Yenile</string>
     <string name="cd_phone">Telefon</string>
     <string name="cd_terminal">Terminal</string>
-    <string name="cd_launch_icon">Başlat</string>
-    <string name="cd_monitor_icon">Monitör</string>
-    <string name="cd_play_icon">Oynat</string>
-    <string name="cd_camera_icon">Kamera</string>
-    <string name="cd_section_icon">Bölüm simgesi</string>
-    <string name="cd_error_icon">Hata</string>
-    <string name="cd_category_icon">Kategori</string>
     <string name="cd_resize_cards">Kartları yeniden boyutlandır</string>
     <string name="tutorial_skip">Atla</string>
     <string name="tutorial_get_started">Başla</string>

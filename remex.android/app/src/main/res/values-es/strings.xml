@@ -25,13 +25,6 @@
     <string name="cd_refresh">Actualizar</string>
     <string name="cd_phone">Teléfono</string>
     <string name="cd_terminal">Terminal</string>
-    <string name="cd_launch_icon">Lanzar</string>
-    <string name="cd_monitor_icon">Monitor</string>
-    <string name="cd_play_icon">Reproducir</string>
-    <string name="cd_camera_icon">Cámara</string>
-    <string name="cd_section_icon">Icono de sección</string>
-    <string name="cd_error_icon">Error</string>
-    <string name="cd_category_icon">Categoría</string>
     <string name="cd_resize_cards">Redimensionar tarjetas</string>
     <string name="tutorial_skip">Saltar</string>
     <string name="tutorial_get_started">Comenzar</string>
