@@ -449,34 +449,67 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     }
 
     [RelayCommand]
-    public async Task LockAsync() => await SendCommandAsync("Lock");
+    public async Task LockAsync() => await SendPowerCommandAsync("Lock", "Wol_LockSent");
 
     [RelayCommand]
-    public async Task SleepAsync() => await SendCommandAsync("Sleep");
+    public async Task SleepAsync() => await SendPowerCommandAsync("Sleep", "Wol_SleepSent");
 
     [RelayCommand]
-    public async Task HibernateAsync() => await SendCommandAsync("Hibernate");
+    public async Task HibernateAsync() => await SendPowerCommandAsync("Hibernate", "Wol_HibernateSent");
 
     [RelayCommand]
-    public async Task SignOutAsync() => await SendCommandAsync("SignOut");
+    public async Task SignOutAsync() => await SendPowerCommandAsync("SignOut", "Wol_SignOutSent");
 
     [RelayCommand]
-    public async Task ShutdownAsync() => await SendCommandAsync("Shutdown");
+    public async Task ShutdownAsync() => await SendPowerCommandAsync("Shutdown", "Wol_ShutdownSent");
 
     [RelayCommand]
-    public async Task ForceShutdownAsync() => await SendCommandAsync("ForceShutdown");
+    public async Task ForceShutdownAsync() => await SendPowerCommandAsync("ForceShutdown", "Wol_ForceShutdownSent");
 
     [RelayCommand]
-    public async Task RestartAsync() => await SendCommandAsync("Restart");
+    public async Task RestartAsync() => await SendPowerCommandAsync("Restart", "Wol_RestartSent");
 
     // ForceRestart existed only on RemoteViewModel, bound straight from RemoteView.axaml, so the
     // command palette - which wires exclusively through shell.Connection.* - had no way to reach it and
     // was missing an action every other surface has. (RemEx-6cda.)
     [RelayCommand]
-    public async Task ForceRestartAsync() => await SendCommandAsync("ForceRestart");
+    public async Task ForceRestartAsync() => await SendPowerCommandAsync("ForceRestart", "Wol_ForceRestartSent");
 
     [RelayCommand]
-    public async Task RestartToUefiAsync() => await SendCommandAsync("RestartToUefi");
+    public async Task RestartToUefiAsync() => await SendPowerCommandAsync("RestartToUefi", "Wol_RebootUefiSent");
+
+    /// <summary>
+    /// Sends a power command and reports the outcome, in both directions.
+    /// </summary>
+    /// <remarks>
+    /// The command palette and the Canvas lock button invoke these <c>[RelayCommand]</c>s directly,
+    /// so the <c>(ok, message)</c> tuple <see cref="SendCommandAsync"/> returns has to be surfaced
+    /// HERE. Discarding it made the palette silent whether the command worked or not - including
+    /// when <see cref="SendCommandAsync"/> returns <c>(false, "Not connected")</c>, which is the
+    /// case a user most needs to be told about. (RemEx-diyv.)
+    ///
+    /// Both directions are reported deliberately: a failure-only message would be inconsistent with
+    /// silence on success, and would leave the user unable to tell "it worked" from "nothing
+    /// happened". <c>RemoteViewModel.ExecuteRemoteCommandAsync</c> surfaces the same tuple into its
+    /// own <c>WolStatusText</c> for the Remote screen's buttons, which take a different path and are
+    /// unaffected by this - the two paths are disjoint, so nothing is reported or recorded twice.
+    /// </remarks>
+    private async Task SendPowerCommandAsync(string action, string sentMessageKey)
+    {
+        var (ok, message) = await SendCommandAsync(action);
+
+        StatusText = ok
+            ? string.Format(
+                LocalizationService.Instance["Wol_SuccessFormat"],
+                LocalizationService.Instance[sentMessageKey])
+            : string.Format(LocalizationService.Instance["Wol_ErrorFormat"], message);
+
+        // Only accepted commands reach the Home activity feed, matching RemoteViewModel: the feed
+        // is a record of what the PC actually did, not of what was attempted.
+        // Fully qualified: this file imports System.Diagnostics, which has its own ActivityKind.
+        if (ok)
+            ActivityService.Instance.Record(Services.ActivityKind.CommandRun, action);
+    }
 
     [RelayCommand]
     public async Task WakeOnLanAsync()
