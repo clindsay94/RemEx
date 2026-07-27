@@ -73,6 +73,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.telemetry.MetricKind
 import kotlin.math.abs
@@ -81,8 +83,32 @@ import kotlin.math.abs
 private fun cdView(context: android.content.Context, resId: Int, sensor: TelemetrySensor?): String =
     context.getString(resId, formatSensor(sensor).text)
 
+/**
+ * Placeholder shown when a card has no data yet.
+ *
+ * Distinguishes the two reasons that can be true, because they are not the same message. With a PC
+ * connected, "Collecting data" with a spinner is accurate - telemetry is on its way. With nothing
+ * connected it was a claim about activity that was not happening: every card sat at "--" under a
+ * perpetual shimmer, implying the app was working on it (RemEx-5mkc). The App Launcher and Task
+ * Manager already made this distinction; the dashboard did not.
+ *
+ * The spinner is dropped in the disconnected case rather than merely relabelled - a motion
+ * indicator IS the claim of progress, so leaving it spinning under "Not connected" would keep
+ * saying the thing the text just denied.
+ */
 @Composable
 private fun CollectingData() {
+    val connected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+
+    if (!connected) {
+        Text(
+            text = stringResource(R.string.dashboard_not_connected),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         RemexLoadingIndicator(modifier = Modifier.size(16.dp))
         Text(

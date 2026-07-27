@@ -836,4 +836,5 @@
     <string name="personalization_style_vibrant">Vibrant</string>
     <string name="personalization_style_neutral">Neutral</string>
     <string name="personalization_style_monochrome">Monochrome</string>
+    <string name="dashboard_not_connected">Not connected</string>
 </resources>

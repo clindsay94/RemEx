@@ -745,4 +745,5 @@
     <string name="personalization_style_vibrant">Насичена</string>
     <string name="personalization_style_neutral">Нейтральна</string>
     <string name="personalization_style_monochrome">Монохромна</string>
+    <string name="dashboard_not_connected">Немає з’єднання</string>
 </resources>

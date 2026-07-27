@@ -743,4 +743,5 @@
     <string name="personalization_style_vibrant">वाइब्रेंट</string>
     <string name="personalization_style_neutral">न्यूट्रल</string>
     <string name="personalization_style_monochrome">मोनोक्रोम</string>
+    <string name="dashboard_not_connected">कनेक्ट नहीं है</string>
 </resources>

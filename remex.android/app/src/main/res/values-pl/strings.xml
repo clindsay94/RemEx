@@ -745,4 +745,5 @@
     <string name="personalization_style_vibrant">Żywa</string>
     <string name="personalization_style_neutral">Neutralna</string>
     <string name="personalization_style_monochrome">Monochromatyczna</string>
+    <string name="dashboard_not_connected">Brak połączenia</string>
 </resources>

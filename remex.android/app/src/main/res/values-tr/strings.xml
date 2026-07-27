@@ -745,4 +745,5 @@
     <string name="personalization_style_vibrant">Canlı</string>
     <string name="personalization_style_neutral">Nötr</string>
     <string name="personalization_style_monochrome">Tek Renk</string>
+    <string name="dashboard_not_connected">Bağlı değil</string>
 </resources>
