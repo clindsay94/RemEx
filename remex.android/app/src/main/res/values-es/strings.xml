@@ -143,7 +143,7 @@
     <string name="cd_move_pc_keys">Mover la barra de teclas de PC</string>
     <string name="cd_reset_input">Restablecer Entrada</string>
     <string name="cd_settings">Ajustes</string>
-    <string name="cd_toggle_fullscreen">Pantalla Completa</string>
+    <string name="cd_enter_fullscreen">Entrar en Pantalla Completa</string>
     <string name="cd_stop">Detener</string>
     <string name="cd_remote_desktop_frame">Marco de Escritorio Remoto</string>
     <string name="remote_desktop_unavailable">Escritorio remoto no disponible</string>

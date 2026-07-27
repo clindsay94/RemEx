@@ -803,20 +803,23 @@ fun RemoteDesktopScreenContent(
                                                                 )
                                                         }
                                                 }
-                                                RemexTooltip(stringResource(R.string.cd_toggle_fullscreen)) {
+                                                // Enters only, never exits: this whole top bar is
+                                                // rendered inside `if (!uiState.isFullscreen)`, so
+                                                // there is no reachable state in which this button
+                                                // would leave fullscreen. The fullscreen overlay
+                                                // owns that, with its own cd_exit_fullscreen button.
+                                                // Passing `true` rather than `!isFullscreen` keeps
+                                                // the description true by construction (RemEx-kqh9).
+                                                RemexTooltip(stringResource(R.string.cd_enter_fullscreen)) {
                                                         IconButton(
-                                                                onClick = {
-                                                                        onSetFullscreen(
-                                                                                !uiState.isFullscreen
-                                                                        )
-                                                                }
+                                                                onClick = { onSetFullscreen(true) }
                                                         ) {
                                                                 Icon(
                                                                         Icons.Default.Fullscreen,
                                                                         contentDescription =
                                                                                 stringResource(
                                                                                         R.string
-                                                                                                .cd_toggle_fullscreen
+                                                                                                .cd_enter_fullscreen
                                                                                 )
                                                                 )
                                                         }

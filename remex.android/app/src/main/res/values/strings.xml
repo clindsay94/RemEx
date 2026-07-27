@@ -201,7 +201,7 @@
     <string name="cd_move_pc_keys">Move PC keys bar</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Settings</string>
-    <string name="cd_toggle_fullscreen">Toggle fullscreen</string>
+    <string name="cd_enter_fullscreen">Enter Fullscreen</string>
     <string name="cd_stop">Stop</string>
     <string name="cd_remote_desktop_frame">Remote Desktop Frame</string>
     <string name="remote_desktop_unavailable">Remote desktop unavailable</string>

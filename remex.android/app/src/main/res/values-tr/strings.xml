@@ -143,7 +143,7 @@
     <string name="cd_move_pc_keys">PC tuş çubuğunu taşı</string>
     <string name="cd_reset_input">Girişi sıfırla</string>
     <string name="cd_settings">Ayarlar</string>
-    <string name="cd_toggle_fullscreen">Tam ekran</string>
+    <string name="cd_enter_fullscreen">Tam ekrana geç</string>
     <string name="cd_stop">Durdur</string>
     <string name="cd_remote_desktop_frame">Uzak Masaüstü çerçevesi</string>
     <string name="remote_desktop_unavailable">Uzak masaüstü kullanılamıyor</string>

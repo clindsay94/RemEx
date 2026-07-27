@@ -132,7 +132,7 @@
     <string name="cd_move_pc_keys">Przenieś pasek klawiszy PC</string>
     <string name="cd_reset_input">Resetuj wejście</string>
     <string name="cd_settings">Ustawienia</string>
-    <string name="cd_toggle_fullscreen">Tryb pełnoekranowy</string>
+    <string name="cd_enter_fullscreen">Przejdź do trybu pełnoekranowego</string>
     <string name="cd_stop">Zatrzymaj</string>
     <string name="cd_remote_desktop_frame">Ramka pulpitu zdalnego</string>
     <string name="remote_desktop_unavailable">Pulpit zdalny niedostępny</string>

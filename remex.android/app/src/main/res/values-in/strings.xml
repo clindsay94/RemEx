@@ -143,7 +143,7 @@
     <string name="cd_move_pc_keys">Pindahkan bilah tombol PC</string>
     <string name="cd_reset_input">Reset Input</string>
     <string name="cd_settings">Pengaturan</string>
-    <string name="cd_toggle_fullscreen">Toggle layar penuh</string>
+    <string name="cd_enter_fullscreen">Masuk Layar Penuh</string>
     <string name="cd_stop">Berhenti</string>
     <string name="cd_remote_desktop_frame">Frame Desktop Jarak Jauh</string>
     <string name="remote_desktop_unavailable">Desktop jarak jauh tidak tersedia</string>

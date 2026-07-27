@@ -143,7 +143,7 @@
     <string name="cd_move_pc_keys">Mover a barra de teclas do PC</string>
     <string name="cd_reset_input">Resetar Entrada</string>
     <string name="cd_settings">Configurações</string>
-    <string name="cd_toggle_fullscreen">Alternar tela cheia</string>
+    <string name="cd_enter_fullscreen">Entrar em Tela Cheia</string>
     <string name="cd_stop">Parar</string>
     <string name="cd_remote_desktop_frame">Quadro da Área de Trabalho Remota</string>
     <string name="remote_desktop_unavailable">Área de trabalho remota indisponível</string>

@@ -143,7 +143,7 @@
     <string name="cd_move_pc_keys">पीसी कुंजी पट्टी ले जाएं</string>
     <string name="cd_reset_input">इनपुट रीसेट करें</string>
     <string name="cd_settings">सेटिंग्स</string>
-    <string name="cd_toggle_fullscreen">फुलस्क्रीन टॉगल करें</string>
+    <string name="cd_enter_fullscreen">फुलस्क्रीन में जाएं</string>
     <string name="cd_stop">रोकें</string>
     <string name="cd_remote_desktop_frame">रिमोट डेस्कटॉप फ्रेम</string>
     <string name="remote_desktop_unavailable">रिमोट डेस्कटॉप अनुपलब्ध है</string>
