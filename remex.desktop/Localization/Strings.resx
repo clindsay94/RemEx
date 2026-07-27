@@ -3432,4 +3432,7 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
     <value>an unknown backend</value>
   </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>Wake on LAN</value>
+  </data>
 </root>

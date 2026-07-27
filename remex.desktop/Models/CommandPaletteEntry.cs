@@ -21,17 +21,43 @@ namespace Remex.Desktop.Models;
 /// <param name="ConfirmBtnKey">
 /// Resource key for the confirm button. Required when <paramref name="ConfirmTitleKey"/> is set.
 /// </param>
+/// <param name="SearchAliases">
+/// Extra localized terms the entry matches on but never displays. The palette searches labels and
+/// categories only, so an action a user knows by a different word is unfindable: removing the
+/// broken Wake-on-LAN entry (RemEx-paa7) left "wake" matching nothing at all, even though the
+/// Remote screen is exactly where waking lives. Localized rather than English keywords, because a
+/// search alias that only works in English is half a fix in an app that ships nine languages.
+/// </param>
 public sealed record CommandPaletteEntry(
     string Label,
     string Category,
     ICommand Command,
     string? ConfirmTitleKey = null,
     string? ConfirmMessageKey = null,
-    string? ConfirmBtnKey = null)
+    string? ConfirmBtnKey = null,
+    string? SearchAliases = null)
 {
     /// <summary>True when this entry must be confirmed before its command runs.</summary>
     public bool RequiresConfirmation =>
         ConfirmTitleKey is not null && ConfirmMessageKey is not null && ConfirmBtnKey is not null;
+
+    /// <summary>
+    /// Whether this entry should show for <paramref name="query"/>. An empty query matches everything.
+    /// </summary>
+    /// <remarks>
+    /// Lives on the entry rather than inside the view model's filter loop so the rule can be tested
+    /// without standing up a <c>ShellViewModel</c> — the alias half of it exists precisely because a
+    /// search term silently matching nothing went unnoticed (RemEx-efse).
+    /// </remarks>
+    public bool Matches(string query)
+    {
+        if (string.IsNullOrEmpty(query))
+            return true;
+
+        return Label.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || Category.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || SearchAliases?.Contains(query, StringComparison.OrdinalIgnoreCase) == true;
+    }
 
     // Rejects a half-marked entry loudly, at construction. Without this the failure direction is
     // fail-OPEN: supply only two of the three keys and RequiresConfirmation is quietly false, so a

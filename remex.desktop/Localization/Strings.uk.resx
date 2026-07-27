@@ -3427,4 +3427,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
     <value>невідомий бекенд</value>
   </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>Пробудження по LAN</value>
+  </data>
 </root>

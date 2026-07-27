@@ -3426,4 +3426,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
     <value>अज्ञात बैकएंड</value>
   </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>लैन पर वेक</value>
+  </data>
 </root>

@@ -40,12 +40,8 @@ public partial class CommandPaletteViewModel : ObservableObject
         var q = SearchText.Trim();
         foreach (var entry in _allEntries)
         {
-            if (string.IsNullOrEmpty(q) ||
-                entry.Label.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                entry.Category.Contains(q, StringComparison.OrdinalIgnoreCase))
-            {
+            if (entry.Matches(q))
                 FilteredResults.Add(entry);
-            }
         }
         IsEmpty = FilteredResults.Count == 0;
     }
@@ -108,7 +104,12 @@ public partial class CommandPaletteViewModel : ObservableObject
     [
         new(LocalizationService.Instance["Palette_Home"],                    LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToHomeCommand),
         new(LocalizationService.Instance["Palette_SensorCanvas"],           LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToCanvasCommand),
-        new(LocalizationService.Instance["Palette_RemoteControl"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteCommand),
+        // Aliased so "wake" finds it. Removing the broken Wake-on-LAN entry (RemEx-paa7) left the
+        // term matching nothing at all, even though this screen is where waking actually lives —
+        // with the configured MAC, validation, and the local-send path that works when the PC is
+        // off. The alias reuses that entry's own nine translations verbatim. (RemEx-efse.)
+        new(LocalizationService.Instance["Palette_RemoteControl"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteCommand,
+            SearchAliases: LocalizationService.Instance["Palette_RemoteControl_SearchAliases"]),
         new(LocalizationService.Instance["Palette_AppLauncher"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToAppLauncherCommand),
         new(LocalizationService.Instance["Palette_TaskManager"],            LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToTaskManagerCommand),
         new(LocalizationService.Instance["Palette_RemoteDesktop"],          LocalizationService.Instance["PaletteCategory_Navigate"], shell.NavigateToRemoteDesktopCommand),

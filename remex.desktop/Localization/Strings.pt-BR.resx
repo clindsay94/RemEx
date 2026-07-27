@@ -3426,4 +3426,7 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
     <value>um backend desconhecido</value>
   </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>Wake on LAN</value>
+  </data>
 </root>

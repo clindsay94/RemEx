@@ -68,4 +68,59 @@ public class CommandPaletteEntryTests
 
         act.Should().Throw<ArgumentException>().WithMessage("*Restart PC*");
     }
+
+    // ── Search matching (RemEx-efse) ──
+
+    [Fact]
+    public void Matches_EmptyQuery_MatchesEverything()
+    {
+        new CommandPaletteEntry("Go Home", "Navigate", Command)
+            .Matches("").Should().BeTrue();
+    }
+
+    [Fact]
+    public void Matches_LabelAndCategory_AreCaseInsensitive()
+    {
+        var entry = new CommandPaletteEntry("Go Home", "Navigate", Command);
+
+        entry.Matches("HOME").Should().BeTrue();
+        entry.Matches("navig").Should().BeTrue();
+    }
+
+    [Fact]
+    public void Matches_UnrelatedQuery_DoesNotMatch()
+    {
+        new CommandPaletteEntry("Go Home", "Navigate", Command)
+            .Matches("wake").Should().BeFalse();
+    }
+
+    // The regression this whole field exists for: RemEx-paa7 removed the broken Wake-on-LAN entry,
+    // which left "wake" matching NOTHING even though the Remote screen is where waking lives.
+    [Fact]
+    public void Matches_SearchAlias_FindsAnEntryItsLabelDoesNotName()
+    {
+        var entry = new CommandPaletteEntry(
+            "Remote Control", "Navigate", Command, SearchAliases: "Wake on LAN");
+
+        entry.Matches("wake").Should().BeTrue();
+        entry.Matches("LAN").Should().BeTrue();
+    }
+
+    // Aliases are localized, so the match must work on a non-ASCII term too - an English-only
+    // alias would be half a fix in an app shipping nine languages.
+    [Fact]
+    public void Matches_SearchAlias_WorksForNonAsciiTerms()
+    {
+        var entry = new CommandPaletteEntry(
+            "Пульт", "Навігація", Command, SearchAliases: "Пробудження по LAN");
+
+        entry.Matches("пробудження").Should().BeTrue();
+    }
+
+    [Fact]
+    public void Matches_NullAliases_DoesNotThrow()
+    {
+        new CommandPaletteEntry("Go Home", "Navigate", Command, SearchAliases: null)
+            .Matches("wake").Should().BeFalse();
+    }
 }

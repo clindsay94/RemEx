@@ -3430,4 +3430,7 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
     <value>bilinmeyen bir arka uç</value>
   </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>Wake on LAN</value>
+  </data>
 </root>

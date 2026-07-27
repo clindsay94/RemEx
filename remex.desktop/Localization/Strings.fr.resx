@@ -3426,4 +3426,7 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
     <value>un backend inconnu</value>
   </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>Réveil par LAN</value>
+  </data>
 </root>

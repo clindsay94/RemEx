@@ -3429,4 +3429,7 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
     <value>backend tidak dikenal</value>
   </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>Wake on LAN</value>
+  </data>
 </root>

@@ -3427,4 +3427,7 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
     <value>nieznany backend</value>
   </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>Budzenie przez LAN</value>
+  </data>
 </root>
