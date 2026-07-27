@@ -3464,4 +3464,13 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="TaskManager_KillErrFailed" xml:space="preserve">
     <value>No se pudo cerrar ese programa. Actualiza la lista y vuelve a intentarlo.</value>
   </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>Esta carpeta está vacía.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>Ningún archivo coincide con esa búsqueda.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>Ninguna aplicación coincide con esa búsqueda.</value>
+  </data>
 </root>

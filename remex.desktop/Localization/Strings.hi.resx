@@ -3441,4 +3441,13 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="TaskManager_KillErrFailed" xml:space="preserve">
     <value>वह प्रोग्राम बंद नहीं किया जा सका। सूची रीफ़्रेश करें और दोबारा कोशिश करें।</value>
   </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>यह फ़ोल्डर खाली है।</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>उस खोज से कोई फ़ाइल मेल नहीं खाती।</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>उस खोज से कोई ऐप मेल नहीं खाता।</value>
+  </data>
 </root>

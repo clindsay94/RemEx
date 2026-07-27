@@ -3442,4 +3442,13 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="TaskManager_KillErrFailed" xml:space="preserve">
     <value>Nie udało się zamknąć tego programu. Odśwież listę i spróbuj ponownie.</value>
   </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>Ten folder jest pusty.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>Żaden plik nie pasuje do tego wyszukiwania.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>Żadna aplikacja nie pasuje do tego wyszukiwania.</value>
+  </data>
 </root>

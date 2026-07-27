@@ -239,6 +239,7 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
                         </Panel>
+                        <TextBlock Text="{local:Localize FileTransfer_FolderEmpty}" IsVisible="{Binding ShowEmptyFolder}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
                         <!-- Search results -->
                         <ListBox ItemsSource="{Binding SearchResults}" SelectionMode="Single" Background="Transparent" BorderThickness="0" IsVisible="{Binding ShowSearchResults}">
@@ -258,6 +259,10 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+                        <!-- A finished search that matched nothing, distinct from an empty
+                             folder above. Both carry the not-IsLoading term so neither flashes
+                             while results are still arriving (RemEx-n69m). -->
+                        <TextBlock Text="{local:Localize FileTransfer_NoSearchResults}" IsVisible="{Binding ShowNoSearchResults}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,32"/>
                     </Grid>
 
                     <!-- Properties pane -->

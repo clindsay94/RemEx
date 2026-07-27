@@ -72,6 +72,14 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         TransferQueue.Changed += OnQueueChanged;
         TransferQueue.ItemCompleted += OnTransferCompleted;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
+
+        // These two properties are created once and only ever mutated, never reassigned, so
+        // CollectionChanged really is a complete signal that their counts moved. That is worth
+        // stating because it is the assumption the empty states rest on: had either been an
+        // [ObservableProperty] that gets a fresh instance assigned, this subscription would follow
+        // the old instance and the empty state would silently stop updating.
+        RemoteEntries.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ShowEmptyFolder));
+        SearchResults.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ShowNoSearchResults));
         _ = InitializeAsync();
     }
 
@@ -419,6 +427,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowSearchResults))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyFolder))]
+    [NotifyPropertyChangedFor(nameof(ShowNoSearchResults))]
     private bool _isSearchActive;
 
     [ObservableProperty]
@@ -427,6 +437,17 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     public ObservableCollection<FileSearchEntry> SearchResults { get; } = new();
 
     public bool ShowSearchResults => IsSearchActive;
+
+    /// <summary>True when the current folder is genuinely empty, rather than still arriving.</summary>
+    /// <remarks>
+    /// The <see cref="IsLoading"/> term is not defensive padding — without it this flashes "this
+    /// folder is empty" on every navigation, in the gap before the listing arrives, which looks
+    /// exactly like a bug to the user. (RemEx-n69m.)
+    /// </remarks>
+    public bool ShowEmptyFolder => !IsLoading && !ShowSearchResults && RemoteEntries.Count == 0;
+
+    /// <summary>True when a search finished and matched nothing.</summary>
+    public bool ShowNoSearchResults => !IsLoading && ShowSearchResults && SearchResults.Count == 0;
 
     /// <summary>
     /// Set only while <see cref="ClearSearch"/> resets <see cref="SearchQuery"/> to empty. Clearing
@@ -541,6 +562,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     // ─── Upload / Download / Send (queued) ─────────────────────────────────────
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyFolder))]
+    [NotifyPropertyChangedFor(nameof(ShowNoSearchResults))]
     private bool _isLoading;
 
     [ObservableProperty]

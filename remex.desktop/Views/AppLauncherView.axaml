@@ -116,6 +116,12 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
+            <!-- Two distinct empty states, not one: nothing configured at all, versus nothing
+                 matching the current search. Keying the second on ShowNoSearchResults rather than
+                 on an empty FilteredApps is what keeps them from both firing at once and telling a
+                 user with no apps to refine a search they never made (RemEx-n69m). -->
+            <TextBlock Text="{local:Localize AppLauncher_NoSearchResults}" IsVisible="{Binding ShowNoSearchResults}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,24"/>
+
             <TextBlock Text="{local:Localize AppLauncher_NoApps}" IsVisible="{Binding !Launchers.Count}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
 
         </StackPanel>

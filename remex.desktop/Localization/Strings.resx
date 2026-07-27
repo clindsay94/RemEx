@@ -3447,4 +3447,13 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="TaskManager_KillErrFailed" xml:space="preserve">
     <value>That program could not be ended. Refresh the list and try again.</value>
   </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>This folder is empty.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>No files match that search.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>No apps match that search.</value>
+  </data>
 </root>

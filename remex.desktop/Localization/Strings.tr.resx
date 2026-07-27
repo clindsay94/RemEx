@@ -3445,4 +3445,13 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="TaskManager_KillErrFailed" xml:space="preserve">
     <value>Bu program kapatılamadı. Listeyi yenileyip tekrar deneyin.</value>
   </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>Bu klasör boş.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>Bu aramayla eşleşen dosya yok.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>Bu aramayla eşleşen uygulama yok.</value>
+  </data>
 </root>

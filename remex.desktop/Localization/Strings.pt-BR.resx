@@ -3441,4 +3441,13 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="TaskManager_KillErrFailed" xml:space="preserve">
     <value>Não foi possível encerrar esse programa. Atualize a lista e tente novamente.</value>
   </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>Esta pasta está vazia.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>Nenhum arquivo corresponde a essa busca.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>Nenhum aplicativo corresponde a essa busca.</value>
+  </data>
 </root>

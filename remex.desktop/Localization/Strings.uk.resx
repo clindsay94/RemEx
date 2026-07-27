@@ -3442,4 +3442,13 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="TaskManager_KillErrFailed" xml:space="preserve">
     <value>Не вдалося закрити цю програму. Оновіть список і спробуйте ще раз.</value>
   </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>Ця папка порожня.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>Жоден файл не відповідає цьому запиту.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>Жодна програма не відповідає цьому запиту.</value>
+  </data>
 </root>

@@ -3441,4 +3441,13 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="TaskManager_KillErrFailed" xml:space="preserve">
     <value>Impossible de fermer ce programme. Actualisez la liste, puis réessayez.</value>
   </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>Ce dossier est vide.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>Aucun fichier ne correspond à cette recherche.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>Aucune application ne correspond à cette recherche.</value>
+  </data>
 </root>

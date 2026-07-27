@@ -36,9 +36,24 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
             ? Launchers
             : Launchers.Where(a => a.DisplayName.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
-    partial void OnSearchTextChanged(string value) => OnPropertyChanged(nameof(FilteredApps));
+    /// <summary>True when apps exist but the current search matches none of them.</summary>
+    /// <remarks>
+    /// Deliberately NOT simply "FilteredApps is empty". That would fire when the launcher has no
+    /// apps at all, doubling up with the existing <c>AppLauncher_NoApps</c> message and telling the
+    /// user to refine a search they never made. The two states are distinct: nothing configured
+    /// versus nothing matching. (RemEx-n69m.)
+    /// </remarks>
+    public bool ShowNoSearchResults => Launchers.Count > 0 && !FilteredApps.Any();
 
-    partial void OnLaunchersChanged(ObservableCollection<AppEntry> value) => OnPropertyChanged(nameof(FilteredApps));
+    private void NotifyFilterChanged()
+    {
+        OnPropertyChanged(nameof(FilteredApps));
+        OnPropertyChanged(nameof(ShowNoSearchResults));
+    }
+
+    partial void OnSearchTextChanged(string value) => NotifyFilterChanged();
+
+    partial void OnLaunchersChanged(ObservableCollection<AppEntry> value) => NotifyFilterChanged();
 
     public AppLauncherViewModel(ConnectionViewModel connection, ShellViewModel shell, ILauncherStorageService storageService, RemexSavefileService? savefileService = null)
     {
@@ -231,7 +246,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         if (idx < 0) return;
 
         Launchers[idx] = updated;
-        OnPropertyChanged(nameof(FilteredApps));
+        NotifyFilterChanged();
         await PersistOrderAsync();
     }
 

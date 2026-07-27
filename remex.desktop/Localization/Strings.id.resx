@@ -3444,4 +3444,13 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="TaskManager_KillErrFailed" xml:space="preserve">
     <value>Program tersebut tidak dapat ditutup. Segarkan daftar lalu coba lagi.</value>
   </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>Folder ini kosong.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>Tidak ada file yang cocok dengan pencarian itu.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>Tidak ada aplikasi yang cocok dengan pencarian itu.</value>
+  </data>
 </root>
