@@ -79,7 +79,7 @@
                             <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                 <StackPanel Spacing="10">
                                     <StackPanel Orientation="Horizontal" Spacing="12">
-                                        <Ellipse Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
+                                        <Ellipse AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
                                         </Ellipse>
                                         <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>

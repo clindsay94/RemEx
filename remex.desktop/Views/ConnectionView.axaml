@@ -16,7 +16,7 @@
             <Border Classes="glass-card" Padding="24">
                 <StackPanel Spacing="16">
                     <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Ellipse Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding IsConnected}">
+                        <Ellipse AutomationProperties.Name="{Binding ConnectionStatusAccessibleName}" Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding IsConnected}">
                         </Ellipse>
                         <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
