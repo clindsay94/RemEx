@@ -617,6 +617,12 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// legacy naming for a non-interactive/Session-0 Windows process, NOT a service install —
     /// there is none (RemEx-9z0f). Exposed so callers show this instead of the raw wire token.
     /// </summary>
+    /// <remarks>
+    /// NOT BOUND IN XAML, and correctly so - it is consumed by <c>AboutViewModel.UpdateHostVersion</c>
+    /// and by <see cref="HostRuntimeSummary"/> below, both of which surface it through their own bound
+    /// properties. Recorded because a scan for "localized property that no view binds" flags this and
+    /// reads as dead code twice over (RemEx-r5pm); it is not.
+    /// </remarks>
     public string HostRuntimeLabel => HostCapabilities?.RuntimeMode switch
     {
         "interactive" => LocalizationService.Instance["Status_InteractiveHost"],
@@ -641,6 +647,11 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         }
     }
 
+    /// <remarks>
+    /// NOT BOUND IN XAML, and correctly so - consumed by <c>SettingsViewModel.UpdateHostCapabilitySummary</c>
+    /// and by <c>RemoteDesktopViewModel</c>, which expose it through their own bound properties. Flagged
+    /// as apparently-dead by the RemEx-6ddx scan and checked; it is not (RemEx-r5pm).
+    /// </remarks>
     public string RemoteDesktopAvailabilitySummary =>
         SupportsRemoteDesktop
             ? LocalizationService.Instance["Status_RemoteDesktopAvailable"]
