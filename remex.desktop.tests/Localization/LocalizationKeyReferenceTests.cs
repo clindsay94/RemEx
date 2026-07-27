@@ -175,4 +175,106 @@ public class LocalizationKeyReferenceTests
         var directory = Path.GetDirectoryName(thisSourceFile)!;
         return Path.GetFullPath(Path.Combine(directory, "..", ".."));
     }
+
+    /// <summary>
+    /// Catches <c>string.Format(Instance["Key"], arg)</c> where the key's value has no placeholder.
+    /// </summary>
+    /// <remarks>
+    /// This is the trap RemEx-udq9 exists to settle. <see cref="string.Format(string, object?)"/>
+    /// against a placeholder-free string SILENTLY DROPS the argument — no exception, no warning —
+    /// so the user is shown a sentence with the filename, count or error detail simply missing.
+    /// <para>
+    /// The naming convention cannot be relied on to prevent it, which is why this check exists
+    /// rather than a rename. Six keys currently end in <c>Format</c> while carrying no placeholder,
+    /// and one of them — <c>Status_InvalidMessageFormat</c>, "Invalid message format from PC" —
+    /// uses the word as part of its MEANING. A rule based on the suffix would demand renaming that
+    /// one too, and would still not stop the mistake being made against a key named anything else.
+    /// Detecting the actual call shape makes the name irrelevant.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NoStringFormatCall_TargetsAKeyWithoutAPlaceholder()
+    {
+        var defined = LoadBaseResxValues();
+        var offenders = new List<string>();
+        var checkedSites = 0;
+
+        var pattern = new Regex(
+            @"string\.Format\(\s*(?:[A-Za-z0-9_.]*?)Instance\[\s*""([A-Za-z0-9_]+)""\s*\]",
+            RegexOptions.Compiled);
+
+        foreach (var file in SourceFiles())
+        {
+            if (!file.EndsWith(".cs", StringComparison.Ordinal))
+                continue;
+
+            // Collapsed so a call wrapped across lines by the formatter still matches.
+            var text = Regex.Replace(File.ReadAllText(file), @"\s+", " ");
+            foreach (Match match in pattern.Matches(text))
+            {
+                var key = match.Groups[1].Value;
+                if (!defined.TryGetValue(key, out var value))
+                    continue;   // undefined keys are the other test's job
+
+                checkedSites++;
+                if (PlaceholderIndexes(value).Count == 0)
+                {
+                    var relative = Path.GetRelativePath(RepoRoot(), file).Replace('\\', '/');
+                    offenders.Add($"{key} = \"{value}\"  formatted at {relative}");
+                }
+            }
+        }
+
+        checkedSites.Should().BeGreaterThan(0,
+            "the pattern must actually match this codebase's string.Format calls, or this test " +
+            "passes vacuously");
+
+        offenders.Should().BeEmpty(
+            "string.Format against a placeholder-free string drops the argument silently, so the " +
+            "user sees a sentence with the filename, count or reason missing");
+    }
+
+    /// <summary>
+    /// Argument indexes in a .NET composite format string: <c>{index[,align][:format]}</c>.
+    /// </summary>
+    /// <remarks>
+    /// Hand-scanned rather than regexed because <c>{{</c> and <c>}}</c> are literal braces. Note
+    /// also that a naive search for the substring <c>"{0}"</c> is wrong and was the first version
+    /// of this check: <c>"Zoom: {0:F1}×"</c> carries a format specifier and would be reported as
+    /// having no placeholder at all.
+    /// </remarks>
+    private static HashSet<string> PlaceholderIndexes(string value)
+    {
+        var found = new HashSet<string>(StringComparer.Ordinal);
+        for (var i = 0; i < value.Length;)
+        {
+            if (value[i] == '{' && i + 1 < value.Length && value[i + 1] == '{') { i += 2; continue; }
+            if (value[i] == '}' && i + 1 < value.Length && value[i + 1] == '}') { i += 2; continue; }
+            if (value[i] == '{')
+            {
+                var close = value.IndexOf('}', i + 1);
+                if (close < 0) break;
+                var head = value.Substring(i + 1, close - i - 1).Split(',', ':')[0];
+                if (head.Length > 0 && head.All(char.IsAsciiDigit))
+                    found.Add(head);
+                i = close + 1;
+                continue;
+            }
+            i++;
+        }
+        return found;
+    }
+
+    private static Dictionary<string, string> LoadBaseResxValues()
+    {
+        var path = Path.Combine(RepoRoot(), "remex.desktop", "Localization", "Strings.resx");
+        return XDocument.Load(path)
+            .Root!
+            .Elements("data")
+            .Where(d => d.Element("value") is not null && (string?)d.Attribute("name") is not null)
+            .ToDictionary(
+                d => (string)d.Attribute("name")!,
+                d => d.Element("value")!.Value,
+                StringComparer.Ordinal);
+    }
 }
