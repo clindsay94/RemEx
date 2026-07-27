@@ -738,4 +738,5 @@
     <string name="task_manager_kill_err_not_running">वह प्रोग्राम अब नहीं चल रहा है। अभी क्या खुला है यह देखने के लिए सूची रीफ़्रेश करें।</string>
     <string name="task_manager_kill_err_identity_changed">वह प्रोग्राम अब इस प्रोसेस ID का उपयोग नहीं करता — यह अब %1$s की है। कुछ भी बंद नहीं किया गया। सूची रीफ़्रेश करें और दोबारा कोशिश करें।</string>
     <string name="task_manager_kill_err_failed">वह प्रोग्राम बंद नहीं किया जा सका। सूची रीफ़्रेश करें और दोबारा कोशिश करें।</string>
+    <string name="file_transfer_mkdir_timeout">फ़ोल्डर बनाने में समय समाप्त हो गया। PC ने जवाब नहीं दिया, इसलिए यह स्पष्ट नहीं है कि फ़ोल्डर बना या नहीं। जांचने के लिए रीफ़्रेश करें।</string>
 </resources>

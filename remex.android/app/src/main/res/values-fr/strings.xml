@@ -738,4 +738,5 @@
     <string name="task_manager_kill_err_not_running">Ce programme n\'est plus en cours d\'exécution. Actualisez la liste pour voir ce qui est ouvert maintenant.</string>
     <string name="task_manager_kill_err_identity_changed">Ce programme n\'utilise plus cet identifiant de processus : il appartient maintenant à %1$s. Rien n\'a été fermé. Actualisez la liste, puis réessayez.</string>
     <string name="task_manager_kill_err_failed">Impossible de fermer ce programme. Actualisez la liste, puis réessayez.</string>
+    <string name="file_transfer_mkdir_timeout">Le délai de création du dossier a expiré. Le PC n\'a pas répondu, donc on ne sait pas si le dossier a été créé. Actualisez pour vérifier.</string>
 </resources>

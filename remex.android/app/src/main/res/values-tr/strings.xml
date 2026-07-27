@@ -740,4 +740,5 @@
     <string name="task_manager_kill_err_not_running">Bu program artık çalışmıyor. Şu anda nelerin açık olduğunu görmek için listeyi yenileyin.</string>
     <string name="task_manager_kill_err_identity_changed">Bu program artık bu işlem kimliğini kullanmıyor — kimlik şimdi %1$s programına ait. Hiçbir şey kapatılmadı. Listeyi yenileyip tekrar deneyin.</string>
     <string name="task_manager_kill_err_failed">Bu program kapatılamadı. Listeyi yenileyip tekrar deneyin.</string>
+    <string name="file_transfer_mkdir_timeout">Klasör oluşturma zaman aşımına uğradı. Bilgisayar yanıt vermedi, bu yüzden klasörün oluşturulup oluşturulmadığı belli değil. Kontrol etmek için yenileyin.</string>
 </resources>

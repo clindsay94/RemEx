@@ -440,13 +440,15 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_transfer_deleting_single, entry.name)
-            val error = runManage(rootId, relative, FileManageOperations.DELETE)
-            if (error != null) Log.w(TAG, "Delete failed: $error")
-            _statusText.value =
-                if (error != null) app().getString(R.string.file_transfer_delete_failed)
-                else app().getString(R.string.file_transfer_deleted_success)
+            val outcome = runManage(rootId, relative, FileManageOperations.DELETE)
+            if (outcome.failed) Log.w(TAG, "Delete failed: $outcome")
+            _statusText.value = when (outcome) {
+                is ManageOutcome.TimedOut -> app().getString(R.string.file_transfer_delete_timeout)
+                is ManageOutcome.HostRefused -> app().getString(R.string.file_transfer_delete_failed)
+                is ManageOutcome.Ok -> app().getString(R.string.file_transfer_deleted_success)
+            }
             _isLoading.value = false
-            if (error == null) browseRemote()
+            if (!outcome.failed) browseRemote()
         }
     }
 
@@ -463,7 +465,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             var errors = 0
             for (entry in targets) {
                 val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
-                if (runManage(rootId, relative, FileManageOperations.DELETE) != null) errors++
+                if (runManage(rootId, relative, FileManageOperations.DELETE).failed) errors++
             }
             _statusText.value = multiResultText(targets.size, errors)
             _isLoading.value = false
@@ -479,13 +481,15 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_transfer_renaming_single, entry.name)
-            val error = runManage(rootId, relative, FileManageOperations.RENAME, newName = trimmed)
-            if (error != null) Log.w(TAG, "Rename failed: $error")
-            _statusText.value =
-                if (error != null) app().getString(R.string.file_transfer_rename_failed)
-                else app().getString(R.string.file_transfer_renamed_success)
+            val outcome = runManage(rootId, relative, FileManageOperations.RENAME, newName = trimmed)
+            if (outcome.failed) Log.w(TAG, "Rename failed: $outcome")
+            _statusText.value = when (outcome) {
+                is ManageOutcome.TimedOut -> app().getString(R.string.file_transfer_rename_timeout)
+                is ManageOutcome.HostRefused -> app().getString(R.string.file_transfer_rename_failed)
+                is ManageOutcome.Ok -> app().getString(R.string.file_transfer_renamed_success)
+            }
             _isLoading.value = false
-            if (error == null) browseRemote()
+            if (!outcome.failed) browseRemote()
         }
     }
 
@@ -497,12 +501,19 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_manager_creating_folder, trimmed)
-            val error = runManage(rootId, relative, FileManageOperations.MKDIR)
-            _statusText.value =
-                if (error != null) app().getString(R.string.file_manager_new_folder_failed, error)
-                else app().getString(R.string.file_manager_folder_created)
+            val outcome = runManage(rootId, relative, FileManageOperations.MKDIR)
+            if (outcome.failed) Log.w(TAG, "Create folder failed: $outcome")
+            _statusText.value = when (outcome) {
+                is ManageOutcome.TimedOut -> app().getString(R.string.file_transfer_mkdir_timeout)
+                // The host's own wording is kept here: FileHostHandler answers this with copy a
+                // user can act on, so replacing it with something generic would lose the most
+                // useful text in the flow.
+                is ManageOutcome.HostRefused ->
+                    app().getString(R.string.file_manager_new_folder_failed, outcome.message)
+                is ManageOutcome.Ok -> app().getString(R.string.file_manager_folder_created)
+            }
             _isLoading.value = false
-            if (error == null) browseRemote()
+            if (!outcome.failed) browseRemote()
         }
     }
 
@@ -527,7 +538,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             for (entry in targets) {
                 val relative = FileManagerLogic.combinePath(_remotePath.value, entry.name)
                 val destination = FileManagerLogic.combinePath(destFolder, entry.name)
-                if (runManage(rootId, relative, operation, destinationPath = destination) != null) errors++
+                if (runManage(rootId, relative, operation, destinationPath = destination).failed) errors++
             }
             _statusText.value = multiResultText(targets.size, errors)
             _isLoading.value = false
@@ -535,14 +546,38 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    /** Sends one file_manage_request and awaits its response; returns an error message or null on success. */
+    /**
+     * How one file_manage_request ended.
+     *
+     * The point of the type is that [TimedOut] and [HostRefused] are different events that need
+     * different words. Before it, runManage returned a String? and its timeout branch handed back
+     * the DELETE-specific message for every operation it serves - delete, rename, mkdir, copy and
+     * move - so a mkdir that timed out literally read "New folder failed: Delete timed out.", a
+     * rename that timed out was flattened into the same sentence as a rename the host refused, and
+     * copy/move lost the reason entirely. Delete was correct only by accident, because the
+     * hardcoded string happened to be its own. (RemEx-201d.)
+     */
+    private sealed interface ManageOutcome {
+        data object Ok : ManageOutcome
+
+        /** The host never answered. Nothing is known about whether it acted. */
+        data object TimedOut : ManageOutcome
+
+        /** The host answered and said no. [message] is its own user-facing wording. */
+        data class HostRefused(val message: String) : ManageOutcome
+    }
+
+    private val ManageOutcome.failed: Boolean
+        get() = this !is ManageOutcome.Ok
+
+    /** Sends one file_manage_request and awaits its response. */
     private suspend fun runManage(
         rootId: String,
         relativePath: String,
         operation: String,
         newName: String? = null,
         destinationPath: String? = null,
-    ): String? {
+    ): ManageOutcome {
         val requestId = newRequestId()
         val deferred = CompletableDeferred<JSONObject>()
         pendingManageOps[requestId] = deferred
@@ -563,9 +598,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         else sendMessage(JSONObject().apply { put("type", "file_manage_request"); put("fileManageRequest", payload) })
         return try {
             val response = withTimeout(30_000) { deferred.await() }
-            response.optJSONObject("fileManageResponse")?.optMeaningfulString("errorMessage")
+            val hostError = response.optJSONObject("fileManageResponse")?.optMeaningfulString("errorMessage")
+            if (hostError == null) ManageOutcome.Ok else ManageOutcome.HostRefused(hostError)
         } catch (_: TimeoutCancellationException) {
-            app().getString(R.string.file_transfer_delete_timeout)
+            // Deliberately carries no message. Naming the operation is the CALLER's job - this
+            // function serves five of them and cannot know which one it is being used for, which is
+            // exactly how the delete-specific wording used to leak into the others.
+            ManageOutcome.TimedOut
         } finally {
             pendingManageOps.remove(requestId)
         }

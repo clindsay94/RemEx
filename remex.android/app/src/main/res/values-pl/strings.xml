@@ -740,4 +740,5 @@
     <string name="task_manager_kill_err_not_running">Ten program już nie działa. Odśwież listę, aby zobaczyć, co jest teraz otwarte.</string>
     <string name="task_manager_kill_err_identity_changed">Ten program nie używa już tego identyfikatora procesu — należy on teraz do %1$s. Nic nie zostało zamknięte. Odśwież listę i spróbuj ponownie.</string>
     <string name="task_manager_kill_err_failed">Nie udało się zamknąć tego programu. Odśwież listę i spróbuj ponownie.</string>
+    <string name="file_transfer_mkdir_timeout">Upłynął limit czasu tworzenia folderu. Komputer nie odpowiedział, więc nie wiadomo, czy folder powstał. Odśwież, aby sprawdzić.</string>
 </resources>

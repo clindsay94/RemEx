@@ -738,4 +738,5 @@
     <string name="task_manager_kill_err_not_running">Esse programa não está mais em execução. Atualize a lista para ver o que está aberto agora.</string>
     <string name="task_manager_kill_err_identity_changed">Esse programa não usa mais este ID de processo — agora ele pertence a %1$s. Nada foi encerrado. Atualize a lista e tente novamente.</string>
     <string name="task_manager_kill_err_failed">Não foi possível encerrar esse programa. Atualize a lista e tente novamente.</string>
+    <string name="file_transfer_mkdir_timeout">O tempo de criação da pasta esgotou. O PC não respondeu, então não está claro se a pasta foi criada. Atualize para verificar.</string>
 </resources>

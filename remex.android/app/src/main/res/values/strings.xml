@@ -831,4 +831,5 @@
     <string name="task_manager_kill_err_not_running">That program is no longer running. Refresh the list to see what is open now.</string>
     <string name="task_manager_kill_err_identity_changed">That program is no longer using this process ID — it now belongs to %1$s. Nothing was ended. Refresh the list and try again.</string>
     <string name="task_manager_kill_err_failed">That program could not be ended. Refresh the list and try again.</string>
+    <string name="file_transfer_mkdir_timeout">Creating the folder timed out. The PC did not respond, so it is not clear whether the folder was created. Refresh to check.</string>
 </resources>

@@ -738,4 +738,5 @@
     <string name="task_manager_kill_err_not_running">Ese programa ya no se está ejecutando. Actualiza la lista para ver qué hay abierto ahora.</string>
     <string name="task_manager_kill_err_identity_changed">Ese programa ya no usa este identificador de proceso: ahora pertenece a %1$s. No se cerró nada. Actualiza la lista y vuelve a intentarlo.</string>
     <string name="task_manager_kill_err_failed">No se pudo cerrar ese programa. Actualiza la lista y vuelve a intentarlo.</string>
+    <string name="file_transfer_mkdir_timeout">Se agotó el tiempo al crear la carpeta. El PC no respondió, así que no está claro si se creó. Actualiza para comprobarlo.</string>
 </resources>

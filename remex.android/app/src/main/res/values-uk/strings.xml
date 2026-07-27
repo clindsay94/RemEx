@@ -740,4 +740,5 @@
     <string name="task_manager_kill_err_not_running">Ця програма більше не працює. Оновіть список, щоб побачити, що відкрито зараз.</string>
     <string name="task_manager_kill_err_identity_changed">Ця програма більше не використовує цей ідентифікатор процесу — тепер він належить %1$s. Нічого не закрито. Оновіть список і спробуйте ще раз.</string>
     <string name="task_manager_kill_err_failed">Не вдалося закрити цю програму. Оновіть список і спробуйте ще раз.</string>
+    <string name="file_transfer_mkdir_timeout">Час очікування створення папки минув. Комп’ютер не відповів, тому невідомо, чи папку створено. Оновіть, щоб перевірити.</string>
 </resources>

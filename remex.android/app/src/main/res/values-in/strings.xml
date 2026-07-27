@@ -741,4 +741,5 @@
     <string name="task_manager_kill_err_not_running">Program tersebut sudah tidak berjalan. Segarkan daftar untuk melihat apa yang terbuka sekarang.</string>
     <string name="task_manager_kill_err_identity_changed">Program tersebut tidak lagi memakai ID proses ini — sekarang ID itu milik %1$s. Tidak ada yang ditutup. Segarkan daftar lalu coba lagi.</string>
     <string name="task_manager_kill_err_failed">Program tersebut tidak dapat ditutup. Segarkan daftar lalu coba lagi.</string>
+    <string name="file_transfer_mkdir_timeout">Waktu pembuatan folder habis. PC tidak merespons, jadi belum jelas apakah folder sudah dibuat. Segarkan untuk memeriksa.</string>
 </resources>
