@@ -1403,7 +1403,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>What is Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.</value>
+    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.&#xD;&#xA;&#xD;&#xA;Waking the PC is not the same as regaining access to it. Wake-on-LAN powers the machine on and it stops at the sign-in screen; RemEx only starts once someone signs in on the PC itself.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>How do I transfer files?</value>

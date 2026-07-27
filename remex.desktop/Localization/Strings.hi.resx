@@ -1358,7 +1358,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>Wake-on-LAN (WOL) क्या है?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN से आप अपने पीसी को दूर से चालू कर सकते हैं। इसे अपने BIOS/UEFI और नेटवर्क अडैप्टर के गुणों में चालू करें। फिर कनेक्शन स्क्रीन में अपने पीसी का MAC पता डालें।</value>
+    <value>Wake-on-LAN से आप अपने पीसी को दूर से चालू कर सकते हैं। इसे अपने BIOS/UEFI और नेटवर्क अडैप्टर के गुणों में चालू करें। फिर कनेक्शन स्क्रीन में अपने पीसी का MAC पता डालें।&#xD;&#xA;&#xD;&#xA;PC चालू करना और उस तक दोबारा पहुँच पाना एक ही बात नहीं है। Wake-on-LAN मशीन चालू करता है और वह साइन-इन स्क्रीन पर रुक जाती है; RemEx तभी शुरू होता है जब कोई PC पर साइन इन करता है।</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>मैं फ़ाइलें कैसे स्थानांतरित करूँ?</value>

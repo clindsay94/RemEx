@@ -1358,7 +1358,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Apa itu Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN memungkinkan Anda menyalakan PC dari jarak jauh. Aktifkan di BIOS/UEFI dan properti adaptor jaringan. Lalu masukkan alamat MAC PC Anda di layar Koneksi.</value>
+    <value>Wake-on-LAN memungkinkan Anda menyalakan PC dari jarak jauh. Aktifkan di BIOS/UEFI dan properti adaptor jaringan. Lalu masukkan alamat MAC PC Anda di layar Koneksi.&#xD;&#xA;&#xD;&#xA;Menyalakan PC tidak sama dengan mendapatkan aksesnya kembali. Wake-on-LAN menghidupkan mesin dan berhenti di layar masuk; RemEx baru berjalan setelah seseorang masuk di PC itu sendiri.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Bagaimana cara mentransfer file?</value>

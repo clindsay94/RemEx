@@ -1358,7 +1358,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Wake-on-LAN (WOL) nedir?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN, bilgisayarınızı uzaktan açmanızı sağlar. BIOS/UEFI'de ve ağ bağdaştırıcısı özelliklerinde etkinleştirin. Ardından Bağlantı ekranında bilgisayarınızın MAC adresini girin.</value>
+    <value>Wake-on-LAN, bilgisayarınızı uzaktan açmanızı sağlar. BIOS/UEFI'de ve ağ bağdaştırıcısı özelliklerinde etkinleştirin. Ardından Bağlantı ekranında bilgisayarınızın MAC adresini girin.&#xD;&#xA;&#xD;&#xA;Bilgisayarı uyandırmak, ona yeniden erişmekle aynı şey değildir. Wake-on-LAN makineyi açar ve makine oturum açma ekranında bekler; RemEx ancak biri bilgisayarda oturum açtığında başlar.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Dosyaları nasıl aktarırım?</value>

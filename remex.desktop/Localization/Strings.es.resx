@@ -1364,7 +1364,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>¿Qué es Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN te permite encender tu PC de forma remota. Actívalo en la BIOS/UEFI y en las propiedades del adaptador de red. Después introduce la dirección MAC de tu PC en la pantalla Conexión.</value>
+    <value>Wake-on-LAN te permite encender tu PC de forma remota. Actívalo en la BIOS/UEFI y en las propiedades del adaptador de red. Después introduce la dirección MAC de tu PC en la pantalla Conexión.&#xD;&#xA;&#xD;&#xA;Encender el PC no es lo mismo que recuperar el acceso. Wake-on-LAN enciende el equipo y este se detiene en la pantalla de inicio de sesión; RemEx solo se inicia cuando alguien inicia sesión en el propio PC.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>¿Cómo transfiero archivos?</value>

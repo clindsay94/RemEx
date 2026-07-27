@@ -1358,7 +1358,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Qu'est-ce que Wake-on-LAN (WOL) ?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN vous permet d'allumer votre PC à distance. Activez-le dans votre BIOS/UEFI et dans les propriétés de la carte réseau. Entrez ensuite l'adresse MAC de votre PC dans l'écran de connexion.</value>
+    <value>Wake-on-LAN vous permet d'allumer votre PC à distance. Activez-le dans votre BIOS/UEFI et dans les propriétés de la carte réseau. Entrez ensuite l'adresse MAC de votre PC dans l'écran de connexion.&#xD;&#xA;&#xD;&#xA;Allumer le PC n'est pas la même chose que retrouver l'accès. Wake-on-LAN démarre la machine, qui s'arrête à l'écran de connexion ; RemEx ne démarre que lorsque quelqu'un ouvre une session sur le PC lui-même.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Comment transférer des fichiers ?</value>

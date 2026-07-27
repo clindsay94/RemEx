@@ -2233,7 +2233,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Co to jest Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN pozwala na zdalne włączenie komputera. Włącz to w BIOS/UEFI i właściwościach karty sieciowej. Następnie wprowadź adres MAC komputera na ekranie Połączenia.</value>
+    <value>Wake-on-LAN pozwala na zdalne włączenie komputera. Włącz to w BIOS/UEFI i właściwościach karty sieciowej. Następnie wprowadź adres MAC komputera na ekranie Połączenia.&#xD;&#xA;&#xD;&#xA;Włączenie komputera to nie to samo co odzyskanie do niego dostępu. Wake-on-LAN uruchamia maszynę, która zatrzymuje się na ekranie logowania; RemEx startuje dopiero, gdy ktoś zaloguje się na samym komputerze.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Jak przesyłać pliki?</value>
