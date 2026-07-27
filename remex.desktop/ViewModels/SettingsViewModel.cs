@@ -230,14 +230,29 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // SetCulture raises "Item", "Item[]" and "" in sequence, so an unguarded handler runs three
+        // times per switch. Harmless when the body only re-raises notifications; this one re-reads
+        // state, so it does the work once. Borrowed from AboutViewModel, which was the only handler
+        // in the codebase getting this right.
+        if (!string.IsNullOrEmpty(e.PropertyName))
+            return;
+
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            // Refresh host info defaults if not connected
             if (_connection.HostCapabilities == null)
             {
+                // Not connected: these two are the placeholder wording, resolved here.
                 HostRuntimeText = LocalizationService.Instance["Service_HostUnavailable"];
                 HostCapabilityText = LocalizationService.Instance["Service_HostUnavailableHint"];
+                return;
             }
+
+            // CONNECTED - the case this handler used to skip entirely, and the case a user is
+            // normally in. Both properties hold a SNAPSHOT taken from the connection's localized
+            // summaries, so nothing about them changes when the language does; they simply kept the
+            // previous wording until host capabilities happened to change next. Recomputing from the
+            // source is the whole fix (RemEx-q3h0).
+            UpdateHostCapabilitySummary();
         });
     }
 

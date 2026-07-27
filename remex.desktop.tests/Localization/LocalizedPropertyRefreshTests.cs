@@ -83,6 +83,43 @@ public class LocalizedPropertyRefreshTests
     }
 
     /// <summary>
+    /// View-models that SNAPSHOT localized text into a plain property must recompute it when the
+    /// language changes, and the recompute must be reachable from their locale handler.
+    /// </summary>
+    /// <remarks>
+    /// This is the variant the test above cannot see. There, the bound property's getter reads the
+    /// localizer, so a scan can find it. Here the bound property is a plain
+    /// <c>[ObservableProperty]</c> assigned once from somewhere else - its getter is a field read
+    /// with no localizer call anywhere near it - while the user sees exactly the same staleness.
+    /// <para>
+    /// A general scan for this shape would have to follow a localized value across files and through
+    /// property calls, and would need an allowlist to stay quiet - which the test above deliberately
+    /// avoids. So this pins the known links instead: cheap, exact, and it fails loudly if someone
+    /// deletes the call rather than the defect coming back silently. Extend the table when
+    /// RemEx-q3h0's remaining sites are fixed.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    // SettingsViewModel used to refresh these only while DISCONNECTED, so a connected user - the
+    // normal case - kept the previous language until host capabilities next changed (RemEx-q3h0).
+    [InlineData("SettingsViewModel.cs", "UpdateHostCapabilitySummary")]
+    // AboutViewModel was already correct and is the reference implementation for the pattern.
+    [InlineData("AboutViewModel.cs", "UpdateHostVersion")]
+    public void LocaleHandler_RecomputesSnapshottedText(string viewModel, string recomputeMethod)
+    {
+        var path = Path.Combine(ViewModelDirectory(), viewModel);
+        File.Exists(path).Should().BeTrue($"{viewModel} is pinned by this test and must exist");
+
+        var reach = LocaleHandlerReach(File.ReadAllText(path));
+
+        reach.Should().NotBeEmpty($"{viewModel} must subscribe to {Localizer}.PropertyChanged");
+        reach.Should().Contain(recomputeMethod,
+            $"{viewModel} holds localized text in a plain property, so its locale handler must call " +
+            $"{recomputeMethod} to recompute it - otherwise the text keeps the previous language " +
+            "until some unrelated event happens to refresh it");
+    }
+
+    /// <summary>
     /// Property names bound in XAML, across the three binding syntaxes this project uses.
     /// </summary>
     /// <remarks>
@@ -155,9 +192,20 @@ public class LocalizedPropertyRefreshTests
         return reach;
     }
 
+    /// <summary>Body of a method DECLARED in this file, by name.</summary>
+    /// <remarks>
+    /// The accessibility prefix is load-bearing, not decoration. Without it the pattern also
+    /// matches CALL sites, and <c>Post(() =&gt;</c> parses as a "declaration" of <c>Post</c>
+    /// whose body is an unrelated lambda elsewhere in the file. That silently widened the
+    /// handler's reach and let the test pass while the recompute call was deleted - found by
+    /// injecting exactly that deletion and watching the test stay green.
+    /// </remarks>
     private static string MethodBody(string source, string name)
     {
-        var m = Regex.Match(source, @"\b" + Regex.Escape(name) + @"\s*\([^)]*\)\s*(=>|\{)");
+        var m = Regex.Match(
+            source,
+            @"(?:private|public|internal|protected)[^\n;{}]*\b"
+                + Regex.Escape(name) + @"\s*\([^)]*\)\s*(=>|\{)");
         if (!m.Success)
             return string.Empty;
         return m.Groups[1].Value == "{"
