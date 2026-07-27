@@ -734,4 +734,16 @@
     <string name="task_manager_kill_err_identity_changed">Program tersebut tidak lagi memakai ID proses ini — sekarang ID itu milik %1$s. Tidak ada yang ditutup. Segarkan daftar lalu coba lagi.</string>
     <string name="task_manager_kill_err_failed">Program tersebut tidak dapat ditutup. Segarkan daftar lalu coba lagi.</string>
     <string name="file_transfer_mkdir_timeout">Waktu pembuatan folder habis. PC tidak merespons, jadi belum jelas apakah folder sudah dibuat. Segarkan untuk memeriksa.</string>
+    <string name="personalization_mode_system">Sistem</string>
+    <string name="personalization_mode_light">Terang</string>
+    <string name="personalization_mode_dark">Gelap</string>
+    <string name="personalization_palette_default">Bawaan</string>
+    <string name="personalization_palette_custom">Kustom</string>
+    <string name="personalization_style_tonal_spot">Titik Tonal</string>
+    <string name="personalization_style_expressive">Ekspresif</string>
+    <string name="personalization_style_fruit_salad">Salad Buah</string>
+    <string name="personalization_style_rainbow">Pelangi</string>
+    <string name="personalization_style_vibrant">Cerah</string>
+    <string name="personalization_style_neutral">Netral</string>
+    <string name="personalization_style_monochrome">Monokrom</string>
 </resources>

@@ -733,4 +733,16 @@
     <string name="task_manager_kill_err_identity_changed">Ця програма більше не використовує цей ідентифікатор процесу — тепер він належить %1$s. Нічого не закрито. Оновіть список і спробуйте ще раз.</string>
     <string name="task_manager_kill_err_failed">Не вдалося закрити цю програму. Оновіть список і спробуйте ще раз.</string>
     <string name="file_transfer_mkdir_timeout">Час очікування створення папки минув. Комп’ютер не відповів, тому невідомо, чи папку створено. Оновіть, щоб перевірити.</string>
+    <string name="personalization_mode_system">Системний</string>
+    <string name="personalization_mode_light">Світла</string>
+    <string name="personalization_mode_dark">Темна</string>
+    <string name="personalization_palette_default">Стандартна</string>
+    <string name="personalization_palette_custom">Власна</string>
+    <string name="personalization_style_tonal_spot">Тональний акцент</string>
+    <string name="personalization_style_expressive">Виразна</string>
+    <string name="personalization_style_fruit_salad">Фруктовий салат</string>
+    <string name="personalization_style_rainbow">Веселка</string>
+    <string name="personalization_style_vibrant">Насичена</string>
+    <string name="personalization_style_neutral">Нейтральна</string>
+    <string name="personalization_style_monochrome">Монохромна</string>
 </resources>

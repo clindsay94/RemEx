@@ -824,4 +824,16 @@
     <string name="task_manager_kill_err_identity_changed">That program is no longer using this process ID — it now belongs to %1$s. Nothing was ended. Refresh the list and try again.</string>
     <string name="task_manager_kill_err_failed">That program could not be ended. Refresh the list and try again.</string>
     <string name="file_transfer_mkdir_timeout">Creating the folder timed out. The PC did not respond, so it is not clear whether the folder was created. Refresh to check.</string>
+    <string name="personalization_mode_system">System</string>
+    <string name="personalization_mode_light">Light</string>
+    <string name="personalization_mode_dark">Dark</string>
+    <string name="personalization_palette_default">Default</string>
+    <string name="personalization_palette_custom">Custom</string>
+    <string name="personalization_style_tonal_spot">Tonal Spot</string>
+    <string name="personalization_style_expressive">Expressive</string>
+    <string name="personalization_style_fruit_salad">Fruit Salad</string>
+    <string name="personalization_style_rainbow">Rainbow</string>
+    <string name="personalization_style_vibrant">Vibrant</string>
+    <string name="personalization_style_neutral">Neutral</string>
+    <string name="personalization_style_monochrome">Monochrome</string>
 </resources>

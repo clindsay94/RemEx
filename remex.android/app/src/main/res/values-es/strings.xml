@@ -731,4 +731,16 @@
     <string name="task_manager_kill_err_identity_changed">Ese programa ya no usa este identificador de proceso: ahora pertenece a %1$s. No se cerró nada. Actualiza la lista y vuelve a intentarlo.</string>
     <string name="task_manager_kill_err_failed">No se pudo cerrar ese programa. Actualiza la lista y vuelve a intentarlo.</string>
     <string name="file_transfer_mkdir_timeout">Se agotó el tiempo al crear la carpeta. El PC no respondió, así que no está claro si se creó. Actualiza para comprobarlo.</string>
+    <string name="personalization_mode_system">Sistema</string>
+    <string name="personalization_mode_light">Claro</string>
+    <string name="personalization_mode_dark">Oscuro</string>
+    <string name="personalization_palette_default">Predeterminada</string>
+    <string name="personalization_palette_custom">Personalizada</string>
+    <string name="personalization_style_tonal_spot">Punto tonal</string>
+    <string name="personalization_style_expressive">Expresiva</string>
+    <string name="personalization_style_fruit_salad">Macedonia</string>
+    <string name="personalization_style_rainbow">Arcoíris</string>
+    <string name="personalization_style_vibrant">Vibrante</string>
+    <string name="personalization_style_neutral">Neutra</string>
+    <string name="personalization_style_monochrome">Monocroma</string>
 </resources>

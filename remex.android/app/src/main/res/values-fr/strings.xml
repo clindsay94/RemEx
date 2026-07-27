@@ -731,4 +731,16 @@
     <string name="task_manager_kill_err_identity_changed">Ce programme n\'utilise plus cet identifiant de processus : il appartient maintenant à %1$s. Rien n\'a été fermé. Actualisez la liste, puis réessayez.</string>
     <string name="task_manager_kill_err_failed">Impossible de fermer ce programme. Actualisez la liste, puis réessayez.</string>
     <string name="file_transfer_mkdir_timeout">Le délai de création du dossier a expiré. Le PC n\'a pas répondu, donc on ne sait pas si le dossier a été créé. Actualisez pour vérifier.</string>
+    <string name="personalization_mode_system">Système</string>
+    <string name="personalization_mode_light">Clair</string>
+    <string name="personalization_mode_dark">Sombre</string>
+    <string name="personalization_palette_default">Par défaut</string>
+    <string name="personalization_palette_custom">Personnalisée</string>
+    <string name="personalization_style_tonal_spot">Touche tonale</string>
+    <string name="personalization_style_expressive">Expressive</string>
+    <string name="personalization_style_fruit_salad">Salade de fruits</string>
+    <string name="personalization_style_rainbow">Arc-en-ciel</string>
+    <string name="personalization_style_vibrant">Vibrante</string>
+    <string name="personalization_style_neutral">Neutre</string>
+    <string name="personalization_style_monochrome">Monochrome</string>
 </resources>

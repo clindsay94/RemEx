@@ -731,4 +731,16 @@
     <string name="task_manager_kill_err_identity_changed">वह प्रोग्राम अब इस प्रोसेस ID का उपयोग नहीं करता — यह अब %1$s की है। कुछ भी बंद नहीं किया गया। सूची रीफ़्रेश करें और दोबारा कोशिश करें।</string>
     <string name="task_manager_kill_err_failed">वह प्रोग्राम बंद नहीं किया जा सका। सूची रीफ़्रेश करें और दोबारा कोशिश करें।</string>
     <string name="file_transfer_mkdir_timeout">फ़ोल्डर बनाने में समय समाप्त हो गया। PC ने जवाब नहीं दिया, इसलिए यह स्पष्ट नहीं है कि फ़ोल्डर बना या नहीं। जांचने के लिए रीफ़्रेश करें।</string>
+    <string name="personalization_mode_system">सिस्टम</string>
+    <string name="personalization_mode_light">लाइट</string>
+    <string name="personalization_mode_dark">डार्क</string>
+    <string name="personalization_palette_default">डिफ़ॉल्ट</string>
+    <string name="personalization_palette_custom">कस्टम</string>
+    <string name="personalization_style_tonal_spot">टोनल स्पॉट</string>
+    <string name="personalization_style_expressive">एक्सप्रेसिव</string>
+    <string name="personalization_style_fruit_salad">फ्रूट सलाद</string>
+    <string name="personalization_style_rainbow">रेनबो</string>
+    <string name="personalization_style_vibrant">वाइब्रेंट</string>
+    <string name="personalization_style_neutral">न्यूट्रल</string>
+    <string name="personalization_style_monochrome">मोनोक्रोम</string>
 </resources>

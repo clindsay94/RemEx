@@ -458,7 +458,7 @@ fun PersonalizationScreenContent(
                                     onCheckedChange = { themeMode = option },
                                     modifier = Modifier.weight(1f)
                             ) {
-                                Text(option.replaceFirstChar { it.uppercase() }, maxLines = 1)
+                                Text(displayModeLabel(option), maxLines = 1)
                             }
                         }
                     }
@@ -474,10 +474,16 @@ fun PersonalizationScreenContent(
                                             "expressive",
                                             "fruit_salad",
                                             "rainbow",
-                                            "vibrant"
+                                            "vibrant",
+                                            // Both are implemented in Theme.kt's
+                                            // colorSchemeFromSeed and were simply never offered
+                                            // here, so they were unreachable (RemEx-6byw).
+                                            "neutral",
+                                            "monochrome"
                                      ),
                             selected = themeStyle,
-                            onSelected = { themeStyle = it }
+                            onSelected = { themeStyle = it },
+                            labelFor = { paletteStyleLabel(it) }
                     )
                 }
             }
@@ -607,7 +613,7 @@ fun PersonalizationScreenContent(
                                     onCheckedChange = { palette = option },
                                     modifier = Modifier.weight(1f)
                             ) {
-                                Text(option.replaceFirstChar { it.uppercase() }, maxLines = 1)
+                                Text(paletteModeLabel(option), maxLines = 1)
                             }
                         }
                     }
@@ -1195,11 +1201,48 @@ private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vect
  * confirmed by an Opus review of the attempted conversion. Revisit only if the option set
  * shrinks to <=3 short labels.
  */
+/** Localized label for a palette style identifier; falls back to the raw identifier. */
+@Composable
+private fun paletteStyleLabel(option: String): String = when (option) {
+    "tonal_spot" -> stringResource(R.string.personalization_style_tonal_spot)
+    "expressive" -> stringResource(R.string.personalization_style_expressive)
+    "fruit_salad" -> stringResource(R.string.personalization_style_fruit_salad)
+    "rainbow" -> stringResource(R.string.personalization_style_rainbow)
+    "vibrant" -> stringResource(R.string.personalization_style_vibrant)
+    "neutral" -> stringResource(R.string.personalization_style_neutral)
+    "monochrome" -> stringResource(R.string.personalization_style_monochrome)
+    else -> option.replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+/** Localized label for the light/dark/system selector. */
+@Composable
+private fun displayModeLabel(option: String): String = when (option) {
+    "system" -> stringResource(R.string.personalization_mode_system)
+    "light" -> stringResource(R.string.personalization_mode_light)
+    "dark" -> stringResource(R.string.personalization_mode_dark)
+    else -> option.replaceFirstChar { it.uppercase() }
+}
+
+/** Localized label for the default/custom palette selector. */
+@Composable
+private fun paletteModeLabel(option: String): String = when (option) {
+    "default" -> stringResource(R.string.personalization_palette_default)
+    "custom" -> stringResource(R.string.personalization_palette_custom)
+    else -> option.replaceFirstChar { it.uppercase() }
+}
+
 @Composable
 private fun SingleSelectChips(
         options: List<String>,
         selected: String,
-        onSelected: (String) -> Unit
+        onSelected: (String) -> Unit,
+        /**
+         * Maps an option identifier to its display text. Null keeps the identifier-prettifying
+         * fallback below, which is correct for the splash-style chips - those are brand proper
+         * nouns and must NOT be translated. Anything a user reads as ordinary words should pass a
+         * mapper instead (RemEx-6byw).
+         */
+        labelFor: (@Composable (String) -> String)? = null
 ) {
     val view = LocalView.current
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1212,9 +1255,10 @@ private fun SingleSelectChips(
                     },
                     label = {
                         Text(
-                                option.replace("_", " ").split(" ").joinToString(" ") {
-                                    it.replaceFirstChar { char -> char.uppercase() }
-                                }
+                                labelFor?.invoke(option)
+                                        ?: option.replace("_", " ").split(" ").joinToString(" ") {
+                                            it.replaceFirstChar { char -> char.uppercase() }
+                                        }
                         )
                     }
             )

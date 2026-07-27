@@ -733,4 +733,16 @@
     <string name="task_manager_kill_err_identity_changed">Bu program artık bu işlem kimliğini kullanmıyor — kimlik şimdi %1$s programına ait. Hiçbir şey kapatılmadı. Listeyi yenileyip tekrar deneyin.</string>
     <string name="task_manager_kill_err_failed">Bu program kapatılamadı. Listeyi yenileyip tekrar deneyin.</string>
     <string name="file_transfer_mkdir_timeout">Klasör oluşturma zaman aşımına uğradı. Bilgisayar yanıt vermedi, bu yüzden klasörün oluşturulup oluşturulmadığı belli değil. Kontrol etmek için yenileyin.</string>
+    <string name="personalization_mode_system">Sistem</string>
+    <string name="personalization_mode_light">Açık</string>
+    <string name="personalization_mode_dark">Koyu</string>
+    <string name="personalization_palette_default">Varsayılan</string>
+    <string name="personalization_palette_custom">Özel</string>
+    <string name="personalization_style_tonal_spot">Tonal Vurgu</string>
+    <string name="personalization_style_expressive">Etkileyici</string>
+    <string name="personalization_style_fruit_salad">Meyve Salatası</string>
+    <string name="personalization_style_rainbow">Gökkuşağı</string>
+    <string name="personalization_style_vibrant">Canlı</string>
+    <string name="personalization_style_neutral">Nötr</string>
+    <string name="personalization_style_monochrome">Tek Renk</string>
 </resources>

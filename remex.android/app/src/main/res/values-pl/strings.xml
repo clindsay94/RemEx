@@ -733,4 +733,16 @@
     <string name="task_manager_kill_err_identity_changed">Ten program nie używa już tego identyfikatora procesu — należy on teraz do %1$s. Nic nie zostało zamknięte. Odśwież listę i spróbuj ponownie.</string>
     <string name="task_manager_kill_err_failed">Nie udało się zamknąć tego programu. Odśwież listę i spróbuj ponownie.</string>
     <string name="file_transfer_mkdir_timeout">Upłynął limit czasu tworzenia folderu. Komputer nie odpowiedział, więc nie wiadomo, czy folder powstał. Odśwież, aby sprawdzić.</string>
+    <string name="personalization_mode_system">Systemowy</string>
+    <string name="personalization_mode_light">Jasny</string>
+    <string name="personalization_mode_dark">Ciemny</string>
+    <string name="personalization_palette_default">Domyślna</string>
+    <string name="personalization_palette_custom">Własna</string>
+    <string name="personalization_style_tonal_spot">Akcent tonalny</string>
+    <string name="personalization_style_expressive">Ekspresyjna</string>
+    <string name="personalization_style_fruit_salad">Sałatka owocowa</string>
+    <string name="personalization_style_rainbow">Tęcza</string>
+    <string name="personalization_style_vibrant">Żywa</string>
+    <string name="personalization_style_neutral">Neutralna</string>
+    <string name="personalization_style_monochrome">Monochromatyczna</string>
 </resources>

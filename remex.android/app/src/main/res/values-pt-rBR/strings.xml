@@ -731,4 +731,16 @@
     <string name="task_manager_kill_err_identity_changed">Esse programa não usa mais este ID de processo — agora ele pertence a %1$s. Nada foi encerrado. Atualize a lista e tente novamente.</string>
     <string name="task_manager_kill_err_failed">Não foi possível encerrar esse programa. Atualize a lista e tente novamente.</string>
     <string name="file_transfer_mkdir_timeout">O tempo de criação da pasta esgotou. O PC não respondeu, então não está claro se a pasta foi criada. Atualize para verificar.</string>
+    <string name="personalization_mode_system">Sistema</string>
+    <string name="personalization_mode_light">Claro</string>
+    <string name="personalization_mode_dark">Escuro</string>
+    <string name="personalization_palette_default">Padrão</string>
+    <string name="personalization_palette_custom">Personalizada</string>
+    <string name="personalization_style_tonal_spot">Ponto tonal</string>
+    <string name="personalization_style_expressive">Expressiva</string>
+    <string name="personalization_style_fruit_salad">Salada de frutas</string>
+    <string name="personalization_style_rainbow">Arco-íris</string>
+    <string name="personalization_style_vibrant">Vibrante</string>
+    <string name="personalization_style_neutral">Neutra</string>
+    <string name="personalization_style_monochrome">Monocromática</string>
 </resources>
