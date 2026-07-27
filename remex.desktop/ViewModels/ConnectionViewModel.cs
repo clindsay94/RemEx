@@ -402,6 +402,24 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // Unconditional, and deliberately OUTSIDE the idle guard below. This one derives from
+        // IsConnected, so [NotifyPropertyChangedFor] on _isConnected only re-raises it when the
+        // connection actually flips - never on a language switch. A screen reader would keep
+        // announcing the indicator's name in the previous language until the state happened to
+        // change, which for a stable connection is indefinitely (RemEx-6ddx).
+        Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(ConnectionStatusAccessibleName));
+
+            // Re-raised for the same reason, from different triggers: HostRuntimeSummary only fires
+            // when HostCapabilities changes, so on a stable connection it would hold the previous
+            // language indefinitely. PairingPinExpiresInText is refreshed every second by the
+            // countdown, so it self-heals in under a second - included anyway, because a rule with
+            // an exemption list is a rule nobody can check mechanically.
+            OnPropertyChanged(nameof(HostRuntimeSummary));
+            OnPropertyChanged(nameof(PairingPinExpiresInText));
+        });
+
         // Refresh idle status when language changes
         if (!IsConnecting && !IsAutoReconnecting)
         {

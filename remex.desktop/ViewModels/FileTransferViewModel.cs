@@ -1257,6 +1257,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         // Not optional: LocalizationService.Instance is a process-lifetime singleton, so staying
         // subscribed would pin this view-model for the life of the app.
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
+
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         TransferQueue.Changed -= OnQueueChanged;
         TransferQueue.Dispose();
