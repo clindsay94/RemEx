@@ -744,4 +744,6 @@
     <string name="personalization_style_neutral">Neutre</string>
     <string name="personalization_style_monochrome">Monochrome</string>
     <string name="dashboard_not_connected">Non connecté</string>
+    <string name="faq_q16">Puis-je verrouiller mon PC depuis mon téléphone ?</string>
+    <string name="faq_a16">Oui. Utilisez l\'écran Contrôle à distance, ou ajoutez la tuile Verrouiller le PC aux Réglages rapides de votre téléphone pour un accès en un geste.</string>
 </resources>

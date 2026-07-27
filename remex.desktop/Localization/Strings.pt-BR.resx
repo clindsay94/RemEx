@@ -2743,4 +2743,24 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="AppLauncher_NoSearchResults" xml:space="preserve">
     <value>Nenhum aplicativo corresponde a essa busca.</value>
   </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>Como mudo a aparência do RemEx?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Use o botão "Personalize appearance" para abrir o painel Personalizar.
+
+Você pode mudar:
+• O tema (CyberNOC, Monolith, SolarFlare ou BaseDarkGlass)
+• A cor de destaque e a paleta
+• O raio e o formato dos cantos dos cartões
+• A fonte e o tamanho dela
+• A opacidade dos cartões
+• O idioma do aplicativo, independentemente do Windows ou Linux</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>Posso assistir ao tutorial de novo?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Sim. Abra as Configurações e use "Repetir tutorial" na seção Ajuda. Você pode fazer isso quantas vezes quiser.</value>
+  </data>
 </root>

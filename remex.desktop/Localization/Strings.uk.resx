@@ -2744,4 +2744,24 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="AppLauncher_NoSearchResults" xml:space="preserve">
     <value>Жодна програма не відповідає цьому запиту.</value>
   </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>Як змінити вигляд RemEx?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Скористайтеся кнопкою «Personalize appearance», щоб відкрити панель Personalize.
+
+Можна змінити:
+• Тему (CyberNOC, Monolith, SolarFlare або BaseDarkGlass)
+• Акцентний колір і палітру
+• Радіус і форму кутів карток
+• Шрифт і його розмір
+• Прозорість карток
+• Мову застосунку — незалежно від мови Windows чи Linux</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>Чи можна переглянути посібник ще раз?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Так. Відкрийте Налаштування та скористайтеся пунктом «Повторити посібник» у розділі Довідка. Це можна робити скільки завгодно разів.</value>
+  </data>
 </root>

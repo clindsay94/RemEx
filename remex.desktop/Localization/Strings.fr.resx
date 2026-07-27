@@ -2743,4 +2743,24 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="AppLauncher_NoSearchResults" xml:space="preserve">
     <value>Aucune application ne correspond à cette recherche.</value>
   </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>Comment changer l'apparence de RemEx ?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Utilisez le bouton « Personnaliser l'apparence » pour ouvrir le panneau Personnaliser.
+
+Vous pouvez modifier :
+• Le thème (CyberNOC, Monolith, SolarFlare ou BaseDarkGlass)
+• La couleur d'accentuation et la palette
+• Le rayon et la forme des coins des cartes
+• La police et sa taille
+• L'opacité des cartes
+• La langue de l'application, indépendamment de celle de Windows ou Linux</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>Puis-je revoir le tutoriel ?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Oui. Ouvrez les Paramètres et utilisez « Revoir le tutoriel » dans la section Aide. Vous pouvez le faire aussi souvent que vous le souhaitez.</value>
+  </data>
 </root>

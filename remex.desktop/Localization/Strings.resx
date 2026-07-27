@@ -2749,4 +2749,24 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="AppLauncher_NoSearchResults" xml:space="preserve">
     <value>No apps match that search.</value>
   </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>How do I change how RemEx looks?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Use the "Personalize appearance" button to open the Personalize panel.
+
+You can change:
+• Theme (CyberNOC, Monolith, SolarFlare or BaseDarkGlass)
+• Accent colour and palette
+• Card corner radius and shape
+• Font family and scale
+• Card opacity
+• App language, independently of your Windows or Linux language</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>Can I watch the tutorial again?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Yes. Open Settings and use "Replay Tutorial" in the Help section. You can do this as often as you like.</value>
+  </data>
 </root>

@@ -2747,4 +2747,24 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="AppLauncher_NoSearchResults" xml:space="preserve">
     <value>Bu aramayla eşleşen uygulama yok.</value>
   </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>RemEx'in görünümünü nasıl değiştiririm?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Personalize panelini açmak için "Personalize appearance" düğmesini kullanın.
+
+Şunları değiştirebilirsiniz:
+• Tema (CyberNOC, Monolith, SolarFlare veya BaseDarkGlass)
+• Vurgu rengi ve palet
+• Kart köşe yarıçapı ve biçimi
+• Yazı tipi ve boyutu
+• Kart saydamlığı
+• Uygulama dili — Windows veya Linux dilinizden bağımsız olarak</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>Eğitimi tekrar izleyebilir miyim?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Evet. Ayarlar'ı açın ve Yardım bölümündeki "Eğitimi Yeniden Oynat" seçeneğini kullanın. Bunu istediğiniz kadar yapabilirsiniz.</value>
+  </data>
 </root>

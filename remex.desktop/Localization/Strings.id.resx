@@ -2746,4 +2746,24 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="AppLauncher_NoSearchResults" xml:space="preserve">
     <value>Tidak ada aplikasi yang cocok dengan pencarian itu.</value>
   </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>Bagaimana cara mengubah tampilan RemEx?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Gunakan tombol "Personalize appearance" untuk membuka panel Personalize.
+
+Anda dapat mengubah:
+• Tema (CyberNOC, Monolith, SolarFlare, atau BaseDarkGlass)
+• Warna aksen dan palet
+• Radius dan bentuk sudut kartu
+• Jenis dan ukuran huruf
+• Keburaman kartu
+• Bahasa aplikasi, terpisah dari bahasa Windows atau Linux Anda</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>Bisakah saya menonton tutorialnya lagi?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Ya. Buka Pengaturan dan gunakan "Putar Ulang Tutorial" di bagian Bantuan. Anda dapat melakukannya sesering yang Anda mau.</value>
+  </data>
 </root>

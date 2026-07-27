@@ -744,4 +744,6 @@
     <string name="personalization_style_neutral">Neutra</string>
     <string name="personalization_style_monochrome">Monocromática</string>
     <string name="dashboard_not_connected">Sem conexão</string>
+    <string name="faq_q16">Posso bloquear meu PC pelo celular?</string>
+    <string name="faq_a16">Sim. Use a tela de Controle remoto ou adicione o bloco Bloquear PC às Configurações rápidas do celular para acesso com um toque.</string>
 </resources>

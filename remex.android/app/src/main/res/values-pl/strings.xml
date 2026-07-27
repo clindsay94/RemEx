@@ -746,4 +746,6 @@
     <string name="personalization_style_neutral">Neutralna</string>
     <string name="personalization_style_monochrome">Monochromatyczna</string>
     <string name="dashboard_not_connected">Brak połączenia</string>
+    <string name="faq_q16">Czy mogę zablokować komputer z telefonu?</string>
+    <string name="faq_a16">Tak. Skorzystaj z ekranu Zdalne sterowanie lub dodaj kafelek Zablokuj komputer do Szybkich ustawień telefonu, aby mieć dostęp jednym dotknięciem.</string>
 </resources>

@@ -2744,4 +2744,24 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="AppLauncher_NoSearchResults" xml:space="preserve">
     <value>Żadna aplikacja nie pasuje do tego wyszukiwania.</value>
   </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>Jak zmienić wygląd RemEx?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Użyj przycisku „Personalize appearance”, aby otworzyć panel Personalizacji.
+
+Możesz zmienić:
+• Motyw (CyberNOC, Monolith, SolarFlare lub BaseDarkGlass)
+• Kolor akcentu i paletę
+• Promień i kształt narożników kart
+• Krój i rozmiar czcionki
+• Przezroczystość kart
+• Język aplikacji, niezależnie od języka systemu Windows lub Linux</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>Czy mogę obejrzeć samouczek ponownie?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Tak. Otwórz Ustawienia i użyj opcji „Powtórz samouczek” w sekcji Pomoc. Możesz to robić dowolnie często.</value>
+  </data>
 </root>

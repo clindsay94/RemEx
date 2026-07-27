@@ -746,4 +746,6 @@
     <string name="personalization_style_neutral">Nötr</string>
     <string name="personalization_style_monochrome">Tek Renk</string>
     <string name="dashboard_not_connected">Bağlı değil</string>
+    <string name="faq_q16">Bilgisayarımı telefonumdan kilitleyebilir miyim?</string>
+    <string name="faq_a16">Evet. Uzaktan Denetim ekranını kullanın veya tek dokunuşla erişim için telefonunuzun Hızlı Ayarlar bölümüne Bilgisayarı Kilitle kutucuğunu ekleyin.</string>
 </resources>

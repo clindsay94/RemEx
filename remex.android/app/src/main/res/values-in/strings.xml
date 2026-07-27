@@ -747,4 +747,6 @@
     <string name="personalization_style_neutral">Netral</string>
     <string name="personalization_style_monochrome">Monokrom</string>
     <string name="dashboard_not_connected">Tidak terhubung</string>
+    <string name="faq_q16">Bisakah saya mengunci PC dari ponsel?</string>
+    <string name="faq_a16">Ya. Gunakan layar Kontrol Jarak Jauh, atau tambahkan kartu Kunci PC ke Pengaturan Cepat ponsel Anda untuk akses sekali ketuk.</string>
 </resources>

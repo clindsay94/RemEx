@@ -746,4 +746,6 @@
     <string name="personalization_style_neutral">Нейтральна</string>
     <string name="personalization_style_monochrome">Монохромна</string>
     <string name="dashboard_not_connected">Немає з’єднання</string>
+    <string name="faq_q16">Чи можу я заблокувати комп\'ютер із телефона?</string>
+    <string name="faq_a16">Так. Скористайтеся екраном Віддалене керування або додайте плитку «Заблокувати ПК» до Швидких налаштувань телефона для доступу одним дотиком.</string>
 </resources>

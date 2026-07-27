@@ -837,4 +837,6 @@
     <string name="personalization_style_neutral">Neutral</string>
     <string name="personalization_style_monochrome">Monochrome</string>
     <string name="dashboard_not_connected">Not connected</string>
+    <string name="faq_q16">Can I lock my PC from my phone?</string>
+    <string name="faq_a16">Yes. Use the Remote Control screen, or add the Lock PC tile to your phone\'s Quick Settings for one-tap access.</string>
 </resources>

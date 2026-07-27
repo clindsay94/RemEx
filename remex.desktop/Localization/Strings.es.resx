@@ -2757,4 +2757,24 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="AppLauncher_NoSearchResults" xml:space="preserve">
     <value>Ninguna aplicación coincide con esa búsqueda.</value>
   </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>¿Cómo cambio el aspecto de RemEx?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Usa el botón «Personalizar apariencia» para abrir el panel Personalizar.
+
+Puedes cambiar:
+• El tema (CyberNOC, Monolith, SolarFlare o BaseDarkGlass)
+• El color de acento y la paleta
+• El radio y la forma de las esquinas de las tarjetas
+• La tipografía y su tamaño
+• La opacidad de las tarjetas
+• El idioma de la aplicación, independientemente del de Windows o Linux</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>¿Puedo volver a ver el tutorial?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Sí. Abre Configuración y usa «Repetir tutorial» en la sección Ayuda. Puedes hacerlo tantas veces como quieras.</value>
+  </data>
 </root>
