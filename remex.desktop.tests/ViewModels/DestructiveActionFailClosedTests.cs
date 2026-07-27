@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.Input;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Logging;
+using Remex.Core.Models;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -107,5 +109,82 @@ public class DestructiveActionFailClosedTests
         title.Should().NotBeNullOrWhiteSpace();
         title.Should().NotBe("Confirm_ClearLogs_Title",
             "the dialog must receive resolved text, not the resource key");
+    }
+
+    // ── Kill Process (RemEx-w9ui) ────────────────────────────────────────────────
+    //
+    // A second site, chosen because ending a process discards whatever that program had not saved
+    // and there is no undo — the most destructive of the confirmed actions. TaskManagerViewModel
+    // takes only a ConnectionViewModel, which has a parameterless constructor, so this needs no
+    // socket and no DI graph.
+    //
+    // The observable is KillError. Past the guard, KillProcessAsync re-verifies that the PID it is
+    // about to kill still belongs to the program the dialog named (RemEx-2s91) — and a freshly
+    // built ViewModel has an empty process list, so that check always fails and sets KillError.
+    // That makes "did we get past the guard" directly visible without sending anything anywhere.
+
+    private static (TaskManagerViewModel Vm, ProcessInfo Target) CreateTaskManager() =>
+            (new TaskManagerViewModel(new ConnectionViewModel()),
+             new ProcessInfo { Id = 4242, Name = "notepad" });
+
+    [Fact]
+    public async Task KillProcess_WithNoDialogWired_DoesNotProceed()
+    {
+        var (vm, target) = CreateTaskManager();
+
+        // KillProcessCommand is exposed as ICommand, so reach the awaitable form explicitly.
+        await ((IAsyncRelayCommand)vm.KillProcessCommand).ExecuteAsync(target);
+
+        vm.KillError.Should().BeNull(
+            "an unwired ViewModel must not reach the kill path at all, so nothing past the guard " +
+            "should have run");
+    }
+
+    [Fact]
+    public async Task KillProcess_WhenUserDeclines_DoesNotProceed()
+    {
+        var (vm, target) = CreateTaskManager();
+        vm.OnConfirmationRequested = (_, _, _) => Task.FromResult(false);
+
+        // KillProcessCommand is exposed as ICommand, so reach the awaitable form explicitly.
+        await ((IAsyncRelayCommand)vm.KillProcessCommand).ExecuteAsync(target);
+
+        vm.KillError.Should().BeNull("declining must have the same effect as no dialog at all");
+    }
+
+    // Positive control: proves the two above are not passing simply because KillProcessAsync never
+    // does anything. Confirming must get past the guard, which the PID re-verification then reports.
+    [Fact]
+    public async Task KillProcess_WhenUserConfirms_ProceedsPastTheGuard()
+    {
+        var (vm, target) = CreateTaskManager();
+        vm.OnConfirmationRequested = (_, _, _) => Task.FromResult(true);
+
+        // KillProcessCommand is exposed as ICommand, so reach the awaitable form explicitly.
+        await ((IAsyncRelayCommand)vm.KillProcessCommand).ExecuteAsync(target);
+
+        vm.KillError.Should().NotBeNull(
+            "a confirmed kill must run the code after the guard, which reports that the target is " +
+            "no longer present");
+    }
+
+    [Fact]
+    public async Task KillProcess_NamesTheProcessInTheConfirmation()
+    {
+        var (vm, target) = CreateTaskManager();
+        string? message = null;
+        vm.OnConfirmationRequested = (_, m, _) =>
+        {
+            message = m;
+            return Task.FromResult(false);
+        };
+
+        // KillProcessCommand is exposed as ICommand, so reach the awaitable form explicitly.
+        await ((IAsyncRelayCommand)vm.KillProcessCommand).ExecuteAsync(target);
+
+        // The user has to be told WHICH process, or the prompt is unanswerable — and the format
+        // string resolving to its own key would be invisible without this.
+        message.Should().NotBeNullOrWhiteSpace();
+        message.Should().Contain("notepad").And.Contain("4242");
     }
 }
