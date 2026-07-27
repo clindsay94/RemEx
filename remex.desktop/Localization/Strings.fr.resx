@@ -2295,7 +2295,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Deuxième métrique</value>
   </data>
   <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>sélectionnés</value>
+    <value>sélectionnées</value>
   </data>
   <data name="Custom_ContentFont" xml:space="preserve">
     <value>Fonte du contenu</value>
