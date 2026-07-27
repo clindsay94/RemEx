@@ -743,7 +743,30 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// <summary>
     /// How long to wait for a command response before giving up.
     /// </summary>
-    private const int CommandTimeoutSeconds = 10;
+    /// <remarks>
+    /// Settable so <c>ConnectionViewModelTests</c> can shorten it; production never assigns it. It
+    /// is a <see cref="TimeSpan"/> rather than a count of seconds purely so the timeout test costs
+    /// milliseconds rather than adding ten seconds to the suite (RemEx-h01r).
+    /// </remarks>
+    internal TimeSpan CommandTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
+    private IWebSocketSender? _commandSender;
+
+    /// <summary>
+    /// How correlated commands reach the wire. Defaults to the real guarded socket send.
+    /// </summary>
+    internal IWebSocketSender CommandSender
+    {
+        get => _commandSender ??= new GuardedSocketSender(this);
+        set => _commandSender = value;
+    }
+
+    /// <summary>The production sender: the existing lock-guarded socket write, behind the seam.</summary>
+    private sealed class GuardedSocketSender(ConnectionViewModel owner) : IWebSocketSender
+    {
+        public Task SendAsync(RemexMessage message, CancellationToken ct)
+            => owner.SendGuardedAsync(message, ct);
+    }
 
     /// <summary>
     /// Pending command awaiters keyed by correlation ID.
@@ -757,17 +780,17 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// message, and awaits the matching response with a <see cref="CommandTimeoutSeconds"/>
     /// timeout.  Cleans up the dictionary entry regardless of outcome.
     /// </summary>
-    private async Task<RemexMessage> SendCommandAndWaitAsync(RemexMessage msg, CancellationToken ct = default)
+    internal async Task<RemexMessage> SendCommandAndWaitAsync(RemexMessage msg, CancellationToken ct = default)
     {
         var correlationId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pendingCommands[correlationId] = tcs;
         try
         {
-            await SendGuardedAsync(msg with { CorrelationId = correlationId }, ct);
+            await CommandSender.SendAsync(msg with { CorrelationId = correlationId }, ct);
             try
             {
-                return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(CommandTimeoutSeconds), ct);
+                return await tcs.Task.WaitAsync(CommandTimeout, ct);
             }
             catch (TimeoutException)
             {
@@ -777,6 +800,44 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         finally
         {
             _pendingCommands.TryRemove(correlationId, out _);
+        }
+    }
+
+    /// <summary>
+    /// Hands a <c>command_response</c> to the caller waiting on its correlation ID.
+    /// </summary>
+    /// <remarks>
+    /// Called by the receive loop, and directly by tests. Keeping it as ONE method is the point:
+    /// a test that re-implemented this matching would keep passing while the real loop broke.
+    /// </remarks>
+    internal void DeliverCommandResponse(RemexMessage message)
+    {
+        if (message.CorrelationId is string cid
+            && _pendingCommands.TryGetValue(cid, out var matchedTcs))
+        {
+            // Normal path: correlation ID present and matches a pending request
+            matchedTcs.TrySetResult(message);
+        }
+        else if (message.CorrelationId is null && !_pendingCommands.IsEmpty)
+        {
+            // Fallback for hosts that do not echo correlation IDs back in their
+            // CommandResponse messages (i.e. unpatched / older host versions).
+            // LIMITATION: With multiple concurrent in-flight commands this path
+            // delivers the response to at most one caller (the first whose TCS
+            // accepts it); all remaining concurrent callers will eventually time
+            // out.  Upgrade the host so it echoes CorrelationId to avoid this.
+            if (_pendingCommands.Count > 1)
+                Debug.WriteLine(
+                    "[ConnectionViewModel] WARNING: Fallback correlation path taken with " +
+                    $"{_pendingCommands.Count} concurrent in-flight commands. " +
+                    "Only one caller will receive this response; the rest will time out. " +
+                    "Upgrade the host to a version that echoes CorrelationId.");
+
+            foreach (var entry in _pendingCommands)
+            {
+                if (entry.Value.TrySetResult(message))
+                    break;
+            }
         }
     }
 
@@ -1047,33 +1108,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                         break;
 
                     case MessageTypes.CommandResponse:
-                        if (message.CorrelationId is string cid
-                            && _pendingCommands.TryGetValue(cid, out var matchedTcs))
-                        {
-                            // Normal path: correlation ID present and matches a pending request
-                            matchedTcs.TrySetResult(message);
-                        }
-                        else if (message.CorrelationId is null && !_pendingCommands.IsEmpty)
-                        {
-                            // Fallback for hosts that do not echo correlation IDs back in their
-                            // CommandResponse messages (i.e. unpatched / older host versions).
-                            // LIMITATION: With multiple concurrent in-flight commands this path
-                            // delivers the response to at most one caller (the first whose TCS
-                            // accepts it); all remaining concurrent callers will eventually time
-                            // out.  Upgrade the host so it echoes CorrelationId to avoid this.
-                            if (_pendingCommands.Count > 1)
-                                Debug.WriteLine(
-                                    "[ConnectionViewModel] WARNING: Fallback correlation path taken with " +
-                                    $"{_pendingCommands.Count} concurrent in-flight commands. " +
-                                    "Only one caller will receive this response; the rest will time out. " +
-                                    "Upgrade the host to a version that echoes CorrelationId.");
-
-                            foreach (var entry in _pendingCommands)
-                            {
-                                if (entry.Value.TrySetResult(message))
-                                    break;
-                            }
-                        }
+                        DeliverCommandResponse(message);
                         break;
 
                     case MessageTypes.LauncherSync when message.LauncherEntries is not null:
