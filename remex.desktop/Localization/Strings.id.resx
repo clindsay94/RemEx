@@ -2453,8 +2453,8 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Canvas_ActionDone" xml:space="preserve">
     <value>Selesai</value>
   </data>
-  <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>dipilih</value>
+  <data name="Canvas_SelectedCountFormat" xml:space="preserve">
+    <value>{0} dipilih</value>
   </data>
   <data name="Canvas_CoachTitle" xml:space="preserve">
     <value>Bangun dasbor Anda</value>

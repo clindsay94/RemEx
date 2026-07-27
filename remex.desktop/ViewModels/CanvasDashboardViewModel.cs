@@ -342,6 +342,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
         // Listen for telemetry updates to create/update sensor cards.
         Connection.PropertyChanged += OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
 
         Connection.LayoutProfileReceived += OnLayoutProfileReceived;
 
@@ -715,7 +716,22 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     /// <summary>Number of currently selected cards (shown on the floating action bar).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectionSummary))]
     private int _selectionCount;
+
+    /// <summary>
+    /// The floating action bar's "N selected" text, as ONE localized format string rather than a
+    /// number and a separate adjective sitting next to each other.
+    /// </summary>
+    /// <remarks>
+    /// The split version could not be translated correctly. A bare adjective has to agree with a
+    /// count that is 1 as often as it is 3 - French and Spanish were plural (wrong at one), pt-BR
+    /// was singular (wrong above one), and Polish needs three forms, so no single word works there
+    /// at all. The placeholder also lets each locale choose its own WORD ORDER, which the old XAML
+    /// fixed as [count][word]; Polish and Ukrainian want the impersonal verb first (RemEx-si0h).
+    /// </remarks>
+    public string SelectionSummary =>
+        string.Format(LocalizationService.Instance["Canvas_SelectedCountFormat"], SelectionCount);
 
     private void OnSelectedCardsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
@@ -1382,8 +1398,17 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         _subscribedSensorNames.Clear();
     }
 
+    /// <summary>
+    /// <see cref="SelectionSummary"/> reads the localizer when it is got, so a language switch
+    /// changes its value with nothing on this view-model having changed - and therefore with no
+    /// notification. Re-raise it explicitly.
+    /// </summary>
+    private void OnLocaleChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+        Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(SelectionSummary)));
+
     public void Dispose()
     {
+        LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         CleanupSensorSubscriptions();
         Connection.PropertyChanged -= OnConnectionPropertyChanged;
         Connection.LayoutProfileReceived -= OnLayoutProfileReceived;

@@ -2039,8 +2039,8 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Canvas_ActionDone" xml:space="preserve">
     <value>Done</value>
   </data>
-  <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>selected</value>
+  <data name="Canvas_SelectedCountFormat" xml:space="preserve">
+    <value>{0} selected</value>
   </data>
   <data name="Canvas_CoachTitle" xml:space="preserve">
     <value>Build your dashboard</value>

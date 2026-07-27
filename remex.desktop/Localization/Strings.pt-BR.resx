@@ -2294,8 +2294,8 @@ Linux: ip addr  ou  hostname -I</value>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>Segunda Métrica</value>
   </data>
-  <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>selecionado</value>
+  <data name="Canvas_SelectedCountFormat" xml:space="preserve">
+    <value>Seleção: {0}</value>
   </data>
   <data name="Custom_ContentFont" xml:space="preserve">
     <value>Fonte de Conteúdo</value>

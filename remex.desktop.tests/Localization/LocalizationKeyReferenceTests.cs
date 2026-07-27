@@ -265,6 +265,72 @@ public class LocalizationKeyReferenceTests
         return found;
     }
 
+    /// <summary>
+    /// Every TRANSLATION of a key that has placeholders must carry the same placeholder indexes.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="NoStringFormatCall_TargetsAKeyWithoutAPlaceholder"/> reads only the neutral
+    /// <c>Strings.resx</c>, so it proves English is formattable and says nothing about the other
+    /// eight files. A translator who drops <c>{0}</c> produces a sentence with the number, filename
+    /// or reason silently missing — <see cref="string.Format(string, object?)"/> does not complain —
+    /// and the damage is visible ONLY in that language, which is precisely the class of defect an
+    /// English-reading reviewer cannot see.
+    /// <para>
+    /// This became load-bearing with RemEx-si0h, which moved the canvas selection counter from a
+    /// bare adjective to <c>Canvas_SelectedCountFormat</c>. Nine files now each have to carry the
+    /// placeholder, and each locale deliberately places it differently: Polish and Ukrainian lead
+    /// with an impersonal verb, English trails the adjective.
+    /// </para>
+    /// <para>
+    /// A locale that simply omits the key is NOT an offender here — that is the parity question,
+    /// and conflating the two would make this test fail for a reason it does not describe.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryTranslationOfAFormatKey_KeepsThePlaceholders()
+    {
+        var baseValues = LoadBaseResxValues();
+        var formatKeys = baseValues
+            .Where(kv => PlaceholderIndexes(kv.Value).Count > 0)
+            .ToDictionary(kv => kv.Key, kv => PlaceholderIndexes(kv.Value), StringComparer.Ordinal);
+
+        formatKeys.Should().NotBeEmpty("this codebase does use composite format strings");
+
+        var offenders = new List<string>();
+        var localeDirectory = Path.Combine(RepoRoot(), "remex.desktop", "Localization");
+
+        foreach (var path in Directory.GetFiles(localeDirectory, "Strings.*.resx"))
+        {
+            var locale = Path.GetFileNameWithoutExtension(path).Replace("Strings.", string.Empty);
+            var values = XDocument.Load(path)
+                .Root!
+                .Elements("data")
+                .Where(d => d.Element("value") is not null && (string?)d.Attribute("name") is not null)
+                .ToDictionary(
+                    d => (string)d.Attribute("name")!,
+                    d => d.Element("value")!.Value,
+                    StringComparer.Ordinal);
+
+            foreach (var (key, expected) in formatKeys)
+            {
+                if (!values.TryGetValue(key, out var translated))
+                    continue;   // missing key is the parity question, not this one
+
+                var actual = PlaceholderIndexes(translated);
+                if (!actual.SetEquals(expected))
+                {
+                    offenders.Add(
+                        $"{locale}/{key}: expected placeholders {{{string.Join(",", expected.OrderBy(i => i))}}} " +
+                        $"but found {{{string.Join(",", actual.OrderBy(i => i))}}} in \"{translated}\"");
+                }
+            }
+        }
+
+        offenders.Should().BeEmpty(
+            "a translation that loses a placeholder silently drops the argument, and only speakers " +
+            "of that language ever see the gap");
+    }
+
     private static Dictionary<string, string> LoadBaseResxValues()
     {
         var path = Path.Combine(RepoRoot(), "remex.desktop", "Localization", "Strings.resx");

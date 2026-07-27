@@ -2298,8 +2298,8 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>İkinci Metrik</value>
   </data>
-  <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>seçili</value>
+  <data name="Canvas_SelectedCountFormat" xml:space="preserve">
+    <value>{0} seçili</value>
   </data>
   <data name="Custom_ContentFont" xml:space="preserve">
     <value>İçerik Yazı Tipi</value>

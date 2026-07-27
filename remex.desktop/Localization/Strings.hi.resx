@@ -2450,8 +2450,8 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Canvas_ActionDone" xml:space="preserve">
     <value>हो गया</value>
   </data>
-  <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>चयनित</value>
+  <data name="Canvas_SelectedCountFormat" xml:space="preserve">
+    <value>{0} चयनित</value>
   </data>
   <data name="Canvas_CoachTitle" xml:space="preserve">
     <value>अपना डैशबोर्ड बनाएं</value>

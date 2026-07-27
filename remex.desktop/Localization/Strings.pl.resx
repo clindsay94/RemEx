@@ -2295,8 +2295,8 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>Drugi wskaźnik</value>
   </data>
-  <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>zaznaczonych</value>
+  <data name="Canvas_SelectedCountFormat" xml:space="preserve">
+    <value>Zaznaczono: {0}</value>
   </data>
   <data name="Custom_ContentFont" xml:space="preserve">
     <value>Czcionka treści</value>

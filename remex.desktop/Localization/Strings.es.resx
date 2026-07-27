@@ -2308,8 +2308,8 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>Métrica secundaria</value>
   </data>
-  <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>seleccionadas</value>
+  <data name="Canvas_SelectedCountFormat" xml:space="preserve">
+    <value>Selección: {0}</value>
   </data>
   <data name="Custom_Typography" xml:space="preserve">
     <value>TIPOGRAFÍA</value>
