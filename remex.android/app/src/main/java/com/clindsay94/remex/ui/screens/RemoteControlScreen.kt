@@ -9,6 +9,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -270,7 +271,10 @@ fun RemoteControlScreenContent(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize(),
+                // imePadding as well as the toolbar inset below: the delay field sits
+                // mid-grid, so without it the keyboard covers the row being typed into
+                // (RemEx-a9ci).
+                modifier = Modifier.fillMaxSize().imePadding(),
                 // Extra bottom inset so the floating toolbar never covers the last row.
                 contentPadding =
                         PaddingValues(

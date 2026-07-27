@@ -8,6 +8,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -383,7 +386,16 @@ fun PairingScreenContent(
     }) {
             padding ->
         Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+                // Was a fixed column with no scroll: at large font scale or in landscape the
+                // keyboard could cover Submit and Cancel with no way to reach them. Scroll
+                // gives an escape, imePadding keeps the viewport above the keyboard
+                // (RemEx-a9ci).
+                modifier =
+                        Modifier.fillMaxSize()
+                                .padding(padding)
+                                .imePadding()
+                                .verticalScroll(rememberScrollState())
+                                .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
         ) {

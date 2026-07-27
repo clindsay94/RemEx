@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -318,6 +319,14 @@ fun ConnectionScreenContent(
                                 modifier =
                                         Modifier.fillMaxSize()
                                                 .padding(padding)
+                                                // Before verticalScroll on purpose: this
+                                                // shrinks the scroll VIEWPORT when the
+                                                // keyboard opens, so the lower fields can be
+                                                // scrolled above it. Applied after the scroll
+                                                // it would only pad the content, leaving the
+                                                // viewport itself behind the keyboard
+                                                // (RemEx-a9ci).
+                                                .imePadding()
                                                 .verticalScroll(rememberScrollState())
                                                 .padding(24.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
