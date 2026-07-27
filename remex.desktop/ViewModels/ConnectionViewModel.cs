@@ -525,10 +525,15 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// since. Omitted when null — the host then kills unverified, which is what it did for every
     /// client before RemEx-druh.
     /// </param>
+    /// <param name="expectedStartUnixMs">
+    /// When this client last saw that PID start. Lets the host tell a RELAUNCH of the same
+    /// program into the same PID from the instance the user actually confirmed.
+    /// </param>
     public async Task<Remex.Core.Models.IPC.CommandResponse> KillProcessWithResponseAsync(
         int processId,
         bool elevated = false,
-        string? expectedName = null)
+        string? expectedName = null,
+        long? expectedStartUnixMs = null)
     {
         if (_webSocket?.State != WebSocketState.Open) return new Remex.Core.Models.IPC.CommandResponse(false, "Not connected", null);
         var parameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } };
@@ -538,6 +543,11 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         // Sending the name lets the host check identity and kill in one step (RemEx-druh).
         if (!string.IsNullOrWhiteSpace(expectedName))
             parameters["ExpectedName"] = expectedName;
+
+        // Omitted rather than sent as 0 when unknown: the host treats an absent value as
+        // unchecked, and 0 would be a real timestamp that matches nothing (RemEx-on4n).
+        if (expectedStartUnixMs is long startMs)
+            parameters["ExpectedStartUnixMs"] = startMs.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         var msg = new RemexMessage
         {

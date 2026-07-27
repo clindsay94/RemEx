@@ -84,6 +84,69 @@ public class ProcessKillGuardTests
             "like, which is why LinuxProcessMonitorService checks the comm spelling too");
     }
 
+    // ── Start time: telling a RELAUNCH from the instance the user confirmed ──────
+
+    [Fact]
+    public void TheSameInstance_IsAllowed()
+        => Assert.True(ProcessKillGuard.IsExpectedStartTime(1_700_000_000_000, 1_700_000_000_000));
+
+    /// <summary>
+    /// The case the name check cannot catch: same program, same PID, different run.
+    /// </summary>
+    [Fact]
+    public void ARelaunchIntoTheSamePid_IsRefused()
+        => Assert.False(
+            ProcessKillGuard.IsExpectedStartTime(1_700_000_000_000, 1_700_000_600_000),
+            "same name and same PID, but ten minutes later - a different window with different unsaved work");
+
+    /// <summary>
+    /// Compared with a tolerance, not for equality.
+    /// </summary>
+    /// <remarks>
+    /// Testing exact equality would be a trap rather than rigour. Hosts read the start time at two
+    /// different moments from sources that may round differently, and any drift would refuse a
+    /// legitimate kill PERMANENTLY, telling the user to refresh a list that keeps producing the same
+    /// value. The tolerance sits far below the window this guards (a program exiting and another
+    /// taking its PID) and far above any plausible representation drift.
+    /// </remarks>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(ProcessKillGuard.StartTimeToleranceMs - 1)]
+    [InlineData(ProcessKillGuard.StartTimeToleranceMs)]
+    public void DriftWithinTheTolerance_IsStillTheSameProcess(long driftMs)
+        => Assert.True(ProcessKillGuard.IsExpectedStartTime(1_700_000_000_000, 1_700_000_000_000 + driftMs));
+
+    [Theory]
+    [InlineData(ProcessKillGuard.StartTimeToleranceMs + 1)]
+    [InlineData(60_000)]
+    public void DriftBeyondTheTolerance_IsRefused(long driftMs)
+        => Assert.False(ProcessKillGuard.IsExpectedStartTime(1_700_000_000_000, 1_700_000_000_000 + driftMs));
+
+    /// <summary>Drift is symmetric — a reading that comes back EARLIER is just as suspicious.</summary>
+    [Fact]
+    public void DriftIsMeasuredInBothDirections()
+    {
+        Assert.True(ProcessKillGuard.IsExpectedStartTime(1_700_000_000_000, 1_700_000_000_000 - 1_000));
+        Assert.False(ProcessKillGuard.IsExpectedStartTime(1_700_000_000_000, 1_700_000_000_000 - 60_000));
+    }
+
+    /// <summary>
+    /// Unknown means unchecked, on either side.
+    /// </summary>
+    /// <remarks>
+    /// Two separate reasons, both of which would be bugs if this refused instead. A client older
+    /// than this field sends nothing — refusing would brick Kill Process on every phone that had not
+    /// updated. And <c>Process.StartTime</c> genuinely fails for protected and system processes even
+    /// from an elevated host — refusing would quietly make exactly those processes unkillable, which
+    /// nobody asked for and which would look like a bug rather than a guard.
+    /// </remarks>
+    [Theory]
+    [InlineData(null, 1_700_000_000_000L)]
+    [InlineData(1_700_000_000_000L, null)]
+    [InlineData(null, null)]
+    public void AnUnknownStartTime_IsAllowedThrough(long? expected, long? actual)
+        => Assert.True(ProcessKillGuard.IsExpectedStartTime(expected, actual));
+
     /// <summary>The refusal has to say enough that the user knows refreshing is the way forward.</summary>
     [Fact]
     public void MismatchMessage_NamesBothProgramsAndSaysNothingWasEnded()

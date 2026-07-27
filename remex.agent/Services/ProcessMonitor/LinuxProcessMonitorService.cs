@@ -117,6 +117,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 {
                     Id = pid,
                     Name = name,
+                    StartTimeUnixMs = TryReadStartUnixMs(pid),
                     MemoryUsage = memory,
                     CpuUsage = cpuUsage,
                     FilePath = exePath,
@@ -171,7 +172,40 @@ public class LinuxProcessMonitorService : IProcessMonitorService
         }
     }
 
-    public ProcessKillResult KillProcess(int processId, string? expectedName = null)
+    /// <summary>
+    /// A process's start time as Unix milliseconds UTC, or null when it cannot be read.
+    /// </summary>
+    /// <remarks>
+    /// Looked up by PID rather than taking a <see cref="Process"/>, because the listing walks /proc
+    /// directly and never materialises one. A process that vanishes between the directory scan and
+    /// this call simply yields null, which the guard treats as unchecked. (RemEx-on4n.)
+    /// </remarks>
+    private static long? TryReadStartUnixMs(int processId)
+    {
+        try
+        {
+            using var p = Process.GetProcessById(processId);
+            return new DateTimeOffset(p.StartTime.ToUniversalTime(), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+    }
+
+    public ProcessKillResult KillProcess(int processId, string? expectedName = null, long? expectedStartUnixMs = null)
     {
         try
         {
@@ -193,8 +227,10 @@ public class LinuxProcessMonitorService : IProcessMonitorService
             // over that limit. Accepting either host-derived spelling costs nothing, because a
             // genuinely different program matches neither.
             var commName = TryReadCommName(processId);
-            if (!ProcessKillGuard.IsExpectedProcess(expectedName, p.ProcessName)
-                && !(commName is not null && ProcessKillGuard.IsExpectedProcess(expectedName, commName)))
+            var nameMatches = ProcessKillGuard.IsExpectedProcess(expectedName, p.ProcessName)
+                || (commName is not null && ProcessKillGuard.IsExpectedProcess(expectedName, commName));
+            if (!nameMatches
+                || !ProcessKillGuard.IsExpectedStartTime(expectedStartUnixMs, TryReadStartUnixMs(processId)))
             {
                 var reported = commName ?? p.ProcessName;
                 _logger.LogWarning(

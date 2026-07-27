@@ -143,11 +143,12 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
     /// where two paths differing only in case are two different files.
     /// </para>
     /// <para>
-    /// <see cref="ProcessInfo"/> carries no start time, so Id + Name + FilePath is the strongest
-    /// identity available. That still cannot distinguish a relaunch of the SAME program which happens
-    /// to be handed the SAME PID; closing that needs the host to verify the name at kill time, which
-    /// is filed separately. This check removes the dangerous case - killing an UNRELATED program -
-    /// not every conceivable one.
+    /// This deliberately does NOT use <see cref="ProcessInfo.StartTimeUnixMs"/>, even though it now
+    /// exists (RemEx-on4n). Adding it here would tighten a check that can never be authoritative:
+    /// whatever this concludes, the PID can still change hands during the network round trip that
+    /// follows. The start-time comparison that actually decides is the host's, immediately before
+    /// the kill, and duplicating it here would suggest this check carries a guarantee it cannot.
+    /// What this one is for is failing CLOSED on the obvious case without a round trip at all.
     /// </para>
     /// </remarks>
     internal static bool ConfirmedTargetStillPresent(ProcessInfo confirmed, IReadOnlyList<ProcessInfo> current)
@@ -220,7 +221,10 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var resp = await _connection.KillProcessWithResponseAsync(process.Id, expectedName: process.Name);
+        var resp = await _connection.KillProcessWithResponseAsync(
+            process.Id,
+            expectedName: process.Name,
+            expectedStartUnixMs: process.StartTimeUnixMs);
         if (!resp.Success)
         {
             // TaskManager_KillFailed existed in no .resx file at all, and LocalizationService's

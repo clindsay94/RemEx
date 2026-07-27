@@ -40,9 +40,13 @@ public class PingPongTests : IClassFixture<RemexHostFactory>
 
         public bool WasCalled { get; private set; }
 
-        public Remex.Core.Models.ProcessKillResult KillProcess(int processId, string? expectedName = null)
+        /// <summary>The last start time forwarded, so the wiring for it is pinned as well.</summary>
+        public long? LastExpectedStartUnixMs { get; private set; }
+
+        public Remex.Core.Models.ProcessKillResult KillProcess(int processId, string? expectedName = null, long? expectedStartUnixMs = null)
         {
             LastExpectedName = expectedName;
+            LastExpectedStartUnixMs = expectedStartUnixMs;
             WasCalled = true;
             return killResult;
         }
@@ -156,6 +160,7 @@ public class PingPongTests : IClassFixture<RemexHostFactory>
             {
                 { "ProcessId", "42" },
                 { "ExpectedName", "chrome" },
+                { "ExpectedStartUnixMs", "1700000000000" },
             }
         };
         await MessageSerializer.SendAsync(ws, cmd, CancellationToken.None);
@@ -169,6 +174,7 @@ public class PingPongTests : IClassFixture<RemexHostFactory>
 
         Assert.True(monitor.WasCalled);
         Assert.Equal("chrome", monitor.LastExpectedName);
+        Assert.Equal(1700000000000L, monitor.LastExpectedStartUnixMs);
     }
 
     /// <summary>

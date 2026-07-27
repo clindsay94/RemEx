@@ -50,6 +50,42 @@ public static class ProcessKillGuard
             || string.Equals(expectedName, actualName, StringComparison.Ordinal);
 
     /// <summary>
+    /// How far apart two readings of the same process's start time may be and still be the same
+    /// process.
+    /// </summary>
+    /// <remarks>
+    /// The value round-trips as an integer, so exact equality would *usually* hold — and testing for
+    /// it anyway would be a trap. Hosts read the start time from different sources at different
+    /// moments, and any rounding, clock adjustment or per-platform truncation between the listing
+    /// and the kill would refuse a legitimate action permanently, with a message telling the user to
+    /// refresh a list that will keep producing the same value. Two seconds is far below the window
+    /// this guard defends (a program exiting and another being handed the same PID) and far above
+    /// any plausible representation drift.
+    /// </remarks>
+    public const long StartTimeToleranceMs = 2_000;
+
+    /// <summary>
+    /// Whether a live process started close enough to when the client last saw it to be the same
+    /// instance.
+    /// </summary>
+    /// <param name="expectedStartUnixMs">
+    /// What the client recorded, or null when it did not say — an older client, or a process whose
+    /// start time the host could not read. Unknown means UNCHECKED, never "refuse": this must not
+    /// become a way to make protected processes unkillable, and it must not brick clients that
+    /// predate the field.
+    /// </param>
+    /// <param name="actualStartUnixMs">
+    /// What the live process reports now, or null when the host cannot read it at kill time. Also
+    /// unchecked, for the same reason — a host that has lost the ability to read a start time has
+    /// not learned anything about identity, so it must fall back to the name check rather than
+    /// invent a refusal.
+    /// </param>
+    public static bool IsExpectedStartTime(long? expectedStartUnixMs, long? actualStartUnixMs)
+        => expectedStartUnixMs is not long expected
+            || actualStartUnixMs is not long actual
+            || Math.Abs(expected - actual) <= StartTimeToleranceMs;
+
+    /// <summary>
     /// The refusal shown when the PID no longer belongs to the program the user confirmed.
     /// </summary>
     /// <remarks>

@@ -567,7 +567,9 @@ public sealed class PingPongHandler(
                         // simply omits it and is killed unverified, exactly as before. Nothing
                         // breaks on an older phone; it just does not gain the protection.
                         message.CommandParameters.TryGetValue("ExpectedName", out var expectedName);
-                        var killResult = processMonitorService.KillProcess(pid, expectedName);
+                        message.CommandParameters.TryGetValue("ExpectedStartUnixMs", out var startStr);
+                        var expectedStart = long.TryParse(startStr, out var parsedStart) ? parsedStart : (long?)null;
+                        var killResult = processMonitorService.KillProcess(pid, expectedName, expectedStart);
                         return MakeCommandResponse(
                             killResult.Success,
                             killResult.Success
@@ -580,7 +582,9 @@ public sealed class PingPongHandler(
                         && int.TryParse(epidStr, out var epid))
                     {
                         message.CommandParameters.TryGetValue("ExpectedName", out var eExpectedName);
-                        var killResult = processMonitorService.KillProcess(epid, eExpectedName);
+                        message.CommandParameters.TryGetValue("ExpectedStartUnixMs", out var eStartStr);
+                        var eExpectedStart = long.TryParse(eStartStr, out var eParsedStart) ? eParsedStart : (long?)null;
+                        var killResult = processMonitorService.KillProcess(epid, eExpectedName, eExpectedStart);
                         return MakeCommandResponse(
                             killResult.Success,
                             killResult.Success

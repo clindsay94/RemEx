@@ -29,5 +29,10 @@ public interface IProcessMonitorService
     /// Kotlin. (RemEx-druh.)
     /// </para>
     /// </remarks>
-    ProcessKillResult KillProcess(int processId, string? expectedName = null);
+    /// <param name="expectedStartUnixMs">
+    /// When the caller last saw that PID start, as Unix milliseconds UTC. Distinguishes a
+    /// RELAUNCH of the same program into the same PID, which the name alone cannot. Null skips
+    /// the check.
+    /// </param>
+    ProcessKillResult KillProcess(int processId, string? expectedName = null, long? expectedStartUnixMs = null);
 }

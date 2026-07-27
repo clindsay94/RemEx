@@ -41,7 +41,8 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                 var info = new ProcessInfo
                 {
                     Id = p.Id,
-                    Name = p.ProcessName
+                    Name = p.ProcessName,
+                    StartTimeUnixMs = TryReadStartUnixMs(p)
                 };
 
                 try
@@ -119,7 +120,36 @@ public class WindowsProcessMonitorService : IProcessMonitorService
         });
     }
 
-    public ProcessKillResult KillProcess(int processId, string? expectedName = null)
+
+    /// <summary>
+    /// A process's start time as Unix milliseconds UTC, or null when it cannot be read.
+    /// </summary>
+    /// <remarks>
+    /// <c>Process.StartTime</c> throws for protected and system processes even from an elevated
+    /// host, so this must degrade the value rather than the row — a process with no readable start
+    /// time is still listed and still killable, just unverified on that axis. (RemEx-on4n.)
+    /// </remarks>
+    private static long? TryReadStartUnixMs(Process p)
+    {
+        try
+        {
+            return new DateTimeOffset(p.StartTime.ToUniversalTime(), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    public ProcessKillResult KillProcess(int processId, string? expectedName = null, long? expectedStartUnixMs = null)
     {
         try
         {
@@ -137,7 +167,8 @@ public class WindowsProcessMonitorService : IProcessMonitorService
             // Both the process list and this check read the name from Process.ProcessName, so the
             // two agree by construction. That is NOT true on Linux, which has a second, truncated
             // spelling — see the note in LinuxProcessMonitorService.
-            if (!ProcessKillGuard.IsExpectedProcess(expectedName, p.ProcessName))
+            if (!ProcessKillGuard.IsExpectedProcess(expectedName, p.ProcessName)
+                || !ProcessKillGuard.IsExpectedStartTime(expectedStartUnixMs, TryReadStartUnixMs(p)))
             {
                 _logger.LogWarning(
                     "Refused to end process {Pid}: expected {Expected} but found {Actual}.",
