@@ -2773,4 +2773,10 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="FileTransfer_ErrGeneric" xml:space="preserve">
     <value>Не вдалося завершити передавання. Перевірте, чи підключений пристрій досі сполучено, а потім спробуйте ще раз.</value>
   </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>Стан з’єднання: підключено</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>Стан з’єднання: немає з’єднання</value>
+  </data>
 </root>

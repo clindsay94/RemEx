@@ -2772,4 +2772,10 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="FileTransfer_ErrGeneric" xml:space="preserve">
     <value>स्थानांतरण पूरा नहीं हो सका। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
   </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>कनेक्शन स्थिति: कनेक्टेड</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>कनेक्शन स्थिति: कनेक्ट नहीं है</value>
+  </data>
 </root>

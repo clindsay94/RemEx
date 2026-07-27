@@ -2786,4 +2786,10 @@ Puedes cambiar:
   <data name="FileTransfer_ErrGeneric" xml:space="preserve">
     <value>No se pudo completar la transferencia. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>Estado de la conexión: conectado</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>Estado de la conexión: sin conexión</value>
+  </data>
 </root>

@@ -62,7 +62,27 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
     [NotifyCanExecuteChangedFor(nameof(DisconnectCommand))]
     [NotifyCanExecuteChangedFor(nameof(SendPingCommand))]
+    [NotifyPropertyChangedFor(nameof(ConnectionStatusAccessibleName))]
     private bool _isConnected;
+
+    /// <summary>
+    /// Accessible name for the connection status indicator: what it IS, plus its state.
+    /// </summary>
+    /// <remarks>
+    /// The dot used to take its name from <see cref="StatusText"/>, a general-purpose transient
+    /// message. A screen reader therefore announced whatever that last held - a command result, a
+    /// pairing note - as the NAME of the connection indicator, which is both wrong and unstable:
+    /// the same element answered to a different name minute to minute (RemEx-x12a).
+    /// <para>
+    /// Two states only, tracking <see cref="IsConnected"/>, which is exactly what the dot conveys
+    /// visually through its <c>connected</c> class. Sighted and screen-reader users now get the same
+    /// information from it rather than two different things.
+    /// </para>
+    /// </remarks>
+    public string ConnectionStatusAccessibleName =>
+        IsConnected
+            ? LocalizationService.Instance["A11y_ConnectionConnected"]
+            : LocalizationService.Instance["A11y_ConnectionDisconnected"];
 
     [ObservableProperty]
     [NotifyDataErrorInfo]

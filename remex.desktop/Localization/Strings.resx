@@ -2778,4 +2778,10 @@ You can change:
   <data name="FileTransfer_ErrGeneric" xml:space="preserve">
     <value>The transfer could not be completed. Check the connected device is still paired, then try again.</value>
   </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>Connection status: connected</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>Connection status: not connected</value>
+  </data>
 </root>

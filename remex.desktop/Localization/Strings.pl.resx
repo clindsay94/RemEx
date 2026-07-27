@@ -2773,4 +2773,10 @@ Możesz zmienić:
   <data name="FileTransfer_ErrGeneric" xml:space="preserve">
     <value>Nie udało się ukończyć transferu. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>Stan połączenia: połączono</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>Stan połączenia: brak połączenia</value>
+  </data>
 </root>

@@ -2776,4 +2776,10 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="FileTransfer_ErrGeneric" xml:space="preserve">
     <value>Aktarım tamamlanamadı. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>Bağlantı durumu: bağlı</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>Bağlantı durumu: bağlı değil</value>
+  </data>
 </root>

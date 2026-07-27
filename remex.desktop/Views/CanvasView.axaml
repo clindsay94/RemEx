@@ -297,7 +297,7 @@
                                         <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsConnection}}">
                                             <TextBlock Text="{local:Localize Canvas_Connection}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <Ellipse Width="10" Height="10" AutomationProperties.Name="{Binding Connection.StatusText}" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
+                                                <Ellipse Width="10" Height="10" AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
                                                 </Ellipse>
                                                 <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             </StackPanel>

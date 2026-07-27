@@ -2772,4 +2772,10 @@ Vous pouvez modifier :
   <data name="FileTransfer_ErrGeneric" xml:space="preserve">
     <value>Impossible de terminer le transfert. Vérifiez que l’appareil connecté est toujours couplé, puis réessayez.</value>
   </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>État de la connexion : connecté</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>État de la connexion : non connecté</value>
+  </data>
 </root>

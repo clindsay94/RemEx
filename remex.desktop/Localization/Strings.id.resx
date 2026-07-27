@@ -2775,4 +2775,10 @@ Anda dapat mengubah:
   <data name="FileTransfer_ErrGeneric" xml:space="preserve">
     <value>Transfer tidak dapat diselesaikan. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>Status koneksi: terhubung</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>Status koneksi: tidak terhubung</value>
+  </data>
 </root>
