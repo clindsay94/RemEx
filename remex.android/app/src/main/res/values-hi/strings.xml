@@ -119,7 +119,7 @@
     <string name="rc_category_energy">ऊर्जा</string>
     <string name="screen_remote_desktop_title">रिमोट डेस्कटॉप</string>
     <string name="cd_show_keyboard">कीबोर्ड दिखाएं</string>
-    <string name="cd_key_escape">Esc (Escape)</string>
+    <string name="cd_key_escape">Esc (एस्केप)</string>
     <string name="cd_key_tab">Tab</string>
     <string name="cd_key_backspace">बैकस्पेस</string>
     <string name="cd_key_enter">Enter</string>
@@ -127,7 +127,7 @@
     <string name="cd_key_arrow_up">ऊपर तीर</string>
     <string name="cd_key_arrow_down">नीचे तीर</string>
     <string name="cd_key_arrow_right">दाईं तीर</string>
-    <string name="cd_key_delete">Del (Delete)</string>
+    <string name="cd_key_delete">Del (हटाएं)</string>
     <string name="cd_key_windows">Windows कुंजी</string>
     <string name="cd_key_ctrl">Ctrl</string>
     <string name="cd_key_alt">Alt</string>
@@ -135,9 +135,9 @@
     <string name="cd_key_altgr">AltGr</string>
     <string name="cd_key_home">Home</string>
     <string name="cd_key_end">End</string>
-    <string name="cd_key_pageup">PgUp (Page Up)</string>
-    <string name="cd_key_pagedown">PgDn (Page Down)</string>
-    <string name="cd_key_insert">Ins (Insert)</string>
+    <string name="cd_key_pageup">PgUp (पृष्ठ ऊपर)</string>
+    <string name="cd_key_pagedown">PgDn (पृष्ठ नीचे)</string>
+    <string name="cd_key_insert">Ins (सम्मिलित करें)</string>
     <string name="cd_more_keys">अधिक कुंजियाँ</string>
     <string name="cd_show_pc_keys">पीसी कुंजियाँ दिखाएं</string>
     <string name="cd_move_pc_keys">पीसी कुंजी पट्टी ले जाएं</string>

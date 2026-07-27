@@ -108,7 +108,7 @@
     <string name="rc_category_energy">Energia</string>
     <string name="screen_remote_desktop_title">Pulpit zdalny</string>
     <string name="cd_show_keyboard">Pokaż klawiaturę</string>
-    <string name="cd_key_escape">Esc (Escape)</string>
+    <string name="cd_key_escape">Esc</string>
     <string name="cd_key_tab">Tab</string>
     <string name="cd_key_backspace">Backspace</string>
     <string name="cd_key_enter">Enter</string>
@@ -116,7 +116,7 @@
     <string name="cd_key_arrow_up">Strzałka w górę</string>
     <string name="cd_key_arrow_down">Strzałka w dół</string>
     <string name="cd_key_arrow_right">Strzałka w prawo</string>
-    <string name="cd_key_delete">Del (Delete)</string>
+    <string name="cd_key_delete">Del (Usuń)</string>
     <string name="cd_key_windows">Klawisz Windows</string>
     <string name="cd_key_ctrl">Ctrl</string>
     <string name="cd_key_alt">Alt</string>
@@ -124,9 +124,9 @@
     <string name="cd_key_altgr">AltGr</string>
     <string name="cd_key_home">Home</string>
     <string name="cd_key_end">End</string>
-    <string name="cd_key_pageup">PgUp (Page Up)</string>
-    <string name="cd_key_pagedown">PgDn (Page Down)</string>
-    <string name="cd_key_insert">Ins (Insert)</string>
+    <string name="cd_key_pageup">PgUp (Strona w górę)</string>
+    <string name="cd_key_pagedown">PgDn (Strona w dół)</string>
+    <string name="cd_key_insert">Ins (Wstaw)</string>
     <string name="cd_more_keys">Więcej klawiszy</string>
     <string name="cd_show_pc_keys">Pokaż klawisze PC</string>
     <string name="cd_move_pc_keys">Przenieś pasek klawiszy PC</string>

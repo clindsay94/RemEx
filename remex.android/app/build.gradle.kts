@@ -178,8 +178,19 @@ android {
                 // change that deletes a placeholder leaves the test up-to-date and unrun -- the
                 // same silent-skip RemEx-odkk documents. The two .kt files recompile anyway, but
                 // are declared alongside so the dependency is stated rather than inferred.
+                // KeycapAccessibleNameTests reads every locale file, and a translation-only edit
+                // changes no R id, so without these the guard sits up-to-date through exactly the
+                // change it exists to check (the RemEx-odkk trap, again).
                 listOf(
                                 "src/main/res/values/strings.xml",
+                                "src/main/res/values-es/strings.xml",
+                                "src/main/res/values-fr/strings.xml",
+                                "src/main/res/values-hi/strings.xml",
+                                "src/main/res/values-in/strings.xml",
+                                "src/main/res/values-pl/strings.xml",
+                                "src/main/res/values-pt-rBR/strings.xml",
+                                "src/main/res/values-tr/strings.xml",
+                                "src/main/res/values-uk/strings.xml",
                                 "src/main/java/com/clindsay94/remex/ui/screens/TutorialScreen.kt",
                                 "src/main/java/com/clindsay94/remex/ui/screens/FaqScreen.kt",
                         )
