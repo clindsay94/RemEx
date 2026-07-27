@@ -1,0 +1,85 @@
+name: Build and test
+
+# Until this existed, nothing built or tested this repository except a developer's own machine.
+# See RemEx-jx7r.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.cs'
+      - '**/*.axaml'
+      - '**/*.csproj'
+      - '**/*.resx'
+      - 'Remex.sln'
+      - 'Directory.Build.props'
+      - 'remex.android/**'
+      - '.github/workflows/dotnet.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows - build and test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # -t:Rebuild IS LOAD-BEARING. DO NOT SIMPLIFY IT TO `dotnet build`.
+      #
+      # Avalonia's XAML compilation step is skipped by MSBuild's incremental up-to-date check, so a
+      # plain `dotnet build` can report "Build succeeded, 0 Errors" on a .axaml file that does not
+      # compile — and `dotnet test` then runs the stale assembly and passes too. Compiled bindings
+      # are on solution-wide (AvaloniaUseCompiledBindingsByDefault in remex.desktop.csproj), which
+      # means every binding error is a compile error that this blind spot can hide.
+      #
+      # This is not hypothetical: RemEx-5vcb moved one binding, got "0 Errors" from two plain
+      # builds, and only -t:Rebuild produced the AVLN2000 that proved it broken. A CI running a
+      # plain build would have merged it. Full detail in bd memory:
+      # axaml-changes-need-rebuild-not-build
+      - name: Build (rebuild, so XAML is actually compiled)
+        run: dotnet build Remex.sln -c Release -t:Rebuild
+
+      - name: Test
+        run: dotnet test Remex.sln -c Release --no-build
+
+  linux:
+    name: Linux - build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # The PC side must build on Linux as well as Windows (CLAUDE.md, Cross-Platform Parity).
+      # remex.agent and remex.agent.tests target net10.0 here rather than net10.0-windows via an
+      # IsOSPlatform condition; remex.agent.windows is Windows-only and is deliberately not in
+      # Remex.sln. Verified green in WSL before this workflow was added.
+      #
+      # This leg also catches the case-sensitive-path class of bug that CLAUDE.md hard rule 4
+      # exists for, which no amount of building on Windows can detect.
+      - name: Build (rebuild, for the same reason as the Windows leg)
+        run: dotnet build Remex.sln -c Release -t:Rebuild
+
+      # NO TEST STEP HERE YET, deliberately. Two remex.desktop.tests cases cannot pass on Linux:
+      # one hardcodes C:\Windows\System32 paths and asserts no warnings, and one finds
+      # docs/CHANGELOG.md by walking up from the assembly location. Enabling tests here today
+      # would make this job red on arrival, which is how a CI job gets ignored and then deleted.
+      # Tracked as RemEx-6i1l, which carries the fixes and the instruction to un-comment this:
+      #
+      #   - name: Test
+      #     run: dotnet test Remex.sln -c Release --no-build
+
+# NO ANDROID JOB HERE YET, and deliberately so. `./gradlew assembleRelease` is not self-contained
+# on a clean runner: app/build.gradle.kts pins ndkVersion "30.0.14904198" and shells out to
+# `dotnet` to build libRemexCore.so via NativeAOT for net10.0-android, so the job needs that exact
+# NDK, the .NET Android workload, and the JDK — none of which was verified to be available on a
+# hosted runner before this workflow was written. Adding a job expected to fail is how CI gets
+# ignored. Tracked as RemEx-t4zr. When it is added it must use assembleRelease and never
+# assembleDebug: only the release variant runs the fatal lintVitalRelease gate.
