@@ -1,0 +1,44 @@
+name: Localization check
+
+# Catches the three ways a translation can go wrong: a key missing from one language,
+# a translation that has fallen behind its English source, and a key used in code that
+# no language file defines at all. See scripts/check-localization.ps1 for the detail.
+
+on:
+  pull_request:
+    paths:
+      - 'remex.desktop/Localization/**'
+      - 'remex.android/app/src/main/res/values*/strings.xml'
+      - 'remex.desktop/**/*.cs'
+      - 'remex.desktop/**/*.axaml'
+      - 'remex.agent/**/*.cs'
+      - 'remex.android/app/src/main/**/*.kt'
+      - 'scripts/check-localization.ps1'
+      - 'scripts/localization-baseline.json'
+      - '.github/workflows/localization-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'remex.desktop/Localization/**'
+      - 'remex.android/app/src/main/res/values*/strings.xml'
+      - 'scripts/check-localization.ps1'
+      - 'scripts/localization-baseline.json'
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Keys are complete, current and declared
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          # The freshness detector compares the commit that last touched each key's line in the
+          # English file against the same line in every translation, so it needs real history.
+          # A shallow clone makes git blame report one commit for every line and the detector
+          # silently finds nothing.
+          fetch-depth: 0
+
+      - name: Run the localization check
+        shell: pwsh
+        run: ./scripts/check-localization.ps1
