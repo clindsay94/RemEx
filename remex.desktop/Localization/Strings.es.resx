@@ -14,26 +14,14 @@
   </resheader>
 
   
-  <data name="App_Name" xml:space="preserve">
-    <value>RemEx</value>
-  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Inicio</value>
   </data>
   <data name="Nav_Sensors" xml:space="preserve">
     <value>Sensores</value>
   </data>
-  <data name="Nav_Remote" xml:space="preserve">
-    <value>Remoto</value>
-  </data>
   <data name="Nav_Launcher" xml:space="preserve">
     <value>Lanzador</value>
-  </data>
-  <data name="Nav_Tasks" xml:space="preserve">
-    <value>Tareas</value>
-  </data>
-  <data name="Nav_Desktop" xml:space="preserve">
-    <value>Escritorio</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Configuración</value>
@@ -64,20 +52,11 @@
   <data name="Btn_Discover" xml:space="preserve">
     <value>Descubrir</value>
   </data>
-  <data name="Btn_Refresh" xml:space="preserve">
-    <value>⟳ Actualizar</value>
-  </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Iniciar</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
     <value>⏹ Detener</value>
-  </data>
-  <data name="Btn_Submit" xml:space="preserve">
-    <value>Enviar</value>
-  </data>
-  <data name="Btn_Ping" xml:space="preserve">
-    <value>Ping</value>
   </data>
 
   
@@ -86,12 +65,6 @@
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>CONTROLES DE ENERGÍA &amp; SISTEMA</value>
-  </data>
-  <data name="Remote_WolSection" xml:space="preserve">
-    <value>WAKE ON LAN</value>
-  </data>
-  <data name="Remote_WolDescription" xml:space="preserve">
-    <value>Envía un paquete mágico para despertar el PC objetivo.</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>NORMAL</value>
@@ -126,9 +99,6 @@
   <data name="Remote_RebootUefi" xml:space="preserve">
     <value>🔧  Reiniciar a UEFI</value>
   </data>
-  <data name="Remote_WolSend" xml:space="preserve">
-    <value>🔌  Enviar Paquete Wake-on-LAN</value>
-  </data>
 
   
   <data name="Settings_Header" xml:space="preserve">
@@ -152,12 +122,6 @@
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Guardar &amp; Reconectar</value>
   </data>
-  <data name="Settings_RemoteDesktop" xml:space="preserve">
-    <value>ESCRITORIO REMOTO</value>
-  </data>
-  <data name="Settings_StreamFpsDesc" xml:space="preserve">
-    <value>Velocidad de fotogramas predeterminada para nuevas transmisiones</value>
-  </data>
   <data name="Settings_Layout" xml:space="preserve">
     <value>DISEÑO</value>
   </data>
@@ -176,50 +140,11 @@
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Seleccionar sensores para mostrar en la pantalla de inicio</value>
   </data>
-  <data name="Settings_AccountFormat" xml:space="preserve">
-    <value>Cuenta: {0}</value>
-  </data>
-  <data name="Settings_Username" xml:space="preserve">
-    <value>Nombre de usuario</value>
-  </data>
-  <data name="Settings_Password" xml:space="preserve">
-    <value>Contraseña</value>
-  </data>
-  <data name="Settings_RestartNote" xml:space="preserve">
-    <value>El cambio de idioma tendrá efecto después de reiniciar RemEx.</value>
-  </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Idioma</value>
   </data>
 
   
-  <data name="Home_Subtitle" xml:space="preserve">
-    <value>CENTRO DE COMANDO DE EJECUCIÓN REMOTA</value>
-  </data>
-  <data name="Home_QuickActions" xml:space="preserve">
-    <value>ACCIONES RÁPIDAS</value>
-  </data>
-  <data name="Home_SensorWorkspace" xml:space="preserve">
-    <value>Área de Sensores</value>
-  </data>
-  <data name="Home_PcRemote" xml:space="preserve">
-    <value>PC Remoto</value>
-  </data>
-  <data name="Home_Desktop" xml:space="preserve">
-    <value>Escritorio</value>
-  </data>
-  <data name="Home_Launcher" xml:space="preserve">
-    <value>Lanzador</value>
-  </data>
-  <data name="Home_Tasks" xml:space="preserve">
-    <value>Tareas</value>
-  </data>
-  <data name="Home_LiveTelemetry" xml:space="preserve">
-    <value>TELEMETRÍA EN VIVO</value>
-  </data>
-  <data name="Home_NoPinnedSensors" xml:space="preserve">
-    <value>No hay sensores fijados aún</value>
-  </data>
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
     <value>Abre el Área de Sensores, haz clic derecho en una tarjeta y fíjala al inicio.</value>
   </data>
@@ -300,9 +225,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Header" xml:space="preserve">
-    <value>VISTAZO RÁPIDO</value>
-  </data>
   <data name="TrayFlyout_Home" xml:space="preserve">
     <value>INICIO</value>
   </data>
@@ -359,41 +281,8 @@
   <data name="Canvas_Disconnect" xml:space="preserve">
     <value>✕ Desconectar</value>
   </data>
-  <data name="Canvas_LayoutSaved" xml:space="preserve">
-    <value>¡Diseño Guardado!</value>
-  </data>
-  <data name="Canvas_SyncRequested" xml:space="preserve">
-    <value>Sincronización solicitada…</value>
-  </data>
-  <data name="Dashboard_SystemTelemetry" xml:space="preserve">
-    <value>Telemetría del Sistema</value>
-  </data>
-  <data name="Dashboard_Samples" xml:space="preserve">
-    <value>MUESTRAS</value>
-  </data>
-  <data name="Dashboard_Uptime" xml:space="preserve">
-    <value>TIEMPO DE ACTIVIDAD</value>
-  </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Conectar</value>
-  </data>
-  <data name="Dashboard_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
-  </data>
-  <data name="Dashboard_Disconnect" xml:space="preserve">
-    <value>✕ Desconectar</value>
-  </data>
-  <data name="Dashboard_HostWatermark" xml:space="preserve">
-    <value>ws://PC:port/ws</value>
-  </data>
-  <data name="Dashboard_MenuSize" xml:space="preserve">
-    <value>📐 Tamaño</value>
-  </data>
-  <data name="Dashboard_MenuTheme" xml:space="preserve">
-    <value>🎨 Tema</value>
-  </data>
-  <data name="Dashboard_MenuGraph" xml:space="preserve">
-    <value>📊 Gráfico</value>
   </data>
 
   
@@ -430,12 +319,6 @@
   <data name="RemoteDesktop_Fullscreen" xml:space="preserve">
     <value>Salir</value>
   </data>
-  <data name="RemoteDesktop_CompactPad" xml:space="preserve">
-    <value>Compacto</value>
-  </data>
-  <data name="RemoteDesktop_FullPad" xml:space="preserve">
-    <value>Completo</value>
-  </data>
   <data name="RemoteDesktop_ResolutionFormat" xml:space="preserve">
     <value>Resolución: {0}</value>
   </data>
@@ -447,12 +330,6 @@
   </data>
 
   
-  <data name="Custom_Header" xml:space="preserve">
-    <value>🎨  PERSONALIZACIÓN</value>
-  </data>
-  <data name="Custom_Subheader" xml:space="preserve">
-    <value>TEMAS &amp; PRESETS DEL MOTOR</value>
-  </data>
   <data name="Custom_BasePresets" xml:space="preserve">
     <value>PRESETS BASE</value>
   </data>
@@ -482,12 +359,6 @@
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Restablecer a Valores del Tema</value>
-  </data>
-  <data name="Custom_Back" xml:space="preserve">
-    <value>← Centro de Comando</value>
-  </data>
-  <data name="Custom_RemoteCardShape" xml:space="preserve">
-    <value>Forma de Tarjeta Remota</value>
   </data>
   <data name="Custom_PresetStandardGlass" xml:space="preserve">
     <value>Standard Glass</value>
@@ -639,9 +510,6 @@
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
     <value>Error: {0}</value>
-  </data>
-  <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>Usuario desconectado</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
     <value>Error de envío: {0}</value>
@@ -870,109 +738,16 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_Atmosphere" xml:space="preserve">
-    <value>ATMÓSFERA</value>
-  </data>
   <data name="Shell_About" xml:space="preserve">
     <value>About</value>
-  </data>
-  <data name="Shell_AutoSaveNote" xml:space="preserve">
-    <value>Se guarda automáticamente al cambiar.
-Persiste tras reiniciar.</value>
-  </data>
-  <data name="Shell_FineTuning" xml:space="preserve">
-    <value>AJUSTE FINO</value>
-  </data>
-  <data name="Shell_HostWatermark" xml:space="preserve">
-    <value>ws://PC:port/ws</value>
-  </data>
-  <data name="Shell_Initializing" xml:space="preserve">
-    <value>Inicializando panel...</value>
-  </data>
-  <data name="Shell_JpegQuality" xml:space="preserve">
-    <value>Calidad JPEG</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Abrir Configuración</value>
   </data>
-  <data name="Shell_PasswordWatermark" xml:space="preserve">
-    <value>Contraseña de Windows</value>
-  </data>
-  <data name="Shell_SettingsSubtitle" xml:space="preserve">
-    <value>Configuración &amp;
-Personalización</value>
-  </data>
-  <data name="Shell_SettingsTitle" xml:space="preserve">
-    <value>⚙ Configuración</value>
-  </data>
-  <data name="Shell_StreamSettings" xml:space="preserve">
-    <value>AJUSTES DE TRANSMISIÓN</value>
-  </data>
-  <data name="Shell_StreamSettingsDesc" xml:space="preserve">
-    <value>Configura la calidad de la transmisión de pantalla que el PC emite a los clientes conectados (teléfono, tablet).</value>
-  </data>
-  <data name="Shell_Subtitle" xml:space="preserve">
-    <value>Centro de Mando de Ejecución Remota</value>
-  </data>
-  <data name="Shell_TargetFps" xml:space="preserve">
-    <value>FPS Objetivo</value>
-  </data>
-  <data name="Shell_Theme" xml:space="preserve">
-    <value>TEMA</value>
-  </data>
-  <data name="Shell_UsernameWatermark" xml:space="preserve">
-    <value>.\Usuario</value>
-  </data>
-  <data name="Shell_Welcome" xml:space="preserve">
-    <value>BIENVENIDO</value>
-  </data>
 
   
-  <data name="Nav_DesktopTooltip" xml:space="preserve">
-    <value>Escritorio Remoto — Transmite la pantalla de tu PC en tiempo real</value>
-  </data>
-  <data name="Nav_HomeTooltip" xml:space="preserve">
-    <value>Inicio — Resumen y sensores fijados</value>
-  </data>
-  <data name="Nav_Launch" xml:space="preserve">
-    <value>Lanzar</value>
-  </data>
-  <data name="Nav_LauncherTooltip" xml:space="preserve">
-    <value>Lanzador de Apps — Inicia programas en tu PC remotamente</value>
-  </data>
-  <data name="Nav_FilesTooltip" xml:space="preserve">
-    <value>Transferencia de archivos — Explora carpetas compartidas del PC y mueve archivos entre el teléfono y el equipo</value>
-  </data>
-  <data name="Nav_RemoteTooltip" xml:space="preserve">
-    <value>Control Remoto — Energía, volumen y
-Wake-on-LAN</value>
-  </data>
-  <data name="Nav_SensorsTooltip" xml:space="preserve">
-    <value>Área de Sensores — Tarjetas de telemetría de arrastrar y soltar</value>
-  </data>
-  <data name="Nav_SettingsTooltip" xml:space="preserve">
-    <value>Configuración — Conexión, diseño y personalización</value>
-  </data>
-  <data name="Nav_TasksTooltip" xml:space="preserve">
-    <value>Administrador de Tareas — Ver y terminar procesos en ejecución</value>
-  </data>
 
   
-  <data name="Home_CancelTooltip" xml:space="preserve">
-    <value>Cancelar el intento de conexión</value>
-  </data>
-  <data name="Home_ConnectTooltip" xml:space="preserve">
-    <value>Conectar al PC de RemEx — asegúrate de que se esté ejecutando en tu PC</value>
-  </data>
-  <data name="Home_DesktopTooltip" xml:space="preserve">
-    <value>Transmite el escritorio de tu PC a este dispositivo en tiempo real</value>
-  </data>
-  <data name="Home_LauncherTooltip" xml:space="preserve">
-    <value>Inicia programas en tu PC sin estar frente al teclado</value>
-  </data>
-  <data name="Home_PcRemoteTooltip" xml:space="preserve">
-    <value>Controla tu PC remotamente — energía, volumen y Wake-on-LAN</value>
-  </data>
   <data name="Home_QrCodeButton" xml:space="preserve">
     <value>Código QR</value>
   </data>
@@ -997,27 +772,11 @@ Wake-on-LAN</value>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
     <value>Expires in {0}s</value>
   </data>
-  <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
-    <value>Abre el área de sensores de arrastrar y soltar para monitorear
-la telemetría del PC</value>
-  </data>
-  <data name="Home_TasksTooltip" xml:space="preserve">
-    <value>Mira los procesos en ejecución y termina tareas en tu PC</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
 
   
-  <data name="Settings_AutoSaveHint" xml:space="preserve">
-    <value>Los cambios se guardan automáticamente y persisten tras reiniciar.</value>
-  </data>
-  <data name="Settings_ConfigureLogin" xml:space="preserve">
-    <value>⚙ Configurar Inicio de Sesión</value>
-  </data>
-  <data name="Settings_DiscoverTooltip" xml:space="preserve">
-    <value>Autodescubrimiento de hosts RemEx en tu red local usando mDNS</value>
-  </data>
   <data name="Settings_General" xml:space="preserve">
     <value>GENERAL</value>
   </data>
@@ -1051,48 +810,11 @@ la telemetría del PC</value>
   <data name="Settings_Help" xml:space="preserve">
     <value>AYUDA</value>
   </data>
-  <data name="Settings_HostAddressTooltip" xml:space="preserve">
-    <value>Dirección WebSocket del PC RemEx (ej. ws://192.168.1.42:5005/ws).
-Busca tu IP con ipconfig (Windows) o ip addr (Linux).</value>
-  </data>
-  <data name="Settings_HwInfoTooltip" xml:space="preserve">
-    <value>HWiNFO (opcional, recomendado) monitorea más de 300 sensores incluyendo temperaturas de CPU, estadísticas de GPU, ventiladores y voltajes.
-Sin HWiNFO, RemEx usa contadores de rendimiento de Windows integrados (básicos: CPU/RAM/Disco/Red).
-Descarga HWiNFO en hwinfo.com → Ajustes → activa 'Shared Memory Support'.
-Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala en sus ajustes.</value>
-  </data>
-  <data name="Settings_Install" xml:space="preserve">
-    <value>📦 Instalar</value>
-  </data>
-  <data name="Settings_LanguageHeader" xml:space="preserve">
-    <value>IDIOMA</value>
-  </data>
-  <data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve">
-    <value>Abre primero el Área de Sensores para descubrir sensores.</value>
-  </data>
-  <data name="Settings_PasswordWatermark" xml:space="preserve">
-    <value>Contraseña de Windows para esta cuenta</value>
-  </data>
-  <data name="Settings_Refresh" xml:space="preserve">
-    <value>⟳ Actualizar</value>
-  </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
     <value>📖 Repetir Tutorial</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Ver de nuevo el tutorial de inicio</value>
-  </data>
-  <data name="Settings_SaveReconnectTooltip" xml:space="preserve">
-    <value>Guardar ajustes de conexión y reconectar al PC</value>
-  </data>
-  <data name="Settings_SnapToGridTooltip" xml:space="preserve">
-    <value>Al estar activado, las tarjetas se ajustan a la cuadrícula al reposicionarlas</value>
-  </data>
-  <data name="Settings_Uninstall" xml:space="preserve">
-    <value>🗑 Desinstalar</value>
-  </data>
-  <data name="Settings_UsernameWatermark" xml:space="preserve">
-    <value>.\Usuario o EQUIPO\Usuario</value>
   </data>
   <data name="Settings_FileTransferSection" xml:space="preserve">
     <value>CARPETAS COMPARTIDAS</value>
@@ -1100,34 +822,17 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
   <data name="Settings_FileTransferDesc" xml:space="preserve">
     <value>Elige qué carpetas de este PC aparecen en Transferencia de archivos. Las carpetas de solo lectura permiten navegar y descargar, mientras que las carpetas editables también aceptan subidas desde tu teléfono.</value>
   </data>
-  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve">
-    <value>CÓMO FUNCIONA LA TRANSFERENCIA DE ARCHIVOS</value>
-  </data>
-  <data name="Settings_FileTransferTutorialBody" xml:space="preserve">
-    <value>Tu teléfono solo ve las carpetas de esta lista. Orienta las subidas habituales a una carpeta escribible como Transferencias RemEx, y deja todo lo demás en solo lectura a menos que quieras que los dispositivos móviles lo modifiquen.</value>
-  </data>
-  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Añade las carpetas del PC que quieras que RemEx exponga.
-2. Activa las subidas solo para las carpetas que deban aceptar archivos de teléfono a PC.
-3. Abre Transferencia de archivos en tu teléfono y explora las carpetas compartidas desde allí.</value>
-  </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Agregar carpeta</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
     <value>Restaurar predeterminados</value>
   </data>
-  <data name="Settings_FileTransferEmpty" xml:space="preserve">
-    <value>Todavía no hay carpetas compartidas configuradas. Agrega al menos una carpeta para que la Transferencia de archivos esté disponible.</value>
-  </data>
   <data name="Settings_FileTransferWritable" xml:space="preserve">
     <value>Permitir subidas</value>
   </data>
   <data name="Settings_FileTransferRemove" xml:space="preserve">
     <value>Eliminar</value>
-  </data>
-  <data name="Settings_FileTransferImmediate" xml:space="preserve">
-    <value>Los cambios se aplican inmediatamente en la pantalla de Transferencia de archivos.</value>
   </data>
   <data name="Settings_FileTransferPickerTitle" xml:space="preserve">
     <value>Seleccionar carpeta para compartir</value>
@@ -1167,9 +872,6 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
   <data name="FileTransfer_ReadOnly" xml:space="preserve">
     <value>Solo lectura</value>
   </data>
-  <data name="FileTransfer_PathLabel" xml:space="preserve">
-    <value>Ruta</value>
-  </data>
   <data name="FileTransfer_UpTooltip" xml:space="preserve">
     <value>Ir a la carpeta superior</value>
   </data>
@@ -1187,12 +889,6 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
   </data>
   <data name="FileTransfer_DownloadTooltip" xml:space="preserve">
     <value>Elige dónde guardar el archivo remoto seleccionado</value>
-  </data>
-  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve">
-    <value>Abrir carpeta</value>
-  </data>
-  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve">
-    <value>Abrir la carpeta remota seleccionada</value>
   </data>
   <data name="FileTransfer_CancelTooltip" xml:space="preserve">
     <value>Cancelar la transferencia activa</value>
@@ -1219,21 +915,6 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
   <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve">
     <value>El archivo seleccionado no está disponible como ruta local.</value>
   </data>
-  <data name="FileTransfer_UploadingFormat" xml:space="preserve">
-    <value>Subiendo {0}…</value>
-  </data>
-  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve">
-    <value>Subiendo {0}… {1:P0}</value>
-  </data>
-  <data name="FileTransfer_UploadComplete" xml:space="preserve">
-    <value>Subida completa.</value>
-  </data>
-  <data name="FileTransfer_UploadCancelled" xml:space="preserve">
-    <value>Subida cancelada.</value>
-  </data>
-  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve">
-    <value>Error al subir: {0}</value>
-  </data>
   <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve">
     <value>Diálogo de guardado no disponible.</value>
   </data>
@@ -1242,21 +923,6 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
   </data>
   <data name="FileTransfer_SavePathUnavailable" xml:space="preserve">
     <value>El destino seleccionado no está disponible como ruta local.</value>
-  </data>
-  <data name="FileTransfer_DownloadingFormat" xml:space="preserve">
-    <value>Descargando {0}…</value>
-  </data>
-  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve">
-    <value>Descargando {0}… {1:P0}</value>
-  </data>
-  <data name="FileTransfer_DownloadComplete" xml:space="preserve">
-    <value>Descarga completa.</value>
-  </data>
-  <data name="FileTransfer_DownloadCancelled" xml:space="preserve">
-    <value>Descarga cancelada.</value>
-  </data>
-  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve">
-    <value>Error al descargar: {0}</value>
   </data>
   <data name="FileTransfer_HintNoneSelected" xml:space="preserve">
     <value>Elige una carpeta compartida para explorar.</value>
@@ -1367,15 +1033,6 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
   
 
   
-  <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
-    <value>IP de Broadcast (255.255.255.255)</value>
-  </data>
-  <data name="Remote_WolMacWatermark" xml:space="preserve">
-    <value>Dirección MAC (AA:BB:CC:DD:EE:FF)</value>
-  </data>
-  <data name="Remote_WolPortWatermark" xml:space="preserve">
-    <value>Puerto</value>
-  </data>
 
   
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
@@ -1439,16 +1096,6 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
   </data>
 
   
-  <data name="AppLauncher_AddNewApp" xml:space="preserve">
-    <value>AGREGAR NUEVA APLICACIÓN</value>
-  </data>
-  <data name="AppLauncher_DisplayNameWatermark" xml:space="preserve">
-    <value>Nombre para Mostrar (ej.
-Chrome)</value>
-  </data>
-  <data name="AppLauncher_TargetPathWatermark" xml:space="preserve">
-    <value>Ruta de Destino (ej. C:\Archivos de programa\...)</value>
-  </data>
 
   
   <data name="TaskMgr_CpuLabel" xml:space="preserve">
@@ -1631,9 +1278,6 @@ Chrome)</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>¿Qué hay de nuevo?</value>
-  </data>
-  <data name="About_Faq" xml:space="preserve">
-    <value>Frequently Asked Questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
     <value>Vídeo por hardware H.264</value>
@@ -1849,9 +1493,6 @@ Chrome)</value>
   <data name="Status_InvalidQrData" xml:space="preserve">
     <value>Datos de código QR no válidos</value>
   </data>
-  <data name="Settings_ExecutableFileFilter" xml:space="preserve">
-    <value>Ejecutable</value>
-  </data>
   <data name="Palette_Home" xml:space="preserve">
     <value>Inicio</value>
   </data>
@@ -2038,30 +1679,6 @@ Chrome)</value>
   <data name="Home_Directives" xml:space="preserve">
     <value>// DIRECTIVAS</value>
   </data>
-  <data name="Home_RemoteControl" xml:space="preserve">
-    <value>CONTROL_REMOTO</value>
-  </data>
-  <data name="Home_RemoteControlDesc" xml:space="preserve">
-    <value>Energía y acceso al sistema</value>
-  </data>
-  <data name="Home_AppLauncher" xml:space="preserve">
-    <value>LANZADOR_APPS</value>
-  </data>
-  <data name="Home_AppLauncherDesc" xml:space="preserve">
-    <value>Ejecutar procesos remotos</value>
-  </data>
-  <data name="Home_TaskMonitor" xml:space="preserve">
-    <value>MONITOR_TAREAS</value>
-  </data>
-  <data name="Home_TaskMonitorDesc" xml:space="preserve">
-    <value>Administrar hilos activos</value>
-  </data>
-  <data name="Home_FileSystem" xml:space="preserve">
-    <value>SISTEMA_ARCHIVOS</value>
-  </data>
-  <data name="Home_FileSystemDesc" xml:space="preserve">
-    <value>Transferencia remota de datos</value>
-  </data>
   <data name="Home_LinkStatus" xml:space="preserve">
     <value>ESTADO_ENLACE</value>
   </data>
@@ -2110,12 +1727,6 @@ Chrome)</value>
   <data name="Custom_BorderCornerRadiusPixelsTooltip" xml:space="preserve">
     <value>Radio del borde en píxeles</value>
   </data>
-  <data name="Custom_CornerRadiusRemoteTooltip" xml:space="preserve">
-    <value>Personalizar la redondez de los bordes para botones de control remoto</value>
-  </data>
-  <data name="Custom_BorderCornerRadiusRemotePixelsTooltip" xml:space="preserve">
-    <value>Radio del botón remoto en píxeles</value>
-  </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
     <value>Ajustar el nivel de opacidad del efecto de vidrio esmerilado</value>
   </data>
@@ -2152,24 +1763,6 @@ Chrome)</value>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Seleccionar el estilo de animación de la pantalla de bienvenida</value>
   </data>
-  <data name="Settings_RefreshServiceTooltip" xml:space="preserve">
-    <value>Actualizar el estado del servicio del sistema</value>
-  </data>
-  <data name="Settings_ConfigureLoginTooltip" xml:space="preserve">
-    <value>Configurar credenciales de inicio de sesión del servicio (usuario/contraseña)</value>
-  </data>
-  <data name="Settings_InstallServiceTooltip" xml:space="preserve">
-    <value>Instalar el servicio de sistema RemEx como servidor automático en segundo plano</value>
-  </data>
-  <data name="Settings_StartServiceTooltip" xml:space="preserve">
-    <value>Iniciar el proceso del servicio del servidor RemEx</value>
-  </data>
-  <data name="Settings_StopServiceTooltip" xml:space="preserve">
-    <value>Detener el proceso del servicio del servidor RemEx</value>
-  </data>
-  <data name="Settings_UninstallServiceTooltip" xml:space="preserve">
-    <value>Desinstalar completamente el servicio RemEx del sistema</value>
-  </data>
   <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
     <value>Configurar la dirección del PC RemEx (protocolo websocket wss://)</value>
   </data>
@@ -2181,21 +1774,6 @@ Chrome)</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
     <value>Terminar la conexión de sesión activa con el Your PC</value>
-  </data>
-  <data name="Settings_ChangeLanguageTooltip" xml:space="preserve">
-    <value>Cambiar el idioma de visualización de la aplicación</value>
-  </data>
-  <data name="Settings_SelectPreferredLanguageTooltip" xml:space="preserve">
-    <value>Seleccione su idioma preferido (los cambios se aplican de inmediato)</value>
-  </data>
-  <data name="Settings_CompressQualityTooltip" xml:space="preserve">
-    <value>Configurar la calidad de compresión del espejo de escritorio (menor calidad mejora el rendimiento de red)</value>
-  </data>
-  <data name="Settings_TargetFrameRateTooltip" xml:space="preserve">
-    <value>Fotogramas por segundo objetivo para la compresión (valores mayores son más fluidos pero consumen más ancho de banda)</value>
-  </data>
-  <data name="Settings_ChooseTargetFpsTooltip" xml:space="preserve">
-    <value>Elegir FPS objetivo para la transmisión</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Activar guías de alineación para que los sensores se ajusten a la cuadrícula</value>
@@ -2209,92 +1787,8 @@ Chrome)</value>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Alternar barra lateral</value>
   </data>
-  <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
-    <value>Personalizar la redondez de las esquinas del borde predeterminado para paneles y tarjetas del tablero</value>
-  </data>
-  <data name="Tooltip_CornerRadiusSlider" xml:space="preserve">
-    <value>Radio de la esquina del borde en píxeles</value>
-  </data>
-  <data name="Tooltip_RemoteCardShape" xml:space="preserve">
-    <value>Personalizar la redondez de las esquinas de los bordes específicamente para las teclas de control remoto</value>
-  </data>
-  <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
-    <value>Radio de esquina de los botones remotos en píxeles</value>
-  </data>
-  <data name="Tooltip_GlowStrength" xml:space="preserve">
-    <value>Ajustar la intensidad del brillo del aura de neón de fondo alrededor de los bordes de los paneles</value>
-  </data>
-  <data name="Tooltip_GlowStrengthSlider" xml:space="preserve">
-    <value>Grosor/propagación del brillo de neón en píxeles</value>
-  </data>
-  <data name="Tooltip_AccentColor" xml:space="preserve">
-    <value>Seleccionar colores destacados de la paleta de temas</value>
-  </data>
-  <data name="Tooltip_AccentViolet" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Violeta neón</value>
-  </data>
-  <data name="Tooltip_AccentCyan" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Ciber cian</value>
-  </data>
-  <data name="Tooltip_AccentPink" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Rosa fuerte/Magenta</value>
-  </data>
-  <data name="Tooltip_AccentAmber" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Oro solar/Ámbar</value>
-  </data>
-  <data name="Tooltip_AccentGreen" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Verde esmeralda</value>
-  </data>
-  <data name="Tooltip_AccentRose" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Rosa carmesí</value>
-  </data>
-  <data name="Tooltip_SplashScreen" xml:space="preserve">
-    <value>Seleccionar el estilo de animación de la pantalla de bienvenida de inicio</value>
-  </data>
-  <data name="Tooltip_RefreshService" xml:space="preserve">
-    <value>Actualizar el estado del servicio del sistema</value>
-  </data>
-  <data name="Tooltip_ConfigureServiceLogin" xml:space="preserve">
-    <value>Configurar las credenciales de inicio de sesión del servicio (usuario/contraseña)</value>
-  </data>
-  <data name="Tooltip_InstallService" xml:space="preserve">
-    <value>Instalar el servicio del sistema RemEx como un servidor de fondo automático</value>
-  </data>
-  <data name="Tooltip_StartService" xml:space="preserve">
-    <value>Iniciar el proceso del servicio del servidor RemEx en segundo plano</value>
-  </data>
-  <data name="Tooltip_StopService" xml:space="preserve">
-    <value>Detener el proceso del servicio del servidor RemEx en segundo plano</value>
-  </data>
-  <data name="Tooltip_UninstallService" xml:space="preserve">
-    <value>Desinstalar completamente el servicio del sistema RemEx del sistema</value>
-  </data>
   <data name="Tooltip_SaveReconnect" xml:space="preserve">
     <value>Guardar la dirección de configuración del PC e intentar conectarse</value>
-  </data>
-  <data name="Tooltip_Disconnect" xml:space="preserve">
-    <value>Terminar la conexión de sesión activa con la Your PC</value>
-  </data>
-  <data name="Tooltip_LanguageSection" xml:space="preserve">
-    <value>Cambiar el idioma de visualización de la aplicación</value>
-  </data>
-  <data name="Tooltip_LanguageSelect" xml:space="preserve">
-    <value>Seleccione su idioma preferido (los cambios se aplican de inmediato)</value>
-  </data>
-  <data name="Tooltip_StreamQuality" xml:space="preserve">
-    <value>Configurar el nivel de calidad de compresión del flujo de imagen espejo del escritorio (una menor calidad aumenta el rendimiento de la red)</value>
-  </data>
-  <data name="Tooltip_StreamFps" xml:space="preserve">
-    <value>Velocidad de fotogramas objetivo para el motor de compresión de escritorio (valores más altos se ven más fluidos pero consumen más ancho de banda)</value>
-  </data>
-  <data name="Tooltip_StreamFpsSelect" xml:space="preserve">
-    <value>Elegir FPS objetivo para la transmisión</value>
-  </data>
-  <data name="Tooltip_SnapToGrid" xml:space="preserve">
-    <value>Habilitar guías de alineación para que los mosaicos de sensores se ajusten a incrementos estándar en el lienzo</value>
-  </data>
-  <data name="Tooltip_GridSize" xml:space="preserve">
-    <value>Incremento de ajuste de ubicación de cuadrícula en píxeles absolutos</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>¿Necesita ver el tutorial de nuevo?</value>
@@ -2317,12 +1811,6 @@ Chrome)</value>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Salir</value>
   </data>
-  <data name="Canvas_ExportTooltip" xml:space="preserve">
-    <value>Guardar lienzo como PNG en la carpeta Imágenes</value>
-  </data>
-  <data name="Canvas_CopyTooltip" xml:space="preserve">
-    <value>Copiar imagen instantánea directamente al portapapeles</value>
-  </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>Auto (inteligente)</value>
   </data>
@@ -2331,9 +1819,6 @@ Chrome)</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
     <value>Línea ╱╲╱</value>
-  </data>
-  <data name="Canvas_GraphArea" xml:space="preserve">
-    <value>Área ▓▓▓</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
     <value>Anillo ◍</value>
@@ -2358,24 +1843,6 @@ Chrome)</value>
   </data>
   <data name="Canvas_SetAlert" xml:space="preserve">
     <value>Configurar alerta...</value>
-  </data>
-  <data name="Boot_Remote" xml:space="preserve">
-    <value>REMOTO</value>
-  </data>
-  <data name="Boot_Execution" xml:space="preserve">
-    <value>EJECUCIÓN</value>
-  </data>
-  <data name="Boot_CommandCenter" xml:space="preserve">
-    <value>⚡ CENTRO DE CONTROL</value>
-  </data>
-  <data name="Boot_CommandYourPc" xml:space="preserve">
-    <value>CONTROLE SU PC</value>
-  </data>
-  <data name="Boot_Ote" xml:space="preserve">
-    <value>moto</value>
-  </data>
-  <data name="Boot_Ecution" xml:space="preserve">
-    <value>cución</value>
   </data>
   <data name="Dialog_ConfirmTitle" xml:space="preserve">
     <value>Confirmar</value>
@@ -2709,68 +2176,11 @@ Chrome)</value>
   <data name="RemoteDesktop_FpsValue" xml:space="preserve">
     <value>{0} FPS</value>
   </data>
-  <data name="Settings_ServiceSection" xml:space="preserve">
-    <value>SERVICIO WINDOWS</value>
-  </data>
-  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
-    <value>WINDOWS SERVICE</value>
-  </data>
-  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX BACKGROUND SERVICE</value>
-  </data>
-  <data name="Settings_ServiceLogin" xml:space="preserve">
-    <value>INICIO DE SESIÓN DEL SERVICIO</value>
-  </data>
-  <data name="Settings_ServiceDesc" xml:space="preserve">
-    <value>El servicio se ejecuta en segundo plano para que RemEx pueda aceptar comandos remotos sin abrir la aplicación.</value>
-  </data>
-  <data name="Tutorial_P2_Title" xml:space="preserve">
-    <value>Ejecutar como Servicio de Windows</value>
-  </data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve">
-    <value>Para mantener RemEx funcionando 24/7 sin haber iniciado sesión, instálalo como un servicio de Windows:</value>
-  </data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
-  </data>
-  <data name="Tutorial_P2_Note" xml:space="preserve">
-    <value>El servicio se ejecuta bajo tu cuenta de usuario para que pueda acceder a tu sesión de escritorio para la captura de pantalla y el lanzamiento de apps.</value>
-  </data>
-  <data name="Tutorial_P3_Title" xml:space="preserve">
-    <value>Configuración del Servicio Linux</value>
-  </data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>En Linux, el PC de RemEx puede ejecutarse como un servicio de systemd para el inicio automático.</value>
-  </data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux PC archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-PC folder.
-4. Use systemctl --user status remex-PC to verify it is running.</value>
-  </data>
-  <data name="Tutorial_P3_Link" xml:space="preserve">
-    <value>Para instrucciones detalladas, consulta docs/linux-service-setup.md en GitHub</value>
-  </data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve">
-    <value>Ruta del Binario del PC</value>
-  </data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve">
-    <value>Autodetectar (o establecer ruta personalizada)</value>
-  </data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve">
-    <value>Para instrucciones detalladas, opciones de configuración y solución de problemas, consulta la guía completa:</value>
-  </data>
   <data name="Nav_Commands" xml:space="preserve">
     <value>Comandos</value>
   </data>
   <data name="Nav_Processes" xml:space="preserve">
     <value>Procesos</value>
-  </data>
-  <data name="Nav_Connection" xml:space="preserve">
-    <value>Conexión</value>
   </data>
   <data name="Nav_Faq" xml:space="preserve">
     <value>Preguntas frecuentes</value>
@@ -2795,9 +2205,6 @@ Chrome)</value>
   </data>
   <data name="Conn_DiscoverHosts" xml:space="preserve">
     <value>Buscar hosts en mi red</value>
-  </data>
-  <data name="Conn_Pairing" xml:space="preserve">
-    <value>Emparejamiento</value>
   </data>
   <data name="Conn_HostInfo" xml:space="preserve">
     <value>Host</value>
@@ -2895,26 +2302,11 @@ Chrome)</value>
   <data name="Canvas_CoachReplayTooltip" xml:space="preserve">
     <value>Ver consejo de lienzo nuevamente</value>
   </data>
-  <data name="Canvas_GraphBigValue" xml:space="preserve">
-    <value>Valor grande</value>
-  </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
     <value>Métrica dual</value>
   </data>
-  <data name="Canvas_GraphHue" xml:space="preserve">
-    <value>Pulso de tonalidad</value>
-  </data>
-  <data name="Canvas_GraphRadial" xml:space="preserve">
-    <value>Medidor de anillo</value>
-  </data>
-  <data name="Canvas_GraphValueSpark" xml:space="preserve">
-    <value>Valor + chispa</value>
-  </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>Métrica secundaria</value>
-  </data>
-  <data name="Canvas_SecondMetricNone" xml:space="preserve">
-    <value>Ninguno</value>
   </data>
   <data name="Canvas_SelectedLabel" xml:space="preserve">
     <value>seleccionadas</value>

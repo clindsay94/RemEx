@@ -14,26 +14,14 @@
   </resheader>
 
   
-  <data name="App_Name" xml:space="preserve">
-    <value>RemEx</value>
-  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Ana Sayfa</value>
   </data>
   <data name="Nav_Sensors" xml:space="preserve">
     <value>Sensörler</value>
   </data>
-  <data name="Nav_Remote" xml:space="preserve">
-    <value>Uzaktan</value>
-  </data>
   <data name="Nav_Launcher" xml:space="preserve">
     <value>Başlatıcı</value>
-  </data>
-  <data name="Nav_Tasks" xml:space="preserve">
-    <value>Görevler</value>
-  </data>
-  <data name="Nav_Desktop" xml:space="preserve">
-    <value>Masaüstü</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Ayarlar</value>
@@ -64,20 +52,11 @@
   <data name="Btn_Discover" xml:space="preserve">
     <value>Keşfet</value>
   </data>
-  <data name="Btn_Refresh" xml:space="preserve">
-    <value>⟳ Yenile</value>
-  </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Başlat</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
     <value>⏹ Durdur</value>
-  </data>
-  <data name="Btn_Submit" xml:space="preserve">
-    <value>Gönder</value>
-  </data>
-  <data name="Btn_Ping" xml:space="preserve">
-    <value>Ping</value>
   </data>
 
   
@@ -86,12 +65,6 @@
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>GÜÇ &amp; SİSTEM KONTROLLERİ</value>
-  </data>
-  <data name="Remote_WolSection" xml:space="preserve">
-    <value>WAKE ON LAN</value>
-  </data>
-  <data name="Remote_WolDescription" xml:space="preserve">
-    <value>Hedef PC'yi uyandırmak için sihirli paket gönderin.</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>NORMAL</value>
@@ -126,9 +99,6 @@
   <data name="Remote_RebootUefi" xml:space="preserve">
     <value>🔧 UEFI'ye Yeniden Başlat</value>
   </data>
-  <data name="Remote_WolSend" xml:space="preserve">
-    <value>🔌 Wake-on-LAN Paketi Gönder</value>
-  </data>
 
   
   <data name="Settings_Header" xml:space="preserve">
@@ -152,12 +122,6 @@
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Kaydet &amp; Yeniden Bağlan</value>
   </data>
-  <data name="Settings_RemoteDesktop" xml:space="preserve">
-    <value>UZAK MASAÜSTÜ</value>
-  </data>
-  <data name="Settings_StreamFpsDesc" xml:space="preserve">
-    <value>Yeni akışlar için varsayılan kare hızı</value>
-  </data>
   <data name="Settings_Layout" xml:space="preserve">
     <value>DÜZEN</value>
   </data>
@@ -176,50 +140,11 @@
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Ana ekranda görüntülenecek sensörleri seçin</value>
   </data>
-  <data name="Settings_AccountFormat" xml:space="preserve">
-    <value>Hesap: {0}</value>
-  </data>
-  <data name="Settings_Username" xml:space="preserve">
-    <value>Kullanıcı adı</value>
-  </data>
-  <data name="Settings_Password" xml:space="preserve">
-    <value>Şifre</value>
-  </data>
-  <data name="Settings_RestartNote" xml:space="preserve">
-    <value>Dil değişikliği RemEx yeniden başlatıldıktan sonra geçerli olacak.</value>
-  </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Dil</value>
   </data>
 
   
-  <data name="Home_Subtitle" xml:space="preserve">
-    <value>UZAKTAN YÜRÜTME KOMUTA MERKEZİ</value>
-  </data>
-  <data name="Home_QuickActions" xml:space="preserve">
-    <value>HIZLI İŞLEMLER</value>
-  </data>
-  <data name="Home_SensorWorkspace" xml:space="preserve">
-    <value>Sensör Çalışma Alanı</value>
-  </data>
-  <data name="Home_PcRemote" xml:space="preserve">
-    <value>PC Uzaktan</value>
-  </data>
-  <data name="Home_Desktop" xml:space="preserve">
-    <value>Masaüstü</value>
-  </data>
-  <data name="Home_Launcher" xml:space="preserve">
-    <value>Başlatıcı</value>
-  </data>
-  <data name="Home_Tasks" xml:space="preserve">
-    <value>Görevler</value>
-  </data>
-  <data name="Home_LiveTelemetry" xml:space="preserve">
-    <value>CANLI TELEMETRİ</value>
-  </data>
-  <data name="Home_NoPinnedSensors" xml:space="preserve">
-    <value>Henüz sabitlenmiş sensör yok</value>
-  </data>
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
     <value>Sensör Çalışma Alanını açın, bir kartı sağ tıklayın ve Ana Sayfaya sabitleyin.</value>
   </data>
@@ -300,9 +225,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Header" xml:space="preserve">
-    <value>CANLI BAKIŞ</value>
-  </data>
   <data name="TrayFlyout_Home" xml:space="preserve">
     <value>ANA SAYFA</value>
   </data>
@@ -359,41 +281,8 @@
   <data name="Canvas_Disconnect" xml:space="preserve">
     <value>✕ Bağlantıyı Kes</value>
   </data>
-  <data name="Canvas_LayoutSaved" xml:space="preserve">
-    <value>Düzen Kaydedildi!</value>
-  </data>
-  <data name="Canvas_SyncRequested" xml:space="preserve">
-    <value>Senkronizasyon istendi…</value>
-  </data>
-  <data name="Dashboard_SystemTelemetry" xml:space="preserve">
-    <value>Sistem Telemetrisi</value>
-  </data>
-  <data name="Dashboard_Samples" xml:space="preserve">
-    <value>ÖRNEKLER</value>
-  </data>
-  <data name="Dashboard_Uptime" xml:space="preserve">
-    <value>ÇALIŞMA SÜRESİ</value>
-  </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Bağlan</value>
-  </data>
-  <data name="Dashboard_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
-  </data>
-  <data name="Dashboard_Disconnect" xml:space="preserve">
-    <value>✕ Bağlantıyı Kes</value>
-  </data>
-  <data name="Dashboard_HostWatermark" xml:space="preserve">
-    <value>ws://PC:port/ws</value>
-  </data>
-  <data name="Dashboard_MenuSize" xml:space="preserve">
-    <value>📐 Boyut</value>
-  </data>
-  <data name="Dashboard_MenuTheme" xml:space="preserve">
-    <value>🎨 Tema</value>
-  </data>
-  <data name="Dashboard_MenuGraph" xml:space="preserve">
-    <value>📊 Grafik</value>
   </data>
 
   
@@ -430,12 +319,6 @@
   <data name="RemoteDesktop_Fullscreen" xml:space="preserve">
     <value>Çık</value>
   </data>
-  <data name="RemoteDesktop_CompactPad" xml:space="preserve">
-    <value>Kompakt</value>
-  </data>
-  <data name="RemoteDesktop_FullPad" xml:space="preserve">
-    <value>Tam</value>
-  </data>
   <data name="RemoteDesktop_ResolutionFormat" xml:space="preserve">
     <value>Çözünürlük: {0}</value>
   </data>
@@ -447,12 +330,6 @@
   </data>
 
   
-  <data name="Custom_Header" xml:space="preserve">
-    <value>🎨 ÖZELLEŞTIRME</value>
-  </data>
-  <data name="Custom_Subheader" xml:space="preserve">
-    <value>TEMALAR &amp; MOTOR ÖN AYARLARI</value>
-  </data>
   <data name="Custom_BasePresets" xml:space="preserve">
     <value>TEMEL ÖN AYARLAR</value>
   </data>
@@ -482,12 +359,6 @@
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Tema Varsayılanlarına Sıfırla</value>
-  </data>
-  <data name="Custom_Back" xml:space="preserve">
-    <value>← Komuta Merkezi</value>
-  </data>
-  <data name="Custom_RemoteCardShape" xml:space="preserve">
-    <value>Uzak Kart Şekli</value>
   </data>
   <data name="Custom_PresetStandardGlass" xml:space="preserve">
     <value>Standard Glass</value>
@@ -639,9 +510,6 @@
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
     <value>Hata: {0}</value>
-  </data>
-  <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>Kullanıcı bağlantısı kesildi</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
     <value>Gönderim hatası: {0}</value>
@@ -864,106 +732,16 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_Atmosphere" xml:space="preserve">
-    <value>ATMOSFER</value>
-  </data>
   <data name="Shell_About" xml:space="preserve">
     <value>About</value>
-  </data>
-  <data name="Shell_AutoSaveNote" xml:space="preserve">
-    <value>Değişiklikte otomatik kaydedilir. Yeniden başlatmalarda korunur.</value>
-  </data>
-  <data name="Shell_FineTuning" xml:space="preserve">
-    <value>İNCE AYAR</value>
-  </data>
-  <data name="Shell_HostWatermark" xml:space="preserve">
-    <value>ws://PC:port/ws</value>
-  </data>
-  <data name="Shell_Initializing" xml:space="preserve">
-    <value>Kontrol paneli başlatılıyor...</value>
-  </data>
-  <data name="Shell_JpegQuality" xml:space="preserve">
-    <value>JPEG Kalitesi</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Ayarları Aç</value>
   </data>
-  <data name="Shell_PasswordWatermark" xml:space="preserve">
-    <value>Windows şifresi</value>
-  </data>
-  <data name="Shell_SettingsSubtitle" xml:space="preserve">
-    <value>Yapılandırma ve Özelleştirme</value>
-  </data>
-  <data name="Shell_SettingsTitle" xml:space="preserve">
-    <value>⚙ Ayarlar</value>
-  </data>
-  <data name="Shell_StreamSettings" xml:space="preserve">
-    <value>YAYIN AYARLARI</value>
-  </data>
-  <data name="Shell_StreamSettingsDesc" xml:space="preserve">
-    <value>PC'un bağlı istemcilere (telefon, tablet) yayınladığı ekran yayınının kalitesini yapılandırın.</value>
-  </data>
-  <data name="Shell_Subtitle" xml:space="preserve">
-    <value>Uzaktan Yürütme Komuta Merkezi</value>
-  </data>
-  <data name="Shell_TargetFps" xml:space="preserve">
-    <value>Hedef FPS</value>
-  </data>
-  <data name="Shell_Theme" xml:space="preserve">
-    <value>TEMA</value>
-  </data>
-  <data name="Shell_UsernameWatermark" xml:space="preserve">
-    <value>.\Kullaniciadi</value>
-  </data>
-  <data name="Shell_Welcome" xml:space="preserve">
-    <value>HOŞ GELDİNİZ</value>
-  </data>
 
   
-  <data name="Nav_DesktopTooltip" xml:space="preserve">
-    <value>Uzak Masaüstü — Bilgisayarınızın ekranını gerçek zamanlı olarak yayınlayın</value>
-  </data>
-  <data name="Nav_HomeTooltip" xml:space="preserve">
-    <value>Ana Sayfa — Genel bakış ve sabitlenmiş sensörler</value>
-  </data>
-  <data name="Nav_Launch" xml:space="preserve">
-    <value>Başlat</value>
-  </data>
-  <data name="Nav_LauncherTooltip" xml:space="preserve">
-    <value>Uygulama Başlatıcı — Bilgisayarınızdaki programları uzaktan başlatın</value>
-  </data>
-  <data name="Nav_FilesTooltip" xml:space="preserve">
-    <value>Dosya Aktarımı — Paylaşılan PC klasörlerine göz atın ve telefon ile PC arasında dosya taşıyın</value>
-  </data>
-  <data name="Nav_RemoteTooltip" xml:space="preserve">
-    <value>Uzaktan Kumanda — Güç, ses seviyesi ve Wake-on-LAN</value>
-  </data>
-  <data name="Nav_SensorsTooltip" xml:space="preserve">
-    <value>Sensör Çalışma Alanı — Sürükle ve bırak telemetri kartları</value>
-  </data>
-  <data name="Nav_SettingsTooltip" xml:space="preserve">
-    <value>Ayarlar — Bağlantı, düzen ve kişiselleştirme</value>
-  </data>
-  <data name="Nav_TasksTooltip" xml:space="preserve">
-    <value>Görev Yöneticisi — Çalışan süreçleri görüntüleyin ve sonlandırın</value>
-  </data>
 
   
-  <data name="Home_CancelTooltip" xml:space="preserve">
-    <value>Bağlantı girişimini iptal et</value>
-  </data>
-  <data name="Home_ConnectTooltip" xml:space="preserve">
-    <value>RemEx PC'a bağlanın — bilgisayarınızda çalıştığından emin olun</value>
-  </data>
-  <data name="Home_DesktopTooltip" xml:space="preserve">
-    <value>Bilgisayarınızın masaüstünü bu cihaza gerçek zamanlı yayınlayın</value>
-  </data>
-  <data name="Home_LauncherTooltip" xml:space="preserve">
-    <value>Klavyenin başında olmadan bilgisayarınızda programlar başlatın</value>
-  </data>
-  <data name="Home_PcRemoteTooltip" xml:space="preserve">
-    <value>Bilgisayarınızı uzaktan kontrol edin — güç, ses ve Wake-on-LAN</value>
-  </data>
   <data name="Home_QrCodeButton" xml:space="preserve">
     <value>QR Kodu</value>
   </data>
@@ -988,26 +766,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
     <value>Expires in {0}s</value>
   </data>
-  <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
-    <value>Bilgisayar telemetrisini izlemek için sürükle-bırak sensör çalışma alanını açın</value>
-  </data>
-  <data name="Home_TasksTooltip" xml:space="preserve">
-    <value>Bilgisayarınızdaki çalışan süreçleri görüntüleyin ve görevleri sonlandırın</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
 
   
-  <data name="Settings_AutoSaveHint" xml:space="preserve">
-    <value>Değişiklikler otomatik olarak kaydedilir ve yeniden başlatmalarda korunur.</value>
-  </data>
-  <data name="Settings_ConfigureLogin" xml:space="preserve">
-    <value>⚙ Girişi Yapılandır</value>
-  </data>
-  <data name="Settings_DiscoverTooltip" xml:space="preserve">
-    <value>mDNS kullanarak yerel ağınızdaki RemEx PC'ları otomatik olarak keşfedin</value>
-  </data>
   <data name="Settings_General" xml:space="preserve">
     <value>GENEL</value>
   </data>
@@ -1041,44 +804,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_Help" xml:space="preserve">
     <value>YARDIM</value>
   </data>
-  <data name="Settings_HostAddressTooltip" xml:space="preserve">
-    <value>RemEx PC'un WebSocket adresi (ör. ws://192.168.1.42:5005/ws). IP'nizi ipconfig (Windows) veya ip addr (Linux) ile bulun.</value>
-  </data>
-  <data name="Settings_HwInfoTooltip" xml:space="preserve">
-    <value>HWInfo (isteğe bağlı, önerilir) çekirdek başına CPU sıcaklıkları, GPU istatistikleri, fan hızları ve voltajlar dahil 300+ donanım sensörünü izler. HWInfo olmadan RemEx yerleşik Windows Performans Sayaçlarını (temel CPU/RAM/Disk/Ağ) kullanır. hwinfo.com adresinden HWInfo'yu indirin → Settings → 'Shared Memory Support' özelliğini etkinleştirin. Not: HWInfo'nun paylaşılan belleği 12 saat sonra otomatik olarak devre dışı kalır — HWInfo ayarlarından yeniden etkinleştirin.</value>
-  </data>
-  <data name="Settings_Install" xml:space="preserve">
-    <value>📦 Yükle</value>
-  </data>
-  <data name="Settings_LanguageHeader" xml:space="preserve">
-    <value>DİL</value>
-  </data>
-  <data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve">
-    <value>Sensörleri keşfetmek için önce Sensör Çalışma Alanını açın.</value>
-  </data>
-  <data name="Settings_PasswordWatermark" xml:space="preserve">
-    <value>Bu hesap için Windows şifresi</value>
-  </data>
-  <data name="Settings_Refresh" xml:space="preserve">
-    <value>⟳ Yenile</value>
-  </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
     <value>📖 Öğreticiyi Tekrar İzle</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Başlangıç öğreticisini yeniden izleyin</value>
-  </data>
-  <data name="Settings_SaveReconnectTooltip" xml:space="preserve">
-    <value>Bağlantı ayarlarını kaydedin ve PC'a yeniden bağlanın</value>
-  </data>
-  <data name="Settings_SnapToGridTooltip" xml:space="preserve">
-    <value>Etkinleştirildiğinde, sensör kartları yeniden konumlandırıldığında en yakın kılavuz çizgisine yapışır</value>
-  </data>
-  <data name="Settings_Uninstall" xml:space="preserve">
-    <value>🗑 Kaldır</value>
-  </data>
-  <data name="Settings_UsernameWatermark" xml:space="preserve">
-    <value>.\Kullaniciadi veya MAKINE\Kullaniciadi</value>
   </data>
   <data name="Settings_FileTransferSection" xml:space="preserve">
     <value>PAYLAŞILAN KLASÖRLER</value>
@@ -1086,34 +816,17 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
     <value>Bu PC'deki hangi klasörlerin Dosya Aktarımı'nda görüneceğini seçin. Salt okunur klasörler gezinmeye ve indirmeye izin verir; yazılabilir klasörler ise telefonunuzdan yükleme de kabul eder.</value>
   </data>
-  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve">
-    <value>DOSYA AKTARIMI NASIL ÇALIŞIR</value>
-  </data>
-  <data name="Settings_FileTransferTutorialBody" xml:space="preserve">
-    <value>Telefonunuz yalnızca burada listelenen klasörleri görür. Rutin yüklemeleri RemEx Transfers gibi yazılabilir bir klasöre yönlendirin ve geri kalanı, mobil cihazların değiştirmesini istemediğiniz sürece salt okunur bırakın.</value>
-  </data>
-  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. RemEx'in paylaşmasını istediğiniz PC klasörlerini ekleyin.
-2. Yüklemeleri yalnızca telefondan PC'ye dosya kabul etmesi gereken klasörler için açın.
-3. Telefonunuzda Dosya Aktarımı'nı açın ve paylaşılan klasörlere oradan göz atın.</value>
-  </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Klasör Ekle</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
     <value>Varsayılanları Geri Yükle</value>
   </data>
-  <data name="Settings_FileTransferEmpty" xml:space="preserve">
-    <value>Henüz paylaşılan klasör yapılandırılmamış. Dosya Aktarımı'nı kullanılabilir hale getirmek için en az bir klasör ekleyin.</value>
-  </data>
   <data name="Settings_FileTransferWritable" xml:space="preserve">
     <value>Yüklemeye izin ver</value>
   </data>
   <data name="Settings_FileTransferRemove" xml:space="preserve">
     <value>Kaldır</value>
-  </data>
-  <data name="Settings_FileTransferImmediate" xml:space="preserve">
-    <value>Değişiklikler Dosya Aktarımı ekranına hemen uygulanır.</value>
   </data>
   <data name="Settings_FileTransferPickerTitle" xml:space="preserve">
     <value>Paylaşılacak klasörü seçin</value>
@@ -1153,9 +866,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_ReadOnly" xml:space="preserve">
     <value>Salt okunur</value>
   </data>
-  <data name="FileTransfer_PathLabel" xml:space="preserve">
-    <value>Yol</value>
-  </data>
   <data name="FileTransfer_UpTooltip" xml:space="preserve">
     <value>Üst klasöre git</value>
   </data>
@@ -1173,12 +883,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="FileTransfer_DownloadTooltip" xml:space="preserve">
     <value>Seçilen uzak dosyayı nereye kaydedeceğinizi seçin</value>
-  </data>
-  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve">
-    <value>Klasörü Aç</value>
-  </data>
-  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve">
-    <value>Seçilen uzak klasörü aç</value>
   </data>
   <data name="FileTransfer_CancelTooltip" xml:space="preserve">
     <value>Etkin aktarımı iptal et</value>
@@ -1205,21 +909,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve">
     <value>Seçilen dosya yerel yol olarak mevcut değil.</value>
   </data>
-  <data name="FileTransfer_UploadingFormat" xml:space="preserve">
-    <value>{0} yükleniyor…</value>
-  </data>
-  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve">
-    <value>{0} yükleniyor… {1:P0}</value>
-  </data>
-  <data name="FileTransfer_UploadComplete" xml:space="preserve">
-    <value>Yükleme tamamlandı.</value>
-  </data>
-  <data name="FileTransfer_UploadCancelled" xml:space="preserve">
-    <value>Yükleme iptal edildi.</value>
-  </data>
-  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve">
-    <value>Yükleme başarısız: {0}</value>
-  </data>
   <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve">
     <value>Kaydet iletişim kutusu kullanılamıyor.</value>
   </data>
@@ -1228,21 +917,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="FileTransfer_SavePathUnavailable" xml:space="preserve">
     <value>Seçilen hedef yerel yol olarak mevcut değil.</value>
-  </data>
-  <data name="FileTransfer_DownloadingFormat" xml:space="preserve">
-    <value>{0} indiriliyor…</value>
-  </data>
-  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve">
-    <value>{0} indiriliyor… {1:P0}</value>
-  </data>
-  <data name="FileTransfer_DownloadComplete" xml:space="preserve">
-    <value>İndirme tamamlandı.</value>
-  </data>
-  <data name="FileTransfer_DownloadCancelled" xml:space="preserve">
-    <value>İndirme iptal edildi.</value>
-  </data>
-  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve">
-    <value>İndirme başarısız: {0}</value>
   </data>
   <data name="FileTransfer_HintNoneSelected" xml:space="preserve">
     <value>Göz atmak için paylaşılan bir klasör seçin.</value>
@@ -1353,15 +1027,6 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
-    <value>Yayın IP'si (255.255.255.255)</value>
-  </data>
-  <data name="Remote_WolMacWatermark" xml:space="preserve">
-    <value>MAC Adresi (AA:BB:CC:DD:EE:FF)</value>
-  </data>
-  <data name="Remote_WolPortWatermark" xml:space="preserve">
-    <value>Bağlantı Noktası</value>
-  </data>
 
   
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
@@ -1425,15 +1090,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="AppLauncher_AddNewApp" xml:space="preserve">
-    <value>YENİ UYGULAMA EKLE</value>
-  </data>
-  <data name="AppLauncher_DisplayNameWatermark" xml:space="preserve">
-    <value>Görünen Ad (ör. Chrome)</value>
-  </data>
-  <data name="AppLauncher_TargetPathWatermark" xml:space="preserve">
-    <value>Hedef Yol (ör. C:\Program Files...)</value>
-  </data>
 
   
   <data name="TaskMgr_CpuLabel" xml:space="preserve">
@@ -1616,9 +1272,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>Neler yeni?</value>
-  </data>
-  <data name="About_Faq" xml:space="preserve">
-    <value>Frequently Asked Questions</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
     <value>H.264 Donanım Videosu</value>
@@ -1834,9 +1487,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Status_InvalidQrData" xml:space="preserve">
     <value>Geçersiz QR kod verisi</value>
   </data>
-  <data name="Settings_ExecutableFileFilter" xml:space="preserve">
-    <value>Çalıştırılabilir</value>
-  </data>
   <data name="Palette_Home" xml:space="preserve">
     <value>Ana Sayfa</value>
   </data>
@@ -2023,30 +1673,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_Directives" xml:space="preserve">
     <value>// YÖNERGELER</value>
   </data>
-  <data name="Home_RemoteControl" xml:space="preserve">
-    <value>UZAKTAN_KONTROL</value>
-  </data>
-  <data name="Home_RemoteControlDesc" xml:space="preserve">
-    <value>Sistem gücü ve erişim</value>
-  </data>
-  <data name="Home_AppLauncher" xml:space="preserve">
-    <value>UYGULAMA_BAŞLATICI</value>
-  </data>
-  <data name="Home_AppLauncherDesc" xml:space="preserve">
-    <value>Uzak işlemleri çalıştır</value>
-  </data>
-  <data name="Home_TaskMonitor" xml:space="preserve">
-    <value>GÖREV_MONİTÖRÜ</value>
-  </data>
-  <data name="Home_TaskMonitorDesc" xml:space="preserve">
-    <value>Etkin iş parçacıklarını yönet</value>
-  </data>
-  <data name="Home_FileSystem" xml:space="preserve">
-    <value>DOSYA_SİSTEMİ</value>
-  </data>
-  <data name="Home_FileSystemDesc" xml:space="preserve">
-    <value>Uzak veri aktarımı</value>
-  </data>
   <data name="Home_LinkStatus" xml:space="preserve">
     <value>BAĞLANTI_DURUMU</value>
   </data>
@@ -2095,12 +1721,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Custom_BorderCornerRadiusPixelsTooltip" xml:space="preserve">
     <value>Piksel cinsinden kenar yuvarlaklığı yarıçapı</value>
   </data>
-  <data name="Custom_CornerRadiusRemoteTooltip" xml:space="preserve">
-    <value>Uzaktan kontrol işlem tuşları için kenar yuvarlaklığını özelleştir</value>
-  </data>
-  <data name="Custom_BorderCornerRadiusRemotePixelsTooltip" xml:space="preserve">
-    <value>Piksel cinsinden uzaktan kontrol düğmesi yuvarlaklık yarıçapı</value>
-  </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
     <value>Cam efekti arka planının görünür opaklık düzeyini ayarla</value>
   </data>
@@ -2137,24 +1757,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Başlangıç hoş geldiniz açılış ekranı animasyonu tarzını seç</value>
   </data>
-  <data name="Settings_RefreshServiceTooltip" xml:space="preserve">
-    <value>Sistem servis durumunu yenile</value>
-  </data>
-  <data name="Settings_ConfigureLoginTooltip" xml:space="preserve">
-    <value>Servis giriş bilgilerini yapılandır (kullanıcı adı/şifre)</value>
-  </data>
-  <data name="Settings_InstallServiceTooltip" xml:space="preserve">
-    <value>RemEx sistem servisini otomatik bir arka plan sunucusu olarak kur</value>
-  </data>
-  <data name="Settings_StartServiceTooltip" xml:space="preserve">
-    <value>Arka plan RemEx sunucu servisini başlat</value>
-  </data>
-  <data name="Settings_StopServiceTooltip" xml:space="preserve">
-    <value>Arka plan RemEx sunucu servisini durdur</value>
-  </data>
-  <data name="Settings_UninstallServiceTooltip" xml:space="preserve">
-    <value>Arka plan RemEx servisini sistemden tamamen kaldır</value>
-  </data>
   <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
     <value>RemEx sunucu adresini yapılandır (websocket protokolü wss://)</value>
   </data>
@@ -2166,21 +1768,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
     <value>Sunucu bilgisayarı ile olan aktif oturum bağlantısını sonlandır</value>
-  </data>
-  <data name="Settings_ChangeLanguageTooltip" xml:space="preserve">
-    <value>Uygulama görünüm dilini değiştir</value>
-  </data>
-  <data name="Settings_SelectPreferredLanguageTooltip" xml:space="preserve">
-    <value>Tercih ettiğiniz dili seçin (değişiklikler hemen uygulanır)</value>
-  </data>
-  <data name="Settings_CompressQualityTooltip" xml:space="preserve">
-    <value>Masaüstü akışının sıkıştırma kalitesini yapılandır (düşük kalite ağ performansını artırır)</value>
-  </data>
-  <data name="Settings_TargetFrameRateTooltip" xml:space="preserve">
-    <value>Masaüstü sıkıştırma motoru için hedef kare hızı (yüksek değerler akıcı görünür ancak daha fazla ağ bant genişliği tüketir)</value>
-  </data>
-  <data name="Settings_ChooseTargetFpsTooltip" xml:space="preserve">
-    <value>Akış için hedef FPS seçin</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Sensör karolarının tuval üzerinde hizalanması için kılavuzları etkinleştir</value>
@@ -2194,92 +1781,8 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Kenar Çubuğunu Aç/Kapat</value>
   </data>
-  <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
-    <value>Genel gösterge paneli kartları ve panelleri için varsayılan kenarlık köşesi yuvarlaklığını özelleştirin</value>
-  </data>
-  <data name="Tooltip_CornerRadiusSlider" xml:space="preserve">
-    <value>Piksel cinsinden kenarlık koşe yarıçapı</value>
-  </data>
-  <data name="Tooltip_RemoteCardShape" xml:space="preserve">
-    <value>Özellikle uzaktan kumanda işlem tuşları için kenarlık köşesi yuvarlaklığını özelleştirin</value>
-  </data>
-  <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
-    <value>Piksel cinsinden uzaktan kumanda düğmesi köşe yarıçapı</value>
-  </data>
-  <data name="Tooltip_GlowStrength" xml:space="preserve">
-    <value>Panel kenarlarındaki arka plan vurgulu neon aura parlaklık yoğunluğunu ayarlayın</value>
-  </data>
-  <data name="Tooltip_GlowStrengthSlider" xml:space="preserve">
-    <value>Piksel cinsinden neon ışıma kalınlığı/yayılımı</value>
-  </data>
-  <data name="Tooltip_AccentColor" xml:space="preserve">
-    <value>Tema renk paleti vurgularını seçin</value>
-  </data>
-  <data name="Tooltip_AccentViolet" xml:space="preserve">
-    <value>Neon Menekşe vurgu rengi temasını seçin</value>
-  </data>
-  <data name="Tooltip_AccentCyan" xml:space="preserve">
-    <value>Siber Camgöbeği vurgu rengi temasını seçin</value>
-  </data>
-  <data name="Tooltip_AccentPink" xml:space="preserve">
-    <value>Sıcak Pembe/Galibarda vurgu rengi temasını seçin</value>
-  </data>
-  <data name="Tooltip_AccentAmber" xml:space="preserve">
-    <value>Güneş Altını/Kehribar vurgu rengi temasını seçin</value>
-  </data>
-  <data name="Tooltip_AccentGreen" xml:space="preserve">
-    <value>Zümrüt Yeşili vurgu rengi temasını seçin</value>
-  </data>
-  <data name="Tooltip_AccentRose" xml:space="preserve">
-    <value>Koyu Kırmızı vurgu rengi temasını seçin</value>
-  </data>
-  <data name="Tooltip_SplashScreen" xml:space="preserve">
-    <value>Başlangıç hoş geldiniz açılış ekranı animasyonu stilini seçin</value>
-  </data>
-  <data name="Tooltip_RefreshService" xml:space="preserve">
-    <value>Sistem hizmeti durumunu yenile</value>
-  </data>
-  <data name="Tooltip_ConfigureServiceLogin" xml:space="preserve">
-    <value>Hizmet oturum açma kimlik bilgilerini yapılandırın (kullanıcı adı/şifre)</value>
-  </data>
-  <data name="Tooltip_InstallService" xml:space="preserve">
-    <value>RemEx sistem hizmetini otomatik bir arka plan sunucusu olarak yükleyin</value>
-  </data>
-  <data name="Tooltip_StartService" xml:space="preserve">
-    <value>Arka plan RemEx sunucu hizmet sürecini başlatın</value>
-  </data>
-  <data name="Tooltip_StopService" xml:space="preserve">
-    <value>Arka plan RemEx sunucu hizmet sürecini durdurun</value>
-  </data>
-  <data name="Tooltip_UninstallService" xml:space="preserve">
-    <value>RemEx sistem hizmetini sistemden tamamen kaldırın</value>
-  </data>
   <data name="Tooltip_SaveReconnect" xml:space="preserve">
     <value>Ana bilgisayar yapılandırma adresini kaydedin ve bağlanmayı deneyin</value>
-  </data>
-  <data name="Tooltip_Disconnect" xml:space="preserve">
-    <value>Ana bilgisayarla olan aktif oturum bağlantısını sonlandırın</value>
-  </data>
-  <data name="Tooltip_LanguageSection" xml:space="preserve">
-    <value>Uygulama görüntüleme dili bağlamını değiştirin</value>
-  </data>
-  <data name="Tooltip_LanguageSelect" xml:space="preserve">
-    <value>Tercih ettiğiniz dili seçin (değişiklikler hemen uygulanır)</value>
-  </data>
-  <data name="Tooltip_StreamQuality" xml:space="preserve">
-    <value>Masaüstü ayna görüntüsü akışının sıkıştırma kalitesi düzeyini yapılandırın (düşük kalite ağ performansını artırır)</value>
-  </data>
-  <data name="Tooltip_StreamFps" xml:space="preserve">
-    <value>Masaüstü sıkıştırma motoru için hedef kare hızı (daha yüksek değerler daha akıcı görünür ancak daha fazla ağ bant genişliği tüketir)</value>
-  </data>
-  <data name="Tooltip_StreamFpsSelect" xml:space="preserve">
-    <value>Akış için hedef FPS'yi seçin</value>
-  </data>
-  <data name="Tooltip_SnapToGrid" xml:space="preserve">
-    <value>Sensör döşemelerinin yerleşim tuvalindeki standart artışlara hizalanması için hizalama kılavuzlarını etkinleştirin</value>
-  </data>
-  <data name="Tooltip_GridSize" xml:space="preserve">
-    <value>Mutlak piksel cinsinden kılavuz yerleşimi artış sınırları</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Kılavuzu tekrar görmek ister misiniz?</value>
@@ -2302,12 +1805,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Çıkış</value>
   </data>
-  <data name="Canvas_ExportTooltip" xml:space="preserve">
-    <value>Tuvali Resimler klasörüne PNG olarak kaydet</value>
-  </data>
-  <data name="Canvas_CopyTooltip" xml:space="preserve">
-    <value>Ekran görüntüsünü doğrudan panoya kopyalayın</value>
-  </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>Otomatik (akıllı)</value>
   </data>
@@ -2316,9 +1813,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
     <value>Çizgi ╱╲╱</value>
-  </data>
-  <data name="Canvas_GraphArea" xml:space="preserve">
-    <value>Alan ▓▓▓</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
     <value>Halka ◍</value>
@@ -2343,24 +1837,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Canvas_SetAlert" xml:space="preserve">
     <value>Uyarı Ayarla...</value>
-  </data>
-  <data name="Boot_Remote" xml:space="preserve">
-    <value>UZAKTAN</value>
-  </data>
-  <data name="Boot_Execution" xml:space="preserve">
-    <value>UYGULAMA</value>
-  </data>
-  <data name="Boot_CommandCenter" xml:space="preserve">
-    <value>⚡ KOMUTA MERKEZİ</value>
-  </data>
-  <data name="Boot_CommandYourPc" xml:space="preserve">
-    <value>BİLGİSAYARINIZI YÖNETİN</value>
-  </data>
-  <data name="Boot_Ote" xml:space="preserve">
-    <value>zak</value>
-  </data>
-  <data name="Boot_Ecution" xml:space="preserve">
-    <value>lama</value>
   </data>
   <data name="Dialog_ConfirmTitle" xml:space="preserve">
     <value>Onayla</value>
@@ -2690,68 +2166,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_TrustRevoked" xml:space="preserve">
     <value>Cihaz izinleri iptal edildi.</value>
   </data>
-  <data name="Settings_ServiceSection" xml:space="preserve">
-    <value>WINDOWS HİZMETİ</value>
-  </data>
-  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
-    <value>WINDOWS SERVICE</value>
-  </data>
-  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX BACKGROUND SERVICE</value>
-  </data>
-  <data name="Settings_ServiceLogin" xml:space="preserve">
-    <value>HİZMET GİRİŞİ</value>
-  </data>
-  <data name="Settings_ServiceDesc" xml:space="preserve">
-    <value>Hizmet, RemEx'in uygulama açık olmadan uzak komutları kabul edebilmesi için arka planda çalışır.</value>
-  </data>
-  <data name="Tutorial_P2_Title" xml:space="preserve">
-    <value>Bir Windows Hizmeti Olarak Çalıştır</value>
-  </data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve">
-    <value>RemEx'i oturum açmadan 7/24 çalışır durumda tutmak için bir Windows hizmeti olarak yükleyin:</value>
-  </data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
-  </data>
-  <data name="Tutorial_P2_Note" xml:space="preserve">
-    <value>Hizmet, ekran yakalama ve uygulama başlatma için masaüstü oturumunuza erişebilmesi adına kullanıcı hesabınız altında çalışır.</value>
-  </data>
-  <data name="Tutorial_P3_Title" xml:space="preserve">
-    <value>Linux Hizmet Kurulumu</value>
-  </data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>Linux'ta RemEx PC, otomatik başlatma için bir systemd hizmeti olarak çalışabilir.</value>
-  </data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux PC archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-PC folder.
-4. Use systemctl --user status remex-PC to verify it is running.</value>
-  </data>
-  <data name="Tutorial_P3_Link" xml:space="preserve">
-    <value>Ayrıntılı talimatlar için GitHub'daki docs/linux-service-setup.md dosyasına bakın.</value>
-  </data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve">
-    <value>PC Binary Yolu</value>
-  </data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve">
-    <value>Otomatik algıla (veya özel yol belirle)</value>
-  </data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve">
-    <value>Ayrıntılı talimatlar, yapılandırma seçenekleri ve sorun giderme için tam kılavuza bakın:</value>
-  </data>
   <data name="Nav_Commands" xml:space="preserve">
     <value>Komutlar</value>
   </data>
   <data name="Nav_Processes" xml:space="preserve">
     <value>İşlemler</value>
-  </data>
-  <data name="Nav_Connection" xml:space="preserve">
-    <value>Bağlantı</value>
   </data>
   <data name="Nav_Faq" xml:space="preserve">
     <value>SSS</value>
@@ -2776,9 +2195,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Conn_DiscoverHosts" xml:space="preserve">
     <value>Ağımdaki hostları bul</value>
-  </data>
-  <data name="Conn_Pairing" xml:space="preserve">
-    <value>Eşleştirme</value>
   </data>
   <data name="Conn_HostInfo" xml:space="preserve">
     <value>Host</value>
@@ -2876,26 +2292,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Canvas_CoachTitle" xml:space="preserve">
     <value>Gösterge panelinizi oluşturun</value>
   </data>
-  <data name="Canvas_GraphBigValue" xml:space="preserve">
-    <value>Büyük Değer 42</value>
-  </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
     <value>Çift Metrik ⑂</value>
   </data>
-  <data name="Canvas_GraphHue" xml:space="preserve">
-    <value>Renk Atışı ◐</value>
-  </data>
-  <data name="Canvas_GraphRadial" xml:space="preserve">
-    <value>Radyal ◔</value>
-  </data>
-  <data name="Canvas_GraphValueSpark" xml:space="preserve">
-    <value>Değer + Spark ⌇</value>
-  </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>İkinci Metrik</value>
-  </data>
-  <data name="Canvas_SecondMetricNone" xml:space="preserve">
-    <value>İkinci Metriği Temizle</value>
   </data>
   <data name="Canvas_SelectedLabel" xml:space="preserve">
     <value>seçili</value>
