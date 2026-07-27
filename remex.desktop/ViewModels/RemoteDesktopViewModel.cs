@@ -232,6 +232,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _desktopService.CursorShapeReceived += OnCursorShapeReceived;
         _desktopService.Disconnected += OnDisconnected;
         Connection.PropertyChanged += OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
 
         // Sync stream defaults from persisted Settings panel values.
         // Without this, the Quality/FPS sliders in Settings have no effect on the actual stream.
@@ -283,6 +284,30 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     // ═══════════════ Commands ═══════════════
 
     public bool IsRemoteDesktopSupported => Connection.SupportsRemoteDesktop;
+
+    /// <summary>
+    /// Re-raises the localized computed properties when the user switches language.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="LocalizationService"/> raises <c>PropertyChanged</c> for the indexer on
+    /// <c>SetCulture</c>, which refreshes bindings that read it directly - but not properties that
+    /// merely CALL the indexer inside an expression body. Those have to be re-raised by name, which
+    /// three sibling view-models already do and this one did not, so these two labels kept their
+    /// old-language text until something unrelated happened to re-raise them (RemEx-6h3q).
+    /// <para>
+    /// No cascade rescued it: <c>ConnectionViewModel.OnLocaleChanged</c> reassigns its own
+    /// <c>StatusText</c> and never touches <c>IsConnected</c>, <c>HostCapabilities</c> or
+    /// <c>SupportsRemoteDesktop</c>, which are the only three triggers here that re-raise them.
+    /// </para>
+    /// </remarks>
+    private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(RemoteDesktopCapabilityText));
+            OnPropertyChanged(nameof(WindowControlCapabilityText));
+        });
+    }
 
     public string RemoteDesktopCapabilityText =>
         Connection.IsConnected
@@ -976,6 +1001,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         Connection.PropertyChanged -= OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         _desktopService.FrameReceived -= OnFrameReceived;
         _desktopService.MetaReceived -= OnMetaReceived;
         _desktopService.ErrorReceived -= OnErrorReceived;
