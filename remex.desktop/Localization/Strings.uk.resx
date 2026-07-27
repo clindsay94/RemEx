@@ -1601,7 +1601,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Вимкнення — ви впевнені?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>Віддалений ПК буде вимкнено. Усю незбережену роботу буде втрачено.</value>
+    <value>Віддалений ПК буде вимкнено. Усю незбережену роботу буде втрачено. Увімкнути його через RemEx недостатньо: RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Вимкнути</value>
@@ -1610,7 +1610,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Перезавантаження — ви впевнені?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>Віддалений ПК буде перезавантажено. Усю незбережену роботу буде втрачено.</value>
+    <value>Віддалений ПК буде перезавантажено. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Перезавантажити</value>
@@ -1619,7 +1619,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Примусове вимкнення — ви впевнені?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Це негайно вимкне віддалений ПК. Усю незбережену роботу буде втрачено.</value>
+    <value>Це негайно вимкне віддалений ПК. Усю незбережену роботу буде втрачено. Увімкнути його через RemEx недостатньо: RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Примусово вимкнути</value>
@@ -1628,7 +1628,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Примусове перезавантаження — ви впевнені?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Це негайно перезавантажить віддалений ПК. Усю незбережену роботу буде втрачено.</value>
+    <value>Це негайно перезавантажить віддалений ПК. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Примусово перезавантажити</value>
@@ -1637,7 +1637,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Перезавантаження в UEFI — ви впевнені?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>Віддалений ПК перезавантажиться й одразу завантажиться в налаштування мікропрограми UEFI. Усю незбережену роботу буде втрачено.</value>
+    <value>Віддалений ПК перезавантажиться й одразу завантажиться в налаштування мікропрограми UEFI. Усю незбережену роботу буде втрачено. RemEx не зможе знову до нього підключитися, доки ви не ввійдете в систему знову на самому ПК.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Перезавантажити в UEFI</value>

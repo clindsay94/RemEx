@@ -2781,7 +2781,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Wyłączanie — czy na pewno?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>Zdalny komputer zostanie wyłączony. Cała niezapisana praca zostanie utracona.</value>
+    <value>Zdalny komputer zostanie wyłączony. Cała niezapisana praca zostanie utracona. Wybudzenie go przez RemEx nie wystarczy: RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Wyłącz</value>
@@ -2790,7 +2790,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Restart — czy na pewno?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>Zdalny komputer zostanie uruchomiony ponownie. Cała niezapisana praca zostanie utracona.</value>
+    <value>Zdalny komputer zostanie uruchomiony ponownie. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Restartuj</value>
@@ -2799,7 +2799,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Wymuś wyłączenie — czy na pewno?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>To spowoduje natychmiastowe wyłączenie zdalnego komputera. Cała niezapisana praca zostanie utracona.</value>
+    <value>To spowoduje natychmiastowe wyłączenie zdalnego komputera. Cała niezapisana praca zostanie utracona. Wybudzenie go przez RemEx nie wystarczy: RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Wymuś wyłączenie</value>
@@ -2808,7 +2808,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Wymuś restart — czy na pewno?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>To spowoduje natychmiastowy restart zdalnego komputera. Cała niezapisana praca zostanie utracona.</value>
+    <value>To spowoduje natychmiastowy restart zdalnego komputera. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Wymuś restart</value>
@@ -2817,7 +2817,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Uruchom do UEFI — czy na pewno?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>Zdalny komputer uruchomi się ponownie i zabootuje bezpośrednio do ustawień oprogramowania UEFI. Cała niezapisana praca zostanie utracona.</value>
+    <value>Zdalny komputer uruchomi się ponownie i zabootuje bezpośrednio do ustawień oprogramowania UEFI. Cała niezapisana praca zostanie utracona. RemEx nie będzie mógł go osiągnąć, dopóki nie zalogujesz się ponownie na samym komputerze.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Uruchom do UEFI</value>

@@ -1616,7 +1616,7 @@ Chrome)</value>
     <value>Apagar — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>El PC remoto se apagará. Todo el trabajo no guardado se perderá.</value>
+    <value>El PC remoto se apagará. Todo el trabajo no guardado se perderá. Encenderlo con RemEx no basta por sí solo: RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Apagar</value>
@@ -1625,7 +1625,7 @@ Chrome)</value>
     <value>Reiniciar — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>El PC remoto se reiniciará. Todo el trabajo no guardado se perderá.</value>
+    <value>El PC remoto se reiniciará. Todo el trabajo no guardado se perderá. RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Reiniciar</value>
@@ -1634,7 +1634,7 @@ Chrome)</value>
     <value>Forzar Apagado — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Esto apagará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá.</value>
+    <value>Esto apagará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá. Encenderlo con RemEx no basta por sí solo: RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Forzar Apagado</value>
@@ -1643,7 +1643,7 @@ Chrome)</value>
     <value>Forzar Reinicio — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Esto reiniciará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá.</value>
+    <value>Esto reiniciará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá. RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Forzar Reinicio</value>
@@ -1652,7 +1652,7 @@ Chrome)</value>
     <value>Reiniciar a UEFI — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>El PC remoto se reiniciará y arrancará directamente en los ajustes del firmware UEFI. Todo el trabajo no guardado se perderá.</value>
+    <value>El PC remoto se reiniciará y arrancará directamente en los ajustes del firmware UEFI. Todo el trabajo no guardado se perderá. RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Reiniciar a UEFI</value>

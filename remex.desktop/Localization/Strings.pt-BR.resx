@@ -1601,7 +1601,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Desligar — Tem certeza?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>O PC remoto será desligado. Todo o trabalho não salvo será perdido.</value>
+    <value>O PC remoto será desligado. Todo o trabalho não salvo será perdido. Ligá-lo com o RemEx não basta: o RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Desligar</value>
@@ -1610,7 +1610,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Reiniciar — Tem certeza?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>O PC remoto será reiniciado. Todo o trabalho não salvo será perdido.</value>
+    <value>O PC remoto será reiniciado. Todo o trabalho não salvo será perdido. O RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Reiniciar</value>
@@ -1619,7 +1619,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Forçar Desligamento — Tem certeza?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Isso desligará o PC remoto imediatamente. Todo o trabalho não salvo será perdido.</value>
+    <value>Isso desligará o PC remoto imediatamente. Todo o trabalho não salvo será perdido. Ligá-lo com o RemEx não basta: o RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Forçar Desligamento</value>
@@ -1628,7 +1628,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Forçar Reinicialização — Tem certeza?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Isso reiniciará o PC remoto imediatamente. Todo o trabalho não salvo será perdido.</value>
+    <value>Isso reiniciará o PC remoto imediatamente. Todo o trabalho não salvo será perdido. O RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Forçar Reinicialização</value>
@@ -1637,7 +1637,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Reiniciar para UEFI — Tem certeza?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>O PC remoto será reiniciado e iniciará diretamente nas configurações de firmware UEFI. Todo o trabalho não salvo será perdido.</value>
+    <value>O PC remoto será reiniciado e iniciará diretamente nas configurações de firmware UEFI. Todo o trabalho não salvo será perdido. O RemEx não conseguirá acessá-lo novamente até que você faça login novamente no próprio PC.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Reiniciar para UEFI</value>

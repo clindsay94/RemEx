@@ -1601,7 +1601,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Matikan — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>PC jarak jauh akan dimatikan. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>PC jarak jauh akan dimatikan. Semua pekerjaan yang belum disimpan akan hilang. Membangunkannya dengan RemEx saja tidak cukup: RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Matikan</value>
@@ -1610,7 +1610,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Restart — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>PC jarak jauh akan di-restart. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>PC jarak jauh akan di-restart. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Restart</value>
@@ -1619,7 +1619,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Paksa Matikan — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Ini akan segera mematikan PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>Ini akan segera mematikan PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang. Membangunkannya dengan RemEx saja tidak cukup: RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Paksa Matikan</value>
@@ -1628,7 +1628,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Paksa Restart — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Ini akan segera me-restart PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>Ini akan segera me-restart PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Paksa Restart</value>
@@ -1637,7 +1637,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Boot ke UEFI — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>PC jarak jauh akan di-restart dan boot langsung ke pengaturan firmware UEFI. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>PC jarak jauh akan di-restart dan boot langsung ke pengaturan firmware UEFI. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Boot ke UEFI</value>

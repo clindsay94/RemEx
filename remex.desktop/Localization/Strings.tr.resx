@@ -1601,7 +1601,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Kapat — Emin misiniz?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>Uzaktaki bilgisayar kapatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
+    <value>Uzaktaki bilgisayar kapatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. RemEx ile uyandırmak tek başına yetmez: Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Kapat</value>
@@ -1610,7 +1610,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Yeniden Başlat — Emin misiniz?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>Uzaktaki bilgisayar yeniden başlatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
+    <value>Uzaktaki bilgisayar yeniden başlatılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Yeniden Başlat</value>
@@ -1619,7 +1619,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Zorla Kapat — Emin misiniz?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Bu, uzaktaki bilgisayarı hemen kapatacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
+    <value>Bu, uzaktaki bilgisayarı hemen kapatacak. Kaydedilmemiş tüm çalışmalar kaybolacak. RemEx ile uyandırmak tek başına yetmez: Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Zorla Kapat</value>
@@ -1628,7 +1628,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Zorla Yeniden Başlat — Emin misiniz?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Bu, uzaktaki bilgisayarı hemen yeniden başlatacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
+    <value>Bu, uzaktaki bilgisayarı hemen yeniden başlatacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Zorla Yeniden Başlat</value>
@@ -1637,7 +1637,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>UEFI'ye Yeniden Başlat — Emin misiniz?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>Uzaktaki bilgisayar yeniden başlatılacak ve doğrudan UEFI donanım yazılımı ayarlarına açılacak. Kaydedilmemiş tüm çalışmalar kaybolacak.</value>
+    <value>Uzaktaki bilgisayar yeniden başlatılacak ve doğrudan UEFI donanım yazılımı ayarlarına açılacak. Kaydedilmemiş tüm çalışmalar kaybolacak. Siz bilgisayarda yeniden oturum açmadıkça RemEx ona yeniden ulaşamaz.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>UEFI'ye Yeniden Başlat</value>

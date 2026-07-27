@@ -1601,7 +1601,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>शटडाउन — क्या आप निश्चित हैं?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>रिमोट पीसी शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा।</value>
+    <value>रिमोट पीसी शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। सिर्फ़ इसे RemEx से चालू करना काफी नहीं है: जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>शटडाउन करें</value>
@@ -1610,7 +1610,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>रीस्टार्ट — क्या आप निश्चित हैं?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>रिमोट पीसी रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा।</value>
+    <value>रिमोट पीसी रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>रीस्टार्ट करें</value>
@@ -1619,7 +1619,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>फोर्स शटडाउन — क्या आप निश्चित हैं?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>इससे रिमोट पीसी तुरंत शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा।</value>
+    <value>इससे रिमोट पीसी तुरंत शटडाउन हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। सिर्फ़ इसे RemEx से चालू करना काफी नहीं है: जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>फोर्स शटडाउन करें</value>
@@ -1628,7 +1628,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>फोर्स रीस्टार्ट — क्या आप निश्चित हैं?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>इससे रिमोट पीसी तुरंत रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा।</value>
+    <value>इससे रिमोट पीसी तुरंत रीस्टार्ट हो जाएगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>फोर्स रीस्टार्ट करें</value>
@@ -1637,7 +1637,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>UEFI में रीस्टार्ट — क्या आप निश्चित हैं?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>रिमोट पीसी रीस्टार्ट होगा और सीधे UEFI फ़र्मवेयर सेटिंग्स में बूट होगा। बिना सहेजा गया सारा काम खो जाएगा।</value>
+    <value>रिमोट पीसी रीस्टार्ट होगा और सीधे UEFI फ़र्मवेयर सेटिंग्स में बूट होगा। बिना सहेजा गया सारा काम खो जाएगा। जब तक आप पीसी पर फिर से साइन इन नहीं करते, तब तक RemEx दोबारा कनेक्ट नहीं हो पाएगा।</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>UEFI में रीस्टार्ट करें</value>

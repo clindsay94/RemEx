@@ -1601,7 +1601,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Arrêter — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>Le PC distant va s'arrêter. Tout travail non enregistré sera perdu.</value>
+    <value>Le PC distant va s'arrêter. Tout travail non enregistré sera perdu. Le réveiller avec RemEx ne suffit pas : RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Arrêter</value>
@@ -1610,7 +1610,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Redémarrer — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>Le PC distant va redémarrer. Tout travail non enregistré sera perdu.</value>
+    <value>Le PC distant va redémarrer. Tout travail non enregistré sera perdu. RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Redémarrer</value>
@@ -1619,7 +1619,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Arrêt forcé — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Cela arrêtera immédiatement le PC distant. Tout travail non enregistré sera perdu.</value>
+    <value>Cela arrêtera immédiatement le PC distant. Tout travail non enregistré sera perdu. Le réveiller avec RemEx ne suffit pas : RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Arrêt forcé</value>
@@ -1628,7 +1628,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Redémarrage forcé — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Cela redémarrera immédiatement le PC distant. Tout travail non enregistré sera perdu.</value>
+    <value>Cela redémarrera immédiatement le PC distant. Tout travail non enregistré sera perdu. RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Redémarrage forcé</value>
@@ -1637,7 +1637,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Redémarrer vers UEFI — Êtes-vous sûr ?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>Le PC distant redémarrera directement dans les paramètres du firmware UEFI. Tout travail non enregistré sera perdu.</value>
+    <value>Le PC distant redémarrera directement dans les paramètres du firmware UEFI. Tout travail non enregistré sera perdu. RemEx ne pourra plus l'atteindre tant que vous ne vous reconnecterez pas sur le PC lui-même.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Redémarrer vers UEFI</value>
