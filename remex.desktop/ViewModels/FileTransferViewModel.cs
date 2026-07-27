@@ -513,7 +513,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 ? string.Format(LocalizationService.Instance["FileTransfer_SearchTruncatedFormat"], SearchResults.Count)
                 : string.Format(LocalizationService.Instance["FileTransfer_SearchResultsFormat"], SearchResults.Count);
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { /* the user navigated away or started another search; superseding one is normal */ }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Searching the connected device failed");

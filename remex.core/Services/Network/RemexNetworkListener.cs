@@ -182,6 +182,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         }
         catch (ObjectDisposedException)
         {
+            // the listener was disposed while accepting, which is how it shuts down
         }
         _tcpListener?.Stop();
         if (_listenTask != null && !_listenTask.IsCompleted)

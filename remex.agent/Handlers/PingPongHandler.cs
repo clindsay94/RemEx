@@ -511,7 +511,7 @@ public sealed class PingPongHandler(
 
             // Cancel background stream
             streamCts.Cancel();
-            try { await streamTask; } catch (OperationCanceledException) { } catch (Exception ex) { logger.LogTrace(ex, "Stream task ended with error."); }
+            try { await streamTask; } catch (OperationCanceledException) { /* expected on cancel; the sibling catch below reports anything else */ } catch (Exception ex) { logger.LogTrace(ex, "Stream task ended with error."); }
 
             if (webSocket.State == WebSocketState.Open)
             {

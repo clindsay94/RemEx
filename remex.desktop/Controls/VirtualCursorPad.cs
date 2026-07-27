@@ -415,6 +415,6 @@ public class VirtualCursorPad : Control
                 await System.Threading.Tasks.Task.Delay(RepeatIntervalMs, ct);
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { /* cancellation is how the pad stops, not a failure */ }
     }
 }

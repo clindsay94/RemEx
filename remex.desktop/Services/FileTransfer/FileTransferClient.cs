@@ -629,7 +629,7 @@ public sealed class FileTransferClient : IDisposable
             // complete before the fileStream is disposed — prevents ObjectDisposedException on
             // pending writes.
             channel.Writer.TryComplete();
-            try { await writeTask; } catch (OperationCanceledException) { }
+            try { await writeTask; } catch (OperationCanceledException) { /* draining the writer after cancelling it - the cancel is the reason it stopped */ }
 
             if (result.FileTransferEnd?.Success == false)
             {

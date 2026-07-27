@@ -224,14 +224,14 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         _connectionCts?.Cancel();
         if (_receiveLoopTask != null)
         {
-            try { await _receiveLoopTask; } catch { }
+            try { await _receiveLoopTask; } catch { /* draining the receive loop after cancelling it - whatever it surfaces describes the shutdown, not a fault */ }
         }
 
         if (_webSocket != null)
         {
             if (_webSocket.State == WebSocketState.Open)
             {
-                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { }
+                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { /* a polite close on a socket that may already be gone; the disconnect happens either way */ }
             }
             _webSocket.Dispose();
             _webSocket = null;
@@ -375,7 +375,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                 }
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { /* cancellation is how this wait normally ends */ }
         catch (Exception)
         {
             ConnectionStateChanged?.Invoke(false);

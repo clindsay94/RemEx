@@ -250,9 +250,9 @@ public sealed class RemoteDesktopHandler : IDisposable
                                 await Task.WhenAny(streamTask, receiveTask, cursorTask);
                                 await streamCts.CancelAsync();
 
-                                try { await streamTask; } catch (OperationCanceledException) { }
-                                try { await receiveTask; } catch (OperationCanceledException) { }
-                                try { await cursorTask; } catch (OperationCanceledException) { }
+                                try { await streamTask; } catch (OperationCanceledException) { /* we just cancelled it; this is the acknowledgement, not a failure */ }
+                                try { await receiveTask; } catch (OperationCanceledException) { /* as above - draining the task so teardown does not race it */ }
+                                try { await cursorTask; } catch (OperationCanceledException) { /* as above */ }
                             }
                         }
                         finally
@@ -632,7 +632,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                         }
 
                         // Notify sender loop
-                        try { frameAvailable.Release(); } catch (ObjectDisposedException) { }
+                        try { frameAvailable.Release(); } catch (ObjectDisposedException) { /* the sender loop already tore the semaphore down; there is nobody left to signal */ }
                     }
                     else if (!captureSucceeded)
                     {
@@ -792,7 +792,7 @@ public sealed class RemoteDesktopHandler : IDisposable
             {
                 await captureTask;
             }
-            catch { }
+            catch { /* draining the capture task during teardown: it has already been cancelled, and whatever it surfaces is about the shutdown rather than about a fault worth reporting */ }
             _activeH264Encoder = null;
             h264Encoder?.Dispose();
             frameAvailable.Dispose();
@@ -1021,7 +1021,7 @@ public sealed class RemoteDesktopHandler : IDisposable
             }
         }
         catch (OperationCanceledException) { /* normal */ }
-        catch (WebSocketException) { }
+        catch (WebSocketException) { /* the socket is already going away - the peer disconnecting is how this loop normally ends */ }
     }
 
     private async Task SendDesktopWindowResult(WebSocket webSocket, DesktopWindowResult result, string? correlationId, SemaphoreSlim sendLock, CancellationToken ct)

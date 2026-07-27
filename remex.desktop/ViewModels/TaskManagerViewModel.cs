@@ -303,7 +303,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
                 await RefreshProcessesAsync();
                 await Task.Delay(2000, ct); // Poll every 2 seconds
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException) { /* polling was cancelled because the view went away */ }
             catch { await Task.Delay(2000, ct); }
         }
     }

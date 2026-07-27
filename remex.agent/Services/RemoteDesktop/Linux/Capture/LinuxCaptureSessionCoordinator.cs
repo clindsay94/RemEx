@@ -104,7 +104,7 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
         if (_captureLoop is not null)
         {
             try { await _captureLoop; }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException) { /* cancellation is how a capture session normally ends */ }
             catch (Exception ex) { _logger.LogWarning(ex, "Capture loop exit error."); }
         }
 

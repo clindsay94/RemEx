@@ -350,14 +350,14 @@ public sealed class RemexDesktopClient : IDisposable
         _pendingWindowRequests.Clear();
         if (_receiveLoopTask != null)
         {
-            try { await _receiveLoopTask; } catch { }
+            try { await _receiveLoopTask; } catch { /* draining the receive loop after cancelling it - see RemexNativeClient */ }
         }
 
         if (_webSocket != null)
         {
             if (_webSocket.State == WebSocketState.Open)
             {
-                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { }
+                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { /* a polite close on a socket that may already be gone */ }
             }
             _webSocket.Dispose();
             _webSocket = null;

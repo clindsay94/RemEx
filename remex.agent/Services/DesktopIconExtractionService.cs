@@ -115,7 +115,7 @@ public class DesktopIconExtractionService : IIconExtractionService
                 }
             }
         }
-        catch { }
+        catch { /* an icon that cannot be extracted degrades to no icon; the launcher entry is still usable without one */ }
         return null;
     }
 

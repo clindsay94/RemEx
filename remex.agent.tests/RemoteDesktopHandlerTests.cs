@@ -313,14 +313,14 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
                 if (r.MessageType == WebSocketMessageType.Close) break;
             }
         }
-        catch (OperationCanceledException) { }
-        catch (WebSocketException) { }
-        catch (System.IO.IOException) { }
+        catch (OperationCanceledException) { /* test teardown: the socket is being torn down deliberately, so these three are the expected ways the loop ends */ }
+        catch (WebSocketException) { /* as above */ }
+        catch (System.IO.IOException) { /* as above */ }
 
         if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
         {
             try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
-            catch { }
+            catch { /* best-effort test cleanup: a failure here would mask the assertion the test actually makes */ }
         }
     }
 
@@ -538,7 +538,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
         if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
         {
             try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
-            catch { }
+            catch { /* best-effort test cleanup, as above */ }
         }
     }
 

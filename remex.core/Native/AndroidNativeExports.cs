@@ -453,7 +453,7 @@ public static class AndroidNativeExports
     {
         if (_pairingWebSocket != null)
         {
-            try { _pairingWebSocket.Dispose(); } catch { }
+            try { _pairingWebSocket.Dispose(); } catch { /* best-effort cleanup: a socket that fails to dispose is already unusable, and throwing here would replace the real pairing outcome with a teardown error */ }
             _pairingWebSocket = null;
         }
 
@@ -560,7 +560,7 @@ public static class AndroidNativeExports
                         }
                         catch (OperationCanceledException) when (handshakeCts.IsCancellationRequested)
                         {
-                            try { ws.Dispose(); } catch { }
+                            try { ws.Dispose(); } catch { /* best-effort cleanup of a socket that never got promoted; see ClearActivePairingState */ }
                             return $"ERROR: {PairingErrorCodes.PairTimeout}: Pairing handshake timed out — host did not return PairingResponse within 60s";
                         }
                     }
@@ -568,7 +568,7 @@ public static class AndroidNativeExports
                     if (_activePairingResponse == null)
                     {
                         _activePairingClient = null;
-                        try { ws.Dispose(); } catch { }
+                        try { ws.Dispose(); } catch { /* as above */ }
                         return $"ERROR: {PairingErrorCodes.PairMalformed}: Host responded but PairingResponse payload was missing";
                     }
 
@@ -589,7 +589,7 @@ public static class AndroidNativeExports
                     // If we created a socket but didn't promote it to _pairingWebSocket, dispose it now.
                     if (ws != null)
                     {
-                        try { ws.Dispose(); } catch { }
+                        try { ws.Dispose(); } catch { /* as above */ }
                     }
                 }
             }

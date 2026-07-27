@@ -291,7 +291,7 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>
         if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
         {
             try { await ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
-            catch { }
+            catch { /* best-effort test cleanup: a teardown failure must not fail a passing test */ }
         }
     }
 

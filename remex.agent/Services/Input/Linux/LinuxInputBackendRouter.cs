@@ -265,6 +265,6 @@ public sealed class LinuxInputBackendRouter : IInputSimulationService, IDisposab
             using var proc = Process.Start(psi);
             proc?.WaitForExit(2000);
         }
-        catch { }
+        catch { /* probing a backend that is not present on this system is the normal case, not an error - the router falls through to the next one */ }
     }
 }

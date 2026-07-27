@@ -953,7 +953,7 @@ public sealed class TransferSessionManager : IDisposable
 
         public void Cancel()
         {
-            try { _cts.Cancel(); } catch (ObjectDisposedException) { }
+            try { _cts.Cancel(); } catch (ObjectDisposedException) { /* the token source was already disposed by a concurrent teardown, which means the cancel it would have carried has already happened */ }
         }
     }
 
