@@ -142,6 +142,27 @@ android {
             // with "Method e in android.util.Log not mocked". See:
             // https://developer.android.com/r/studio-ui/build/not-mocked
             isReturnDefaultValues = true
+
+            // Hand the repo root to unit tests explicitly rather than letting them guess it from
+            // a working directory. PairingErrorCodesCoverageTest reads a C# file two levels up
+            // (remex.core/Native/PairingErrorCodes.cs) to prove the Kotlin mapping still covers
+            // every native cause; a relative-path guess would break the moment Gradle changed the
+            // test working directory, with an error saying nothing about why. (RemEx-odkk.)
+            all {
+                val repoRoot = rootProject.projectDir.parentFile
+                it.systemProperty("remex.repoRoot", repoRoot.absolutePath)
+
+                // And declare that C# file as a task INPUT. Without this, Gradle's up-to-date
+                // check has no idea the test depends on it, so editing ONLY that file leaves the
+                // test skipped as up-to-date — the guard would go quiet in exactly the situation
+                // it exists for. Verified: adding an unmapped code and re-running reported BUILD
+                // SUCCESSFUL until this line existed, and only --rerun-tasks revealed the failure.
+                it.inputs
+                        .file(File(repoRoot, "remex.core/Native/PairingErrorCodes.cs"))
+                        .withPropertyName("pairingErrorCodesSource")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+            }
         }
     }
 
