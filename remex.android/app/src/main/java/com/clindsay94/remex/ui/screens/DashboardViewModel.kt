@@ -364,6 +364,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         viewModelScope.launch {
             settingsManager.migrateShapeDefaultsV2()
+            settingsManager.migrateShapeDefaultsV3()
         }
 
         maybeAutoShowCoach()
