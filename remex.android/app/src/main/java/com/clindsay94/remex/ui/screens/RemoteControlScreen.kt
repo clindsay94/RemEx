@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.view.HapticFeedbackConstants
 import com.clindsay94.remex.ui.components.hapticCommandSent
 import com.clindsay94.remex.ui.components.hapticCommandAcknowledged
 import com.clindsay94.remex.ui.components.hapticCommandFailed

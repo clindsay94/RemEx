@@ -45,8 +45,6 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
-import com.clindsay94.remex.data.SettingsManager
-import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
 
