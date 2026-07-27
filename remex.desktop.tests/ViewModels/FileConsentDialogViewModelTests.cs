@@ -12,50 +12,57 @@ public class FileConsentDialogViewModelTests
         new() { ConsentId = "consent-1", Kind = kind, Detail = detail };
 
     [Fact]
-    public void Allow_WithRemember_ResolvesGrantedAndRemembered()
+    public async Task Allow_WithRemember_ResolvesGrantedAndRemembered()
     {
         var vm = new FileConsentDialogViewModel(Request()) { Remember = true };
 
         vm.AllowCommand.Execute(null);
 
+        // Assert completion BEFORE awaiting. These commands resolve the decision synchronously,
+        // and awaiting a task that never completed would hang the test until xUnit's timeout
+        // rather than failing it with a useful message.
         vm.ResultTask.IsCompletedSuccessfully.Should().BeTrue();
-        var decision = vm.ResultTask.Result;
+        var decision = await vm.ResultTask;
         decision.Granted.Should().BeTrue();
         decision.Remember.Should().BeTrue();
     }
 
     [Fact]
-    public void Allow_WithoutRemember_ResolvesGrantedNotRemembered()
+    public async Task Allow_WithoutRemember_ResolvesGrantedNotRemembered()
     {
         var vm = new FileConsentDialogViewModel(Request());
 
         vm.AllowCommand.Execute(null);
 
-        var decision = vm.ResultTask.Result;
+        vm.ResultTask.IsCompletedSuccessfully.Should().BeTrue();
+        var decision = await vm.ResultTask;
         decision.Granted.Should().BeTrue();
         decision.Remember.Should().BeFalse();
     }
 
     [Fact]
-    public void Deny_ResolvesDeniedRegardlessOfRemember()
+    public async Task Deny_ResolvesDeniedRegardlessOfRemember()
     {
         var vm = new FileConsentDialogViewModel(Request()) { Remember = true };
 
         vm.DenyCommand.Execute(null);
 
-        var decision = vm.ResultTask.Result;
+        vm.ResultTask.IsCompletedSuccessfully.Should().BeTrue();
+        var decision = await vm.ResultTask;
         decision.Granted.Should().BeFalse();
         decision.Remember.Should().BeFalse();
     }
 
     [Fact]
-    public void ResolveAsDeny_WhenDismissed_ResolvesDenied()
+    public async Task ResolveAsDeny_WhenDismissed_ResolvesDenied()
     {
         var vm = new FileConsentDialogViewModel(Request());
 
         vm.ResolveAsDeny();
 
-        vm.ResultTask.Result.Granted.Should().BeFalse();
+        vm.ResultTask.IsCompletedSuccessfully.Should().BeTrue();
+        var decision = await vm.ResultTask;
+        decision.Granted.Should().BeFalse();
     }
 
     [Fact]
