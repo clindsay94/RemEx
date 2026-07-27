@@ -47,12 +47,46 @@ private enum class CommandCategory(@param:StringRes val labelRes: Int) {
     ENERGY(R.string.rc_category_energy)
 }
 
+/**
+ * Whether an action discards the user's work, and therefore must be confirmed.
+ *
+ * This is the ONE place the question is answered. It used to be a hand-set Boolean on every card,
+ * and the original values had been assigned by CATEGORY - every POWER card true, every SESSION and
+ * ENERGY card false. Sign Out sits in SESSION beside Wake and Lock, so it inherited `false` by
+ * association and shipped a destructive action with no prompt (RemEx-awks). Nothing in the type
+ * stopped the twelfth card repeating that, because the property that actually matters - does this
+ * close programs or lose unsaved work? - was never expressed, only proxied.
+ *
+ * The `else` branch confirms. A `when` over a wire string cannot be exhaustive, so the default has
+ * to be the SAFE direction: an action nobody classified gets a prompt rather than running silently.
+ * RemoteControlConfirmationTests then fails if any card actually relies on that default, so the
+ * fallback is a safety net rather than a place for cards to quietly accumulate.
+ */
+private fun actionDiscardsWork(action: String): Boolean = when (action) {
+    "SignOut",
+    "Shutdown",
+    "ForceShutdown",
+    "Restart",
+    "ForceRestart",
+    "RestartToUefi" -> true
+
+    // Reversible, and none of them closes a program or discards unsaved work. Wake and Lock change
+    // nothing the user is holding; Sleep and Hibernate preserve session state by definition;
+    // MonitorOff only blanks the display.
+    "WakeOnLan",
+    "Lock",
+    "Sleep",
+    "Hibernate",
+    "MonitorOff" -> false
+
+    else -> true
+}
+
 private data class RemoteCommandCard(
         val id: String,
         @param:StringRes val titleRes: Int,
         val action: String,
         val icon: ImageVector,
-        val requiresConfirmation: Boolean,
         val category: CommandCategory,
         /**
          * Optional short consequence shown only while the card is awaiting confirmation, for commands
@@ -76,7 +110,14 @@ private data class RemoteCommandCard(
          * because they do not require confirmation.
          */
         val supportsDelay: Boolean = true
-)
+) {
+    /**
+     * Derived from [action], never hand-set. Reading it from one classifier is what stops a new
+     * card inheriting the wrong answer by sitting next to the wrong neighbour.
+     */
+    val requiresConfirmation: Boolean
+        get() = actionDiscardsWork(action)
+}
 
 /**
  * Height the floating quick-actions toolbar occludes at the bottom of the command grid.
@@ -95,7 +136,6 @@ private val remoteCommandCards =
                         R.string.rc_wake_pc,
                         "WakeOnLan",
                         Icons.Default.Sensors,
-                        false,
                         CommandCategory.SESSION
                 ),
                 RemoteCommandCard(
@@ -103,7 +143,6 @@ private val remoteCommandCards =
                         R.string.rc_lock_pc,
                         "Lock",
                         Icons.Default.Lock,
-                        false,
                         CommandCategory.SESSION
                 ),
                 // Signing out closes every open program on the PC and discards unsaved work, exactly
@@ -116,7 +155,6 @@ private val remoteCommandCards =
                         R.string.rc_logoff,
                         "SignOut",
                         Icons.AutoMirrored.Filled.Logout,
-                        true,
                         CommandCategory.SESSION,
                         // The consequence a phone user cannot see: the PC stays ON but becomes
                         // unreachable, because remex.agent lives in the signed-in session and is
@@ -133,7 +171,6 @@ private val remoteCommandCards =
                         R.string.rc_shutdown,
                         "Shutdown",
                         Icons.Default.PowerSettingsNew,
-                        true,
                         CommandCategory.POWER
                 ),
                 RemoteCommandCard(
@@ -141,7 +178,6 @@ private val remoteCommandCards =
                         R.string.rc_force_shutdown,
                         "ForceShutdown",
                         Icons.Default.PowerOff,
-                        true,
                         CommandCategory.POWER
                 ),
                 RemoteCommandCard(
@@ -149,7 +185,6 @@ private val remoteCommandCards =
                         R.string.rc_restart,
                         "Restart",
                         Icons.Default.RestartAlt,
-                        true,
                         CommandCategory.POWER
                 ),
                 RemoteCommandCard(
@@ -157,7 +192,6 @@ private val remoteCommandCards =
                         R.string.rc_force_restart,
                         "ForceRestart",
                         Icons.Default.Warning,
-                        true,
                         CommandCategory.POWER
                 ),
                 RemoteCommandCard(
@@ -165,7 +199,6 @@ private val remoteCommandCards =
                         R.string.rc_reboot_uefi,
                         "RestartToUefi",
                         Icons.Default.Refresh,
-                        true,
                         CommandCategory.POWER
                 ),
                 RemoteCommandCard(
@@ -173,7 +206,6 @@ private val remoteCommandCards =
                         R.string.rc_sleep,
                         "Sleep",
                         Icons.Default.Bedtime,
-                        false,
                         CommandCategory.ENERGY
                 ),
                 RemoteCommandCard(
@@ -181,7 +213,6 @@ private val remoteCommandCards =
                         R.string.rc_hibernate,
                         "Hibernate",
                         Icons.Default.Bedtime,
-                        false,
                         CommandCategory.ENERGY
                 ),
                 RemoteCommandCard(
@@ -189,7 +220,6 @@ private val remoteCommandCards =
                         R.string.rc_monitor_off,
                         "MonitorOff",
                         Icons.Default.Monitor,
-                        false,
                         CommandCategory.ENERGY
                 )
         )
