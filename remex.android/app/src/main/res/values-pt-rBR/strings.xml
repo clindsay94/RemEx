@@ -759,4 +759,11 @@
     <string name="faq_a14">Pode ser. Seu PC guarda um certificado de segurança que o celular usa para reconhecê-lo, em um lugar que nada mais consegue ler — é isso que impede outro programa de se passar pelo seu PC. Se o RemEx no PC não conseguir ler esse arquivo, ele abre normalmente mas não consegue aceitar conexões, então seu celular não consegue alcançá-lo mesmo que continue aparecendo como pareado.\n\nEm um PC com Windows: o RemEx precisa de direitos de administrador para lê-lo. Feche o RemEx, clique com o botão direito e escolha \"Executar como administrador\", depois tente conectar novamente. Normalmente o RemEx já inicia com direitos de administrador sozinho quando você entra no PC, então isso deve ser raro.\n\nEm um PC com Linux: o RemEx não precisa de root — nunca o inicie com sudo. Isso quase sempre significa que uma instalação antiga do remex-host deixou o certificado pertencendo ao root. Execute o instalador do RemEx no PC novamente; ele conserta isso para você e seus celulares pareados continuam funcionando.</string>
     <string name="faq_q15">Posso impedir que o RemEx inicie automaticamente no meu PC?</string>
     <string name="faq_a15">Sim, mas isso se muda no PC, não no celular.\n\nNo PC, abra o RemEx, vá em Configurações e desative \"Iniciar ao fazer login\". O RemEx continua instalado e ainda pode ser aberto manualmente, e reativar a opção restaura o início automático.\n\nPor trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada \"RemEx\" e o Linux usa uma entrada de autostart em ~/.config/autostart/remex-agent.desktop. Se o RemEx parar de iniciar ao entrar, desative e reative a opção.\n\nLembre-se de que seu celular só alcança o PC enquanto o RemEx estiver rodando, então com o início automático desativado será preciso abri-lo no PC antes de conectar.</string>
+    <string name="cd_hue">Matiz (Hue)</string>
+    <string name="cd_chroma">Vibração (Chroma)</string>
+    <string name="cd_contrast">Contraste</string>
+    <string name="cd_font_scale">Escala da Fonte</string>
+    <string name="cd_corner_radius">Base do Canto</string>
+    <string name="cd_degree_value">%1$d°</string>
+    <string name="cd_dp_value">%1$ddp</string>
 </resources>

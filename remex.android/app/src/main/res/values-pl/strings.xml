@@ -761,4 +761,11 @@
     <string name="faq_a14">To możliwe. Twój komputer przechowuje certyfikat bezpieczeństwa, po którym telefon go rozpoznaje, w miejscu, którego nie może odczytać nic innego — to właśnie uniemożliwia innym programom podszywanie się pod Twój komputer. Jeśli RemEx na komputerze nie może odczytać tego pliku, nadal się otwiera, ale nie może przyjmować połączeń, więc telefon nie może się z nim połączyć, mimo że nadal jest pokazywany jako sparowany.\n\nNa komputerze z Windows: RemEx potrzebuje uprawnień administratora, aby go odczytać. Zamknij RemEx, kliknij go prawym przyciskiem i wybierz \"Uruchom jako administrator\", a potem połącz się ponownie. RemEx zwykle sam uruchamia się z uprawnieniami administratora po zalogowaniu, więc powinno to być rzadkie.\n\nNa komputerze z Linuksem: RemEx nie potrzebuje roota — nigdy nie uruchamiaj go przez sudo. Prawie zawsze oznacza to, że stara instalacja remex-host pozostawiła certyfikat należący do roota. Uruchom ponownie instalator RemEx na komputerze; naprawi to za Ciebie, a sparowane telefony będą działać dalej.</string>
     <string name="faq_q15">Czy mogę wyłączyć automatyczne uruchamianie RemEx na komputerze?</string>
     <string name="faq_a15">Tak, ale zmienia się to na komputerze, nie w telefonie.\n\nNa komputerze otwórz RemEx, przejdź do Ustawień i wyłącz \"Uruchom przy logowaniu\". RemEx pozostaje zainstalowany i nadal możesz uruchomić go ręcznie, a ponowne włączenie przywraca automatyczny start.\n\nPod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie \"RemEx\", a Linux wpisu autostartu w ~/.config/autostart/remex-agent.desktop. Jeśli RemEx przestanie uruchamiać się po zalogowaniu, wyłącz i włącz to ustawienie ponownie.\n\nPamiętaj, że telefon może połączyć się z komputerem tylko wtedy, gdy RemEx działa, więc przy wyłączonym automatycznym starcie trzeba go najpierw uruchomić na komputerze.</string>
+    <string name="cd_hue">Odcień</string>
+    <string name="cd_chroma">Nasycenie (Chroma)</string>
+    <string name="cd_contrast">Kontrast</string>
+    <string name="cd_font_scale">Skala czcionki</string>
+    <string name="cd_corner_radius">Baza narożnika</string>
+    <string name="cd_degree_value">%1$d°</string>
+    <string name="cd_dp_value">%1$ddp</string>
 </resources>

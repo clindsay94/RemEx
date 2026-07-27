@@ -639,13 +639,15 @@ fun PersonalizationScreenContent(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Hue Slider
+                            // Hue Slider. The label carries the value, so it is cleared for
+                            // TalkBack and the HueSlider itself announces both (RemEx-qiz5).
                             Text(
                                     stringResource(
                                             R.string.personalization_hue_label,
                                             currentHct.hue.roundToInt()
                                     ),
-                                    style = MaterialTheme.typography.labelSmall
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.clearAndSetSemantics {}
                             )
                             HueSlider(
                                     value = currentHct.hue.toFloat(),
@@ -664,13 +666,20 @@ fun PersonalizationScreenContent(
                                     }
                             )
 
-                            // Chroma Slider
+                            // Chroma Slider. Like contrast below, the value is a bare number
+                            // with no typography for a translator to decide, so it needs no
+                            // resource of its own - and feeding the SAME Int to the label and to
+                            // stateDescription is what guarantees they can never disagree.
+                            val chromaAccessibilityLabel = stringResource(R.string.cd_chroma)
+                            val chromaValue = themeSeedChroma.roundToInt()
+                            val chromaValueText = chromaValue.toString()
                             Text(
                                     stringResource(
                                             R.string.personalization_chroma_label,
-                                            themeSeedChroma.roundToInt()
+                                            chromaValue
                                     ),
-                                    style = MaterialTheme.typography.labelSmall
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.clearAndSetSemantics {}
                             )
                             Slider(
                                     value = themeSeedChroma,
@@ -680,16 +689,26 @@ fun PersonalizationScreenContent(
                                                 HapticFeedbackConstants.CLOCK_TICK
                                         )
                                     },
-                                    valueRange = 0f..120f
+                                    valueRange = 0f..120f,
+                                    modifier =
+                                            Modifier.semantics {
+                                                contentDescription = chromaAccessibilityLabel
+                                                stateDescription = chromaValueText
+                                            }
                             )
 
-                            // Contrast Slider
+                            // Contrast Slider. The value is a bare number, so it needs no
+                            // resource of its own - it is the same "%.2f" the label already
+                            // formats, which respects the device locale's decimal separator.
+                            val contrastAccessibilityLabel = stringResource(R.string.cd_contrast)
+                            val contrastValueText = "%.2f".format(themeContrast)
                             Text(
                                     stringResource(
                                             R.string.personalization_contrast_label,
-                                            "%.2f".format(themeContrast)
+                                            contrastValueText
                                     ),
-                                    style = MaterialTheme.typography.labelSmall
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.clearAndSetSemantics {}
                             )
                             Slider(
                                     value = themeContrast,
@@ -699,7 +718,12 @@ fun PersonalizationScreenContent(
                                                 HapticFeedbackConstants.CLOCK_TICK
                                         )
                                     },
-                                    valueRange = -1.0f..1.0f
+                                    valueRange = -1.0f..1.0f,
+                                    modifier =
+                                            Modifier.semantics {
+                                                contentDescription = contrastAccessibilityLabel
+                                                stateDescription = contrastValueText
+                                            }
                             )
 
                             // Tonal Row
@@ -812,9 +836,14 @@ fun PersonalizationScreenContent(
                         }
                     }
 
+                    val fontScalePercent = (fontScale * 100).roundToInt()
+                    val fontScaleAccessibilityLabel = stringResource(R.string.cd_font_scale)
+                    val fontScalePercentText =
+                            stringResource(R.string.cd_percent_value, fontScalePercent)
                     Text(
-                            stringResource(R.string.personalization_font_scale_format, (fontScale * 100).roundToInt()),
-                            style = MaterialTheme.typography.labelMedium
+                            stringResource(R.string.personalization_font_scale_format, fontScalePercent),
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.clearAndSetSemantics {}
                     )
                     Slider(
                             value = fontScale,
@@ -822,7 +851,12 @@ fun PersonalizationScreenContent(
                             onValueChangeFinished = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                             },
-                            valueRange = 0.85f..1.4f
+                            valueRange = 0.85f..1.4f,
+                            modifier =
+                                    Modifier.semantics {
+                                        contentDescription = fontScaleAccessibilityLabel
+                                        stateDescription = fontScalePercentText
+                                    }
                     )
                 }
             }
@@ -844,9 +878,15 @@ fun PersonalizationScreenContent(
                             Icons.Default.Tune
                     )
 
+                    // Corner radius is in dp, not percent, so it needs its own value format
+                    // rather than reusing cd_percent_value.
+                    val cornerRadiusAccessibilityLabel = stringResource(R.string.cd_corner_radius)
+                    val cornerRadiusValueText =
+                            stringResource(R.string.cd_dp_value, cornerRadius)
                     Text(
                             stringResource(R.string.personalization_corner_base, cornerRadius),
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.clearAndSetSemantics {}
                     )
                     Slider(
                             value = cornerRadius.toFloat(),
@@ -854,7 +894,12 @@ fun PersonalizationScreenContent(
                             onValueChangeFinished = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                             },
-                            valueRange = 4f..36f
+                            valueRange = 4f..36f,
+                            modifier =
+                                    Modifier.semantics {
+                                        contentDescription = cornerRadiusAccessibilityLabel
+                                        stateDescription = cornerRadiusValueText
+                                    }
                     )
 
                     // A11y pairing for this label + Slider (RemEx-porq). TalkBack previously announced
@@ -979,10 +1024,19 @@ fun PersonalizationScreenContent(
                                         style = MaterialTheme.typography.bodyMediumEmphasized
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Cleared because the Slider below now announces this same
+                                    // shape name as its stateDescription. The category Text above
+                                    // is deliberately left announceable, but only as the row
+                                    // HEADING: unlike the other slider labels on this screen it
+                                    // carries no value, so leaving it cannot repeat one. Note it
+                                    // does NOT name the reset button beside it - this Row sets no
+                                    // mergeDescendants, so they are separate focus stops and all
+                                    // six reset buttons still announce identically (RemEx-pmo4).
                                     Text(
                                             shapeNameText,
                                             style = MaterialTheme.typography.labelSmallEmphasized,
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.clearAndSetSemantics {}
                                     )
                                     if (!isInherit) {
                                         IconButton(
@@ -1019,7 +1073,15 @@ fun PersonalizationScreenContent(
                                         },
                                         valueRange = 0f..maxShapes,
                                         steps = materialShapesList.size - 2,
-                                        modifier = Modifier.weight(1f)
+                                        // The meaningful value here is the shape NAME, not the
+                                        // index - "Circle" tells a TalkBack user what they just
+                                        // selected, "3.0" does not. One fix covers every visible
+                                        // shape slider, since they are all this one composable.
+                                        modifier =
+                                                Modifier.weight(1f).semantics {
+                                                    contentDescription = label
+                                                    stateDescription = shapeNameText
+                                                }
                                 )
                                 Box(
                                         modifier =
@@ -1165,6 +1227,12 @@ private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
     val gradient = remember {
         Brush.horizontalGradient((0..360).map { Color.hsv(it.toFloat(), 1f, 1f) })
     }
+    // Hoisted: semantics {} is not a composable scope, so stringResource cannot be called
+    // inside it. See the card-opacity slider (RemEx-porq) for why both properties are needed -
+    // contentDescription alone leaves M3's own stateDescription in place, which is the raw
+    // float TalkBack was reading out.
+    val hueAccessibilityLabel = stringResource(R.string.cd_hue)
+    val hueValueText = stringResource(R.string.cd_degree_value, value.roundToInt())
     Box(modifier = Modifier.fillMaxWidth().height(32.dp).clip(CircleShape).background(gradient)) {
         Slider(
                 value = value,
@@ -1176,7 +1244,11 @@ private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
                                 activeTrackColor = Color.Transparent,
                                 inactiveTrackColor = Color.Transparent
                         ),
-                modifier = Modifier.fillMaxSize()
+                modifier =
+                        Modifier.fillMaxSize().semantics {
+                            contentDescription = hueAccessibilityLabel
+                            stateDescription = hueValueText
+                        }
         )
     }
 }
