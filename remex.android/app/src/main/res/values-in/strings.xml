@@ -498,7 +498,6 @@
     <string name="file_transfer_shortcut_removed">Pintasan dihapus.</string>
     <string name="file_transfer_transfer_failed">Transfer tidak selesai. Pastikan PC Anda masih terhubung, lalu coba lagi.</string>
     <string name="file_transfer_unable_open_location">Tidak dapat membuka lokasi penyimpanan yang dipilih.</string>
-    <string name="file_transfer_unknown_error">Kesalahan tidak dikenal.</string>
     <string name="file_transfer_upload_complete">Unggahan selesai.</string>
     <string name="file_transfer_upload_failed">Tidak dapat mengirim file. Pastikan PC Anda masih terhubung, lalu coba lagi.</string>
     <string name="file_transfer_uploading_single">Mengunggah %1$s…</string>
@@ -520,7 +519,7 @@
     <string name="personalization_splash_style">Animasi Layar Pembuka</string>
     <string name="personalization_typography_studio">Studio Tipografi</string>
     <string name="rc_command_sent">Perintah dikirim</string>
-    <string name="rc_error_format">Kesalahan: %1$s</string>
+    <string name="rc_error_format">Tidak dapat mengirim perintah itu ke PC. Pastikan PC masih terhubung, lalu coba lagi.</string>
     <string name="rc_failed_format">Gagal: %1$s</string>
     <string name="rc_failed_mac_not_configured">Gagal: Alamat MAC tidak dikonfigurasi di pengaturan</string>
     <string name="rc_success_format">Sukses: %1$s</string>

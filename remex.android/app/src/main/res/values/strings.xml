@@ -694,7 +694,6 @@
     <string name="file_transfer_download_failed_sha256">Download failed: SHA-256 mismatch</string>
     <string name="file_transfer_download_complete">Download complete.</string>
     <string name="file_transfer_upload_complete">Upload complete.</string>
-    <string name="file_transfer_unknown_error">Unknown error.</string>
     <string name="file_transfer_transfer_failed">The transfer did not finish. Check your PC is still connected, then try again.</string>
     <string name="file_transfer_cancelled">Cancelled.</string>
     <string name="file_transfer_unable_open_location">Unable to open the selected save location.</string>
@@ -713,7 +712,7 @@
     <string name="rc_failed_format">Failed: %1$s</string>
     <string name="rc_failed_mac_not_configured">Failed: MAC address not configured in settings</string>
     <string name="rc_command_sent">Command sent</string>
-    <string name="rc_error_format">Error: %1$s</string>
+    <string name="rc_error_format">Could not send that command to the PC. Check it is still connected, then try again.</string>
 
     <string name="remote_desktop_action_failed">Desktop window action failed</string>
     <string name="remote_desktop_untitled_window">(untitled)</string>

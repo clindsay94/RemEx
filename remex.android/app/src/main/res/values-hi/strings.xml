@@ -498,7 +498,6 @@
     <string name="file_transfer_shortcut_removed">शॉर्टकट हटा दिया गया।</string>
     <string name="file_transfer_transfer_failed">ट्रांसफ़र पूरा नहीं हुआ। जांचें कि आपका पीसी अभी भी कनेक्ट है, फिर दोबारा कोशिश करें।</string>
     <string name="file_transfer_unable_open_location">चयनित सहेजने का स्थान खोलने में असमर्थ।</string>
-    <string name="file_transfer_unknown_error">अज्ञात त्रुटि।</string>
     <string name="file_transfer_upload_complete">अपलोड पूर्ण।</string>
     <string name="file_transfer_upload_failed">फ़ाइल नहीं भेजी जा सकी। जांचें कि आपका पीसी अभी भी कनेक्ट है, फिर दोबारा कोशिश करें।</string>
     <string name="file_transfer_uploading_single">%1$s अपलोड किया जा रहा है…</string>
@@ -520,7 +519,7 @@
     <string name="personalization_splash_style">स्प्लैश स्क्रीन एनीमेशन</string>
     <string name="personalization_typography_studio">टाइपोग्राफी स्टूडियो</string>
     <string name="rc_command_sent">कमांड भेजा गया</string>
-    <string name="rc_error_format">त्रुटि: %1$s</string>
+    <string name="rc_error_format">यह कमांड PC को नहीं भेजी जा सकी। जांचें कि वह अभी भी कनेक्टेड है, फिर दोबारा कोशिश करें।</string>
     <string name="rc_failed_format">विफल: %1$s</string>
     <string name="rc_failed_mac_not_configured">विफल: सेटिंग्स में मैक एड्रेस कॉन्फ़िगर नहीं किया गया है</string>
     <string name="rc_success_format">सफलता: %1$s</string>

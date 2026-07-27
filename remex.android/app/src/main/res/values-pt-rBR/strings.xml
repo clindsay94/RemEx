@@ -498,7 +498,6 @@
     <string name="file_transfer_shortcut_removed">Atalho removido.</string>
     <string name="file_transfer_transfer_failed">A transferência não foi concluída. Verifique se o seu PC ainda está conectado e tente novamente.</string>
     <string name="file_transfer_unable_open_location">Não foi possível abrir o local de salvamento selecionado.</string>
-    <string name="file_transfer_unknown_error">Erro desconhecido.</string>
     <string name="file_transfer_upload_complete">Envio concluído.</string>
     <string name="file_transfer_upload_failed">Não foi possível enviar o arquivo. Verifique se o seu PC ainda está conectado e tente novamente.</string>
     <string name="file_transfer_uploading_single">Enviando %1$s…</string>
@@ -520,7 +519,7 @@
     <string name="personalization_splash_style">Animação de Tela de Inicialização</string>
     <string name="personalization_typography_studio">Estúdio de Tipografia</string>
     <string name="rc_command_sent">Comando enviado</string>
-    <string name="rc_error_format">Erro: %1$s</string>
+    <string name="rc_error_format">Não foi possível enviar esse comando ao PC. Verifique se ele continua conectado e tente novamente.</string>
     <string name="rc_failed_format">Falha: %1$s</string>
     <string name="rc_failed_mac_not_configured">Falha: endereço MAC não configurado nas configurações</string>
     <string name="rc_success_format">Sucesso: %1$s</string>

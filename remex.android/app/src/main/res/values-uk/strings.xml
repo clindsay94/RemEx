@@ -498,7 +498,6 @@
     <string name="file_transfer_shortcut_removed">Ярлик видалено.</string>
     <string name="file_transfer_transfer_failed">Передавання не завершено. Перевірте, чи ПК досі підключений, а потім спробуйте ще раз.</string>
     <string name="file_transfer_unable_open_location">Не вдалося відкрити вибране місце збереження.</string>
-    <string name="file_transfer_unknown_error">Невідома помилка.</string>
     <string name="file_transfer_upload_complete">Вивантаження завершено.</string>
     <string name="file_transfer_upload_failed">Не вдалося надіслати файл. Перевірте, чи ПК досі підключений, а потім спробуйте ще раз.</string>
     <string name="file_transfer_uploading_single">Вивантаження %1$s…</string>
@@ -520,7 +519,7 @@
     <string name="personalization_splash_style">Анімація заставки</string>
     <string name="personalization_typography_studio">Студія типографіки</string>
     <string name="rc_command_sent">Команду надіслано</string>
-    <string name="rc_error_format">Помилка: %1$s</string>
+    <string name="rc_error_format">Не вдалося надіслати цю команду на комп’ютер. Перевірте, чи він досі підключений, а потім спробуйте ще раз.</string>
     <string name="rc_failed_format">Не вдалося: %1$s</string>
     <string name="rc_failed_mac_not_configured">Не вдалося: MAC-адресу не налаштовано в параметрах</string>
     <string name="rc_success_format">Успішно: %1$s</string>

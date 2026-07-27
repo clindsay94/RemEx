@@ -498,7 +498,6 @@
     <string name="file_transfer_shortcut_removed">Raccourci retiré.</string>
     <string name="file_transfer_transfer_failed">Le transfert ne s\'est pas terminé. Vérifiez que votre PC est toujours connecté, puis réessayez.</string>
     <string name="file_transfer_unable_open_location">Impossible d\'ouvrir l\'emplacement d\'enregistrement sélectionné.</string>
-    <string name="file_transfer_unknown_error">Erreur inconnue.</string>
     <string name="file_transfer_upload_complete">Envoi terminé.</string>
     <string name="file_transfer_upload_failed">Impossible d\'envoyer le fichier. Vérifiez que votre PC est toujours connecté, puis réessayez.</string>
     <string name="file_transfer_uploading_single">Envoi de %1$s…</string>
@@ -520,7 +519,7 @@
     <string name="personalization_splash_style">Animation de l\'écran de démarrage</string>
     <string name="personalization_typography_studio">Studio de typographie</string>
     <string name="rc_command_sent">Commande envoyée</string>
-    <string name="rc_error_format">Erreur : %1$s</string>
+    <string name="rc_error_format">Impossible d\'envoyer cette commande au PC. Vérifiez qu\'il est toujours connecté, puis réessayez.</string>
     <string name="rc_failed_format">Échec : %1$s</string>
     <string name="rc_failed_mac_not_configured">Échec : adresse MAC non configurée dans les paramètres</string>
     <string name="rc_success_format">Succès : %1$s</string>

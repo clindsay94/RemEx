@@ -477,7 +477,6 @@
     <string name="file_transfer_shortcut_removed">Skrót usunięty.</string>
     <string name="file_transfer_transfer_failed">Transfer nie został ukończony. Sprawdź, czy komputer jest nadal połączony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_unable_open_location">Nie można otworzyć wybranej lokalizacji zapisu.</string>
-    <string name="file_transfer_unknown_error">Nieznany błąd.</string>
     <string name="file_transfer_upload_complete">Przesyłanie zakończone.</string>
     <string name="file_transfer_upload_failed">Nie udało się wysłać pliku. Sprawdź, czy komputer jest nadal połączony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_uploading_single">Przesyłanie %1$s…</string>
@@ -499,7 +498,7 @@
     <string name="personalization_splash_style">Animacja ekranu powitalnego</string>
     <string name="personalization_typography_studio">Studio typografii</string>
     <string name="rc_command_sent">Polecenie wysłane</string>
-    <string name="rc_error_format">Błąd: %1$s</string>
+    <string name="rc_error_format">Nie udało się wysłać tego polecenia do komputera. Sprawdź, czy jest nadal połączony, a następnie spróbuj ponownie.</string>
     <string name="rc_failed_format">Niepowodzenie: %1$s</string>
     <string name="rc_failed_mac_not_configured">Niepowodzenie: Adres MAC nieskonfigurowany w ustawieniach</string>
     <string name="rc_success_format">Sukces: %1$s</string>

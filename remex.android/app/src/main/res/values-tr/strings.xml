@@ -498,7 +498,6 @@
     <string name="file_transfer_shortcut_removed">Kısayol kaldırıldı.</string>
     <string name="file_transfer_transfer_failed">Aktarım tamamlanmadı. Bilgisayarınızın hâlâ bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="file_transfer_unable_open_location">Seçilen kaydetme konumu açılamıyor.</string>
-    <string name="file_transfer_unknown_error">Bilinmeyen hata.</string>
     <string name="file_transfer_upload_complete">Yükleme tamamlandı.</string>
     <string name="file_transfer_upload_failed">Dosya gönderilemedi. Bilgisayarınızın hâlâ bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="file_transfer_uploading_single">%1$s yükleniyor…</string>
@@ -520,7 +519,7 @@
     <string name="personalization_splash_style">Başlangıç Ekranı Animasyonu</string>
     <string name="personalization_typography_studio">Tipografi Stüdyosu</string>
     <string name="rc_command_sent">Komut gönderildi</string>
-    <string name="rc_error_format">Hata: %1$s</string>
+    <string name="rc_error_format">Bu komut bilgisayara gönderilemedi. Bilgisayarın hâlâ bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="rc_failed_format">Başarısız: %1$s</string>
     <string name="rc_failed_mac_not_configured">Başarısız: Ayarlarda MAC adresi yapılandırılmadı</string>
     <string name="rc_success_format">Başarılı: %1$s</string>

@@ -498,7 +498,6 @@
     <string name="file_transfer_shortcut_removed">Acceso directo quitado.</string>
     <string name="file_transfer_transfer_failed">La transferencia no se completó. Comprueba que tu PC siga conectado y vuelve a intentarlo.</string>
     <string name="file_transfer_unable_open_location">No se puede abrir la ubicación de guardado seleccionada.</string>
-    <string name="file_transfer_unknown_error">Error desconocido.</string>
     <string name="file_transfer_upload_complete">Subida completada.</string>
     <string name="file_transfer_upload_failed">No se pudo enviar el archivo. Comprueba que tu PC siga conectado y vuelve a intentarlo.</string>
     <string name="file_transfer_uploading_single">Subiendo %1$s…</string>
@@ -520,7 +519,7 @@
     <string name="personalization_splash_style">Animación de pantalla de inicio</string>
     <string name="personalization_typography_studio">Estudio de tipografía</string>
     <string name="rc_command_sent">Comando enviado</string>
-    <string name="rc_error_format">Error: %1$s</string>
+    <string name="rc_error_format">No se pudo enviar ese comando al PC. Comprueba que siga conectado y vuelve a intentarlo.</string>
     <string name="rc_failed_format">Falló: %1$s</string>
     <string name="rc_failed_mac_not_configured">Falló: dirección MAC no configurada en la configuración</string>
     <string name="rc_success_format">Éxito: %1$s</string>
