@@ -14,8 +14,11 @@
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
+        <!-- The hover ring was literal White, which is invisible against SolarFlare's near-white
+             surface - so on that theme there was no hover feedback at all. TextPrimaryBrush is the
+             one key guaranteed to contrast with its own theme's background (RemEx-fy0a). -->
         <Style Selector="Button.accent-picker:pointerover">
-            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
     </UserControl.Styles>
 
@@ -251,7 +254,10 @@
                 </Grid>
 
                 <!-- Shown only when a chosen font can't be loaded on this machine; the app falls back safely. -->
-                <Border Background="#22F59E0B" BorderBrush="#55F59E0B" BorderThickness="1" CornerRadius="8" Padding="12,8" IsVisible="{Binding HasFontWarning}">
+                <!-- Warning colours come from the theme, not literals: the amber pair below was
+                     mixed for a dark glass background and washes out on SolarFlare, whose surface
+                     is near-white. Both keys exist in all four themes (RemEx-fy0a). -->
+                <Border Background="{DynamicResource SystemWarningBackgroundBrush}" BorderBrush="{DynamicResource SystemWarningBrush}" BorderThickness="1" CornerRadius="8" Padding="12,8" IsVisible="{Binding HasFontWarning}">
                     <TextBlock Text="{Binding FontWarning}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                 </Border>
             </StackPanel>
