@@ -187,7 +187,7 @@ public sealed class FileTransferClient : IDisposable
         Capabilities = response.FileRootsResponse?.FileCapabilities;
 
         if (response.FileRootsResponse?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
-            throw new IOException($"Root listing error: {err}");
+            throw FileTransferHostException.ForHostError(err, $"Root listing error: {err}");
 
         return response.FileRootsResponse?.Roots ?? [];
     }
@@ -400,7 +400,9 @@ public sealed class FileTransferClient : IDisposable
             ct);
 
         if (response.FileManageResponse?.Success == false)
-            throw new IOException(response.FileManageResponse.ErrorMessage ?? $"{operation} failed.");
+            throw FileTransferHostException.ForHostError(
+                response.FileManageResponse.ErrorMessage,
+                $"{operation} failed without the host giving a reason.");
     }
 
     /// <summary>Bounded recursive search under a root subtree. Returns hits plus whether results were capped.</summary>
@@ -459,7 +461,7 @@ public sealed class FileTransferClient : IDisposable
         if (response.FileMetadataResponse is not { } meta)
             throw new IOException("No metadata response received.");
         if (meta.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
-            throw new IOException($"Metadata error: {err}");
+            throw FileTransferHostException.ForHostError(err, $"Metadata error: {err}");
         return meta;
     }
 
@@ -506,7 +508,7 @@ public sealed class FileTransferClient : IDisposable
 
         var resp = response.FileVolumesResponse;
         if (resp?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
-            throw new IOException($"Volumes error: {err}");
+            throw FileTransferHostException.ForHostError(err, $"Volumes error: {err}");
         return (resp?.Volumes ?? [], resp?.FullBrowseGranted ?? false);
     }
 
@@ -529,7 +531,7 @@ public sealed class FileTransferClient : IDisposable
             ct);
 
         if (response.FileRootManageResponse?.ErrorMessage is string err)
-            throw new IOException($"Add root failed: {err}");
+            throw FileTransferHostException.ForHostError(err, "Add root failed with an empty host message.");
 
         return response.FileRootManageResponse?.Roots ?? [];
     }
@@ -553,7 +555,7 @@ public sealed class FileTransferClient : IDisposable
             ct);
 
         if (response.FileRootManageResponse?.ErrorMessage is string err)
-            throw new IOException($"Remove root failed: {err}");
+            throw FileTransferHostException.ForHostError(err, "Remove root failed with an empty host message.");
 
         return response.FileRootManageResponse?.Roots ?? [];
     }

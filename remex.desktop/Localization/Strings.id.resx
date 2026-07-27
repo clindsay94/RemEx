@@ -1236,7 +1236,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>PC belum mengekspos folder bersama apa pun.</value>
   </data>
   <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
-    <value>Folder bersama tidak tersedia: {0}</value>
+    <value>Tidak dapat memuat folder bersama. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
     <value>Tidak dapat membuka folder tersebut. Pastikan perangkat yang terhubung masih disandingkan dan folder masih dibagikan, lalu coba lagi.</value>
@@ -1380,7 +1380,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folder ditambahkan ke root bersama.</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>Tidak dapat menyematkan folder: {0}</value>
+    <value>Tidak dapat menyematkan folder tersebut. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
     <value>Hapus folder bersama ini dari dropdown</value>
@@ -1392,7 +1392,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folder bersama dihapus.</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>Tidak dapat menghapus folder: {0}</value>
+    <value>Tidak dapat menghapus folder tersebut. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
 
   
@@ -2540,7 +2540,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Buat</value>
   </data>
   <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
-    <value>Tidak dapat membuat folder: {0}</value>
+    <value>Tidak dapat membuat folder. Pastikan nama tersebut belum dipakai dan folder mengizinkan perubahan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
     <value>Membuat folder “{0}”…</value>
@@ -2582,7 +2582,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Salin dan pindah hanya berfungsi dalam folder bersama yang sama.</value>
   </data>
   <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
-    <value>Tempel gagal: {0}</value>
+    <value>Tidak dapat menempelkan item tersebut di sini. Pastikan folder tujuan mengizinkan perubahan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_PasteTooltip" xml:space="preserve">
     <value>Tempel item yang disalin atau dipotong ke folder ini.</value>
@@ -2609,7 +2609,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Properti</value>
   </data>
   <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
-    <value>Tidak dapat memuat detail: {0}</value>
+    <value>Tidak dapat memuat detail item tersebut. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
     <value>PROPERTI</value>
@@ -2696,7 +2696,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Akses perangkat penuh tidak diberikan.</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
-    <value>Tidak dapat mencantumkan drive: {0}</value>
+    <value>Tidak dapat menampilkan daftar drive. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
     <value>{0} drive tersedia.</value>

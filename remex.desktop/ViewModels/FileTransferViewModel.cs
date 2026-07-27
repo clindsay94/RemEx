@@ -198,9 +198,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             if (SelectedRemoteRoot is null)
                 StatusText = LocalizationService.Instance["FileTransfer_NoSharedFolders"];
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Listing the phone's shared folders failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_SharedFoldersUnavailableFormat"], ex.Message);
+            _logger.LogWarning(ex, "Listing the phone's shared folders failed");
+            StatusText = LocalizationService.Instance["FileTransfer_SharedFoldersUnavailableFormat"];
         }
         finally
         {
@@ -811,9 +818,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
             await BrowseRemoteAsync();
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Pasting the clipboard selection failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_PasteFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Pasting the clipboard selection failed");
+            StatusText = LocalizationService.Instance["FileTransfer_PasteFailedFormat"];
         }
         finally
         {
@@ -941,9 +955,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             IsCreatingFolder = false;
             await BrowseRemoteAsync();
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Creating a folder on the phone failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_CreateFolderFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Creating a folder on the phone failed");
+            StatusText = LocalizationService.Instance["FileTransfer_CreateFolderFailedFormat"];
         }
         finally
         {
@@ -988,9 +1009,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         {
             SelectedMetadata = await _client.GetMetadataRemoteAsync(SelectedRemoteRoot.RootId, relativePath, CancellationToken.None);
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Loading item details from the phone failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_PropertiesFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Loading item details from the phone failed");
+            StatusText = LocalizationService.Instance["FileTransfer_PropertiesFailedFormat"];
         }
 
         if (!entry.IsDirectory && IsImageFile(entry.Name))
@@ -1049,9 +1077,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 ? string.Format(LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], Volumes.Count)
                 : LocalizationService.Instance["FileTransfer_VolumesDenied"];
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Listing the phone's drives failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_VolumesFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Listing the phone's drives failed");
+            StatusText = LocalizationService.Instance["FileTransfer_VolumesFailedFormat"];
         }
         finally
         {
@@ -1115,9 +1150,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             ReplaceRemoteRoots(updatedRoots);
             StatusText = LocalizationService.Instance["FileTransfer_PinComplete"];
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Pinning the current folder failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_PinFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Pinning the current folder failed");
+            StatusText = LocalizationService.Instance["FileTransfer_PinFailedFormat"];
         }
         finally
         {
@@ -1143,9 +1185,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             ReplaceRemoteRoots(updatedRoots);
             StatusText = LocalizationService.Instance["FileTransfer_RemoveRootComplete"];
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Removing the shared folder failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_RemoveRootFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Removing the shared folder failed");
+            StatusText = LocalizationService.Instance["FileTransfer_RemoveRootFailedFormat"];
         }
         finally
         {

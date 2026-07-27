@@ -1281,7 +1281,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>The PC has not exposed any shared folders yet.</value>
   </data>
   <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
-    <value>Shared folders unavailable: {0}</value>
+    <value>Could not load the shared folders. Check the connected device is still paired, then try again.</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
     <value>Could not open that folder. Check the connected device is still paired and the folder is still shared, then try again.</value>
@@ -1425,7 +1425,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folder added to shared roots.</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>Could not pin folder: {0}</value>
+    <value>Could not pin that folder. Check the connected device is still paired, then try again.</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
     <value>Remove this shared folder from the dropdown</value>
@@ -1437,7 +1437,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Shared folder removed.</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>Could not remove folder: {0}</value>
+    <value>Could not remove that folder. Check the connected device is still paired, then try again.</value>
   </data>
 
   
@@ -2809,7 +2809,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folder created.</value>
   </data>
   <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
-    <value>Could not create folder: {0}</value>
+    <value>Could not create the folder. Check that name is not already in use and the folder allows changes, then try again.</value>
   </data>
   <data name="FileTransfer_CopyBtn" xml:space="preserve">
     <value>Copy</value>
@@ -2851,7 +2851,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Copy and move only work within the same shared folder.</value>
   </data>
   <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
-    <value>Paste failed: {0}</value>
+    <value>Could not paste those items here. Check the destination folder allows changes, then try again.</value>
   </data>
   <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
     <value>Properties</value>
@@ -2863,7 +2863,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>PROPERTIES</value>
   </data>
   <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
-    <value>Could not load details: {0}</value>
+    <value>Could not load the details for that item. Check the connected device is still paired, then try again.</value>
   </data>
   <data name="FileTransfer_PropSize" xml:space="preserve">
     <value>Size</value>
@@ -2899,7 +2899,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Full-device access was not granted.</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
-    <value>Could not list drives: {0}</value>
+    <value>Could not list the drives. Check the connected device is still paired, then try again.</value>
   </data>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
     <value>TRANSFERS</value>

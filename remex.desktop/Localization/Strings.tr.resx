@@ -1236,7 +1236,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>PC henüz paylaşılan klasör sunmamış.</value>
   </data>
   <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
-    <value>Paylaşılan klasörler kullanılamıyor: {0}</value>
+    <value>Paylaşılan klasörler yüklenemedi. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
     <value>Bu klasör açılamadı. Bağlı cihazın hâlâ eşleştirilmiş olduğundan ve klasörün hâlâ paylaşıldığından emin olun, ardından tekrar deneyin.</value>
@@ -1380,7 +1380,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Klasör paylaşılan köklere eklendi.</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>Klasör sabitlenemedi: {0}</value>
+    <value>Bu klasör sabitlenemedi. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
     <value>Bu paylaşılan klasörü açılır listeden kaldır</value>
@@ -1392,7 +1392,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Paylaşılan klasör kaldırıldı.</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>Klasör kaldırılamadı: {0}</value>
+    <value>Bu klasör kaldırılamadı. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
 
   
@@ -2542,7 +2542,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Klasör oluşturuldu.</value>
   </data>
   <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
-    <value>Klasör oluşturulamadı: {0}</value>
+    <value>Klasör oluşturulamadı. Bu adın kullanımda olmadığından ve klasörün değişikliklere izin verdiğinden emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_CopyBtn" xml:space="preserve">
     <value>Kopyala</value>
@@ -2584,7 +2584,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Kopyalama ve taşıma yalnızca aynı paylaşılan klasör içinde çalışır.</value>
   </data>
   <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
-    <value>Yapıştırma başarısız: {0}</value>
+    <value>Bu öğeler buraya yapıştırılamadı. Hedef klasörün değişikliklere izin verdiğinden emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_SearchWatermark" xml:space="preserve">
     <value>Bu klasörde ara…</value>
@@ -2626,7 +2626,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>ÖZELLİKLER</value>
   </data>
   <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
-    <value>Ayrıntılar yüklenemedi: {0}</value>
+    <value>Bu öğenin ayrıntıları yüklenemedi. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_PropSize" xml:space="preserve">
     <value>Boyut</value>
@@ -2662,7 +2662,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Tam cihaz erişimi verilmedi.</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
-    <value>Sürücüler listelenemedi: {0}</value>
+    <value>Sürücüler listelenemedi. Bağlı cihazın hâlâ eşleştirilmiş olduğundan emin olun, ardından tekrar deneyin.</value>
   </data>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
     <value>AKTARIMLAR</value>

@@ -1191,7 +1191,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>PC nie udostępnił jeszcze żadnych folderów.</value>
   </data>
   <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
-    <value>Foldery udostępnione niedostępne: {0}</value>
+    <value>Nie udało się wczytać folderów udostępnionych. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
     <value>Nie udało się otworzyć tego folderu. Sprawdź, czy połączone urządzenie jest nadal sparowane i czy folder jest nadal udostępniony, a następnie spróbuj ponownie.</value>
@@ -1335,7 +1335,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folder dodany do folderów udostępnionych.</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>Nie można przypiąć folderu: {0}</value>
+    <value>Nie udało się przypiąć tego folderu. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
     <value>Usuń ten folder udostępniony z listy rozwijanej</value>
@@ -1347,7 +1347,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folder udostępniony usunięty.</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>Nie można usunąć folderu: {0}</value>
+    <value>Nie udało się usunąć tego folderu. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
 
   
@@ -2325,7 +2325,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Utwórz</value>
   </data>
   <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
-    <value>Nie udało się utworzyć folderu: {0}</value>
+    <value>Nie udało się utworzyć folderu. Sprawdź, czy ta nazwa nie jest już używana i czy folder pozwala na zmiany, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
     <value>Tworzenie folderu „{0}”…</value>
@@ -2367,7 +2367,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Kopiowanie i przenoszenie działają tylko w obrębie tego samego folderu udostępnionego.</value>
   </data>
   <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
-    <value>Wklejanie nie powiodło się: {0}</value>
+    <value>Nie udało się wkleić tych elementów tutaj. Sprawdź, czy folder docelowy pozwala na zmiany, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_PasteTooltip" xml:space="preserve">
     <value>Wklej skopiowane lub wycięte elementy do tego folderu.</value>
@@ -2394,7 +2394,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Właściwości</value>
   </data>
   <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
-    <value>Nie udało się wczytać szczegółów: {0}</value>
+    <value>Nie udało się wczytać szczegółów tego elementu. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
     <value>WŁAŚCIWOŚCI</value>
@@ -2481,7 +2481,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Nie udzielono pełnego dostępu do urządzenia.</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
-    <value>Nie udało się wyświetlić listy dysków: {0}</value>
+    <value>Nie udało się wyświetlić listy dysków. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
   </data>
   <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
     <value>Dostępnych dysków: {0}.</value>

@@ -1236,7 +1236,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>होस्ट ने अभी तक कोई साझा फ़ोल्डर नहीं दिखाया है।</value>
   </data>
   <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
-    <value>साझा फ़ोल्डर अनुपलब्ध: {0}</value>
+    <value>साझा फ़ोल्डर लोड नहीं हो सके। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
     <value>वह फ़ोल्डर नहीं खोला जा सका। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है और फ़ोल्डर अभी भी साझा है, फिर दोबारा कोशिश करें।</value>
@@ -1380,7 +1380,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>फ़ोल्डर साझा रूट में जोड़ा गया।</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>फ़ोल्डर पिन नहीं किया जा सका: {0}</value>
+    <value>उस फ़ोल्डर को पिन नहीं किया जा सका। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
     <value>इस साझा फ़ोल्डर को ड्रॉपडाउन से हटाएँ</value>
@@ -1392,7 +1392,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>साझा फ़ोल्डर हटा दिया गया।</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>फ़ोल्डर हटाया नहीं जा सका: {0}</value>
+    <value>उस फ़ोल्डर को हटाया नहीं जा सका। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
   </data>
 
   
@@ -2540,7 +2540,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>बनाएं</value>
   </data>
   <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
-    <value>फ़ोल्डर नहीं बनाया जा सका: {0}</value>
+    <value>फ़ोल्डर नहीं बनाया जा सका। जांचें कि वह नाम पहले से इस्तेमाल में नहीं है और फ़ोल्डर में बदलाव की अनुमति है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
     <value>फ़ोल्डर “{0}” बनाया जा रहा है…</value>
@@ -2582,7 +2582,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>कॉपी और स्थानांतरण केवल एक ही साझा फ़ोल्डर के भीतर काम करते हैं।</value>
   </data>
   <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
-    <value>पेस्ट विफल: {0}</value>
+    <value>उन आइटम को यहां पेस्ट नहीं किया जा सका। जांचें कि गंतव्य फ़ोल्डर में बदलाव की अनुमति है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_PasteTooltip" xml:space="preserve">
     <value>कॉपी या कट किए गए आइटम को इस फ़ोल्डर में पेस्ट करें।</value>
@@ -2609,7 +2609,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>गुण</value>
   </data>
   <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
-    <value>विवरण लोड नहीं किया जा सका: {0}</value>
+    <value>उस आइटम का विवरण लोड नहीं हो सका। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
     <value>गुण</value>
@@ -2696,7 +2696,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>पूर्ण-डिवाइस एक्सेस नहीं दी गई।</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
-    <value>ड्राइव सूचीबद्ध नहीं की जा सकीं: {0}</value>
+    <value>ड्राइव की सूची नहीं मिल सकी। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
   </data>
   <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
     <value>{0} ड्राइव उपलब्ध हैं।</value>
