@@ -2220,7 +2220,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>Vous avez la dernière version.</value>
   </data>
   <data name="About_Update_Available" xml:space="preserve">
-    <value>Mise à jour disponible : {0}</value>
+    <value>Mise à jour disponible : {0}</value>
   </data>
   <data name="About_Update_Failed" xml:space="preserve">
     <value>Impossible de vérifier les mises à jour. Réessayez plus tard.</value>
@@ -2642,10 +2642,10 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
     <value>Spritz</value>
   </data>
   <data name="TaskManager_KillFailed" xml:space="preserve">
-    <value>Impossible de terminer « {0} » (PID {1}). Rien n'a été modifié. Actualisez la liste et réessayez.</value>
+    <value>Impossible de terminer « {0} » (PID {1}). Rien n'a été modifié. Actualisez la liste et réessayez.</value>
   </data>
   <data name="TaskManager_KillTargetChanged" xml:space="preserve">
-    <value>Rien n'a été terminé. « {0} » (PID {1}) s'est fermé pendant que vous décidiez, et ce PID peut désormais appartenir à un autre programme. La liste a été actualisée : retrouvez le programme et réessayez.</value>
+    <value>Rien n'a été terminé. « {0} » (PID {1}) s'est fermé pendant que vous décidiez, et ce PID peut désormais appartenir à un autre programme. La liste a été actualisée : retrouvez le programme et réessayez.</value>
   </data>
   <data name="Confirm_SignOut_Title" xml:space="preserve">
     <value>Déconnexion — Êtes-vous sûr ?</value>
