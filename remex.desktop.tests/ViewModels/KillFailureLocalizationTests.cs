@@ -1,3 +1,8 @@
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.ViewModels;
@@ -74,6 +79,95 @@ public class KillFailureLocalizationTests
         const string Legacy = "Access denied. Run the host as Administrator or retry with KillProcessElevated.";
 
         TaskManagerViewModel.LocalizeKillFailure(Legacy).Should().Be(Legacy);
+    }
+
+    /// <summary>
+    /// Every code the host can send has a branch here — checked against the declaration file, not
+    /// against a hand-written list.
+    /// </summary>
+    /// <remarks>
+    /// Android has had this guard since RemEx-r37a; the PC had only the hand-authored
+    /// <c>[InlineData]</c> cases above, which can prove the mappings that EXIST do not fall through
+    /// but can never notice a code that was never added to them. That asymmetry was flagged in
+    /// review and is what this closes (RemEx-v1is).
+    /// <para>
+    /// The failure it guards is quiet rather than loud: <see cref="TaskManagerViewModel"/>'s switch
+    /// ends in a default arm that falls back to the host's English, so a missing branch is a missing
+    /// TRANSLATION, not a crash or a raw code on screen. That is the safe direction, and it is
+    /// exactly why nothing would otherwise report it.
+    /// </para>
+    /// <para>
+    /// The check is "the result differs from the English fallback". A code with no branch returns
+    /// the fallback verbatim, so a distinctive sentinel is passed as the fallback rather than
+    /// realistic English — realistic text could coincide with a real translation and let a gap pass.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void EveryDeclaredCode_HasAMappingRatherThanFallingThrough()
+    {
+        const string Sentinel = "!!UNMAPPED-FALLBACK-SENTINEL!!";
+
+        var declared = DeclaredCodes();
+        declared.Should().NotBeEmpty(
+            "the regex must still match ProcessKillErrorCodes.cs, or this test passes vacuously");
+
+        var unmapped = declared
+            .Where(code => TaskManagerViewModel.LocalizeKillFailure(
+                ProcessKillErrorCodes.Format(code, Sentinel, arg: "probe")) == Sentinel)
+            .ToList();
+
+        unmapped.Should().BeEmpty(
+            "a code with no arm in LocalizeKillFailure reaches the user as the host's English " +
+            "instead of a translated sentence, and nothing else reports it");
+    }
+
+    /// <summary>
+    /// Every declared code must also resolve to a real resource, not to its own key name.
+    /// </summary>
+    /// <remarks>
+    /// Separate from the mapping check because they fail for different reasons and one masks the
+    /// other: a branch can exist and still show rubbish if the <c>.resx</c> entry is missing, since
+    /// <c>LocalizationService</c>'s indexer ends in <c>?? key</c> and renders the developer string.
+    /// RemEx-2s91 shipped exactly that.
+    /// </remarks>
+    [Fact]
+    public void NoDeclaredCode_RendersAResourceKeyName()
+    {
+        foreach (var code in DeclaredCodes())
+        {
+            var shown = TaskManagerViewModel.LocalizeKillFailure(
+                ProcessKillErrorCodes.Format(code, "fallback", arg: "probe"));
+
+            shown.Should().NotStartWith("TaskManager_",
+                $"code '{code}' resolved to a resource key name, which means the .resx entry is missing");
+        }
+    }
+
+    /// <summary>Codes as the host declares them, parsed from the C# source rather than mirrored.</summary>
+    private static List<string> DeclaredCodes()
+    {
+        var path = Path.Combine(RepoRoot(), "remex.core", "Models", "ProcessKillErrorCodes.cs");
+        File.Exists(path).Should().BeTrue($"the declaration file must be readable at {path}");
+
+        return Regex.Matches(File.ReadAllText(path), @"public\s+const\s+string\s+\w+\s*=\s*""([^""]+)""")
+            .Select(m => m.Groups[1].Value)
+            .ToList();
+    }
+
+    /// <summary>
+    /// The repository root, resolved from THIS source file rather than from the test assembly.
+    /// </summary>
+    /// <remarks>
+    /// Walking up from <c>AppContext.BaseDirectory</c> couples the test to build output living
+    /// inside the repo, so building with <c>--artifacts-path</c> elsewhere breaks it with an error
+    /// that says nothing about the change that caused it — see RemEx-6i1l, where exactly that
+    /// happened.
+    /// </remarks>
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+    {
+        // <repo>/remex.desktop.tests/ViewModels/ThisFile.cs -> <repo>
+        var directory = Path.GetDirectoryName(thisSourceFile)!;
+        return Path.GetFullPath(Path.Combine(directory, "..", ".."));
     }
 
     [Fact]
