@@ -47,6 +47,13 @@ public class AppLauncherService : IAppLauncherService
         // (Settings > App Launcher on the desktop UI, synced to the phone). This is the actual
         // allowlist — a client can only ever launch something the PC's owner already added
         // themselves, never an arbitrary path supplied over the wire.
+        //
+        // "added themselves" is enforced elsewhere and was not always true: until RemEx-q6xt a
+        // paired client could send launcher_add, or replace the whole list with launcher_sync, and
+        // then launch what it had just added — making this check measure a list the caller
+        // controlled. PingPongHandler.RequiresLoopback now refuses those three message types from
+        // any non-loopback connection, which is what this sentence depends on. If that gate is
+        // ever relaxed, this comment becomes false again.
         var entries = await _launcherStorage.LoadEntriesAsync();
         if (!IsLaunchAllowed(fullPath, entries))
         {

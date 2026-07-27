@@ -24,6 +24,12 @@
 
   <!-- The consolidated Remex.Agent is both the Avalonia GUI host and the in-process ASP.NET host. -->
   <ItemGroup>
+    <!-- PingPongHandler.RequiresLoopback is the launcher-allowlist authorization gate;
+         LauncherAllowlistAuthorizationTests checks it directly (RemEx-q6xt). -->
+    <InternalsVisibleTo Include="Remex.Agent.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

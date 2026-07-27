@@ -217,6 +217,35 @@ public sealed class PingPongHandler(
                     continue;
                 }
 
+                // Pairing is NOT sufficient for the three messages that mutate the launcher
+                // allowlist. VULN-3 (RemEx-s032.3) hardened LAUNCHAPP by requiring the target to
+                // match a persisted launcher entry, and that mitigation only means anything while
+                // the list is curated by the person at the PC. Before this gate a paired client
+                // could add any local path with launcher_add - or replace the entire list in one
+                // message with launcher_sync - and then launch it as the always-elevated host
+                // (RemEx-q6xt).
+                //
+                // Loopback is the PC's own UI talking to its embedded host, which is the only
+                // sender that legitimately writes this list. Android never sends these types; it
+                // only ever asks with launcher_sync_request. Note this restricts the INBOUND
+                // direction only - the host still emits launcher_sync to clients on connect.
+                if (!isLoopback && RequiresLoopback(message.Type))
+                {
+                    logger.LogWarning(
+                        "Rejecting {Type} from a non-loopback connection — the launcher allowlist " +
+                        "may only be changed on the PC itself.",
+                        message.Type);
+                    var notLocal = new RemexMessage
+                    {
+                        Type = MessageTypes.CommandResponse,
+                        CommandSuccess = false,
+                        CommandMessage = "The list of programs can only be changed on the PC itself.",
+                        CorrelationId = message.CorrelationId,
+                    };
+                    await MessageSerializer.SendAsync(webSocket, notLocal, ct);
+                    continue;
+                }
+
                 switch (message.Type)
                 {
                     case MessageTypes.Ping:
@@ -674,6 +703,25 @@ public sealed class PingPongHandler(
     /// Returns true when the message type must be rejected before the connection has completed
     /// pairing. Ping and the pairing handshake messages are intentionally exempt.
     /// </summary>
+    /// <summary>
+    /// Message types that a paired-but-remote client still may not send: the three that MUTATE the
+    /// launcher allowlist.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="RequiresPairing"/> because it answers a different question. That one
+    /// asks "has this connection authenticated"; this asks "is this connection the PC itself". The
+    /// allowlist is the thing VULN-3's LAUNCHAPP check is measured against, so being able to rewrite
+    /// it over the wire makes that mitigation self-referential (RemEx-q6xt).
+    /// <para>
+    /// <c>launcher_sync_request</c> is deliberately absent: asking for the list is a read, and it is
+    /// what the Android client actually sends.
+    /// </para>
+    /// </remarks>
+    internal static bool RequiresLoopback(string type) =>
+        type is MessageTypes.LauncherAdd
+             or MessageTypes.LauncherRemove
+             or MessageTypes.LauncherSync;
+
     private static bool RequiresPairing(string type) => type switch
     {
         MessageTypes.Ping => false,
