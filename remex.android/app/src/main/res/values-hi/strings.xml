@@ -6,10 +6,8 @@
     <string name="widget_remote_label">RemEx रिमोट</string>
     <string name="widget_hardware_label">RemEx हार्डवेयर</string>
     <string name="widget_launcher_label">RemEx लॉन्चर</string>
-    <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">रिमोट एक्जीक्यूशन</string>
     <string name="snackbar_no_pc_connected">कोई पीसी कनेक्ट नहीं है</string>
-    <string name="snackbar_setup_connection">कनेक्शन सेट करें</string>
     <string name="nav_more_label">अधिक</string>
     <string name="exit_dialog_title">RemEx से बाहर निकलें?</string>
     <string name="exit_dialog_message">क्या आप वाकई बाहर निकलना चाहते हैं?</string>
@@ -56,7 +54,6 @@
     <string name="status_disconnected">डिस्कनेक्ट हो गया</string>
     <string name="status_connected">कनेक्ट हो गया</string>
     <string name="status_connecting">%1$s:%2$d से कनेक्ट हो रहा है…</string>
-    <string name="status_error">आपके पीसी तक नहीं पहुंच सके</string>
     <string name="status_awaiting_metadata">पीसी के विवरण की प्रतीक्षा है</string>
     <string name="status_metadata_unavailable">पीसी के विवरण उपलब्ध नहीं हैं</string>
     <string name="status_native_lib_not_loaded">नेटिव लाइब्रेरी लोड नहीं हुई</string>
@@ -102,7 +99,6 @@
     <string name="settings_tab_input">इनपुट</string>
     <string name="settings_tab_file_transfer">फ़ाइल ट्रांसफर</string>
     <string name="settings_tab_help">सहायता</string>
-    <string name="settings_tab_about">जानकारी</string>
     <string name="settings_help_title">सहायता और विवरण</string>
     <string name="settings_replay_tutorial">📖 ट्यूटोरियल फिर से देखें</string>
     <string name="settings_replay_tutorial_body">शुरुआती गाइड को फिर से देखें जिसमें सेटअप, ऑटो-डिस्कवरी, आईपी ढूँढना और पीसी से कनेक्ट करना शामिल है।</string>
@@ -192,12 +188,10 @@
     <string name="dashboard_connecting">कनेक्ट हो रहा है…</string>
     <string name="dashboard_tap_to_connect">कनेक्ट करने के लिए टैप करें</string>
     <string name="dashboard_wake_pc_button">पीसी जगाएं</string>
-    <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">डेटा एकत्र किया जा रहा है…</string>
     <string name="screen_connection_title">कनेक्शन</string>
     <string name="screen_splash_title">लोड हो रहा है</string>
     <string name="screen_tutorial_title">ट्यूटोरियल</string>
-    <string name="connection_host_settings">पीसी सेटिंग्स</string>
     <string name="connection_auto_discover_title">LAN पर ऑटो-डिस्कवर</string>
     <string name="connection_auto_discover_hint">सुनिश्चित करें कि आपके पीसी पर RemEx ऐप चल रहा है और दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं।</string>
     <string name="connection_searching">आपका पीसी खोजा जा रहा है…</string>
@@ -257,9 +251,6 @@
     <string name="qr_error_invalid">अमान्य RemEx QR कोड</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">RemEx के बारे में</string>
-    <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
-    <string name="about_version_android">Android संस्करण: %1$s</string>
-    <string name="about_version_pc">PC संस्करण: %1$s</string>
     <string name="about_github_star">GitHub पर RemEx को फ़ॉलो करें</string>
     <string name="about_github_cat">(pls, they have my cat)</string>
     <string name="about_made_with">डेनवर, कोलोराडो में ♥️ के साथ बनाया गया</string>
@@ -339,14 +330,11 @@
     <string name="tile_monitor_off_label">मॉनिटर बंद करें</string>
     <string name="tile_wol_label">वेक ऑन लैन</string>
     <string name="screen_file_transfer_title">फ़ाइल ट्रांसफर</string>
-    <string name="file_transfer_local">लोकल (फ़ोन)</string>
-    <string name="file_transfer_remote">रिमोट (पीसी)</string>
     <string name="file_transfer_browse">ब्राउज़ करें</string>
     <string name="file_transfer_upload">अपलोड ↑</string>
     <string name="file_transfer_download">डाउनलोड ↓</string>
     <string name="file_transfer_cancel">रद्द करें</string>
     <string name="file_transfer_not_connected">रिमोट फ़ाइलें ब्राउज़ करने के लिए किसी पीसी से कनेक्ट करें।</string>
-    <string name="file_transfer_loading">लोड हो रहा है…</string>
     <string name="file_transfer_empty">कोई फ़ाइल नहीं मिली।</string>
     <string name="file_transfer_shared_folder">शेयर्ड फ़ोल्डर</string>
     <string name="file_transfer_no_shared_folders">यह पीसी अभी तक कोई शेयर्ड फ़ोल्डर नहीं दिखा रहा है।</string>

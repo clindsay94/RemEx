@@ -6,10 +6,8 @@
     <string name="widget_remote_label">RemEx Remoto</string>
     <string name="widget_hardware_label">RemEx Hardware</string>
     <string name="widget_launcher_label">RemEx Launcher</string>
-    <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">Execução Remota</string>
     <string name="snackbar_no_pc_connected">Nenhum PC conectado</string>
-    <string name="snackbar_setup_connection">Configurar conexão</string>
     <string name="nav_more_label">Mais</string>
     <string name="exit_dialog_title">Sair do RemEx?</string>
     <string name="exit_dialog_message">Tem certeza de que deseja sair?</string>
@@ -56,7 +54,6 @@
     <string name="status_disconnected">Desconectado</string>
     <string name="status_connected">Conectado</string>
     <string name="status_connecting">Conectando a %1$s:%2$d…</string>
-    <string name="status_error">Não foi possível alcançar o seu PC</string>
     <string name="status_awaiting_metadata">Aguardando detalhes do PC</string>
     <string name="status_metadata_unavailable">Detalhes do PC indisponíveis</string>
     <string name="status_native_lib_not_loaded">Biblioteca nativa não carregada</string>
@@ -102,7 +99,6 @@
     <string name="settings_tab_input">Entrada</string>
     <string name="settings_tab_file_transfer">Transferência de Arquivos</string>
     <string name="settings_tab_help">Ajuda</string>
-    <string name="settings_tab_about">Sobre</string>
     <string name="settings_help_title">Ajuda e Sobre</string>
     <string name="settings_replay_tutorial">📖  Repetir Tutorial</string>
     <string name="settings_replay_tutorial_body">Assista novamente ao guia de introdução que cobre a configuração, descoberta automática, como encontrar seu IP e conectar ao PC.</string>
@@ -192,12 +188,10 @@
     <string name="dashboard_connecting">CONECTANDO…</string>
     <string name="dashboard_tap_to_connect">TOQUE PARA CONECTAR</string>
     <string name="dashboard_wake_pc_button">LIGAR PC</string>
-    <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Coletando dados…</string>
     <string name="screen_connection_title">Conexão</string>
     <string name="screen_splash_title">Carregando</string>
     <string name="screen_tutorial_title">Tutorial</string>
-    <string name="connection_host_settings">Configurações do PC</string>
     <string name="connection_auto_discover_title">Autodescoberta na LAN</string>
     <string name="connection_auto_discover_hint">Certifique-se de que o app RemEx esteja rodando no seu PC e de que ambos os dispositivos estejam na mesma rede Wi-Fi.</string>
     <string name="connection_searching">Buscando seu PC…</string>
@@ -257,9 +251,6 @@
     <string name="qr_error_invalid">Código QR do RemEx inválido</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">Sobre o RemEx</string>
-    <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
-    <string name="about_version_android">Versão do Android: %1$s</string>
-    <string name="about_version_pc">Versão do PC: %1$s</string>
     <string name="about_github_star">Siga o RemEx no GitHub</string>
     <string name="about_github_cat">(pls, they have my cat)</string>
     <string name="about_made_with">Feito com ♥️ em Denver, Colorado</string>
@@ -339,14 +330,11 @@
     <string name="tile_monitor_off_label">Desligar Monitor</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
     <string name="screen_file_transfer_title">Transferência de Arquivos</string>
-    <string name="file_transfer_local">Local (Celular)</string>
-    <string name="file_transfer_remote">Remoto (PC)</string>
     <string name="file_transfer_browse">Navegar</string>
     <string name="file_transfer_upload">Enviar ↑</string>
     <string name="file_transfer_download">Baixar ↓</string>
     <string name="file_transfer_cancel">Cancelar</string>
     <string name="file_transfer_not_connected">Conecte-se a um PC para navegar pelos arquivos remotos.</string>
-    <string name="file_transfer_loading">Carregando…</string>
     <string name="file_transfer_empty">Nenhum arquivo encontrado.</string>
     <string name="file_transfer_shared_folder">Pasta compartilhada</string>
     <string name="file_transfer_no_shared_folders">Este PC ainda não está expondo nenhuma pasta compartilhada.</string>

@@ -8,7 +8,6 @@
     <string name="widget_launcher_label">RemEx Launcher</string>
 
     
-    <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">Remote Execution</string>
     <string name="splash_command_your">COMMAND </string>
     <string name="splash_pc">YOUR PC</string>
@@ -21,7 +20,6 @@
 
     
     <string name="snackbar_no_pc_connected">No PC connected</string>
-    <string name="snackbar_setup_connection">Set up connection</string>
     <string name="nav_more_label">More</string>
     <string name="exit_dialog_title">Exit RemEx?</string>
     <string name="exit_dialog_message">Are you sure you want to exit?</string>
@@ -84,7 +82,6 @@
     <string name="status_disconnected">Disconnected</string>
     <string name="status_connected">Connected</string>
     <string name="status_connecting">Connecting to %1$s:%2$d…</string>
-    <string name="status_error">Couldn\'t reach your PC</string>
     <string name="status_awaiting_metadata">Waiting for PC details</string>
     <string name="status_metadata_unavailable">PC details unavailable</string>
     <string name="status_native_lib_not_loaded">Native library not loaded</string>
@@ -153,7 +150,6 @@
     <string name="settings_tab_input">Input</string>
     <string name="settings_tab_file_transfer">File Transfer</string>
     <string name="settings_tab_help">Help</string>
-    <string name="settings_tab_about">About</string>
     <string name="settings_help_title">Help</string>
     <string name="settings_replay_tutorial">📖  Replay Tutorial</string>
     <string name="settings_replay_tutorial_body">Re-watch the getting-started walkthrough for setup, QR pairing, manual connection, and daily-use tips.</string>
@@ -290,7 +286,6 @@
     <string name="dashboard_connecting">CONNECTING…</string>
     <string name="dashboard_tap_to_connect">TAP TO CONNECT</string>
     <string name="dashboard_wake_pc_button">WAKE PC</string>
-    <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Collecting data…</string>
     <string name="cd_open_view_picker">Choose display view</string>
     <string name="dashboard_view_picker_title">Choose a view</string>
@@ -322,7 +317,6 @@
     <string name="screen_connection_title">Connection</string>
     <string name="screen_splash_title">Loading</string>
     <string name="screen_tutorial_title">Tutorial</string>
-    <string name="connection_host_settings">PC Settings</string>
     <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
     <string name="connection_auto_discover_hint">Make sure the RemEx app is running on your PC and both devices are on the same Wi-Fi network.</string>
     <string name="connection_searching">Searching for your PC…</string>
@@ -388,13 +382,10 @@
     
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
-    <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
     <string name="about_android_client_label">Android Client</string>
     <string name="about_pc_host_label">Your PC</string>
     <string name="about_view_github">View Source on GitHub</string>
     <string name="about_status_unknown">Unknown</string>
-    <string name="about_version_android">Android Version: %1$s</string>
-    <string name="about_version_pc">PC Version: %1$s</string>
     <string name="about_github_star">Follow RemEx on GitHub</string>
     <string name="about_github_cat">Browse releases, report issues, and star the project if RemEx helps you.</string>
     <string name="about_made_with">Made With ♥️ in Denver, Colorado</string>
@@ -521,14 +512,11 @@
 
     
     <string name="screen_file_transfer_title">File Transfer</string>
-    <string name="file_transfer_local">Local (Phone)</string>
-    <string name="file_transfer_remote">Remote (PC)</string>
     <string name="file_transfer_browse">Browse</string>
     <string name="file_transfer_upload">Upload ↑</string>
     <string name="file_transfer_download">Download ↓</string>
     <string name="file_transfer_cancel">Cancel</string>
     <string name="file_transfer_not_connected">Connect to a PC to browse remote files.</string>
-    <string name="file_transfer_loading">Loading…</string>
     <string name="file_transfer_empty">No files found.</string>
     <string name="file_transfer_shared_folder">Shared folder</string>
     <string name="file_transfer_no_shared_folders">This PC is not exposing any shared folders yet.</string>

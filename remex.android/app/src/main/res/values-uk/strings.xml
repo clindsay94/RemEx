@@ -6,10 +6,8 @@
     <string name="widget_remote_label">RemEx Дистанційне керування</string>
     <string name="widget_hardware_label">RemEx Обладнання</string>
     <string name="widget_launcher_label">RemEx Запуск</string>
-    <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">Віддалене виконання</string>
     <string name="snackbar_no_pc_connected">ПК не підключено</string>
-    <string name="snackbar_setup_connection">Налаштувати підключення</string>
     <string name="nav_more_label">Більше</string>
     <string name="exit_dialog_title">Вийти з RemEx?</string>
     <string name="exit_dialog_message">Ви впевнені, що хочете вийти?</string>
@@ -56,7 +54,6 @@
     <string name="status_disconnected">Відключено</string>
     <string name="status_connected">Підключено</string>
     <string name="status_connecting">Підключення до %1$s:%2$d…</string>
-    <string name="status_error">Не вдалося дістатися до вашого ПК</string>
     <string name="status_awaiting_metadata">Очікування відомостей про ПК</string>
     <string name="status_metadata_unavailable">Відомості про ПК недоступні</string>
     <string name="status_native_lib_not_loaded">Нативну бібліотеку не завантажено</string>
@@ -102,7 +99,6 @@
     <string name="settings_tab_input">Введення</string>
     <string name="settings_tab_file_transfer">Передача файлів</string>
     <string name="settings_tab_help">Довідка</string>
-    <string name="settings_tab_about">Про програму</string>
     <string name="settings_help_title">Довідка та інформація</string>
     <string name="settings_replay_tutorial">📖  Переглянути посібник знову</string>
     <string name="settings_replay_tutorial_body">Перегляньте ще раз посібник із початку роботи: налаштування, сполучення за QR-кодом, підключення вручну та поради щодо щоденного використання.</string>
@@ -192,12 +188,10 @@
     <string name="dashboard_connecting">ПІДКЛЮЧЕННЯ…</string>
     <string name="dashboard_tap_to_connect">НАТИСНІТЬ, ЩОБ ПІДКЛЮЧИТИСЯ</string>
     <string name="dashboard_wake_pc_button">ПРОБУДИТИ ПК</string>
-    <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Збір даних…</string>
     <string name="screen_connection_title">Підключення</string>
     <string name="screen_splash_title">Завантаження</string>
     <string name="screen_tutorial_title">Посібник</string>
-    <string name="connection_host_settings">Налаштування ПК</string>
     <string name="connection_auto_discover_title">Автоматичне виявлення в локальній мережі</string>
     <string name="connection_auto_discover_hint">Переконайтеся, що застосунок RemEx запущено на вашому ПК і обидва пристрої підключені до однієї мережі Wi-Fi.</string>
     <string name="connection_searching">Пошук вашого ПК…</string>
@@ -257,9 +251,6 @@
     <string name="qr_error_invalid">Недійсний QR-код RemEx</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">Про RemEx</string>
-    <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
-    <string name="about_version_android">Версія Android: %1$s</string>
-    <string name="about_version_pc">Версія ПК: %1$s</string>
     <string name="about_github_star">Підпишіться на RemEx у GitHub</string>
     <string name="about_github_cat">Перегляньте релізи, повідомляйте про проблеми та поставте проєкту зірку, якщо RemEx вам корисний.</string>
     <string name="about_made_with">Створено з ♥️ у Денвері, Колорадо</string>
@@ -339,14 +330,11 @@
     <string name="tile_monitor_off_label">Вимкнути монітор</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
     <string name="screen_file_transfer_title">Передача файлів</string>
-    <string name="file_transfer_local">Локально (телефон)</string>
-    <string name="file_transfer_remote">Віддалено (ПК)</string>
     <string name="file_transfer_browse">Огляд</string>
     <string name="file_transfer_upload">Вивантажити ↑</string>
     <string name="file_transfer_download">Завантажити ↓</string>
     <string name="file_transfer_cancel">Скасувати</string>
     <string name="file_transfer_not_connected">Підключіться до ПК, щоб оглядати віддалені файли.</string>
-    <string name="file_transfer_loading">Завантаження…</string>
     <string name="file_transfer_empty">Файлів не знайдено.</string>
     <string name="file_transfer_shared_folder">Спільна папка</string>
     <string name="file_transfer_no_shared_folders">Цей ПК ще не надає спільних папок.</string>

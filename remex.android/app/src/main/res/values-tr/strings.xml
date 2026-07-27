@@ -6,10 +6,8 @@
     <string name="widget_remote_label">RemEx Uzaktan Kumanda</string>
     <string name="widget_hardware_label">RemEx Donanım</string>
     <string name="widget_launcher_label">RemEx Başlatıcı</string>
-    <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">Uzaktan Yürütme</string>
     <string name="snackbar_no_pc_connected">Bağlı bilgisayar yok</string>
-    <string name="snackbar_setup_connection">Bağlantıyı ayarla</string>
     <string name="nav_more_label">Diğer</string>
     <string name="exit_dialog_title">RemEx uygulamasından çıkılsın mı?</string>
     <string name="exit_dialog_message">Çıkmak istediğinizden emin misiniz?</string>
@@ -56,7 +54,6 @@
     <string name="status_disconnected">Bağlantı kesildi</string>
     <string name="status_connected">Bağlandı</string>
     <string name="status_connecting">%1$s:%2$d adresine bağlanılıyor…</string>
-    <string name="status_error">Bilgisayarınıza ulaşılamadı</string>
     <string name="status_awaiting_metadata">PC ayrıntıları bekleniyor</string>
     <string name="status_metadata_unavailable">PC ayrıntıları mevcut değil</string>
     <string name="status_native_lib_not_loaded">Yerel kitaplık yüklenmedi</string>
@@ -102,7 +99,6 @@
     <string name="settings_tab_input">Giriş</string>
     <string name="settings_tab_file_transfer">Dosya Aktarımı</string>
     <string name="settings_tab_help">Yardım</string>
-    <string name="settings_tab_about">Hakkında</string>
     <string name="settings_help_title">Yardım ve Bilgi</string>
     <string name="settings_replay_tutorial">📖  Öğreticiyi Tekrar Oynat</string>
     <string name="settings_replay_tutorial_body">Kurulum, QR ile eşleştirme, elle bağlanma ve günlük kullanım ipuçları için başlangıç öğreticisini yeniden izleyin.</string>
@@ -192,12 +188,10 @@
     <string name="dashboard_connecting">BAĞLANILIYOR…</string>
     <string name="dashboard_tap_to_connect">BAĞLANMAK İÇİN DOKUNUN</string>
     <string name="dashboard_wake_pc_button">BİLGİSAYARI UYANDIR</string>
-    <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Veriler toplanıyor…</string>
     <string name="screen_connection_title">Bağlantı</string>
     <string name="screen_splash_title">Yükleniyor</string>
     <string name="screen_tutorial_title">Öğretici</string>
-    <string name="connection_host_settings">PC Ayarları</string>
     <string name="connection_auto_discover_title">Yerel Ağda Otomatik Keşif</string>
     <string name="connection_auto_discover_hint">RemEx uygulamasının bilgisayarınızda çalıştığından ve her iki cihazın da aynı Wi-Fi ağında olduğundan emin olun.</string>
     <string name="connection_searching">PC\'niz aranıyor…</string>
@@ -257,9 +251,6 @@
     <string name="qr_error_invalid">Geçersiz RemEx QR kodu</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">RemEx Hakkında</string>
-    <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
-    <string name="about_version_android">Android Sürümü: %1$s</string>
-    <string name="about_version_pc">PC Sürümü: %1$s</string>
     <string name="about_github_star">RemEx\'i GitHub\'da takip edin</string>
     <string name="about_github_cat">Sürümlere göz atın, sorunları bildirin ve RemEx işinize yarıyorsa projeye yıldız verin.</string>
     <string name="about_made_with">Denver, Colorado\'da ♥️ ile yapıldı</string>
@@ -339,14 +330,11 @@
     <string name="tile_monitor_off_label">Monitörü Kapat</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
     <string name="screen_file_transfer_title">Dosya Aktarımı</string>
-    <string name="file_transfer_local">Yerel (Telefon)</string>
-    <string name="file_transfer_remote">Uzak (PC)</string>
     <string name="file_transfer_browse">Göz at</string>
     <string name="file_transfer_upload">Yükle ↑</string>
     <string name="file_transfer_download">İndir ↓</string>
     <string name="file_transfer_cancel">İptal</string>
     <string name="file_transfer_not_connected">Uzak dosyalara göz atmak için bir bilgisayara bağlanın.</string>
-    <string name="file_transfer_loading">Yükleniyor…</string>
     <string name="file_transfer_empty">Dosya bulunamadı.</string>
     <string name="file_transfer_shared_folder">Paylaşılan klasör</string>
     <string name="file_transfer_no_shared_folders">Bu bilgisayar henüz paylaşılan klasör sunmuyor.</string>

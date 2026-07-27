@@ -6,10 +6,8 @@
     <string name="widget_remote_label">RemEx Remote</string>
     <string name="widget_hardware_label">RemEx Hardware</string>
     <string name="widget_launcher_label">RemEx Launcher</string>
-    <string name="splash_app_name">RemEx</string>
     <string name="splash_tagline">Eksekusi Jarak Jauh</string>
     <string name="snackbar_no_pc_connected">Tidak ada PC terhubung</string>
-    <string name="snackbar_setup_connection">Siapkan koneksi</string>
     <string name="nav_more_label">Lainnya</string>
     <string name="exit_dialog_title">Keluar dari RemEx?</string>
     <string name="exit_dialog_message">Apakah Anda yakin ingin keluar?</string>
@@ -56,7 +54,6 @@
     <string name="status_disconnected">Terputus</string>
     <string name="status_connected">Terhubung</string>
     <string name="status_connecting">Menghubungkan ke %1$s:%2$d…</string>
-    <string name="status_error">Tidak dapat menjangkau PC Anda</string>
     <string name="status_awaiting_metadata">Menunggu detail PC</string>
     <string name="status_metadata_unavailable">Detail PC tidak tersedia</string>
     <string name="status_native_lib_not_loaded">Pustaka asli tidak dimuat</string>
@@ -102,7 +99,6 @@
     <string name="settings_tab_input">Input</string>
     <string name="settings_tab_file_transfer">Transfer File</string>
     <string name="settings_tab_help">Bantuan</string>
-    <string name="settings_tab_about">Tentang</string>
     <string name="settings_help_title">Bantuan &amp; Tentang</string>
     <string name="settings_replay_tutorial">📖  Putar Ulang Tutorial</string>
     <string name="settings_replay_tutorial_body">Tonton kembali panduan memulai yang mencakup pengaturan, penemuan otomatis, mencari IP, dan menghubungkan ke PC Anda.</string>
@@ -192,12 +188,10 @@
     <string name="dashboard_connecting">MENGHUBUNGKAN…</string>
     <string name="dashboard_tap_to_connect">KETUK UNTUK MENGHUBUNGKAN</string>
     <string name="dashboard_wake_pc_button">BANGUNKAN PC</string>
-    <string name="dashboard_no_value">--</string>
     <string name="dashboard_collecting_data">Mengumpulkan data…</string>
     <string name="screen_connection_title">Koneksi</string>
     <string name="screen_splash_title">Memuat</string>
     <string name="screen_tutorial_title">Tutorial</string>
-    <string name="connection_host_settings">Pengaturan PC</string>
     <string name="connection_auto_discover_title">Temukan Otomatis di LAN</string>
     <string name="connection_auto_discover_hint">Pastikan aplikasi RemEx berjalan di PC Anda dan kedua perangkat berada di jaringan Wi-Fi yang sama.</string>
     <string name="connection_searching">Mencari PC Anda…</string>
@@ -257,9 +251,6 @@
     <string name="qr_error_invalid">Kode QR RemEx tidak valid</string>
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">Tentang RemEx</string>
-    <string name="about_app_name">REM(OTE) EX(ECUTION)</string>
-    <string name="about_version_android">Versi Android: %1$s</string>
-    <string name="about_version_pc">Versi PC: %1$s</string>
     <string name="about_github_star">Ikuti RemEx di GitHub</string>
     <string name="about_github_cat">(pls, they have my cat)</string>
     <string name="about_made_with">Dibuat dengan ♥️ di Denver, Colorado</string>
@@ -339,14 +330,11 @@
     <string name="tile_monitor_off_label">Matikan Monitor</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
     <string name="screen_file_transfer_title">Transfer File</string>
-    <string name="file_transfer_local">Lokal (Ponsel)</string>
-    <string name="file_transfer_remote">Jarak Jauh (PC)</string>
     <string name="file_transfer_browse">Telusuri</string>
     <string name="file_transfer_upload">Unggah ↑</string>
     <string name="file_transfer_download">Unduh ↓</string>
     <string name="file_transfer_cancel">Batal</string>
     <string name="file_transfer_not_connected">Hubungkan ke PC untuk menelusuri file jarak jauh.</string>
-    <string name="file_transfer_loading">Memuat…</string>
     <string name="file_transfer_empty">Tidak ada file yang ditemukan.</string>
     <string name="file_transfer_shared_folder">Folder bersama</string>
     <string name="file_transfer_no_shared_folders">PC ini belum mengekspos folder bersama apa pun.</string>
