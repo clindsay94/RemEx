@@ -708,7 +708,7 @@
     <string name="dashboard_view_value_spark">Значення + спарклайн</string>
     <string name="personalization_shape_auto">Авто (за категорією)</string>
     <string name="personalization_shape_remote_desktop">Віддалений робочий стіл</string>
-    <string name="personalization_shape_reset_default">Скинути до форми за замовчуванням</string>
+    <string name="personalization_shape_reset_default">Скинути %1$s до форми за замовчуванням</string>
     <string name="shape_picker_title">Виберіть форму</string>
     <string name="shape_rounded_rectangle">Заокруглений прямокутник</string>
     <plurals name="dashboard_selection_count">

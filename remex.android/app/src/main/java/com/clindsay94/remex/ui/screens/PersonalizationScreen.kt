@@ -1073,9 +1073,16 @@ fun PersonalizationScreenContent(
                                         ) {
                                             Icon(
                                                     Icons.Default.Refresh,
+                                                    // Names the ROW it belongs to. Fifteen of
+                                                    // these buttons sit in one screen and the Row
+                                                    // sets no mergeDescendants, so a bare "Reset to
+                                                    // default shape" left a screen-reader user with
+                                                    // fifteen identical controls and no way to tell
+                                                    // which category each one resets (RemEx-pmo4).
                                                     contentDescription =
                                                             stringResource(
-                                                                    R.string.personalization_shape_reset_default
+                                                                    R.string.personalization_shape_reset_default,
+                                                                    label
                                                             ),
                                                     modifier = Modifier.size(16.dp)
                                             )

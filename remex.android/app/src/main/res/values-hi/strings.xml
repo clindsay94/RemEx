@@ -708,7 +708,7 @@
     <string name="cd_view_dual_metric">दोहरा मीट्रिक ओवरले, %1$s</string>
     <string name="personalization_shape_remote_desktop">रिमोट डेस्कटॉप</string>
     <string name="personalization_shape_auto">स्वचालित (प्रति श्रेणी)</string>
-    <string name="personalization_shape_reset_default">डिफ़ॉल्ट आकार में रीसेट करें</string>
+    <string name="personalization_shape_reset_default">%1$s को डिफ़ॉल्ट आकार में रीसेट करें</string>
     <string name="shape_rounded_rectangle">गोल कोने वाले आयत</string>
     <string name="share_to_pc_skipped_unreadable">%1$d फ़ाइल(फ़ाइलें) छोड़ दी गईं जो पढ़ी नहीं जा सकीं — वे खाली हो सकती हैं या अब उपलब्ध नहीं हैं।</string>
     <plurals name="dashboard_selection_count">

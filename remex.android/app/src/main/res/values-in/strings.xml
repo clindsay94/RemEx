@@ -714,7 +714,7 @@
     <string name="cd_view_dual_metric">Overlay metrik ganda, %1$s</string>
     <string name="personalization_shape_remote_desktop">Desktop Jarak Jauh</string>
     <string name="personalization_shape_auto">Otomatis (per kategori)</string>
-    <string name="personalization_shape_reset_default">Reset ke bentuk default</string>
+    <string name="personalization_shape_reset_default">Reset %1$s ke bentuk default</string>
     <string name="shape_rounded_rectangle">Persegi Panjang Membulat</string>
     <!-- Ongoing FGS notification progress line: "45% · 3/7". Locale-neutral (digits + percent + slash),
          so it is intentionally not translated. -->

@@ -713,7 +713,7 @@
     <string name="cd_view_dual_metric">Çift metrik üst katmanı, %1$s</string>
     <string name="personalization_shape_remote_desktop">Uzak Masaüstü</string>
     <string name="personalization_shape_auto">Otomatik (kategori başına)</string>
-    <string name="personalization_shape_reset_default">Varsayılan şekile sıfırla</string>
+    <string name="personalization_shape_reset_default">%1$s öğesini varsayılan şekle sıfırla</string>
     <string name="shape_rounded_rectangle">Yuvarlak Dikdörtgen</string>
     <!-- file_transfer_service_progress is intentionally not translated (locale-neutral) -->
     <string name="share_to_pc_skipped_unreadable">Okunamayan %1$d dosya atlandı — boş olabilir veya artık mevcut olmayabilir.</string>

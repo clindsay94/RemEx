@@ -709,7 +709,7 @@
     <string name="shape_rounded_rectangle">Rectángulo redondeado</string>
     <string name="personalization_shape_auto">Automático (por categoría)</string>
     <string name="personalization_shape_remote_desktop">Escritorio Remoto</string>
-    <string name="personalization_shape_reset_default">Restablecer a forma predeterminada</string>
+    <string name="personalization_shape_reset_default">Restablecer %1$s a la forma predeterminada</string>
     <string name="share_to_pc_skipped_unreadable">Se omitieron %1$d archivo(s) que no se pudieron leer — pueden estar vacíos o no estar disponibles.</string>
     <plurals name="dashboard_selection_count">
         <item quantity="one">%1$d seleccionado</item>

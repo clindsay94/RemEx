@@ -707,7 +707,7 @@
     <string name="dashboard_view_value_spark">Valeur + sparkline</string>
     <string name="personalization_shape_auto">Auto (par catégorie)</string>
     <string name="personalization_shape_remote_desktop">Bureau à distance</string>
-    <string name="personalization_shape_reset_default">Réinitialiser à la forme par défaut</string>
+    <string name="personalization_shape_reset_default">Réinitialiser %1$s à la forme par défaut</string>
     <string name="shape_picker_title">Choisir une forme</string>
     <string name="shape_rounded_rectangle">Rectangle arrondi</string>
     <string name="share_to_pc_skipped_unreadable">%1$d fichier(s) ignoré(s) qui n\'ont pas pu être lus — ils peuvent être vides ou ne plus être disponibles.</string>

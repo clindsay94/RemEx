@@ -714,7 +714,7 @@
     <string name="dashboard_view_value_spark">Wartość + wykres</string>
     <string name="personalization_shape_auto">Auto (wg kategorii)</string>
     <string name="personalization_shape_remote_desktop">Pulpit zdalny</string>
-    <string name="personalization_shape_reset_default">Przywróć domyślny kształt</string>
+    <string name="personalization_shape_reset_default">Przywróć domyślny kształt: %1$s</string>
     <string name="shape_picker_title">Wybierz kształt</string>
     <string name="share_to_pc_skipped_unreadable">Pominięto %1$d plik(ów), których nie udało się odczytać — mogą być puste lub już niedostępne.</string>
     <string name="faq_q14">Telefon pokazuje, że jest sparowany, ale nie łączy się. Czy to może być problem z uprawnieniami na komputerze?</string>
