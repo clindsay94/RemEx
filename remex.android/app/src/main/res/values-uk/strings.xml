@@ -700,8 +700,6 @@
     <string name="splash_term_pairing">сполучення</string>
     <string name="splash_term_session_ready">сесія готова</string>
     <string name="personalization_splash_pong">Signal Pong</string>
-    <string name="file_transfer_service_progress">%1$d%% · %2$d/%3$d</string>
-    <string name="file_manager_transfer_active">%1$s</string>
     <string name="share_to_pc_skipped_unreadable">Пропущено %1$d файл(ів), які не можуть бути прочитані — вони можуть бути порожніми чи більше недоступні.</string>
     <string name="cd_dashboard_exit_selection">Вийти з режиму вибору</string>
     <string name="cd_dashboard_pin_selection">Закріпити вибрані картки</string>

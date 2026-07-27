@@ -653,7 +653,6 @@
     <string name="file_manager_resume">Retomar</string>
     <string name="file_manager_transfer_queued">Na fila</string>
     <string name="file_manager_transfer_negotiating">Iniciando…</string>
-    <string name="file_manager_transfer_active">%1$s</string>
     <string name="file_manager_transfer_paused">Pausado • %1$s</string>
     <string name="file_manager_transfer_verifying">Verificando…</string>
     <string name="file_manager_transfer_done">Concluído</string>
@@ -744,7 +743,6 @@
     <string name="dashboard_view_picker_title">Escolher uma visualização</string>
     <string name="dashboard_view_ring_gauge">Medidor de anel</string>
     <string name="dashboard_view_value_spark">Valor + sparkline</string>
-    <string name="file_transfer_service_progress">%1$d%% · %2$d/%3$d</string>
     <string name="personalization_shape_auto">Automático (por categoria)</string>
     <string name="personalization_shape_remote_desktop">Área de Trabalho Remota</string>
     <string name="personalization_shape_reset_default">Redefinir para forma padrão</string>

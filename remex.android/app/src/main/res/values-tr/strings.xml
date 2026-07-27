@@ -653,7 +653,6 @@
     <string name="file_manager_resume">Sürdür</string>
     <string name="file_manager_transfer_queued">Sırada</string>
     <string name="file_manager_transfer_negotiating">Başlatılıyor…</string>
-    <string name="file_manager_transfer_active">%1$s</string>
     <string name="file_manager_transfer_paused">Duraklatıldı • %1$s</string>
     <string name="file_manager_transfer_verifying">Doğrulanıyor…</string>
     <string name="file_manager_transfer_done">Tamamlandı</string>
@@ -755,7 +754,6 @@
     <string name="personalization_shape_reset_default">Varsayılan şekile sıfırla</string>
     <string name="shape_rounded_rectangle">Yuvarlak Dikdörtgen</string>
     <!-- file_transfer_service_progress is intentionally not translated (locale-neutral) -->
-    <string name="file_transfer_service_progress" translatable="false">%1$d%% · %2$d/%3$d</string>
     <string name="share_to_pc_skipped_unreadable">Okunamayan %1$d dosya atlandı — boş olabilir veya artık mevcut olmayabilir.</string>
     <string name="faq_q14">Telefonum eşleşmiş görünüyor ama bağlanmıyor. Bilgisayardaki bir izin sorunu olabilir mi?</string>
     <string name="faq_a14">Olabilir. Bilgisayarınız, telefonunuzun onu tanımak için kullandığı bir güvenlik sertifikasını başka hiçbir şeyin okuyamayacağı bir yerde saklar — başka bir programın sizin bilgisayarınızmış gibi davranmasını bu engeller. Bilgisayardaki RemEx bu dosyayı okuyamazsa yine de açılır ama bağlantı kabul edemez; bu yüzden telefonunuz hâlâ eşleşmiş görünse bile ona ulaşamaz.\n\nWindows bilgisayarda: RemEx\'in bu dosyayı okuması için yönetici izni gerekir. RemEx\'i kapatın, sağ tıklayıp \"Yönetici olarak çalıştır\" seçin ve yeniden bağlanmayı deneyin. RemEx oturum açtığınızda normalde kendiliğinden yönetici izniyle başlar, bu yüzden bu durum ender olmalıdır.\n\nLinux bilgisayarda: RemEx\'in root olması gerekmez — onu asla sudo ile başlatmayın. Bu neredeyse her zaman eski bir remex-host kurulumunun sertifikayı root\'a ait bıraktığı anlamına gelir. Bilgisayarda RemEx yükleyicisini yeniden çalıştırın; bunu sizin için onarır ve eşleşmiş telefonlarınız çalışmaya devam eder.</string>

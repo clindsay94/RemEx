@@ -653,7 +653,6 @@
     <string name="file_manager_resume">Reanudar</string>
     <string name="file_manager_transfer_queued">En cola</string>
     <string name="file_manager_transfer_negotiating">Iniciando…</string>
-    <string name="file_manager_transfer_active">%1$s</string>
     <string name="file_manager_transfer_paused">En pausa • %1$s</string>
     <string name="file_manager_transfer_verifying">Verificando…</string>
     <string name="file_manager_transfer_done">Completada</string>
@@ -749,7 +748,6 @@
     <string name="personalization_shape_auto">Automático (por categoría)</string>
     <string name="personalization_shape_remote_desktop">Escritorio Remoto</string>
     <string name="personalization_shape_reset_default">Restablecer a forma predeterminada</string>
-    <string name="file_transfer_service_progress" translatable="false">%1$d%% · %2$d/%3$d</string>
     <string name="share_to_pc_skipped_unreadable">Se omitieron %1$d archivo(s) que no se pudieron leer — pueden estar vacíos o no estar disponibles.</string>
     <plurals name="dashboard_selection_count">
         <item quantity="one">%1$d seleccionado</item>

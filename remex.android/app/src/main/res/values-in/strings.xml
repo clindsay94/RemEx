@@ -653,7 +653,6 @@
     <string name="file_manager_resume">Lanjutkan</string>
     <string name="file_manager_transfer_queued">Diantrekan</string>
     <string name="file_manager_transfer_negotiating">Memulai…</string>
-    <string name="file_manager_transfer_active">%1$s</string>
     <string name="file_manager_transfer_paused">Dijeda • %1$s</string>
     <string name="file_manager_transfer_verifying">Memverifikasi…</string>
     <string name="file_manager_transfer_done">Selesai</string>
@@ -757,7 +756,6 @@
     <string name="shape_rounded_rectangle">Persegi Panjang Membulat</string>
     <!-- Ongoing FGS notification progress line: "45% · 3/7". Locale-neutral (digits + percent + slash),
          so it is intentionally not translated. -->
-    <string name="file_transfer_service_progress" translatable="false">%1$d%% · %2$d/%3$d</string>
     <string name="faq_q14">Ponsel saya bilang sudah dipasangkan tetapi tidak bisa terhubung. Mungkinkah ini masalah izin di PC?</string>
     <string name="faq_a14">Mungkin. PC Anda menyimpan sertifikat keamanan yang dipakai ponsel untuk mengenalinya, di tempat yang tidak bisa dibaca hal lain — itulah yang mencegah program lain berpura-pura menjadi PC Anda. Jika RemEx di PC tidak bisa membaca berkas itu, RemEx tetap terbuka tetapi tidak dapat menerima koneksi, sehingga ponsel Anda tidak bisa menjangkaunya meskipun masih tampak sudah dipasangkan.\n\nDi PC Windows: RemEx memerlukan hak administrator untuk membacanya. Tutup RemEx, klik kanan lalu pilih \"Run as administrator\", kemudian coba hubungkan lagi. RemEx biasanya berjalan dengan hak administrator secara otomatis saat Anda masuk, jadi ini seharusnya jarang terjadi.\n\nDi PC Linux: RemEx tidak memerlukan root — jangan pernah menjalankannya dengan sudo. Ini hampir selalu berarti instalasi remex-host lama meninggalkan sertifikat milik root. Jalankan lagi penginstal RemEx di PC; itu memperbaikinya untuk Anda dan ponsel yang sudah dipasangkan tetap berfungsi.</string>
     <string name="faq_q15">Bisakah saya menghentikan RemEx berjalan otomatis di PC saya?</string>

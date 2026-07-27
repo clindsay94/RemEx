@@ -628,7 +628,6 @@
     <string name="file_manager_resume">Wznów</string>
     <string name="file_manager_transfer_queued">W kolejce</string>
     <string name="file_manager_transfer_negotiating">Rozpoczynanie…</string>
-    <string name="file_manager_transfer_active">%1$s</string>
     <string name="file_manager_transfer_paused">Wstrzymano • %1$s</string>
     <string name="file_manager_transfer_verifying">Weryfikowanie…</string>
     <string name="file_manager_transfer_done">Gotowe</string>
@@ -751,7 +750,6 @@
     <string name="dashboard_view_picker_title">Wybierz widok</string>
     <string name="dashboard_view_ring_gauge">Wskaźnik pierścieniowy</string>
     <string name="dashboard_view_value_spark">Wartość + wykres</string>
-    <string name="file_transfer_service_progress" translatable="false">%1$d%% · %2$d/%3$d</string>
     <string name="personalization_shape_auto">Auto (wg kategorii)</string>
     <string name="personalization_shape_remote_desktop">Pulpit zdalny</string>
     <string name="personalization_shape_reset_default">Przywróć domyślny kształt</string>

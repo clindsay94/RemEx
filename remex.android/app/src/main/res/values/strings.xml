@@ -821,7 +821,7 @@
     <string name="file_manager_resume">Resume</string>
     <string name="file_manager_transfer_queued">Queued</string>
     <string name="file_manager_transfer_negotiating">Starting…</string>
-    <string name="file_manager_transfer_active">%1$s</string>
+    <string name="file_manager_transfer_active" translatable="false">%1$s</string>
     <string name="file_manager_transfer_paused">Paused • %1$s</string>
     <string name="file_manager_transfer_verifying">Verifying…</string>
     <string name="file_manager_transfer_done">Done</string>

@@ -653,7 +653,6 @@
     <string name="file_manager_resume">फिर शुरू करें</string>
     <string name="file_manager_transfer_queued">कतार में</string>
     <string name="file_manager_transfer_negotiating">शुरू हो रहा है…</string>
-    <string name="file_manager_transfer_active">%1$s</string>
     <string name="file_manager_transfer_paused">रोका गया • %1$s</string>
     <string name="file_manager_transfer_verifying">सत्यापित हो रहा है…</string>
     <string name="file_manager_transfer_done">पूर्ण</string>
@@ -749,7 +748,6 @@
     <string name="personalization_shape_auto">स्वचालित (प्रति श्रेणी)</string>
     <string name="personalization_shape_reset_default">डिफ़ॉल्ट आकार में रीसेट करें</string>
     <string name="shape_rounded_rectangle">गोल कोने वाले आयत</string>
-    <string name="file_transfer_service_progress">%1$d%% · %2$d/%3$d</string>
     <string name="share_to_pc_skipped_unreadable">%1$d फ़ाइल(फ़ाइलें) छोड़ दी गईं जो पढ़ी नहीं जा सकीं — वे खाली हो सकती हैं या अब उपलब्ध नहीं हैं।</string>
     <plurals name="dashboard_selection_count">
         <item quantity="one">%1$d चयनित</item>
