@@ -10,7 +10,6 @@
     <string name="splash_tagline">Uzaktan Yürütme</string>
     <string name="snackbar_no_pc_connected">Bağlı bilgisayar yok</string>
     <string name="snackbar_setup_connection">Bağlantıyı ayarla</string>
-    <string name="connection_required_context">Bu özelliği kullanmak için bağlantı gereklidir.</string>
     <string name="nav_more_label">Diğer</string>
     <string name="exit_dialog_title">RemEx uygulamasından çıkılsın mı?</string>
     <string name="exit_dialog_message">Çıkmak istediğinizden emin misiniz?</string>

@@ -10,7 +10,6 @@
     <string name="splash_tagline">रिमोट एक्जीक्यूशन</string>
     <string name="snackbar_no_pc_connected">कोई पीसी कनेक्ट नहीं है</string>
     <string name="snackbar_setup_connection">कनेक्शन सेट करें</string>
-    <string name="connection_required_context">Connection required to access this feature.</string>
     <string name="nav_more_label">अधिक</string>
     <string name="exit_dialog_title">RemEx से बाहर निकलें?</string>
     <string name="exit_dialog_message">क्या आप वाकई बाहर निकलना चाहते हैं?</string>

@@ -10,7 +10,6 @@
     <string name="splash_tagline">Віддалене виконання</string>
     <string name="snackbar_no_pc_connected">ПК не підключено</string>
     <string name="snackbar_setup_connection">Налаштувати підключення</string>
-    <string name="connection_required_context">Щоб скористатися цією функцією, потрібне підключення.</string>
     <string name="nav_more_label">Більше</string>
     <string name="exit_dialog_title">Вийти з RemEx?</string>
     <string name="exit_dialog_message">Ви впевнені, що хочете вийти?</string>

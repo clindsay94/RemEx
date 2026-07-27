@@ -10,7 +10,6 @@
     <string name="splash_tagline">Exécution à Distance</string>
     <string name="snackbar_no_pc_connected">Aucun PC connecté</string>
     <string name="snackbar_setup_connection">Configurer la connexion</string>
-    <string name="connection_required_context">Connection required to access this feature.</string>
     <string name="nav_more_label">Plus</string>
     <string name="exit_dialog_title">Quitter RemEx ?</string>
     <string name="exit_dialog_message">Voulez-vous vraiment quitter ?</string>

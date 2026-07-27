@@ -10,7 +10,6 @@
     <string name="splash_tagline">Eksekusi Jarak Jauh</string>
     <string name="snackbar_no_pc_connected">Tidak ada PC terhubung</string>
     <string name="snackbar_setup_connection">Siapkan koneksi</string>
-    <string name="connection_required_context">Connection required to access this feature.</string>
     <string name="nav_more_label">Lainnya</string>
     <string name="exit_dialog_title">Keluar dari RemEx?</string>
     <string name="exit_dialog_message">Apakah Anda yakin ingin keluar?</string>
