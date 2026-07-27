@@ -580,33 +580,6 @@
   </data>
 
   
-  <data name="Service_NotInstalled" xml:space="preserve">
-    <value>Belum Terinstal</value>
-  </data>
-  <data name="Service_Running" xml:space="preserve">
-    <value>Berjalan</value>
-  </data>
-  <data name="Service_Stopped" xml:space="preserve">
-    <value>Dihentikan</value>
-  </data>
-  <data name="Service_Pending" xml:space="preserve">
-    <value>Menunggu…</value>
-  </data>
-  <data name="Service_Installed" xml:space="preserve">
-    <value>Terinstal</value>
-  </data>
-  <data name="Service_Starting" xml:space="preserve">
-    <value>Memulai…</value>
-  </data>
-  <data name="Service_Stopping" xml:space="preserve">
-    <value>Menghentikan…</value>
-  </data>
-  <data name="Service_Uninstalling" xml:space="preserve">
-    <value>Layanan dihapus.</value>
-  </data>
-  <data name="Service_PasswordRequired" xml:space="preserve">
-    <value>Kata sandi diperlukan.</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
   </data>
@@ -615,24 +588,6 @@
   </data>
   <data name="Service_HostUnavailableHint" xml:space="preserve">
     <value>Hubungkan ke PC untuk memeriksa kemampuan runtime.</value>
-  </data>
-  <data name="Service_Checking" xml:space="preserve">
-    <value>Memeriksa…</value>
-  </data>
-  <data name="Service_StoppedMsg" xml:space="preserve">
-    <value>Dihentikan.</value>
-  </data>
-  <data name="Service_StopFailed" xml:space="preserve">
-    <value>Gagal menghentikan — lihat log.</value>
-  </data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>Kredensial diperbarui — restart layanan agar perubahan diterapkan.</value>
-  </data>
-  <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>Gagal — lihat log.</value>
-  </data>
-  <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>Copot pemasangan mungkin gagal — lihat log.</value>
   </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>Koneksi dibatalkan</value>
@@ -1396,15 +1351,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Service_BtnInstall" xml:space="preserve">
-    <value>📦 Instal</value>
-  </data>
-  <data name="Service_BtnLogin" xml:space="preserve">
-    <value>⚙ Login</value>
-  </data>
-  <data name="Service_BtnRemove" xml:space="preserve">
-    <value>🗑 Hapus</value>
-  </data>
 
   
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
@@ -2754,60 +2700,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_ServiceDesc" xml:space="preserve">
     <value>Layanan berjalan di latar belakang agar RemEx dapat menerima perintah jarak jauh tanpa membuka aplikasi.</value>
-  </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Menerbitkan Remex.PC…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Penerbitan gagal — lihat log.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Membuat layanan…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Gagal membuat layanan — lihat log.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Mengonfigurasi login…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Gagal mengonfigurasi kredensial — lihat log.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Memberikan hak masuk…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Menghentikan PC tertanam…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Memulai layanan…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Terinstal &amp; dimulai.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Terinstal — mulai mungkin gagal, lihat log.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Menginstal layanan systemd…</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Menghapus layanan systemd…</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Menghapus layanan…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Menerapkan kredensial…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Menemukan Remex.PC…</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Dimulai.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Gagal memulai — lihat log.</value>
   </data>
   <data name="Tutorial_P2_Title" xml:space="preserve">
     <value>Jalankan sebagai Layanan Windows</value>

@@ -580,33 +580,6 @@
   </data>
 
   
-  <data name="Service_NotInstalled" xml:space="preserve">
-    <value>No Instalado</value>
-  </data>
-  <data name="Service_Running" xml:space="preserve">
-    <value>En Ejecución</value>
-  </data>
-  <data name="Service_Stopped" xml:space="preserve">
-    <value>Detenido</value>
-  </data>
-  <data name="Service_Pending" xml:space="preserve">
-    <value>Pendiente…</value>
-  </data>
-  <data name="Service_Installed" xml:space="preserve">
-    <value>Instalado</value>
-  </data>
-  <data name="Service_Starting" xml:space="preserve">
-    <value>Iniciando…</value>
-  </data>
-  <data name="Service_Stopping" xml:space="preserve">
-    <value>Deteniendo…</value>
-  </data>
-  <data name="Service_Uninstalling" xml:space="preserve">
-    <value>Servicio desinstalado.</value>
-  </data>
-  <data name="Service_PasswordRequired" xml:space="preserve">
-    <value>Se requiere contraseña.</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
   </data>
@@ -615,24 +588,6 @@
   </data>
   <data name="Service_HostUnavailableHint" xml:space="preserve">
     <value>Conéctate a un PC para inspeccionar las capacidades del tiempo de ejecución.</value>
-  </data>
-  <data name="Service_Checking" xml:space="preserve">
-    <value>Comprobando…</value>
-  </data>
-  <data name="Service_StoppedMsg" xml:space="preserve">
-    <value>Detenido.</value>
-  </data>
-  <data name="Service_StopFailed" xml:space="preserve">
-    <value>Error al detener — ver registro.</value>
-  </data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>Credenciales actualizadas — reinicia el servicio para aplicar los cambios.</value>
-  </data>
-  <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>Fallido — ver registro.</value>
-  </data>
-  <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>La desinstalación pudo haber fallado — ver registro.</value>
   </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>Conexión cancelada</value>
@@ -1410,15 +1365,6 @@ Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala
   </data>
 
   
-  <data name="Service_BtnInstall" xml:space="preserve">
-    <value>📦 Instalar</value>
-  </data>
-  <data name="Service_BtnLogin" xml:space="preserve">
-    <value>⚙ Sesión</value>
-  </data>
-  <data name="Service_BtnRemove" xml:space="preserve">
-    <value>🗑 Eliminar</value>
-  </data>
 
   
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
@@ -2777,60 +2723,6 @@ Chrome)</value>
   </data>
   <data name="Settings_ServiceDesc" xml:space="preserve">
     <value>El servicio se ejecuta en segundo plano para que RemEx pueda aceptar comandos remotos sin abrir la aplicación.</value>
-  </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Publicando Remex.PC…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Publicación fallida — ver registro.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Creando servicio…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Error al crear servicio — ver registro.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Configurando inicio de sesión…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Error al configurar credenciales — ver registro.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Otorgando derechos de inicio de sesión…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Deteniendo PC integrado…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Iniciando servicio…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Instalado &amp; iniciado.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Instalado — el inicio puede haber fallado, ver registro.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Instalando servicio systemd...</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Eliminando servicio systemd...</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Eliminando servicio…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Aplicando credenciales…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Localizando Remex.PC…</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Iniciado.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Error al iniciar — ver registro.</value>
   </data>
   <data name="Tutorial_P2_Title" xml:space="preserve">
     <value>Ejecutar como Servicio de Windows</value>

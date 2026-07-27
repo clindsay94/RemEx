@@ -222,39 +222,8 @@ namespace Remex.Desktop.Localization {
         public static string Status_PadFullTooltip => ResourceManager.GetString("Status_PadFullTooltip", resourceCulture)!;
 
         // Service Status
-        public static string Service_NotInstalled => ResourceManager.GetString("Service_NotInstalled", resourceCulture)!;
-        public static string Service_Running => ResourceManager.GetString("Service_Running", resourceCulture)!;
-        public static string Service_Stopped => ResourceManager.GetString("Service_Stopped", resourceCulture)!;
-        public static string Service_Pending => ResourceManager.GetString("Service_Pending", resourceCulture)!;
-        public static string Service_Installed => ResourceManager.GetString("Service_Installed", resourceCulture)!;
-        public static string Service_Starting => ResourceManager.GetString("Service_Starting", resourceCulture)!;
-        public static string Service_Stopping => ResourceManager.GetString("Service_Stopping", resourceCulture)!;
-        public static string Service_Uninstalling => ResourceManager.GetString("Service_Uninstalling", resourceCulture)!;
-        public static string Service_PasswordRequired => ResourceManager.GetString("Service_PasswordRequired", resourceCulture)!;
-        public static string Service_Publishing => ResourceManager.GetString("Service_Publishing", resourceCulture)!;
-        public static string Service_PublishFailed => ResourceManager.GetString("Service_PublishFailed", resourceCulture)!;
-        public static string Service_Creating => ResourceManager.GetString("Service_Creating", resourceCulture)!;
-        public static string Service_CreateFailed => ResourceManager.GetString("Service_CreateFailed", resourceCulture)!;
-        public static string Service_ConfiguringLogin => ResourceManager.GetString("Service_ConfiguringLogin", resourceCulture)!;
-        public static string Service_ConfigureFailed => ResourceManager.GetString("Service_ConfigureFailed", resourceCulture)!;
-        public static string Service_GrantingRights => ResourceManager.GetString("Service_GrantingRights", resourceCulture)!;
-        public static string Service_StoppingEmbedded => ResourceManager.GetString("Service_StoppingEmbedded", resourceCulture)!;
-        public static string Service_StartingService => ResourceManager.GetString("Service_StartingService", resourceCulture)!;
-        public static string Service_InstalledStarted => ResourceManager.GetString("Service_InstalledStarted", resourceCulture)!;
-        public static string Service_InstalledStartFailed => ResourceManager.GetString("Service_InstalledStartFailed", resourceCulture)!;
-        public static string Service_DeletingService => ResourceManager.GetString("Service_DeletingService", resourceCulture)!;
-        public static string Service_ApplyingCredentials => ResourceManager.GetString("Service_ApplyingCredentials", resourceCulture)!;
         public static string Service_HostUnavailable => ResourceManager.GetString("Service_HostUnavailable", resourceCulture)!;
         public static string Service_HostUnavailableHint => ResourceManager.GetString("Service_HostUnavailableHint", resourceCulture)!;
-        public static string Service_Checking => ResourceManager.GetString("Service_Checking", resourceCulture)!;
-        public static string Service_LocatingHost => ResourceManager.GetString("Service_LocatingHost", resourceCulture)!;
-        public static string Service_StartedMsg => ResourceManager.GetString("Service_StartedMsg", resourceCulture)!;
-        public static string Service_StartFailed => ResourceManager.GetString("Service_StartFailed", resourceCulture)!;
-        public static string Service_StoppedMsg => ResourceManager.GetString("Service_StoppedMsg", resourceCulture)!;
-        public static string Service_StopFailed => ResourceManager.GetString("Service_StopFailed", resourceCulture)!;
-        public static string Service_CredentialsUpdated => ResourceManager.GetString("Service_CredentialsUpdated", resourceCulture)!;
-        public static string Service_CredentialsFailed => ResourceManager.GetString("Service_CredentialsFailed", resourceCulture)!;
-        public static string Service_UninstallFailed => ResourceManager.GetString("Service_UninstallFailed", resourceCulture)!;
         public static string Status_ConnectionCancelled => ResourceManager.GetString("Status_ConnectionCancelled", resourceCulture)!;
         public static string Status_ConnectionTimedOut => ResourceManager.GetString("Status_ConnectionTimedOut", resourceCulture)!;
 
@@ -316,9 +285,6 @@ namespace Remex.Desktop.Localization {
         public static string Remote_WolBroadcastWatermark => ResourceManager.GetString("Remote_WolBroadcastWatermark", resourceCulture)!;
         public static string Remote_WolMacWatermark => ResourceManager.GetString("Remote_WolMacWatermark", resourceCulture)!;
         public static string Remote_WolPortWatermark => ResourceManager.GetString("Remote_WolPortWatermark", resourceCulture)!;
-        public static string Service_BtnInstall => ResourceManager.GetString("Service_BtnInstall", resourceCulture)!;
-        public static string Service_BtnLogin => ResourceManager.GetString("Service_BtnLogin", resourceCulture)!;
-        public static string Service_BtnRemove => ResourceManager.GetString("Service_BtnRemove", resourceCulture)!;
         public static string Settings_AutoSaveHint => ResourceManager.GetString("Settings_AutoSaveHint", resourceCulture)!;
         public static string Settings_ConfigureLogin => ResourceManager.GetString("Settings_ConfigureLogin", resourceCulture)!;
         public static string Settings_DiscoverTooltip => ResourceManager.GetString("Settings_DiscoverTooltip", resourceCulture)!;

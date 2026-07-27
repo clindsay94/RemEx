@@ -580,33 +580,6 @@
   </data>
 
   
-  <data name="Service_NotInstalled" xml:space="preserve">
-    <value>Non installé</value>
-  </data>
-  <data name="Service_Running" xml:space="preserve">
-    <value>En cours d'exécution</value>
-  </data>
-  <data name="Service_Stopped" xml:space="preserve">
-    <value>Arrêté</value>
-  </data>
-  <data name="Service_Pending" xml:space="preserve">
-    <value>En attente...</value>
-  </data>
-  <data name="Service_Installed" xml:space="preserve">
-    <value>Installé</value>
-  </data>
-  <data name="Service_Starting" xml:space="preserve">
-    <value>Démarrage...</value>
-  </data>
-  <data name="Service_Stopping" xml:space="preserve">
-    <value>Arrêt...</value>
-  </data>
-  <data name="Service_Uninstalling" xml:space="preserve">
-    <value>Service désinstallé.</value>
-  </data>
-  <data name="Service_PasswordRequired" xml:space="preserve">
-    <value>Mot de passe requis.</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom : {0}×</value>
   </data>
@@ -615,24 +588,6 @@
   </data>
   <data name="Service_HostUnavailableHint" xml:space="preserve">
     <value>Connectez-vous à un hôte pour inspecter les capacités du runtime.</value>
-  </data>
-  <data name="Service_Checking" xml:space="preserve">
-    <value>Vérification...</value>
-  </data>
-  <data name="Service_StoppedMsg" xml:space="preserve">
-    <value>Arrêté.</value>
-  </data>
-  <data name="Service_StopFailed" xml:space="preserve">
-    <value>Échec de l'arrêt — voir journal.</value>
-  </data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>Identifiants mis à jour — redémarrez le service.</value>
-  </data>
-  <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>Échec — voir journal.</value>
-  </data>
-  <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>Désinstallation peut avoir échoué — voir journal.</value>
   </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>Connexion annulée</value>
@@ -1396,15 +1351,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Service_BtnInstall" xml:space="preserve">
-    <value>📦 Installer</value>
-  </data>
-  <data name="Service_BtnLogin" xml:space="preserve">
-    <value>⚙ Connexion</value>
-  </data>
-  <data name="Service_BtnRemove" xml:space="preserve">
-    <value>🗑 Supprimer</value>
-  </data>
 
   
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
@@ -2754,60 +2700,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_ServiceDesc" xml:space="preserve">
     <value>Le service s'exécute en arrière-plan pour que RemEx puisse accepter les commandes sans ouvrir l'application.</value>
-  </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Publication de Remex.PC...</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Échec de la publication — voir le journal.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Création du service...</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Erreur lors de la création du service — voir le journal.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Configuration de la connexion...</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Échec de la configuration des identifiants — voir le journal.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Attribution des droits de connexion...</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Arrêt de l'hôte intégré...</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Démarrage du service...</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Installé et démarré.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Installé — le démarrage a peut-être échoué, voir le journal.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Installation du service systemd…</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Suppression du service systemd…</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Suppression du service...</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Application des identifiants...</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Localisation de Remex.PC...</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Démarré.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Échec du démarrage — voir journal.</value>
   </data>
   <data name="Tutorial_P2_Title" xml:space="preserve">
     <value>Exécuter en tant que service Windows</value>

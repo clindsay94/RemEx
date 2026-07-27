@@ -580,33 +580,6 @@
   </data>
 
   
-  <data name="Service_NotInstalled" xml:space="preserve">
-    <value>इंस्टॉल नहीं है</value>
-  </data>
-  <data name="Service_Running" xml:space="preserve">
-    <value>चल रहा है</value>
-  </data>
-  <data name="Service_Stopped" xml:space="preserve">
-    <value>रुका हुआ</value>
-  </data>
-  <data name="Service_Pending" xml:space="preserve">
-    <value>प्रतीक्षारत…</value>
-  </data>
-  <data name="Service_Installed" xml:space="preserve">
-    <value>इंस्टॉल है</value>
-  </data>
-  <data name="Service_Starting" xml:space="preserve">
-    <value>शुरू हो रहा है…</value>
-  </data>
-  <data name="Service_Stopping" xml:space="preserve">
-    <value>रुक रहा है…</value>
-  </data>
-  <data name="Service_Uninstalling" xml:space="preserve">
-    <value>सेवा अनइंस्टॉल हो गई।</value>
-  </data>
-  <data name="Service_PasswordRequired" xml:space="preserve">
-    <value>पासवर्ड आवश्यक है।</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
   </data>
@@ -615,24 +588,6 @@
   </data>
   <data name="Service_HostUnavailableHint" xml:space="preserve">
     <value>रनटाइम क्षमताओं की जांच के लिए होस्ट से कनेक्ट करें।</value>
-  </data>
-  <data name="Service_Checking" xml:space="preserve">
-    <value>जांच की जा रही है…</value>
-  </data>
-  <data name="Service_StoppedMsg" xml:space="preserve">
-    <value>रुक गया।</value>
-  </data>
-  <data name="Service_StopFailed" xml:space="preserve">
-    <value>रोकना विफल रहा — लॉग देखें।</value>
-  </data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>क्रेडेंशियल अपडेट हो गए — बदलावों को लागू करने के लिए सेवा पुनः प्रारंभ करें।</value>
-  </data>
-  <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>विफल — लॉग देखें।</value>
-  </data>
-  <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>अनइंस्टॉल विफल हो सकता है — लॉग देखें।</value>
   </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>कनेक्शन रद्द कर दिया गया</value>
@@ -1396,15 +1351,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Service_BtnInstall" xml:space="preserve">
-    <value>📦 इंस्टॉल करें</value>
-  </data>
-  <data name="Service_BtnLogin" xml:space="preserve">
-    <value>⚙ लॉगिन</value>
-  </data>
-  <data name="Service_BtnRemove" xml:space="preserve">
-    <value>🗑 हटाएं</value>
-  </data>
 
   
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
@@ -2754,60 +2700,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_ServiceDesc" xml:space="preserve">
     <value>सेवा पृष्ठभूमि में चलती है ताकि RemEx ऐप खुले बिना रिमोट कमांड स्वीकार कर सके।</value>
-  </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Remex.PC प्रकाशित हो रहा है…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>प्रकाशन विफल — लॉग देखें।</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>सेवा बना रहे हैं…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>सेवा बनाने में विफल — लॉग देखें।</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>लॉगिन कॉन्फ़िगर हो रहा है…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>क्रेडेंशियल कॉन्फ़िगर करने में विफल — लॉग देखें।</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>लॉगऑन अधिकार दे रहे हैं…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>एम्बेडेड होस्ट बंद हो रहा है…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>सेवा शुरू हो रही है…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>इंस्टॉल &amp; शुरू हो गया।</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>इंस्टॉल — शुरू विफल हो सकता है, लॉग देखें।</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Installing systemd service…</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Removing systemd service…</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>सेवा हटा रहे हैं…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>क्रेडेंशियल लागू हो रहे हैं…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Remex.PC खोजा जा रहा है…</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>शुरू हो गया।</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>शुरू करना विफल रहा — लॉग देखें।</value>
   </data>
   <data name="Tutorial_P2_Title" xml:space="preserve">
     <value>विंडोज़ सेवा के रूप में चलाएं</value>

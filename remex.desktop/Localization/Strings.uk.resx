@@ -580,33 +580,6 @@
   </data>
 
   
-  <data name="Service_NotInstalled" xml:space="preserve">
-    <value>Не встановлено</value>
-  </data>
-  <data name="Service_Running" xml:space="preserve">
-    <value>Виконується</value>
-  </data>
-  <data name="Service_Stopped" xml:space="preserve">
-    <value>Зупинено</value>
-  </data>
-  <data name="Service_Pending" xml:space="preserve">
-    <value>Очікування…</value>
-  </data>
-  <data name="Service_Installed" xml:space="preserve">
-    <value>Встановлено</value>
-  </data>
-  <data name="Service_Starting" xml:space="preserve">
-    <value>Запускається…</value>
-  </data>
-  <data name="Service_Stopping" xml:space="preserve">
-    <value>Зупиняється…</value>
-  </data>
-  <data name="Service_Uninstalling" xml:space="preserve">
-    <value>Службу видалено.</value>
-  </data>
-  <data name="Service_PasswordRequired" xml:space="preserve">
-    <value>Потрібен пароль.</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
   </data>
@@ -615,24 +588,6 @@
   </data>
   <data name="Service_HostUnavailableHint" xml:space="preserve">
     <value>Підключіться до хоста для перевірки можливостей середовища виконання.</value>
-  </data>
-  <data name="Service_Checking" xml:space="preserve">
-    <value>Перевірка…</value>
-  </data>
-  <data name="Service_StoppedMsg" xml:space="preserve">
-    <value>Зупинено.</value>
-  </data>
-  <data name="Service_StopFailed" xml:space="preserve">
-    <value>Помилка зупинки — див. журнал.</value>
-  </data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>Облікові дані оновлено — перезапустіть службу, щоб зміни набули чинності.</value>
-  </data>
-  <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>Не вдалося — див. журнал.</value>
-  </data>
-  <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>Можливо, видалення не вдалося — див. журнал.</value>
   </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>Підключення скасовано</value>
@@ -1396,15 +1351,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Service_BtnInstall" xml:space="preserve">
-    <value>📦 Встановити</value>
-  </data>
-  <data name="Service_BtnLogin" xml:space="preserve">
-    <value>⚙ Вхід</value>
-  </data>
-  <data name="Service_BtnRemove" xml:space="preserve">
-    <value>🗑 Видалити</value>
-  </data>
 
   
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
@@ -2755,60 +2701,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_ServiceDesc" xml:space="preserve">
     <value>Служба працює у фоновому режимі, щоб RemEx міг приймати віддалені команди без відкритого застосунку.</value>
-  </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Публікація Remex.PC…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Публікація не вдалась — перегляньте журнал.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Створення служби…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Не вдалося створити службу — перегляньте журнал.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Налаштування входу…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Не вдалося налаштувати облікові дані — перегляньте журнал.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Надання прав входу…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Зупинка вбудованого хоста…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Запуск служби…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Встановлено &amp; запущено.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Встановлено — запуск міг не вдатися, перегляньте журнал.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Встановлення служби systemd…</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Видалення служби systemd…</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Видалення служби…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Застосування облікових даних…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Пошук Remex.PC…</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Запущено.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Помилка запуску — див. журнал.</value>
   </data>
   <data name="Tutorial_P2_Title" xml:space="preserve">
     <value>Запуск як служби Windows</value>

@@ -580,33 +580,6 @@
   </data>
 
   
-  <data name="Service_NotInstalled" xml:space="preserve">
-    <value>Yüklü Değil</value>
-  </data>
-  <data name="Service_Running" xml:space="preserve">
-    <value>Çalışıyor</value>
-  </data>
-  <data name="Service_Stopped" xml:space="preserve">
-    <value>Durduruldu</value>
-  </data>
-  <data name="Service_Pending" xml:space="preserve">
-    <value>Beklemede…</value>
-  </data>
-  <data name="Service_Installed" xml:space="preserve">
-    <value>Yüklü</value>
-  </data>
-  <data name="Service_Starting" xml:space="preserve">
-    <value>Başlatılıyor…</value>
-  </data>
-  <data name="Service_Stopping" xml:space="preserve">
-    <value>Durduruluyor…</value>
-  </data>
-  <data name="Service_Uninstalling" xml:space="preserve">
-    <value>Hizmet kaldırıldı.</value>
-  </data>
-  <data name="Service_PasswordRequired" xml:space="preserve">
-    <value>Şifre gereklidir.</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
   </data>
@@ -615,24 +588,6 @@
   </data>
   <data name="Service_HostUnavailableHint" xml:space="preserve">
     <value>Çalışma zamanı özelliklerini incelemek için bir PC'a bağlanın.</value>
-  </data>
-  <data name="Service_Checking" xml:space="preserve">
-    <value>Kontrol ediliyor…</value>
-  </data>
-  <data name="Service_StoppedMsg" xml:space="preserve">
-    <value>Durduruldu.</value>
-  </data>
-  <data name="Service_StopFailed" xml:space="preserve">
-    <value>Durdurma başarısız — log'a bakın.</value>
-  </data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>Kimlik bilgileri güncellendi — değişikliklerin geçerli olması için hizmeti yeniden başlatın.</value>
-  </data>
-  <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>Başarısız — log'a bakın.</value>
-  </data>
-  <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>Kaldırma işlemi başarısız olmuş olabilir — log'a bakın.</value>
   </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>Bağlantı iptal edildi</value>
@@ -1396,15 +1351,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Service_BtnInstall" xml:space="preserve">
-    <value>📦 Yükle</value>
-  </data>
-  <data name="Service_BtnLogin" xml:space="preserve">
-    <value>⚙ Giriş</value>
-  </data>
-  <data name="Service_BtnRemove" xml:space="preserve">
-    <value>🗑 Kaldır</value>
-  </data>
 
   
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
@@ -2758,60 +2704,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_ServiceDesc" xml:space="preserve">
     <value>Hizmet, RemEx'in uygulama açık olmadan uzak komutları kabul edebilmesi için arka planda çalışır.</value>
-  </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Remex.PC yayımlanıyor…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Yayımlama başarısız — log'a bakın.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Hizmet oluşturuluyor…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Hizmet oluşturma başarısız — log'a bakın.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Giriş yapılandırılıyor…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Kimlik bilgileri yapılandırılamadı — log'a bakın.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Oturum açma hakları veriliyor…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Gömülü PC durduruluyor…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Hizmet başlatılıyor…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Yüklendi &amp; başlatıldı.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Yüklendi — başlatma başarısız olabilir, log'a bakın.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>systemd hizmeti kuruluyor…</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>systemd hizmeti kaldırılıyor…</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Hizmet siliniyor…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Kimlik bilgileri uygulanıyor…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Remex.PC bulunuyor…</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Başlatıldı.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Başlatma başarısız — log'a bakın.</value>
   </data>
   <data name="Tutorial_P2_Title" xml:space="preserve">
     <value>Bir Windows Hizmeti Olarak Çalıştır</value>

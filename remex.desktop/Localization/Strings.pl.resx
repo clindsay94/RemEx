@@ -559,33 +559,6 @@
   </data>
 
   
-  <data name="Service_NotInstalled" xml:space="preserve">
-    <value>Nie zainstalowano</value>
-  </data>
-  <data name="Service_Running" xml:space="preserve">
-    <value>Działa</value>
-  </data>
-  <data name="Service_Stopped" xml:space="preserve">
-    <value>Zatrzymano</value>
-  </data>
-  <data name="Service_Pending" xml:space="preserve">
-    <value>Oczekuje…</value>
-  </data>
-  <data name="Service_Installed" xml:space="preserve">
-    <value>Zainstalowano</value>
-  </data>
-  <data name="Service_Starting" xml:space="preserve">
-    <value>Uruchamianie…</value>
-  </data>
-  <data name="Service_Stopping" xml:space="preserve">
-    <value>Zatrzymywanie…</value>
-  </data>
-  <data name="Service_Uninstalling" xml:space="preserve">
-    <value>Usługa odinstalowana.</value>
-  </data>
-  <data name="Service_PasswordRequired" xml:space="preserve">
-    <value>Hasło jest wymagane.</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
   </data>
@@ -594,24 +567,6 @@
   </data>
   <data name="Service_HostUnavailableHint" xml:space="preserve">
     <value>Połącz się z hostem, aby sprawdzić możliwości środowiska uruchomieniowego.</value>
-  </data>
-  <data name="Service_Checking" xml:space="preserve">
-    <value>Sprawdzanie...</value>
-  </data>
-  <data name="Service_StoppedMsg" xml:space="preserve">
-    <value>Zatrzymano.</value>
-  </data>
-  <data name="Service_StopFailed" xml:space="preserve">
-    <value>Błąd zatrzymania — sprawdź log.</value>
-  </data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>Poświadczenia zaktualizowane — uruchom ponownie usługę, aby zastosować zmiany.</value>
-  </data>
-  <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>Niepowodzenie — sprawdź log.</value>
-  </data>
-  <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>Odinstalowanie mogło się nie powieść — sprawdź log.</value>
   </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>Połączenie anulowane</value>
@@ -1351,15 +1306,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="Service_BtnInstall" xml:space="preserve">
-    <value>📦 Zainstaluj</value>
-  </data>
-  <data name="Service_BtnLogin" xml:space="preserve">
-    <value>⚙ Logowanie</value>
-  </data>
-  <data name="Service_BtnRemove" xml:space="preserve">
-    <value>🗑 Usuń</value>
-  </data>
 
   
   <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
@@ -2534,54 +2480,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_ServiceDesc" xml:space="preserve">
     <value>Usługa działa w tle, aby RemEx mógł przyjmować zdalne polecenia bez otwartej aplikacji.</value>
   </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Publikowanie Remex.PC…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Publikacja nie powiodła się — sprawdź log.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Tworzenie usługi…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Nie udało się utworzyć usługi — sprawdź log.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Konfigurowanie logowania…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Nie udało się skonfigurować poświadczeń — sprawdź log.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Przyznawanie praw logowania…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Zatrzymywanie wbudowanego hosta…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Uruchamianie usługi…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Zainstalowano &amp; uruchomiono.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Zainstalowano — uruchomienie mogło się nie powieść, sprawdź log.</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Usuwanie usługi…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Stosowanie poświadczeń…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Lokalizowanie Remex.PC...</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Uruchomiono.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Błąd uruchomienia — sprawdź log.</value>
-  </data>
   <data name="Tutorial_P2_Title" xml:space="preserve">
     <value>Uruchom jako usługę Windows</value>
   </data>
@@ -2914,12 +2812,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_ServiceSection_Linux" xml:space="preserve">
     <value>USŁUGA LINUX W TLE</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Instalowanie usługi systemd…</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Usuwanie usługi systemd…</value>
   </data>
   <data name="Tutorial_P2_Steps" xml:space="preserve">
     <value>1. Otwórz Ustawienia (⚙) → przewiń do 'Usługa Windows'
