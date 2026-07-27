@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -117,9 +118,33 @@ public class AboutViewModelChangelogTests
         Assert.Contains($"**{items[0].Version}", releasedSection, StringComparison.Ordinal);
     }
 
-    /// <summary>Walks up from the test bin directory to the repo's docs/CHANGELOG.md (the bundled asset's source).</summary>
-    private static string FindRepoChangelog()
+    /// <summary>Resolves the repo's docs/CHANGELOG.md (the bundled asset's source).</summary>
+    /// <remarks>
+    /// Anchored to THIS SOURCE FILE rather than to the test assembly's location. The previous
+    /// version walked up from <see cref="AppContext.BaseDirectory"/>, which silently coupled the
+    /// test to build output living inside the repo tree: building with <c>--artifacts-path</c>
+    /// pointed anywhere else made this test fail with an error that says nothing about the change
+    /// that caused it. <c>[CallerFilePath]</c> is baked in at compile time, and this repo sets no
+    /// <c>PathMap</c> or <c>ContinuousIntegrationBuild</c> that would rewrite it. (RemEx-6i1l.)
+    /// <para>
+    /// The directory walk is kept as a fallback for the opposite failure - an assembly built on
+    /// one machine and run on another, where the compile-time path does not exist.
+    /// </para>
+    /// </remarks>
+    private static string FindRepoChangelog([CallerFilePath] string thisSourceFile = "")
     {
+        // <repo>/remex.desktop.tests/ViewModels/ThisFile.cs -> <repo>
+        if (!string.IsNullOrEmpty(thisSourceFile))
+        {
+            var sourceDir = Path.GetDirectoryName(thisSourceFile);
+            if (!string.IsNullOrEmpty(sourceDir))
+            {
+                var fromSource = Path.Combine(sourceDir, "..", "..", "docs", "CHANGELOG.md");
+                if (File.Exists(fromSource))
+                    return Path.GetFullPath(fromSource);
+            }
+        }
+
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
@@ -128,6 +153,9 @@ public class AboutViewModelChangelogTests
                 return candidate;
             dir = dir.Parent;
         }
-        throw new FileNotFoundException("docs/CHANGELOG.md not found above " + AppContext.BaseDirectory);
+
+        throw new FileNotFoundException(
+            $"docs/CHANGELOG.md not found next to the source file ({thisSourceFile}) " +
+            $"or above the test assembly ({AppContext.BaseDirectory}).");
     }
 }

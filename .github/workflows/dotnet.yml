@@ -48,7 +48,7 @@ jobs:
         run: dotnet test Remex.sln -c Release --no-build
 
   linux:
-    name: Linux - build
+    name: Linux - build, and test what is proven to run there
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,14 +67,22 @@ jobs:
       - name: Build (rebuild, for the same reason as the Windows leg)
         run: dotnet build Remex.sln -c Release -t:Rebuild
 
-      # NO TEST STEP HERE YET, deliberately. Two remex.desktop.tests cases cannot pass on Linux:
-      # one hardcodes C:\Windows\System32 paths and asserts no warnings, and one finds
-      # docs/CHANGELOG.md by walking up from the assembly location. Enabling tests here today
-      # would make this job red on arrival, which is how a CI job gets ignored and then deleted.
-      # Tracked as RemEx-6i1l, which carries the fixes and the instruction to un-comment this:
-      #
-      #   - name: Test
-      #     run: dotnet test Remex.sln -c Release --no-build
+      # Core and Desktop tests only — 361 of the 811. Both were verified passing on Linux under
+      # WSL, including with --artifacts-path pointing outside the repo, which is what used to
+      # break AboutViewModelChangelogTests. (RemEx-6i1l fixed these two.)
+      - name: Test (Core and Desktop)
+        run: |
+          dotnet test remex.core.tests/remex.core.tests.csproj -c Release --no-build
+          dotnet test remex.desktop.tests/remex.desktop.tests.csproj -c Release --no-build
+
+      # remex.agent.tests is NOT run here yet, and the reason is an unverified environment fact
+      # rather than a defect. remex.agent carries <FrameworkReference Include="Microsoft.AspNetCore.App" />,
+      # so its test host needs the ASP.NET Core shared runtime, not just Microsoft.NETCore.App. The
+      # WSL image used to validate this workflow has only the latter, so the run there failed with
+      # "You must install or update .NET to run this application" — which says nothing about
+      # whether a hosted runner is fine. actions/setup-dotnet almost certainly provides it, but
+      # "almost certainly" is not the standard the rest of this file was held to. Tracked as
+      # RemEx-a83w: confirm on a real runner, then fold this into the step above.
 
 # NO ANDROID JOB HERE YET, and deliberately so. `./gradlew assembleRelease` is not self-contained
 # on a clean runner: app/build.gradle.kts pins ndkVersion "30.0.14904198" and shells out to
