@@ -37,6 +37,7 @@ public partial class CanvasView : UserControl
         {
             _previousVm.PropertyChanged -= OnVmPropertyChanged;
             _previousVm.ShowSecondMetricRequested -= OnShowSecondMetricRequested;
+            _previousVm.OnConfirmationRequested = null;
         }
 
         _previousVm = DataContext as CanvasDashboardViewModel;
@@ -48,6 +49,10 @@ public partial class CanvasView : UserControl
             _previousVm.ShowSetAlertRequested += OnShowSetAlertRequested;
             _previousVm.ShowSecondMetricRequested += OnShowSecondMetricRequested;
             _previousVm.PropertyChanged += OnVmPropertyChanged;
+            // Guards Reboot to UEFI (RemEx-5vcb). Wired here rather than in OnLoaded so the
+            // delegate exists even if the button is somehow reached before the view first loads -
+            // without it the command fails closed and the button would silently do nothing.
+            _previousVm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
         }
 
         // Re-wire the minimap's PanRequested when the VM changes.

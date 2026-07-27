@@ -63,6 +63,45 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     public ConnectionViewModel Connection { get; }
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
+    /// <summary>
+    /// Reboots the remote PC into its firmware settings, after confirmation.
+    /// </summary>
+    /// <remarks>
+    /// The Canvas quick-action bar used to bind straight to <c>Connection.RestartToUefiCommand</c>,
+    /// so one click rebooted the PC into UEFI with no prompt - while the command palette and the
+    /// Android card both gated the identical command behind <c>Confirm_RebootUefi_*</c>. It is
+    /// arguably the least recoverable action in the app: it discards unsaved work and leaves the
+    /// machine sitting in firmware setup until someone is physically there to leave it. (RemEx-5vcb.)
+    ///
+    /// The confirmation lives HERE rather than inside <c>ConnectionViewModel.RestartToUefiAsync</c>
+    /// because the palette already confirms before invoking that command - guarding the command
+    /// itself would prompt twice on that path. Confirming at the caller is the pattern every other
+    /// destructive action in this app follows.
+    /// </remarks>
+    [RelayCommand]
+    private async Task RestartToUefiAsync()
+    {
+        // Fails CLOSED, matching ConfirmationDialogHost and every other confirmed action: an
+        // unwired ViewModel, or a view with no visible parent window, declines the reboot rather
+        // than performing it unconfirmed.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_RebootUefi_Title"],
+                LocalizationService.Instance["Confirm_RebootUefi_Message"],
+                LocalizationService.Instance["Confirm_RebootUefi_Btn"]))
+        {
+            return;
+        }
+
+        await Connection.RestartToUefiAsync();
+    }
+
     /// <summary>Raised when the view should reset the canvas pan/zoom to origin.</summary>
     public event EventHandler? ResetViewRequested;
 
