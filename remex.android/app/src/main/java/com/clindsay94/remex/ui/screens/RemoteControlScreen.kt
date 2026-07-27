@@ -12,6 +12,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
@@ -20,12 +22,17 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -70,6 +77,16 @@ private data class RemoteCommandCard(
          */
         val supportsDelay: Boolean = true
 )
+
+/**
+ * Height the floating quick-actions toolbar occludes at the bottom of the command grid.
+ *
+ * Shared by the grid's bottom [PaddingValues] and by the confirm-actions bring-into-view request
+ * so the two cannot drift apart: a scroll that merely brings the Confirm/Cancel row's trailing
+ * edge to the viewport bottom would park it *behind* the toolbar, which is the same
+ * discoverability bug in a new place. (RemEx-tgl1.)
+ */
+private val FloatingToolbarOcclusion = 104.dp
 
 private val remoteCommandCards =
         listOf(
@@ -256,7 +273,13 @@ fun RemoteControlScreenContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize(),
                 // Extra bottom inset so the floating toolbar never covers the last row.
-                contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 104.dp)
+                contentPadding =
+                        PaddingValues(
+                                start = 16.dp,
+                                top = 16.dp,
+                                end = 16.dp,
+                                bottom = FloatingToolbarOcclusion
+                        )
         ) {
             item(span = { GridItemSpan(2) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -463,13 +486,60 @@ private fun CommandCard(
     val localizedTitle = stringResource(card.titleRes)
     val motionScheme = MaterialTheme.motionScheme
 
+    // Bringing the Confirm/Cancel row into view when the card arms. See RemEx-tgl1: the card
+    // grows downward on its confirm face and the LazyVerticalGrid does not follow, so on a card
+    // in the last visible row the buttons can sit entirely off-screen with a destructive action
+    // already armed.
+    //
+    // TIMING IS THE WHOLE PROBLEM, and the obvious version does nothing. ContentInViewNode
+    // .bringChildIntoView opens with `if (localRect()?.isMaxVisible() != false) return` - it is
+    // ONE-SHOT with no retry path. Request it from a LaunchedEffect when the confirm face enters
+    // composition and the row has not been measured yet, so its rect degenerates to zero-height
+    // at the card's top-left; the card's top is on screen by definition, so the request is judged
+    // already-visible and silently dropped. It compiles, it lints, and it scrolls nothing.
+    //
+    // So the request is driven from two places that both run AFTER layout:
+    //   - onSizeChanged, i.e. as soon as the row has real bounds, and
+    //   - animateContentSize's finishedListener, i.e. once the growth settles.
+    // The second is the one that must exist: while the card is still animating taller the grid's
+    // scroll extent is still short, and an under-consumed scroll makes ContentInViewNode cancel
+    // the request outright rather than resume it.
+    val scope = rememberCoroutineScope()
+    val confirmActionsRequester = remember { BringIntoViewRequester() }
+    var confirmActionsSize by remember { mutableStateOf(IntSize.Zero) }
+    val toolbarOcclusionPx = with(LocalDensity.current) { FloatingToolbarOcclusion.toPx() }
+
+    suspend fun revealConfirmActions() {
+        val size = confirmActionsSize
+        if (size == IntSize.Zero) return
+        // Explicit rect extended below the row: the default request stops as soon as the trailing
+        // edge reaches the viewport bottom, which is exactly where the floating toolbar sits.
+        confirmActionsRequester.bringIntoView(
+                Rect(
+                        left = 0f,
+                        top = 0f,
+                        right = size.width.toFloat(),
+                        bottom = size.height.toFloat() + toolbarOcclusionPx
+                )
+        )
+    }
+
+    LaunchedEffect(isAwaitingConfirmation, confirmActionsSize) {
+        if (isAwaitingConfirmation) revealConfirmActions()
+    }
+
     Card(
             // M3: animateContentSize replaces fixed height toggle for organic transitions
             modifier =
                     modifier.fillMaxWidth()
                             .animateContentSize(
                                     animationSpec =
-                                            MaterialTheme.motionScheme.fastSpatialSpec()
+                                            MaterialTheme.motionScheme.fastSpatialSpec(),
+                                    finishedListener = { _, _ ->
+                                        if (isAwaitingConfirmation) {
+                                            scope.launch { revealConfirmActions() }
+                                        }
+                                    }
                             ),
             shape = shape,
             colors =
@@ -508,6 +578,15 @@ private fun CommandCard(
                     )
 
                     if (awaitingConfirmation) {
+                        // Tie the measured size to THIS confirm face, not to the card. Without
+                        // the reset, a second arm of the same card starts with the stale size
+                        // from the first: the IntSize.Zero guard no longer fires, so the request
+                        // runs at composition time against an unplaced Row and scrolls to the
+                        // wrong offset - and because onSizeChanged then writes the same value,
+                        // mutableStateOf sees no change, the LaunchedEffect never re-keys, and
+                        // the fast path silently disappears after the first arm.
+                        DisposableEffect(Unit) { onDispose { confirmActionsSize = IntSize.Zero } }
+
                         // Consequence line, only for commands that declare one. Placed above the
                         // timer field and the buttons so it is read before the destructive action is
                         // reachable, not after it. Theme role rather than a literal colour, so it
@@ -535,8 +614,18 @@ private fun CommandCard(
                             )
                         }
 
+                        // The requester is anchored to the BUTTON ROW rather than to the card,
+                        // because the row is what actually has to be reachable. onSizeChanged is
+                        // what makes the request fire against real bounds instead of the
+                        // zero-height rect a composition-time request would produce.
+                        //
+                        // Deliberately NOT "fixed" by capping the consequence line with maxLines:
+                        // truncating a safety warning is worse than making the user scroll.
                         Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier =
+                                        Modifier.fillMaxWidth()
+                                                .onSizeChanged { confirmActionsSize = it }
+                                                .bringIntoViewRequester(confirmActionsRequester),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             // M3: error colors for destructive confirmation button
