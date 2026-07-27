@@ -1768,9 +1768,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Restartuj komputer do UEFI</value>
   </data>
-  <data name="Palette_WakeOnLan" xml:space="preserve">
-    <value>Budzenie przez LAN</value>
-  </data>
   <data name="Palette_Disconnect" xml:space="preserve">
     <value>Rozłącz</value>
   </data>

@@ -131,7 +131,10 @@ public partial class CommandPaletteViewModel : ObservableObject
         new(LocalizationService.Instance["Palette_RestartPc"],              LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.RestartCommand,       "Confirm_Restart_Title",       "Confirm_Restart_Message",       "Confirm_Restart_Btn"),
         new(LocalizationService.Instance["Palette_ForceRestartPc"],        LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.ForceRestartCommand,  "Confirm_ForceRestart_Title",  "Confirm_ForceRestart_Message",  "Confirm_ForceRestart_Btn"),
         new(LocalizationService.Instance["Palette_RestartPcToUefi"],      LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.RestartToUefiCommand, "Confirm_RebootUefi_Title",    "Confirm_RebootUefi_Message",    "Confirm_RebootUefi_Btn"),
-        new(LocalizationService.Instance["Palette_WakeOnLan"],             LocalizationService.Instance["PaletteCategory_Power"],    shell.Connection.WakeOnLanCommand),
+        // No Wake-on-LAN entry. The one that used to be here bound a command that sent no MAC
+        // address, which the host rejects with "Missing MacAddress parameter." - so it had never
+        // worked, and silently. Waking needs the Remote screen's configured MAC and its
+        // not-connected local-send path; a working palette entry is RemEx-efse. (RemEx-paa7.)
         new(LocalizationService.Instance["Palette_Disconnect"],              LocalizationService.Instance["PaletteCategory_Connection"], shell.Connection.DisconnectCommand),
         new(LocalizationService.Instance["Palette_Connect"],                 LocalizationService.Instance["PaletteCategory_Connection"], shell.Connection.ConnectCommand),
     ];

@@ -1999,9 +1999,6 @@ Chrome)</value>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Reiniciar PC a UEFI</value>
   </data>
-  <data name="Palette_WakeOnLan" xml:space="preserve">
-    <value>Despertar por LAN</value>
-  </data>
   <data name="Palette_Disconnect" xml:space="preserve">
     <value>Desconectar</value>
   </data>

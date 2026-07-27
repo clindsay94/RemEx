@@ -1984,9 +1984,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Redémarrer le PC sur UEFI</value>
   </data>
-  <data name="Palette_WakeOnLan" xml:space="preserve">
-    <value>Réveil par LAN</value>
-  </data>
   <data name="Palette_Disconnect" xml:space="preserve">
     <value>Déconnecter</value>
   </data>

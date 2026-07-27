@@ -511,12 +511,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             ActivityService.Instance.Record(Services.ActivityKind.CommandRun, action);
     }
 
-    [RelayCommand]
-    public async Task WakeOnLanAsync()
-    {
-        // This needs parameters usually, but for a simple widget toggle it might use defaults
-        await SendCommandAsync("WakeOnLan");
-    }
+    // WakeOnLanAsync used to live here, sending "WakeOnLan" with no parameters on the guess that
+    // the host "might use defaults". It does not: PingPongHandler's WAKEONLAN branch returns
+    // (false, "Missing MacAddress parameter.") when no MAC is supplied, so the command could never
+    // do anything. Its only caller was the command palette, and the tuple was discarded, so it
+    // failed silently on every invocation since it was written. Removed rather than repaired,
+    // because a working palette entry needs the Remote screen's configured MAC and its
+    // not-connected local-send fallback - see RemEx-efse. Wake-on-LAN itself is
+    // unaffected and still works from the Remote screen. (RemEx-paa7.)
 
     public async Task<Remex.Core.Models.IPC.CommandResponse> KillProcessWithResponseAsync(int processId, bool elevated = false)
     {
