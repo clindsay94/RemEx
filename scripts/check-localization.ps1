@@ -664,7 +664,11 @@ function Get-ReferencedKeys {
             else {
                 $patterns = @(
                     'Instance\[\s*"([A-Za-z0-9_]+)"\s*\]',
-                    '\{\s*local:Localize\s+([A-Za-z0-9_]+)',
+                    # ANY namespace prefix, not just 'local'. This file family uses two -
+                    # {local:Localize} 528 times and {conv:Localize} 116 - and matching only the
+                    # first left 116 references invisible to this axis, which is precisely the
+                    # blind spot it exists to close. (RemEx-fxkg.)
+                    '\{\s*[A-Za-z_][A-Za-z0-9_]*:Localize\s+([A-Za-z0-9_]+)',
                     '(?<![A-Za-z0-9_.])Strings\.([A-Z][A-Za-z0-9_]*)'
                 )
             }
