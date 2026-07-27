@@ -386,22 +386,6 @@
     "resx/similar-to-english/uk/Tutorial_P3_Steps",
     "resx/similar-to-english/uk/Tutorial_P8_QR_Body1",
     "resx/similar-to-english/uk/Tutorial_P8_QR_Body2",
-    "resx/similar-to-english/uk/Tutorial_P8_QR_Steps",
-    "resx/undefined/RemoteDesktop_BackendReady",
-    "resx/undefined/RemoteDesktop_LoadingDisplays",
-    "resx/undefined/RemoteDesktop_SelectDisplayTarget",
-    "resx/undefined/RemoteDesktop_SwitchingDisplay",
-    "resx/undefined/RemoteDesktop_WindowActionFailed",
-    "resx/undefined/RemoteDesktop_WindowControlFailed",
-    "resx/undefined/RemoteDesktop_WindowControlUnavailable",
-    "resx/undefined/RemoteDesktop_WindowQueryFailed",
-    "resx/undefined/Status_FailedGeneratePin",
-    "resx/undefined/Status_FailedGeneratePinHost",
-    "resx/undefined/Status_InvalidHostAddress",
-    "resx/undefined/Status_InvalidSettings",
-    "resx/undefined/Status_LoadDisplaysFailedFormat",
-    "resx/undefined/Status_PairingCancelled",
-    "resx/undefined/Status_PairingFailed",
-    "resx/undefined/Status_PairingServiceUnavailable"
+    "resx/similar-to-english/uk/Tutorial_P8_QR_Steps"
   ]
 }

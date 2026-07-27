@@ -3369,4 +3369,52 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Keluar</value>
   </data>
+  <data name="Status_FailedGeneratePin" xml:space="preserve">
+    <value>Tidak dapat membuat PIN pairing</value>
+  </data>
+  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
+    <value>PC tidak memberikan PIN pairing</value>
+  </data>
+  <data name="Status_PairingServiceUnavailable" xml:space="preserve">
+    <value>Penyandingan tidak tersedia saat ini</value>
+  </data>
+  <data name="Status_PairingFailed" xml:space="preserve">
+    <value>Penyandingan gagal. Periksa PIN di PC</value>
+  </data>
+  <data name="Status_PairingCancelled" xml:space="preserve">
+    <value>Penyandingan dibatalkan</value>
+  </data>
+  <data name="Status_InvalidSettings" xml:space="preserve">
+    <value>Periksa pengaturan koneksi</value>
+  </data>
+  <data name="Status_InvalidHostAddress" xml:space="preserve">
+    <value>Alamat PC itu tidak valid</value>
+  </data>
+  <data name="Status_LoadDisplaysFailedFormat" xml:space="preserve">
+    <value>Tidak dapat memuat tampilan: {0}</value>
+  </data>
+  <data name="RemoteDesktop_LoadingDisplays" xml:space="preserve">
+    <value>Memuat tampilan…</value>
+  </data>
+  <data name="RemoteDesktop_SelectDisplayTarget" xml:space="preserve">
+    <value>Pilih tampilan terlebih dahulu</value>
+  </data>
+  <data name="RemoteDesktop_SwitchingDisplay" xml:space="preserve">
+    <value>Mengganti tampilan…</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlUnavailable" xml:space="preserve">
+    <value>Kontrol jendela tidak tersedia</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlFailed" xml:space="preserve">
+    <value>Kontrol jendela gagal</value>
+  </data>
+  <data name="RemoteDesktop_WindowQueryFailed" xml:space="preserve">
+    <value>Tidak dapat menampilkan daftar jendela: {0}</value>
+  </data>
+  <data name="RemoteDesktop_WindowActionFailed" xml:space="preserve">
+    <value>Aksi jendela gagal: {0}</value>
+  </data>
+  <data name="RemoteDesktop_BackendReady" xml:space="preserve">
+    <value>Kontrol jendela siap ({0})</value>
+  </data>
 </root>

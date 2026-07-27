@@ -3366,4 +3366,52 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="Confirm_SignOut_Btn" xml:space="preserve">
     <value>Sair</value>
   </data>
+  <data name="Status_FailedGeneratePin" xml:space="preserve">
+    <value>Não foi possível criar um PIN de pareamento</value>
+  </data>
+  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
+    <value>O PC não forneceu um PIN de pareamento</value>
+  </data>
+  <data name="Status_PairingServiceUnavailable" xml:space="preserve">
+    <value>O pareamento não está disponível agora</value>
+  </data>
+  <data name="Status_PairingFailed" xml:space="preserve">
+    <value>Falha no pareamento. Verifique o PIN no PC</value>
+  </data>
+  <data name="Status_PairingCancelled" xml:space="preserve">
+    <value>Pareamento cancelado</value>
+  </data>
+  <data name="Status_InvalidSettings" xml:space="preserve">
+    <value>Verifique as configurações de conexão</value>
+  </data>
+  <data name="Status_InvalidHostAddress" xml:space="preserve">
+    <value>Esse endereço de PC não é válido</value>
+  </data>
+  <data name="Status_LoadDisplaysFailedFormat" xml:space="preserve">
+    <value>Não foi possível carregar as telas: {0}</value>
+  </data>
+  <data name="RemoteDesktop_LoadingDisplays" xml:space="preserve">
+    <value>Carregando telas…</value>
+  </data>
+  <data name="RemoteDesktop_SelectDisplayTarget" xml:space="preserve">
+    <value>Escolha uma tela primeiro</value>
+  </data>
+  <data name="RemoteDesktop_SwitchingDisplay" xml:space="preserve">
+    <value>Trocando de tela…</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlUnavailable" xml:space="preserve">
+    <value>Controle de janelas indisponível</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlFailed" xml:space="preserve">
+    <value>Falha no controle de janelas</value>
+  </data>
+  <data name="RemoteDesktop_WindowQueryFailed" xml:space="preserve">
+    <value>Não foi possível listar as janelas: {0}</value>
+  </data>
+  <data name="RemoteDesktop_WindowActionFailed" xml:space="preserve">
+    <value>Falha na ação da janela: {0}</value>
+  </data>
+  <data name="RemoteDesktop_BackendReady" xml:space="preserve">
+    <value>Controle de janelas pronto ({0})</value>
+  </data>
 </root>
