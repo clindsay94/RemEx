@@ -223,7 +223,11 @@
             <Panel>
                 <!-- Placeholder shown when not streaming -->
                 <StackPanel IsVisible="{Binding !IsStreaming}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-                    <TextBlock Text="D" FontSize="64" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Black"/>
+                    <!-- Was a literal Text="D" at 64pt: a leftover from an icon-font placeholder that
+                         rendered as the bare letter D once the app stopped using that font. Now the
+                         real desktop-PC geometry, which also means it inherits the theme accent
+                         rather than depending on a glyph existing (RemEx-po2x). -->
+                    <Path Data="{StaticResource IconDesktopPC}" Fill="{DynamicResource AccentPrimaryBrush}" Width="64" Height="64" Stretch="Uniform" HorizontalAlignment="Center"/>
                     <TextBlock Text="{local:Localize RemoteDesktop_PlaceholderTitle}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="{local:Localize RemoteDesktop_PlaceholderHint}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="{Binding RemoteDesktopCapabilityText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="560" TextAlignment="Center"/>

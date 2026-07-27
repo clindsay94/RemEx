@@ -49,6 +49,8 @@
 
             <!-- Widget List -->
             <ScrollViewer Grid.Row="1" Margin="0,20" VerticalScrollBarVisibility="Hidden" MaxHeight="380">
+                <!-- Panel so the empty state can share the ScrollViewer, which takes one child. -->
+                <Panel>
                 <ListBox ItemsSource="{Binding PinnedSensors}" Background="Transparent" BorderThickness="0" Padding="0">
                     <ListBox.Styles>
                         <Style Selector="ListBoxItem">
@@ -89,6 +91,21 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+
+                <!-- With nothing pinned the flyout was simply blank, which reads as broken rather
+                     than as empty. HomeView already has a state for exactly this data, so its
+                     wording is reused rather than a fourth variant invented - no new strings, and
+                     the two surfaces cannot drift apart. Trimmed to the hint alone: the flyout is a
+                     small transient popup, not a place for a heading and a call-to-action button
+                     (RemEx-po2x). -->
+                <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}"
+                           IsVisible="{Binding !PinnedSensors.Count}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="12,24"
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </Panel>
             </ScrollViewer>
 
             <!-- Actions -->
