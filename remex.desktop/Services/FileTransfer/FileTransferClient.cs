@@ -552,7 +552,9 @@ public sealed class FileTransferClient : IDisposable
             var result = await _idleWatchdog.AwaitCompletionAsync(tcs, lastActivity, ct);
 
             if (result.FileTransferEnd?.Success == false)
-                throw new IOException($"Upload failed: {result.FileTransferEnd.ErrorMessage}");
+                throw FileTransferHostException.ForHostError(
+                    result.FileTransferEnd.ErrorMessage,
+                    $"Upload failed: {result.FileTransferEnd.ErrorMessage}");
         }
         finally
         {
@@ -634,7 +636,9 @@ public sealed class FileTransferClient : IDisposable
             if (result.FileTransferEnd?.Success == false)
             {
                 try { File.Delete(localPath); } catch { /* best-effort */ }
-                throw new IOException($"Download failed: {result.FileTransferEnd.ErrorMessage}");
+                throw FileTransferHostException.ForHostError(
+                    result.FileTransferEnd.ErrorMessage,
+                    $"Download failed: {result.FileTransferEnd.ErrorMessage}");
             }
 
             // Verify the host-supplied SHA-256 against the bytes we actually received.
@@ -645,7 +649,7 @@ public sealed class FileTransferClient : IDisposable
             if (!string.IsNullOrEmpty(expectedHash) && expectedHash != actualHash)
             {
                 try { File.Delete(localPath); } catch { /* best-effort */ }
-                throw new IOException("Download failed: SHA-256 integrity check failed.");
+                throw new FileTransferIntegrityException();
             }
         }
         finally

@@ -2763,4 +2763,13 @@ Vous pouvez modifier :
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Oui. Ouvrez les Paramètres et utilisez « Revoir le tutoriel » dans la section Aide. Vous pouvez le faire aussi souvent que vous le souhaitez.</value>
   </data>
+  <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
+    <value>Le fichier téléchargé ne correspondait pas à celui envoyé par le PC ; il a été supprimé. Retéléchargez-le.</value>
+  </data>
+  <data name="FileTransfer_ErrStoppedResponding" xml:space="preserve">
+    <value>Le transfert ne répond plus. Vérifiez que l’appareil connecté est toujours couplé, puis réessayez.</value>
+  </data>
+  <data name="FileTransfer_ErrGeneric" xml:space="preserve">
+    <value>Impossible de terminer le transfert. Vérifiez que l’appareil connecté est toujours couplé, puis réessayez.</value>
+  </data>
 </root>

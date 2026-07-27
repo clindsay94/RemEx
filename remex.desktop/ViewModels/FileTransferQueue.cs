@@ -1,3 +1,4 @@
+using Remex.Desktop.Services.FileTransfer;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
@@ -229,7 +230,7 @@ public sealed class FileTransferQueue
         }
         catch (Exception ex)
         {
-            _post(() => item.ErrorMessage = ex.Message);
+            _post(() => item.ErrorMessage = DescribeFailure(ex));
             SetState(item, TransferState.Failed);
             item.Completion.TrySetResult();
         }
@@ -241,4 +242,27 @@ public sealed class FileTransferQueue
 
     private void SetState(FileTransferQueueItem item, TransferState state)
         => _post(() => item.State = state);
+
+    /// <summary>
+    /// Turns a transfer failure into text fit for the queue panel.
+    /// </summary>
+    /// <remarks>
+    /// This panel renders whatever it is given, so <c>ex.Message</c> put developer English on screen
+    /// in every language - "Download failed: SHA-256 integrity check failed.", the idle-watchdog
+    /// timeout, and so on (RemEx-s4p4).
+    /// <para>
+    /// Dispatch is by TYPE, never by message text. A host refusal carries wording the phone wrote
+    /// for a user and is shown verbatim; the two failures the PC itself detects get localized
+    /// sentences; anything else falls back to a generic one with the detail left to the log. Matching
+    /// on message content instead would silently revert to raw English the first time a message was
+    /// reworded.
+    /// </para>
+    /// </remarks>
+    private static string DescribeFailure(Exception ex) => ex switch
+    {
+        FileTransferHostException host => host.HostMessage,
+        FileTransferIntegrityException => LocalizationService.Instance["FileTransfer_ErrIntegrity"],
+        TimeoutException => LocalizationService.Instance["FileTransfer_ErrStoppedResponding"],
+        _ => LocalizationService.Instance["FileTransfer_ErrGeneric"],
+    };
 }

@@ -2763,4 +2763,13 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>हाँ। सेटिंग्स खोलें और सहायता अनुभाग में «ट्यूटोरियल दोबारा चलाएँ» चुनें। आप इसे जितनी बार चाहें कर सकते हैं।</value>
   </data>
+  <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
+    <value>डाउनलोड की गई फ़ाइल PC से भेजी गई फ़ाइल से मेल नहीं खाती, इसलिए उसे हटा दिया गया। फिर से डाउनलोड करें।</value>
+  </data>
+  <data name="FileTransfer_ErrStoppedResponding" xml:space="preserve">
+    <value>स्थानांतरण ने जवाब देना बंद कर दिया। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
+  </data>
+  <data name="FileTransfer_ErrGeneric" xml:space="preserve">
+    <value>स्थानांतरण पूरा नहीं हो सका। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
+  </data>
 </root>

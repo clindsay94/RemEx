@@ -2764,4 +2764,13 @@ Możesz zmienić:
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Tak. Otwórz Ustawienia i użyj opcji „Powtórz samouczek” w sekcji Pomoc. Możesz to robić dowolnie często.</value>
   </data>
+  <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
+    <value>Pobrany plik nie zgadzał się z tym, co wysłał komputer, więc został usunięty. Pobierz go ponownie.</value>
+  </data>
+  <data name="FileTransfer_ErrStoppedResponding" xml:space="preserve">
+    <value>Transfer przestał odpowiadać. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
+  </data>
+  <data name="FileTransfer_ErrGeneric" xml:space="preserve">
+    <value>Nie udało się ukończyć transferu. Sprawdź, czy połączone urządzenie jest nadal sparowane, a następnie spróbuj ponownie.</value>
+  </data>
 </root>

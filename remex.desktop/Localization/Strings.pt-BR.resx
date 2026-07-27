@@ -2763,4 +2763,13 @@ Você pode mudar:
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Sim. Abra as Configurações e use "Repetir tutorial" na seção Ajuda. Você pode fazer isso quantas vezes quiser.</value>
   </data>
+  <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
+    <value>O arquivo baixado não correspondeu ao que o PC enviou, então ele foi excluído. Baixe novamente.</value>
+  </data>
+  <data name="FileTransfer_ErrStoppedResponding" xml:space="preserve">
+    <value>A transferência parou de responder. Verifique se o dispositivo conectado continua pareado e tente novamente.</value>
+  </data>
+  <data name="FileTransfer_ErrGeneric" xml:space="preserve">
+    <value>Não foi possível concluir a transferência. Verifique se o dispositivo conectado continua pareado e tente novamente.</value>
+  </data>
 </root>

@@ -2766,4 +2766,13 @@ Anda dapat mengubah:
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Ya. Buka Pengaturan dan gunakan "Putar Ulang Tutorial" di bagian Bantuan. Anda dapat melakukannya sesering yang Anda mau.</value>
   </data>
+  <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
+    <value>Berkas yang diunduh tidak cocok dengan yang dikirim PC, jadi berkas itu dihapus. Coba unduh lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrStoppedResponding" xml:space="preserve">
+    <value>Transfer berhenti merespons. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrGeneric" xml:space="preserve">
+    <value>Transfer tidak dapat diselesaikan. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
+  </data>
 </root>

@@ -56,7 +56,16 @@ public class FileTransferQueueTests
     }
 
     [Fact]
-    public async Task Work_ThatThrows_MarksItemFailedWithMessage()
+    /// <summary>
+    /// An unrecognised failure is reported in the user's language, not as the exception's text.
+    /// </summary>
+    /// <remarks>
+    /// This test previously asserted the opposite - that the raw message "nope" reached
+    /// <c>ErrorMessage</c> - which is precisely the defect RemEx-s4p4 exists to remove: the queue
+    /// panel renders this string, so every exception thrown anywhere under a transfer was
+    /// user-facing developer English in all nine languages.
+    /// </remarks>
+    public async Task Work_ThatThrows_ReportsALocalizedMessageRatherThanTheExceptionText()
     {
         var queue = NewQueue();
         var item = queue.Enqueue(FileTransferQueueKind.Upload, "boom", (_, _) => throw new InvalidOperationException("nope"));
@@ -64,7 +73,52 @@ public class FileTransferQueueTests
         await item.Completion.Task;
 
         item.State.Should().Be(TransferState.Failed);
-        item.ErrorMessage.Should().Be("nope");
+        item.ErrorMessage.Should().NotBe("nope", "the exception's own text must never reach the queue panel");
+        item.ErrorMessage.Should().NotBeNullOrWhiteSpace();
+        item.ErrorMessage.Should().NotBe("FileTransfer_ErrGeneric",
+            "a key resolving to its own name means the .resx entry is missing");
+    }
+
+    /// <summary>
+    /// A host refusal IS shown verbatim - it is the one message written for a user.
+    /// </summary>
+    /// <remarks>
+    /// The counterpart to the test above, and the reason dispatch is by TYPE: replacing this with a
+    /// generic sentence would discard the most useful text in the whole flow, which is the mistake
+    /// RemEx-mznc caught on the PC's other error surface.
+    /// </remarks>
+    [Fact]
+    public async Task Work_ThatFailsOnTheHost_ShowsTheHostsOwnWording()
+    {
+        const string HostReply = "Adding a shared folder must be done on the phone.";
+        var queue = NewQueue();
+        var item = queue.Enqueue(
+            FileTransferQueueKind.Upload,
+            "boom",
+            (_, _) => throw Remex.Desktop.Services.FileTransfer.FileTransferHostException.ForHostError(
+                HostReply, "developer context"));
+
+        await item.Completion.Task;
+
+        item.State.Should().Be(TransferState.Failed);
+        item.ErrorMessage.Should().Be(HostReply);
+    }
+
+    /// <summary>An integrity failure gets its own sentence, distinct from the generic one.</summary>
+    [Fact]
+    public async Task Work_ThatFailsIntegrity_ReportsTheIntegrityMessage()
+    {
+        var queue = NewQueue();
+        var item = queue.Enqueue(
+            FileTransferQueueKind.Download,
+            "boom",
+            (_, _) => throw new Remex.Desktop.Services.FileTransfer.FileTransferIntegrityException());
+
+        await item.Completion.Task;
+
+        item.ErrorMessage.Should().NotBeNullOrWhiteSpace();
+        item.ErrorMessage.Should().NotContain("SHA-256", "the developer wording must not reach the user");
+        item.ErrorMessage.Should().NotBe("FileTransfer_ErrIntegrity");
     }
 
     [Fact]
