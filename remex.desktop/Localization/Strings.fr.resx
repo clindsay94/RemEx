@@ -707,7 +707,7 @@
     <value>{0} nécessite un hôte RemEx connecté. Ouvrez Paramètres pour configurer votre connexion.</value>
   </data>
   <data name="Status_Pairing" xml:space="preserve">
-    <value>Association avec l'hôte...</value>
+    <value>Appairage avec le PC...</value>
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>Le PIN doit comporter exactement 6 chiffres.</value>
@@ -1643,10 +1643,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Redémarrer vers UEFI</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Appairer avec l'hôte</value>
+    <value>Appairer avec le PC</value>
   </data>
   <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Entrez le code PIN à 6 chiffres affiché sur l'hôte :</value>
+    <value>Entrez le code PIN à 6 chiffres affiché sur le PC :</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Appairer</value>

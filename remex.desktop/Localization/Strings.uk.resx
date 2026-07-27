@@ -707,7 +707,7 @@
     <value>{0} потребує підключеного хоста RemEx. Відкрийте Налаштування, щоб налаштувати підключення.</value>
   </data>
   <data name="Status_Pairing" xml:space="preserve">
-    <value>Сполучення з хостом...</value>
+    <value>Сполучення з ПК...</value>
   </data>
   <data name="Pairing_InvalidPin" xml:space="preserve">
     <value>PIN-код повинен складатися рівно з 6 цифр.</value>
@@ -1019,19 +1019,19 @@ Linux: ip addr  or  hostname -I</value>
     <value>Згенеруйте QR-код для підключення додатка RemEx Android</value>
   </data>
   <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Show pairing PIN</value>
+    <value>Показати PIN-код сполучення</value>
   </data>
   <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+    <value>Показати 6-значний код, потрібний телефону для сполучення з цим ПК</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PAIRING PIN</value>
+    <value>PIN-КОД СПОЛУЧЕННЯ</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
-    <value>Enter this code on your phone to complete pairing</value>
+    <value>Введіть цей код на телефоні, щоб завершити сполучення</value>
   </data>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
-    <value>Expires in {0}s</value>
+    <value>Діє ще {0} с</value>
   </data>
   <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
     <value>Відкрийте простір датчиків із функцією перетягування для моніторингу телеметрії ПК</value>
@@ -1643,13 +1643,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Перезавантажити в UEFI</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with PC</value>
+    <value>Сполучити з ПК</value>
   </data>
   <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the PC machine:</value>
+    <value>Введіть 6-значний PIN-код, показаний на ПК:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
+    <value>Сполучити</value>
   </data>
 
   
