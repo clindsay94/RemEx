@@ -2,6 +2,7 @@ using Remex.Desktop.Services.FileTransfer;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
@@ -68,6 +69,18 @@ public sealed partial class FileTransferQueueItem : ObservableObject
 
     public bool CanCancel => !IsTerminal;
 
+    /// <summary>
+    /// Re-raises the two labels that read <see cref="LocalizationService"/> at get-time. Called by the
+    /// owning <see cref="FileTransferQueue"/> on a language switch - the item itself deliberately does
+    /// not subscribe, because the service is a process-lifetime singleton and one subscription per
+    /// transfer would pin every completed item alive.
+    /// </summary>
+    internal void RaiseLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(ModeLabel));
+        OnPropertyChanged(nameof(StateLabel));
+    }
+
     /// <summary>Localized one-word description of the transfer direction.</summary>
     public string ModeLabel => Kind switch
     {
@@ -106,7 +119,7 @@ public sealed partial class FileTransferQueueItem : ObservableObject
 /// cancellable view. UI mutations are marshalled through <see cref="_post"/> so it is safe from any thread
 /// and drivable synchronously in tests.
 /// </summary>
-public sealed class FileTransferQueue
+public sealed class FileTransferQueue : IDisposable
 {
     private readonly Action<Action> _post;
     private readonly ConcurrentQueue<FileTransferQueueItem> _pending = new();
@@ -132,7 +145,28 @@ public sealed class FileTransferQueue
     public FileTransferQueue(Action<Action>? post)
     {
         _post = post ?? (action => Dispatcher.UIThread.Post(action));
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
     }
+
+    /// <summary>
+    /// A language switch changes what <see cref="FileTransferQueueItem.ModeLabel"/> and
+    /// <see cref="FileTransferQueueItem.StateLabel"/> would return, but nothing on the item itself
+    /// changed, so no notification fires and the queue keeps showing the old language until the row's
+    /// state happens to change. Fan the change out to every item instead.
+    /// </summary>
+    private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e) =>
+        _post(() =>
+        {
+            foreach (var item in Items)
+                item.RaiseLocalizedLabels();
+        });
+
+    /// <summary>
+    /// Detaches from the <see cref="LocalizationService"/> singleton. Not optional: the service
+    /// outlives every view, so a queue that subscribes without detaching is pinned for the process
+    /// lifetime along with every item it holds.
+    /// </summary>
+    public void Dispose() => LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
 
     /// <summary>Adds a transfer to the tail of the queue and starts the pump if idle. Returns the new item.</summary>
     public FileTransferQueueItem Enqueue(FileTransferQueueKind kind, string fileName, Func<IProgress<double>, CancellationToken, Task> work)

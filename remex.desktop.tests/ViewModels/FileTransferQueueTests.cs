@@ -1,9 +1,11 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Remex.Core.Models;
+using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -189,5 +191,66 @@ public class FileTransferQueueTests
 
         gate.SetResult();
         await active.Completion.Task;
+    }
+
+    /// <summary>
+    /// The labels read the localizer at get-time, so switching language changes what they return
+    /// without anything on the item changing. Without the queue's fan-out the row keeps rendering the
+    /// previous language until its state happens to move.
+    /// </summary>
+    [Fact]
+    public async Task LanguageSwitch_RefreshesQueuedItemLabels()
+    {
+        var original = LocalizationService.Instance.CultureTag;
+        try
+        {
+            LocalizationService.Instance.SetCulture("en");
+            using var queue = NewQueue();
+            var item = queue.Enqueue(FileTransferQueueKind.Upload, "a.txt", (_, _) => Task.CompletedTask);
+            await item.Completion.Task;
+            var english = item.ModeLabel;
+
+            var raised = new List<string?>();
+            item.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+            LocalizationService.Instance.SetCulture("fr");
+
+            raised.Should().Contain(nameof(FileTransferQueueItem.ModeLabel));
+            raised.Should().Contain(nameof(FileTransferQueueItem.StateLabel));
+            item.ModeLabel.Should().NotBe(english, "the French resource differs from the English one");
+        }
+        finally
+        {
+            LocalizationService.Instance.SetCulture(original);
+        }
+    }
+
+    /// <summary>
+    /// The localizer is a process-lifetime singleton, so a queue that stayed subscribed would keep
+    /// itself and every item it holds alive forever.
+    /// </summary>
+    [Fact]
+    public async Task Dispose_DetachesFromTheLocalizer()
+    {
+        var original = LocalizationService.Instance.CultureTag;
+        try
+        {
+            LocalizationService.Instance.SetCulture("en");
+            var queue = NewQueue();
+            var item = queue.Enqueue(FileTransferQueueKind.Upload, "a.txt", (_, _) => Task.CompletedTask);
+            await item.Completion.Task;
+            queue.Dispose();
+
+            var raised = new List<string?>();
+            item.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+            LocalizationService.Instance.SetCulture("fr");
+
+            raised.Should().BeEmpty();
+        }
+        finally
+        {
+            LocalizationService.Instance.SetCulture(original);
+        }
     }
 }

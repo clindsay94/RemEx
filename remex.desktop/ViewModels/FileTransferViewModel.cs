@@ -1246,6 +1246,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     {
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         TransferQueue.Changed -= OnQueueChanged;
+        TransferQueue.Dispose();
         TransferQueue.ItemCompleted -= OnTransferCompleted;
         _searchCts?.Cancel();
         _client.Dispose();
