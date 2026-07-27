@@ -33,9 +33,35 @@
         side this is especially nasty: LocalizationService's lookup ends in "?? key", so the user
         is shown the raw key name (e.g. "TaskManager_KillFailed") on screen, in every language.
 
-    Parity and undefined-key problems are ERRORS - they are objective and always wrong.
-    Staleness findings are WARNINGS by default, because they are heuristic; pass -StrictStaleness
-    to make them fail the build too.
+    AXIS 4 - PLACEHOLDER PARITY ("does the translation still take the same arguments?")
+        A value can be present, translated, current, and defined everywhere, and still be broken
+        from the inside. If a locale carries a placeholder English does not have, it either
+        renders literally - a user in that language reads the characters "{0}" on screen - or it
+        throws a FormatException, in that language only. If a locale is MISSING a placeholder
+        English has, the argument is silently dropped and that language alone gets a sentence
+        with the number missing.
+
+        Axes 1-3 are all structurally blind to this: parity is intact because the key exists
+        everywhere, the value is genuinely translated so staleness ignores it, and the key is
+        defined so the undefined-key axis never fires. This axis exists because exactly that
+        combination shipped a literal "{0}" to Spanish users (RemEx-xn7l).
+
+        THE TWO PLATFORMS USE DIFFERENT SYNTAX and must not share an extractor:
+          - PC .resx uses .NET composite formatting - {0}, {1}, with optional alignment and
+            format specifier ({0,-10}, {0:F2}), and literal braces written doubled ({{ }}).
+            Without honouring the doubling, every literal brace reads as a placeholder.
+          - Android uses printf - %1$s, %2$d, %.2f, with %% for a literal percent. The unit of
+            comparison is the (index, conversion) PAIR, because a locale that turns %1$d into
+            %1$s changes how the number is formatted even though nothing crashes.
+
+        A differing INDEX SET is an error - that is the crash-or-drop case. A matching index set
+        with a differing CONVERSION is a warning, because it degrades formatting rather than
+        breaking. Repeating a placeholder is legal in both syntaxes and is not a finding: sets
+        are compared, not counts, so "Delete {0}? {0} is gone" is fine against a single "{0}".
+
+    Parity, undefined-key and placeholder-index problems are ERRORS - they are objective and
+    always wrong. Staleness findings are WARNINGS by default, because they are heuristic; pass
+    -StrictStaleness to make them fail the build too.
 
     KNOWN LIMITATION of the freshness detector: it can only see drift that git can see. When all
     nine files are edited in one commit - which the .resx sync workflow often does - every
@@ -105,7 +131,7 @@ param(
     [string]$Platform = 'all',
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet('all', 'parity', 'staleness', 'undefined')]
+    [ValidateSet('all', 'parity', 'staleness', 'undefined', 'placeholder')]
     [string]$Axis = 'all',
 
     [Parameter(Mandatory = $false)]
@@ -683,6 +709,153 @@ function Test-UndefinedKeys {
 }
 
 # ---------------------------------------------------------------------------------------------
+# AXIS 4 - PLACEHOLDER PARITY
+# ---------------------------------------------------------------------------------------------
+function Get-PlaceholderSet {
+    <#
+        Returns the placeholders in one value as a set of identities, plus anything malformed.
+        Identity is the argument index for .resx, and "index:conversion" for Android - see the
+        script header for why the two platforms cannot share an extractor.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Text,
+        [Parameter(Mandatory = $true)][ValidateSet('resx', 'android')][string]$Syntax
+    )
+
+    $found = [System.Collections.Generic.HashSet[string]]::new()
+    $malformed = [System.Collections.Generic.List[string]]::new()
+    if ([string]::IsNullOrEmpty($Text)) {
+        return @{ Placeholders = $found; Malformed = $malformed }
+    }
+
+    if ($Syntax -eq 'resx') {
+        # Hand-scanned rather than regexed, because {{ and }} are literal braces and a regex
+        # that does not consume them in pairs will misread "{{0}}" as the placeholder {0}.
+        $i = 0
+        while ($i -lt $Text.Length) {
+            $c = $Text[$i]
+            if ($c -eq '{' -and $i + 1 -lt $Text.Length -and $Text[$i + 1] -eq '{') { $i += 2; continue }
+            if ($c -eq '}' -and $i + 1 -lt $Text.Length -and $Text[$i + 1] -eq '}') { $i += 2; continue }
+            if ($c -eq '{') {
+                $close = $Text.IndexOf('}', $i + 1)
+                if ($close -lt 0) { $malformed.Add("an opening brace at character $($i + 1) is never closed"); break }
+                $inner = $Text.Substring($i + 1, $close - $i - 1)
+                # The index runs up to the alignment comma or the format-specifier colon.
+                $indexPart = ($inner -split '[,:]', 2)[0]
+                if ($indexPart -match '^\d+$') { [void]$found.Add($indexPart) }
+                else { $malformed.Add("'{$inner}' is not a valid placeholder") }
+                $i = $close + 1
+                continue
+            }
+            if ($c -eq '}') { $malformed.Add("a closing brace at character $($i + 1) has no opening brace"); $i++; continue }
+            $i++
+        }
+    }
+    else {
+        # %[index$][flags][width][.precision]conversion, and %% for a literal percent.
+        # The space flag is deliberately NOT accepted: it would make the "% d" inside ordinary
+        # prose such as "100% done" parse as a format specifier.
+        $implicit = 0
+        foreach ($m in [regex]::Matches($Text, '%%|%(?:(\d+)\$)?[-#+0,(]*\d*(?:\.\d+)?([a-zA-Z])')) {
+            if ($m.Value -eq '%%') { continue }
+            $conversion = $m.Groups[2].Value
+            if ($m.Groups[1].Success) {
+                $index = $m.Groups[1].Value
+            }
+            else {
+                # Non-positional specifiers are numbered by the order they appear.
+                $implicit++
+                $index = "$implicit"
+            }
+            [void]$found.Add("${index}:${conversion}")
+        }
+    }
+
+    return @{ Placeholders = $found; Malformed = $malformed }
+}
+
+function Get-IndexPart {
+    param([Parameter(Mandatory = $true)][string]$Identity)
+    # "3:d" -> "3" for Android; "3" -> "3" for resx.
+    return ($Identity -split ':', 2)[0]
+}
+
+function Test-PlaceholderParity {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Config,
+        [Parameter(Mandatory = $true)][hashtable]$BaseEntries,
+        [Parameter(Mandatory = $true)][hashtable]$LocaleEntries
+    )
+
+    foreach ($key in ($BaseEntries.Keys | Sort-Object)) {
+        $english = Get-PlaceholderSet -Text $BaseEntries[$key].Value -Syntax $Config.Kind
+        foreach ($m in $english.Malformed) {
+            Add-Finding -Severity Error -Category 'Placeholder: malformed in English' -Platform $Config.Name `
+                -Id "$($Config.Kind)/placeholder-malformed/en/$key" `
+                -Message "English '$key' has a broken placeholder - $m"
+        }
+        $englishIndices = [System.Collections.Generic.HashSet[string]]::new(
+            [string[]]@($english.Placeholders | ForEach-Object { Get-IndexPart $_ }))
+
+        foreach ($locale in $Config.Locales) {
+            if (-not $LocaleEntries.ContainsKey($locale)) { continue }
+            if (-not $LocaleEntries[$locale].ContainsKey($key)) { continue }
+
+            $localeSet = Get-PlaceholderSet -Text $LocaleEntries[$locale][$key].Value -Syntax $Config.Kind
+            foreach ($m in $localeSet.Malformed) {
+                Add-Finding -Severity Error -Category 'Placeholder: malformed translation' -Platform $Config.Name `
+                    -Id "$($Config.Kind)/placeholder-malformed/$locale/$key" `
+                    -Message "$locale '$key' has a broken placeholder - $m"
+            }
+
+            $localeIndices = [System.Collections.Generic.HashSet[string]]::new(
+                [string[]]@($localeSet.Placeholders | ForEach-Object { Get-IndexPart $_ }))
+
+            $extra = [System.Collections.Generic.HashSet[string]]::new($localeIndices)
+            $extra.ExceptWith($englishIndices)
+            $missing = [System.Collections.Generic.HashSet[string]]::new($englishIndices)
+            $missing.ExceptWith($localeIndices)
+
+            if ($extra.Count -gt 0) {
+                $list = ($extra | Sort-Object | ForEach-Object { Format-Placeholder -Index $_ -Syntax $Config.Kind }) -join ', '
+                Add-Finding -Severity Error -Category 'Placeholder: locale has one English lacks' -Platform $Config.Name `
+                    -Id "$($Config.Kind)/placeholder-extra/$locale/$key" `
+                    -Message ("{0} '{1}' uses {2}, which English does not supply - it renders literally or throws: `"{3}`"" -f `
+                        $locale, $key, $list, (Get-Excerpt $LocaleEntries[$locale][$key].Value))
+            }
+            if ($missing.Count -gt 0) {
+                $list = ($missing | Sort-Object | ForEach-Object { Format-Placeholder -Index $_ -Syntax $Config.Kind }) -join ', '
+                Add-Finding -Severity Error -Category 'Placeholder: locale is missing one' -Platform $Config.Name `
+                    -Id "$($Config.Kind)/placeholder-missing/$locale/$key" `
+                    -Message ("{0} '{1}' drops {2}, so that value is silently lost in this language only: `"{3}`"" -f `
+                        $locale, $key, $list, (Get-Excerpt $LocaleEntries[$locale][$key].Value))
+            }
+
+            # Same arguments, different conversion (Android only): nothing crashes, but the
+            # number is formatted differently in that language. A warning, not an error.
+            if ($Config.Kind -eq 'android' -and $extra.Count -eq 0 -and $missing.Count -eq 0) {
+                $enPairs = @($english.Placeholders | Sort-Object)
+                $locPairs = @($localeSet.Placeholders | Sort-Object)
+                if (($enPairs -join '|') -ne ($locPairs -join '|')) {
+                    Add-Finding -Severity Warning -Category 'Placeholder: conversion differs' -Platform $Config.Name `
+                        -Id "$($Config.Kind)/placeholder-conversion/$locale/$key" `
+                        -Message "$locale '$key' formats the same arguments differently - English uses $($enPairs -join ', '), $locale uses $($locPairs -join ', ')"
+                }
+            }
+        }
+    }
+}
+
+function Format-Placeholder {
+    param(
+        [Parameter(Mandatory = $true)][string]$Index,
+        [Parameter(Mandatory = $true)][string]$Syntax
+    )
+    if ($Syntax -eq 'resx') { return "{$Index}" }
+    return "%$Index`$..."
+}
+
+# ---------------------------------------------------------------------------------------------
 # Driver
 # ---------------------------------------------------------------------------------------------
 Write-Host 'RemEx localization check' -ForegroundColor White
@@ -734,6 +907,11 @@ foreach ($platformKey in $selected) {
     if ($Axis -in @('all', 'undefined')) {
         Write-Step 'Axis 3: keys referenced in code but declared nowhere...'
         Test-UndefinedKeys -Config $config -BaseEntries $baseEntries
+    }
+
+    if ($Axis -in @('all', 'placeholder')) {
+        Write-Step 'Axis 4: placeholders match English...'
+        Test-PlaceholderParity -Config $config -BaseEntries $baseEntries -LocaleEntries $localeEntries
     }
 }
 
@@ -788,7 +966,8 @@ if ($fixed.Count -gt 0 -and $Axis -eq 'all' -and $Platform -eq 'all') {
 if ($active.Count -eq 0) {
     Write-Host ''
     Write-Host '  No new localization problems. Every key exists in all 9 files on both platforms,' -ForegroundColor Green
-    Write-Host '  and every key used in code is declared somewhere.' -ForegroundColor Green
+    Write-Host '  every key used in code is declared somewhere, and every translation takes the' -ForegroundColor Green
+    Write-Host '  same arguments as its English source.' -ForegroundColor Green
     exit 0
 }
 
@@ -842,6 +1021,17 @@ if ($categories -contains 'Parity: translated an invariant') {
 if ($categories -contains 'Undefined: key used but never declared') {
     Write-Host '   - "key used but never declared": the app will show the user the raw key name in' -ForegroundColor Gray
     Write-Host '     every language. Either add the key to all 9 files, or fix the typo in the code.' -ForegroundColor Gray
+}
+if ($categories -like 'Placeholder:*') {
+    Write-Host '   - "locale has one English lacks": nothing supplies that argument, so the user' -ForegroundColor Gray
+    Write-Host '     of that language sees the placeholder printed literally, or the screen throws.' -ForegroundColor Gray
+    Write-Host '     Check how the key is consumed before editing: if the call site does not use' -ForegroundColor Gray
+    Write-Host '     string.Format at all, the whole placeholder has to go.' -ForegroundColor Gray
+    Write-Host '   - "locale is missing one": that argument is dropped for that language only, so' -ForegroundColor Gray
+    Write-Host '     the sentence loses a number or name. Put it back where the grammar wants it -' -ForegroundColor Gray
+    Write-Host '     the position may differ from English, which is what indexed placeholders are for.' -ForegroundColor Gray
+    Write-Host '   - "malformed": a literal brace must be doubled ({{ }}) in a .resx value, and a' -ForegroundColor Gray
+    Write-Host '     literal percent must be doubled (%%) in an Android string.' -ForegroundColor Gray
 }
 if ($categories -like '*Staleness*') {
     Write-Host '   - Staleness findings are heuristics, not proof. Read the value and decide.' -ForegroundColor Gray
