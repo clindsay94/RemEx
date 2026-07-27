@@ -46,6 +46,11 @@ import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 private data class FaqItem(
         val questionRes: Int,
         val answerRes: Int,
+        /**
+         * Optional string resource substituted into [answerRes] as `%1$s`, so an answer that names
+         * another screen tracks that screen's own title instead of repeating it (RemEx-9vcw).
+         */
+        val answerArgRes: Int? = null,
         val releasesLink: Boolean = false
 )
 
@@ -62,7 +67,8 @@ private val faqItems =
                 FaqItem(questionRes = R.string.faq_q5, answerRes = R.string.faq_a5),
                 FaqItem(questionRes = R.string.faq_q6, answerRes = R.string.faq_a6),
                 FaqItem(questionRes = R.string.faq_q7, answerRes = R.string.faq_a7),
-                FaqItem(questionRes = R.string.faq_q8, answerRes = R.string.faq_a8),
+                FaqItem(questionRes = R.string.faq_q8, answerRes = R.string.faq_a8,
+                                answerArgRes = R.string.screen_dashboard_title),
                 FaqItem(questionRes = R.string.faq_q9, answerRes = R.string.faq_a9),
                 FaqItem(questionRes = R.string.faq_q10, answerRes = R.string.faq_a10),
                 FaqItem(questionRes = R.string.faq_q11, answerRes = R.string.faq_a11),
@@ -192,7 +198,13 @@ private fun FaqCard(item: FaqItem) {
                             color = MaterialTheme.colorScheme.outlineVariant
                     )
                     Text(
-                            text = stringResource(item.answerRes),
+                            text =
+                                    if (item.answerArgRes != null)
+                                            stringResource(
+                                                    item.answerRes,
+                                                    stringResource(item.answerArgRes)
+                                            )
+                                    else stringResource(item.answerRes),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

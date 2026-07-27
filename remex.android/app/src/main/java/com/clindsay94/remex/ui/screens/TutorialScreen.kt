@@ -81,6 +81,12 @@ private data class TutorialPage(
     val emoji: String,
     val titleRes: Int,
     val bodyRes: Int,
+    /**
+     * Optional string resource substituted into [bodyRes] as `%1$s`. Exists so a body that names
+     * another screen can name it by ITS OWN title resource rather than by a hand-copied duplicate,
+     * which drifted apart per-locale twice (RemEx-7gwa, RemEx-9vcw).
+     */
+    val bodyArgRes: Int? = null,
     val linkLabelRes: Int? = null,
     val linkUrl: String? = null,
     val actionLabelRes: Int? = null,
@@ -142,6 +148,7 @@ private val tutorialPages = listOf(
         emoji = "🚀",
         titleRes = R.string.tutorial_page6_title,
         bodyRes = R.string.tutorial_page6_body,
+        bodyArgRes = R.string.screen_dashboard_title,
         illustration = TutorialIllustration.READY
     ),
     TutorialPage(
@@ -416,7 +423,10 @@ private fun TutorialPageContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = stringResource(page.bodyRes),
+            text =
+                    if (page.bodyArgRes != null)
+                            stringResource(page.bodyRes, stringResource(page.bodyArgRes))
+                    else stringResource(page.bodyRes),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

@@ -171,6 +171,25 @@ android {
                         .withPropertyName("processKillErrorCodesSource")
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                         .optional(true)
+
+                // ScreenNameSubstitutionTests reads these three by text to prove a body that
+                // declares %1$s also supplies the argument. strings.xml is the one that NEEDS the
+                // declaration: editing a value does not change the R class, so without this a
+                // change that deletes a placeholder leaves the test up-to-date and unrun -- the
+                // same silent-skip RemEx-odkk documents. The two .kt files recompile anyway, but
+                // are declared alongside so the dependency is stated rather than inferred.
+                listOf(
+                                "src/main/res/values/strings.xml",
+                                "src/main/java/com/clindsay94/remex/ui/screens/TutorialScreen.kt",
+                                "src/main/java/com/clindsay94/remex/ui/screens/FaqScreen.kt",
+                        )
+                        .forEach { path ->
+                            it.inputs
+                                    .file(File(projectDir, path))
+                                    .withPropertyName("screenNameSubstitution:" + path)
+                                    .withPathSensitivity(PathSensitivity.RELATIVE)
+                                    .optional(true)
+                        }
             }
         }
     }
