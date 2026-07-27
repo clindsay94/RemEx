@@ -87,6 +87,13 @@ class SettingsManager(val context: Context) {
                 // migrate new installs only and leave everyone else on the clover - the two
                 // populations would silently disagree about the default (RemEx-nkdv).
                 val SHAPE_DEFAULTS_MIGRATED_V3_KEY = booleanPreferencesKey("shape_defaults_migrated_v3")
+                // Per-CATEGORY shape overrides (RemEx-mycn). One key per DashboardShapes
+                // .CardCategory, all defaulting to INHERIT so an untouched install resolves
+                // exactly as before and no migration is needed.
+                val CATEGORY_SHAPE_PRESET_KEYS: Map<DashboardShapes.CardCategory, androidx.datastore.preferences.core.Preferences.Key<Float>> =
+                        DashboardShapes.CardCategory.entries.associateWith { category ->
+                                floatPreferencesKey("category_shape_preset_" + category.name.lowercase())
+                        }
                 // First-run Home Base coach marks: true once the user has seen or dismissed the
                 // dashboard coaching overlay. Reset re-arms it as first-run (RemEx-km0i.10).
                 val DASHBOARD_COACH_SEEN_KEY = booleanPreferencesKey("dashboard_coach_seen")
@@ -516,6 +523,26 @@ class SettingsManager(val context: Context) {
          * it - the two cases are indistinguishable in storage, and preserving a real choice matters
          * more than migrating every last default.
          */
+        /**
+         * The user's per-category shape choices. Absent entries mean INHERIT, so the map is sparse
+         * and an untouched install yields an empty map rather than eight explicit sentinels.
+         */
+        val categoryShapePresetsFlow: Flow<Map<DashboardShapes.CardCategory, Float>> =
+                context.dataStore.data.map { preferences ->
+                        CATEGORY_SHAPE_PRESET_KEYS.mapNotNull { (category, key) ->
+                                preferences[key]?.let { category to it }
+                        }
+                                .toMap()
+                }
+
+        suspend fun saveCategoryShapePreset(
+                category: DashboardShapes.CardCategory,
+                preset: Float,
+        ) {
+                val key = CATEGORY_SHAPE_PRESET_KEYS.getValue(category)
+                context.dataStore.edit { it[key] = preset }
+        }
+
         suspend fun migrateShapeDefaultsV3() {
                 val prefs = context.dataStore.data.first()
                 if (prefs[SHAPE_DEFAULTS_MIGRATED_V3_KEY] == true) return

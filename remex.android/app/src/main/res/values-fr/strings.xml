@@ -746,4 +746,12 @@
     <string name="dashboard_not_connected">Non connecté</string>
     <string name="faq_q16">Puis-je verrouiller mon PC depuis mon téléphone ?</string>
     <string name="faq_a16">Oui. Utilisez l\'écran Contrôle à distance, ou ajoutez la tuile Verrouiller le PC aux Réglages rapides de votre téléphone pour un accès en un geste.</string>
+    <string name="personalization_shape_cat_pc_status">Cartes d’état du PC</string>
+    <string name="personalization_shape_cat_cpu">Cartes CPU</string>
+    <string name="personalization_shape_cat_gpu">Cartes GPU</string>
+    <string name="personalization_shape_cat_ram">Cartes mémoire</string>
+    <string name="personalization_shape_cat_temperature">Cartes de température</string>
+    <string name="personalization_shape_cat_network">Cartes réseau</string>
+    <string name="personalization_shape_cat_action">Cartes d’action</string>
+    <string name="personalization_shape_cat_other">Autres cartes</string>
 </resources>

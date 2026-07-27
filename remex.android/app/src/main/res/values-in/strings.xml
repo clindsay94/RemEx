@@ -749,4 +749,12 @@
     <string name="dashboard_not_connected">Tidak terhubung</string>
     <string name="faq_q16">Bisakah saya mengunci PC dari ponsel?</string>
     <string name="faq_a16">Ya. Gunakan layar Kontrol Jarak Jauh, atau tambahkan kartu Kunci PC ke Pengaturan Cepat ponsel Anda untuk akses sekali ketuk.</string>
+    <string name="personalization_shape_cat_pc_status">Kartu status PC</string>
+    <string name="personalization_shape_cat_cpu">Kartu CPU</string>
+    <string name="personalization_shape_cat_gpu">Kartu GPU</string>
+    <string name="personalization_shape_cat_ram">Kartu memori</string>
+    <string name="personalization_shape_cat_temperature">Kartu suhu</string>
+    <string name="personalization_shape_cat_network">Kartu jaringan</string>
+    <string name="personalization_shape_cat_action">Kartu tindakan</string>
+    <string name="personalization_shape_cat_other">Kartu lainnya</string>
 </resources>

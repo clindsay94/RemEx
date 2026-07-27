@@ -85,10 +85,15 @@ fun PersonalizationScreen(
         return
     }
 
+    val categoryShapePresets by
+            viewModel.categoryShapePresets.collectAsStateWithLifecycle(initialValue = emptyMap())
+
     PersonalizationScreenContent(
         settings = currentSettingsState,
         showHeader = showHeader,
         onDynamicColorChange = viewModel::setDynamicColor,
+        categoryShapePresets = categoryShapePresets,
+        onCategoryShapeChange = viewModel::setCategoryShapePreset,
         onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, remoteMouseCardShapePreset, splashStyle ->
             viewModel.save(
                 themeMode = themeMode,
@@ -148,6 +153,9 @@ fun PersonalizationScreenContent(
     settings: SettingsManager.PersonalizationPreferences,
     showHeader: Boolean,
     onDynamicColorChange: (Boolean) -> Unit = {},
+    /** The user's per-category shape choices; absent entries mean "inherit". */
+    categoryShapePresets: Map<DashboardShapes.CardCategory, Float> = emptyMap(),
+    onCategoryShapeChange: (DashboardShapes.CardCategory, Float) -> Unit = { _, _ -> },
     onSave: (
         themeMode: String,
         themePalette: String,
@@ -957,7 +965,21 @@ fun PersonalizationScreenContent(
                                     }
                     )
 
+                    // Per-category rows come first: they are the narrower setting, and the
+                    // resolver honours them ahead of the class rows below (RemEx-mycn). Generated
+                    // from the enum so a new CardCategory cannot be added without surfacing here.
+                    val categoryShapeConfigs =
+                            DashboardShapes.CardCategory.entries.map { category ->
+                                val label = stringResource(categoryShapeLabel(category))
+                                val current =
+                                        categoryShapePresets[category]
+                                                ?: DashboardShapes.SHAPE_PRESET_INHERIT
+                                (label to current) to
+                                        { v: Float -> onCategoryShapeChange(category, v) }
+                            }
+
                     val shapeConfigs =
+                            categoryShapeConfigs +
                             listOf(
                                     stringResource(R.string.personalization_shape_telemetry) to
                                             telemetryCardShapePreset to
@@ -1201,6 +1223,18 @@ private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vect
  * confirmed by an Opus review of the attempted conversion. Revisit only if the option set
  * shrinks to <=3 short labels.
  */
+/** Resource id for a card category's shape-picker label. */
+private fun categoryShapeLabel(category: DashboardShapes.CardCategory): Int = when (category) {
+    DashboardShapes.CardCategory.PC_STATUS -> R.string.personalization_shape_cat_pc_status
+    DashboardShapes.CardCategory.CPU -> R.string.personalization_shape_cat_cpu
+    DashboardShapes.CardCategory.GPU -> R.string.personalization_shape_cat_gpu
+    DashboardShapes.CardCategory.RAM -> R.string.personalization_shape_cat_ram
+    DashboardShapes.CardCategory.TEMPERATURE -> R.string.personalization_shape_cat_temperature
+    DashboardShapes.CardCategory.NETWORK -> R.string.personalization_shape_cat_network
+    DashboardShapes.CardCategory.ACTION -> R.string.personalization_shape_cat_action
+    DashboardShapes.CardCategory.OTHER -> R.string.personalization_shape_cat_other
+}
+
 /** Localized label for a palette style identifier; falls back to the raw identifier. */
 @Composable
 private fun paletteStyleLabel(option: String): String = when (option) {

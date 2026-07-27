@@ -106,4 +106,11 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
             splashStyle = splashStyle
         )
     }
+
+    /** The user's per-category card-shape choices; absent entries mean inherit. */
+    val categoryShapePresets = settingsManager.categoryShapePresetsFlow
+
+    fun setCategoryShapePreset(category: DashboardShapes.CardCategory, preset: Float) {
+        viewModelScope.launch { settingsManager.saveCategoryShapePreset(category, preset) }
+    }
 }

@@ -168,6 +168,8 @@ fun DashboardScreen(
         val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
         val cardOpacity by viewModel.cardOpacity.collectAsStateWithLifecycle()
         val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsStateWithLifecycle()
+        val categoryShapePresets by
+                viewModel.categoryShapePresets.collectAsStateWithLifecycle(initialValue = emptyMap())
         val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsStateWithLifecycle()
         val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
         val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
@@ -198,6 +200,7 @@ fun DashboardScreen(
                         cornerRadius = cornerRadius,
                         cardOpacity = cardOpacity,
                         pcCardShapePreset = pcCardShapePreset,
+                        categoryShapePresets = categoryShapePresets,
                         telemetryCardShapePreset = telemetryCardShapePreset,
                         draggingCardId = draggingCardId,
                         selectedCardIds = selectedCardIds,
@@ -269,6 +272,7 @@ fun DashboardScreenContent(
         cornerRadius: Int,
         cardOpacity: Float,
         pcCardShapePreset: Float,
+        categoryShapePresets: Map<DashboardShapes.CardCategory, Float>,
         telemetryCardShapePreset: Float,
         draggingCardId: String?,
         selectedCardIds: Set<String>,
@@ -702,7 +706,8 @@ fun DashboardScreenContent(
                                                                 DashboardShapes.resolveShapeIndex(
                                                                         card,
                                                                         pcCardShapePreset,
-                                                                        telemetryCardShapePreset
+                                                                        telemetryCardShapePreset,
+                                                                        categoryShapePresets
                                                                 )
 
                                                         androidx.compose.animation.AnimatedVisibility(
@@ -1603,6 +1608,7 @@ private fun DashboardScreenPreview() {
             onMoveSelection = { _, _ -> },
             onTogglePinSelection = {},
             onRemoveSelection = {},
+            categoryShapePresets = emptyMap(),
             onClearSelection = {},
             onSetGroupShape = { _, _ -> },
             onSetCardEnabled = { _, _ -> }

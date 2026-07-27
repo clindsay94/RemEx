@@ -748,4 +748,12 @@
     <string name="dashboard_not_connected">Bağlı değil</string>
     <string name="faq_q16">Bilgisayarımı telefonumdan kilitleyebilir miyim?</string>
     <string name="faq_a16">Evet. Uzaktan Denetim ekranını kullanın veya tek dokunuşla erişim için telefonunuzun Hızlı Ayarlar bölümüne Bilgisayarı Kilitle kutucuğunu ekleyin.</string>
+    <string name="personalization_shape_cat_pc_status">Bilgisayar durumu kartları</string>
+    <string name="personalization_shape_cat_cpu">İşlemci kartları</string>
+    <string name="personalization_shape_cat_gpu">Ekran kartı kartları</string>
+    <string name="personalization_shape_cat_ram">Bellek kartları</string>
+    <string name="personalization_shape_cat_temperature">Sıcaklık kartları</string>
+    <string name="personalization_shape_cat_network">Ağ kartları</string>
+    <string name="personalization_shape_cat_action">Eylem kartları</string>
+    <string name="personalization_shape_cat_other">Diğer kartlar</string>
 </resources>

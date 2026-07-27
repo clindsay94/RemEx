@@ -746,4 +746,12 @@
     <string name="dashboard_not_connected">Sin conexión</string>
     <string name="faq_q16">¿Puedo bloquear mi PC desde el teléfono?</string>
     <string name="faq_a16">Sí. Usa la pantalla de Control remoto o añade el mosaico Bloquear PC a los Ajustes rápidos del teléfono para acceder con un toque.</string>
+    <string name="personalization_shape_cat_pc_status">Tarjetas de estado del PC</string>
+    <string name="personalization_shape_cat_cpu">Tarjetas de CPU</string>
+    <string name="personalization_shape_cat_gpu">Tarjetas de GPU</string>
+    <string name="personalization_shape_cat_ram">Tarjetas de memoria</string>
+    <string name="personalization_shape_cat_temperature">Tarjetas de temperatura</string>
+    <string name="personalization_shape_cat_network">Tarjetas de red</string>
+    <string name="personalization_shape_cat_action">Tarjetas de acción</string>
+    <string name="personalization_shape_cat_other">Otras tarjetas</string>
 </resources>

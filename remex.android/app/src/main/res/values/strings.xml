@@ -839,4 +839,12 @@
     <string name="dashboard_not_connected">Not connected</string>
     <string name="faq_q16">Can I lock my PC from my phone?</string>
     <string name="faq_a16">Yes. Use the Remote Control screen, or add the Lock PC tile to your phone\'s Quick Settings for one-tap access.</string>
+    <string name="personalization_shape_cat_pc_status">PC status cards</string>
+    <string name="personalization_shape_cat_cpu">CPU cards</string>
+    <string name="personalization_shape_cat_gpu">GPU cards</string>
+    <string name="personalization_shape_cat_ram">Memory cards</string>
+    <string name="personalization_shape_cat_temperature">Temperature cards</string>
+    <string name="personalization_shape_cat_network">Network cards</string>
+    <string name="personalization_shape_cat_action">Action cards</string>
+    <string name="personalization_shape_cat_other">Other cards</string>
 </resources>

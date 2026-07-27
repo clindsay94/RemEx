@@ -746,4 +746,12 @@
     <string name="dashboard_not_connected">कनेक्ट नहीं है</string>
     <string name="faq_q16">क्या मैं अपने फ़ोन से PC लॉक कर सकता हूँ?</string>
     <string name="faq_a16">हाँ। रिमोट कंट्रोल स्क्रीन का उपयोग करें, या एक टैप में पहुँच के लिए अपने फ़ोन की क्विक सेटिंग्स में Lock PC टाइल जोड़ें।</string>
+    <string name="personalization_shape_cat_pc_status">PC स्थिति कार्ड</string>
+    <string name="personalization_shape_cat_cpu">CPU कार्ड</string>
+    <string name="personalization_shape_cat_gpu">GPU कार्ड</string>
+    <string name="personalization_shape_cat_ram">मेमोरी कार्ड</string>
+    <string name="personalization_shape_cat_temperature">तापमान कार्ड</string>
+    <string name="personalization_shape_cat_network">नेटवर्क कार्ड</string>
+    <string name="personalization_shape_cat_action">एक्शन कार्ड</string>
+    <string name="personalization_shape_cat_other">अन्य कार्ड</string>
 </resources>

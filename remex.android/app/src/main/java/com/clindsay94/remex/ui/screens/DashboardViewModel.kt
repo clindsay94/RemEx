@@ -912,4 +912,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             )
         }
     }
+
+    /** Per-category card-shape overrides; absent entries mean inherit (RemEx-mycn). */
+    val categoryShapePresets = settingsManager.categoryShapePresetsFlow
 }

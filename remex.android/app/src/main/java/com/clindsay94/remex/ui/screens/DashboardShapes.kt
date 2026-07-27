@@ -77,12 +77,32 @@ object DashboardShapes {
     }
 
     /**
-     * 1. per-card / group override, 2. legacy coarse user preset (pc/telemetry class sliders),
-     * 3. built-in per-category default. `ACTION` never reads a class preset (no slider bucket).
+     * Resolves a card's shape, most specific setting first:
+     *
+     * 1. the per-card / group override,
+     * 2. the user's per-CATEGORY choice ("all RAM cards"),
+     * 3. the user's coarse CLASS preset ("all telemetry cards"),
+     * 4. the built-in per-category default.
+     *
+     * Category beats class deliberately, because it is the narrower statement: a user who sets RAM
+     * to Oval and telemetry to Square means the RAM cards to be Oval. Ordering these the other way
+     * round would silently discard the more specific of the user's two choices.
+     *
+     * `ACTION` still never reads a class preset - it has no class slider - but it now has a
+     * category one, which is what made it reachable at all.
      */
-    fun resolveShapeIndex(card: HomeCardState, pcClassPreset: Float, telemetryClassPreset: Float): Float {
+    fun resolveShapeIndex(
+        card: HomeCardState,
+        pcClassPreset: Float,
+        telemetryClassPreset: Float,
+        categoryPresets: Map<CardCategory, Float> = emptyMap(),
+    ): Float {
         if (card.shapePreset != SHAPE_PRESET_INHERIT) return card.shapePreset
         val category = categoryOf(card)
+
+        val categoryOverride = categoryPresets[category] ?: SHAPE_PRESET_INHERIT
+        if (categoryOverride != SHAPE_PRESET_INHERIT) return categoryOverride
+
         val classOverride = when (category) {
             CardCategory.PC_STATUS -> pcClassPreset
             CardCategory.CPU, CardCategory.GPU, CardCategory.RAM,
@@ -90,6 +110,7 @@ object DashboardShapes {
             CardCategory.ACTION -> SHAPE_PRESET_INHERIT
         }
         if (classOverride != SHAPE_PRESET_INHERIT) return classOverride
+
         return defaultShapeFor(category)
     }
 }

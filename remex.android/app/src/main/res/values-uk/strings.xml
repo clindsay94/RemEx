@@ -748,4 +748,12 @@
     <string name="dashboard_not_connected">Немає з’єднання</string>
     <string name="faq_q16">Чи можу я заблокувати комп\'ютер із телефона?</string>
     <string name="faq_a16">Так. Скористайтеся екраном Віддалене керування або додайте плитку «Заблокувати ПК» до Швидких налаштувань телефона для доступу одним дотиком.</string>
+    <string name="personalization_shape_cat_pc_status">Картки стану ПК</string>
+    <string name="personalization_shape_cat_cpu">Картки CPU</string>
+    <string name="personalization_shape_cat_gpu">Картки GPU</string>
+    <string name="personalization_shape_cat_ram">Картки памʼяті</string>
+    <string name="personalization_shape_cat_temperature">Картки температури</string>
+    <string name="personalization_shape_cat_network">Картки мережі</string>
+    <string name="personalization_shape_cat_action">Картки дій</string>
+    <string name="personalization_shape_cat_other">Інші картки</string>
 </resources>
