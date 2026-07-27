@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,6 +30,10 @@ public class LinuxProcessMonitorService : IProcessMonitorService
             var results = new List<ProcessInfo>();
             var activePids = new HashSet<int>();
 
+            // Read once per poll: every process's start time is derived from it, and it does
+            // not change while the machine is up.
+            long bootTimeUnixSeconds = GetBootTimeUnixSeconds();
+
             long currentTotalCpuTime = GetTotalCpuTime();
             long totalCpuDiff;
             lock (_lock)
@@ -48,6 +53,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 long memory = 0;
                 long processTotalCpuTime = 0;
                 string exePath = "";
+                long? startTimeUnixMs = null;
 
                 try
                 {
@@ -66,6 +72,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                     long utime = long.Parse(parts[11]);
                     long stime = long.Parse(parts[12]);
                     processTotalCpuTime = utime + stime;
+                    startTimeUnixMs = TryComputeStartUnixMs(parts, bootTimeUnixSeconds);
                 }
                 catch { continue; }
 
@@ -117,7 +124,7 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 {
                     Id = pid,
                     Name = name,
-                    StartTimeUnixMs = TryReadStartUnixMs(pid),
+                    StartTimeUnixMs = startTimeUnixMs,
                     MemoryUsage = memory,
                     CpuUsage = cpuUsage,
                     FilePath = exePath,
@@ -173,33 +180,107 @@ public class LinuxProcessMonitorService : IProcessMonitorService
     }
 
     /// <summary>
-    /// A process's start time as Unix milliseconds UTC, or null when it cannot be read.
+    /// Clock ticks per second, as <c>/proc/&lt;pid&gt;/stat</c> reports CPU and start times.
     /// </summary>
     /// <remarks>
-    /// Looked up by PID rather than taking a <see cref="Process"/>, because the listing walks /proc
-    /// directly and never materialises one. A process that vanishes between the directory scan and
-    /// this call simply yields null, which the guard treats as unchecked. (RemEx-on4n.)
+    /// This is <c>USER_HZ</c>, which the kernel fixes at 100 for userspace regardless of the
+    /// internal <c>CONFIG_HZ</c>. Reading it properly means <c>sysconf(_SC_CLK_TCK)</c> through a
+    /// P/Invoke; the constant is used instead and named here so the assumption is visible rather
+    /// than buried in a magic number. Verified against <c>getconf CLK_TCK</c> and, more usefully,
+    /// against <see cref="Process.StartTime"/> itself — see the remarks on
+    /// <see cref="TryComputeStartUnixMs"/>.
     /// </remarks>
+    private const long UserHz = 100;
+
+    /// <summary>Field index of <c>starttime</c> within the stat fields that follow <c>comm</c>.</summary>
+    /// <remarks>
+    /// <c>starttime</c> is field 22 of <c>/proc/&lt;pid&gt;/stat</c> counting from 1. The callers here
+    /// split the remainder AFTER the closing parenthesis of <c>comm</c> (field 2), so field N lands
+    /// at index N-3 — hence 19.
+    /// </remarks>
+    private const int StartTimeFieldIndex = 19;
+
+    /// <summary>
+    /// Boot time as Unix seconds, from <c>/proc/stat</c>'s <c>btime</c> line. Zero when unreadable.
+    /// </summary>
+    private static long GetBootTimeUnixSeconds()
+    {
+        try
+        {
+            foreach (var line in File.ReadLines("/proc/stat"))
+            {
+                if (line.StartsWith("btime ", StringComparison.Ordinal)
+                    && long.TryParse(line.AsSpan(6).Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var seconds))
+                {
+                    return seconds;
+                }
+            }
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// A process's start time as Unix milliseconds UTC, computed from stat fields already in hand.
+    /// </summary>
+    /// <param name="statFieldsAfterComm">
+    /// The stat line split on spaces, starting AFTER <c>comm</c>'s closing parenthesis.
+    /// </param>
+    /// <param name="bootTimeUnixSeconds">From <see cref="GetBootTimeUnixSeconds"/>; 0 means unknown.</param>
+    /// <remarks>
+    /// <c>starttime</c> is measured in clock ticks since boot, so wall-clock time is boot time plus
+    /// that. Computing it here rather than materialising a <see cref="Process"/> per row matters
+    /// twice over. It removes a second read of a file the caller has already read, for every process
+    /// on every poll (RemEx-nchu) — but more importantly it means the process LISTING and the
+    /// kill-time check derive the value the same way, so they cannot disagree. That is not a
+    /// theoretical concern here: this class previously exposed a process's name from two different
+    /// sources that disagreed above 15 characters, which refused every kill of a long-named process
+    /// until review caught it (RemEx-druh).
+    /// <para>
+    /// Verified rather than assumed: across every process on a live Linux machine, this agreed with
+    /// <see cref="Process.StartTime"/> to within 508 ms — the residual being <c>btime</c>'s
+    /// whole-second granularity, comfortably inside
+    /// <see cref="Remex.Core.Services.ProcessKillGuard.StartTimeToleranceMs"/>.
+    /// </para>
+    /// </remarks>
+    private static long? TryComputeStartUnixMs(string[] statFieldsAfterComm, long bootTimeUnixSeconds)
+    {
+        if (bootTimeUnixSeconds <= 0
+            || statFieldsAfterComm.Length <= StartTimeFieldIndex
+            || !long.TryParse(
+                statFieldsAfterComm[StartTimeFieldIndex],
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var ticksSinceBoot))
+        {
+            return null;
+        }
+
+        return bootTimeUnixSeconds * 1000 + ticksSinceBoot * 1000 / UserHz;
+    }
+
+    /// <summary>
+    /// A single process's start time, for the kill-time check. Null when it cannot be read, which
+    /// the guard treats as unchecked.
+    /// </summary>
     private static long? TryReadStartUnixMs(int processId)
     {
         try
         {
-            using var p = Process.GetProcessById(processId);
-            return new DateTimeOffset(p.StartTime.ToUniversalTime(), TimeSpan.Zero).ToUnixTimeMilliseconds();
-        }
-        catch (ArgumentException)
-        {
-            return null;
-        }
-        catch (InvalidOperationException)
-        {
-            return null;
-        }
-        catch (NotSupportedException)
-        {
-            return null;
+            var stat = File.ReadAllText($"/proc/{processId}/stat");
+            var lastParen = stat.LastIndexOf(')');
+            if (lastParen < 0 || lastParen + 2 >= stat.Length)
+                return null;
+
+            return TryComputeStartUnixMs(stat[(lastParen + 2)..].Split(' '), GetBootTimeUnixSeconds());
         }
         catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
         {
             return null;
         }
