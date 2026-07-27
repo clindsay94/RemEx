@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Remex.Core.Guards;
 using Remex.Core.Services.Network;

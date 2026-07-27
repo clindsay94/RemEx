@@ -9,8 +9,6 @@ using Remex.Agent.Services;
 using Remex.Agent.Services.Input;
 using Remex.Agent.Services.RemoteDesktop.Linux;
 using Remex.Agent.Services.RemoteDesktop.Windows;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Remex.Agent.Tests;
 

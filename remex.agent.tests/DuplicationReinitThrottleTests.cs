@@ -1,4 +1,3 @@
-using System;
 using Remex.Agent.Services.ScreenCapture;
 using Xunit;
 

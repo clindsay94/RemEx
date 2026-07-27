@@ -1,14 +1,9 @@
-using System;
 using System.Collections.Concurrent;
-using System.IO;
 using System.Net.Security;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Security.Cryptography.X509Certificates;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 

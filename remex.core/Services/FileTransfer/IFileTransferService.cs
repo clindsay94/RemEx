@@ -1,7 +1,3 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Remex.Core.Models;
 
 namespace Remex.Core.Services.FileTransfer;

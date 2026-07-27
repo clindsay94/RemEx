@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Remex.Desktop.ViewModels;
-using System;
 
 namespace Remex.Desktop.Views;
 

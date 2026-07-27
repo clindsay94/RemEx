@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;

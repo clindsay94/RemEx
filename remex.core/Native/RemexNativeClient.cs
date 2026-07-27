@@ -1,13 +1,9 @@
-using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net.Security;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using System.Threading.Tasks;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Models.IPC;

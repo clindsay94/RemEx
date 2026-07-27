@@ -1,8 +1,4 @@
-using System;
-using System.Linq;
 using System.Runtime.Versioning;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace Remex.Agent.Services.RemoteDesktop.Linux.Portal;

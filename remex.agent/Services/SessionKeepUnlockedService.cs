@@ -1,4 +1,3 @@
-using System;
 using Remex.Desktop.Services;
 using Remex.Agent.Services.Session;
 

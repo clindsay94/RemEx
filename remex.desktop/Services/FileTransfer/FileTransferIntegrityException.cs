@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace Remex.Desktop.Services.FileTransfer;
 
 /// <summary>

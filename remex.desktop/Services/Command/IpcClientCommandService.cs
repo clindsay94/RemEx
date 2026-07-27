@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using Remex.Core.Services.Command;
 
 namespace Remex.Desktop.Services.Command;

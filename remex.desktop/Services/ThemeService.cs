@@ -5,7 +5,6 @@ using Avalonia.Media;
 using Avalonia.Styling;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
-using System;
 using System.Diagnostics;
 
 namespace Remex.Desktop.Services;

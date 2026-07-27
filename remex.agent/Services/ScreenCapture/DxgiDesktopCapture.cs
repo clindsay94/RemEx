@@ -1,10 +1,7 @@
-using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Threading;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Guards;
 using Remex.Core.Services; // CaptureScaling (relocated to Remex.Core so the WGC project can share it)

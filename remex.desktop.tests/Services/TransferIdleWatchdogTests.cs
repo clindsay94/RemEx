@@ -1,7 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Remex.Desktop.Services.FileTransfer;
 using Xunit;

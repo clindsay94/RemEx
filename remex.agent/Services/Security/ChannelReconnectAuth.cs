@@ -1,8 +1,5 @@
-using System;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Messages;
 using Remex.Core.Models;

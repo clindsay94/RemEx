@@ -1,7 +1,5 @@
-using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Threading;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Guards;
 

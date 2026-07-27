@@ -1,4 +1,3 @@
-using System.Linq;
 using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.ViewModels;

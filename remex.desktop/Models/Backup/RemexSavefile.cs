@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Remex.Core.Models;
 using Remex.Desktop.Services.FileTransfer;
 

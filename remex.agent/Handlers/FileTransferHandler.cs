@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.IO;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using Remex.Core.Messages;

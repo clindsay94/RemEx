@@ -1,5 +1,3 @@
-using System;
-
 namespace Remex.Agent.Services.ScreenCapture;
 
 internal static class DxgiPointerShapeDecoder
