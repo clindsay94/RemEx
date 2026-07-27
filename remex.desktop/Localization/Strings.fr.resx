@@ -3414,4 +3414,19 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Contrôle des fenêtres prêt ({0})</value>
   </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>Contrôle des fenêtres via {0}</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>Le contrôle avancé des fenêtres n'est pas disponible sur ce PC.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>inconnu</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>Impossible de changer d'affichage</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>un backend inconnu</value>
+  </data>
 </root>

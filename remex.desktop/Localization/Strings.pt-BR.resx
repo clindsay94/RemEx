@@ -3414,4 +3414,19 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Controle de janelas pronto ({0})</value>
   </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>Controle de janelas via {0}</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>O controle avançado de janelas não está disponível neste PC.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>desconhecido</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>Não foi possível trocar de tela</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>um backend desconhecido</value>
+  </data>
 </root>

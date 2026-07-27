@@ -3418,4 +3418,19 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Pencere denetimi hazır ({0})</value>
   </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>{0} ile pencere denetimi</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>Bu PC'de gelişmiş pencere denetimi kullanılamıyor.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>bilinmiyor</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>Ekran değiştirilemedi</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>bilinmeyen bir arka uç</value>
+  </data>
 </root>

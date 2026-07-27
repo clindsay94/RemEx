@@ -3420,4 +3420,19 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Window control ready ({0})</value>
   </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>Window control via {0}</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>Advanced window control is not available on this PC.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>unknown</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>Could not switch display</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>an unknown backend</value>
+  </data>
 </root>

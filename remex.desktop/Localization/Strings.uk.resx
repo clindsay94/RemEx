@@ -3415,4 +3415,19 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Керування вікнами готове ({0})</value>
   </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>Керування вікнами через {0}</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>Розширене керування вікнами недоступне на цьому ПК.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>невідомо</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>Не вдалося перемкнути екран</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>невідомий бекенд</value>
+  </data>
 </root>

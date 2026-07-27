@@ -3414,4 +3414,19 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>विंडो नियंत्रण तैयार ({0})</value>
   </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>{0} के माध्यम से विंडो नियंत्रण</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>इस PC पर उन्नत विंडो नियंत्रण उपलब्ध नहीं है।</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>अज्ञात</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>डिस्प्ले नहीं बदला जा सका</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>अज्ञात बैकएंड</value>
+  </data>
 </root>

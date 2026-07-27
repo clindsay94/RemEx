@@ -3437,4 +3437,19 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Control de ventanas listo ({0})</value>
   </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>Control de ventanas mediante {0}</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>El control avanzado de ventanas no está disponible en este PC.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>desconocido</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>No se pudo cambiar de pantalla</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>un método desconocido</value>
+  </data>
 </root>

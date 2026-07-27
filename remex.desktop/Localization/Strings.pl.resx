@@ -3415,4 +3415,19 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Sterowanie oknami gotowe ({0})</value>
   </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>Sterowanie oknami przez {0}</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>Zaawansowane sterowanie oknami jest niedostępne na tym PC.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>nieznane</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>Nie udało się przełączyć ekranu</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>nieznany backend</value>
+  </data>
 </root>

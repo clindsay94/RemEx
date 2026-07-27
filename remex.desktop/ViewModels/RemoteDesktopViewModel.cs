@@ -293,8 +293,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     public string WindowControlCapabilityText =>
         SupportsAdvancedWindowControl
-            ? $"Window control via {Connection.HostCapabilities?.WindowControlBackend ?? "host"}"
-            : "Advanced window control is unavailable on this host.";
+            ? string.Format(
+                LocalizationService.Instance["RemoteDesktop_WindowControlViaFormat"],
+                // Substituted after a preposition ("via {0}"), so this fallback has to be a
+                // noun phrase. The bare-word RemoteDesktop_BackendUnknown reads as an adverb
+                // or a finite verb in several languages and is only grammatical in the
+                // parenthetical frame RemoteDesktop_BackendReady uses.
+                Connection.HostCapabilities?.WindowControlBackend
+                    ?? LocalizationService.Instance["RemoteDesktop_BackendUnknownInline"])
+            : LocalizationService.Instance["RemoteDesktop_AdvancedWindowControlUnavailable"];
 
     public bool HasDisplayTargets => AvailableDisplayTargets.Count > 0;
 
@@ -503,7 +510,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            StatusText = $"Display switch failed: {ex.Message}";
+            // The technical detail goes to the log, not to the status bar: that TextBlock is
+            // floored at 140px with CharacterEllipsis (RemEx-9a46), so an exception message
+            // would be trimmed to nothing useful anyway.
+            _logger.LogError(ex, "Failed to switch the remote desktop display target.");
+            StatusText = LocalizationService.Instance["RemoteDesktop_DisplaySwitchFailed"];
             HasStreamError = true;
         }
         finally
@@ -696,7 +707,9 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private void ApplyWindowResult(DesktopWindowResult result)
     {
         WindowControlStatusText = result.Success
-            ? string.Format(LocalizationService.Instance["RemoteDesktop_BackendReady"], result.Backend ?? "host")
+            ? string.Format(
+                LocalizationService.Instance["RemoteDesktop_BackendReady"],
+                result.Backend ?? LocalizationService.Instance["RemoteDesktop_BackendUnknown"])
             : result.ErrorText ?? LocalizationService.Instance["RemoteDesktop_WindowControlFailed"];
 
         if (result.Windows is null)

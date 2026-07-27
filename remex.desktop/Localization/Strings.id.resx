@@ -3417,4 +3417,19 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Kontrol jendela siap ({0})</value>
   </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>Kontrol jendela melalui {0}</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>Kontrol jendela lanjutan tidak tersedia di PC ini.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>tidak diketahui</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>Tidak dapat mengganti tampilan</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>backend tidak dikenal</value>
+  </data>
 </root>
