@@ -569,8 +569,8 @@
   <data name="Status_StreamConnecting" xml:space="preserve">
     <value>Conectando...</value>
   </data>
-  <data name="Status_StreamFailedFormat" xml:space="preserve">
-    <value>Fallido: {0}</value>
+  <data name="Status_StreamFailed" xml:space="preserve">
+    <value>No se pudo iniciar la transmisión. Prueba a reconectar.</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
     <value>Detenido</value>
@@ -3410,8 +3410,8 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="Status_InvalidHostAddress" xml:space="preserve">
     <value>Esa dirección de PC no es válida</value>
   </data>
-  <data name="Status_LoadDisplaysFailedFormat" xml:space="preserve">
-    <value>No se pudieron cargar las pantallas: {0}</value>
+  <data name="Status_LoadDisplaysFailed" xml:space="preserve">
+    <value>No se pudieron cargar las pantallas. Inténtalo de nuevo.</value>
   </data>
   <data name="RemoteDesktop_LoadingDisplays" xml:space="preserve">
     <value>Cargando pantallas…</value>
@@ -3429,10 +3429,10 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
     <value>Error en el control de ventanas</value>
   </data>
   <data name="RemoteDesktop_WindowQueryFailed" xml:space="preserve">
-    <value>No se pudieron listar las ventanas: {0}</value>
+    <value>No se pudieron listar las ventanas. Inténtalo de nuevo.</value>
   </data>
   <data name="RemoteDesktop_WindowActionFailed" xml:space="preserve">
-    <value>Error en la acción de ventana: {0}</value>
+    <value>Esa acción de ventana no funcionó.</value>
   </data>
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Control de ventanas listo ({0})</value>

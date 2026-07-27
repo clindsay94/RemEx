@@ -569,8 +569,8 @@
   <data name="Status_StreamConnecting" xml:space="preserve">
     <value>Connecting...</value>
   </data>
-  <data name="Status_StreamFailedFormat" xml:space="preserve">
-    <value>Failed: {0}</value>
+  <data name="Status_StreamFailed" xml:space="preserve">
+    <value>Não foi possível iniciar a transmissão. Tente reconectar.</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
     <value>Stopped</value>
@@ -3387,8 +3387,8 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="Status_InvalidHostAddress" xml:space="preserve">
     <value>Esse endereço de PC não é válido</value>
   </data>
-  <data name="Status_LoadDisplaysFailedFormat" xml:space="preserve">
-    <value>Não foi possível carregar as telas: {0}</value>
+  <data name="Status_LoadDisplaysFailed" xml:space="preserve">
+    <value>Não foi possível carregar as telas. Tente novamente.</value>
   </data>
   <data name="RemoteDesktop_LoadingDisplays" xml:space="preserve">
     <value>Carregando telas…</value>
@@ -3406,10 +3406,10 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
     <value>Falha no controle de janelas</value>
   </data>
   <data name="RemoteDesktop_WindowQueryFailed" xml:space="preserve">
-    <value>Não foi possível listar as janelas: {0}</value>
+    <value>Não foi possível listar as janelas. Tente novamente.</value>
   </data>
   <data name="RemoteDesktop_WindowActionFailed" xml:space="preserve">
-    <value>Falha na ação da janela: {0}</value>
+    <value>Essa ação de janela não funcionou.</value>
   </data>
   <data name="RemoteDesktop_BackendReady" xml:space="preserve">
     <value>Controle de janelas pronto ({0})</value>

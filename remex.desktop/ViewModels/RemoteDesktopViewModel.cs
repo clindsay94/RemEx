@@ -388,7 +388,12 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 _desktopService.Disconnect();
             }
 
-            StatusText = string.Format(LocalizationService.Instance["Status_StreamFailedFormat"], ex.Message);
+            _logger.LogError(
+                ex,
+                "Failed to start the remote desktop stream for display {DisplayId} ({CaptureMode}).",
+                SelectedDisplayTarget?.DisplayId,
+                SelectedDisplayTarget?.CaptureMode);
+            StatusText = LocalizationService.Instance["Status_StreamFailed"];
         }
     }
 
@@ -465,10 +470,14 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+            _logger.LogError(
+                ex,
+                "Failed to load the remote desktop display list from {HostAddress}.",
+                Connection.HostAddress);
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 ClearDisplayTargets();
-                StatusText = string.Format(LocalizationService.Instance["Status_LoadDisplaysFailedFormat"], ex.Message);
+                StatusText = LocalizationService.Instance["Status_LoadDisplaysFailed"];
                 HasStreamError = true;
             });
         }
@@ -513,7 +522,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             // The technical detail goes to the log, not to the status bar: that TextBlock is
             // floored at 140px with CharacterEllipsis (RemEx-9a46), so an exception message
             // would be trimmed to nothing useful anyway.
-            _logger.LogError(ex, "Failed to switch the remote desktop display target.");
+            _logger.LogError(
+                ex,
+                "Failed to switch the remote desktop display target to {DisplayId} ({CaptureMode}).",
+                SelectedDisplayTarget?.DisplayId,
+                SelectedDisplayTarget?.CaptureMode);
             StatusText = LocalizationService.Instance["RemoteDesktop_DisplaySwitchFailed"];
             HasStreamError = true;
         }
@@ -617,7 +630,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            WindowControlStatusText = string.Format(LocalizationService.Instance["RemoteDesktop_WindowQueryFailed"], ex.Message);
+            _logger.LogError(
+                ex,
+                "Failed to query remote windows with search text {WindowSearchText}.",
+                WindowSearchText);
+            WindowControlStatusText = LocalizationService.Instance["RemoteDesktop_WindowQueryFailed"];
         }
     }
 
@@ -682,12 +699,17 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // Captured before the call, not read in the catch: ApplyWindowResult re-resolves
+        // SelectedWindow from the refreshed list and falls back to the first entry if the id
+        // is gone, so reading it after a throw can name a window the action never ran on.
+        var windowId = SelectedWindow.Id;
+
         try
         {
             var action = new DesktopWindowAction
             {
                 Action = actionType,
-                WindowId = SelectedWindow.Id,
+                WindowId = windowId,
             };
 
             var result = await _desktopService.ExecuteWindowActionAsync(transform?.Invoke(action) ?? action);
@@ -700,7 +722,12 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            WindowControlStatusText = string.Format(LocalizationService.Instance["RemoteDesktop_WindowActionFailed"], ex.Message);
+            _logger.LogError(
+                ex,
+                "Failed to run window action {WindowAction} on window {WindowId}.",
+                actionType,
+                windowId);
+            WindowControlStatusText = LocalizationService.Instance["RemoteDesktop_WindowActionFailed"];
         }
     }
 
