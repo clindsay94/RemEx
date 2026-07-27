@@ -3769,31 +3769,6 @@ private fun RemoteDesktopScreenPreview() {
     }
 }
 
-@Composable
-private fun RepeatingIconButton(
-        onClick: () -> Unit,
-        icon: androidx.compose.ui.graphics.vector.ImageVector,
-        description: String
-) {
-        val interactionSource = remember { MutableInteractionSource() }
-        val isPressed by interactionSource.collectIsPressedAsState()
-
-        LaunchedEffect(isPressed) {
-                if (isPressed) {
-                        var delayTime = 400L
-                        while (true) {
-                                onClick()
-                                delay(delayTime)
-                                delayTime = (delayTime * 0.8f).toLong().coerceAtLeast(50L)
-                        }
-                }
-        }
-
-        IconButton(onClick = {}, interactionSource = interactionSource) {
-                Icon(icon, contentDescription = description)
-        }
-}
-
 /**
  * Shared colors for a toggle-style [FilledTonalIconButton] in the fullscreen overlay row
  * (RemEx-klq) — dedupes the three identical active/inactive color blocks the FPS/Keyboard/PC-keys

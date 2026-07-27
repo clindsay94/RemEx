@@ -46,7 +46,6 @@ public sealed class PairingService : IPairingService
     private int _failedHmacAttempts;
     private const int MaxFailedHmacAttempts = 5;
 
-    private const int PinLength = 6;
     // Short session lifetime limits the window for online brute-force. A legitimate user
     // receiving the PIN out-of-band and entering it on Android comfortably fits in ~2 minutes;
     // the session can always be restarted. Previously 600s, which left a 10-minute grinding window.

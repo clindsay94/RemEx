@@ -92,9 +92,6 @@ internal sealed class DxgiDesktopCapture : IDisposable
     private delegate uint ReleaseFn(IntPtr self);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate void GetImmediateContextFn(IntPtr self, out IntPtr ppContext);
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate int  CreateTexture2DFn(IntPtr self, IntPtr pDesc, IntPtr pInitialData, out IntPtr ppTex);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]

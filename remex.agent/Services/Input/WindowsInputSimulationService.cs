@@ -246,8 +246,6 @@ public class WindowsInputSimulationService : IInputSimulationService
 
     #region P/Invoke constants and structs
 
-    private const int SM_CXSCREEN = 0;
-    private const int SM_CYSCREEN = 1;
     private const int SM_XVIRTUALSCREEN = 76;
     private const int SM_YVIRTUALSCREEN = 77;
     private const int SM_CXVIRTUALSCREEN = 78;

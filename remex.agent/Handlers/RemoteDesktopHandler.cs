@@ -33,8 +33,6 @@ public sealed class RemoteDesktopHandler : IDisposable
     private readonly BlockingCollection<InputEvent> _inputQueue = new(1000);
     private readonly Task _inputProcessingTask;
 
-    private static readonly TimeSpan FrameSendTimeout = TimeSpan.FromSeconds(5);
-
     // Upper bound on the target frame rate, shared with clients via DesktopConfig.MaxTargetFps so the
     // UI's "Unlimited" option and this host clamp agree on one number. 360 sits at or above the highest
     // consumer display refresh, and the encoder is throughput-bound below it at real resolutions, so it
