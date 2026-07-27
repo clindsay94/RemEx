@@ -734,4 +734,8 @@
     <string name="cd_corner_radius">Base de Coin</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
+    <string name="task_manager_kill_err_access_denied">RemEx n\'a pas l\'autorisation de fermer ce programme. Il doit peut-être être lancé en tant qu\'administrateur sur le PC.</string>
+    <string name="task_manager_kill_err_not_running">Ce programme n\'est plus en cours d\'exécution. Actualisez la liste pour voir ce qui est ouvert maintenant.</string>
+    <string name="task_manager_kill_err_identity_changed">Ce programme n\'utilise plus cet identifiant de processus : il appartient maintenant à %1$s. Rien n\'a été fermé. Actualisez la liste, puis réessayez.</string>
+    <string name="task_manager_kill_err_failed">Impossible de fermer ce programme. Actualisez la liste, puis réessayez.</string>
 </resources>

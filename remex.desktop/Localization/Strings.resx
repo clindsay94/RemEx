@@ -3435,4 +3435,16 @@ Behind that switch, Windows uses a Task Scheduler task named "RemEx" — you can
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
     <value>Wake on LAN</value>
   </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx does not have permission to end that program. It may need to be started as an administrator on the PC.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>That program is no longer running. Refresh the list to see what is open now.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>That program is no longer using this process ID — it now belongs to {0}. Nothing was ended. Refresh the list and try again.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>That program could not be ended. Refresh the list and try again.</value>
+  </data>
 </root>

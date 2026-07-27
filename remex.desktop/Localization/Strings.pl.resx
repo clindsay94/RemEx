@@ -3430,4 +3430,16 @@ Pod tym przełącznikiem Windows używa zadania Harmonogramu zadań o nazwie "Re
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
     <value>Budzenie przez LAN</value>
   </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx nie ma uprawnień, aby zamknąć ten program. Może być konieczne uruchomienie go jako administrator na komputerze.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>Ten program już nie działa. Odśwież listę, aby zobaczyć, co jest teraz otwarte.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>Ten program nie używa już tego identyfikatora procesu — należy on teraz do {0}. Nic nie zostało zamknięte. Odśwież listę i spróbuj ponownie.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>Nie udało się zamknąć tego programu. Odśwież listę i spróbuj ponownie.</value>
+  </data>
 </root>

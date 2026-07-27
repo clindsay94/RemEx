@@ -3429,4 +3429,16 @@ Derrière cette option, Windows utilise une tâche du Planificateur de tâches n
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
     <value>Réveil par LAN</value>
   </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx n'a pas l'autorisation de fermer ce programme. Il doit peut-être être lancé en tant qu'administrateur sur le PC.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>Ce programme n'est plus en cours d'exécution. Actualisez la liste pour voir ce qui est ouvert maintenant.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>Ce programme n'utilise plus cet identifiant de processus : il appartient maintenant à {0}. Rien n'a été fermé. Actualisez la liste, puis réessayez.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>Impossible de fermer ce programme. Actualisez la liste, puis réessayez.</value>
+  </data>
 </root>

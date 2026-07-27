@@ -734,4 +734,8 @@
     <string name="cd_corner_radius">कॉर्नर बेस</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
+    <string name="task_manager_kill_err_access_denied">RemEx के पास उस प्रोग्राम को बंद करने की अनुमति नहीं है। इसे PC पर एडमिनिस्ट्रेटर के रूप में शुरू करना पड़ सकता है।</string>
+    <string name="task_manager_kill_err_not_running">वह प्रोग्राम अब नहीं चल रहा है। अभी क्या खुला है यह देखने के लिए सूची रीफ़्रेश करें।</string>
+    <string name="task_manager_kill_err_identity_changed">वह प्रोग्राम अब इस प्रोसेस ID का उपयोग नहीं करता — यह अब %1$s की है। कुछ भी बंद नहीं किया गया। सूची रीफ़्रेश करें और दोबारा कोशिश करें।</string>
+    <string name="task_manager_kill_err_failed">वह प्रोग्राम बंद नहीं किया जा सका। सूची रीफ़्रेश करें और दोबारा कोशिश करें।</string>
 </resources>

@@ -827,4 +827,8 @@
     <string name="cd_corner_radius">Corner Base</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
+    <string name="task_manager_kill_err_access_denied">RemEx does not have permission to end that program. It may need to be started as an administrator on the PC.</string>
+    <string name="task_manager_kill_err_not_running">That program is no longer running. Refresh the list to see what is open now.</string>
+    <string name="task_manager_kill_err_identity_changed">That program is no longer using this process ID — it now belongs to %1$s. Nothing was ended. Refresh the list and try again.</string>
+    <string name="task_manager_kill_err_failed">That program could not be ended. Refresh the list and try again.</string>
 </resources>

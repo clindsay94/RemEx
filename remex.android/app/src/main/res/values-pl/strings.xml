@@ -736,4 +736,8 @@
     <string name="cd_corner_radius">Baza narożnika</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
+    <string name="task_manager_kill_err_access_denied">RemEx nie ma uprawnień, aby zamknąć ten program. Może być konieczne uruchomienie go jako administrator na komputerze.</string>
+    <string name="task_manager_kill_err_not_running">Ten program już nie działa. Odśwież listę, aby zobaczyć, co jest teraz otwarte.</string>
+    <string name="task_manager_kill_err_identity_changed">Ten program nie używa już tego identyfikatora procesu — należy on teraz do %1$s. Nic nie zostało zamknięte. Odśwież listę i spróbuj ponownie.</string>
+    <string name="task_manager_kill_err_failed">Nie udało się zamknąć tego programu. Odśwież listę i spróbuj ponownie.</string>
 </resources>

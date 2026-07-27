@@ -3429,4 +3429,16 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
     <value>Wake on LAN</value>
   </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>O RemEx não tem permissão para encerrar esse programa. Pode ser necessário iniciá-lo como administrador no PC.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>Esse programa não está mais em execução. Atualize a lista para ver o que está aberto agora.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>Esse programa não usa mais este ID de processo — agora ele pertence a {0}. Nada foi encerrado. Atualize a lista e tente novamente.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>Não foi possível encerrar esse programa. Atualize a lista e tente novamente.</value>
+  </data>
 </root>

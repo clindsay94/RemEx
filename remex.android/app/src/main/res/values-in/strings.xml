@@ -737,4 +737,8 @@
     <string name="cd_corner_radius">Basis Sudut</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
+    <string name="task_manager_kill_err_access_denied">RemEx tidak memiliki izin untuk menutup program tersebut. Program mungkin perlu dijalankan sebagai administrator di PC.</string>
+    <string name="task_manager_kill_err_not_running">Program tersebut sudah tidak berjalan. Segarkan daftar untuk melihat apa yang terbuka sekarang.</string>
+    <string name="task_manager_kill_err_identity_changed">Program tersebut tidak lagi memakai ID proses ini — sekarang ID itu milik %1$s. Tidak ada yang ditutup. Segarkan daftar lalu coba lagi.</string>
+    <string name="task_manager_kill_err_failed">Program tersebut tidak dapat ditutup. Segarkan daftar lalu coba lagi.</string>
 </resources>

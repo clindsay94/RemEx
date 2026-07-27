@@ -736,4 +736,8 @@
     <string name="cd_corner_radius">Базовий радіус кутів</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
+    <string name="task_manager_kill_err_access_denied">RemEx не має дозволу закрити цю програму. Можливо, її потрібно запустити на комп\'ютері від імені адміністратора.</string>
+    <string name="task_manager_kill_err_not_running">Ця програма більше не працює. Оновіть список, щоб побачити, що відкрито зараз.</string>
+    <string name="task_manager_kill_err_identity_changed">Ця програма більше не використовує цей ідентифікатор процесу — тепер він належить %1$s. Нічого не закрито. Оновіть список і спробуйте ще раз.</string>
+    <string name="task_manager_kill_err_failed">Не вдалося закрити цю програму. Оновіть список і спробуйте ще раз.</string>
 </resources>

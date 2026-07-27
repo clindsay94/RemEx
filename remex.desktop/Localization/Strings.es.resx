@@ -3452,4 +3452,16 @@ Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de ta
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
     <value>Despertar por LAN</value>
   </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx no tiene permiso para cerrar ese programa. Puede que deba iniciarse como administrador en el PC.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>Ese programa ya no se está ejecutando. Actualiza la lista para ver qué hay abierto ahora.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>Ese programa ya no usa este identificador de proceso: ahora pertenece a {0}. No se cerró nada. Actualiza la lista y vuelve a intentarlo.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>No se pudo cerrar ese programa. Actualiza la lista y vuelve a intentarlo.</value>
+  </data>
 </root>

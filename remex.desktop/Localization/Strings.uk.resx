@@ -3430,4 +3430,16 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
     <value>Пробудження по LAN</value>
   </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx не має дозволу закрити цю програму. Можливо, її потрібно запустити на комп'ютері від імені адміністратора.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>Ця програма більше не працює. Оновіть список, щоб побачити, що відкрито зараз.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>Ця програма більше не використовує цей ідентифікатор процесу — тепер він належить {0}. Нічого не закрито. Оновіть список і спробуйте ще раз.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>Не вдалося закрити цю програму. Оновіть список і спробуйте ще раз.</value>
+  </data>
 </root>

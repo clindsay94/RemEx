@@ -144,7 +144,10 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                     processId, expectedName, p.ProcessName);
                 return new ProcessKillResult(
                     false,
-                    ProcessKillGuard.MismatchMessage(processId, expectedName, p.ProcessName));
+                    ProcessKillErrorCodes.Format(
+                        ProcessKillErrorCodes.IdentityMismatch,
+                        ProcessKillGuard.MismatchMessage(processId, expectedName, p.ProcessName),
+                        p.ProcessName));
             }
 
             p.Kill(entireProcessTree: true);
@@ -155,23 +158,34 @@ public class WindowsProcessMonitorService : IProcessMonitorService
             _logger.LogWarning(ex, "Access denied killing process {Pid}; elevation is required.", processId);
             return new ProcessKillResult(
                 false,
-                "Access denied. Run the host as Administrator or retry with KillProcessElevated.",
+                ProcessKillErrorCodes.Format(
+                    ProcessKillErrorCodes.AccessDenied,
+                    "Access denied. Run the host as Administrator or retry with KillProcessElevated."),
                 true);
         }
         catch (ArgumentException ex)
         {
             _logger.LogWarning(ex, "Process {Pid} could not be found.", processId);
-            return new ProcessKillResult(false, "Process could not be found.");
+            return new ProcessKillResult(
+                false,
+                ProcessKillErrorCodes.Format(
+                    ProcessKillErrorCodes.NotRunning, "Process could not be found."));
         }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Process {Pid} has already exited.", processId);
-            return new ProcessKillResult(false, "Process has already exited.");
+            return new ProcessKillResult(
+                false,
+                ProcessKillErrorCodes.Format(
+                    ProcessKillErrorCodes.NotRunning, "Process has already exited."));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to kill process {Pid}", processId);
-            return new ProcessKillResult(false, $"Failed to kill process {processId}.");
+            return new ProcessKillResult(
+                false,
+                ProcessKillErrorCodes.Format(
+                    ProcessKillErrorCodes.Failed, $"Failed to kill process {processId}."));
         }
     }
 

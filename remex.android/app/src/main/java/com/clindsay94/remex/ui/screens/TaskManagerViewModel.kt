@@ -307,6 +307,40 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
      * read identity and kill in one step; anything done here is separated from the kill by a network
      * round trip (RemEx-druh).
      */
+    /**
+     * Maps a host kill failure to a localized message.
+     *
+     * The host authors these in English and cannot do otherwise — it does not know this phone's
+     * language, and the PC's .resx files are not this app's strings. So it tags failures as
+     * "code\u001Farg\u001FenglishFallback" and each client owns the wording, exactly as remote
+     * desktop already does in [RemoteDesktopViewModel.localizeDesktopError] (RemEx-728, RemEx-r37a).
+     *
+     * Untagged text and unknown codes fall back to the host's plain English rather than to something
+     * generic: an older PC sends untagged text, and a specific English reason beats a vague
+     * translated one.
+     */
+    private fun localizeKillFailure(raw: String): String {
+        if (raw.isEmpty()) return raw
+        val parts = raw.split('\u001F')
+        if (parts.size < 3) return raw // untagged legacy text — show as-is
+        val code = parts[0]
+        val arg = parts[1]
+        val fallback = parts.subList(2, parts.size).joinToString("\u001F")
+        val app = getApplication<Application>()
+        return when (code) {
+            "kill_access_denied" -> app.getString(R.string.task_manager_kill_err_access_denied)
+            "kill_not_running" -> app.getString(R.string.task_manager_kill_err_not_running)
+            "kill_identity_mismatch" ->
+                    if (arg.isNotBlank()) {
+                        app.getString(R.string.task_manager_kill_err_identity_changed, arg)
+                    } else {
+                        app.getString(R.string.task_manager_kill_err_not_running)
+                    }
+            "kill_failed" -> app.getString(R.string.task_manager_kill_err_failed)
+            else -> fallback.ifEmpty { raw }
+        }
+    }
+
     fun killProcess(process: ProcessInfo) {
         viewModelScope.launch {
             if (RemexCoreClient.isLibraryLoaded) {
@@ -334,7 +368,8 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                     Pair(responseJson?.isNotBlank() == true, null)
                 }
                 if (!success) {
-                    _killError.value = message ?: getApplication<Application>().getString(R.string.task_manager_kill_failed_format, process.id)
+                    _killError.value = message?.let { localizeKillFailure(it) }
+                            ?: getApplication<Application>().getString(R.string.task_manager_kill_failed_format, process.id)
                 }
                 // Request a fresh process list immediately; the host will respond
                 // via the processList SharedFlow when it's ready.

@@ -234,10 +234,48 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
                     LocalizationService.Instance["TaskManager_KillFailed"],
                     process.Name,
                     process.Id)
-                : resp.Message;
+                : LocalizeKillFailure(resp.Message);
             System.Diagnostics.Debug.WriteLine($"Kill process failed: {KillError}");
         }
         await RefreshProcessesAsync();
+    }
+
+    /// <summary>
+    /// Turns a host kill failure into a sentence in the user's language.
+    /// </summary>
+    /// <remarks>
+    /// The host authors these in English and cannot do otherwise — it does not know which language
+    /// this window is running in, and the phone does not share this resource file. So it sends
+    /// <c>"code␟arg␟englishFallback"</c> and each client owns the wording, the same shape remote
+    /// desktop already uses (RemEx-728, RemEx-r37a).
+    /// <para>
+    /// Untagged text is returned verbatim rather than replaced with something generic. That is the
+    /// compatibility path — an older host sends plain English, and showing it is strictly better
+    /// than discarding a specific reason for a vague one. Unknown codes fall back the same way,
+    /// which is why the fallback must remain a complete sentence on the host side.
+    /// </para>
+    /// </remarks>
+    public static string LocalizeKillFailure(string raw)
+    {
+        var parts = raw.Split(ProcessKillErrorCodes.Delimiter);
+        if (parts.Length < 3)
+            return raw;
+
+        var code = parts[0];
+        var arg = parts[1];
+        // Rejoin, so a fallback that happens to contain the delimiter survives intact.
+        var fallback = string.Join(ProcessKillErrorCodes.Delimiter, parts.Skip(2));
+
+        return code switch
+        {
+            ProcessKillErrorCodes.AccessDenied => LocalizationService.Instance["TaskManager_KillErrAccessDenied"],
+            ProcessKillErrorCodes.NotRunning => LocalizationService.Instance["TaskManager_KillErrNotRunning"],
+            ProcessKillErrorCodes.IdentityMismatch when !string.IsNullOrWhiteSpace(arg) =>
+                string.Format(LocalizationService.Instance["TaskManager_KillErrIdentityChangedFormat"], arg),
+            ProcessKillErrorCodes.IdentityMismatch => LocalizationService.Instance["TaskManager_KillErrNotRunning"],
+            ProcessKillErrorCodes.Failed => LocalizationService.Instance["TaskManager_KillErrFailed"],
+            _ => string.IsNullOrWhiteSpace(fallback) ? raw : fallback,
+        };
     }
 
     public void StartPolling()

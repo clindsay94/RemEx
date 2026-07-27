@@ -3432,4 +3432,16 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
     <value>Wake on LAN</value>
   </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx tidak memiliki izin untuk menutup program tersebut. Program mungkin perlu dijalankan sebagai administrator di PC.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>Program tersebut sudah tidak berjalan. Segarkan daftar untuk melihat apa yang terbuka sekarang.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>Program tersebut tidak lagi memakai ID proses ini — sekarang ID itu milik {0}. Tidak ada yang ditutup. Segarkan daftar lalu coba lagi.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>Program tersebut tidak dapat ditutup. Segarkan daftar lalu coba lagi.</value>
+  </data>
 </root>

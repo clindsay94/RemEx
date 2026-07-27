@@ -162,6 +162,15 @@ android {
                         .withPropertyName("pairingErrorCodesSource")
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                         .optional(true)
+
+                // Same arrangement for the "end process" failure codes, and for the same reason:
+                // ProcessKillErrorCodesCoverageTest reads this file to prove every code the host
+                // can send is mapped to a localized string here. (RemEx-r37a.)
+                it.inputs
+                        .file(File(repoRoot, "remex.core/Models/ProcessKillErrorCodes.cs"))
+                        .withPropertyName("processKillErrorCodesSource")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
             }
         }
     }

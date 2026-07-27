@@ -736,4 +736,8 @@
     <string name="cd_corner_radius">Köşe Tabanı</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
+    <string name="task_manager_kill_err_access_denied">RemEx\'in bu programı kapatma izni yok. Programın bilgisayarda yönetici olarak başlatılması gerekebilir.</string>
+    <string name="task_manager_kill_err_not_running">Bu program artık çalışmıyor. Şu anda nelerin açık olduğunu görmek için listeyi yenileyin.</string>
+    <string name="task_manager_kill_err_identity_changed">Bu program artık bu işlem kimliğini kullanmıyor — kimlik şimdi %1$s programına ait. Hiçbir şey kapatılmadı. Listeyi yenileyip tekrar deneyin.</string>
+    <string name="task_manager_kill_err_failed">Bu program kapatılamadı. Listeyi yenileyip tekrar deneyin.</string>
 </resources>

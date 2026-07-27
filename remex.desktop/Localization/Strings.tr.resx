@@ -3433,4 +3433,16 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
     <value>Wake on LAN</value>
   </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx'in bu programı kapatma izni yok. Programın bilgisayarda yönetici olarak başlatılması gerekebilir.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>Bu program artık çalışmıyor. Şu anda nelerin açık olduğunu görmek için listeyi yenileyin.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>Bu program artık bu işlem kimliğini kullanmıyor — kimlik şimdi {0} programına ait. Hiçbir şey kapatılmadı. Listeyi yenileyip tekrar deneyin.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>Bu program kapatılamadı. Listeyi yenileyip tekrar deneyin.</value>
+  </data>
 </root>

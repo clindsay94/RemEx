@@ -3429,4 +3429,16 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
     <value>लैन पर वेक</value>
   </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx के पास उस प्रोग्राम को बंद करने की अनुमति नहीं है। इसे PC पर एडमिनिस्ट्रेटर के रूप में शुरू करना पड़ सकता है।</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>वह प्रोग्राम अब नहीं चल रहा है। अभी क्या खुला है यह देखने के लिए सूची रीफ़्रेश करें।</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>वह प्रोग्राम अब इस प्रोसेस ID का उपयोग नहीं करता — यह अब {0} की है। कुछ भी बंद नहीं किया गया। सूची रीफ़्रेश करें और दोबारा कोशिश करें।</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>वह प्रोग्राम बंद नहीं किया जा सका। सूची रीफ़्रेश करें और दोबारा कोशिश करें।</value>
+  </data>
 </root>

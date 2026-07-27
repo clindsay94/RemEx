@@ -734,4 +734,8 @@
     <string name="cd_corner_radius">Base do Canto</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
+    <string name="task_manager_kill_err_access_denied">O RemEx não tem permissão para encerrar esse programa. Pode ser necessário iniciá-lo como administrador no PC.</string>
+    <string name="task_manager_kill_err_not_running">Esse programa não está mais em execução. Atualize a lista para ver o que está aberto agora.</string>
+    <string name="task_manager_kill_err_identity_changed">Esse programa não usa mais este ID de processo — agora ele pertence a %1$s. Nada foi encerrado. Atualize a lista e tente novamente.</string>
+    <string name="task_manager_kill_err_failed">Não foi possível encerrar esse programa. Atualize a lista e tente novamente.</string>
 </resources>

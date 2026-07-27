@@ -734,4 +734,8 @@
     <string name="cd_corner_radius">Base de Esquina</string>
     <string name="cd_degree_value">%1$d°</string>
     <string name="cd_dp_value">%1$ddp</string>
+    <string name="task_manager_kill_err_access_denied">RemEx no tiene permiso para cerrar ese programa. Puede que deba iniciarse como administrador en el PC.</string>
+    <string name="task_manager_kill_err_not_running">Ese programa ya no se está ejecutando. Actualiza la lista para ver qué hay abierto ahora.</string>
+    <string name="task_manager_kill_err_identity_changed">Ese programa ya no usa este identificador de proceso: ahora pertenece a %1$s. No se cerró nada. Actualiza la lista y vuelve a intentarlo.</string>
+    <string name="task_manager_kill_err_failed">No se pudo cerrar ese programa. Actualiza la lista y vuelve a intentarlo.</string>
 </resources>
