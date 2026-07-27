@@ -82,13 +82,22 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                     long rssPages = long.Parse(statmParts[1]);
                     memory = rssPages * Environment.SystemPageSize;
                 }
-                catch { }
+                catch
+                {
+                    // Silent per-property degradation. /proc/<pid>/statm disappears the moment the process
+                    // exits, and the field layout is not guaranteed for kernel threads - the row is still
+                    // listed with the memory figure absent rather than dropped.
+                }
 
                 try
                 {
                     exePath = File.ResolveLinkTarget(Path.Combine(dir, "exe"), true)?.FullName ?? "";
                 }
-                catch { }
+                catch
+                {
+                    // Resolving /proc/<pid>/exe needs permission the host may not have for another user's
+                    // process; an empty path is the honest answer and the row survives.
+                }
 
                 double cpuUsage = 0;
                 lock (_lock)
@@ -117,7 +126,10 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                         var fi = new FileInfo(exePath);
                         installDate = fi.CreationTime;
                     }
-                    catch { }
+                    catch
+                    {
+                        // The executable resolved but its creation time did not. Cosmetic, unlike the row.
+                    }
                 }
 
                 results.Add(new ProcessInfo
@@ -216,8 +228,15 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 }
             }
         }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        catch (IOException)
+        {
+            // The process vanished between the directory scan and this read, which is routine on a
+            // busy machine rather than exceptional.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Same, for a process this host is not permitted to inspect.
+        }
 
         return 0;
     }
@@ -370,7 +389,11 @@ public class LinuxProcessMonitorService : IProcessMonitorService
                 return total;
             }
         }
-        catch { }
+        catch
+        {
+            // Total CPU time is a denominator for percentage figures only. If /proc/stat cannot be
+            // read, every percentage degrades to zero rather than the whole listing failing.
+        }
         return 0;
     }
 

@@ -49,7 +49,13 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                 {
                     info = info with { MemoryUsage = p.WorkingSet64 };
                 }
-                catch { }
+                catch
+                {
+                    // Silent per-property degradation, not an error. WorkingSet64 throws for protected and
+                    // system processes even from an elevated host, and for any process that exits between the
+                    // enumeration and this read. The row is still worth listing with the memory figure absent -
+                    // dropping it would hide a running process from the user entirely.
+                }
 
                 try
                 {
@@ -72,8 +78,14 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                         info = info with { CpuUsage = usage };
                     }
                 }
-                catch (System.ComponentModel.Win32Exception) { }
-                catch (InvalidOperationException) { }
+                catch (System.ComponentModel.Win32Exception)
+                {
+                    // As above: TotalProcessorTime is unreadable for protected processes.
+                }
+                catch (InvalidOperationException)
+                {
+                    // And InvalidOperationException is the process having exited mid-enumeration.
+                }
                 catch (Exception ex)
                 {
                     _logger.LogTrace(ex, "Unexpected error getting CPU time for {Pid}", p.Id);
@@ -97,11 +109,22 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                             var fi = new FileInfo(path);
                             info = info with { InstallDate = fi.CreationTime };
                         }
-                        catch { }
+                        catch
+                        {
+                            // The executable exists but its creation time is unreadable - a permissions or
+                            // reparse-point case. The install date is cosmetic; the row is not.
+                        }
                     }
                 }
-                catch (System.ComponentModel.Win32Exception) { }
-                catch (InvalidOperationException) { }
+                catch (System.ComponentModel.Win32Exception)
+                {
+                    // MainModule is the most commonly denied of these: it is refused for every process at a
+                    // higher integrity level, which is most of the ones worth protecting.
+                }
+                catch (InvalidOperationException)
+                {
+                    // Exited between enumeration and read.
+                }
                 catch (Exception ex)
                 {
                     _logger.LogTrace(ex, "Unexpected error getting module info for {Pid}", p.Id);
