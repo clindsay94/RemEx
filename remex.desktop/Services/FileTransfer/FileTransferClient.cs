@@ -573,11 +573,13 @@ public sealed class FileTransferClient : IDisposable
         using var reg = ct.Register(() =>
         {
             tcs.TrySetCanceled(ct);
-            _ = _connection.SendAsync(new RemexMessage
+            // Cannot be awaited - this runs inside ct.Register - but a failure matters: if the
+            // cancel never reaches the peer it keeps streaming a transfer the user stopped.
+            _connection.SendAsync(new RemexMessage
             {
                 Type = MessageTypes.FileTransferCancel,
                 FileTransferCancel = new FileTransferCancel { TransferId = transferId }
-            });
+            }).FireAndForget($"send cancel for transfer {transferId}");
         });
 
         await using var fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);

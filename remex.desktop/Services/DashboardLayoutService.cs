@@ -135,7 +135,9 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
 
         _debounceTimer?.Dispose();
         _debounceTimer = new Timer(
-            _ => _ = FlushAsync(),
+            // A timer callback cannot await, and a dropped fault here means the debounced save
+            // never happened and nothing said so - the user loses the layout they just edited.
+            _ => FlushAsync().FireAndForget("flush the debounced dashboard layout save"),
             null,
             DebounceMs,
             Timeout.Infinite);

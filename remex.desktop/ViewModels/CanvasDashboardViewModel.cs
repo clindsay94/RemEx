@@ -1090,7 +1090,8 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
         if (Connection.IsConnected)
         {
-            _ = Connection.SendLayoutUpdateAsync(profile);
+            Connection.SendLayoutUpdateAsync(profile)
+                .FireAndForget("send dashboard layout update to the connected device");
         }
     }
 
