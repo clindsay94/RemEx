@@ -297,7 +297,17 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    fun killProcess(pid: Int) {
+    /**
+     * Ends [process] on the PC.
+     *
+     * Sends the name alongside the PID so the host can refuse if that number has changed hands
+     * since this list was fetched. A PID is not an identity — operating systems recycle them — and
+     * this client previously sent a bare one with no check of any kind, so a stale list could end an
+     * unrelated program. The check is the host's rather than this screen's because only the host can
+     * read identity and kill in one step; anything done here is separated from the kill by a network
+     * round trip (RemEx-druh).
+     */
+    fun killProcess(process: ProcessInfo) {
         viewModelScope.launch {
             if (RemexCoreClient.isLibraryLoaded) {
                 _killError.value = null
@@ -307,7 +317,8 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                             put(
                                     "parameters",
                                     JSONObject().apply {
-                                        put("ProcessId", pid.toString())
+                                        put("ProcessId", process.id.toString())
+                                        put("ExpectedName", process.name)
                                     }
                             )
                         }
@@ -323,7 +334,7 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                     Pair(responseJson?.isNotBlank() == true, null)
                 }
                 if (!success) {
-                    _killError.value = message ?: getApplication<Application>().getString(R.string.task_manager_kill_failed_format, pid)
+                    _killError.value = message ?: getApplication<Application>().getString(R.string.task_manager_kill_failed_format, process.id)
                 }
                 // Request a fresh process list immediately; the host will respond
                 // via the processList SharedFlow when it's ready.

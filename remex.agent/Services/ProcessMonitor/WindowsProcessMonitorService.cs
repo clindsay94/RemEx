@@ -119,11 +119,34 @@ public class WindowsProcessMonitorService : IProcessMonitorService
         });
     }
 
-    public ProcessKillResult KillProcess(int processId)
+    public ProcessKillResult KillProcess(int processId, string? expectedName = null)
     {
         try
         {
             var p = Process.GetProcessById(processId);
+
+            // Check identity immediately before killing. This is the whole reason the check lives
+            // on the host: any client-side version is separated from the kill by a network round
+            // trip, during which the PID can change hands (RemEx-druh).
+            //
+            // Not literally atomic, and the comment should not claim it is: ProcessName is read
+            // from the snapshot GetProcessById took, and Kill() re-resolves the PID when it opens
+            // its handle. What this removes is the round trip and the user's thinking time — the
+            // residual window is a handful of instructions rather than seconds.
+            //
+            // Both the process list and this check read the name from Process.ProcessName, so the
+            // two agree by construction. That is NOT true on Linux, which has a second, truncated
+            // spelling — see the note in LinuxProcessMonitorService.
+            if (!ProcessKillGuard.IsExpectedProcess(expectedName, p.ProcessName))
+            {
+                _logger.LogWarning(
+                    "Refused to end process {Pid}: expected {Expected} but found {Actual}.",
+                    processId, expectedName, p.ProcessName);
+                return new ProcessKillResult(
+                    false,
+                    ProcessKillGuard.MismatchMessage(processId, expectedName, p.ProcessName));
+            }
+
             p.Kill(entireProcessTree: true);
             return new ProcessKillResult(true, "Process killed.");
         }

@@ -109,7 +109,9 @@ fun TaskManagerScreenContent(
         onRefreshProcesses: () -> Unit,
         onUpdateSearchQuery: (String) -> Unit,
         onUpdateSortField: (ProcessSortField) -> Unit,
-        onKillProcess: (Int) -> Unit,
+        // Takes the whole ProcessInfo, not just the id: the host verifies the name before
+        // ending anything, so the PID alone is no longer enough to act on (RemEx-druh).
+        onKillProcess: (ProcessInfo) -> Unit,
         onNavigateToConnection: () -> Unit,
         modifier: Modifier = Modifier,
         killError: String? = null,
@@ -252,7 +254,7 @@ fun TaskManagerScreenContent(
                                             maxCpu = maxCpu,
                                             shapePreset = shapePreset,
                                             cornerRadius = cornerRadius,
-                                            onKill = { onKillProcess(process.id) },
+                                            onKill = { onKillProcess(process) },
                                             modifier =
                                                     Modifier.animateItem(
                                                             placementSpec =

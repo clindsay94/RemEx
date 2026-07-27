@@ -134,11 +134,77 @@ public class LinuxProcessMonitorService : IProcessMonitorService
         });
     }
 
-    public ProcessKillResult KillProcess(int processId)
+    /// <summary>
+    /// Reads a process's name from <c>/proc/{pid}/stat</c> — the same source the process list sends
+    /// to clients, and therefore the spelling a client echoes back.
+    /// </summary>
+    /// <remarks>
+    /// This repeats the parse in <see cref="GetProcessesAsync"/> deliberately rather than reusing
+    /// <c>Process.ProcessName</c>, because the two do not agree: the kernel truncates <c>comm</c> to
+    /// <c>TASK_COMM_LEN - 1</c> = 15 characters and <c>ProcessName</c> is not truncated. The field is
+    /// wrapped in parentheses and may itself contain spaces and parentheses, which is why the
+    /// closing one is found from the END of the line rather than the first one after the opening.
+    /// <para>
+    /// Returns null rather than throwing when the file cannot be read — that means the process is
+    /// gone, and the caller falls back to the name it already holds.
+    /// </para>
+    /// </remarks>
+    private static string? TryReadCommName(int processId)
+    {
+        try
+        {
+            var stat = File.ReadAllText($"/proc/{processId}/stat");
+            var firstParen = stat.IndexOf('(');
+            var lastParen = stat.LastIndexOf(')');
+            if (firstParen < 0 || lastParen <= firstParen)
+                return null;
+
+            return stat.Substring(firstParen + 1, lastParen - firstParen - 1);
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    public ProcessKillResult KillProcess(int processId, string? expectedName = null)
     {
         try
         {
             var p = Process.GetProcessById(processId);
+
+            // Check identity immediately before killing, narrowing the window from a full client
+            // round trip plus however long the user took to confirm, down to a single host-side
+            // check-then-kill. PID recycling matters more here than on Windows, since Linux hands
+            // PIDs out sequentially and wraps at a much lower ceiling (RemEx-druh).
+            //
+            // BOTH names are accepted, and that is not belt-and-braces — it is the fix for a real
+            // regression. This host has TWO different names for the same process:
+            // GetProcessesAsync parses /proc/<pid>/stat's comm field, which the kernel truncates to
+            // TASK_COMM_LEN-1 = 15 characters, while Process.ProcessName is not truncated. The
+            // client echoes back whichever one it was sent — the truncated one. Comparing that
+            // against ProcessName alone refused EVERY process whose real name exceeds 15
+            // characters, every time, with a message telling the user their list was stale when it
+            // was not. gnome-terminal-server, xdg-desktop-portal and most Electron helpers are all
+            // over that limit. Accepting either host-derived spelling costs nothing, because a
+            // genuinely different program matches neither.
+            var commName = TryReadCommName(processId);
+            if (!ProcessKillGuard.IsExpectedProcess(expectedName, p.ProcessName)
+                && !(commName is not null && ProcessKillGuard.IsExpectedProcess(expectedName, commName)))
+            {
+                var reported = commName ?? p.ProcessName;
+                _logger.LogWarning(
+                    "Refused to end process {Pid}: expected {Expected} but found {Actual} (comm {Comm}).",
+                    processId, expectedName, p.ProcessName, commName);
+                return new ProcessKillResult(
+                    false,
+                    ProcessKillGuard.MismatchMessage(processId, expectedName, reported));
+            }
+
             p.Kill();
             return new ProcessKillResult(true, "Process killed.");
         }

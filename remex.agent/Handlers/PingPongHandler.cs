@@ -563,7 +563,11 @@ public sealed class PingPongHandler(
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
                         && int.TryParse(pidStr, out var pid))
                     {
-                        var killResult = processMonitorService.KillProcess(pid);
+                        // ExpectedName is optional on the wire: a client older than RemEx-druh
+                        // simply omits it and is killed unverified, exactly as before. Nothing
+                        // breaks on an older phone; it just does not gain the protection.
+                        message.CommandParameters.TryGetValue("ExpectedName", out var expectedName);
+                        var killResult = processMonitorService.KillProcess(pid, expectedName);
                         return MakeCommandResponse(
                             killResult.Success,
                             killResult.Success
@@ -575,7 +579,8 @@ public sealed class PingPongHandler(
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var epidStr) == true
                         && int.TryParse(epidStr, out var epid))
                     {
-                        var killResult = processMonitorService.KillProcess(epid);
+                        message.CommandParameters.TryGetValue("ExpectedName", out var eExpectedName);
+                        var killResult = processMonitorService.KillProcess(epid, eExpectedName);
                         return MakeCommandResponse(
                             killResult.Success,
                             killResult.Success

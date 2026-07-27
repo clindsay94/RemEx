@@ -31,7 +31,21 @@ public class PingPongTests : IClassFixture<RemexHostFactory>
     private sealed class MockProcessMonitorService(Remex.Core.Models.ProcessKillResult killResult) : Remex.Core.Services.IProcessMonitorService
     {
         public Task<List<Remex.Core.Models.ProcessInfo>> GetProcessesAsync() => Task.FromResult(new List<Remex.Core.Models.ProcessInfo>());
-        public Remex.Core.Models.ProcessKillResult KillProcess(int processId) => killResult;
+        /// <summary>The last name the handler forwarded, so a test can prove it reached the service.</summary>
+        /// <remarks>
+        /// The host-side identity check is worthless if the handler drops the parameter on the way,
+        /// and that is a silent failure: the kill still succeeds, just unverified (RemEx-druh).
+        /// </remarks>
+        public string? LastExpectedName { get; private set; }
+
+        public bool WasCalled { get; private set; }
+
+        public Remex.Core.Models.ProcessKillResult KillProcess(int processId, string? expectedName = null)
+        {
+            LastExpectedName = expectedName;
+            WasCalled = true;
+            return killResult;
+        }
     }
 
     [Fact]
@@ -98,14 +112,98 @@ public class PingPongTests : IClassFixture<RemexHostFactory>
     private readonly RemexHostFactory _factory;
 
     private RemexHostFactory GetFactory(Remex.Core.Models.ProcessKillResult? killResult = null)
+        => GetFactory(new MockProcessMonitorService(
+            killResult ?? new Remex.Core.Models.ProcessKillResult(true, "Process killed.")));
+
+    /// <summary>Overload that lets a test keep the monitor and inspect what the handler forwarded.</summary>
+    private RemexHostFactory GetFactory(MockProcessMonitorService monitor)
     {
         return new RemexHostFactory().WithServices(services =>
         {
             services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, MockCommandService>();
             services.AddSingleton<Remex.Core.Services.ILauncherStorageService, MockLauncherStorageService>();
-            services.AddSingleton<Remex.Core.Services.IProcessMonitorService>(
-                new MockProcessMonitorService(killResult ?? new Remex.Core.Models.ProcessKillResult(true, "Process killed.")));
+            services.AddSingleton<Remex.Core.Services.IProcessMonitorService>(monitor);
         });
+    }
+
+    /// <summary>
+    /// The host's identity check is only as good as the parameter reaching it, so pin that the
+    /// handler forwards <c>ExpectedName</c> — for the elevated action too, which is a separate
+    /// branch and therefore a separate chance to forget.
+    /// </summary>
+    /// <remarks>
+    /// Dropping it fails silently in the worst way: the kill still succeeds, just unverified, so
+    /// every test of the guard itself would still pass while the protection was switched off in
+    /// production (RemEx-druh).
+    /// </remarks>
+    [Theory]
+    [InlineData("KillProcess")]
+    [InlineData("KillProcessElevated")]
+    public async Task Command_KillProcess_ForwardsTheExpectedNameToTheMonitor(string action)
+    {
+        var monitor = new MockProcessMonitorService(new Remex.Core.Models.ProcessKillResult(true, "Process killed."));
+        var factory = GetFactory(monitor);
+
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(
+            new Uri($"ws://localhost{RemexConstants.WebSocketPath}"), CancellationToken.None);
+
+        var cmd = new RemexMessage
+        {
+            Type = MessageTypes.Command,
+            CommandAction = action,
+            CommandParameters = new System.Collections.Generic.Dictionary<string, string>
+            {
+                { "ProcessId", "42" },
+                { "ExpectedName", "chrome" },
+            }
+        };
+        await MessageSerializer.SendAsync(ws, cmd, CancellationToken.None);
+
+        while (true)
+        {
+            var msg = await MessageSerializer.ReceiveAsync(ws, CancellationToken.None);
+            if (msg?.Type == MessageTypes.CommandResponse) break;
+            if (msg == null) break;
+        }
+
+        Assert.True(monitor.WasCalled);
+        Assert.Equal("chrome", monitor.LastExpectedName);
+    }
+
+    /// <summary>
+    /// A client that predates RemEx-druh sends no name, and must still be able to end a process.
+    /// </summary>
+    [Fact]
+    public async Task Command_KillProcess_WithoutAnExpectedName_StillWorks()
+    {
+        var monitor = new MockProcessMonitorService(new Remex.Core.Models.ProcessKillResult(true, "Process killed."));
+        var factory = GetFactory(monitor);
+
+        var wsClient = factory.Server.CreateWebSocketClient();
+        var ws = await wsClient.ConnectAsync(
+            new Uri($"ws://localhost{RemexConstants.WebSocketPath}"), CancellationToken.None);
+
+        var cmd = new RemexMessage
+        {
+            Type = MessageTypes.Command,
+            CommandAction = "KillProcess",
+            CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", "42" } }
+        };
+        await MessageSerializer.SendAsync(ws, cmd, CancellationToken.None);
+
+        RemexMessage? response = null;
+        while (true)
+        {
+            var msg = await MessageSerializer.ReceiveAsync(ws, CancellationToken.None);
+            if (msg?.Type == MessageTypes.CommandResponse) { response = msg; break; }
+            if (msg == null) break;
+        }
+
+        Assert.NotNull(response);
+        Assert.True(response!.CommandSuccess);
+        Assert.True(monitor.WasCalled);
+        Assert.Null(monitor.LastExpectedName);
     }
 
     public PingPongTests(RemexHostFactory factory)

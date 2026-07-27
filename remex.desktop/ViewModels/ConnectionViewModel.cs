@@ -520,14 +520,30 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     // not-connected local-send fallback - see RemEx-efse. Wake-on-LAN itself is
     // unaffected and still works from the Remote screen. (RemEx-paa7.)
 
-    public async Task<Remex.Core.Models.IPC.CommandResponse> KillProcessWithResponseAsync(int processId, bool elevated = false)
+    /// <param name="expectedName">
+    /// The process name the user was shown, sent so the host can refuse if the PID has changed hands
+    /// since. Omitted when null — the host then kills unverified, which is what it did for every
+    /// client before RemEx-druh.
+    /// </param>
+    public async Task<Remex.Core.Models.IPC.CommandResponse> KillProcessWithResponseAsync(
+        int processId,
+        bool elevated = false,
+        string? expectedName = null)
     {
         if (_webSocket?.State != WebSocketState.Open) return new Remex.Core.Models.IPC.CommandResponse(false, "Not connected", null);
+        var parameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } };
+
+        // The client-side re-check in TaskManagerViewModel cannot close this on its own: it is
+        // separated from the kill by a network round trip, and the PID can change hands inside it.
+        // Sending the name lets the host check identity and kill in one step (RemEx-druh).
+        if (!string.IsNullOrWhiteSpace(expectedName))
+            parameters["ExpectedName"] = expectedName;
+
         var msg = new RemexMessage
         {
             Type = MessageTypes.Command,
             CommandAction = elevated ? "KillProcessElevated" : "KillProcess",
-            CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } }
+            CommandParameters = parameters
         };
         try
         {

@@ -220,7 +220,7 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var resp = await _connection.KillProcessWithResponseAsync(process.Id);
+        var resp = await _connection.KillProcessWithResponseAsync(process.Id, expectedName: process.Name);
         if (!resp.Success)
         {
             // TaskManager_KillFailed existed in no .resx file at all, and LocalizationService's
