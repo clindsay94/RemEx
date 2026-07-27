@@ -208,21 +208,6 @@
     "resx/behind-english/uk/Tutorial_P7_Body3",
     "resx/behind-english/uk/Tutorial_P9_Body1",
     "resx/behind-english/uk/Wol_SendingLocal",
-    "resx/behind-english/uk/Wol_SendingViaHost",
-    "resx/similar-to-english/es/Settings_PairingPinHint",
-    "resx/similar-to-english/es/Settings_ShowPairingPinTooltip",
-    "resx/similar-to-english/hi/PairingDialogInstruction",
-    "resx/similar-to-english/hi/Settings_PairingPinHint",
-    "resx/similar-to-english/hi/Settings_ShowPairingPinTooltip",
-    "resx/similar-to-english/hi/Status_ConnectToCheckDesktop",
-    "resx/similar-to-english/pt-BR/PairingDialogInstruction",
-    "resx/similar-to-english/pt-BR/Settings_PairingPinHint",
-    "resx/similar-to-english/pt-BR/Settings_ShowPairingPinTooltip",
-    "resx/similar-to-english/pt-BR/Status_ConnectToCheckDesktop",
-    "resx/similar-to-english/tr/PairingDialogInstruction",
-    "resx/similar-to-english/tr/Settings_PairingPinHint",
-    "resx/similar-to-english/tr/Settings_ShowPairingPinTooltip",
-    "resx/similar-to-english/tr/Status_ConnectToCheckDesktop",
-    "resx/similar-to-english/uk/Status_ConnectToCheckDesktop"
+    "resx/behind-english/uk/Wol_SendingViaHost"
   ]
 }

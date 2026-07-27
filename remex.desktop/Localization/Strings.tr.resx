@@ -435,10 +435,10 @@
     <value>Tam boyutlu imleç pad etkinleştirildi</value>
   </data>
   <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
-    <value>Connect to a PC to check remote desktop availability.</value>
+    <value>Uzak masaüstünün kullanılabilirliğini denetlemek için bir bilgisayara bağlanın.</value>
   </data>
   <data name="Status_StreamConnecting" xml:space="preserve">
-    <value>Connecting...</value>
+    <value>Bağlanıyor...</value>
   </data>
   <data name="Status_StreamFailed" xml:space="preserve">
     <value>Yayın başlatılamadı. Yeniden bağlanmayı deneyin.</value>
@@ -752,19 +752,19 @@ Linux: ip addr  veya  hostname -I</value>
     <value>RemEx Android uygulamasını bağlamak için QR kodu oluşturun</value>
   </data>
   <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Show pairing PIN</value>
+    <value>Eşleştirme PIN'ini göster</value>
   </data>
   <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+    <value>Telefonunuzun bu bilgisayarla eşleşmek için ihtiyaç duyduğu 6 haneli kodu gösterir</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>PAIRING PIN</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
-    <value>Enter this code on your phone to complete pairing</value>
+    <value>Eşleştirmeyi tamamlamak için bu kodu telefonunuza girin</value>
   </data>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
-    <value>Expires in {0}s</value>
+    <value>{0} sn içinde sona erer</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
@@ -1245,10 +1245,10 @@ Linux: ip addr  veya  hostname -I</value>
     <value>UEFI'ye Yeniden Başlat</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with PC</value>
+    <value>Bilgisayarla eşleştir</value>
   </data>
   <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the PC machine:</value>
+    <value>Bilgisayarda görünen 6 haneli PIN'i girin:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Pair</value>
@@ -1256,19 +1256,19 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Keyboard Shortcuts</value>
+    <value>Klavye Kısayolları</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Command Palette</value>
+    <value>Komut Paleti</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
-    <value>Undo Layout Edit</value>
+    <value>Düzen değişikliğini geri al</value>
   </data>
   <data name="About_RedoLayout" xml:space="preserve">
-    <value>Redo Layout Edit</value>
+    <value>Düzen değişikliğini yinele</value>
   </data>
   <data name="About_CloseOverlays" xml:space="preserve">
-    <value>Close Overlays/Panels</value>
+    <value>Kaplamaları/panelleri kapat</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>Neler yeni?</value>

@@ -435,10 +435,10 @@
     <value>पूर्ण-आकार कर्सर पैड सक्षम</value>
   </data>
   <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
-    <value>Connect to a PC to check remote desktop availability.</value>
+    <value>रिमोट डेस्कटॉप की उपलब्धता जाँचने के लिए किसी PC से कनेक्ट करें।</value>
   </data>
   <data name="Status_StreamConnecting" xml:space="preserve">
-    <value>Connecting...</value>
+    <value>कनेक्ट हो रहा है...</value>
   </data>
   <data name="Status_StreamFailed" xml:space="preserve">
     <value>स्ट्रीम शुरू नहीं हो सकी। फिर से कनेक्ट करके देखें।</value>
@@ -752,19 +752,19 @@ Linux: ip addr  या  hostname -I</value>
     <value>RemEx Android ऐप को कनेक्ट करने के लिए QR कोड जनरेट करें</value>
   </data>
   <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Show pairing PIN</value>
+    <value>पेयरिंग PIN दिखाएँ</value>
   </data>
   <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+    <value>वह 6 अंकों का कोड दिखाएँ जो आपके फ़ोन को इस PC से पेयर करने के लिए चाहिए</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>PAIRING PIN</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
-    <value>Enter this code on your phone to complete pairing</value>
+    <value>पेयरिंग पूरी करने के लिए यह कोड अपने फ़ोन पर दर्ज करें</value>
   </data>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
-    <value>Expires in {0}s</value>
+    <value>{0} सेकंड में समाप्त</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
@@ -1245,10 +1245,10 @@ Linux: ip addr  या  hostname -I</value>
     <value>UEFI में रीस्टार्ट करें</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with PC</value>
+    <value>PC के साथ पेयर करें</value>
   </data>
   <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the PC machine:</value>
+    <value>PC पर दिखाया गया 6 अंकों का PIN दर्ज करें:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Pair</value>
@@ -1256,19 +1256,19 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Keyboard Shortcuts</value>
+    <value>कीबोर्ड शॉर्टकट</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Command Palette</value>
+    <value>कमांड पैलेट</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
-    <value>Undo Layout Edit</value>
+    <value>लेआउट बदलाव पूर्ववत करें</value>
   </data>
   <data name="About_RedoLayout" xml:space="preserve">
-    <value>Redo Layout Edit</value>
+    <value>लेआउट बदलाव फिर से करें</value>
   </data>
   <data name="About_CloseOverlays" xml:space="preserve">
-    <value>Close Overlays/Panels</value>
+    <value>ओवरले/पैनल बंद करें</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>नया क्या है?</value>

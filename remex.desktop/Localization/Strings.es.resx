@@ -467,7 +467,7 @@
     <value>Tiempo de espera de conexión agotado</value>
   </data>
   <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Found PC: {0}</value>
+    <value>PC encontrado: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
     <value>Se encontraron {0} PCs RemEx en tu red.</value>
@@ -758,19 +758,19 @@ Linux: ip addr  o  hostname -I</value>
     <value>Generar un código QR para conectar la app RemEx Android</value>
   </data>
   <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Show pairing PIN</value>
+    <value>Mostrar PIN de emparejamiento</value>
   </data>
   <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+    <value>Muestra el código de 6 dígitos que tu teléfono necesita para emparejarse con este PC</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>PAIRING PIN</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
-    <value>Enter this code on your phone to complete pairing</value>
+    <value>Introduce este código en tu teléfono para completar el emparejamiento</value>
   </data>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
-    <value>Expires in {0}s</value>
+    <value>Caduca en {0} s</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
@@ -1262,19 +1262,19 @@ Linux: ip addr  o  hostname -I</value>
 
   
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Keyboard Shortcuts</value>
+    <value>Atajos de teclado</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Command Palette</value>
+    <value>Paleta de comandos</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
-    <value>Undo Layout Edit</value>
+    <value>Deshacer cambio de diseño</value>
   </data>
   <data name="About_RedoLayout" xml:space="preserve">
-    <value>Redo Layout Edit</value>
+    <value>Rehacer cambio de diseño</value>
   </data>
   <data name="About_CloseOverlays" xml:space="preserve">
-    <value>Close Overlays/Panels</value>
+    <value>Cerrar superposiciones/paneles</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>¿Qué hay de nuevo?</value>

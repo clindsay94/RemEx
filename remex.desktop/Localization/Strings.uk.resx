@@ -435,10 +435,10 @@
     <value>Повнорозмірний пад курсора активовано</value>
   </data>
   <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
-    <value>Connect to a PC to check remote desktop availability.</value>
+    <value>Під'єднайтеся до комп'ютера, щоб перевірити доступність віддаленого робочого стола.</value>
   </data>
   <data name="Status_StreamConnecting" xml:space="preserve">
-    <value>Connecting...</value>
+    <value>Під'єднання...</value>
   </data>
   <data name="Status_StreamFailed" xml:space="preserve">
     <value>Не вдалося розпочати трансляцію. Спробуйте підключитися знову.</value>
@@ -1256,19 +1256,19 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Keyboard Shortcuts</value>
+    <value>Комбінації клавіш</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Command Palette</value>
+    <value>Палітра команд</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
-    <value>Undo Layout Edit</value>
+    <value>Скасувати зміну макета</value>
   </data>
   <data name="About_RedoLayout" xml:space="preserve">
-    <value>Redo Layout Edit</value>
+    <value>Повторити зміну макета</value>
   </data>
   <data name="About_CloseOverlays" xml:space="preserve">
-    <value>Close Overlays/Panels</value>
+    <value>Закрити накладки/панелі</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>Що нового?</value>

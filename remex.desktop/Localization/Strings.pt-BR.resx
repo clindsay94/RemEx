@@ -435,10 +435,10 @@
     <value>Pad de cursor tamanho completo ativado</value>
   </data>
   <data name="Status_ConnectToCheckDesktop" xml:space="preserve">
-    <value>Connect to a PC to check remote desktop availability.</value>
+    <value>Conecte-se a um PC para verificar a disponibilidade da área de trabalho remota.</value>
   </data>
   <data name="Status_StreamConnecting" xml:space="preserve">
-    <value>Connecting...</value>
+    <value>Conectando...</value>
   </data>
   <data name="Status_StreamFailed" xml:space="preserve">
     <value>Não foi possível iniciar a transmissão. Tente reconectar.</value>
@@ -752,19 +752,19 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Gerar um código QR para conectar o app RemEx Android</value>
   </data>
   <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Show pairing PIN</value>
+    <value>Mostrar PIN de pareamento</value>
   </data>
   <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+    <value>Mostra o código de 6 dígitos que o celular precisa para parear com este PC</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>PAIRING PIN</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
-    <value>Enter this code on your phone to complete pairing</value>
+    <value>Digite este código no seu celular para concluir o pareamento</value>
   </data>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
-    <value>Expires in {0}s</value>
+    <value>Expira em {0}s</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
@@ -1245,10 +1245,10 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Reiniciar para UEFI</value>
   </data>
   <data name="PairingDialogTitle" xml:space="preserve">
-    <value>Pair with PC</value>
+    <value>Parear com o PC</value>
   </data>
   <data name="PairingDialogInstruction" xml:space="preserve">
-    <value>Enter the 6-digit PIN displayed on the PC machine:</value>
+    <value>Digite o PIN de 6 dígitos exibido no PC:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
     <value>Pair</value>
@@ -1256,19 +1256,19 @@ Linux: ip addr  ou  hostname -I</value>
 
   
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Keyboard Shortcuts</value>
+    <value>Atalhos de teclado</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Command Palette</value>
+    <value>Paleta de comandos</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
-    <value>Undo Layout Edit</value>
+    <value>Desfazer alteração de layout</value>
   </data>
   <data name="About_RedoLayout" xml:space="preserve">
-    <value>Redo Layout Edit</value>
+    <value>Refazer alteração de layout</value>
   </data>
   <data name="About_CloseOverlays" xml:space="preserve">
-    <value>Close Overlays/Panels</value>
+    <value>Fechar sobreposições/painéis</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>O que há de novo?</value>
