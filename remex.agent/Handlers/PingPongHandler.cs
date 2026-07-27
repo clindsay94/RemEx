@@ -533,19 +533,19 @@ public sealed class PingPongHandler(
             switch (message.CommandAction!.ToUpperInvariant())
             {
                 case "SHUTDOWN":
-                    await commandService.Shutdown(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.Shutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Shutdown executed.");
                 case "FORCESHUTDOWN":
-                    await commandService.ForceShutdown(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.ForceShutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Force shutdown executed.");
                 case "RESTART":
-                    await commandService.Restart(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.Restart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Restart executed.");
                 case "FORCERESTART":
-                    await commandService.ForceRestart(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.ForceRestart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Force restart executed.");
                 case "RESTARTTOUEFI":
-                    await commandService.RestartToUefi(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.RestartToUefi(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Restart to UEFI executed.");
                 case "SLEEP":
                     await commandService.Sleep();
@@ -742,26 +742,6 @@ public sealed class PingPongHandler(
         {
             CryptographicOperations.ZeroMemory(reconnectSecret);
         }
-    }
-
-    private static int ParseDelaySeconds(Dictionary<string, string>? parameters)
-    {
-        if (parameters == null)
-        {
-            return 0;
-        }
-
-        foreach (var key in new[] { "DelaySeconds", "Seconds", "TimerSeconds" })
-        {
-            if (parameters.TryGetValue(key, out var raw)
-                && int.TryParse(raw, out var parsed)
-                && parsed > 0)
-            {
-                return Math.Clamp(parsed, 0, 315360000);
-            }
-        }
-
-        return 0;
     }
 
     private async Task StreamTelemetryAsync(WebSocket webSocket, CancellationToken ct)
