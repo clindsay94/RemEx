@@ -438,7 +438,7 @@
     <string name="faq_q13">RemEx nagle odmawia połączenia / prosi o ponowne sparowanie. Dlaczego?</string>
     <string name="faq_a13">Przy pierwszym parowaniu telefon zapamiętuje dokładny odcisk certyfikatu Twojego komputera i od tej pory będzie ufał wyłącznie temu komputerowi. Jeśli certyfikat się zmieni — na przykład po ponownej instalacji remex.agent, przywróceniu komputera z kopii zapasowej lub przeniesieniu na nowy sprzęt — telefon słusznie odmawia połączenia zamiast zaufać potencjalnemu oszustowi.\n\nTo oczekiwane zachowanie zabezpieczające, a nie błąd. Aby to naprawić, usuń (rozparuj) komputer na ekranie Połączenie, a następnie sparuj się ponownie, używając nowego 6-cyfrowego kodu PIN wyświetlanego na komputerze.</string>
     <string name="file_transfer_action_downloading">Pobieranie</string>
-    <string name="file_transfer_action_uploading">Przesyłanie</string>
+    <string name="file_transfer_action_uploading">Wysyłanie</string>
     <string name="file_transfer_adding_shortcut">Dodawanie skrótu…</string>
     <string name="file_transfer_browse_error">Nie udało się otworzyć tego folderu. Sprawdź, czy komputer jest nadal połączony i czy folder jest nadal udostępniony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_send_error">Nie udało się połączyć z komputerem. Sprawdź, czy oba urządzenia są w tej samej sieci, a następnie spróbuj ponownie.</string>
@@ -470,9 +470,9 @@
     <string name="file_transfer_shortcut_removed">Skrót usunięty.</string>
     <string name="file_transfer_transfer_failed">Transfer nie został ukończony. Sprawdź, czy komputer jest nadal połączony, a następnie spróbuj ponownie.</string>
     <string name="file_transfer_unable_open_location">Nie można otworzyć wybranej lokalizacji zapisu.</string>
-    <string name="file_transfer_upload_complete">Przesyłanie zakończone.</string>
+    <string name="file_transfer_upload_complete">Wysyłanie zakończone.</string>
     <string name="file_transfer_upload_failed">Nie udało się wysłać pliku. Sprawdź, czy komputer jest nadal połączony, a następnie spróbuj ponownie.</string>
-    <string name="file_transfer_uploading_single">Przesyłanie %1$s…</string>
+    <string name="file_transfer_uploading_single">Wysyłanie %1$s…</string>
     <string name="font_inter_premium">Inter (Premium)</string>
     <string name="font_jetbrains_mono_tech">JetBrains Mono (Tech)</string>
     <string name="font_lato">Lato</string>

@@ -316,7 +316,7 @@
     <string name="tile_monitor_off_label">Éteindre l\'écran</string>
     <string name="tile_wol_label">Wake-on-LAN</string>
     <string name="screen_file_transfer_title">Transfert de fichiers</string>
-    <string name="file_transfer_upload">Téléverser ↑</string>
+    <string name="file_transfer_upload">Envoyer ↑</string>
     <string name="file_transfer_download">Télécharger ↓</string>
     <string name="file_transfer_cancel">Annuler</string>
     <string name="file_transfer_not_connected">Connectez-vous à un PC pour parcourir les fichiers distants.</string>
@@ -324,13 +324,13 @@
     <string name="file_transfer_no_shared_folders">Ce PC n\'expose pas encore de dossiers partagés.</string>
     <string name="file_transfer_read_only_root">Lecture seule</string>
     <string name="file_transfer_notification_channel_name">Transferts de fichiers</string>
-    <string name="file_transfer_notification_channel_description">Affiche la progression des téléversements et téléchargements.</string>
-    <string name="file_transfer_notification_upload_title">Téléversement de %1$s</string>
+    <string name="file_transfer_notification_channel_description">Affiche la progression des envois et des téléchargements.</string>
+    <string name="file_transfer_notification_upload_title">Envoi de %1$s</string>
     <string name="file_transfer_notification_download_title">Téléchargement de %1$s</string>
     <string name="file_transfer_notification_preparing">Préparation du transfert…</string>
     <string name="file_transfer_notification_progress">%1$d sur %2$d octets transférés</string>
     <string name="file_transfer_notification_complete_title">Transfert terminé</string>
-    <string name="file_transfer_notification_upload_complete">%1$s téléversé</string>
+    <string name="file_transfer_notification_upload_complete">%1$s envoyé</string>
     <string name="file_transfer_notification_upload_failed">Envoi de %1$s échoué</string>
     <string name="file_transfer_notification_download_complete">%1$s téléchargé</string>
     <string name="file_transfer_notification_failed_title">Échec du transfert</string>
@@ -455,7 +455,7 @@
     <string name="faq_q11">Comment configurer Tailscale pour un accès à distance ?</string>
     <string name="faq_a11">Tailscale vous permet d\'accéder à votre PC depuis n\'importe où — en toute sécurité, sans redirection de port et sans rien exposer sur l\'Internet public. C\'est gratuit pour un usage personnel.\n\n1. Sur votre PC :\n• Windows : installez Tailscale depuis tailscale.com/download/windows, puis connectez-vous.\n• Linux : exécutez :\n   curl -fsSL https://tailscale.com/install.sh | sh\n   sudo tailscale up\n\n2. Sur ce téléphone :\n• Installez Tailscale depuis le Google Play Store.\n• Connectez-vous avec le MÊME compte que celui utilisé sur votre PC.\n• Activez le commutateur VPN de Tailscale.\n\n3. Trouvez l\'IP Tailscale de votre PC :\n• Dans l\'application Tailscale (ou la console d\'administration sur login.tailscale.com), trouvez votre PC et copiez son IP. Elle commence par 100. — par exemple 100.101.102.103.\n\n4. Connectez-vous dans RemEx :\n• Ouvrez l\'écran Connexion et connectez-vous manuellement à cette adresse 100.x.y.z en utilisant le port RemEx (par défaut 5005).\n• Appairez avec le code PIN la première fois, exactement comme sur votre réseau domestique.\n\nC\'est tout — RemEx fonctionne désormais depuis n\'importe où, entièrement chiffré.\n\nAstuce : la découverte automatique ne fonctionne que sur votre réseau local, donc via Tailscale, connectez-vous toujours en saisissant l\'adresse IP 100.x.y.z manuellement.</string>
     <string name="faq_q12">Comment transférer des fichiers entre mon téléphone et mon PC ?</string>
-    <string name="faq_a12">Ouvrez l\'onglet Plus → Transfert de fichiers pour parcourir Local (Téléphone) et Distant (PC) côte à côte, puis utilisez Téléverser ↑ / Télécharger ↓ pour déplacer des fichiers entre les deux.\n\nLes deux côtés n\'exposent que les dossiers que vous avez explicitement partagés :\n• Sur le PC : ajoutez un dossier partagé depuis la vue Transfert de fichiers de l\'application remex.agent.\n• Sur le téléphone : allez dans Paramètres → Transfert de fichiers et ajoutez un dossier — cela permet aussi au PC de parcourir ce dossier sur votre téléphone.\n\nVous pouvez épingler des dossiers en raccourcis, renommer ou supprimer des fichiers, et sélectionner plusieurs éléments à la fois. Les transferts affichent une progression en direct dans une notification et continuent en arrière-plan.</string>
+    <string name="faq_a12">Ouvrez l\'onglet Plus → Transfert de fichiers pour parcourir Local (Téléphone) et Distant (PC) côte à côte, puis utilisez Envoyer ↑ / Télécharger ↓ pour déplacer des fichiers entre les deux.\n\nLes deux côtés n\'exposent que les dossiers que vous avez explicitement partagés :\n• Sur le PC : ajoutez un dossier partagé depuis la vue Transfert de fichiers de l\'application remex.agent.\n• Sur le téléphone : allez dans Paramètres → Transfert de fichiers et ajoutez un dossier — cela permet aussi au PC de parcourir ce dossier sur votre téléphone.\n\nVous pouvez épingler des dossiers en raccourcis, renommer ou supprimer des fichiers, et sélectionner plusieurs éléments à la fois. Les transferts affichent une progression en direct dans une notification et continuent en arrière-plan.</string>
     <string name="faq_q13">RemEx refuse soudainement de se connecter / me demande de coupler à nouveau. Pourquoi ?</string>
     <string name="faq_a13">La première fois que vous couplez votre PC, votre téléphone mémorise l\'empreinte exacte du certificat de ce PC et ne fera plus jamais confiance qu\'à celui-là. Si le certificat change — par exemple après une réinstallation de remex.agent, une restauration du PC depuis une sauvegarde, ou un changement de matériel — votre téléphone refuse à juste titre la connexion plutôt que de faire confiance à un imposteur.\n\nIl s\'agit d\'un comportement de sécurité normal, pas d\'un bug. Pour y remédier, supprimez (découplez) le PC depuis l\'écran Connexion, puis couplez-le à nouveau à l\'aide du nouveau code PIN à 6 chiffres affiché sur le PC.</string>
     <string name="file_transfer_action_downloading">Téléchargement</string>
