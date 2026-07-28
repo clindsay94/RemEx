@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
@@ -52,7 +53,6 @@ import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FilterCenterFocus
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.material.icons.filled.GridView
@@ -431,7 +431,7 @@ fun DashboardScreenContent(
                                                 enabled = selectedCardIds.isEmpty(),
                                         ) {
                                                 Icon(
-                                                        Icons.Filled.HelpOutline,
+                                                        Icons.AutoMirrored.Filled.HelpOutline,
                                                         contentDescription = stringResource(R.string.coach_replay),
                                                 )
                                         }

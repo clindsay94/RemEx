@@ -490,8 +490,12 @@ fun RemoteDesktopScreenContent(
                 if (!isRemoteKeyboardOpen) {
                     focusRequester.requestFocus()
                     keyboardController?.show()
+                    // Flags 0, not SHOW_IMPLICIT: that flag was deprecated in API 37 (it has no
+                    // effect at all from Android B onward) and its documented replacement is to call
+                    // showSoftInput without it. Dropping it also matches the intent here — this is an
+                    // explicit request triggered by the user tapping the keyboard button.
                     (view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
-                        ?.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+                        ?.showSoftInput(view, 0)
                 } else {
                     keyboardController?.hide()
                 }

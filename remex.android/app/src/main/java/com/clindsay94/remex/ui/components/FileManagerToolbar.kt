@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Check
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -159,7 +159,10 @@ private fun ToolbarIconRow(
         // Sort menu
         RemexTooltip(stringResource(R.string.file_manager_sort)) {
             IconButton(onClick = { onSortMenuOpenChange(true) }) {
-                Icon(Icons.Default.Sort, contentDescription = stringResource(R.string.file_manager_sort))
+                Icon(
+                    Icons.AutoMirrored.Filled.Sort,
+                    contentDescription = stringResource(R.string.file_manager_sort),
+                )
             }
         }
         DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { onSortMenuOpenChange(false) }) {

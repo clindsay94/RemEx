@@ -18,6 +18,7 @@ import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -49,6 +50,11 @@ class FileTransferJobService : JobService() {
     // The live job's parameters, needed to (re)attach the notification and to call jobFinished().
     @Volatile private var params: JobParameters? = null
 
+    // sample() is still a @FlowPreview API. Accepted deliberately: it is the only operator that gives
+    // the "emit at most one update per window" behaviour the OS notification rate limit needs, it has
+    // been preview-stable for years, and a source-incompatible change would surface here at compile
+    // time — not at runtime on a user's phone.
+    @OptIn(FlowPreview::class)
     override fun onStartJob(params: JobParameters): Boolean {
         this.params = params
         isRunning = true

@@ -203,7 +203,11 @@ object FileTransferChannelClient : FileFrameChannel {
         val opened = CompletableDeferred<Boolean>()
         val listener =
             object : WebSocketListener() {
-                override fun onOpen(ws: WebSocket, response: Response) {
+                // NOTE: these parameters are named `webSocket` to match [WebSocketListener]; inside the
+                // overrides that shadows the enclosing [webSocket] field, which is intentional — a
+                // callback must always act on the socket it was handed, never on whatever the field
+                // currently points at (it may already have been replaced by a newer connection).
+                override fun onOpen(webSocket: WebSocket, response: Response) {
                     // Do NOT mark the channel ready here. The host holds the socket open but refuses
                     // to service it until we answer its reconnect_challenge text frame below —
                     // openState only flips true, and [opened] only completes, once the proof has been
@@ -212,7 +216,7 @@ object FileTransferChannelClient : FileFrameChannel {
                     Log.i(TAG, "Binary /ws/files socket accepted by $host:$port; awaiting reconnect challenge")
                 }
 
-                override fun onMessage(ws: WebSocket, text: String) {
+                override fun onMessage(webSocket: WebSocket, text: String) {
                     try {
                         val challenge = JSONObject(text)
                         if (challenge.optString("type") != "reconnect_challenge") {
@@ -239,7 +243,7 @@ object FileTransferChannelClient : FileFrameChannel {
                                     },
                                 )
                             }
-                        ws.send(proof.toString())
+                        webSocket.send(proof.toString())
 
                         // Proof is on the wire — only now is the channel actually usable.
                         openState = true
@@ -250,22 +254,22 @@ object FileTransferChannelClient : FileFrameChannel {
                         Log.e(TAG, "Failed to answer /ws/files reconnect challenge; closing", e)
                         if (!opened.isCompleted) opened.complete(false)
                         try {
-                            ws.close(1008, "bad reconnect challenge")
+                            webSocket.close(1008, "bad reconnect challenge")
                         } catch (closeError: Exception) {
                             // best-effort
                         }
                     }
                 }
 
-                override fun onMessage(ws: WebSocket, bytes: ByteString) {
+                override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
                     dispatch(bytes.toByteArray())
                 }
 
-                override fun onClosing(ws: WebSocket, code: Int, reason: String) {
-                    ws.close(code, null)
+                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    webSocket.close(code, null)
                 }
 
-                override fun onClosed(ws: WebSocket, code: Int, reason: String) {
+                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                     // Covers the case where the host 1008-closes the socket (proof rejected/timed
                     // out) before onFailure would otherwise fire — callers awaiting [opened] must
                     // not hang.
@@ -273,7 +277,7 @@ object FileTransferChannelClient : FileFrameChannel {
                     handleClosed()
                 }
 
-                override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                     Log.w(TAG, "Binary /ws/files channel failure: ${t.message} (http=${response?.code})")
                     if (!opened.isCompleted) opened.complete(false)
                     handleClosed()

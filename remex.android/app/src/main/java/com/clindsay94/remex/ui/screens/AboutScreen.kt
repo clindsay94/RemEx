@@ -146,7 +146,6 @@ fun AboutScreenContent(
                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
                     // M3: ListItem for structured icon + label + value rows
                     ListItem(
-                            headlineContent = { Text(stringResource(R.string.about_android_client_label)) },
                             leadingContent = {
                                 Icon(
                                         imageVector = Icons.Default.Smartphone,
@@ -161,13 +160,14 @@ fun AboutScreenContent(
                                 )
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                    )
+                    ) {
+                        Text(stringResource(R.string.about_android_client_label))
+                    }
                     HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             color = MaterialTheme.colorScheme.outlineVariant
                     )
                     ListItem(
-                            headlineContent = { Text(stringResource(R.string.about_pc_host_label)) },
                             leadingContent = {
                                 Icon(
                                         imageVector = Icons.Default.Terminal,
@@ -182,7 +182,9 @@ fun AboutScreenContent(
                                 )
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-                    )
+                    ) {
+                        Text(stringResource(R.string.about_pc_host_label))
+                    }
                 }
             }
 

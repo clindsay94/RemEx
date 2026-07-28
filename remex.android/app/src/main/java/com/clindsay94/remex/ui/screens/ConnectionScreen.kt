@@ -1352,12 +1352,6 @@ private fun ConnectionScreenPreview() {
 @Composable
 private fun HelpStep(number: String, title: String, body: String?) {
         ListItem(
-                headlineContent = {
-                        Text(
-                                title,
-                                style = MaterialTheme.typography.bodyMediumEmphasized
-                        )
-                },
                 supportingContent =
                         body?.let {
                                 {
@@ -1387,7 +1381,12 @@ private fun HelpStep(number: String, title: String, body: String?) {
                         ListItemDefaults.colors(
                                 containerColor = androidx.compose.ui.graphics.Color.Transparent
                         )
-        )
+        ) {
+                Text(
+                        title,
+                        style = MaterialTheme.typography.bodyMediumEmphasized
+                )
+        }
 }
 
 @Composable
@@ -1397,12 +1396,6 @@ private fun IpInstructionRow(
         instruction: String
 ) {
         ListItem(
-                headlineContent = {
-                        Text(
-                                platform,
-                                style = MaterialTheme.typography.labelMediumEmphasized
-                        )
-                },
                 supportingContent = {
                         Text(
                                 instruction,
@@ -1421,5 +1414,10 @@ private fun IpInstructionRow(
                         ListItemDefaults.colors(
                                 containerColor = androidx.compose.ui.graphics.Color.Transparent
                         )
-        )
+        ) {
+                Text(
+                        platform,
+                        style = MaterialTheme.typography.labelMediumEmphasized
+                )
+        }
 }

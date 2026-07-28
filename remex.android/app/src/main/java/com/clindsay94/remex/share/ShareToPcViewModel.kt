@@ -332,7 +332,7 @@ class ShareToPcViewModel(application: Application) : AndroidViewModel(applicatio
                 if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) size = cursor.getLong(sizeIndex)
             }
         }
-        if (size == null || size!! <= 0L) {
+        if (size == null || size <= 0L) {
             try {
                 resolver.openAssetFileDescriptor(uri, "r")?.use { afd ->
                     val length = afd.length
