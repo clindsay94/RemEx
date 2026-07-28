@@ -48,10 +48,14 @@ public sealed class FileTransferHandlerTests : IDisposable
         public override void Dispose() { }
     }
 
-    private static FileTransferHandler CreateHandler(IFileTransferService svc) =>
-        new(NullLogger<FileTransferHandler>.Instance, svc,
-            new Mock<IFileTrustService>().Object,
-            new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
+    private static FileTransferHandler CreateHandler(IFileTransferService svc)
+    {
+        var trust = new Mock<IFileTrustService>().Object;
+        var volumes = new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance);
+        return new FileTransferHandler(
+            NullLogger<FileTransferHandler>.Instance, svc, trust, volumes,
+            new SharedRootReadResolver(svc, trust, volumes));
+    }
 
     // ── Upload happy path ──────────────────────────────────────────────────────
 
@@ -700,7 +704,9 @@ public sealed class FileTransferHandlerTests : IDisposable
             trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None).GetAwaiter().GetResult();
 
         var volumes = new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance);
-        var handler = new FileTransferHandler(NullLogger<FileTransferHandler>.Instance, service, trust, volumes);
+        var handler = new FileTransferHandler(
+            NullLogger<FileTransferHandler>.Instance, service, trust, volumes,
+            new SharedRootReadResolver(service, trust, volumes));
         return (handler, volumes, baseTemp);
     }
 
@@ -906,11 +912,14 @@ public sealed class FileTransferHandlerTests : IDisposable
             Path.Combine(baseTemp, "file_transfer_trust.json"),
             TimeSpan.FromSeconds(5));
 
+        var files = new Mock<IFileTransferService>().Object;
+        var volumes = new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance);
         var handler = new FileTransferHandler(
             NullLogger<FileTransferHandler>.Instance,
-            new Mock<IFileTransferService>().Object,
+            files,
             trust,
-            new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
+            volumes,
+            new SharedRootReadResolver(files, trust, volumes));
 
         return (handler, trust);
     }

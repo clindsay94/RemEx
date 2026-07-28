@@ -169,6 +169,10 @@ public static class HostBootstrapper
         // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP2: trust/consent + volume enumeration ──
         builder.Services.AddSingleton<IFileTrustService, FileTrustService>();
         builder.Services.AddSingleton<VolumeEnumerator>();
+        // The one place a client-supplied rootId is turned into a readable location, shared by the v2
+        // handler and the v3 sender so full-device browsing cannot be wired up on only one of them
+        // (RemEx-hb1t.6).
+        builder.Services.AddSingleton<SharedRootReadResolver>();
         builder.Services.AddTransient<FileTransferHandler>();
         // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP4: binary channel, sessions, resume, queue ──
         // Singletons on purpose: TransferSessionManager holds live per-transfer state that MUST be shared

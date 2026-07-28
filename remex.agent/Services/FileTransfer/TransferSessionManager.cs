@@ -61,14 +61,18 @@ public sealed class TransferSessionManager : IDisposable
 
     private readonly ILogger<TransferSessionManager> _logger;
     private readonly IFileTransferService _fileTransferService;
+    private readonly SharedRootReadResolver _readResolver;
     private readonly string _stagingDir;
 
     private readonly ConcurrentDictionary<string, ReceiveSession> _receiveSessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, SendSession> _sendSessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, FileChannel> _channels = new(StringComparer.Ordinal);
 
-    public TransferSessionManager(ILogger<TransferSessionManager> logger, IFileTransferService fileTransferService)
-        : this(logger, fileTransferService, stagingDir: null)
+    public TransferSessionManager(
+        ILogger<TransferSessionManager> logger,
+        IFileTransferService fileTransferService,
+        SharedRootReadResolver readResolver)
+        : this(logger, fileTransferService, readResolver, stagingDir: null)
     {
     }
 
@@ -76,10 +80,12 @@ public sealed class TransferSessionManager : IDisposable
     internal TransferSessionManager(
         ILogger<TransferSessionManager> logger,
         IFileTransferService fileTransferService,
+        SharedRootReadResolver readResolver,
         string? stagingDir)
     {
         _logger = Guard.NotNull(logger);
         _fileTransferService = Guard.NotNull(fileTransferService);
+        _readResolver = Guard.NotNull(readResolver);
 
         if (stagingDir is null)
         {
@@ -644,6 +650,21 @@ public sealed class TransferSessionManager : IDisposable
     // Host sender (download): stream a host file out with ack-driven backpressure.
     // ─────────────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Testable seam: resolves a download's source <paramref name="rootId"/> and opens it for reading.
+    ///
+    /// <para>Goes through <see cref="SharedRootReadResolver"/> rather than
+    /// <see cref="IFileTransferService.OpenForReadAsync"/> so a file reached by full-device browsing — i.e. a
+    /// bare mounted volume that is not a pinned shared root — downloads instead of failing with
+    /// "Unknown shared root" (RemEx-hb1t.6). Calling the service directly here is what left every real
+    /// Android download broken after RemEx-39jw fixed only the legacy v2 handler.</para>
+    ///
+    /// <para>Fail-closed: an empty <paramref name="clientId"/> (unidentified peer) has no full-browse grant,
+    /// so the resolver refuses rather than widening access.</para>
+    /// </summary>
+    internal Task<Stream> OpenDownloadSourceAsync(string clientId, string rootId, string relativePath, CancellationToken ct)
+        => _readResolver.OpenForReadAsync(rootId, relativePath, clientId, ct);
+
     private async Task BeginSendAsync(string clientId, FileTransferOffer offer, WebSocket controlWs, CancellationToken ct)
     {
         string? nameError = null;
@@ -671,7 +692,7 @@ public sealed class TransferSessionManager : IDisposable
         Stream source;
         try
         {
-            source = await _fileTransferService.OpenForReadAsync(offer.DestRoot, hostRelativePath, ct);
+            source = await OpenDownloadSourceAsync(clientId, offer.DestRoot!, hostRelativePath, ct);
         }
         catch (Exception ex)
         {

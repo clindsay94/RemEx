@@ -13,7 +13,8 @@ public sealed class FileTransferHandler(
     ILogger<FileTransferHandler> logger,
     IFileTransferService fileTransferService,
     IFileTrustService fileTrustService,
-    VolumeEnumerator volumeEnumerator)
+    VolumeEnumerator volumeEnumerator,
+    SharedRootReadResolver readResolver)
 {
     private const int ProgressChunkInterval = 10;
 
@@ -171,16 +172,12 @@ public sealed class FileTransferHandler(
                     : await RemapUnconfiguredWriteTargetAsync(start.RemoteRootId, remoteRelativePath, ct);
                 stream = await fileTransferService.OpenForWriteAsync(writeRootId, writeRelativePath, start.TotalBytes, ct);
             }
-            else if (await IsConfiguredRootAsync(start.RemoteRootId, ct))
-            {
-                stream = await fileTransferService.OpenForReadAsync(start.RemoteRootId, remoteRelativePath, ct);
-            }
             else
             {
-                // Download from a bare full-device-browsed volume (RemEx-39jw) — read-only, so this is safe
-                // to extend, unlike upload above.
-                var volume = await ResolveConsentedVolumeAsync(start.RemoteRootId, clientId, ct);
-                stream = await fileTransferService.OpenVolumeForReadAsync(volume.Path, remoteRelativePath, ct);
+                // Download accepts either a pinned shared root or a bare full-device-browsed volume
+                // (RemEx-39jw) — read-only, so this is safe to extend, unlike upload above. Same resolver as
+                // the v3 sender, so both download paths behave identically (RemEx-hb1t.6).
+                stream = await readResolver.OpenForReadAsync(start.RemoteRootId, remoteRelativePath, clientId, ct);
             }
 
             var totalBytes = start.Direction == "download" && stream.CanSeek
@@ -840,24 +837,22 @@ public sealed class FileTransferHandler(
         await MessageSerializer.SendAsync(ws, response, ct);
     }
 
-    /// <summary>True when <paramref name="rootId"/> matches one of the pinned/configured shared roots.</summary>
-    private async Task<bool> IsConfiguredRootAsync(string rootId, CancellationToken ct)
-        => (await fileTransferService.ListRootsAsync(ct)).Any(r => r.RootId == rootId);
+    /// <inheritdoc cref="SharedRootReadResolver.IsConfiguredRootAsync"/>
+    private Task<bool> IsConfiguredRootAsync(string rootId, CancellationToken ct)
+        => readResolver.IsConfiguredRootAsync(rootId, ct);
 
     /// <summary>
     /// Resolves a RootId that is NOT a configured shared root to a genuine, consent-granted mounted volume
-    /// (RemEx-39jw). Re-verifies the full-browse grant here — never trusts RootId alone — mirroring the
-    /// check <see cref="HandleFileBrowseRequestAsync"/> already performs. Used by the read-only volume ops
-    /// (download/hash/search/metadata/thumbnail); full browse never exposes write/delete (RemEx-hb1t), so
-    /// callers that need a writable root must reject an unconfigured RootId instead of calling this.
+    /// (RemEx-39jw). Used by the read-only volume ops (download/hash/search/metadata/thumbnail); full browse
+    /// never exposes write/delete (RemEx-hb1t), so callers that need a writable root must reject an
+    /// unconfigured RootId instead of calling this.
+    ///
+    /// <para>Delegates to <see cref="SharedRootReadResolver"/> — the shared decision point the v3 sender in
+    /// <see cref="TransferSessionManager"/> also uses. Keeping a second private copy here is what allowed the
+    /// two paths to disagree in RemEx-hb1t.6; do not re-inline it.</para>
     /// </summary>
-    private async Task<FileVolumeInfo> ResolveConsentedVolumeAsync(string rootId, string? clientId, CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(clientId) || !await fileTrustService.IsFullBrowseGrantedAsync(clientId, ct))
-            throw new UnauthorizedAccessException("Full-device browsing has not been granted for this device.");
-        return volumeEnumerator.Enumerate().FirstOrDefault(v => v.Id == rootId)
-            ?? throw new UnauthorizedAccessException($"Unknown shared root '{rootId}'.");
-    }
+    private Task<FileVolumeInfo> ResolveConsentedVolumeAsync(string rootId, string? clientId, CancellationToken ct)
+        => readResolver.ResolveConsentedVolumeAsync(rootId, clientId, ct);
 
     private const string UnpinnedWriteMessage =
         "This folder isn't one of the PC's shared folders. On the PC, add it to RemEx's shared folders, then try again.";
