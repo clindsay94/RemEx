@@ -26,13 +26,9 @@ Board size at filing time: **27 open + 11 in-progress + 31 deferred**. At one be
 
 ### Known state at filing time (2026-07-31)
 
-- The working tree on `ui-polish-loop` has **uncommitted launcher_sync_request work** —
-  `remex.core/Messages/RemexMessage.cs`, `remex.agent/Handlers/PingPongHandler.cs`,
-  `remex.agent.tests/LauncherSyncRequestTests.cs` (new), `LauncherAllowlistAuthorizationTests.cs`,
-  `AppLauncherViewModel.kt`, `docs/CHANGELOG.md`. This was validated end-to-end on 2026-07-29
-  (902 tests green, emulator round-trip confirmed). **First iteration: commit this as its own
-  commit before touching any bead.** Copy exact file paths/case from `git status` output.
-- The four P1 beads `RemEx-ccen`, `RemEx-evzv`, `RemEx-lcp8`, `RemEx-rpu2`, `RemEx-8c1l`,
+- The previous ui-polish loop's work (PR #54, ~190 commits) is merged to `main` and released as
+  2.4.0. This loop starts clean from that point on the `v2.5-board-drain` branch.
+- The P1 beads `RemEx-ccen`, `RemEx-evzv`, `RemEx-lcp8`, `RemEx-rpu2`, `RemEx-8c1l`,
   `RemEx-lxpv` all touch the same Remote Desktop capture/encode path. Read the other beads'
   notes before starting one so two iterations don't fight over the same code.
 
@@ -76,11 +72,11 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
 
 ## PROCEDURE — follow in order
 
-1. Run `git branch --show-current`. If it is not `ui-polish-loop`, run
-   `git checkout ui-polish-loop`. NEVER work on `main`.
+1. Run `git branch --show-current`. If it is not `v2.5-board-drain`, run
+   `git checkout v2.5-board-drain` (create it from `main` with `git checkout -b v2.5-board-drain`
+   if it does not exist). NEVER work on `main`.
 
-2. Run `git status`. If the tree is dirty, a previous iteration died mid-work (or it's the known
-   launcher_sync_request work described above — commit that as its own commit). Inspect the diff
+2. Run `git status`. If the tree is dirty, a previous iteration died mid-work. Inspect the diff
    and either finish coherent work or `git checkout -- .` to discard incoherent scraps. Do not
    start new work on top of an unexplained dirty tree.
 
@@ -240,7 +236,7 @@ simultaneously and verifiably true in THIS iteration's real command output:
    concrete external prerequisite it is waiting on.
 3. `dotnet build Remex.sln` and `dotnet test Remex.sln` exit 0.
 4. `cd remex.android && ./gradlew assembleRelease` exits 0.
-5. `git status` shows a clean tree on `ui-polish-loop`.
+5. `git status` shows a clean tree on `v2.5-board-drain`.
 
 You must actually RUN all of these and see their real output before making the claim. Do not
 output the promise because you feel finished, because progress is slow, or because the remaining
