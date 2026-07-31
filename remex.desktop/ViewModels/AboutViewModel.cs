@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Desktop.Services;
@@ -65,9 +64,10 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         // once, so rebuild them when the culture changes.
         LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
 
-        // Get client version from assembly
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        ClientVersion = version?.ToString() ?? "unknown";
+        // Get client version from assembly, in the same three-part form the Android About screen
+        // shows for the same release (e.g. "2.4.0") rather than a four-part "2.4.0.0".
+        var version = AppVersion.Display;
+        ClientVersion = string.IsNullOrEmpty(version) ? "unknown" : version;
 
         // The update check runs at startup (App.InitializeAppAsync); pick up any cached result so the
         // card is populated the instant About opens, and stay subscribed for the startup check that may

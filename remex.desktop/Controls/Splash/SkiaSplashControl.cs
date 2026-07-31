@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -172,11 +171,8 @@ public sealed class SkiaSplashControl : Control, IDisposable
 
     private static string ResolveVersion()
     {
-        var info = typeof(SkiaSplashControl).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-                   ?? typeof(SkiaSplashControl).Assembly.GetName().Version?.ToString(3)
-                   ?? "";
-        int plus = info.IndexOf('+');
-        if (plus >= 0) info = info[..plus];
+        // Shared with the About page so the splash and About never disagree about the version.
+        var info = AppVersion.Display;
         return string.IsNullOrEmpty(info) ? "" : "v" + info;
     }
 
