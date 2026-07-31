@@ -77,7 +77,7 @@ public sealed record DesktopDisplayInfo
     public string DisplayId { get; init; } = string.Empty;
 
     /// <summary>
-    /// Stable identity for this physical monitor, intended to survive reboots and re-plugging.
+    /// Stable identity for this physical monitor, or EMPTY when the host has none to offer.
     /// </summary>
     /// <remarks>
     /// Intended for the client that wants to reselect "the monitor I was watching last time".
@@ -102,6 +102,21 @@ public sealed record DesktopDisplayInfo
     /// So: treat a key that no longer resolves as "that monitor is gone" and fall back to the primary
     /// display, never assuming resolution succeeds — but do not treat a key that DOES resolve as proof
     /// the user is looking at the same physical panel.
+    /// </para>
+    /// <para>
+    /// AN EMPTY KEY IS A REAL ANSWER, not a bug, and clients must handle it: it means the host could
+    /// not establish a stable identity for that display. Do NOT fall back to <see cref="DisplayId"/>
+    /// in that case — that is session-scoped by definition, so remembering it silently returns the
+    /// user to a different physical screen later. Remember nothing instead.
+    /// </para>
+    /// <para>
+    /// THE WINDOWS HOST sends empty rather than an unstable-but-plausible value, because nothing on
+    /// the wire tells a client how much to trust the key and a degraded one would be stored as though
+    /// it were good (RemEx-i50k). THE LINUX HOST DOES NOT YET DO THIS: its xrandr path sets the key to
+    /// the output name, which is also its <see cref="DisplayId"/>. That is far less harmful than the
+    /// Windows case was — DRM connector names like <c>DP-1</c> are port-scoped and do not renumber
+    /// when other monitors change — but it does mean a non-empty key is not, on its own, proof that
+    /// the host had a stable source (RemEx-kiy1).
     /// </para>
     /// </remarks>
     [JsonPropertyName("persistentDisplayKey")]

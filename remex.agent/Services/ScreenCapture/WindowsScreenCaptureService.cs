@@ -208,10 +208,8 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                     .Select((display, index) => new DesktopDisplayInfo
                     {
                         DisplayId = display.DisplayId,
-                        PersistentDisplayKey = ChoosePersistentDisplayKey(
-                            TryGetMonitorInterfacePath(display.DeviceName),
-                            display.DeviceName,
-                            index + 1),
+                        PersistentDisplayKey =
+                            ChoosePersistentDisplayKey(TryGetMonitorInterfacePath(display.DeviceName)),
                         Name = display.Name,
                         IsPrimary = display.IsPrimary,
                         Left = display.Bounds.Left,
@@ -726,38 +724,29 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     }
 
     /// <summary>
-    /// Picks the value for <see cref="DesktopDisplayInfo.PersistentDisplayKey"/> from the best source
-    /// available, most stable first.
+    /// The stable identity for this monitor, or EMPTY when there is not one.
     /// </summary>
     /// <remarks>
-    /// Pure so the ladder can be tested without a monitor attached (RemEx-zftu). The bug this replaces
+    /// Pure so the choice can be tested without a monitor attached (RemEx-zftu). The bug it replaced
     /// was not a subtle one: the Windows host assigned <c>PersistentDisplayKey</c> the SAME string as
     /// <c>DisplayId</c>, i.e. <c>\.\DISPLAY1</c> or a <c>monitor-N</c> ordinal — both enumeration
     /// artefacts. A client that persisted it and reselected that monitor later could silently land on a
     /// DIFFERENT physical screen after a replug, and it failed QUIETLY, because the key still resolved.
     ///
-    /// The last rung is deliberately kept and deliberately unstable: when Windows will not tell us
-    /// anything about the panel, an ordinal is all there is. It is better to return something the
-    /// session can use than to fail enumeration, but nothing about it survives a monitor change.
+    /// THERE IS NO LONGER A FALLBACK LADDER, and removing it was the point of RemEx-i50k. This used
+    /// to degrade to the adapter output name and then to an ordinal — but the adapter name is exactly
+    /// what <c>DisplayId</c> already is, so in that case the "persistent" key was BYTE-IDENTICAL to
+    /// the session-scoped id it exists to outlive. A client cannot tell the two apart: nothing on the
+    /// wire says how much to trust the value, so a degraded key looks exactly like a good one and
+    /// gets stored as though it were stable, resurrecting the wrong-monitor bug the key was added to
+    /// fix (RemEx-zftu, RemEx-ynur).
+    ///
+    /// So an empty string is the honest answer, and it is a better one: the Android client already
+    /// treats a missing key as "do not remember this display", which turns a silent wrong answer into
+    /// a visible loss of a preference. Returning something usable-looking was the mistake.
     /// </remarks>
-    internal static string ChoosePersistentDisplayKey(
-        string? monitorInterfacePath, string? adapterDeviceName, int ordinal)
-    {
-        if (!string.IsNullOrWhiteSpace(monitorInterfacePath))
-        {
-            return monitorInterfacePath.Trim();
-        }
-
-        // No panel identity available. Fall back to the adapter output, which at least survives for as
-        // long as the monitor topology does not change — the pre-RemEx-zftu behaviour, now reached only
-        // when the stable source is unavailable rather than always.
-        if (!string.IsNullOrWhiteSpace(adapterDeviceName))
-        {
-            return adapterDeviceName.Trim();
-        }
-
-        return $"monitor-{ordinal}";
-    }
+    internal static string ChoosePersistentDisplayKey(string? monitorInterfacePath)
+        => string.IsNullOrWhiteSpace(monitorInterfacePath) ? string.Empty : monitorInterfacePath.Trim();
 
     private static Rectangle GetVirtualDesktopBounds()
         => new(

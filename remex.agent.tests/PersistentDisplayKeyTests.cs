@@ -34,74 +34,61 @@ public class PersistentDisplayKeyTests
         @"\\?\DISPLAY#GSM5B09#5&1a2b3c4d&0&UID4353#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}";
 
     [Fact]
-    public void PrefersTheMonitorInterfacePathOverTheAdapterName()
+    public void ReturnsTheMonitorInterfacePath()
     {
-        // THE BUG. Before this fix the adapter output name was the answer unconditionally, which is
-        // an enumeration artefact. If this ever returns the adapter name again while a real panel
-        // identity is available, the persistent key has silently gone back to being session-scoped.
-        var key = WindowsScreenCaptureService.ChoosePersistentDisplayKey(
-            InterfacePath, @"\\.\DISPLAY1", ordinal: 1);
-
-        Assert.Equal(InterfacePath, key);
-        Assert.DoesNotContain(@"\\.\DISPLAY", key);
-    }
-
-    [Fact]
-    public void TheKeyDoesNotDependOnWhichAdapterOutputTheMonitorIsEnumeratedOn()
-    {
-        // This is the persistence property in miniature: the same physical panel must produce the
-        // same key regardless of where it lands in the enumeration. Adding a monitor renumbers the
-        // adapter outputs, and that renumbering is exactly what used to change the stored key.
-        var first = WindowsScreenCaptureService.ChoosePersistentDisplayKey(
-            InterfacePath, @"\\.\DISPLAY1", ordinal: 1);
-        var afterAMonitorWasAdded = WindowsScreenCaptureService.ChoosePersistentDisplayKey(
-            InterfacePath, @"\\.\DISPLAY3", ordinal: 3);
-
-        Assert.Equal(first, afterAMonitorWasAdded);
-    }
-
-    [Fact]
-    public void TwoPanelsNeverShareAKey()
-    {
-        var left = WindowsScreenCaptureService.ChoosePersistentDisplayKey(
-            InterfacePath, @"\\.\DISPLAY1", ordinal: 1);
-        var right = WindowsScreenCaptureService.ChoosePersistentDisplayKey(
-            @"\\?\DISPLAY#DEL41A8#5&9f8e7d6c&0&UID4354#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}",
-            @"\\.\DISPLAY2",
-            ordinal: 2);
-
-        Assert.NotEqual(left, right);
+        Assert.Equal(InterfacePath, WindowsScreenCaptureService.ChoosePersistentDisplayKey(InterfacePath));
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void FallsBackToTheAdapterNameWhenWindowsOffersNoPanelIdentity(string? noPath)
+    public void ReturnsEmptyWhenWindowsOffersNoPanelIdentity(string? noPath)
     {
-        // Degraded but usable: this is the old behaviour, now reached only when the stable source is
-        // genuinely unavailable rather than on every enumeration. A blank path must count as absent —
-        // returning "" as a key would collide across every display at once.
-        var key = WindowsScreenCaptureService.ChoosePersistentDisplayKey(noPath, @"\\.\DISPLAY2", ordinal: 2);
-
-        Assert.Equal(@"\\.\DISPLAY2", key);
+        // THE POINT OF RemEx-i50k, and it replaced a fallback ladder that looked helpful. This used
+        // to degrade to the adapter output name — which is exactly what DisplayId already is, so the
+        // "persistent" key came back BYTE-IDENTICAL to the session-scoped id it exists to outlive.
+        // Nothing on the wire tells a client how much to trust the value, so a degraded key looked
+        // like a good one, got stored as though it were stable, and resurrected the wrong-monitor bug
+        // the key was added to fix.
+        //
+        // Empty is the honest answer and the more useful one: the client treats a missing key as "do
+        // not remember this display", turning a silent wrong answer into a visible lost preference.
+        Assert.Equal(string.Empty, WindowsScreenCaptureService.ChoosePersistentDisplayKey(noPath));
     }
 
     [Fact]
-    public void FallsBackToAnOrdinalOnlyWhenThereIsNothingElseAtAll()
+    public void NeverReturnsAnythingResemblingADisplayId()
     {
-        var key = WindowsScreenCaptureService.ChoosePersistentDisplayKey(null, null, ordinal: 3);
+        // A regression guard with teeth: if anyone reinstates a fallback, the value it would most
+        // plausibly reach for is the adapter output name. That must never come back from here.
+        foreach (var noPath in new string?[] { null, "", "   " })
+        {
+            var key = WindowsScreenCaptureService.ChoosePersistentDisplayKey(noPath);
 
-        Assert.Equal("monitor-3", key);
+            Assert.DoesNotContain(@"\.\DISPLAY", key);
+            Assert.DoesNotContain("monitor-", key);
+        }
     }
 
     [Fact]
-    public void NeverReturnsBlank()
+    public void TwoPanelsNeverShareAKey()
     {
-        // Every rung must yield something. A blank key would make every display look like the same
-        // display to a client that maps by key.
-        Assert.False(string.IsNullOrWhiteSpace(
-            WindowsScreenCaptureService.ChoosePersistentDisplayKey("  ", "  ", ordinal: 1)));
+        var left = WindowsScreenCaptureService.ChoosePersistentDisplayKey(InterfacePath);
+        var right = WindowsScreenCaptureService.ChoosePersistentDisplayKey(
+            @"\?\DISPLAY#DEL41A8#5&9f8e7d6c&0&UID4354#{e6f07b5f-ee97-4a90-b076-33f57bf4eaa7}");
+
+        Assert.NotEqual(left, right);
+    }
+
+    [Fact]
+    public void TrimsWhatWindowsReturns()
+    {
+        // The path arrives from a fixed-size marshalled buffer, so trailing whitespace is real and an
+        // untrimmed key would fail to match a trimmed one stored earlier.
+        Assert.Equal(
+            InterfacePath,
+            WindowsScreenCaptureService.ChoosePersistentDisplayKey("  " + InterfacePath + "  "));
     }
 
     // ── The enumeration walk ────────────────────────────────────────────────────────────────
@@ -131,8 +118,10 @@ public class PersistentDisplayKeyTests
     public void WalkSkipsInactiveEntriesRatherThanStoppingAtThem()
     {
         // The break/continue distinction. Stopping at the first inactive child would return null for
-        // any adapter whose first monitor slot is dormant — a clone-mode or docked setup — and the
-        // key would silently drop to the unstable adapter-name rung with nothing to indicate why.
+        // any adapter whose first monitor slot is dormant — a clone-mode or docked setup — and since
+        // RemEx-i50k removed the fallback, the display would then report NO key at all and the user
+        // would lose the ability to remember it. Visible rather than silently wrong, but still a
+        // capability lost for no reason.
         Assert.Equal(InterfacePath, Walk(Inactive("dormant"), Active(InterfacePath)));
     }
 
@@ -148,19 +137,9 @@ public class PersistentDisplayKeyTests
     [Fact]
     public void WalkIgnoresActiveEntriesWithNoDeviceId()
     {
-        // An active child can still report a blank path when the interface name is unavailable.
-        // Returning "" would give every such display the same key.
+        // An active child can still report a blank path when the interface name is unavailable, and
+        // the walk must keep looking rather than stop at it — otherwise a display that DOES have an
+        // identity further down the list is reported as having none.
         Assert.Equal(InterfacePath, Walk(Active(null), Active("   "), Active(InterfacePath)));
-    }
-
-    [Fact]
-    public void TrimsWhatWindowsReturns()
-    {
-        // The interface path arrives from a fixed-size marshalled buffer, so trailing whitespace is a
-        // real possibility and an untrimmed key would fail to match a trimmed one stored earlier.
-        var key = WindowsScreenCaptureService.ChoosePersistentDisplayKey(
-            "  " + InterfacePath + "  ", @"\\.\DISPLAY1", ordinal: 1);
-
-        Assert.Equal(InterfacePath, key);
     }
 }
