@@ -3,26 +3,53 @@ using System.Runtime.InteropServices;
 namespace Remex.Core.Native;
 
 /// <summary>
-/// Minimal JNI mapping for .NET NativeAOT.
+/// Minimal JNI mapping for .NET NativeAOT: the per-thread JNI interface pointer.
 /// </summary>
+/// <remarks>
+/// Mirrors the C ABI exactly, so the layout is NOT free to change — <see cref="Functions"/> must stay
+/// the first and only field, because the JVM hands over a pointer to its own table and this struct is
+/// simply reinterpreting it. A <c>JNIEnv*</c> is valid only on the thread it was obtained on and must
+/// never be cached across threads.
+/// </remarks>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct JNIEnv
 {
+    /// <summary>The JNI function table. Entries are reached by ordinal — see <see cref="JniHelper"/>.</summary>
     public void** Functions;
 }
 
+/// <summary>
+/// The process-wide Java VM handle. Unlike <see cref="JNIEnv"/> this IS valid across threads, which
+/// is what lets a native thread attach and obtain its own env.
+/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct JavaVM
 {
+    /// <summary>The invocation-interface function table, reached by ordinal.</summary>
     public void** Functions;
 }
 
+/// <summary>
+/// The JNI <c>jvalue</c> union, used to pass arguments to Java methods.
+/// </summary>
+/// <remarks>
+/// A real union — every field starts at offset 0, so writing one and reading another reinterprets the
+/// same bytes. Set the field matching the Java parameter's type and no other; the JVM reads it
+/// according to the method signature, so a mismatch is silent corruption rather than an error.
+/// </remarks>
 [StructLayout(LayoutKind.Explicit)]
 public struct JValue
 {
+    /// <summary>The <c>jboolean</c> view.</summary>
     [FieldOffset(0)] public byte Z;      // jboolean
+
+    /// <summary>The <c>jint</c> view.</summary>
     [FieldOffset(0)] public int I;       // jint
+
+    /// <summary>The <c>jlong</c> view.</summary>
     [FieldOffset(0)] public long J;      // jlong
+
+    /// <summary>The <c>jobject</c> view — a reference handle, never a managed pointer.</summary>
     [FieldOffset(0)] public IntPtr L;    // jobject
 }
 

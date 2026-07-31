@@ -2,8 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace Remex.Core.Models;
 
+/// <summary>Client → host: list the folders this host has shared. Always the first call of a session.</summary>
 public sealed record FileRootsRequest;
 
+/// <summary>
+/// Host → client: the shared folders, and — because roots are always fetched first — the v3
+/// capability handshake, which is why there is no separate negotiation message.
+/// </summary>
 public sealed record FileRootsResponse
 {
     [JsonPropertyName("roots")] public required FileSharedRoot[] Roots { get; init; }
@@ -16,6 +21,11 @@ public sealed record FileRootsResponse
     [JsonPropertyName("fileCapabilities")] public FileCapabilities? FileCapabilities { get; init; }
 }
 
+/// <summary>
+/// One shared folder and what this client may do inside it. The permission flags are the host's
+/// answer, not a request: a client must respect them rather than attempt an operation and rely on
+/// the refusal.
+/// </summary>
 public sealed record FileSharedRoot
 {
     [JsonPropertyName("rootId")] public required string RootId { get; init; }
@@ -27,6 +37,11 @@ public sealed record FileSharedRoot
     [JsonPropertyName("canRemoveRoot")] public bool CanRemoveRoot { get; init; }
 }
 
+/// <summary>
+/// v2 transfer opener, carrying the whole file's identity up front. Superseded by
+/// <see cref="FileTransferOffer"/> in v3 — both flows still exist, and this is the one older clients
+/// use.
+/// </summary>
 public sealed record FileTransferStart
 {
     [JsonPropertyName("transferId")] public required string TransferId { get; init; }
@@ -39,6 +54,7 @@ public sealed record FileTransferStart
     [JsonPropertyName("sha256")] public required string Sha256Base64 { get; init; }
 }
 
+/// <summary>One base64 slice of a v2 transfer, positioned by its own offset so order is explicit.</summary>
 public sealed record FileTransferChunk
 {
     [JsonPropertyName("transferId")] public required string TransferId { get; init; }
@@ -46,6 +62,10 @@ public sealed record FileTransferChunk
     [JsonPropertyName("dataBase64")] public required string DataBase64 { get; init; }
 }
 
+/// <summary>
+/// Final message of a v2 transfer. Carries the sender's hash so the receiver can verify what it
+/// assembled, and reports failure as <c>success: false</c> rather than by dropping the connection.
+/// </summary>
 public sealed record FileTransferEnd
 {
     [JsonPropertyName("transferId")] public required string TransferId { get; init; }
@@ -56,11 +76,13 @@ public sealed record FileTransferEnd
     [JsonPropertyName("sha256")] public string? Sha256Base64 { get; init; }
 }
 
+/// <summary>Either side aborting a transfer in progress.</summary>
 public sealed record FileTransferCancel
 {
     [JsonPropertyName("transferId")] public required string TransferId { get; init; }
 }
 
+/// <summary>Progress ping for the UI. Advisory only — never the signal that a transfer finished.</summary>
 public sealed record FileTransferProgress
 {
     [JsonPropertyName("transferId")] public required string TransferId { get; init; }
@@ -68,6 +90,10 @@ public sealed record FileTransferProgress
     [JsonPropertyName("totalBytes")] public required long TotalBytes { get; init; }
 }
 
+/// <summary>
+/// Client → host: list one directory. Addressed as <c>rootId</c> + <c>relativePath</c>; the bare
+/// <c>path</c> is the older form kept for compatibility.
+/// </summary>
 public sealed record FileBrowseRequest
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -76,6 +102,10 @@ public sealed record FileBrowseRequest
     [JsonPropertyName("relativePath")] public string? RelativePath { get; init; }
 }
 
+/// <summary>
+/// Host → client: directory contents, echoing the location so a late reply cannot be mistaken for
+/// the current folder. Errors arrive as <c>errorMessage</c> with the request still correlated.
+/// </summary>
 public sealed record FileBrowseResponse
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -86,6 +116,7 @@ public sealed record FileBrowseResponse
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
 }
 
+/// <summary>One file or folder in a listing. Sizes are bytes; times are Unix milliseconds UTC.</summary>
 public sealed record FileEntry
 {
     [JsonPropertyName("name")] public required string Name { get; init; }
@@ -94,6 +125,11 @@ public sealed record FileEntry
     [JsonPropertyName("modifiedUnixMs")] public long ModifiedUnixMs { get; init; }
 }
 
+/// <summary>
+/// Client → host: delete, rename, copy, move or mkdir — see <see cref="FileManageOperations"/>.
+/// Destructive by definition, so the host re-checks permissions rather than trusting that the client
+/// only offered the operations it was told about.
+/// </summary>
 public sealed record FileManageRequest
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -107,6 +143,7 @@ public sealed record FileManageRequest
     [JsonPropertyName("overwrite")] public bool Overwrite { get; init; }
 }
 
+/// <summary>Host → client: whether the manage operation succeeded.</summary>
 public sealed record FileManageResponse
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -114,6 +151,7 @@ public sealed record FileManageResponse
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
 }
 
+/// <summary>Client → host: hash a file, so a transfer can be verified or skipped when unchanged.</summary>
 public sealed record FileHashRequest
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -121,6 +159,7 @@ public sealed record FileHashRequest
     [JsonPropertyName("relativePath")] public required string RelativePath { get; init; }
 }
 
+/// <summary>Host → client: base64 SHA-256, or null with an <c>errorMessage</c>.</summary>
 public sealed record FileHashResponse
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -128,6 +167,10 @@ public sealed record FileHashResponse
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
 }
 
+/// <summary>
+/// Client → host: add or remove a SHARED ROOT — changing what is shared at all, not the contents of
+/// a folder. Removing one revokes this client's access to that whole subtree.
+/// </summary>
 public sealed record FileRootManageRequest
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -137,6 +180,7 @@ public sealed record FileRootManageRequest
     [JsonPropertyName("rootId")] public string? RootId { get; init; }
 }
 
+/// <summary>Host → client: the full root list after the change, so clients never patch it locally.</summary>
 public sealed record FileRootManageResponse
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -240,6 +284,10 @@ public sealed record FileVolumeInfo
     [JsonPropertyName("kind")] public required string Kind { get; init; }
 }
 
+/// <summary>
+/// Host → client: the machine's drives, for full-device browsing. Only meaningful once the user has
+/// granted a full-browse consent, which <c>fullBrowseGranted</c> reports.
+/// </summary>
 public sealed record FileVolumesResponse
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -270,6 +318,7 @@ public sealed record FileSearchEntry
     [JsonPropertyName("modifiedUnixMs")] public long ModifiedUnixMs { get; init; }
 }
 
+/// <summary>Host → client: search hits, flagged <c>truncated</c> when the host capped the results.</summary>
 public sealed record FileSearchResponse
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -294,18 +343,26 @@ public sealed record FileMetadataRequest
 /// </summary>
 public sealed record FileMetadata
 {
+    /// <summary>Size in bytes. Zero for a directory rather than a computed subtree total.</summary>
     public required long Size { get; init; }
     /// <summary>Creation time as Unix milliseconds UTC.</summary>
     public required long CreatedUtc { get; init; }
     /// <summary>Last-modified time as Unix milliseconds UTC.</summary>
     public required long ModifiedUtc { get; init; }
+    /// <summary>Whether this item is a directory.</summary>
     public required bool IsDirectory { get; init; }
     /// <summary>Immediate child count for directories; null for files.</summary>
     public int? ItemCount { get; init; }
+    /// <summary>Best-effort MIME type, usually from the extension. Null when it cannot be determined.</summary>
     public string? MimeType { get; init; }
+    /// <summary>
+    /// The item's own read-only attribute. Independent of whether the client may WRITE it — that is
+    /// governed by the shared root's permissions, so a writable root can still contain read-only files.
+    /// </summary>
     public bool ReadOnly { get; init; }
 }
 
+/// <summary>Host → client: the metadata for one item, wrapped with its correlation id.</summary>
 public sealed record FileMetadataResponse
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
@@ -332,6 +389,7 @@ public sealed record FileThumbnailRequest
     [JsonPropertyName("maxDim")] public int MaxDim { get; init; }
 }
 
+/// <summary>Host → client: a base64 JPEG preview, or null when one cannot be produced.</summary>
 public sealed record FileThumbnailResponse
 {
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }

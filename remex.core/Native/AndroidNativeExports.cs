@@ -11,6 +11,58 @@ using Remex.Core.Services.Network;
 
 namespace Remex.Core.Native;
 
+/// <summary>
+/// Every JNI entry point <c>libRemexCore.so</c> exposes to the Android app — the entire surface
+/// across which Kotlin and .NET talk.
+/// </summary>
+/// <remarks>
+/// <para>
+/// THE CONVENTIONS, which hold for every export below and are not visible in the signatures:
+/// </para>
+/// <list type="bullet">
+/// <item><description>
+/// <b>Entry-point names are the contract.</b> Each <c>[UnmanagedCallersOnly(EntryPoint = …)]</c>
+/// string is a JNI-mangled name that must match a Kotlin <c>external fun</c> on the corresponding
+/// class EXACTLY. A mismatch is not a compile error on either side — it surfaces at runtime as
+/// <c>UnsatisfiedLinkError</c> the first time that method is called.
+/// </description></item>
+/// <item><description>
+/// <b><c>IntPtr</c> in means a Java string</b>, read with <c>JniHelper.ReadJString</c>. Parameters
+/// suffixed <c>Utf8</c> or <c>Ptr</c> are UTF-8 <c>jstring</c> handles owned by the JVM; the callee
+/// copies what it needs and never frees them.
+/// </description></item>
+/// <item><description>
+/// <b><c>IntPtr</c> out means a NEW Java string</b>, created with <c>JniHelper.CreateJString</c>.
+/// It is a JNI local reference, so the JVM reclaims it when the native frame returns — Kotlin must
+/// read it before it goes out of scope, and no one frees it by hand. <c>IntPtr.Zero</c> comes back
+/// only if even constructing the fallback error string failed. MOST exports put JSON in that string,
+/// but the pinning and pairing-PIN exports return bare status strings instead
+/// (<c>OK:…</c>, <c>UNSUPPORTED</c>, <c>ERROR: {code}: {message}</c>) — check each
+/// <c>&lt;returns&gt;</c> rather than assuming JSON.
+/// </description></item>
+/// <item><description>
+/// <b>No exception ever crosses this boundary.</b> A managed exception escaping into the JVM
+/// terminates the process, so every export is wrapped: failures return an
+/// <see cref="AndroidNativeOperationResponse"/> with <c>Success = false</c> and the message in
+/// <c>Error</c>, and the void exports swallow-and-log instead. Callers must check <c>success</c>
+/// rather than relying on an exception.
+/// </description></item>
+/// <item><description>
+/// <b>A pending Java exception is cleared before any JNI call.</b> Calling into JNI while one is
+/// pending aborts the process, so the exports check and clear on entry AND before the final call
+/// on the failure path.
+/// </description></item>
+/// </list>
+/// <para>
+/// HOST → CLIENT messages are the direction that bites. An inbound message reaches Kotlin only if
+/// <c>OnNativeMessageReceived</c> forwards it to a registered JNI callback; a type the router does
+/// not recognise is dropped SILENTLY, with no error on either side. That gap once bricked the whole
+/// of v3 file transfer with a misleading "peer did not respond" (RemEx-y6x6). <c>file_*</c> types are
+/// covered by prefix; anything else needs explicit wiring and a round-trip test on a real device.
+/// The one deliberate exception is <c>pairing_pin_response</c>, which is consumed synchronously as
+/// the return value of <see cref="FetchPairingPinNative"/> and must NOT be added to the router.
+/// </para>
+/// </remarks>
 public static class AndroidNativeExports
 {
     private static readonly object SyncRoot = new();
@@ -175,18 +227,43 @@ public static class AndroidNativeExports
     // Since Remex completely bypasses the OS trust manager via `ws.Options.RemoteCertificateValidationCallback = ... => true` and validates
     // the SPKI hash manually in `SubmitPairingPin` / `PinnedHostStore`, we can safely return true here to satisfy the Android
     // SslStream TLS handshake state machine which is forced to call this Java proxy.
+    /// <summary>
+    /// Satisfies the Android TLS handshake's call into the .NET proxy trust manager. Always true —
+    /// see the comment above for why that is not a hole, and read it before changing this.
+    /// </summary>
+    /// <remarks>
+    /// This is NOT where RemEx decides whether to trust a host. Returning false here would not
+    /// harden anything; it would fail every handshake before pinning is ever consulted.
+    /// <para>
+    /// The real decision is the SPKI pin check. For the steady-state data connection that is the
+    /// <c>RemoteCertificateValidationCallback</c> the native clients install UNCONDITIONALLY, which
+    /// fail-closes on an empty pin store. That word is load-bearing: because these exports force the
+    /// OS trust manager to accept anything, making that callback conditional would silently reopen
+    /// full MITM — see the VULN-5 note on <c>RemexNativeClient</c>. Pinning is not optional here;
+    /// it is the ONLY check.
+    /// </para>
+    /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate")]
     public static bool Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate(IntPtr env, IntPtr clazz, long handle)
     {
         return true;
     }
 
+    /// <summary>
+    /// Inner-class spelling of <see cref="Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate"/>
+    /// (<c>_1</c> is JNI's mangling of <c>$</c>). All three spellings exist because which one the
+    /// runtime looks up varies, and an unresolved one is an <c>UnsatisfiedLinkError</c> mid-handshake.
+    /// </summary>
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_android_crypto_DotnetProxyTrustManager_1X509TrustManager_verifyRemoteCertificate")]
     public static bool Java_net_dot_android_crypto_DotnetProxyTrustManager_1X509TrustManager_verifyRemoteCertificate(IntPtr env, IntPtr thiz, long handle)
     {
         return true;
     }
 
+    /// <summary>
+    /// Third spelling of the proxy trust-manager hook. See
+    /// <see cref="Java_net_dot_android_crypto_DotnetProxyTrustManager_verifyRemoteCertificate"/>.
+    /// </summary>
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_android_crypto_DotnetProxyX509TrustManager_verifyRemoteCertificate")]
     public static bool Java_net_dot_android_crypto_DotnetProxyX509TrustManager_verifyRemoteCertificate(IntPtr env, IntPtr thiz, long handle)
     {
@@ -230,6 +307,20 @@ public static class AndroidNativeExports
         return IntPtr.Zero;
     }
 
+    /// <summary>
+    /// Registers the Kotlin object that receives host → client callbacks (telemetry, connection
+    /// state, launcher sync). Until this runs, nothing the host pushes can reach the app.
+    /// </summary>
+    /// <param name="callbackObj">
+    /// The Kotlin listener. A GLOBAL reference is taken so it survives past this call; the previous
+    /// one is released, so calling this again re-points the callbacks rather than adding a second.
+    /// </param>
+    /// <remarks>
+    /// Callbacks are delivered on one dedicated dispatcher thread that attaches to the JVM once and
+    /// never detaches — see the note on the work queue above for why a thread-pool thread must never
+    /// be used. That thread is NOT the Android main thread, so the listener has to marshal anything
+    /// touching UI itself.
+    /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_RegisterCallbackNative")]
     public static void RegisterCallbackNative(IntPtr env, IntPtr thiz, IntPtr callbackObj)
         => ExportVoid("RegisterCallback", () =>
@@ -363,26 +454,61 @@ public static class AndroidNativeExports
         }
     });
 
+    /// <summary>
+    /// Initialises the native client against a host. Must be the first call after
+    /// <see cref="RegisterCallbackNative"/>.
+    /// </summary>
+    /// <param name="initJsonUtf8">JSON <see cref="AndroidNativeInitRequest"/>.</param>
+    /// <returns>JSON <see cref="AndroidNativeInitializationResponse"/>, reporting which subsystems came up.</returns>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_InitRemexNative")]
     public static IntPtr InitRemex(IntPtr env, IntPtr thiz, IntPtr initJsonUtf8)
         => Export(env, () => HandleInitialize(JniHelper.ReadJString(env, initJsonUtf8)));
 
+    /// <summary>
+    /// Sends a Wake-on-LAN magic packet. Fire-and-forget by nature: a success here means the packet
+    /// was sent, never that the PC woke.
+    /// </summary>
+    /// <param name="macAddressUtf8">Target MAC.</param>
+    /// <param name="broadcastIpUtf8">Subnet broadcast address to send to.</param>
+    /// <param name="port">UDP port, conventionally 9.</param>
+    /// <returns>JSON <see cref="AndroidNativeOperationResponse"/>.</returns>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_WakePcNative")]
     public static IntPtr WakePc(IntPtr env, IntPtr thiz, IntPtr macAddressUtf8, IntPtr broadcastIpUtf8, int port)
         => Export(env, () => HandleSendWakeOnLan(JniHelper.ReadJString(env, macAddressUtf8), JniHelper.ReadJString(env, broadcastIpUtf8), port));
 
+    /// <summary>Requests the latest telemetry snapshot.</summary>
+    /// <returns>
+    /// JSON <c>TelemetryPayload</c> on success, or a JSON <see cref="AndroidNativeOperationResponse"/>
+    /// with <c>success: false</c> on failure — so the two shapes differ and the caller must branch on
+    /// <c>success</c> before parsing.
+    /// </returns>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_GetTelemetryNative")]
     public static IntPtr GetTelemetry(IntPtr env, IntPtr thiz)
         => Export(env, HandleRequestTelemetry);
 
+    /// <summary>Sends a pre-serialised <c>RemexMessage</c> envelope to the host.</summary>
+    /// <param name="messageJsonUtf8">JSON <c>RemexMessage</c>.</param>
+    /// <returns>JSON <see cref="AndroidNativeOperationResponse"/> describing the SEND, not the host's reply.</returns>
+    /// <remarks>
+    /// Any reply arrives asynchronously through the registered callback, so success here only means
+    /// the message reached the socket.
+    /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendMessageNative")]
     public static IntPtr SendMessage(IntPtr env, IntPtr thiz, IntPtr messageJsonUtf8)
         => Export(env, () => HandleDispatchMessage(JniHelper.ReadJString(env, messageJsonUtf8)));
 
+    /// <summary>Sends a command (power actions and similar) to the host.</summary>
+    /// <param name="commandJsonUtf8">JSON command payload.</param>
+    /// <returns>JSON <see cref="AndroidNativeOperationResponse"/>.</returns>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendCommandNative")]
     public static IntPtr SendCommand(IntPtr env, IntPtr thiz, IntPtr commandJsonUtf8)
         => Export(env, () => HandleDispatchCommand(JniHelper.ReadJString(env, commandJsonUtf8)));
 
+    /// <summary>Starts the Remote Desktop stream. Returns immediately; frames arrive via callback.</summary>
+    /// <param name="configJsonUtf8">
+    /// JSON <c>DesktopConfig</c>. Empty or unparseable falls back to the default config rather than
+    /// failing, so a malformed config yields a working stream with default settings, not an error.
+    /// </param>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartDesktopStreamNative")]
     public static void StartDesktopStream(IntPtr env, IntPtr thiz, IntPtr configJsonUtf8)
         => ExportVoid("StartDesktopStream", () =>
@@ -403,6 +529,7 @@ public static class AndroidNativeExports
             });
         });
 
+    /// <summary>Stops the Remote Desktop stream. Safe to call when no stream is running.</summary>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StopDesktopStreamNative")]
     public static void StopDesktopStream(IntPtr env, IntPtr thiz)
     {
@@ -456,6 +583,20 @@ public static class AndroidNativeExports
         _activePairingResponse = null;
     }
 
+    /// <summary>
+    /// Opens the pairing socket and begins the ECDH exchange. Step one of three; the host then shows
+    /// a 6-digit PIN on its own screen.
+    /// </summary>
+    /// <param name="hostUrlPtr">Host WebSocket URL.</param>
+    /// <param name="clientNamePtr">Device name shown to the user on the PC.</param>
+    /// <param name="clientVersionPtr">Client version, recorded by the host.</param>
+    /// <param name="clientIdPtr">Stable client identity; the key the host files the pairing under.</param>
+    /// <returns>JSON <see cref="AndroidNativeOperationResponse"/>.</returns>
+    /// <remarks>
+    /// Pairing is the ONLY authentication path for a non-loopback client, so a change here can brick
+    /// every device with no clear error on either end. Follow with <see cref="FetchPairingPinNative"/>
+    /// then <see cref="SubmitPairingPinNative"/>.
+    /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartPairingNative")]
     public static IntPtr StartPairingNative(IntPtr env, IntPtr thiz, IntPtr hostUrlPtr, IntPtr clientNamePtr, IntPtr clientVersionPtr, IntPtr clientIdPtr)
     {
@@ -591,6 +732,12 @@ public static class AndroidNativeExports
         });
     }
 
+    /// <summary>
+    /// Step three: submits the PIN the user read off the PC, completing the exchange and pinning the
+    /// host's SPKI hash on success.
+    /// </summary>
+    /// <param name="pinPtr">The 6-digit PIN as typed.</param>
+    /// <returns>JSON <see cref="AndroidNativeOperationResponse"/>; failure means a wrong or expired PIN.</returns>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SubmitPairingPinNative")]
     public static IntPtr SubmitPairingPinNative(IntPtr env, IntPtr thiz, IntPtr pinPtr)
     {
@@ -655,6 +802,20 @@ public static class AndroidNativeExports
         });
     }
 
+    /// <summary>
+    /// Step two: waits for the host's <c>pairing_pin_response</c> and returns it synchronously.
+    /// </summary>
+    /// <returns>
+    /// A BARE STATUS STRING, not JSON: <c>OK:{hostId}|{spkiHash}|{reconnectSecret}</c> on success,
+    /// <c>UNSUPPORTED</c>, or <c>ERROR: {code}: {message}</c>. Parse it by prefix.
+    /// </returns>
+    /// <remarks>
+    /// THE REASON <c>pairing_pin_response</c> IS NOT IN THE INBOUND MESSAGE ROUTER, and this is
+    /// deliberate rather than an oversight. It arrives on the pairing socket, which only the pairing
+    /// client reads, and is consumed as this method's return value — so it needs no JNI callback and
+    /// cannot be silently dropped by construction. Do not "fix" it by adding it to
+    /// <c>OnNativeMessageReceived</c> (RemEx-1t0b).
+    /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_FetchPairingPinNative")]
     public static IntPtr FetchPairingPinNative(IntPtr env, IntPtr thiz)
     {
@@ -711,6 +872,12 @@ public static class AndroidNativeExports
         });
     }
 
+    /// <summary>
+    /// Reads the SPKI hash pinned for a host, so the client can tell "never paired" from "paired, and
+    /// the certificate must match this".
+    /// </summary>
+    /// <param name="hostIdPtr">Host identity the pin is filed under.</param>
+    /// <returns>The stored hash as a bare string, or empty when nothing is pinned. Not JSON.</returns>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_GetPinnedHostHashNative")]
     public static IntPtr GetPinnedHostHashNative(IntPtr env, IntPtr thiz, IntPtr hostIdPtr)
     {
@@ -718,6 +885,18 @@ public static class AndroidNativeExports
         return Export(env, () => _pinnedHashes.TryGetValue(hostId ?? "", out var hash) ? hash : "");
     }
 
+    /// <summary>
+    /// Stores the SPKI hash to require from a host from now on.
+    /// </summary>
+    /// <param name="hostIdPtr">Host identity to file the pin under.</param>
+    /// <param name="spkiHashPtr">Base64 SHA-256 of the host certificate's SubjectPublicKeyInfo.</param>
+    /// <remarks>
+    /// Overwriting a pin is how a client accepts a NEW host certificate, so this is the one call that
+    /// can silently undo pinning. It belongs to the pairing flow, where the PIN exchange proves the
+    /// host's identity first; calling it from anywhere else would trust a certificate nothing has
+    /// verified. Hashing the SPKI rather than the certificate is what lets a host re-issue for the
+    /// same key pair without breaking every paired device.
+    /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SetPinnedHostHashNative")]
     public static IntPtr SetPinnedHostHashNative(IntPtr env, IntPtr thiz, IntPtr hostIdPtr, IntPtr spkiHashPtr)
     {
@@ -1324,11 +1503,28 @@ public static class AndroidNativeExports
 
 }
 
+/// <summary>Everything the native client needs to connect, passed to <see cref="AndroidNativeExports.InitRemex"/>.</summary>
 public sealed record AndroidNativeInitRequest
 {
+    /// <summary>Host address. The "localhost" default is a development convenience — a real Android
+    /// client is never on the same machine as the host and must set this.</summary>
     public string Host { get; init; } = "localhost";
+
+    /// <summary>Host WebSocket port.</summary>
     public int Port { get; init; } = 5005;
+
+    /// <summary>
+    /// Base64 SHA-256 of the host certificate's SubjectPublicKeyInfo, pinned at pairing time. The
+    /// connection is refused if the host presents anything else.
+    /// </summary>
+    /// <remarks>
+    /// Empty means nothing is pinned yet, which is only valid before pairing. If the host's
+    /// certificate is regenerated this stops matching and the user must re-pair — there is no
+    /// automatic recovery, by design.
+    /// </remarks>
     public string SpkiHash { get; init; } = string.Empty;
+
+    /// <summary>Stable client identity the host files this device's pairing under.</summary>
     public string? ClientId { get; init; }
 
     /// <summary>
@@ -1339,28 +1535,66 @@ public sealed record AndroidNativeInitRequest
     /// </summary>
     public string? ReconnectSecret { get; init; }
 
+    /// <summary>How often to poll telemetry, in milliseconds.</summary>
     public int TelemetryPollIntervalMs { get; init; } = 1000;
+
+    /// <summary>Whether to start the background telemetry loop at init. False leaves polling to the caller.</summary>
     public bool StartTelemetryPolling { get; init; } = true;
+
+    /// <summary>
+    /// Fetch one telemetry snapshot during init so the first screen has data immediately instead of
+    /// showing empty cards until the first poll lands.
+    /// </summary>
     public bool WarmupTelemetry { get; init; } = true;
 }
 
+/// <summary>
+/// The shape every export returns on failure, and most return on success.
+/// </summary>
+/// <remarks>
+/// Because no exception can cross the JNI boundary, this record IS the error channel: callers must
+/// branch on <see cref="Success"/>, never assume a returned string means the operation worked.
+/// </remarks>
 public record AndroidNativeOperationResponse
 {
+    /// <summary>Whether the operation succeeded. Always check this first.</summary>
     public bool Success { get; init; }
+
+    /// <summary>Human-readable outcome. Not localised — it is diagnostic text, not UI copy.</summary>
     public string Message { get; init; } = string.Empty;
+
+    /// <summary>Exception detail when <see cref="Success"/> is false; null otherwise.</summary>
     public string? Error { get; init; }
 }
 
+/// <summary>
+/// Result of <see cref="AndroidNativeExports.InitRemex"/>: which subsystems actually came up.
+/// </summary>
+/// <remarks>
+/// Init can succeed with capabilities missing, so these flags are how the UI knows what to offer
+/// rather than letting the user tap something that will fail.
+/// </remarks>
 public sealed record AndroidNativeInitializationResponse : AndroidNativeOperationResponse
 {
+    /// <summary>Telemetry can be fetched.</summary>
     public bool TelemetryAvailable { get; init; }
+
+    /// <summary>The background telemetry loop is running (only when requested at init).</summary>
     public bool BackgroundLoopStarted { get; init; }
+
+    /// <summary>The host's control channel is reachable.</summary>
     public bool IpcAvailable { get; init; }
+
+    /// <summary>Wake-on-LAN can be sent. Independent of the rest — it works while the PC is off.</summary>
     public bool WakeOnLanAvailable { get; init; }
+
+    /// <summary>The poll interval actually in force, which may differ from the one requested.</summary>
     public int TelemetryPollIntervalMs { get; init; }
 }
 
+/// <summary>Telemetry wrapped in the standard success/failure envelope.</summary>
 public sealed record AndroidNativeTelemetryResponse : AndroidNativeOperationResponse
 {
+    /// <summary>The snapshot; null when <see cref="AndroidNativeOperationResponse.Success"/> is false.</summary>
     public TelemetryPayload? Telemetry { get; init; }
 }

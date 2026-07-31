@@ -7,6 +7,43 @@ namespace Remex.Core.Messages;
 /// <summary>
 /// Lightweight JSON envelope for all Remex IPC messages.
 /// </summary>
+/// <remarks>
+/// <para>
+/// ONE ENVELOPE, MANY PAYLOADS. <see cref="Type"/> is the discriminator and everything else is
+/// optional; a message carries exactly one payload and leaves the other slots null. The slots follow
+/// a strict convention that is worth stating once instead of on each of the thirty-odd properties:
+/// <b>the property name is the payload type name</b> (<c>FileTransferStart? FileTransferStart</c>),
+/// and the matching <see cref="MessageTypes"/> constant is the same name in snake_case
+/// (<c>file_transfer_start</c>). For the types that CARRY a payload the mapping runs both ways, so
+/// no lookup table is needed. The reverse is not total: plenty of constants name payload-free
+/// messages (<c>ping</c>, <c>desktop_start</c>, <c>desktop_frame</c>) and a few carry a payload under
+/// a different name (<c>desktop_input</c> arrives in the <c>InputEvent</c> slot). The individual
+/// slots are left undocumented on purpose — a summary on each could only restate its own name.
+/// </para>
+/// <para>
+/// WHAT IS NOT SELF-EVIDENT, and what actually bites:
+/// </para>
+/// <list type="bullet">
+/// <item><description>
+/// <b>Adding a slot is backward compatible; renaming one is not.</b> A new optional property is
+/// invisible to older peers, so it needs no <see cref="ProtocolVersion"/> bump. Changing a name or a
+/// meaning does, on BOTH sides in the same release — a version mismatch produces silent
+/// deserialization failures, not clean errors.
+/// </description></item>
+/// <item><description>
+/// <b>An unrecognised type is dropped in silence.</b> Neither end errors on a type it does not know,
+/// so a new host → client message reaches the Android app only if it is also routed to a JNI
+/// callback. <c>file_*</c> types are covered by prefix; anything else needs explicit wiring, and
+/// forgetting it once bricked all of v3 file transfer with a misleading "peer did not respond"
+/// (RemEx-y6x6). Always test a new client-bound type round-trip on a real device.
+/// </description></item>
+/// <item><description>
+/// <b>The envelope is source-generated, not reflected.</b> <c>Remex.Core</c> compiles to a NativeAOT
+/// library, so every payload type must be registered in the serializer context; a type that is not
+/// silently fails to serialize in the Android build only.
+/// </description></item>
+/// </list>
+/// </remarks>
 public sealed record RemexMessage
 {
     /// <summary>
@@ -269,6 +306,22 @@ public sealed record RemexMessage
 /// <summary>
 /// Well-known message type constants.
 /// </summary>
+/// <remarks>
+/// <para>
+/// These strings ARE the wire protocol. Each is the snake_case form of its
+/// <see cref="RemexMessage"/> payload slot, so the constants are left individually undocumented:
+/// the name and the value are the same word, and a per-constant summary could only repeat it.
+/// </para>
+/// <para>
+/// Two things are worth knowing before adding one. Changing an existing value silently breaks every
+/// shipped client, because a peer ignores types it does not recognise rather than reporting an
+/// error. And the Android client builds some of its JSON by hand in Kotlin, so a type can exist as a
+/// literal on the phone with no constant here — the parity test
+/// <c>EveryMessageTypeAndroidSends_HasAMatchingConstant</c> exists because exactly that drift once
+/// shipped, and it also matters for authorisation, since loopback-only gating matches on CONSTANTS
+/// and cannot gate a hand-built literal at all.
+/// </para>
+/// </remarks>
 public static class MessageTypes
 {
     public const string Ping = "ping";
