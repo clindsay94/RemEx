@@ -939,11 +939,88 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     private static string? SensorIdentity(SensorViewModel? sensor) =>
         sensor?.RawReading is { } r ? SensorIdentity(r) : sensor?.Name;
 
-    private void ProcessTelemetry(TelemetryPayload payload)
+    /// <summary>
+    /// Groups every sensor-bound card's <see cref="SensorViewModel"/> by its stable identity, so a
+    /// telemetry tick can look each reading up once instead of scanning the card lists per reading.
+    /// </summary>
+    /// <remarks>
+    /// THIS IS THE WHOLE POINT OF RemEx-8tdf. The previous code ran a
+    /// <c>Where + Concat + Distinct + ToList</c> over <c>Cards</c> AND <c>StagedCards</c> for EVERY
+    /// reading — and because every sensor ever seen leaves a staged template card behind,
+    /// <c>StagedCards.Count</c> tracks the sensor count, so the work was ~N² identity-string
+    /// comparisons plus ~5 LINQ allocations and a closure per reading, on the UI thread, once a
+    /// second, even minimized to tray. Building the index once per tick makes it N + M.
+    /// <para>
+    /// Rebuilt per tick rather than cached across ticks, deliberately. A <see cref="SensorViewModel"/>
+    /// has NO identity until its first <c>Update</c> — <see cref="SensorIdentity(SensorViewModel)"/>
+    /// reads <c>RawReading</c> — so a VM created during a tick would be indexed under the wrong key
+    /// by any cache built when its card was added. A per-tick rebuild is O(cards) and cannot go
+    /// stale; the quadratic term is what mattered.
+    /// </para>
+    /// <para>
+    /// Mirrors the replaced LINQ exactly: sensor cards only, null <c>Sensor</c> skipped, and
+    /// duplicates removed by REFERENCE (the old <c>Distinct()</c> on a reference type), so one VM
+    /// shared by several cards is still updated once.
+    /// </para>
+    /// </remarks>
+    internal static Dictionary<string, List<SensorViewModel>> BuildSensorIndex(
+        IEnumerable<CanvasCardViewModel> placed,
+        IEnumerable<CanvasCardViewModel> staged)
     {
-        Dispatcher.UIThread.Post(() =>
+        var index = new Dictionary<string, List<SensorViewModel>>(StringComparer.Ordinal);
+
+        foreach (var card in placed.Concat(staged))
+        {
+            if (card.CardType != "Sensor" || card.Sensor is null) continue;
+
+            // Blank as well as null: a SensorViewModel that has not had its first Update yet falls
+            // back to Name, which is empty — and a READING's identity is never empty (it defaults to
+            // "Unknown"), so such a card could never be matched anyway. Skipping keeps an unmatchable
+            // "" bucket out of the index instead of quietly collecting every un-updated sensor in it.
+            var identity = SensorIdentity(card.Sensor);
+            if (string.IsNullOrEmpty(identity)) continue;
+
+            if (!index.TryGetValue(identity, out var vms))
+            {
+                index[identity] = vms = new List<SensorViewModel>();
+            }
+
+            // Reference comparison, matching the Distinct() this replaced. A plain loop rather than
+            // Any(lambda): buckets are size 1 in practice so the scan is free either way, but the
+            // closure and delegate would be one allocation per sensor card per tick — in the exact
+            // hot path this bead exists to stop allocating in.
+            bool alreadyIndexed = false;
+            for (int i = 0; i < vms.Count; i++)
+            {
+                if (ReferenceEquals(vms[i], card.Sensor)) { alreadyIndexed = true; break; }
+            }
+
+            if (!alreadyIndexed) vms.Add(card.Sensor);
+        }
+
+        return index;
+    }
+
+    private void ProcessTelemetry(TelemetryPayload payload)
+        => Dispatcher.UIThread.Post(() => ApplyTelemetry(payload));
+
+    /// <summary>
+    /// The body of a telemetry tick, split out from the dispatcher post so it can be tested.
+    /// </summary>
+    /// <remarks>
+    /// Testing through <see cref="ProcessTelemetry"/> is not possible: its work is queued on
+    /// Avalonia's UI dispatcher, which never pumps in a unit test, so the assertions would run against
+    /// a tick that had not happened. Splitting the body out lets the tests exercise the REAL matching
+    /// — including the create branch, whose in-tick index mutation is the subtlest thing in here —
+    /// rather than only the index builder.
+    /// </remarks>
+    internal void ApplyTelemetry(TelemetryPayload payload)
+    {
         {
             if (payload.Sensors == null) return;
+
+            // One pass over the cards for the whole tick, instead of one pass PER READING.
+            var sensorIndex = BuildSensorIndex(Cards, StagedCards);
 
             foreach (var reading in payload.Sensors)
             {
@@ -952,17 +1029,11 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 // relabel or two same-named sensors bind correctly (RemEx-km0i.14).
                 var identity = SensorIdentity(reading);
 
-                var sensorVms = Cards
-                    .Where(c => c.CardType == "Sensor" && SensorIdentity(c.Sensor) == identity)
-                    .Select(c => c.Sensor)
-                    .Concat(
-                        StagedCards
-                            .Where(c => c.CardType == "Sensor" && SensorIdentity(c.Sensor) == identity)
-                            .Select(c => c.Sensor))
-                    .Where(s => s is not null)
-                    .Select(s => s!)
-                    .Distinct()
-                    .ToList();
+                if (!sensorIndex.TryGetValue(identity, out var sensorVms))
+                {
+                    sensorVms = new List<SensorViewModel>();
+                    sensorIndex[identity] = sensorVms;
+                }
 
                 // First time seeing this sensor in the current session.
                 if (sensorVms.Count == 0)
@@ -1025,7 +1096,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     sensorVm.Update(reading);
                 }
             }
-        });
+        }
     }
 
     // ═══════════════ Persistence ═══════════════
