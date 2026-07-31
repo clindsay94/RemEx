@@ -302,7 +302,8 @@ public sealed class RemoteDesktopHandler : IDisposable
         var captureStopwatch = new Stopwatch();
         // Absolute-timeline frame pacer (hybrid coarse-sleep + spin). See PrecisionPacer: a bare
         // Task.Delay rounds up to the ~15.6 ms OS timer floor and would cap the stream near 60 FPS.
-        var pacer = new PrecisionPacer();
+        // Disposed with the loop: it owns a native waitable-timer handle (RemEx-ccen).
+        using var pacer = new PrecisionPacer();
         // Monotonic clock for the keyframe-reinit cooldown timestamps below (independent of pacing).
         var rebuildClock = Stopwatch.StartNew();
 
@@ -855,7 +856,8 @@ public sealed class RemoteDesktopHandler : IDisposable
         var tick = 0;
         // ~90 Hz cursor pacing via the shared precision pacer. Task.Delay(11) rounds up to the
         // ~15.6 ms OS timer floor (~64 Hz, missing the 90 Hz target) — see PrecisionPacer. (RD-A)
-        var pacer = new PrecisionPacer();
+        // Disposed with the loop: it owns a native waitable-timer handle (RemEx-ccen).
+        using var pacer = new PrecisionPacer();
         const double cursorIntervalMs = 1000.0 / 90.0;
 
         try
