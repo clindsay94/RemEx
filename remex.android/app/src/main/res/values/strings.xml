@@ -303,8 +303,6 @@
 
     
     <string name="screen_connection_title">Connection</string>
-    <string name="screen_splash_title">Loading</string>
-    <string name="screen_tutorial_title">Tutorial</string>
     <string name="connection_auto_discover_title">Auto-Discover on LAN</string>
     <string name="connection_auto_discover_hint">Make sure the RemEx app is running on your PC and both devices are on the same Wi-Fi network.</string>
     <string name="connection_searching">Searching for your PC…</string>

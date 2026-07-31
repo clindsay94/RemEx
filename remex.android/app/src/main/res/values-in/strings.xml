@@ -178,8 +178,6 @@
     <string name="dashboard_wake_pc_button">BANGUNKAN PC</string>
     <string name="dashboard_collecting_data">Mengumpulkan data…</string>
     <string name="screen_connection_title">Koneksi</string>
-    <string name="screen_splash_title">Memuat</string>
-    <string name="screen_tutorial_title">Tutorial</string>
     <string name="connection_auto_discover_title">Temukan Otomatis di LAN</string>
     <string name="connection_auto_discover_hint">Pastikan aplikasi RemEx berjalan di PC Anda dan kedua perangkat berada di jaringan Wi-Fi yang sama.</string>
     <string name="connection_searching">Mencari PC Anda…</string>

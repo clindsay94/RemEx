@@ -178,8 +178,6 @@
     <string name="dashboard_wake_pc_button">पीसी जगाएं</string>
     <string name="dashboard_collecting_data">डेटा एकत्र किया जा रहा है…</string>
     <string name="screen_connection_title">कनेक्शन</string>
-    <string name="screen_splash_title">लोड हो रहा है</string>
-    <string name="screen_tutorial_title">ट्यूटोरियल</string>
     <string name="connection_auto_discover_title">LAN पर ऑटो-डिस्कवर</string>
     <string name="connection_auto_discover_hint">सुनिश्चित करें कि आपके पीसी पर RemEx ऐप चल रहा है और दोनों डिवाइस एक ही वाई-फाई नेटवर्क पर हैं।</string>
     <string name="connection_searching">आपका पीसी खोजा जा रहा है…</string>

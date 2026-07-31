@@ -178,8 +178,6 @@
     <string name="dashboard_wake_pc_button">ПРОБУДИТИ ПК</string>
     <string name="dashboard_collecting_data">Збір даних…</string>
     <string name="screen_connection_title">Підключення</string>
-    <string name="screen_splash_title">Завантаження</string>
-    <string name="screen_tutorial_title">Посібник</string>
     <string name="connection_auto_discover_title">Автоматичне виявлення в локальній мережі</string>
     <string name="connection_auto_discover_hint">Переконайтеся, що застосунок RemEx запущено на вашому ПК і обидва пристрої підключені до однієї мережі Wi-Fi.</string>
     <string name="connection_searching">Пошук вашого ПК…</string>

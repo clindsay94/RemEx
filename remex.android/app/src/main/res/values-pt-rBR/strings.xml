@@ -178,8 +178,6 @@
     <string name="dashboard_wake_pc_button">LIGAR PC</string>
     <string name="dashboard_collecting_data">Coletando dados…</string>
     <string name="screen_connection_title">Conexão</string>
-    <string name="screen_splash_title">Carregando</string>
-    <string name="screen_tutorial_title">Tutorial</string>
     <string name="connection_auto_discover_title">Autodescoberta na LAN</string>
     <string name="connection_auto_discover_hint">Certifique-se de que o app RemEx esteja rodando no seu PC e de que ambos os dispositivos estejam na mesma rede Wi-Fi.</string>
     <string name="connection_searching">Buscando seu PC…</string>

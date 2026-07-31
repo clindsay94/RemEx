@@ -165,8 +165,6 @@
     <string name="dashboard_wake_pc_button">OBUDŹ PC</string>
     <string name="dashboard_collecting_data">Zbieranie danych…</string>
     <string name="screen_connection_title">Połączenie</string>
-    <string name="screen_splash_title">Ładowanie</string>
-    <string name="screen_tutorial_title">Samouczek</string>
     <string name="connection_auto_discover_title">Autowykrywanie w sieci LAN</string>
     <string name="connection_auto_discover_hint">Upewnij się, że na komputerze działa aplikacja RemEx, a oba urządzenia są w tej samej sieci Wi-Fi.</string>
     <string name="connection_searching">Szukanie Twojego PC…</string>

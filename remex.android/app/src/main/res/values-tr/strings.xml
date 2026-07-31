@@ -178,8 +178,6 @@
     <string name="dashboard_wake_pc_button">BİLGİSAYARI UYANDIR</string>
     <string name="dashboard_collecting_data">Veriler toplanıyor…</string>
     <string name="screen_connection_title">Bağlantı</string>
-    <string name="screen_splash_title">Yükleniyor</string>
-    <string name="screen_tutorial_title">Öğretici</string>
     <string name="connection_auto_discover_title">Yerel Ağda Otomatik Keşif</string>
     <string name="connection_auto_discover_hint">RemEx uygulamasının bilgisayarınızda çalıştığından ve her iki cihazın da aynı Wi-Fi ağında olduğundan emin olun.</string>
     <string name="connection_searching">PC\'niz aranıyor…</string>
