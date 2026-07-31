@@ -41,8 +41,15 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
         <Style Selector="Button.action-pill-danger">
-            <Setter Property="Foreground" Value="{DynamicResource SystemError}"/>
-            <Setter Property="BorderBrush" Value="#40FF6B6B"/>
+            <!-- Foreground: SystemErrorBrush rather than the raw SystemError Color. This is a
+                 readability change, NOT a bug fix — DynamicResourceExpression converts a Color to a
+                 Brush via ColorToBrushConverter when the target property is IBrush, so the old form
+                 resolved correctly too. Naming the brush just matches every sibling style here.
+                 BorderBrush: deliberate theme alignment, replacing a hardcoded #40FF6B6B with the
+                 theme's own error tint so the danger pill follows the palette the way the accent
+                 pill above it already does (RemEx-fy0a). -->
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBackgroundBrush}"/>
         </Style>
     </UserControl.Styles>
 
@@ -291,7 +298,7 @@
             <WrapPanel HorizontalAlignment="Center" Margin="0,8,0,0">
                 <Button AutomationProperties.Name="{local:Localize Home_GitHubCardDesc}" Classes="glass-card interactive" Command="{Binding OpenGitHubCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_GitHubCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
-                        <Border Width="44" Height="44" CornerRadius="22" Background="#1FFFFFFF" Margin="0,0,14,0">
+                        <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource CardBackgroundHoverBrush}" Margin="0,0,14,0">
                             <TextBlock Text="🐙" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
@@ -302,8 +309,8 @@
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Home_PlayStoreCardDesc}" Classes="glass-card interactive" Command="{Binding OpenPlayStoreCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_PlayStoreCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
-                        <Border Width="44" Height="44" CornerRadius="22" Background="#1534D399" Margin="0,0,14,0">
-                            <TextBlock Text="▶" FontSize="20" Foreground="#34D399" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource SystemSuccessBackgroundBrush}" Margin="0,0,14,0">
+                            <TextBlock Text="▶" FontSize="20" Foreground="{DynamicResource SystemSuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock Text="{local:Localize Home_PlayStoreCard}" FontSize="13" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -313,7 +320,7 @@
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Home_HwInfoCardDesc}" Classes="glass-card interactive" Command="{Binding OpenHwInfoCommand}" Padding="0" Margin="8" CornerRadius="16" ToolTip.Tip="{local:Localize Home_HwInfoCardDesc}">
                     <Grid ColumnDefinitions="Auto,*" Margin="20" Width="270">
-                        <Border Width="44" Height="44" CornerRadius="22" Background="#15F59E0B" Margin="0,0,14,0">
+                        <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource SystemWarningBackgroundBrush}" Margin="0,0,14,0">
                             <TextBlock Text="🌡️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">

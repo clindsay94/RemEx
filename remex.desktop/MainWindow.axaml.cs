@@ -91,7 +91,13 @@ public partial class MainWindow : Window
             {
                 // Gradient, Wallpaper, Solid, and all non-transparent modes.
                 TransparencyLevelHint = new[] { WindowTransparencyLevel.None };
-                Background = new SolidColorBrush(Color.FromRgb(0x0A, 0x0A, 0x10));
+                // Follows the theme's own base rather than one hardcoded near-black, which was the
+                // same window colour on SolarFlare as on CyberNOC (RemEx-fy0a).
+                // OpaqueColor: this branch has just disabled transparency, so the background must
+                // actually be opaque. GlassBaseDark carries alpha on two themes, and the brush form
+                // would have made a "non-transparent" window 63% transparent on BaseDarkGlass.
+                Background = new SolidColorBrush(ThemeResources.OpaqueColor(
+                    "GlassBaseDark", Color.FromRgb(0x0A, 0x0A, 0x10)));
                 Opacity = 1.0;
             }
         });

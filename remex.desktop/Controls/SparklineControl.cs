@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Remex.Desktop.Services;
 using Avalonia.Media.Immutable;
 using Avalonia.VisualTree;
 using Remex.Core.Models;
@@ -44,6 +45,27 @@ public class SparklineControl : Control
     /// <summary>Accent for the secondary series in <see cref="GraphType.DualMetric"/>.</summary>
     public static readonly StyledProperty<Color> SecondaryAccentColorProperty =
         AvaloniaProperty.Register<SparklineControl, Color>(nameof(SecondaryAccentColor), Color.Parse("#FFB020"));
+
+    /// <summary>
+    /// The "running hot" colour, resolved from the active theme per render (RemEx-fy0a).
+    /// </summary>
+    /// <remarks>
+    /// Severity, not accent: this is the colour a reading climbs toward as it approaches its
+    /// ceiling, so it follows the theme's error colour rather than the card's own accent.
+    /// <para>
+    /// The two <c>StyledProperty</c> defaults above (<see cref="AccentColorProperty"/>,
+    /// <see cref="SecondaryAccentColorProperty"/>) are deliberately still literals and cannot get
+    /// the same treatment: a property default is baked in at static registration, which runs before
+    /// any theme is loaded, so there is nothing to resolve against at that moment. In practice both
+    /// are set by the card's own customisation binding, so the default only shows on an unbound
+    /// control. Making them theme-aware means a <c>Setter</c> in each of the four theme files, which
+    /// is a design decision about what a sparkline's default accent should be per theme rather than
+    /// plumbing — recorded on RemEx-fy0a and filed as RemEx-qljv.
+    /// </para>
+    /// </remarks>
+    private static Color HotColor => ThemeResources.Color("SystemError", HotColorFallback);
+
+    private static readonly Color HotColorFallback = Color.Parse("#FF3B30");
 
     private const byte AreaFillAlpha = 60;
     private const byte GlowAlpha = 100;
@@ -106,6 +128,19 @@ public class SparklineControl : Control
     {
         get => GetValue(SecondaryAccentColorProperty);
         set => SetValue(SecondaryAccentColorProperty, value);
+    }
+
+    /// <summary>
+    /// Redraws when the theme changes. Same reasoning as <c>CanvasMinimap</c>: a control that paints
+    /// in <see cref="Render"/> is not invalidated by a theme switch the way a DynamicResource
+    /// binding is, so resolving colours per render only helps if something asks for a repaint.
+    /// <c>ResourcesChanged</c> and not <c>ActualThemeVariantChanged</c>, for the reason spelled out
+    /// on <c>CanvasMinimap</c>'s constructor: three of the four themes share the Dark variant, so the
+    /// variant event does not fire when switching between them. (RemEx-fy0a.)
+    /// </summary>
+    public SparklineControl()
+    {
+        ResourcesChanged += (_, _) => InvalidateVisual();
     }
 
     static SparklineControl()
@@ -272,7 +307,7 @@ public class SparklineControl : Control
 
         int litCount = (int)Math.Round(fraction * segments);
         var trackBrush = TrackBrush ?? new ImmutableSolidColorBrush(new Color(TrackAlpha, 128, 128, 128));
-        var hotBrush = new ImmutableSolidColorBrush(Color.Parse("#FF3B30"));
+        var hotBrush = new ImmutableSolidColorBrush(HotColor);
 
         for (int i = 0; i < segments; i++)
         {
@@ -298,7 +333,7 @@ public class SparklineControl : Control
         // so the tile visibly reacts to load — not just a static-colored area chart.
         double range = MaxSeen - MinSeen;
         double fraction = range > 0 ? Math.Clamp((CurrentValue - MinSeen) / range, 0, 1) : 0;
-        var accent = LerpColor(AccentColor, Color.Parse("#FF3B30"), fraction * 0.8);
+        var accent = LerpColor(AccentColor, HotColor, fraction * 0.8);
         var accentBrush = new ImmutableSolidColorBrush(accent);
 
         int count = data.Count;

@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Remex.Desktop.Services;
 
 namespace Remex.Desktop.Controls;
 
@@ -72,7 +73,7 @@ public class ColorPickerPopup : ContentControl
             Text = ElementLabel,
             FontSize = 11,
             FontWeight = FontWeight.SemiBold,
-            Foreground = new SolidColorBrush(Color.Parse("#8888AA")),
+            Foreground = ThemeResources.Brush("TextMutedBrush", new SolidColorBrush(Color.Parse("#8888AA"))),
         });
 
         // SV Pad (Saturation-Value 2D area)
@@ -121,9 +122,16 @@ public class ColorPickerPopup : ContentControl
             Width = 100,
             FontSize = 12,
             FontFamily = new FontFamily("Consolas, monospace"),
-            Background = new SolidColorBrush(Color.Parse("#12121E")),
-            Foreground = new SolidColorBrush(Color.Parse("#C0C0FF")),
-            BorderBrush = new SolidColorBrush(Color.Parse("#2A2A3E")),
+            // Resolved at construction, which is correct here: the popup is rebuilt each time it
+            // opens, so it cannot outlive a theme switch the way a cached static brush would.
+            Background = new SolidColorBrush(ThemeResources.OpaqueColor("GlassBaseDark", Color.Parse("#12121E"))),
+            Foreground = ThemeResources.Brush("TextPrimaryBrush", new SolidColorBrush(Color.Parse("#C0C0FF"))),
+            // CardBorderBrush is translucent where the literal it replaces was opaque (10% black on
+            // SolarFlare), so this border is fainter there than it was. Accepted deliberately rather
+            // than forced opaque: it is the same subtle card border every other surface in the app
+            // uses, and matching them is the point. ThemeService also overrides this key to an
+            // opaque outline once customisation runs.
+            BorderBrush = ThemeResources.Brush("CardBorderBrush", new SolidColorBrush(Color.Parse("#2A2A3E"))),
             CornerRadius = new CornerRadius(4),
             Padding = new Thickness(6, 4),
             Watermark = "#RRGGBB",
@@ -140,6 +148,11 @@ public class ColorPickerPopup : ContentControl
         };
         hexRow.Children.Add(_previewSwatch);
 
+        // The tick has to be legible on whatever accent the active theme picked, so the foreground
+        // is derived from the resolved background rather than left as the white that suited the old
+        // fixed deep blue. SolarFlare's accent is amber — white on it is about 1.9:1.
+        var applyBackground = ThemeResources.Color("AccentPrimary", Color.Parse("#4A3AFF"));
+
         var applyBtn = new Button
         {
             Content = "✓",
@@ -148,8 +161,8 @@ public class ColorPickerPopup : ContentControl
             Height = 32,
             HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
-            Background = new SolidColorBrush(Color.Parse("#4A3AFF")),
-            Foreground = Brushes.White,
+            Background = new SolidColorBrush(applyBackground),
+            Foreground = new SolidColorBrush(ThemeResources.ForegroundOn(applyBackground)),
             CornerRadius = new CornerRadius(4),
         };
         applyBtn.Click += (_, _) => ColorConfirmed?.Invoke(this, SelectedColor);

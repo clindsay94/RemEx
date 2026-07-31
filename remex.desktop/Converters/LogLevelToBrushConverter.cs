@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Remex.Desktop.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Remex.Desktop.Converters;
@@ -52,29 +53,13 @@ public sealed class LogLevelToBrushConverter : IValueConverter
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value switch
     {
-        LogLevel.Trace => Resolve("TextMutedBrush", FallbackTrace),
-        LogLevel.Debug => Resolve("TextSecondaryBrush", FallbackDebug),
-        LogLevel.Information => Resolve("TextPrimaryBrush", FallbackInfo),
-        LogLevel.Warning => Resolve("SystemWarningBrush", FallbackWarn),
-        LogLevel.Error or LogLevel.Critical => Resolve("SystemErrorBrush", FallbackError),
-        _ => Resolve("TextPrimaryBrush", FallbackInfo),
+        LogLevel.Trace => ThemeResources.Brush("TextMutedBrush", FallbackTrace),
+        LogLevel.Debug => ThemeResources.Brush("TextSecondaryBrush", FallbackDebug),
+        LogLevel.Information => ThemeResources.Brush("TextPrimaryBrush", FallbackInfo),
+        LogLevel.Warning => ThemeResources.Brush("SystemWarningBrush", FallbackWarn),
+        LogLevel.Error or LogLevel.Critical => ThemeResources.Brush("SystemErrorBrush", FallbackError),
+        _ => ThemeResources.Brush("TextPrimaryBrush", FallbackInfo),
     };
-
-    /// <summary>Looks <paramref name="key"/> up in the active theme, falling back if absent.</summary>
-    private static IBrush Resolve(string key, IBrush fallback)
-    {
-        var app = Application.Current;
-        if (app is null)
-            return fallback;
-
-        // TryGetResource rather than the indexer: a missing key must degrade to the fallback, not
-        // throw inside a converter, where an exception would take out the whole log list. The
-        // theme variant is passed explicitly so the lookup follows the app's ACTUAL variant rather
-        // than whatever the resource host would default to.
-        return app.TryGetResource(key, app.ActualThemeVariant, out var found) && found is IBrush brush
-            ? brush
-            : fallback;
-    }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
