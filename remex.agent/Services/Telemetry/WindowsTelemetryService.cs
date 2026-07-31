@@ -14,6 +14,68 @@ namespace Remex.Agent.Services.Telemetry;
 public class WindowsTelemetryService : ITelemetryService, IDisposable
 {
     private const string HwInfoSharedMemoryName = "Global\\HWiNFO_SENS_SM2";
+
+    // ═══════════════ HWiNFO shared-memory cache (RemEx-8coq) ═══════════════
+    //
+    // Everything HWiNFO reports about a reading EXCEPT its value is fixed for the session: the label,
+    // the unit, the parent device, the classification. The sampler used to re-derive all of it every
+    // second — reopening the memory-mapped file and its view, marshalling every sensor and every
+    // reading element (three fixed-length strings each), lower-casing four or five times per reading
+    // to classify it, and interpolating an Id string. With 200-400 readings that is ~1500-3000
+    // allocations per second, forever, and it was the largest steady-state allocation source in the
+    // process.
+    //
+    // Now the file and view are opened once and the per-reading work is done once into a template;
+    // a tick reads only the value doubles and stamps them onto those templates.
+    private MemoryMappedFile? _hwInfoMmf;
+    private MemoryMappedViewAccessor? _hwInfoAccessor;
+    private HwInfoLayout _hwInfoLayout;
+    private List<HwInfoReadingTemplate>? _hwInfoTemplates;
+
+    // ── Liveness (RemEx-8coq) ──
+    //
+    // CACHING THE MAPPING DESTROYS THE ONLY SIGNAL THAT HWiNFO STOPPED. The shared section lives as
+    // long as ANY handle references it, so once we hold one: HWiNFO can exit and OpenExisting would
+    // still succeed, the signature still reads "HWiS", the geometry is unchanged, and ReadDouble
+    // happily keeps returning the last bytes HWiNFO ever wrote. Nothing throws. The old
+    // open-and-close-per-tick code got its liveness check for free from the FileNotFoundException
+    // that a reclaimed section produced.
+    //
+    // Without this check the dashboard would show FROZEN last-known temperatures and clocks
+    // presented as live, and — because TryReadHwInfo would keep returning true — the WindowsPerf
+    // fallback would stay suppressed. Strictly worse than before the cache.
+    //
+    // poll_time is HWiNFO's own poll timestamp and advances every cycle, so a stalled value means
+    // the producer is gone or wedged. The threshold is deliberately generous against HWiNFO's ~1s
+    // poll: this decides whether to throw away a working mapping, so it must not flap.
+    private long HwInfoStaleAfterMs { get; init; } = 30_000;
+    private long _hwInfoLastPollTime;
+    private long _hwInfoPollChangedAtMs;
+
+    /// <summary>Byte offset of <c>Value</c> inside a reading element, so a tick can read just that.</summary>
+    private static readonly int HwInfoValueFieldOffset =
+        (int)Marshal.OffsetOf<HWiNFO_READING_ELEMENT>(nameof(HWiNFO_READING_ELEMENT.Value));
+
+    /// <summary>
+    /// The shared-memory geometry a template set was built against. Any change invalidates the cache.
+    /// </summary>
+    /// <remarks>
+    /// Keyed on the whole geometry rather than just the reading count, because HWiNFO can also move
+    /// or resize the sections when the user adds hardware or changes its settings — and a stale
+    /// offset would silently read values from the wrong sensor rather than fail.
+    /// </remarks>
+    private readonly record struct HwInfoLayout(
+        uint Readings, uint Sensors, uint ReadingSize, uint ReadingOffset, uint SensorSize, uint SensorOffset,
+        uint Version, uint Revision);
+
+    /// <summary>Everything about one reading that does not change tick to tick.</summary>
+    private sealed record HwInfoReadingTemplate(
+        long ValueAddress,
+        SensorReading Sensor,
+        MetricKind Kind,
+        SENSOR_READING_TYPE ReadingType,
+        string RawUnit,
+        string CanonicalUnit);
     private readonly ILogger<WindowsTelemetryService> _logger;
     private bool _hwinfoAvailable = true;
 
@@ -39,6 +101,26 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         _logger = logger;
         InitializeFallbackCounters();
     }
+
+    /// <summary>
+    /// Test constructor: points the sampler at a synthetic shared-memory region and shrinks the
+    /// staleness window so the "HWiNFO stopped" path can be exercised without waiting 30 seconds.
+    /// </summary>
+    /// <remarks>
+    /// Exists because the interesting failures here are all invisible against a live HWiNFO — a
+    /// producer that has EXITED still leaves a perfectly readable, permanently stale mapping behind
+    /// (RemEx-8coq). Driving a region this process writes itself is the only way to test that
+    /// off-device, and it does not skip the fallback-counter initialisation the real one does.
+    /// </remarks>
+    internal WindowsTelemetryService(
+        ILogger<WindowsTelemetryService> logger, string sharedMemoryName, long staleAfterMs)
+        : this(logger)
+    {
+        _sharedMemoryName = sharedMemoryName;
+        HwInfoStaleAfterMs = staleAfterMs;
+    }
+
+    private readonly string _sharedMemoryName = HwInfoSharedMemoryName;
 
     private void InitializeFallbackCounters()
     {
@@ -158,110 +240,73 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         return payload;
     }
 
-    private bool TryReadHwInfo(TelemetryPayload fallback, out TelemetryPayload result)
+    internal bool TryReadHwInfo(TelemetryPayload fallback, out TelemetryPayload result)
     {
         result = fallback;
 
         try
         {
-            using var mmf = MemoryMappedFile.OpenExisting(HwInfoSharedMemoryName, MemoryMappedFileRights.Read);
-            using var accessor = mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+            if (!TryEnsureHwInfoOpen()) return false;
+            var accessor = _hwInfoAccessor!;
 
-            // Read the header first
-            int headerSize = Marshal.SizeOf(typeof(HWiNFO_SHARED_MEM2));
-            byte[] headerBytes = new byte[headerSize];
-            accessor.ReadArray(0, headerBytes, 0, headerSize);
-
-            GCHandle headerHandle = GCHandle.Alloc(headerBytes, GCHandleType.Pinned);
-            HWiNFO_SHARED_MEM2 header;
-            try
-            {
-                header = Marshal.PtrToStructure<HWiNFO_SHARED_MEM2>(headerHandle.AddrOfPinnedObject());
-            }
-            finally
-            {
-                headerHandle.Free();
-            }
-
+            var header = ReadHwInfoHeader(accessor);
             if (header.dwSignature != 0x53695748) // "HWiS"
-                return false;
-
-            var sensors = new System.Collections.Generic.List<SensorReading>();
-
-            // Read the parent-sensor section so each reading can be categorized/grouped/named by the
-            // actual device HWiNFO groups it under (drive letter + model, CPU/GPU model, etc.) — far
-            // more reliable than the reading's own generic label.
-            var parentNames = new string[header.dwNumSensorElements];
-            int sensorSize = (int)header.dwSizeOfSensorElement;
-            byte[] sensorBytes = new byte[sensorSize];
-            for (uint si = 0; si < header.dwNumSensorElements; si++)
             {
-                accessor.ReadArray((long)header.dwOffsetOfSensorSection + (long)si * sensorSize, sensorBytes, 0, sensorSize);
-                var sensorHandle = GCHandle.Alloc(sensorBytes, GCHandleType.Pinned);
-                try
-                {
-                    var se = Marshal.PtrToStructure<HWiNFO_SENSOR_ELEMENT>(sensorHandle.AddrOfPinnedObject());
-                    parentNames[si] = !string.IsNullOrWhiteSpace(se.szSensorNameUser) ? se.szSensorNameUser : se.szSensorNameOrig;
-                }
-                finally
-                {
-                    sensorHandle.Free();
-                }
+                InvalidateHwInfoCache();
+                return false;
             }
 
-            int readingSize = (int)header.dwSizeOfReadingElement;
-            byte[] readingBytes = new byte[readingSize];
-
-            for (uint i = 0; i < header.dwNumReadingElements; i++)
+            if (!IsHwInfoStillPolling(header.poll_time))
             {
-                long offset = header.dwOffsetOfReadingSection + (i * readingSize);
-                accessor.ReadArray(offset, readingBytes, 0, readingSize);
+                _logger.LogInformation(
+                    "HWiNFO stopped updating its shared memory (poll_time stalled for {Stale}ms); " +
+                    "dropping the mapping and falling back until it returns.", HwInfoStaleAfterMs);
+                InvalidateHwInfoCache();
+                return false;
+            }
 
-                GCHandle elementHandle = GCHandle.Alloc(readingBytes, GCHandleType.Pinned);
-                try
+            var layout = new HwInfoLayout(
+                header.dwNumReadingElements, header.dwNumSensorElements,
+                header.dwSizeOfReadingElement, header.dwOffsetOfReadingSection,
+                header.dwSizeOfSensorElement, header.dwOffsetOfSensorSection,
+                header.dwVersion, header.dwRevision);
+
+            if (_hwInfoTemplates is null || !_hwInfoLayout.Equals(layout))
+            {
+                _hwInfoTemplates = BuildHwInfoTemplates(accessor, header);
+                _hwInfoLayout = layout;
+                _logger.LogDebug(
+                    "HWiNFO layout changed; rebuilt {Count} reading templates.", _hwInfoTemplates.Count);
+            }
+
+            var sensors = new List<SensorReading>(_hwInfoTemplates.Count);
+            foreach (var template in _hwInfoTemplates)
+            {
+                // The ONLY per-tick read. Everything else on this reading was resolved once.
+                double raw = accessor.ReadDouble(template.ValueAddress);
+
+                var value = FormatSensorValue(
+                    NormalizeValueForKind(template.Kind, raw, template.RawUnit),
+                    template.RawUnit,
+                    template.ReadingType);
+
+                // Value-dependent, so it stays per tick: HWiNFO reports placeholder temperatures
+                // (115C, -128C and similar) for disconnected sensors. Kept OUT of the template build
+                // deliberately — a sensor that is out of range now may be in range next tick, and
+                // caching the decision would strand it.
+                if (template.ReadingType == SENSOR_READING_TYPE.SENSOR_TYPE_TEMP
+                    && (value <= -50 || value >= 112))
                 {
-                    var reading = Marshal.PtrToStructure<HWiNFO_READING_ELEMENT>(elementHandle.AddrOfPinnedObject());
-                    var label = !string.IsNullOrWhiteSpace(reading.szLabelUser) ? reading.szLabelUser : reading.szLabelOrig;
-                    
-                    if (!string.IsNullOrWhiteSpace(label))
-                    {
-                        var parent = reading.dwSensorIndex < parentNames.Length
-                            ? (parentNames[reading.dwSensorIndex] ?? string.Empty)
-                            : string.Empty;
-                        var (category, group, dev) = ClassifyDevice(parent, label);
-                        var kind = ClassifyKind(category, reading.tReading, label, reading.szUnit);
-                        var value = FormatSensorValue(NormalizeValueForKind(kind, reading.Value, reading.szUnit), reading.szUnit, reading.tReading);
-                        var canon = MetricUnits.Canonical(kind);
-                        // Canonical unit when we recognize the metric; otherwise the normalized host unit.
-                        // A card renders this value+unit, so a bogus "ms"/blank unit on an Unknown sensor
-                        // can never reach a kind-bound load/temperature card (the 1089.0ms bug class).
-                        var unit = canon.Length > 0 ? canon : NormalizeUnit(reading.szUnit, reading.Value);
-
-                        // Filter out obvious bogus readings (e.g. 115°C, 127°C, -66°C, -128°C) 
-                        // which are common placeholder values for disconnected sensors.
-                        if (reading.tReading == SENSOR_READING_TYPE.SENSOR_TYPE_TEMP)
-                        {
-                            if (value <= -50 || value >= 112)
-                                continue;
-                        }
-
-                        sensors.Add(new SensorReading
-                        {
-                            Name = DeviceName(dev, label),
-                            Value = value,
-                            Unit = unit,
-                            Category = category,
-                            Source = "HWInfo",
-                            Kind = kind,
-                            Id = $"hwi:{reading.dwSensorIndex:x}:{reading.dwReadingID:x}",
-                            Group = group
-                        });
-                    }
+                    continue;
                 }
-                finally
-                {
-                    elementHandle.Free();
-                }
+
+                // Also value-dependent: NormalizeUnit promotes MB to GB past 1024. The canonical unit
+                // for a recognised metric is fixed, so that case is resolved in the template.
+                var unit = template.CanonicalUnit.Length > 0
+                    ? template.CanonicalUnit
+                    : NormalizeUnit(template.RawUnit, raw);
+
+                sensors.Add(template.Sensor with { Value = value, Unit = unit });
             }
 
             // When HWiNFO data is available, filter out WindowsPerf sensors that overlap
@@ -285,13 +330,184 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         }
         catch (FileNotFoundException)
         {
+            // HWiNFO is not running. Drop the handles so a later start is picked up.
+            InvalidateHwInfoCache();
             return false;
         }
         catch (Exception ex)
         {
+            // Anything else means the mapping we cached can no longer be trusted — HWiNFO restarting
+            // invalidates the view, and retrying against a dead accessor would fail forever.
+            InvalidateHwInfoCache();
             _logger.LogTrace(ex, "HWiNFO parsing failed.");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Opens the HWiNFO shared memory once and keeps it. Returns false when HWiNFO is not running.
+    /// </summary>
+    private bool TryEnsureHwInfoOpen()
+    {
+        if (_hwInfoAccessor is not null) return true;
+
+        try
+        {
+            _hwInfoMmf = MemoryMappedFile.OpenExisting(_sharedMemoryName, MemoryMappedFileRights.Read);
+            _hwInfoAccessor = _hwInfoMmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+            return true;
+        }
+        catch (FileNotFoundException)
+        {
+            InvalidateHwInfoCache();   // HWiNFO not running; try again next tick.
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Drops the cached mapping and templates. Called on ANY failure, because a view that has gone
+    /// bad (HWiNFO restarting is the normal cause) would otherwise be retried forever.
+    /// </summary>
+    private void InvalidateHwInfoCache()
+    {
+        _hwInfoTemplates = null;
+        _hwInfoLayout = default;
+        _hwInfoLastPollTime = 0;
+        _hwInfoPollChangedAtMs = 0;
+
+        _hwInfoAccessor?.Dispose();
+        _hwInfoAccessor = null;
+        _hwInfoMmf?.Dispose();
+        _hwInfoMmf = null;
+    }
+
+    /// <summary>
+    /// Whether HWiNFO is still writing. See the field comments for why a cached mapping cannot tell.
+    /// </summary>
+    /// <remarks>
+    /// Returns true while <paramref name="pollTime"/> keeps changing, and for a grace period after it
+    /// stops. Only a sustained stall is treated as "gone", so a paused or slow poll does not throw
+    /// away a mapping that is about to be useful again.
+    /// </remarks>
+    private bool IsHwInfoStillPolling(long pollTime)
+    {
+        var nowMs = Environment.TickCount64;
+
+        if (pollTime != _hwInfoLastPollTime)
+        {
+            _hwInfoLastPollTime = pollTime;
+            _hwInfoPollChangedAtMs = nowMs;
+            return true;
+        }
+
+        // First observation after a (re)open: start the clock rather than judging immediately.
+        if (_hwInfoPollChangedAtMs == 0)
+        {
+            _hwInfoPollChangedAtMs = nowMs;
+            return true;
+        }
+
+        return nowMs - _hwInfoPollChangedAtMs < HwInfoStaleAfterMs;
+    }
+
+    private static HWiNFO_SHARED_MEM2 ReadHwInfoHeader(MemoryMappedViewAccessor accessor)
+    {
+        int headerSize = Marshal.SizeOf<HWiNFO_SHARED_MEM2>();
+        byte[] headerBytes = new byte[headerSize];
+        accessor.ReadArray(0, headerBytes, 0, headerSize);
+
+        var handle = GCHandle.Alloc(headerBytes, GCHandleType.Pinned);
+        try
+        {
+            return Marshal.PtrToStructure<HWiNFO_SHARED_MEM2>(handle.AddrOfPinnedObject());
+        }
+        finally
+        {
+            handle.Free();
+        }
+    }
+
+    /// <summary>
+    /// Does the expensive pass once: marshals every sensor and reading element, classifies each
+    /// reading, and records where its value lives so ticks can read that and nothing else.
+    /// </summary>
+    /// <remarks>
+    /// This is the code that used to run every second. Readings with no label are dropped here rather
+    /// than per tick, because a label cannot appear later without the geometry changing — and a
+    /// geometry change rebuilds this whole list.
+    /// </remarks>
+    private List<HwInfoReadingTemplate> BuildHwInfoTemplates(
+        MemoryMappedViewAccessor accessor, HWiNFO_SHARED_MEM2 header)
+    {
+        // Read the parent-sensor section so each reading can be categorized/grouped/named by the
+        // actual device HWiNFO groups it under (drive letter + model, CPU/GPU model, etc.) — far
+        // more reliable than the reading's own generic label.
+        var parentNames = new string[header.dwNumSensorElements];
+        int sensorSize = (int)header.dwSizeOfSensorElement;
+        byte[] sensorBytes = new byte[sensorSize];
+        for (uint si = 0; si < header.dwNumSensorElements; si++)
+        {
+            accessor.ReadArray((long)header.dwOffsetOfSensorSection + (long)si * sensorSize, sensorBytes, 0, sensorSize);
+            var sensorHandle = GCHandle.Alloc(sensorBytes, GCHandleType.Pinned);
+            try
+            {
+                var se = Marshal.PtrToStructure<HWiNFO_SENSOR_ELEMENT>(sensorHandle.AddrOfPinnedObject());
+                parentNames[si] = !string.IsNullOrWhiteSpace(se.szSensorNameUser) ? se.szSensorNameUser : se.szSensorNameOrig;
+            }
+            finally
+            {
+                sensorHandle.Free();
+            }
+        }
+
+        int readingSize = (int)header.dwSizeOfReadingElement;
+        byte[] readingBytes = new byte[readingSize];
+        var templates = new List<HwInfoReadingTemplate>((int)header.dwNumReadingElements);
+
+        for (uint i = 0; i < header.dwNumReadingElements; i++)
+        {
+            long offset = header.dwOffsetOfReadingSection + (i * (long)readingSize);
+            accessor.ReadArray(offset, readingBytes, 0, readingSize);
+
+            var elementHandle = GCHandle.Alloc(readingBytes, GCHandleType.Pinned);
+            try
+            {
+                var reading = Marshal.PtrToStructure<HWiNFO_READING_ELEMENT>(elementHandle.AddrOfPinnedObject());
+                var label = !string.IsNullOrWhiteSpace(reading.szLabelUser) ? reading.szLabelUser : reading.szLabelOrig;
+
+                if (string.IsNullOrWhiteSpace(label)) continue;
+
+                var parent = reading.dwSensorIndex < parentNames.Length
+                    ? (parentNames[reading.dwSensorIndex] ?? string.Empty)
+                    : string.Empty;
+                var (category, group, dev) = ClassifyDevice(parent, label);
+                var kind = ClassifyKind(category, reading.tReading, label, reading.szUnit);
+
+                templates.Add(new HwInfoReadingTemplate(
+                    ValueAddress: offset + HwInfoValueFieldOffset,
+                    Sensor: new SensorReading
+                    {
+                        Name = DeviceName(dev, label),
+                        Value = 0,
+                        Unit = string.Empty,
+                        Category = category,
+                        Source = "HWInfo",
+                        Kind = kind,
+                        Id = $"hwi:{reading.dwSensorIndex:x}:{reading.dwReadingID:x}",
+                        Group = group,
+                    },
+                    Kind: kind,
+                    ReadingType: reading.tReading,
+                    RawUnit: reading.szUnit,
+                    CanonicalUnit: MetricUnits.Canonical(kind)));
+            }
+            finally
+            {
+                elementHandle.Free();
+            }
+        }
+
+        return templates;
     }
 
     private static double FormatSensorValue(double value, string unit, SENSOR_READING_TYPE readingType)
@@ -646,6 +862,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         _ramCounter?.Dispose();
         _diskReadCounter?.Dispose();
         _diskWriteCounter?.Dispose();
+        InvalidateHwInfoCache();
         GC.SuppressFinalize(this);
     }
 }
