@@ -272,15 +272,15 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * that arrives before its decoder surface exists (the brief codec-switch window) is dropped rather
      * than mis-fed to the JPEG path — subsequent frames decode once the surface is created. (RemEx-w5v)
      */
-    private fun routeFrameByCodec(codec: String, payload: ByteArray) {
+    private fun routeFrameByCodec(codec: String, bytes: ByteArray, offset: Int, length: Int) {
         if (codec == RemoteDesktopFrameEnvelope.CODEC_H264) {
             val decoder = activeH264Decoder
             if (decoder != null) {
-                decoder.decodeFrame(payload)
+                decoder.decodeFrame(bytes, offset, length)
                 recordFrameTimestamp()
             }
         } else {
-            decodeFrame(payload)
+            decodeFrame(bytes, offset, length)
         }
     }
 
@@ -506,9 +506,10 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 // route those by the negotiated codec as before. (RemEx-w5v)
                 val env = RemoteDesktopFrameEnvelope.tryRead(bytes)
                 if (env != null) {
-                    routeFrameByCodec(env.codec, env.payload)
+                    routeFrameByCodec(env.codec, env.bytes, env.payloadOffset, env.payloadLength)
                 } else {
-                    routeFrameByCodec(_activeCodecState.value, bytes)
+                    // Legacy host: the whole frame IS the payload.
+                    routeFrameByCodec(_activeCodecState.value, bytes, 0, bytes.size)
                 }
                 // Reset the stall watchdog on every arriving frame, regardless of codec. (RemEx-5t4)
                 onFrameArrived()
@@ -718,9 +719,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * Decodes a JPEG frame using bitmap pooling to avoid OOM. Uses inBitmap for memory reuse when
      * dimensions match.
      */
-    private fun decodeFrame(bytes: ByteArray) {
-        if (bytes.isEmpty()) {
-            Log.w(TAG, "decodeFrame: Received empty byte array")
+    private fun decodeFrame(bytes: ByteArray, offset: Int, length: Int) {
+        if (length <= 0) {
+            Log.w(TAG, "decodeFrame: Received empty payload")
+            return
+        }
+        // Bounds are guaranteed by the envelope parser today, but check anyway: a bad range makes
+        // BitmapFactory throw ArrayIndexOutOfBoundsException, which is NOT an IllegalArgumentException
+        // and so would escape the catch below, cancel the frames collector, and stop video with no
+        // error shown. Dropping one frame is the recoverable failure; losing the collector is not.
+        if (offset < 0 || offset + length > bytes.size) {
+            Log.w(TAG, "decodeFrame: range $offset+$length outside ${bytes.size}-byte buffer; dropping")
             return
         }
 
@@ -733,12 +742,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 decodeOptions.inBitmap = null
             }
 
-            val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
+            val decoded = BitmapFactory.decodeByteArray(bytes, offset, length, decodeOptions)
             if (decoded != null) {
                 if (System.currentTimeMillis() % 1000 < 50) {
                     Log.d(
                             TAG,
-                            "decodeFrame: Decoded frame, size: ${bytes.size} bytes, reused: ${decodeOptions.inBitmap != null}"
+                            "decodeFrame: Decoded frame, size: $length bytes, reused: ${decodeOptions.inBitmap != null}"
                     )
                 }
                 reusableBitmap = decoded
@@ -747,7 +756,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 recordFrameTimestamp()
                 lastDecodeProgressMs = System.currentTimeMillis()
             } else {
-                Log.e(TAG, "decodeFrame: BitmapFactory returned null for ${bytes.size} bytes")
+                Log.e(TAG, "decodeFrame: BitmapFactory returned null for $length bytes")
                 // Fallback: Reset reuse if decoding failed
                 decodeOptions.inBitmap = null
             }
@@ -755,7 +764,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             // inBitmap reuse failed (dimensions changed) — decode without reuse
             decodeOptions.inBitmap = null
             try {
-                val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
+                val decoded = BitmapFactory.decodeByteArray(bytes, offset, length, decodeOptions)
                 if (decoded != null) {
                     reusableBitmap?.takeIf { !it.isRecycled }?.recycle()
                     reusableBitmap = decoded

@@ -31,12 +31,25 @@ object RemoteDesktopFrameEnvelope {
     const val CODEC_MJPEG = "Mjpeg"
     const val CODEC_H264 = "H264"
 
+    /**
+     * A parsed envelope. The payload is described as a RANGE INTO [bytes] rather than handed over as
+     * its own array: stripping the 28-byte header with `copyOfRange` duplicated every frame in full a
+     * second time, on top of the unavoidable native->Java copy — roughly 12 MB/s of extra garbage at
+     * 60 fps and 200 KB frames (RemEx-t8ku). Both consumers take (array, offset, length):
+     * `BitmapFactory.decodeByteArray` and `MediaCodec`'s `inputBuffer.put`.
+     *
+     * Safe to hold without copying because the JNI layer allocates a fresh array per frame and never
+     * reuses it — see `RemexClientManager.onFrameReceived`. If that ever changes, the H.264 path is
+     * where it will bite, because that one QUEUES the range for a different thread to consume later.
+     */
     data class Frame(
             val codec: String,
             val streamSerial: Long,
             val sequence: Long,
             val isKeyFrame: Boolean,
-            val payload: ByteArray,
+            val bytes: ByteArray,
+            val payloadOffset: Int,
+            val payloadLength: Int,
     )
 
     /**
@@ -69,7 +82,9 @@ object RemoteDesktopFrameEnvelope {
                 streamSerial = readInt64Le(bytes, 8),
                 sequence = readInt64Le(bytes, 16),
                 isKeyFrame = (flags and 0x01) != 0,
-                payload = bytes.copyOfRange(HEADER_SIZE, HEADER_SIZE + payloadLength),
+                bytes = bytes,
+                payloadOffset = HEADER_SIZE,
+                payloadLength = payloadLength,
         )
     }
 
