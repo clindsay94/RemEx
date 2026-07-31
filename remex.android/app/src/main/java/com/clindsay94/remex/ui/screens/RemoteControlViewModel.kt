@@ -1,12 +1,14 @@
 package com.clindsay94.remex.ui.screens
 
 import android.app.Application
+import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.R
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -101,7 +103,7 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    fun sendMouseMove(deltaX: Int, deltaY: Int) {
+    private fun sendWholePixelMouseMove(deltaX: Int, deltaY: Int) {
         sendInput(
                 JSONObject().apply {
                     put("eventType", "mouseMove")
@@ -111,18 +113,28 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
         )
     }
 
-    private var mouseMoveAccumX = 0f
-    private var mouseMoveAccumY = 0f
+    private val mouseMoveThrottle = MouseMoveThrottle()
 
+    /**
+     * Feeds one frame of trackpad movement.
+     *
+     * Takes floats on purpose. The caller used to truncate each frame's delta to an Int before it got
+     * here, which silently discarded any drag slower than one pixel per frame — see
+     * [MouseMoveThrottle] for why that is the common case rather than an edge one.
+     */
     fun sendMouseMove(deltaX: Float, deltaY: Float) {
-        mouseMoveAccumX += deltaX
-        mouseMoveAccumY += deltaY
-        val intX = mouseMoveAccumX.toInt()
-        val intY = mouseMoveAccumY.toInt()
-        if (intX != 0 || intY != 0) {
-            sendMouseMove(intX, intY)
-            mouseMoveAccumX -= intX
-            mouseMoveAccumY -= intY
+        mouseMoveThrottle.onDelta(deltaX, deltaY, SystemClock.uptimeMillis())?.let {
+            sendWholePixelMouseMove(it.x, it.y)
+        }
+    }
+
+    /**
+     * Sends whatever movement is still accumulated when a drag ends, so a gesture does not stop
+     * short of where the user left it.
+     */
+    fun flushPendingMouseMove() {
+        mouseMoveThrottle.flush(SystemClock.uptimeMillis())?.let {
+            sendWholePixelMouseMove(it.x, it.y)
         }
     }
 
@@ -225,8 +237,33 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    /**
+     * Off the main thread, but STRICTLY ONE AT A TIME.
+     *
+     * Building two JSONObjects, serialising them and crossing the JNI boundary is not main-thread
+     * work, and at trackpad rates it happened often enough to be felt. But plain `Dispatchers.IO`
+     * would be a correctness bug, not just a dispatch change: [sendKeyPress] issues keyDown and
+     * keyUp as two SEPARATE sends, and on a 64-thread dispatcher they would race through tens of
+     * microseconds of JSON build and JNI marshalling. This is why it was safe before:
+     * `viewModelScope.launch {}` defaults to `Dispatchers.Main.immediate`, and
+     * `RemexCoreClient.SendMessage` does not suspend, so each body ran inline and in order.
+     * `limitedParallelism(1)` keeps that submission order while still taking the work off the main
+     * thread.
+     *
+     * BE CLEAR ABOUT WHAT THIS DOES NOT BUY, because it is easy to read as more than it is. Ordering
+     * is preserved only UP TO THE JNI CALL. `desktop_input` does not go through the outbound queue:
+     * `AndroidNativeExports.HandleDesktopMessage` hands it to a fire-and-forget `Task.Run`, which
+     * re-parallelises onto the .NET thread pool, and `RemexDesktopClient.SendMessageAsync` takes no
+     * lock. So two sends issued in order here can still reach the socket out of order, or overlap
+     * and have one dropped by the resulting swallowed exception. That is PRE-EXISTING and unchanged
+     * by this — the point of the single-threaded dispatcher is to avoid adding a second, much wider
+     * race on top of it, not to claim the first one is gone. Tracked as RemEx-krvz. (RemEx-3uhp)
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val sendDispatcher = Dispatchers.IO.limitedParallelism(1)
+
     private fun sendInput(input: JSONObject) {
-        viewModelScope.launch {
+        viewModelScope.launch(sendDispatcher) {
             if (RemexCoreClient.isLibraryLoaded) {
                 val message =
                         JSONObject().apply {

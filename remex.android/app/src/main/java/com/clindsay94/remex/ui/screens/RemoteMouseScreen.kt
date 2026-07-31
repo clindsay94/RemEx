@@ -69,6 +69,7 @@ fun RemoteMouseScreen(
             vScrollSensitivity = vScrollSensitivity,
             onNavigateToConnection = onNavigateToConnection,
             onMouseMove = { x, y -> viewModel.sendMouseMove(x, y) },
+            onMouseMoveEnd = { viewModel.flushPendingMouseMove() },
             onMouseClick = { button -> viewModel.sendMouseClick(button) },
             onScroll = { amount -> viewModel.sendScroll(amount) },
             onTextSent = { text -> viewModel.sendText(text) },
@@ -83,7 +84,8 @@ fun RemoteMouseScreenContent(
         cornerRadius: Int,
         vScrollSensitivity: Float,
         onNavigateToConnection: () -> Unit,
-        onMouseMove: (Int, Int) -> Unit,
+        onMouseMove: (Float, Float) -> Unit,
+        onMouseMoveEnd: () -> Unit,
         onMouseClick: (Int) -> Unit,
         onScroll: (Int) -> Unit,
         onTextSent: (String) -> Unit,
@@ -141,12 +143,17 @@ fun RemoteMouseScreenContent(
                                 Modifier.weight(1f)
                                         .fillMaxWidth()
                                         .pointerInput(Unit) {
-                                            detectDragGestures { change, dragAmount ->
+                                            // Raw floats, NOT dragAmount.x.toInt(): truncating
+                                            // each frame independently threw away any drag slower
+                                            // than a pixel per frame, which at 120 Hz is most
+                                            // careful pointing. The view model accumulates and
+                                            // throttles instead (RemEx-3uhp).
+                                            detectDragGestures(
+                                                    onDragEnd = { onMouseMoveEnd() },
+                                                    onDragCancel = { onMouseMoveEnd() }
+                                            ) { change, dragAmount ->
                                                 change.consume()
-                                                onMouseMove(
-                                                        dragAmount.x.toInt(),
-                                                        dragAmount.y.toInt()
-                                                )
+                                                onMouseMove(dragAmount.x, dragAmount.y)
                                             }
                                         }
                                         .pointerInput(Unit) {
@@ -292,6 +299,7 @@ private fun RemoteMouseScreenPreview() {
             vScrollSensitivity = 1.0f,
             onNavigateToConnection = {},
             onMouseMove = { _, _ -> },
+            onMouseMoveEnd = {},
             onMouseClick = {},
             onScroll = {},
             onTextSent = {},
