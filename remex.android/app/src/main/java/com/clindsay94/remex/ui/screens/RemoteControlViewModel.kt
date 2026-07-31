@@ -250,14 +250,13 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
      * `limitedParallelism(1)` keeps that submission order while still taking the work off the main
      * thread.
      *
-     * BE CLEAR ABOUT WHAT THIS DOES NOT BUY, because it is easy to read as more than it is. Ordering
-     * is preserved only UP TO THE JNI CALL. `desktop_input` does not go through the outbound queue:
-     * `AndroidNativeExports.HandleDesktopMessage` hands it to a fire-and-forget `Task.Run`, which
-     * re-parallelises onto the .NET thread pool, and `RemexDesktopClient.SendMessageAsync` takes no
-     * lock. So two sends issued in order here can still reach the socket out of order, or overlap
-     * and have one dropped by the resulting swallowed exception. That is PRE-EXISTING and unchanged
-     * by this — the point of the single-threaded dispatcher is to avoid adding a second, much wider
-     * race on top of it, not to claim the first one is gone. Tracked as RemEx-krvz. (RemEx-3uhp)
+     * THIS IS ONE HALF OF THE ORDERING GUARANTEE, and it works only because of the other half.
+     * `desktop_input` does not go through the outbound queue — `AndroidNativeExports` used to hand it
+     * to a fire-and-forget `Task.Run` that re-parallelised onto the .NET thread pool, so two sends
+     * issued in order here could still reach the socket inverted, or overlap and have one dropped.
+     * RemEx-krvz replaced that with a single-consumer queue, so the native side now preserves
+     * whatever order it is handed. This dispatcher is what makes the order it is handed the order the
+     * user actually pressed the keys in. Neither half is sufficient alone. (RemEx-3uhp)
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val sendDispatcher = Dispatchers.IO.limitedParallelism(1)

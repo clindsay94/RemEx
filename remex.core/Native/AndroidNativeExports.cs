@@ -518,14 +518,10 @@ public static class AndroidNativeExports
                 ? new DesktopConfig()
                 : RemexJson.Deserialize(configJson, RemexJsonSerializerContext.Default.DesktopConfig) ?? new DesktopConfig();
 
-            _ = Task.Run(async () =>
+            QueueDesktopWork("StartDesktopStream", async () =>
             {
-                try
-                {
-                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                    await RemexDesktopClient.Current.StartStreamAsync(host, port, config, clientId, spkiHash);
-                }
-                catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"StartDesktopStream failed: {ex.Message}"); }
+                var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                await RemexDesktopClient.Current.StartStreamAsync(host, port, config, clientId, spkiHash);
             });
         });
 
@@ -533,14 +529,10 @@ public static class AndroidNativeExports
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StopDesktopStreamNative")]
     public static void StopDesktopStream(IntPtr env, IntPtr thiz)
     {
-        _ = Task.Run(async () =>
+        QueueDesktopWork("StopDesktopStream", async () =>
         {
-            try
-            {
-                await RemexDesktopClient.Current.StopStreamAsync();
-                await RemexDesktopClient.Current.DisconnectAsync();
-            }
-            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"StopDesktopStream failed: {ex.Message}"); }
+            await RemexDesktopClient.Current.StopStreamAsync();
+            await RemexDesktopClient.Current.DisconnectAsync();
         });
     }
 
@@ -560,14 +552,10 @@ public static class AndroidNativeExports
             if (batch is null)
                 return;
 
-            _ = Task.Run(async () =>
+            QueueDesktopWork("SendDesktopPointerBatch", async () =>
             {
-                try
-                {
-                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                    await RemexDesktopClient.Current.SendPointerBatchAsync(host, port, batch, clientId, spkiHash);
-                }
-                catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendDesktopPointerBatch failed: {ex.Message}"); }
+                var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                await RemexDesktopClient.Current.SendPointerBatchAsync(host, port, batch, clientId, spkiHash);
             });
         });
 
@@ -1031,6 +1019,33 @@ public static class AndroidNativeExports
         return SerializeOperationSuccess("Message dispatched.");
     }
 
+    /// <summary>
+    /// Every Remote Desktop operation, in the order it was handed to this queue.
+    /// </summary>
+    /// <remarks>
+    /// These were a dozen separate <c>Task.Run</c> calls — fire-and-forget onto the thread pool, so
+    /// two operations handed over microseconds apart could start on different workers and reach the
+    /// socket in either order. <c>sendKeyPress</c> issues keyDown and keyUp as SEPARATE messages, so
+    /// an inversion leaves a key physically held down on the user's PC, and it fails silently.
+    /// <see cref="OrderedAsyncWorkQueue"/> carries the reasoning and the test. (RemEx-krvz)
+    /// <para>
+    /// The send gate on <c>RemexDesktopClient</c> is defence for callers that do not come through
+    /// here — it stops overlap but cannot restore order, so it is not the fix.
+    /// </para>
+    /// <para>
+    /// NOTE WHERE THE GUARANTEE STARTS: at <c>Enqueue</c>, which runs synchronously on the JNI thread
+    /// and so inherits whatever order the Kotlin caller submitted in. That is genuinely ordered for
+    /// <c>RemoteControlViewModel</c>, which serialises its sends on a single-threaded dispatcher
+    /// (RemEx-3uhp). <c>RemoteDesktopViewModel</c> does NOT yet — it launches on bare
+    /// <c>viewModelScope</c> — so two of ITS operations can still arrive here in either order. That
+    /// is RemEx-7rq3, and this queue cannot fix it from below.
+    /// </para>
+    /// </remarks>
+    private static readonly OrderedAsyncWorkQueue DesktopWork =
+        new((label, ex) => JniHelper.AndroidLogE("RemexNative", $"{label} failed: {ex.Message}"));
+
+    private static void QueueDesktopWork(string label, Func<Task> work) => DesktopWork.Enqueue(label, work);
+
     private static void EnsureOutboundSendLoopStarted()
     {
         if (Interlocked.Exchange(ref _outboundSendLoopStarted, 1) == 1)
@@ -1059,98 +1074,66 @@ public static class AndroidNativeExports
         switch (message.Type)
         {
             case MessageTypes.DesktopStart:
-                _ = Task.Run(async () =>
+                QueueDesktopWork("DesktopStart", async () =>
                 {
-                    try
-                    {
-                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), clientId, spkiHash);
-                    }
-                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopStart failed: {ex.Message}"); }
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig ?? new DesktopConfig(), clientId, spkiHash);
                 });
                 return true;
 
             case MessageTypes.DesktopInput when message.InputEvent != null:
-                _ = Task.Run(async () =>
+                QueueDesktopWork("DesktopInput", async () =>
                 {
-                    try
-                    {
-                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, clientId, spkiHash);
-                    }
-                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopInput failed: {ex.Message}"); }
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.SendInputAsync(host, port, message.InputEvent, clientId, spkiHash);
                 });
                 return true;
 
             case MessageTypes.DesktopConfig when message.DesktopConfig != null:
-                _ = Task.Run(async () =>
+                QueueDesktopWork("DesktopConfig", async () =>
                 {
-                    try
-                    {
-                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, clientId, spkiHash);
-                    }
-                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopConfig failed: {ex.Message}"); }
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.StartStreamAsync(host, port, message.DesktopConfig, clientId, spkiHash);
                 });
                 return true;
 
             case MessageTypes.DesktopDisplayQuery:
-                _ = Task.Run(async () =>
+                QueueDesktopWork("DesktopDisplayQuery", async () =>
                 {
-                    try
-                    {
-                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.RequestDisplayCatalogAsync(host, port, clientId, spkiHash);
-                    }
-                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopDisplayQuery failed: {ex.Message}"); }
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.RequestDisplayCatalogAsync(host, port, clientId, spkiHash);
                 });
                 return true;
 
             case MessageTypes.DesktopTargetSwitch when message.DesktopTargetSwitch != null:
-                _ = Task.Run(async () =>
+                QueueDesktopWork("DesktopTargetSwitch", async () =>
                 {
-                    try
-                    {
-                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.SwitchTargetAsync(host, port, message.DesktopTargetSwitch, clientId, spkiHash);
-                    }
-                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopTargetSwitch failed: {ex.Message}"); }
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.SwitchTargetAsync(host, port, message.DesktopTargetSwitch, clientId, spkiHash);
                 });
                 return true;
 
             case MessageTypes.DesktopWindowQuery when message.DesktopWindowQuery != null:
-                _ = Task.Run(async () =>
+                QueueDesktopWork("DesktopWindowQuery", async () =>
                 {
-                    try
-                    {
-                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.QueryWindowsAsync(host, port, message.DesktopWindowQuery, clientId, spkiHash);
-                    }
-                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopWindowQuery failed: {ex.Message}"); }
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.QueryWindowsAsync(host, port, message.DesktopWindowQuery, clientId, spkiHash);
                 });
                 return true;
 
             case MessageTypes.DesktopWindowAction when message.DesktopWindowAction != null:
-                _ = Task.Run(async () =>
+                QueueDesktopWork("DesktopWindowAction", async () =>
                 {
-                    try
-                    {
-                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.ExecuteWindowActionAsync(host, port, message.DesktopWindowAction, clientId, spkiHash);
-                    }
-                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopWindowAction failed: {ex.Message}"); }
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.ExecuteWindowActionAsync(host, port, message.DesktopWindowAction, clientId, spkiHash);
                 });
                 return true;
 
             case MessageTypes.DesktopStop:
-                _ = Task.Run(async () =>
+                QueueDesktopWork("DesktopStop", async () =>
                 {
-                    try
-                    {
-                        await RemexDesktopClient.Current.StopStreamAsync();
-                        await RemexDesktopClient.Current.DisconnectAsync();
-                    }
-                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopStop failed: {ex.Message}"); }
+                    await RemexDesktopClient.Current.StopStreamAsync();
+                    await RemexDesktopClient.Current.DisconnectAsync();
                 });
                 return true;
 
@@ -1158,14 +1141,10 @@ public static class AndroidNativeExports
             // socket so it reaches RemoteDesktopHandler; without this case it fell through to the
             // control /ws channel and was logged as "Unknown message type". (RemEx-bqc / #2a)
             case MessageTypes.DesktopKeyframeRequest:
-                _ = Task.Run(async () =>
+                QueueDesktopWork("DesktopKeyframeRequest", async () =>
                 {
-                    try
-                    {
-                        var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
-                        await RemexDesktopClient.Current.RequestKeyframeAsync(host, port, clientId, spkiHash);
-                    }
-                    catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"DesktopKeyframeRequest failed: {ex.Message}"); }
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.RequestKeyframeAsync(host, port, clientId, spkiHash);
                 });
                 return true;
 

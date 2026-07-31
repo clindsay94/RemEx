@@ -19,6 +19,30 @@ public sealed class RemexDesktopClient : IDisposable
     private CancellationTokenSource? _receiveCts;
     private Task? _receiveLoopTask;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<DesktopWindowResult>> _pendingWindowRequests = new();
+
+    /// <summary>
+    /// How long a window query or action waits for its reply before giving up.
+    /// </summary>
+    /// <remarks>
+    /// These are the only request/RESPONSE operations on this client, and they used to wait forever:
+    /// no timeout, and the caller passes no cancellation token. A host that never answers — an older
+    /// build, a correlation-id mismatch, a handler that faulted — hung the caller permanently. That
+    /// was survivable when each call had its own thread; it is not now that desktop work is
+    /// serialised, because the hung call blocks every later operation. Generous rather than tight: a
+    /// real query answers in milliseconds, so anything near this is already a failure. (RemEx-krvz)
+    /// </remarks>
+    private static readonly TimeSpan WindowRequestTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>Cancels every in-flight window request; used when the socket can no longer answer.</summary>
+    private void FailPendingWindowRequests()
+    {
+        foreach (var (_, waiter) in _pendingWindowRequests)
+        {
+            waiter.TrySetCanceled();
+        }
+
+        _pendingWindowRequests.Clear();
+    }
     private bool _isStreaming;
 
     // VULN-2 (RemEx-s032.2): the reconnect secret established at pairing, base64-encoded. Remembered on
@@ -281,7 +305,7 @@ public sealed class RemexDesktopClient : IDisposable
                 DesktopWindowQuery = query with { RequestId = requestId },
             }, ct);
 
-            return await tcs.Task;
+            return await tcs.Task.WaitAsync(WindowRequestTimeout, ct);
         }
         finally
         {
@@ -308,13 +332,29 @@ public sealed class RemexDesktopClient : IDisposable
                 DesktopWindowAction = action with { RequestId = requestId },
             }, ct);
 
-            return await tcs.Task;
+            return await tcs.Task.WaitAsync(WindowRequestTimeout, ct);
         }
         finally
         {
             _pendingWindowRequests.TryRemove(requestId, out _);
         }
     }
+
+    /// <summary>
+    /// Serialises sends onto this socket.
+    /// </summary>
+    /// <remarks>
+    /// A <see cref="System.Net.WebSockets.ClientWebSocket"/> permits only ONE outstanding
+    /// <c>SendAsync</c>; a second concurrent one throws <see cref="InvalidOperationException"/>. This
+    /// send had no lock at all, and every caller arrived on a fire-and-forget <c>Task.Run</c>, so an
+    /// overlap threw into a catch that only wrote to logcat — the message was simply gone, with
+    /// nothing surfaced to the user (RemEx-krvz). Matches <c>RemexNativeClient._sendGate</c>.
+    ///
+    /// This is DEFENCE, not the fix. It stops overlap; it cannot restore order, because whichever
+    /// caller wakes first takes the gate first. Ordering comes from the single-consumer queue in
+    /// <c>AndroidNativeExports</c>, and this exists for any caller that does not come through it.
+    /// </remarks>
+    private readonly SemaphoreSlim _sendGate = new(1, 1);
 
     private async Task SendMessageAsync(RemexMessage message, CancellationToken ct)
     {
@@ -324,7 +364,23 @@ public sealed class RemexDesktopClient : IDisposable
         }
 
         var bytes = RemexJson.SerializeToUtf8Bytes(message, RemexJsonSerializerContext.Default.RemexMessage);
-        await _webSocket!.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+
+        await _sendGate.WaitAsync(ct);
+        try
+        {
+            // Re-checked inside the gate: a teardown can complete while this call waits its turn,
+            // and sending on a disposed socket throws where doing nothing is correct.
+            if (!IsConnected)
+            {
+                return;
+            }
+
+            await _webSocket!.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, ct);
+        }
+        finally
+        {
+            _sendGate.Release();
+        }
     }
 
     private static Uri BuildDesktopUri(string host, int port, string? clientId)
@@ -341,11 +397,7 @@ public sealed class RemexDesktopClient : IDisposable
     public async Task DisconnectAsync()
     {
         _receiveCts?.Cancel();
-        foreach (var (_, waiter) in _pendingWindowRequests)
-        {
-            waiter.TrySetCanceled();
-        }
-        _pendingWindowRequests.Clear();
+        FailPendingWindowRequests();
         if (_receiveLoopTask != null)
         {
             try { await _receiveLoopTask; } catch { /* draining the receive loop after cancelling it - see RemexNativeClient */ }
@@ -525,6 +577,12 @@ public sealed class RemexDesktopClient : IDisposable
         }
         finally
         {
+            // A waiter's ONLY completers are a matching reply on this loop and DisconnectAsync. So
+            // when this loop ends — socket dropped, PC asleep, host faulted — anything still waiting
+            // would wait forever. That used to strand one caller; now that desktop work runs on a
+            // single-consumer queue it would strand EVERY later operation behind it, including the
+            // DesktopStop that is the only route to DisconnectAsync. (RemEx-krvz)
+            FailPendingWindowRequests();
             ArrayPool<byte>.Shared.Return(buffer);
         }
     }
