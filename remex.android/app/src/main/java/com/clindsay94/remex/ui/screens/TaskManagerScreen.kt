@@ -32,8 +32,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -363,7 +365,6 @@ private fun FilterSortSection(
         sortDescending: Boolean,
         onUpdateSortField: (ProcessSortField) -> Unit
 ) {
-    val view = LocalView.current
     // Labels resolved here (composable scope) because ButtonGroup's content lambda is non-composable.
     val fields =
             listOf(
@@ -372,76 +373,226 @@ private fun FilterSortSection(
                     ProcessSortField.NAME to stringResource(R.string.sort_name),
                     ProcessSortField.PID to stringResource(R.string.sort_pid)
             )
-    Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+    val sortByText = stringResource(R.string.sort_by)
+
+    // The row is MEASURED rather than switched on a font-scale threshold. A threshold would have to
+    // be a single number covering every locale at every scale, and it would be wrong at one end or
+    // the other; measuring answers the only question that matters — do these four labels, at this
+    // font size, in this language, actually fit beside the label and the direction button?
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val chipStyle = MaterialTheme.typography.labelLarge
+    val labelStyle = MaterialTheme.typography.labelMedium
+    val widestChipLabelPx =
+            remember(fields, chipStyle, density, measurer) {
+                // measurer is keyed on too: rememberTextMeasurer is itself remembered on
+                // (fontFamilyResolver, density, layoutDirection), so a resolver or direction change
+                // that left density equal would otherwise leave this memo holding a width computed
+                // by a measurer that has since been discarded.
+                fields.maxOf { (_, label) -> measurer.measure(label, chipStyle).size.width }
+            }
+    val sortLabelPx =
+            remember(sortByText, labelStyle, density, measurer) {
+                minOf(
+                        measurer.measure(sortByText, labelStyle).size.width,
+                        with(density) { SortLabelMaxWidth.roundToPx() }
+                )
+            }
+
+    BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
     ) {
-        // CAPPED, not weighted. A Row measures non-weighted children first at their full intrinsic
-        // width, so an unbounded label took whatever it wanted and the chips absorbed the entire
-        // shortfall — clipping mid-glyph, since their default overflow is Clip. Invisible while this
-        // string was hardcoded English at ~48dp; localizing it made the label up to 2.5x wider
-        // (RemEx-0pxq).
-        //
-        // widthIn rather than weight(fill = false): giving BOTH children a weight makes totalWeight
-        // 2, and RowColumnMeasurePolicy computes each share up front with no redistribution pass —
-        // so a fill = false label shrinks to intrinsic while the chip row, whose weight defaults to
-        // fill = true, stays PINNED at its 50% share. The label's unused half is not handed back, it
-        // is simply lost, which cost English chips ~84dp and left dead space at the row's end. With
-        // only one weighted child the chip row gets the whole true remainder, so English is
-        // unchanged and only the long locales are capped.
-        Text(
-                text = stringResource(R.string.sort_by),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.widthIn(max = 120.dp),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-        )
-        // M3 Expressive ToggleButtons in a plain Row. NOTE: we deliberately do NOT use the
-        // Expressive ButtonGroup — its measure policy crashes in material3 1.5.0-alpha20
-        // (ButtonGroupMeasurePolicy → Constraints.copy with negative width, ButtonGroup.kt:816).
-        // A standalone ToggleButton still gives the round↔squircle shape morph on selection.
-        Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            fields.forEach { (field, label) ->
-                ToggleButton(
-                        checked = currentSortField == field,
-                        onCheckedChange = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                            onUpdateSortField(field)
-                        },
-                        modifier = Modifier.weight(1f),
-                        contentPadding =
-                                androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
-                ) {
-                    Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        val fitsInline =
+                with(density) {
+                    sortControlsFitInline(
+                            availableWidthPx = constraints.maxWidth,
+                            sortLabelWidthPx = sortLabelPx,
+                            widestChipLabelPx = widestChipLabelPx,
+                            chipCount = fields.size,
+                            chipHorizontalPaddingPx = ChipHorizontalPadding.roundToPx(),
+                            chipSpacingPx = ChipSpacing.roundToPx(),
+                            rowSpacingPx = SortRowSpacing.roundToPx(),
+                            directionButtonWidthPx = DirectionButtonWidth.roundToPx()
+                    )
                 }
+
+        if (fitsInline) {
+            Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SortRowSpacing)
+            ) {
+                // CAPPED, not weighted. A Row measures non-weighted children first at their full
+                // intrinsic width, so an unbounded label took whatever it wanted and the chips
+                // absorbed the entire shortfall — clipping mid-glyph, since their default overflow
+                // is Clip. Invisible while this string was hardcoded English at ~48dp; localizing it
+                // made the label up to 2.5x wider (RemEx-0pxq).
+                //
+                // widthIn rather than weight(fill = false): giving BOTH children a weight makes
+                // totalWeight 2, and RowColumnMeasurePolicy computes each share up front with no
+                // redistribution pass — so a fill = false label shrinks to intrinsic while the chip
+                // row, whose weight defaults to fill = true, stays PINNED at its 50% share. The
+                // label's unused half is not handed back, it is simply lost, which cost English
+                // chips ~84dp and left dead space at the row's end. With only one weighted child the
+                // chip row gets the whole true remainder, so English is unchanged and only the long
+                // locales are capped.
+                SortByLabel(sortByText, Modifier.widthIn(max = SortLabelMaxWidth))
+                SortFieldChips(fields, currentSortField, onUpdateSortField, Modifier.weight(1f))
+                SortDirectionButton(sortDescending, currentSortField, onUpdateSortField)
+            }
+        } else {
+            // Stacked: the chips get the FULL width instead of the ~55% left over beside the label
+            // and the button, which is the only thing that actually buys them room. The label keeps
+            // the direction button company on the first line — it is the one control that must stay
+            // reachable, and it costs nothing there.
+            Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(StackedRowSpacing)
+            ) {
+                Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // weight, not widthIn: with a whole line to itself the label no longer has to be
+                    // capped, so the long translations stop being truncated at exactly the font
+                    // scale where they are hardest to read.
+                    SortByLabel(sortByText, Modifier.weight(1f))
+                    SortDirectionButton(sortDescending, currentSortField, onUpdateSortField)
+                }
+                SortFieldChips(
+                        fields,
+                        currentSortField,
+                        onUpdateSortField,
+                        Modifier.fillMaxWidth()
+                )
             }
         }
-        // Sort direction IconButton stays separate for clear affordance
-        IconButton(
-                onClick = {
-                    view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-                    onUpdateSortField(currentSortField) // same field → toggles descending
-                }
-        ) {
-            val sortArrowRotation by
-                    animateFloatAsState(
-                            targetValue = if (sortDescending) 0f else 180f,
-                            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
-                            label = "sortArrowRotation"
-                    )
-            Icon(
-                    imageVector = Icons.Default.ArrowDownward,
-                    contentDescription =
-                            if (sortDescending) stringResource(R.string.sort_descending)
-                            else stringResource(R.string.sort_ascending),
-                    modifier = Modifier.size(20.dp).rotate(sortArrowRotation)
-            )
+    }
+}
+
+private val SortLabelMaxWidth = 120.dp
+private val ChipHorizontalPadding = 6.dp
+private val ChipSpacing = 4.dp
+private val SortRowSpacing = 8.dp
+/** Gap between the label line and the chip line when stacked. */
+private val StackedRowSpacing = 4.dp
+/** M3 minimum interactive size — what an [IconButton] reserves regardless of its 20dp icon. */
+private val DirectionButtonWidth = 48.dp
+
+/**
+ * Do the sort label, the four sort chips and the direction button fit on one line?
+ *
+ * Pure arithmetic, so the decision this layout turns on can be tested on the JVM rather than only
+ * seen on a device at a font scale nobody remembers to try (RemEx-k0vy). Every input is already in
+ * pixels; the caller converts.
+ *
+ * Sizing every chip to the WIDEST label is deliberate — the chips share the row equally
+ * (`weight(1f)` each), so the widest one decides whether any of them clips. Averaging would report
+ * a fit that the actual measure policy does not deliver.
+ *
+ * The model is EXACT, not an estimate, and carries no slack — verified against material3
+ * 1.5.0-alpha24. `ToggleButton` provides `typography.labelLarge` to its content (ToggleButton.kt),
+ * which is the style measured here, and it constrains `minHeight` only, so there is no hidden
+ * min-width term. `IconButton` applies `minimumInteractiveComponentSize()` outermost over a 40dp
+ * container, and `LocalMinimumInteractiveComponentSize` defaults to 48dp, so the direction button
+ * really does occupy 48dp. The comparison therefore trips at the exact pixel where the first glyph
+ * would clip. Do not "reclaim" margin here — there is none to reclaim.
+ *
+ * Stacking does NOT guarantee a fit. A full-width chip row on a 280dp screen at 2.0x still needs
+ * more than it has, and those chips ellipsize. That is the floor of this approach; escaping it needs
+ * the dropdown option the bead also lists, not a bigger number here.
+ */
+internal fun sortControlsFitInline(
+        availableWidthPx: Int,
+        sortLabelWidthPx: Int,
+        widestChipLabelPx: Int,
+        chipCount: Int,
+        chipHorizontalPaddingPx: Int,
+        chipSpacingPx: Int,
+        rowSpacingPx: Int,
+        directionButtonWidthPx: Int
+): Boolean {
+    if (chipCount <= 0) return true
+    val chipsNeedPx =
+            chipCount * (widestChipLabelPx + 2 * chipHorizontalPaddingPx) +
+                    (chipCount - 1) * chipSpacingPx
+    val remainingPx =
+            availableWidthPx - sortLabelWidthPx - directionButtonWidthPx - 2 * rowSpacingPx
+    return chipsNeedPx <= remainingPx
+}
+
+@Composable
+private fun SortByLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = modifier,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+private fun SortFieldChips(
+        fields: List<Pair<ProcessSortField, String>>,
+        currentSortField: ProcessSortField,
+        onUpdateSortField: (ProcessSortField) -> Unit,
+        modifier: Modifier = Modifier
+) {
+    val view = LocalView.current
+    // M3 Expressive ToggleButtons in a plain Row. NOTE: we deliberately do NOT use the Expressive
+    // ButtonGroup — its measure policy crashes in material3 1.5.0-alpha20 (ButtonGroupMeasurePolicy
+    // → Constraints.copy with negative width, ButtonGroup.kt:816). A standalone ToggleButton still
+    // gives the round↔squircle shape morph on selection.
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(ChipSpacing)) {
+        fields.forEach { (field, label) ->
+            ToggleButton(
+                    checked = currentSortField == field,
+                    onCheckedChange = {
+                        view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                        onUpdateSortField(field)
+                    },
+                    modifier = Modifier.weight(1f),
+                    contentPadding =
+                            androidx.compose.foundation.layout.PaddingValues(
+                                    horizontal = ChipHorizontalPadding
+                            )
+            ) {
+                Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
+    }
+}
+
+/** Sort direction toggle. Stays a separate control from the chips for a clear affordance. */
+@Composable
+private fun SortDirectionButton(
+        sortDescending: Boolean,
+        currentSortField: ProcessSortField,
+        onUpdateSortField: (ProcessSortField) -> Unit
+) {
+    val view = LocalView.current
+    IconButton(
+            onClick = {
+                view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+                onUpdateSortField(currentSortField) // same field → toggles descending
+            }
+    ) {
+        val sortArrowRotation by
+                animateFloatAsState(
+                        targetValue = if (sortDescending) 0f else 180f,
+                        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                        label = "sortArrowRotation"
+                )
+        Icon(
+                imageVector = Icons.Default.ArrowDownward,
+                contentDescription =
+                        if (sortDescending) stringResource(R.string.sort_descending)
+                        else stringResource(R.string.sort_ascending),
+                modifier = Modifier.size(20.dp).rotate(sortArrowRotation)
+        )
     }
 }
 
