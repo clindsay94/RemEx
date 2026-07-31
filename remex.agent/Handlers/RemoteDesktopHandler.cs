@@ -26,6 +26,15 @@ public sealed class RemoteDesktopHandler : IDisposable
     private readonly IDesktopWindowControlService _windowControl;
     private readonly IHostCapabilitiesProvider _hostCapabilitiesProvider;
     private readonly BlockingCollection<InputEvent> _inputQueue = new(1000);
+
+    /// <summary>
+    /// Keys this client has pressed and not released, so teardown can release them (RemEx-e2p4).
+    /// </summary>
+    /// <remarks>
+    /// Per handler, and the handler is constructed per connection, so this is exactly one client's
+    /// session — a second phone's held keys cannot be released by this one's disconnect.
+    /// </remarks>
+    private readonly HeldKeyTracker _heldKeys = new();
     private readonly Task _inputProcessingTask;
 
     // Upper bound on the target frame rate, shared with clients via DesktopConfig.MaxTargetFps so the
@@ -1040,7 +1049,16 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
-    private void DispatchInput(InputEvent input)
+    /// <summary>
+    /// Applies one input event to the host.
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than private so the held-key bookkeeping can be tested end to end: the queue
+    /// that normally feeds this is private and driven by a WebSocket, so without a seam the wiring
+    /// between here and <see cref="Dispose"/> is exactly the kind of link that can be deleted with
+    /// every unit test still green (RemEx-e2p4).
+    /// </remarks>
+    internal void DispatchInput(InputEvent input)
     {
         try
         {
@@ -1085,9 +1103,11 @@ public sealed class RemoteDesktopHandler : IDisposable
                     break;
                 case InputEventTypes.KeyDown when input.KeyCode.HasValue:
                     _inputSimulation.KeyDown(input.KeyCode.Value);
+                    _heldKeys.Pressed(input.KeyCode.Value);
                     break;
                 case InputEventTypes.KeyUp when input.KeyCode.HasValue:
                     _inputSimulation.KeyUp(input.KeyCode.Value);
+                    _heldKeys.Released(input.KeyCode.Value);
                     break;
                 case InputEventTypes.TypeText when input.Text is not null:
                     _inputSimulation.TypeText(input.Text);
@@ -1701,15 +1721,72 @@ public sealed class RemoteDesktopHandler : IDisposable
     public void Dispose()
     {
         _inputQueue.CompleteAdding();
+        bool inputDrained = false;
         try
         {
-            _inputProcessingTask.Wait(TimeSpan.FromSeconds(2));
+            inputDrained = _inputProcessingTask.Wait(TimeSpan.FromSeconds(2));
         }
         catch (AggregateException)
         {
             // Expected if the task faulted or was already completed.
         }
+
+        if (!inputDrained)
+        {
+            // The release below assumes nothing more will be dispatched. If the wait timed out the
+            // input thread may still be mid-dispatch, so a queued KeyDown can land after the release
+            // and re-hold a key that is no longer tracked — the same stuck key as before, which is
+            // status quo rather than a regression, but it must not be silent. More plausible on
+            // Linux, where each event can spawn a subprocess. (RemEx-e2p4)
+            _logger.LogWarning(
+                "Input queue did not drain within 2s; keys held by the client may not be released.");
+        }
+
+        // AFTER the queue has drained, deliberately. Releasing earlier would race the input thread,
+        // and a queued KeyDown arriving afterwards would silently re-hold the key we just released.
+        ReleaseKeysHeldByClient();
+
         _inputQueue.Dispose();
+    }
+
+    /// <summary>
+    /// Releases every key this client still had down when its session ended (RemEx-e2p4).
+    /// </summary>
+    /// <remarks>
+    /// A key press is two messages and a chord is six, and nothing guarantees the client sends the
+    /// closing half: it can be force-stopped, lose Wi-Fi, or tear the stream down before its own
+    /// keyUps drain. The host has already told Windows the key is down, so without this a modifier is
+    /// left physically held on the user's desktop and every later keystroke becomes a chord — with no
+    /// way to clear it from the phone, because the phone is what went away. Client-side ordering
+    /// (RemEx-3uhp, RemEx-7rq3, RemEx-krvz) makes the messages arrive in order when they arrive; this
+    /// is for when they do not.
+    ///
+    /// Best-effort per key: one failing release must not strand the rest, which for modifiers is the
+    /// difference between a stuck Ctrl and a stuck Ctrl+Shift+Alt.
+    /// </remarks>
+    private void ReleaseKeysHeldByClient()
+    {
+        var held = _heldKeys.TakeAll();
+        if (held.Count == 0)
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            "Releasing {Count} key(s) still held by the client at session end: {Keys}",
+            held.Count, string.Join(", ", held));
+
+        foreach (var keyCode in held)
+        {
+            try
+            {
+                _inputSimulation.KeyUp(keyCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to release held key {KeyCode} at session end.", keyCode);
+            }
+        }
     }
 
     private string BuildWindowsDesktopUnavailableMessage(WindowsRemoteDesktopDiagnosticReport report)
