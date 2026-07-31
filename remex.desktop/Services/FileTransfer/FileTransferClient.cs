@@ -710,9 +710,37 @@ public sealed class FileTransferClient : IDisposable
                     $"Download failed: {result.FileTransferEnd.ErrorMessage}");
             }
 
+            // FLUSH BEFORE DECLARING SUCCESS. The writer having returned means every chunk reached
+            // the FileStream, not the disk: up to the 64 KB buffer can still be sitting in memory.
+            // The only other flush is the implicit one when `await using` disposes at method exit,
+            // and DISPOSAL DOES NOT REPORT WRITE FAILURES — measured on .NET 10.0.10, a FileStream
+            // whose underlying handle had been killed returned normally from `DisposeAsync` while
+            // `FlushAsync` on an identically-broken stream threw. Without this a destination that
+            // filled up or was unplugged in that window lost the tail while the transfer reported
+            // success, because the digest below is computed from bytes as RECEIVED. (RemEx-owc3)
+            //
+            // KNOW WHAT THIS DOES AND DOES NOT BUY. FlushAsync hands the managed buffer to the OS
+            // with a write call; it does NOT fsync. So it surfaces the errors the write itself
+            // reports — out of space, device gone, which are the two cases this bead is about — but
+            // once bytes are in the OS cache a later write-back failure is still invisible and the
+            // transfer still reports success. Do NOT "improve" this to Flush(flushToDisk: true): it
+            // blocks synchronously, and the host does not fsync its side either, so a plain flush is
+            // the honest parity rather than a false guarantee on one end.
+            //
+            // Deliberately untokenised. FlushAsync(ct) with an already-cancelled token returns a
+            // cancelled task WITHOUT flushing, abandoning the buffer — the identical failure this
+            // exists to remove. Cancellation is already honoured a few lines above.
+            await fileStream.FlushAsync();
+
             // Verify the host-supplied SHA-256 against the bytes we actually received.
             // Master plan §996 calls this out as the recommended download-side parity
             // with upload integrity verification.
+            //
+            // KNOW WHAT THIS DOES NOT COVER. The digest is accumulated in OnFileTransferMessage from
+            // chunks as they ARRIVE; nothing here re-reads the file. So it proves the transport was
+            // faithful and cannot prove the bytes reached the disk — which is exactly why a writer
+            // that stopped early once passed this check with a truncated file on disk (RemEx-gyf4).
+            // The flush above is what closes that gap; do not mistake this check for covering it.
             var expectedHash = result.FileTransferEnd?.Sha256Base64;
             var actualHash = Convert.ToBase64String(hasher.GetHashAndReset());
             if (!string.IsNullOrEmpty(expectedHash) && expectedHash != actualHash)
