@@ -279,6 +279,17 @@ public static class MessageTypes
     public const string LauncherSync = "launcher_sync";
     public const string LauncherAdd = "launcher_add";
     public const string LauncherRemove = "launcher_remove";
+    /// <summary>
+    /// Client → host: re-send the current launcher allowlist. A pure read, so unlike the three
+    /// mutating launcher types it is NOT loopback-gated (see <c>PingPongHandler.RequiresLoopback</c>).
+    /// The host replies with <see cref="LauncherSync"/>.
+    /// </summary>
+    /// <remarks>
+    /// Existed only as a hand-built literal on the Android side with no constant and no host case,
+    /// so every Refresh tap fell through to the handler's "Unknown message type" default and the
+    /// phone sat on its spinner until a 5s client-side safety net expired (RemEx-vpxx).
+    /// </remarks>
+    public const string LauncherSyncRequest = "launcher_sync_request";
     public const string LayoutSync = "layout_sync";
     public const string LayoutUpdate = "layout_update";
     public const string LayoutRequest = "layout_request";

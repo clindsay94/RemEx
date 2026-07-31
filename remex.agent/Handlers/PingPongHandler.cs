@@ -298,6 +298,16 @@ public sealed class PingPongHandler(
                         logger.LogInformation("Launcher list synced from client ({Count} entries).", message.LauncherEntries.Count);
                         break;
 
+                    // The read counterpart to the three mutating launcher types above, and the only
+                    // launcher message Android sends (pull-to-refresh on the App Launcher screen).
+                    // Deliberately not loopback-gated: re-reading a list the host already pushes on
+                    // connect grants nothing extra. Mirrors LayoutRequest → LayoutSync below.
+                    case MessageTypes.LauncherSyncRequest:
+                        var reqEntries = await launcherStorage.LoadEntriesAsync();
+                        await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = reqEntries }, ct);
+                        logger.LogInformation("Launcher list sent to client on request ({Count} entries).", reqEntries.Count);
+                        break;
+
                     case MessageTypes.ProcessListRequest:
                         var procs = await processMonitorService.GetProcessesAsync();
                         await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.ProcessListSync, ProcessList = procs }, ct);
@@ -713,8 +723,10 @@ public sealed class PingPongHandler(
     /// allowlist is the thing VULN-3's LAUNCHAPP check is measured against, so being able to rewrite
     /// it over the wire makes that mitigation self-referential (RemEx-q6xt).
     /// <para>
-    /// <c>launcher_sync_request</c> is deliberately absent: asking for the list is a read, and it is
-    /// what the Android client actually sends.
+    /// <see cref="MessageTypes.LauncherSyncRequest"/> is deliberately absent: asking for the list is
+    /// a read, and it is what the Android client actually sends. (When this gate was written that
+    /// type had no constant to name it — RemEx-vpxx added one along with the host case that answers
+    /// it, so the exclusion can now be stated in the type system rather than in prose.)
     /// </para>
     /// </remarks>
     internal static bool RequiresLoopback(string type) =>

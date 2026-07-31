@@ -52,15 +52,16 @@ public class LauncherAllowlistAuthorizationTests
     /// Gating it would break the phone's launcher screen while protecting nothing.
     /// </summary>
     /// <remarks>
-    /// Spelled as a literal because there is no <c>MessageTypes</c> constant for it: Android builds
-    /// the JSON by hand (<c>AppLauncherViewModel.kt</c>). The host has no case for it either, which
-    /// is its own defect and is filed separately — but it must not become a LOOPBACK defect here.
+    /// Was spelled as a literal here because no <c>MessageTypes</c> constant existed: Android built
+    /// the JSON by hand (<c>AppLauncherViewModel.kt</c>) and the host had no case for it either, so
+    /// the type lived on exactly one side of the wire. RemEx-vpxx closed both halves; the constant
+    /// is used here now so a rename cannot silently un-verify this.
     /// </remarks>
     [Fact]
     public void LauncherSyncRequest_DoesNotRequireLoopback()
     {
         Assert.False(
-            PingPongHandler.RequiresLoopback("launcher_sync_request"),
+            PingPongHandler.RequiresLoopback(MessageTypes.LauncherSyncRequest),
             "launcher_sync_request is a read, and the only launcher message Android sends.");
     }
 
