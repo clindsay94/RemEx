@@ -84,11 +84,24 @@ public sealed record DesktopDisplayInfo
     /// Resolve it back to a live <see cref="DisplayId"/> against a fresh
     /// <see cref="DesktopDisplayCatalog"/> before asking to capture it.
     /// <para>
-    /// THE GUARANTEE DOES NOT CURRENTLY HOLD ON WINDOWS, so do not rely on it yet. Linux derives it
-    /// from the display's own identity (its UUID where available, otherwise the output name), which
-    /// is stable. The Windows host assigns it the SAME string as <see cref="DisplayId"/> — the device
-    /// name, or a <c>monitor-N</c> ordinal fallback — so there it is exactly as session-scoped as the
-    /// id it is supposed to outlive. Filed as RemEx-zftu.
+    /// Linux derives it from the display's own identity — its UUID where available, otherwise the
+    /// output name; note the portal and single-output paths fall back to a literal <c>"default"</c>,
+    /// which identifies nothing in particular. Windows derives it from the monitor's device interface
+    /// path. (RemEx-zftu; before that fix Windows assigned it the same session-scoped string as
+    /// <see cref="DisplayId"/>, and it did not survive anything.)
+    /// </para>
+    /// <para>
+    /// LIMITS WORTH KNOWING, because the key is better than it was but is not a serial number. The
+    /// Windows path embeds the panel's manufacturer and MODEL (its EDID hardware id) plus the output's
+    /// UID — so it is stable across reboots and across replugging into the SAME port, but not across
+    /// moving a monitor to a different port. It also cannot tell two IDENTICAL panels apart when they
+    /// are swapped between ports: both keys still resolve, each to the other's screen. In clone mode
+    /// one output has several monitor children and the first is used.
+    /// </para>
+    /// <para>
+    /// So: treat a key that no longer resolves as "that monitor is gone" and fall back to the primary
+    /// display, never assuming resolution succeeds — but do not treat a key that DOES resolve as proof
+    /// the user is looking at the same physical panel.
     /// </para>
     /// </remarks>
     [JsonPropertyName("persistentDisplayKey")]

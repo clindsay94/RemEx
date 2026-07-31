@@ -205,10 +205,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
                 DisplayListVersion = _displayListVersion,
                 SupportedCaptureModes = [DesktopCaptureMode.VirtualDesktop, DesktopCaptureMode.Monitor],
                 Displays = _displays
-                    .Select(display => new DesktopDisplayInfo
+                    .Select((display, index) => new DesktopDisplayInfo
                     {
                         DisplayId = display.DisplayId,
-                        PersistentDisplayKey = display.PersistentDisplayKey,
+                        PersistentDisplayKey = ChoosePersistentDisplayKey(
+                            TryGetMonitorInterfacePath(display.DeviceName),
+                            display.DeviceName,
+                            index + 1),
                         Name = display.Name,
                         IsPrimary = display.IsPrimary,
                         Left = display.Bounds.Left,
@@ -633,7 +636,6 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
             displays.Add(new DisplayDefinition(
                 displayId,
-                displayId,
                 deviceName,
                 name,
                 bounds,
@@ -644,6 +646,117 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
         EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, callback, IntPtr.Zero);
         return displays;
+    }
+
+    /// <summary>
+    /// Asks Windows for the device interface path of the monitor attached to <paramref name="adapterDeviceName"/>
+    /// (an adapter output such as <c>\.\DISPLAY1</c>), e.g.
+    /// <c>\?\DISPLAY#GSM5B09#5&amp;1a2b3c4d&amp;0&amp;UID4353#{e6f07b5f-...}</c>.
+    /// </summary>
+    /// <remarks>
+    /// This is the stable half of <see cref="ChoosePersistentDisplayKey"/>. The path embeds the monitor's
+    /// EDID hardware id, so it identifies the physical panel rather than its position in an enumeration
+    /// — which is the entire point of RemEx-zftu. It is stable across reboots and across unplugging and
+    /// replugging the same monitor into the same port. It is NOT stable across moving that monitor to a
+    /// different port, because the <c>UID</c> component is the output's, not the panel's. The EDID
+    /// serial IS reachable (WMI <c>root\wmi</c> <c>WmiMonitorID.SerialNumberID</c>, or the raw EDID
+    /// blob in the registry) but plenty of panels report it blank or constant, so it is not the more
+    /// reliable source it looks like — and this is still enormously better than an enumeration ordinal.
+    ///
+    /// Skips inactive entries, and takes the first active one: an adapter output drives one panel in
+    /// every normal configuration. Returns null when nothing usable is available, which the caller
+    /// treats as the unstable case rather than inventing a key.
+    /// </remarks>
+    private static string? TryGetMonitorInterfacePath(string adapterDeviceName)
+    {
+        if (string.IsNullOrWhiteSpace(adapterDeviceName))
+        {
+            return null;
+        }
+
+        return ResolveMonitorInterfacePath(index =>
+        {
+            var device = new DISPLAY_DEVICE();
+            device.cb = Marshal.SizeOf<DISPLAY_DEVICE>();
+            bool enumerated = EnumDisplayDevices(
+                adapterDeviceName, index, ref device, EDD_GET_DEVICE_INTERFACE_NAME);
+            return new MonitorDeviceEntry(enumerated, device.StateFlags, device.DeviceID);
+        });
+    }
+
+    /// <summary>One <see cref="EnumDisplayDevices"/> result, reduced to what the walk actually needs.</summary>
+    internal readonly record struct MonitorDeviceEntry(bool Enumerated, int StateFlags, string? DeviceId);
+
+    /// <summary>
+    /// Walks an adapter output's monitor children and returns the first usable device interface path.
+    /// </summary>
+    /// <remarks>
+    /// Separated from the P/Invoke so the WALK is testable without a monitor attached. The
+    /// marshalling genuinely needs hardware, but the loop has its own failure modes that hardware
+    /// would not reliably expose either — swapping the skip for a stop would silently take the wrong
+    /// panel in a clone-mode setup, and continuing past a false return would read uninitialised
+    /// entries. Those are pinned by tests; the marshalling is not, and is not pretended to be.
+    ///
+    /// Stopping at the first false is the documented contract: indices are consecutive from 0 and the
+    /// call fails once there are no more monitors for the adapter.
+    /// </remarks>
+    internal static string? ResolveMonitorInterfacePath(Func<uint, MonitorDeviceEntry> enumerate)
+    {
+        for (uint index = 0; index < MaxMonitorsPerAdapter; index++)
+        {
+            var entry = enumerate(index);
+
+            if (!entry.Enumerated)
+            {
+                break;
+            }
+
+            if ((entry.StateFlags & DISPLAY_DEVICE_ACTIVE) == 0)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.DeviceId))
+            {
+                return entry.DeviceId.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Picks the value for <see cref="DesktopDisplayInfo.PersistentDisplayKey"/> from the best source
+    /// available, most stable first.
+    /// </summary>
+    /// <remarks>
+    /// Pure so the ladder can be tested without a monitor attached (RemEx-zftu). The bug this replaces
+    /// was not a subtle one: the Windows host assigned <c>PersistentDisplayKey</c> the SAME string as
+    /// <c>DisplayId</c>, i.e. <c>\.\DISPLAY1</c> or a <c>monitor-N</c> ordinal — both enumeration
+    /// artefacts. A client that persisted it and reselected that monitor later could silently land on a
+    /// DIFFERENT physical screen after a replug, and it failed QUIETLY, because the key still resolved.
+    ///
+    /// The last rung is deliberately kept and deliberately unstable: when Windows will not tell us
+    /// anything about the panel, an ordinal is all there is. It is better to return something the
+    /// session can use than to fail enumeration, but nothing about it survives a monitor change.
+    /// </remarks>
+    internal static string ChoosePersistentDisplayKey(
+        string? monitorInterfacePath, string? adapterDeviceName, int ordinal)
+    {
+        if (!string.IsNullOrWhiteSpace(monitorInterfacePath))
+        {
+            return monitorInterfacePath.Trim();
+        }
+
+        // No panel identity available. Fall back to the adapter output, which at least survives for as
+        // long as the monitor topology does not change — the pre-RemEx-zftu behaviour, now reached only
+        // when the stable source is unavailable rather than always.
+        if (!string.IsNullOrWhiteSpace(adapterDeviceName))
+        {
+            return adapterDeviceName.Trim();
+        }
+
+        return $"monitor-{ordinal}";
     }
 
     private static Rectangle GetVirtualDesktopBounds()
@@ -754,6 +867,32 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         MonitorEnumProc lpfnEnum,
         IntPtr dwData);
 
+    private const uint EDD_GET_DEVICE_INTERFACE_NAME = 0x00000001;
+    private const int DISPLAY_DEVICE_ACTIVE = 0x00000001;
+    /// <summary>Loop bound for <see cref="EnumDisplayDevices"/>; an adapter output drives one panel in practice.</summary>
+    private const uint MaxMonitorsPerAdapter = 16;
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct DISPLAY_DEVICE
+    {
+        public int cb;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string DeviceName;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceString;
+        public int StateFlags;
+        /// <summary>With EDD_GET_DEVICE_INTERFACE_NAME this is the monitor's device interface path.</summary>
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceID;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+        public string DeviceKey;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumDisplayDevices(
+        string? lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
+
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
@@ -839,9 +978,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
 
     #endregion
 
+    // NOTE: no PersistentDisplayKey here on purpose. EnumerateDisplays is reached from
+    // GetActiveBounds, which runs on the per-frame capture path, whereas the key is read only by
+    // GetDisplayCatalog. Resolving it here would mean an EnumDisplayDevices call per monitor per
+    // frame, marshalling an 840-byte struct into four managed strings, for a value nothing reads at
+    // that point. It is computed where it is consumed instead.
     private sealed record DisplayDefinition(
         string DisplayId,
-        string PersistentDisplayKey,
         string DeviceName,
         string Name,
         Rectangle Bounds,
