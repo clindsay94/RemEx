@@ -77,15 +77,19 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     private string? _ffmpegPath;
     private int _width;
     private int _height;
+    private int _inputWidth;
+    private int _inputHeight;
     private bool _initialized;
 
     public bool IsAvailable { get; private set; }
 
     /// <summary>
-    /// Exact raw BGRA byte count this encoder expects per frame (width * height * 4).
-    /// 0 until <see cref="Initialize"/> succeeds.
+    /// Bytes the caller must write per frame. Follows the INPUT size, not the encoded size — ffmpeg's
+    /// <c>-s</c> describes what arrives on the pipe, and a mismatch here desyncs rawvideo and makes
+    /// the encoder emit zero frames. 0 until <see cref="Initialize"/> succeeds.
+    /// THE PROBE MUST USE THE SAME SIZE; see RunEncoderProbe.
     /// </summary>
-    public int ExpectedInputByteCount => _initialized ? _width * _height * 4 : 0;
+    public int ExpectedInputByteCount => _initialized ? _inputWidth * _inputHeight * 4 : 0;
 
     /// <summary>
     /// The FFmpeg codec string that was successfully started (e.g. "h264_nvenc", "libx264").
@@ -144,7 +148,13 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         }
     }
 
-    public bool Initialize(int width, int height, int fps, int qp)
+    /// <summary>
+    /// Starts the encoder. <paramref name="inputWidth"/>/<paramref name="inputHeight"/> are the size
+    /// of the raw BGRA frames the caller will write; <paramref name="width"/>/<paramref name="height"/>
+    /// are the size to encode. When they differ ffmpeg does the downscale — see
+    /// <see cref="BuildEncoderArgs"/> for why that beats scaling on the capture thread.
+    /// </summary>
+    public bool Initialize(int inputWidth, int inputHeight, int width, int height, int fps, int qp)
     {
         if (!IsAvailable || _ffmpegPath == null) return false;
         if (_initialized) DisposeProcess();
@@ -152,6 +162,8 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         // Constant-QP rate control. Lower QP = higher quality + bitrate. Clamp to a sane H.264 range.
         qp = Math.Clamp(qp, 16, 45);
 
+        _inputWidth = inputWidth;
+        _inputHeight = inputHeight;
         _width = width;
         _height = height;
 
@@ -180,10 +192,10 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             // (h264_vaapi on NVIDIA was reported "initialized", died on the first real frame,
             // and the session silently degraded to MJPEG — RemEx-h038). The one-shot probe
             // forces that lazy open up front so fallback to the next codec is deterministic.
-            if (!ProbeCodec(codec, width, height, fps, qp))
+            if (!ProbeCodec(codec, inputWidth, inputHeight, width, height, fps, qp))
                 continue;
 
-            if (TryStartFFmpeg(codec, width, height, fps, qp))
+            if (TryStartFFmpeg(codec, inputWidth, inputHeight, width, height, fps, qp))
             {
                 long maxRate = ComputeMaxRateBps(width, height, fps, qp);
                 _logger.LogInformation(
@@ -223,14 +235,43 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// Builds the full ffmpeg argument string for <paramref name="codec"/>. Shared by the real
     /// streaming process and the one-shot capability probe so the probe exercises EXACTLY the
     /// arguments the real run will use — only the output side differs (single frame to a
-    /// discarded null muxer vs. a flushed Annex-B stream on stdout).
+    /// discarded null muxer vs. a flushed Annex-B stream on stdout). <paramref name="inputWidth"/>/<paramref name="inputHeight"/>
+    /// describe the raw BGRA frames arriving on the pipe; <paramref name="width"/>/
+    /// <paramref name="height"/> are the ENCODED dimensions.
     /// </summary>
-    internal static string BuildEncoderArgs(string codec, int width, int height, int fps, int qp, bool forProbe)
+    /// <remarks>
+    /// When they differ, a <c>scale</c> filter does the downscale inside ffmpeg. That is the point of
+    /// separating them: the capture backend used to shrink the frame itself with a GDI+ bilinear
+    /// <c>DrawImage</c>, measured at <b>20.7 ms per frame</b> for 2560x1440 → 0.6 on the reference box
+    /// — single-threaded, on the capture thread, capping the stream near 48 FPS before the encoder saw
+    /// anything. Handing full-resolution frames to swscale instead costs 1.7 ms of row-copy on the
+    /// capture thread and moves the resample into ffmpeg's SIMD scaler on its own threads (RemEx-evzv).
+    /// <para>
+    /// The trade is pipe bandwidth: full-res 2560x1440 BGRA is 14 MB per frame against 5.3 MB at 0.6.
+    /// It is worth it because the capture thread is what gates frame rate, and 20.7 ms of it cannot be
+    /// spent 120 times a second.
+    /// </para>
+    /// <para>
+    /// <c>bilinear</c>, NOT <c>fast_bilinear</c>. Measured on the reference box at 2560x1440 → 1536x864
+    /// against a lanczos reference: fast_bilinear 28.93 dB / 3.55 ms, bilinear 42.87 dB / 3.87 ms. The
+    /// extra 0.32 ms buys ~14 dB and is free against an 8.3 ms budget at 120 FPS on ffmpeg's own
+    /// thread. The initial choice of fast_bilinear also had the rate-distortion argument backwards:
+    /// scaler aliasing costs MORE bits at a given QP, so it hurts H.264 efficiency as well as sharpness.
+    /// </para>
+    /// </remarks>
+    internal static string BuildEncoderArgs(
+        string codec, int inputWidth, int inputHeight, int width, int height, int fps, int qp, bool forProbe)
     {
         var argsBuilder = new StringBuilder();
 
-        // Input: Raw BGRA frames from stdin
-        argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {width}x{height} -r {fps} -i - -an ");
+        // Input: Raw BGRA frames from stdin, at the size the CAPTURE produces.
+        argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {inputWidth}x{inputHeight} -r {fps} -i - -an ");
+
+        // Downscale inside ffmpeg when capture and encode sizes differ. Prepended to each codec's own
+        // filter chain below rather than emitted as a second -vf, which would silently override it.
+        string scaleFilter = inputWidth != width || inputHeight != height
+            ? $"scale={width}:{height}:flags=bilinear"
+            : string.Empty;
 
         // VBV-capped rate control budget, shared across every codec below. Replaces the previous
         // unbounded constant-QP scheme (no -maxrate/-bufsize anywhere), whose bitrate scaled freely
@@ -264,6 +305,11 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // repeatSPSPPS whenever AV_CODEC_FLAG_GLOBAL_HEADER is unset, which is always true for
                 // raw `-f h264 -` output, so every natural GOP keyframe is already self-contained and
                 // a decoder joining mid-stream configures from the next one. (RemEx-vj7b)
+                //
+                // The scale filter, when present, stays in BGRA: swscale resizes and NVENC still gets
+                // BGRA to convert in fixed-function hardware, so this path keeps its whole point. It
+                // is deliberately NOT scale_cuda for the reason above.
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
                 argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {qp} -b:v 0 -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1");
                 break;
             case "h264_nvenc":
@@ -274,18 +320,22 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // `-forced-idr 1` makes the forced keyframes emitted by `-force_key_frames` true
                 // IDR frames (with fresh SPS/PPS) instead of plain non-IDR I-frames, so an
                 // on-demand keyframe is independently decodable by a desynced client. (RemEx-bqc)
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
                 argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {qp} -b:v 0 -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1 -pix_fmt yuv420p");
                 break;
             case "h264_vaapi":
                 // VA-API on Linux (Intel/AMD). Rate-control left as CQP — VBR/maxrate behavior varies
                 // per driver and needs separate Linux validation (tested on Windows only for Phase 3).
-                argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf format=nv12,hwupload -c:v h264_vaapi -qp {qp} -g {gop} -aud 1");
+                argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf ");
+                if (scaleFilter.Length > 0) argsBuilder.Append($"{scaleFilter},");
+                argsBuilder.Append($"format=nv12,hwupload -c:v h264_vaapi -qp {qp} -g {gop} -aud 1");
                 break;
             case "h264_qsv":
                 // Intel Quick Sync. QVBR: -global_quality anchors quality, -maxrate/-bufsize cap peaks.
                 // -repeat_pps 1: QSV does not re-emit the PPS on IDRs by default, so a decoder that
                 // missed the stream-start access unit could never configure from natural GOP
                 // keyframes — black until a full restart. (RemEx-vj7b)
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
                 argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -repeat_pps 1 -aud 1");
                 break;
             case "h264_amf":
@@ -295,6 +345,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // GOP keyframes — black until a full restart. Spacing == GOP length aligns header
                 // insertion with the periodic IDRs (AMD's recommended streaming setup). NOTE: this is
                 // the H.264 AMF option — `header_insertion_mode` exists only on hevc_amf. (RemEx-vj7b)
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
                 argsBuilder.Append($"-c:v h264_amf -quality speed -rc vbr_peak -b:v {maxRate * 3 / 4} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -header_spacing {gop} -aud 1");
                 break;
             default:
@@ -305,6 +356,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // repeat-headers=1: already x264's default without GLOBAL_HEADER, made explicit so
                 // self-contained GOP keyframes are a tested contract, not an ffmpeg default that a
                 // future muxer/global-header change could silently revoke. (RemEx-vj7b)
+                if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
                 argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -x264-params aud=1:repeat-headers=1");
                 break;
         }
@@ -336,11 +388,13 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// lazy open to happen up front. Exit code 0 means the codec genuinely encodes at this
     /// geometry. (RemEx-h038)
     /// </summary>
-    private bool ProbeCodec(string codec, int width, int height, int fps, int qp)
+    private bool ProbeCodec(string codec, int inputWidth, int inputHeight, int width, int height, int fps, int qp)
     {
         // qp is excluded from the key on purpose: it is clamped to a universally valid H.264
         // range in Initialize and never decides whether an encoder can open.
-        var cacheKey = $"{codec}:{width}x{height}@{fps}";
+        // Input dims are part of the key: they change the filter chain (a scale filter appears or
+        // disappears), so a probe for the same OUTPUT size is not transferable between them.
+        var cacheKey = $"{codec}:{inputWidth}x{inputHeight}->{width}x{height}@{fps}";
         if (ProbeCache.TryGetValue(cacheKey, out var cached) &&
             (cached.Ok || Environment.TickCount64 - cached.AtMs < FailedProbeRetryMs))
         {
@@ -350,7 +404,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         bool ok;
         try
         {
-            ok = RunEncoderProbe(codec, width, height, fps, qp);
+            ok = RunEncoderProbe(codec, inputWidth, inputHeight, width, height, fps, qp);
         }
         catch (Exception ex)
         {
@@ -362,9 +416,9 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         return ok;
     }
 
-    private bool RunEncoderProbe(string codec, int width, int height, int fps, int qp)
+    private bool RunEncoderProbe(string codec, int inputWidth, int inputHeight, int width, int height, int fps, int qp)
     {
-        var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, width, height, fps, qp, forProbe: true))
+        var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, inputWidth, inputHeight, width, height, fps, qp, forProbe: true))
         {
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
@@ -383,10 +437,16 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         try
         {
             // Feed exactly one black frame, then EOF. Written in small chunks so the probe never
-            // allocates a whole frame (≈19 MB at 4096x1152) on the large-object heap.
+            // allocates a whole frame (≈14 MB at 2560x1440) on the large-object heap.
+            //
+            // SIZED FROM THE INPUT DIMENSIONS, which is the whole pipe contract: -s describes what
+            // arrives, so writing the ENCODED size here makes ffmpeg reject the frame with
+            // "packet size N < expected frame_size M" and fail the probe for EVERY codec — which
+            // presents as H.264 silently falling back to MJPEG forever, not as an error. That is
+            // exactly what this change did in review before the length was corrected (RemEx-evzv).
             var stdin = process.StandardInput.BaseStream;
             var zeros = new byte[64 * 1024];
-            long remaining = (long)width * height * 4;
+            long remaining = (long)inputWidth * inputHeight * 4;
             while (remaining > 0)
             {
                 int chunk = (int)Math.Min(zeros.Length, remaining);
@@ -423,11 +483,11 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         return false;
     }
 
-    private bool TryStartFFmpeg(string codec, int width, int height, int fps, int qp)
+    private bool TryStartFFmpeg(string codec, int inputWidth, int inputHeight, int width, int height, int fps, int qp)
     {
         try
         {
-            var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, width, height, fps, qp, forProbe: false))
+            var psi = new ProcessStartInfo(_ffmpegPath!, BuildEncoderArgs(codec, inputWidth, inputHeight, width, height, fps, qp, forProbe: false))
             {
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,

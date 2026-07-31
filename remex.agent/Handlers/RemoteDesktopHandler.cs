@@ -1560,11 +1560,11 @@ public sealed class RemoteDesktopHandler : IDisposable
     {
         var (screenWidth, screenHeight, _, _) = _screenCapture.GetScreenSize();
 
-        // Fit the encoded surface within the hardware H.264 limit, then capture at that same scale so
-        // the raw buffer size matches the encoder's fixed -s WxH input (CaptureScaling.ScaledEven on
-        // the identical scale guarantees this; a 1-pixel mismatch makes nvenc emit 0 frames).
+        // Fit the ENCODED surface within the hardware H.264 limit. Capture is no longer tied to this
+        // scale — ffmpeg downscales from full resolution — but the raw buffer must still match the
+        // encoder's -s WxH INPUT exactly, which is why both sizes go through CaptureScaling.ScaledEven
+        // below; a 1-pixel mismatch makes nvenc emit 0 frames.
         var scale = ClampScaleForH264(screenWidth, screenHeight, _scale);
-        _h264CaptureScale = scale;
         if (scale < _scale)
         {
             _logger.LogInformation(
@@ -1575,8 +1575,29 @@ public sealed class RemoteDesktopHandler : IDisposable
         int targetWidth = CaptureScaling.ScaledEven(screenWidth, scale);
         int targetHeight = CaptureScaling.ScaledEven(screenHeight, scale);
 
+        // CAPTURE AT FULL RESOLUTION and let ffmpeg downscale. The capture backend only has a fast
+        // path (one row-wise copy) when it is not resampling; asking it to shrink drops it into a
+        // GDI+ bilinear DrawImage measured at 20.7 ms per frame at 2560x1440 -> 0.6, single-threaded
+        // on the capture thread, which alone caps the stream near 48 FPS. Full-res capture is 1.7 ms
+        // and swscale does the resize on ffmpeg's own threads (RemEx-evzv).
+        // ODD-DIMENSION GUARD: ScaledEven rounds an odd width DOWN, so at scale 1.0 an odd-width
+        // surface still needs a resample — which puts the capture back on the GDI+ path, now at FULL
+        // resolution and therefore SLOWER than the 0.6 path it replaced, plus 14 MB on the pipe. Only
+        // take the full-res route when it genuinely lands on the no-resample fast path.
+        int captureWidth = CaptureScaling.ScaledEven(screenWidth, 1.0);
+        int captureHeight = CaptureScaling.ScaledEven(screenHeight, 1.0);
+        bool fullResIsFastPath = captureWidth == screenWidth && captureHeight == screenHeight;
+
+        if (!fullResIsFastPath)
+        {
+            captureWidth = targetWidth;
+            captureHeight = targetHeight;
+        }
+
+        _h264CaptureScale = fullResIsFastPath ? 1.0 : scale;
+
         var encoder = new FFmpegH264Encoder(_logger);
-        if (encoder.Initialize(targetWidth, targetHeight, _targetFps, QualityToQp(_quality)))
+        if (encoder.Initialize(captureWidth, captureHeight, targetWidth, targetHeight, _targetFps, QualityToQp(_quality)))
         {
             return encoder;
         }

@@ -18,10 +18,13 @@ public interface IH264Encoder : IDisposable
     int ExpectedInputByteCount { get; }
 
     /// <summary>
-    /// Initializes the encoder with target stream specifications.
+    /// Initializes the encoder. <paramref name="inputWidth"/>/<paramref name="inputHeight"/> describe
+    /// the raw BGRA frames the caller will write; <paramref name="width"/>/<paramref name="height"/>
+    /// are the encoded dimensions. Where they differ the implementation is responsible for the
+    /// downscale — done inside ffmpeg rather than on the capture thread (RemEx-evzv).
     /// <paramref name="qp"/> is the constant quantization parameter (lower = higher quality/bitrate).
     /// </summary>
-    bool Initialize(int width, int height, int fps, int qp);
+    bool Initialize(int inputWidth, int inputHeight, int width, int height, int fps, int qp);
 
     /// <summary>
     /// Encodes a raw 32-bit BGRA pixel frame to H.264 Annex B packets.
