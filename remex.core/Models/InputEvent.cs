@@ -49,20 +49,20 @@ public record InputEvent
     public int? Y { get; init; }
 
     /// <summary>
-    /// Mouse button INDEX, not a platform button code. 0 is left on both hosts; <b>1 and 2 are NOT
-    /// agreed on</b> — see the remarks before choosing a value.
+    /// Mouse button INDEX, not a platform button code: <c>0</c> left, <c>1</c> middle, <c>2</c>
+    /// right. Matches the W3C <c>MouseEvent.button</c> order, and an out-of-range value falls back
+    /// to left rather than being rejected.
     /// </summary>
     /// <remarks>
-    /// The two hosts currently disagree, and this record cannot fix that by declaring a winner:
-    /// <list type="bullet">
-    /// <item><description>Windows: <c>0</c> left, <c>1</c> MIDDLE, <c>2</c> RIGHT; anything else
-    /// falls back to left.</description></item>
-    /// <item><description>Linux: <c>0</c> left, <c>1</c> RIGHT, <c>2</c> MIDDLE, <c>3</c> side,
-    /// <c>4</c> extra.</description></item>
-    /// </list>
-    /// So <c>1</c> means middle-click on a Windows host and right-click on a Linux one. The Android
-    /// client is not self-consistent about it either. Filed as RemEx-kie3; until that lands, treat
-    /// only <c>0</c> as portable and check the host platform before sending anything else.
+    /// Both hosts agree on this — Windows through <c>MOUSEEVENTF_*</c> and Linux through all three
+    /// of its backends (xdotool, ydotool and the portal). The index is deliberately NOT a platform
+    /// code: the same value has to mean the same button whichever host answers.
+    /// <para>
+    /// The Android client sends these through <c>MouseButtons.LEFT/MIDDLE/RIGHT</c> rather than bare
+    /// digits, because a literal <c>1</c> reads as "the first button" at a call site and is in fact
+    /// the middle one. The Remote Mouse screen sent exactly that for its "Left click" button, so
+    /// left click middle-clicked on every platform until RemEx-kie3.
+    /// </para>
     /// </remarks>
     [JsonPropertyName("button")]
     public int? Button { get; init; }

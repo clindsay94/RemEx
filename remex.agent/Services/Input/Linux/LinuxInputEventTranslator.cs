@@ -319,14 +319,37 @@ public static class LinuxInputEventTranslator
     }
 
     /// <summary>
-    /// Converts a <see cref="DesktopPointerSample"/> button index to a Linux BTN_ code.
-    /// Index 0 = BTN_LEFT, 1 = BTN_RIGHT, 2 = BTN_MIDDLE.
+    /// Converts a protocol button index (<see cref="InputEvent.Button"/>) to a Linux BTN_ code.
+    /// Index 0 = BTN_LEFT, 1 = BTN_MIDDLE, 2 = BTN_RIGHT.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// 1 AND 2 WERE THE OTHER WAY ROUND UNTIL RemEx-kie3, and the swap survived because nothing in
+    /// production calls this. Only a unit test referenced it, and that test pinned the wrong order,
+    /// so the contradiction looked verified rather than wrong. Wiring this up for a future evdev
+    /// path would have silently swapped right-click and middle-click on Linux.
+    /// <para>
+    /// THERE ARE SIX BUTTON TABLES IN THIS REPO and every other one already agreed on
+    /// 0/1/2 = left/middle/right: <c>MapButtonXdotool</c>, <c>MapButtonYdotool</c> and
+    /// <c>MapButtonLinux</c> in <c>LinuxInputSimulationService</c>; <c>ButtonToLinuxCode</c> and
+    /// <c>ButtonToXdotoolButton</c> in <c>LinuxInputBackendRouter</c> (the second of which is now
+    /// byte-identical to this one); and the <c>MOUSEEVENTF_*</c> switch in
+    /// <c>WindowsInputSimulationService</c>. Six copies with no shared definition is the actual
+    /// defect — <c>EveryHostButtonMapping_AgreesOnLeftMiddleRight</c> compares them until one
+    /// constant replaces them (RemEx-upxn).
+    /// </para>
+    /// </para>
+    /// <para>
+    /// The old summary also mis-stated its input: <see cref="DesktopPointerSample"/> carries a
+    /// button MASK, not an index (the router reads <c>ButtonMask &amp; 0x02</c> / <c>&amp; 0x04</c>),
+    /// so this never applied to the pointer path at all.
+    /// </para>
+    /// </remarks>
     public static uint ButtonIndexToLinuxCode(int index) => index switch
     {
         0 => 272u,   // BTN_LEFT
-        1 => 273u,   // BTN_RIGHT
-        2 => 274u,   // BTN_MIDDLE
+        1 => 274u,   // BTN_MIDDLE
+        2 => 273u,   // BTN_RIGHT
         3 => 275u,   // BTN_SIDE
         4 => 276u,   // BTN_EXTRA
         _ => 272u,

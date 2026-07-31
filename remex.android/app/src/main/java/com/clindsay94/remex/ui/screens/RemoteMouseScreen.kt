@@ -161,7 +161,7 @@ fun RemoteMouseScreenContent(
                                                     },
                                                     onTap = {
                                                         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                                        onMouseClick(1)
+                                                        onMouseClick(MouseButtons.LEFT)
                                                     }
                                             )
                                         },
@@ -199,7 +199,7 @@ fun RemoteMouseScreenContent(
                     Button(
                             onClick = {
                                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                onMouseClick(1)
+                                onMouseClick(MouseButtons.LEFT)
                             },
                             modifier = Modifier.weight(1f).height(80.dp),
                             shape = MaterialTheme.shapes.medium,
@@ -219,7 +219,7 @@ fun RemoteMouseScreenContent(
                     Button(
                             onClick = {
                                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                onMouseClick(2)
+                                onMouseClick(MouseButtons.RIGHT)
                             },
                             modifier = Modifier.weight(1f).height(80.dp),
                             shape = MaterialTheme.shapes.medium,

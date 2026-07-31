@@ -1158,7 +1158,7 @@ fun RemoteDesktopScreenContent(
                                                                         false // true once mouseDown
                                                                 // has been sent
                                                                 var dragButton =
-                                                                        0 // which mouse button is
+                                                                        MouseButtons.LEFT // which mouse button is
                                                                 // held
                                                                 var hasMovedBeyondSlop = false
                                                                 var multiTouchActive =
@@ -1227,7 +1227,7 @@ fun RemoteDesktopScreenContent(
                                                                                         dragButton
                                                                                 )
                                                                                 isDragging = false
-                                                                                dragButton = 0
+                                                                                dragButton = MouseButtons.LEFT
                                                                         }
                                                                 }
 
@@ -1698,14 +1698,14 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 )
                                                                                                                         hostPress?.let {
                                                                                                                                 onSendMouseDown(
-                                                                                                                                        0,
+                                                                                                                                        MouseButtons.LEFT,
                                                                                                                                         it.x.toInt(),
                                                                                                                                         it.y.toInt()
                                                                                                                                 )
                                                                                                                         }
                                                                                                                 } else {
                                                                                                                         onSendMouseDown(
-                                                                                                                                0,
+                                                                                                                                MouseButtons.LEFT,
                                                                                                                                 null,
                                                                                                                                 null
                                                                                                                         )
@@ -1713,7 +1713,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                 isDragging =
                                                                                                                         true
                                                                                                                 dragButton =
-                                                                                                                        0
+                                                                                                                        MouseButtons.LEFT
                                                                                                                 isDoubleTapHoldArmed =
                                                                                                                         false
                                                                                                                 lastTap =
@@ -1727,14 +1727,14 @@ fun RemoteDesktopScreenContent(
                                                                                                                 // now that user has started
                                                                                                                 // moving after 500ms hold
                                                                                                                 onSendMouseDown(
-                                                                                                                        0,
+                                                                                                                        MouseButtons.LEFT,
                                                                                                                         null,
                                                                                                                         null
                                                                                                                 )
                                                                                                                 isDragging =
                                                                                                                         true
                                                                                                                 dragButton =
-                                                                                                                        0
+                                                                                                                        MouseButtons.LEFT
                                                                                                                 longPressArmed =
                                                                                                                         false
                                                                                                         } else if (!isDragging &&
@@ -1749,7 +1749,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                         )
                                                                                                                 hostPress?.let {
                                                                                                                         onSendMouseDown(
-                                                                                                                                0,
+                                                                                                                                MouseButtons.LEFT,
                                                                                                                                 it.x.toInt(),
                                                                                                                                 it.y.toInt()
                                                                                                                         )
@@ -1757,7 +1757,7 @@ fun RemoteDesktopScreenContent(
                                                                                                                 isDragging =
                                                                                                                         true
                                                                                                                 dragButton =
-                                                                                                                        0
+                                                                                                                        MouseButtons.LEFT
                                                                                                         }
                                                                                                         // Trackpad (relative, no
                                                                                                         // long-press, no double-tap): just
@@ -1847,7 +1847,7 @@ fun RemoteDesktopScreenContent(
                                                                                                         isDragging =
                                                                                                                 false
                                                                                                         dragButton =
-                                                                                                                0
+                                                                                                                MouseButtons.LEFT
                                                                                                 } else if (!hasMovedBeyondSlop
                                                                                                 ) {
                                                                                                         // Tap gesture (no significant
@@ -1864,14 +1864,14 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 )
                                                                                                                         hostPos?.let {
                                                                                                                                 onSendMouseAbsoluteClick(
-                                                                                                                                        0,
+                                                                                                                                        MouseButtons.LEFT,
                                                                                                                                         it.x.toInt(),
                                                                                                                                         it.y.toInt()
                                                                                                                                 )
                                                                                                                         }
                                                                                                                 } else {
                                                                                                                         onSendMouseClick(
-                                                                                                                                0
+                                                                                                                                MouseButtons.LEFT
                                                                                                                         )
                                                                                                                 }
                                                                                                                 lastTap =
@@ -1892,14 +1892,14 @@ fun RemoteDesktopScreenContent(
                                                                                                                                 )
                                                                                                                         hostPos?.let {
                                                                                                                                 onSendMouseAbsoluteClick(
-                                                                                                                                        2,
+                                                                                                                                        MouseButtons.RIGHT,
                                                                                                                                         it.x.toInt(),
                                                                                                                                         it.y.toInt()
                                                                                                                                 )
                                                                                                                         }
                                                                                                                 } else {
                                                                                                                         onSendMouseClick(
-                                                                                                                                2
+                                                                                                                                MouseButtons.RIGHT
                                                                                                                         )
                                                                                                                 }
                                                                                                                 lastTap =
