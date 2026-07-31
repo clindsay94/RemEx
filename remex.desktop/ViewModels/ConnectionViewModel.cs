@@ -1496,12 +1496,20 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     {
         if (certificate == null) return false;
 
-        using var cert2 = new X509Certificate2(certificate);
-        var spki = cert2.PublicKey.ExportSubjectPublicKeyInfo();
-        var hashBytes = System.Security.Cryptography.SHA256.HashData(spki);
-        var hashBase64 = Convert.ToBase64String(hashBytes);
+        var hashBase64 = CertificatePinPolicy.ComputeSpkiHash(certificate);
 
+        // The rule itself is shared with the Remote Desktop channel rather than restated here: both
+        // channels reach the same host, and the one time they each kept their own copy the copies
+        // disagreed (RemEx-mlce, RemEx-xmgw).
         var pins = _pinSnapshot;
+        var accepted = CertificatePinPolicy.IsCertificateAcceptable(
+            hashBase64, pins, _allowFirstTimeTrustForCurrentConnect);
+
+        // The pairing-state update stays at the call site on purpose. A pure predicate that also
+        // mutated this flag is how the two validators drifted; only a MATCHED PIN counts as paired,
+        // so accepting on an empty store (trust-on-first-use) deliberately leaves it false.
+        _isPairedWithCurrentHost = CertificatePinPolicy.IsPairedHost(accepted, pins);
+
         if (pins is null)
         {
             // ConnectAsync must populate the snapshot before invoking ConnectAsync on the socket.
@@ -1509,43 +1517,31 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             _logger.LogError(
                 "TLS validation callback invoked without a pin snapshot. Rejecting cert {Hash}.",
                 hashBase64);
-            _isPairedWithCurrentHost = false;
-            return false;
         }
-
-        if (pins.Count > 0)
+        else if (accepted && pins.Count == 0)
         {
-            if (pins.Values.Contains(hashBase64))
-            {
-                _isPairedWithCurrentHost = true;
-                return true;
-            }
-
+            // Empty pin store and the operator explicitly opted into first-time trust for this
+            // connect attempt. The PIN-based pairing handshake that follows provides the MITM
+            // protection in this window.
+            _logger.LogInformation(
+                "First-time pairing: accepting cert SPKI {Hash} for pairing handshake.",
+                hashBase64);
+        }
+        else if (!accepted && pins.Count > 0)
+        {
             _logger.LogError(
                 "Rejecting host certificate: SPKI {Hash} does not match any pinned host. " +
                 "If the host certificate has legitimately rotated, the operator must re-pair.",
                 hashBase64);
-            _isPairedWithCurrentHost = false;
-            return false;
         }
-
-        // Empty pin store. Trust-on-first-use is permitted only if the operator explicitly opted
-        // in for this connect attempt. The PIN-based pairing handshake that follows provides
-        // MITM protection in this window.
-        if (_allowFirstTimeTrustForCurrentConnect)
+        else if (!accepted)
         {
-            _isPairedWithCurrentHost = false;
-            _logger.LogInformation(
-                "First-time pairing: accepting cert SPKI {Hash} for pairing handshake.",
+            _logger.LogError(
+                "Rejecting host certificate: SPKI {Hash} not pinned and first-time trust not granted.",
                 hashBase64);
-            return true;
         }
 
-        _logger.LogError(
-            "Rejecting host certificate: SPKI {Hash} not pinned and first-time trust not granted.",
-            hashBase64);
-        _isPairedWithCurrentHost = false;
-        return false;
+        return accepted;
     }
 
     /// <summary>

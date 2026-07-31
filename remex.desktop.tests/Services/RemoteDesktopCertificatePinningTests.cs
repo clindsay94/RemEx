@@ -1,14 +1,18 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using Remex.Desktop.Services.Network;
+using Remex.Desktop.Services.Security;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Services;
 
 /// <summary>
-/// The Remote Desktop channel's certificate pinning must actually decide something.
+/// Certificate pinning must actually decide something, and both TLS channels must ask the same
+/// question. Covers <c>CertificatePinPolicy</c> — the single rule the Remote Desktop stream and the
+/// control channel now share (RemEx-xmgw) — as well as the call sites that must keep consulting it.
 /// </summary>
 /// <remarks>
 /// <c>ValidateServerCertificate</c> computed the presented SPKI hash, looked it up in
@@ -42,14 +46,14 @@ public class RemoteDesktopCertificatePinningTests
     [Fact]
     public void NoSnapshot_IsRejected_EvenOnLoopback()
     {
-        RemoteDesktopService.IsCertificateAcceptable(Presented, null, allowFirstTimeTrust: true)
+        CertificatePinPolicy.IsCertificateAcceptable(Presented, null, allowFirstTimeTrust: true)
             .Should().BeFalse();
     }
 
     [Fact]
     public void PinnedHash_IsAccepted()
     {
-        RemoteDesktopService.IsCertificateAcceptable(
+        CertificatePinPolicy.IsCertificateAcceptable(
             Presented, Pins("other-host-hash", Presented), allowFirstTimeTrust: false)
             .Should().BeTrue();
     }
@@ -61,7 +65,7 @@ public class RemoteDesktopCertificatePinningTests
     [Fact]
     public void UnpinnedHash_IsRejected_WhenPinsExist()
     {
-        RemoteDesktopService.IsCertificateAcceptable(
+        CertificatePinPolicy.IsCertificateAcceptable(
             Presented, Pins("some-other-hash"), allowFirstTimeTrust: false)
             .Should().BeFalse();
     }
@@ -73,7 +77,7 @@ public class RemoteDesktopCertificatePinningTests
     [Fact]
     public void Loopback_DoesNotOverrideAnExistingPinSet()
     {
-        RemoteDesktopService.IsCertificateAcceptable(
+        CertificatePinPolicy.IsCertificateAcceptable(
             Presented, Pins("some-other-hash"), allowFirstTimeTrust: true)
             .Should().BeFalse();
     }
@@ -90,14 +94,14 @@ public class RemoteDesktopCertificatePinningTests
     [Fact]
     public void EmptyStore_OnLoopback_IsAccepted()
     {
-        RemoteDesktopService.IsCertificateAcceptable(Presented, Pins(), allowFirstTimeTrust: true)
+        CertificatePinPolicy.IsCertificateAcceptable(Presented, Pins(), allowFirstTimeTrust: true)
             .Should().BeTrue();
     }
 
     [Fact]
     public void EmptyStore_OffLoopback_IsRejected()
     {
-        RemoteDesktopService.IsCertificateAcceptable(Presented, Pins(), allowFirstTimeTrust: false)
+        CertificatePinPolicy.IsCertificateAcceptable(Presented, Pins(), allowFirstTimeTrust: false)
             .Should().BeFalse();
     }
 
@@ -116,13 +120,78 @@ public class RemoteDesktopCertificatePinningTests
         var source = File.ReadAllText(Path.Combine(
             RepoRoot(), "remex.desktop", "Services", "Network", "RemoteDesktopService.cs"));
 
-        source.Should().Contain("var accepted = IsCertificateAcceptable(hashBase64, _pinSnapshot, _allowFirstTimeTrust);",
-            "the callback must consult the rule");
+        // Whitespace-normalised so the assertion pins the CALL, not its line breaks. Matching the
+        // raw source would make a re-wrap or a re-indent fail this test with a message about
+        // certificate pinning, which is a confusing way to learn that a formatter ran.
+        var normalized = Regex.Replace(source, @"\s+", " ");
+
+        normalized.Should().Contain(
+            "var accepted = CertificatePinPolicy.IsCertificateAcceptable(hashBase64, _pinSnapshot, _allowFirstTimeTrust);",
+            "the callback must consult the rule, with the snapshot and policy it captured");
         source.Should().Contain("return accepted;",
             "and return its answer rather than an unconditional true");
         source.Should().NotContain("GetAllPinsAsync().GetAwaiter().GetResult()",
             "pins are snapshotted before connect; blocking on async I/O inside a TLS handshake " +
             "callback is what PrepareTlsValidationAsync exists to avoid");
+    }
+
+    /// <summary>
+    /// Neither TLS channel may keep its own copy of the pinning rule.
+    /// </summary>
+    /// <remarks>
+    /// This is the property RemEx-xmgw's dedupe actually buys. The unit tests above pin the rule's
+    /// behaviour, but they are blind to a second implementation appearing beside it — which is
+    /// exactly what happened: two validators that looked alike, one of which ignored its own lookup
+    /// and accepted everything (RemEx-mlce). A copy is caught here by the lookup expression, which
+    /// is the one line a re-implementation cannot avoid writing.
+    /// </remarks>
+    [Fact]
+    public void NeitherChannel_ReimplementsThePinLookup()
+    {
+        foreach (var relativePath in new[]
+                 {
+                     Path.Combine("remex.desktop", "Services", "Network", "RemoteDesktopService.cs"),
+                     Path.Combine("remex.desktop", "ViewModels", "ConnectionViewModel.cs"),
+                 })
+        {
+            var source = File.ReadAllText(Path.Combine(RepoRoot(), relativePath));
+
+            source.Should().NotContain("pins.Values.Contains", because:
+                $"{relativePath} must delegate to CertificatePinPolicy rather than keep a second " +
+                "copy of the rule; the two copies disagreed for real once");
+            source.Should().Contain("CertificatePinPolicy.IsCertificateAcceptable", because:
+                $"{relativePath} still opens a TLS channel to the host and must consult the rule");
+        }
+    }
+
+    /// <summary>
+    /// Only a MATCHED PIN counts as paired — accepting on an empty store does not.
+    /// </summary>
+    /// <remarks>
+    /// The control channel sets <c>_isPairedWithCurrentHost</c> from this, and it used to fall out
+    /// of the branch structure: the old code assigned <c>true</c> in exactly one branch (matched
+    /// pin) and <c>false</c> in all four others, including the branch that ACCEPTS under
+    /// trust-on-first-use. Folding the rule into a shared predicate is only behaviour-preserving if
+    /// that asymmetry survives, so it is asserted rather than assumed. Getting it wrong would mark
+    /// the trust-on-first-use window as a verified pairing.
+    /// </remarks>
+    [Theory]
+    [InlineData(true, 1, true)]    // accepted against a non-empty store => matched pin => paired
+    [InlineData(true, 0, false)]   // accepted against an empty store => trust-on-first-use, NOT paired
+    [InlineData(false, 1, false)]  // rejected against a non-empty store
+    [InlineData(false, 0, false)]  // rejected, nothing to pair with
+    public void IsPairedHost_IsTrueOnlyForAMatchedPin(bool accepted, int pinCount, bool expected)
+    {
+        var pins = pinCount == 0 ? Pins() : Pins(Presented);
+
+        CertificatePinPolicy.IsPairedHost(accepted, pins).Should().Be(expected);
+    }
+
+    [Fact]
+    public void IsPairedHost_IsFalse_WhenNoSnapshotWasLoaded()
+    {
+        // A missing snapshot cannot be a pairing, and the callback rejects in that case anyway.
+        CertificatePinPolicy.IsPairedHost(accepted: true, pins: null).Should().BeFalse();
     }
 
     // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path

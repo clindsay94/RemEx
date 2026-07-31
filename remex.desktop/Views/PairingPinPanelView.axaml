@@ -1,0 +1,28 @@
+<!--
+    The pairing-PIN panel's contents, shared by ConnectionView and SettingsView.
+    See PairingQrPanelView.axaml for why only the contents are shared and not the card chrome.
+
+    DataContext is the ConnectionViewModel: inherited in ConnectionView, passed explicitly as
+    DataContext="{Binding Connection}" in SettingsView.
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:conv="using:Remex.Desktop.Converters"
+    x:Class="Remex.Desktop.Views.PairingPinPanelView" x:DataType="vm:ConnectionViewModel">
+    <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{conv:Localize Settings_PairingPinTitle}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Content="✕" Command="{Binding ClosePairingPinCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand"/>
+        </Grid>
+
+        <!-- Monospaced and widely letter-spaced because the user is reading these six digits off
+             the screen and typing them into a phone; proportional digits make 1/7 and 0/8 harder. -->
+        <Border Background="{DynamicResource CardBackgroundBrush}" Padding="20,16" CornerRadius="8" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding ActivePairingPin}" FontFamily="Consolas" FontSize="42" FontWeight="Bold" LetterSpacing="8" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center"/>
+        </Border>
+
+        <TextBlock Text="{conv:Localize Settings_PairingPinHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
+        <TextBlock Text="{Binding PairingPinExpiresInText}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextAlignment="Center" IsVisible="{Binding HasActivePairingPin}"/>
+    </StackPanel>
+</UserControl>

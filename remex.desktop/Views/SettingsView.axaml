@@ -3,6 +3,7 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:views="using:Remex.Desktop.Views"
     xmlns:coreModels="using:Remex.Core.Models" x:Class="Remex.Desktop.Views.SettingsView" x:DataType="vm:SettingsViewModel">
 
     <UserControl.Styles>
@@ -114,49 +115,22 @@
                                         ToolTip.Tip="{local:Localize Settings_ShowPairingPinTooltip}"/>
                             </StackPanel>
 
-                            <!-- QR Code Display Panel -->
+                            <!-- QR Code Display Panel — contents shared with ConnectionView
+                                 (RemEx-xmgw). The card chrome here is deliberately NOT the
+                                 glass-card style ConnectionView uses; see PairingQrPanelView. -->
                             <Border IsVisible="{Binding Connection.ShowQrCode}"
                                     Background="{DynamicResource GlassBaseDarkBrush}"
                                     CornerRadius="12" Padding="20"
                                     BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <StackPanel Spacing="16">
-                                    <Grid ColumnDefinitions="*,Auto">
-                                        <TextBlock Text="{local:Localize Home_QrCodeButton}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-                                        <Button Grid.Column="1" Content="✕" AutomationProperties.Name="{local:Localize A11y_Close}" Command="{Binding Connection.CloseQrCodeCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand"/>
-                                    </Grid>
-
-                                    <Border Background="White" Padding="12" CornerRadius="8" HorizontalAlignment="Center">
-                                        <Image Source="{Binding Connection.QrCodeImage}" Width="180" Height="180"/>
-                                    </Border>
-
-                                    <TextBlock Text="{local:Localize Home_QrCodeScanHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
-                                </StackPanel>
+                                <views:PairingQrPanelView DataContext="{Binding Connection}"/>
                             </Border>
 
-                            <!-- Pairing PIN Display Panel -->
+                            <!-- Pairing PIN Display Panel — contents shared with ConnectionView -->
                             <Border IsVisible="{Binding Connection.ShowPairingPin}"
                                     Background="{DynamicResource GlassBaseDarkBrush}"
                                     CornerRadius="12" Padding="20"
                                     BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-                                <StackPanel Spacing="16">
-                                    <Grid ColumnDefinitions="*,Auto">
-                                        <TextBlock Text="{local:Localize Settings_PairingPinTitle}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
-                                        <Button Grid.Column="1" Content="✕" AutomationProperties.Name="{local:Localize A11y_Close}" Command="{Binding Connection.ClosePairingPinCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand"/>
-                                    </Grid>
-
-                                    <Border Background="{DynamicResource CardBackgroundBrush}" Padding="20,16" CornerRadius="8" HorizontalAlignment="Center">
-                                        <TextBlock Text="{Binding Connection.ActivePairingPin}"
-                                                   FontFamily="Consolas"
-                                                   FontSize="42"
-                                                   FontWeight="Bold"
-                                                   LetterSpacing="8"
-                                                   Foreground="{DynamicResource AccentPrimaryBrush}"
-                                                   HorizontalAlignment="Center"/>
-                                    </Border>
-
-                                    <TextBlock Text="{local:Localize Settings_PairingPinHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
-                                    <TextBlock Text="{Binding Connection.PairingPinExpiresInText}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextAlignment="Center" IsVisible="{Binding Connection.HasActivePairingPin}"/>
-                                </StackPanel>
+                                <views:PairingPinPanelView DataContext="{Binding Connection}"/>
                             </Border>
                         </StackPanel>
                     </Border>

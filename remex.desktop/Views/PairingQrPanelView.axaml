@@ -1,0 +1,34 @@
+<!--
+    The QR pairing panel's contents, shared by ConnectionView and SettingsView.
+
+    Only the CONTENTS are shared, not the card around them: the two hosts wrap this in visibly
+    different chrome (ConnectionView uses the glass-card style, which is CardBackgroundBrush plus a
+    box shadow; SettingsView uses a flat GlassBaseDarkBrush card). Unifying that would silently
+    restyle one of the two screens across all four themes, which is a design decision and not part
+    of RemEx-xmgw's dedupe.
+
+    DataContext is the ConnectionViewModel. ConnectionView inherits it; SettingsView passes it in
+    explicitly via DataContext="{Binding Connection}", which is what lets the bindings below drop the
+    "Connection." prefix that used to be the only difference between the two copies.
+-->
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Remex.Desktop.ViewModels"
+    xmlns:conv="using:Remex.Desktop.Converters"
+    x:Class="Remex.Desktop.Views.PairingQrPanelView" x:DataType="vm:ConnectionViewModel">
+    <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{conv:Localize Home_QrCodeButton}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Content="✕" Command="{Binding CloseQrCodeCommand}" Background="Transparent" Padding="4" VerticalAlignment="Center" Cursor="Hand"/>
+        </Grid>
+
+        <!-- Deliberately a hardcoded White plate rather than a theme brush: a QR code needs a light
+             quiet zone and high contrast against the dark modules to stay scannable, so this one
+             does not follow the theme (the same exemption the theme preview tiles carry). -->
+        <Border Background="White" Padding="12" CornerRadius="8" HorizontalAlignment="Center">
+            <Image Source="{Binding QrCodeImage}" Width="180" Height="180"/>
+        </Border>
+
+        <TextBlock Text="{conv:Localize Home_QrCodeScanHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
+    </StackPanel>
+</UserControl>
