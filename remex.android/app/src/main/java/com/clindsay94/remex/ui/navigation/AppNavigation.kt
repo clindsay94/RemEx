@@ -73,6 +73,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -274,14 +277,32 @@ private fun AppNavigationContent(
                 }
         }
 
-        LaunchedEffect(Unit) {
-                RemexClientManager.pairingRequired.collect { (host, port) ->
-                        // Ignore a replayed/stale pairing request when we're already connected —
-                        // this otherwise navigates to the PIN screen on a widget tap that simply
-                        // re-creates MainActivity. Pairing is only meaningful when not connected.
-                        if (RemexClientManager.isConnected.value) return@collect
-                        navController.navigate("${Screen.Pairing.route}/$host/$port") {
-                                launchSingleTop = true
+        // Gated on STARTED so a pairing request that arrives while the app is backgrounded does
+        // not drive navigation behind the user's back; it is handled when they come back.
+        //
+        // Gating ALONE would have made this worse rather than better. pairingRequired has
+        // replay = 1, so re-subscribing on every foreground redelivers the last request — the app
+        // would walk to the PIN screen every single time it resumed. consumePairingRequest() is
+        // what makes the pair safe: handle it once, then drop it. The isConnected check below is now
+        // a second line of defence rather than the only one.
+        val lifecycleOwner = LocalLifecycleOwner.current
+        LaunchedEffect(lifecycleOwner) {
+                lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        RemexClientManager.pairingRequired.collect { (host, port) ->
+                                // Pairing is only meaningful when not connected. Deliberately does
+                                // NOT consume: isConnected is cleared only when the native layer
+                                // NOTICES the link is gone, so it can be stale-true after the phone
+                                // leaves the LAN — and connect() has no already-connected early
+                                // return, so a genuine request can be emitted in that state.
+                                // Destroying it here would strand the user on a Connect button that
+                                // does nothing until the staleness resolves. Leaving it in the
+                                // replay cache is what the pre-existing guard did, and it is right:
+                                // consume only where we actually acted.
+                                if (RemexClientManager.isConnected.value) return@collect
+                                RemexClientManager.consumePairingRequest()
+                                navController.navigate("${Screen.Pairing.route}/$host/$port") {
+                                        launchSingleTop = true
+                                }
                         }
                 }
         }

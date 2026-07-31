@@ -228,6 +228,27 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             )
     val pairingRequired = _pairingRequired.asSharedFlow()
 
+    /**
+     * Drops the retained pairing request after it has been acted on.
+     *
+     * [pairingRequired] has `replay = 1` so a subscriber that arrives late — the composition being
+     * rebuilt after a widget tap re-creates MainActivity — still learns that pairing is needed. The
+     * cost is that the SAME request is redelivered to every future subscriber, forever, which is why
+     * the navigation site needed a guard against acting on a stale one. Consuming it here makes the
+     * event one-shot in fact rather than by convention: it is delivered until somebody handles it,
+     * then it is gone. Losing it is safe — a connect attempt that still needs pairing re-emits.
+     *
+     * This COMPLEMENTS the clear in [onConnectionStateChanged], which fires when a connection
+     * succeeds. That one covers the case where nobody was looking; this one covers the case where
+     * somebody was, and acted. Neither subsumes the other: a user who reaches the PIN screen and
+     * backs out never connects, so only this call stops the request being redelivered on every
+     * subsequent resume.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun consumePairingRequest() {
+        _pairingRequired.resetReplayCache()
+    }
+
     private val _connectionError =
             MutableSharedFlow<String>(
                     extraBufferCapacity = 1,

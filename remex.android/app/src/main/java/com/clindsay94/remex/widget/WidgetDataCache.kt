@@ -30,6 +30,22 @@ object WidgetDataCache {
 
     private var cachingJob: Job? = null
 
+    /**
+     * Starts the widget data cache once per process. Idempotent.
+     *
+     * `@Synchronized` because the guard is a check-then-act on three callers that are NOT all on the
+     * same thread: `MainActivity.onCreate`, `RemexConnectionService`, and `HardwareInfoWidget`'s
+     * update path, which runs from a broadcast. Two of those arriving together would each read a
+     * null job and start a second collector on a second scope — a permanent duplicate, since nothing
+     * ever cancels these.
+     *
+     * The scope is deliberately process-lifetime and is never cancelled. That is not an oversight:
+     * a widget outlives every Activity and Service that might have started this, so tying the cache
+     * to any of their lifecycles would stop refreshing the widget while it is still on the home
+     * screen. It is one scope for the life of the process, which is why starting a second one
+     * matters enough to synchronize.
+     */
+    @Synchronized
     fun startCaching(context: Context) {
         if (cachingJob != null) return
         val appContext = context.applicationContext

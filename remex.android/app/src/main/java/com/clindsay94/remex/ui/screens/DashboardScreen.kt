@@ -116,6 +116,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.RemExTheme
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
@@ -183,9 +186,19 @@ fun DashboardScreen(
 
         val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
-        LaunchedEffect(Unit) {
-                viewModel.wakeStatus.collect { message ->
-                        snackbarHostState.showSnackbar(message, duration = androidx.compose.material3.SnackbarDuration.Short)
+        // Gated on STARTED. Unlike pairingRequired this flow has NO replay, so gating genuinely
+        // drops anything emitted while stopped — which is the behaviour we want here: the user
+        // triggers a wake from this screen, and a snackbar announcing it minutes later, after they
+        // have been elsewhere, is worse than no snackbar at all.
+        val lifecycleOwner = LocalLifecycleOwner.current
+        LaunchedEffect(lifecycleOwner) {
+                lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        viewModel.wakeStatus.collect { message ->
+                                snackbarHostState.showSnackbar(
+                                        message,
+                                        duration = androidx.compose.material3.SnackbarDuration.Short
+                                )
+                        }
                 }
         }
 

@@ -310,7 +310,11 @@ fun PairingScreen(
     val coroutineScope = rememberCoroutineScope()
     var pin by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
+    // Keyed on the parameters it reads, not Unit. Today every host/port change arrives as a new
+    // nav entry (the route embeds both), so a change cannot reach this composable without recreating
+    // it — but a Unit key states that the effect is independent of its inputs, which is false, and
+    // that is the kind of claim a later refactor gets caught by.
+    LaunchedEffect(host, port) {
         val hostUrl = "wss://$host:$port/ws"
         val clientId = withContext(Dispatchers.IO) { settingsManager.getOrCreateClientId() }
         // Only allow the PIN to be fetched over the wire when the transport is trusted
