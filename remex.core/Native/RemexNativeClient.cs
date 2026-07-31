@@ -348,24 +348,43 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         {
             while (!ct.IsCancellationRequested && _webSocket?.State == WebSocketState.Open)
             {
-                using var ms = new System.IO.MemoryStream();
+                // Created only when a message actually spans more than one frame. Nearly all do not,
+                // and those are parsed straight out of the rented buffer (RemEx-tfi6).
+                System.IO.MemoryStream? accumulator = null;
                 WebSocketReceiveResult result;
-                do
+                try
                 {
-                    result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
-                    if (result.MessageType == WebSocketMessageType.Close)
+                    do
                     {
-                        await DisconnectAsync();
-                        return;
-                    }
-                    ms.Write(buffer, 0, result.Count);
-                } while (!result.EndOfMessage);
+                        result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            await DisconnectAsync();
+                            return;
+                        }
 
-                if (result.MessageType == WebSocketMessageType.Text)
+                        if (result.EndOfMessage && accumulator is null)
+                            break;
+
+                        accumulator ??= new System.IO.MemoryStream(buffer.Length * 2);
+                        accumulator.Write(buffer, 0, result.Count);
+                    } while (!result.EndOfMessage);
+
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        // GetBuffer rather than ToArray: the accumulator already holds exactly these
+                        // bytes contiguously, and the copy was pure waste. Both spans stay valid for
+                        // the whole of Deserialize, which is synchronous and materializes its result.
+                        var utf8 = accumulator is null
+                            ? new ReadOnlySpan<byte>(buffer, 0, result.Count)
+                            : new ReadOnlySpan<byte>(accumulator.GetBuffer(), 0, (int)accumulator.Length);
+                        var msg = RemexJson.Deserialize(utf8, RemexJsonSerializerContext.Default.RemexMessage);
+                        if (msg != null) HandleMessage(msg);
+                    }
+                }
+                finally
                 {
-                    var bytes = ms.ToArray();
-                    var msg = RemexJson.Deserialize(bytes, RemexJsonSerializerContext.Default.RemexMessage);
-                    if (msg != null) HandleMessage(msg);
+                    accumulator?.Dispose();
                 }
             }
         }
@@ -376,7 +395,9 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(buffer);
+            // Cleared, not just released: this buffer carries pairing material and file bytes, and
+            // ArrayPool.Shared is process-wide, so an uncleared return hands those to the next renter.
+            ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
         }
     }
 
