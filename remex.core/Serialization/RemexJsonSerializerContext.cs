@@ -9,7 +9,44 @@ using Remex.Core.Native;
 
 namespace Remex.Core.Serialization;
 
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+// WhenWritingNull: RemexMessage is one envelope with ~60 nullable payload slots of which exactly one
+// is ever set, so writing nulls put ~55 "field":null entries on the wire in BOTH directions — a pong
+// that should be ~50 bytes went out at 1.5–2 KB, and input events at pointer rate paid it too.
+//
+// Safe without a protocolVersion bump because absent and null are the same thing to System.Text.Json,
+// so every C# reader is unaffected by construction. The risk was only ever the Android side, which
+// parses some forwarded messages with org.json by hand — and that was audited rather than assumed
+// (RemEx-bcgr):
+//
+//   • Every strict get*() call (which THROWS on a missing key) lands on a field that is non-nullable
+//     in C# — AppEntry.DisplayName/TargetPath, ProcessInfo.Id/Name, the required pairing nonce,
+//     DesktopMeta.CursorX/CursorY — so those keys keep being written. reconnectChallenge is read only
+//     after type == "reconnect_challenge", where it is non-null.
+//     NOTE the guarantee is by convention, not by the runtime: nullable reference types are not
+//     enforced at run time, so a non-nullable property CAN hold null (e.g. AppEntry is rehydrated
+//     from apps.json into a positional record whose parameters are not `required`). Today that
+//     serializes as "displayName":null and Android's getString hands back the literal string "null";
+//     once omitted it throws instead, and AppLauncherViewModel catches at whole-array scope, so one
+//     ugly row becomes an empty launcher. Low probability, but the invariant to preserve is
+//     "these properties are never null", NOT "the compiler stops them being null".
+//     The same shape is now load-bearing for `required` members: a null-valued required property
+//     used to serialize present-and-null (satisfying required on read) and would now be omitted,
+//     making the receiver throw and the message drop SILENTLY — the RemEx-y6x6 failure mode. There
+//     are currently no `required T?` properties; keep it that way.
+//   • has() && !isNull() pairs are unchanged: isNull() is true for an absent key as well as an
+//     explicit null.
+//
+// It also FIXES two live defects, which is why this is worth more than the bytes. Android's
+// optString() on an explicit JSON null returns the literal string "null", so the eight
+// `if (has(k)) optString(k) else null` sites in FileHostHandler/FileTransferEngine were producing
+// "null" instead of null — FileTransferViewModel already carries a takeUnless(it == "null") guard
+// that exists solely to undo it. And RemoteDesktopViewModel's
+// `optInt("desktopNumber").takeIf { has("desktopNumber") }` was yielding 0 for a null desktopNumber,
+// because has() is true for an explicitly-null key; it now yields the null the code was written to
+// produce.
+[JsonSourceGenerationOptions(
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(AppEntry))]
 [JsonSerializable(typeof(AndroidNativeInitRequest))]
 [JsonSerializable(typeof(AndroidNativeInitializationResponse))]
