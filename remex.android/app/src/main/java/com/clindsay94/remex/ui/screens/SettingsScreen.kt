@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -576,7 +577,8 @@ private fun FileTransferSettingsTab() {
                                                 text = displayName,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 modifier = Modifier.weight(1f),
-                                                maxLines = 1
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
                                         )
                                         IconButton(
                                                 onClick = {

@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import android.view.HapticFeedbackConstants
 import com.clindsay94.remex.R
@@ -192,7 +193,8 @@ private fun ShapePickerCell(
             label,
             style = MaterialTheme.typography.labelSmall,
             textAlign = TextAlign.Center,
-            maxLines = 1
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

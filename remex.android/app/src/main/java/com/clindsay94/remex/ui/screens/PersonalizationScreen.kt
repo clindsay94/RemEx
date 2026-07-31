@@ -466,7 +466,11 @@ fun PersonalizationScreenContent(
                                     onCheckedChange = { themeMode = option },
                                     modifier = Modifier.weight(1f)
                             ) {
-                                Text(displayModeLabel(option), maxLines = 1)
+                                Text(
+                                        displayModeLabel(option),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                )
                             }
                         }
                     }
@@ -621,7 +625,11 @@ fun PersonalizationScreenContent(
                                     onCheckedChange = { palette = option },
                                     modifier = Modifier.weight(1f)
                             ) {
-                                Text(paletteModeLabel(option), maxLines = 1)
+                                Text(
+                                        paletteModeLabel(option),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                )
                             }
                         }
                     }
