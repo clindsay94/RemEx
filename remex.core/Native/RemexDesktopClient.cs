@@ -45,6 +45,21 @@ public sealed class RemexDesktopClient : IDisposable
     }
     private bool _isStreaming;
 
+    /// <summary>
+    /// True once the stream has been stopped ON PURPOSE, until it is started again.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="_isStreaming"/> alone cannot tell the two reasons for not streaming apart. It goes
+    /// false when the user stops, and equally when the socket dies under us — the receive loop clears
+    /// it. That matters because the send paths auto-start a stream when one is not running, which is
+    /// the right recovery after a transient drop and completely wrong after a deliberate stop: a
+    /// straggler keyUp queued behind the stop then RECONNECTS and starts a whole new capture session,
+    /// leaving the phone encoding frames nobody asked for and the host holding a session open with
+    /// its keep-awake engaged — while the UI shows the stream as stopped. Recording the intent lets
+    /// recovery survive while resurrection does not. (RemEx-yzbb)
+    /// </remarks>
+    private bool _streamStoppedByRequest;
+
     // VULN-2 (RemEx-s032.2): the reconnect secret established at pairing, base64-encoded. Remembered on
     // the singleton so reconnects after a drop can re-answer the host's proof-of-possession challenge on
     // the /ws/desktop channel without the caller re-supplying it. Null until the first paired connect.
@@ -153,6 +168,14 @@ public sealed class RemexDesktopClient : IDisposable
     {
         await EnsureConnectedAsync(host, port, clientId, spkiHash, ct, reconnectSecretBase64);
 
+        // Cleared here, ABOVE the early return, for the same reason the stop side records intent
+        // above its own: asking to start expresses the intent whether or not a stream is already
+        // believed to be running. Below the return it would stay set whenever _isStreaming is
+        // stale-true — the window between the socket leaving Open and the receive loop noticing —
+        // and input would then be dropped silently, which is a worse failure than the zombie stream
+        // this flag exists to prevent. (RemEx-yzbb)
+        _streamStoppedByRequest = false;
+
         var resolvedConfig = config ?? DefaultConfig;
 
         if (_isStreaming)
@@ -172,6 +195,11 @@ public sealed class RemexDesktopClient : IDisposable
 
     public async Task StopStreamAsync(CancellationToken ct = default)
     {
+        // Recorded before the early return on purpose. Asking to stop expresses the intent whether or
+        // not a stream happened to be running, and it is exactly the not-running case where a
+        // straggler would otherwise start one. (RemEx-yzbb)
+        _streamStoppedByRequest = true;
+
         if (!IsConnected || !_isStreaming)
         {
             return;
@@ -187,10 +215,20 @@ public sealed class RemexDesktopClient : IDisposable
 
     public async Task SendInputAsync(string host, int port, InputEvent input, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
     {
+        // Checked BEFORE connecting, so a straggler cannot even reopen the socket. Input arriving
+        // after a deliberate stop has nothing to act on, and delivering it is not worth resurrecting
+        // a capture session for. (RemEx-yzbb)
+        if (_streamStoppedByRequest)
+        {
+            return;
+        }
+
         await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
 
         if (!_isStreaming)
         {
+            // Not a deliberate stop, so this is recovery: the socket dropped mid-session and the
+            // receive loop cleared the flag. Restarting here is what makes input survive a blip.
             await StartStreamAsync(host, port, DefaultConfig, clientId, spkiHash, ct);
         }
 
@@ -272,6 +310,13 @@ public sealed class RemexDesktopClient : IDisposable
     /// </summary>
     public async Task SendPointerBatchAsync(string host, int port, DesktopPointerBatch batch, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
     {
+        // Same as SendInputAsync, and likelier to fire: a burst of pointer samples from the user's
+        // last touch can still be in flight when they stop the stream. (RemEx-yzbb)
+        if (_streamStoppedByRequest)
+        {
+            return;
+        }
+
         await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
 
         if (!_isStreaming)
