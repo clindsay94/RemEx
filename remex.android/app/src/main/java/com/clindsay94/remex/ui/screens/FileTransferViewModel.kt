@@ -440,12 +440,15 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_transfer_deleting_single, entry.name)
-            val error = runManage(rootId, relative, FileManageOperations.DELETE)
-            _statusText.value =
-                if (error != null) app().getString(R.string.file_transfer_delete_failed, error)
-                else app().getString(R.string.file_transfer_deleted_success)
+            val outcome = runManage(rootId, relative, FileManageOperations.DELETE)
+            if (outcome.failed) Log.w(TAG, "Delete failed: $outcome")
+            _statusText.value = when (outcome) {
+                is ManageOutcome.TimedOut -> app().getString(R.string.file_transfer_delete_timeout)
+                is ManageOutcome.HostRefused -> app().getString(R.string.file_transfer_delete_failed)
+                is ManageOutcome.Ok -> app().getString(R.string.file_transfer_deleted_success)
+            }
             _isLoading.value = false
-            if (error == null) browseRemote()
+            if (!outcome.failed) browseRemote()
         }
     }
 
@@ -462,7 +465,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             var errors = 0
             for (entry in targets) {
                 val relative = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
-                if (runManage(rootId, relative, FileManageOperations.DELETE) != null) errors++
+                if (runManage(rootId, relative, FileManageOperations.DELETE).failed) errors++
             }
             _statusText.value = multiResultText(targets.size, errors)
             _isLoading.value = false
@@ -478,12 +481,15 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_transfer_renaming_single, entry.name)
-            val error = runManage(rootId, relative, FileManageOperations.RENAME, newName = trimmed)
-            _statusText.value =
-                if (error != null) app().getString(R.string.file_transfer_rename_failed, error)
-                else app().getString(R.string.file_transfer_renamed_success)
+            val outcome = runManage(rootId, relative, FileManageOperations.RENAME, newName = trimmed)
+            if (outcome.failed) Log.w(TAG, "Rename failed: $outcome")
+            _statusText.value = when (outcome) {
+                is ManageOutcome.TimedOut -> app().getString(R.string.file_transfer_rename_timeout)
+                is ManageOutcome.HostRefused -> app().getString(R.string.file_transfer_rename_failed)
+                is ManageOutcome.Ok -> app().getString(R.string.file_transfer_renamed_success)
+            }
             _isLoading.value = false
-            if (error == null) browseRemote()
+            if (!outcome.failed) browseRemote()
         }
     }
 
@@ -495,12 +501,19 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         viewModelScope.launch {
             _isLoading.value = true
             _statusText.value = app().getString(R.string.file_manager_creating_folder, trimmed)
-            val error = runManage(rootId, relative, FileManageOperations.MKDIR)
-            _statusText.value =
-                if (error != null) app().getString(R.string.file_manager_new_folder_failed, error)
-                else app().getString(R.string.file_manager_folder_created)
+            val outcome = runManage(rootId, relative, FileManageOperations.MKDIR)
+            if (outcome.failed) Log.w(TAG, "Create folder failed: $outcome")
+            _statusText.value = when (outcome) {
+                is ManageOutcome.TimedOut -> app().getString(R.string.file_transfer_mkdir_timeout)
+                // The host's own wording is kept here: FileHostHandler answers this with copy a
+                // user can act on, so replacing it with something generic would lose the most
+                // useful text in the flow.
+                is ManageOutcome.HostRefused ->
+                    app().getString(R.string.file_manager_new_folder_failed, outcome.message)
+                is ManageOutcome.Ok -> app().getString(R.string.file_manager_folder_created)
+            }
             _isLoading.value = false
-            if (error == null) browseRemote()
+            if (!outcome.failed) browseRemote()
         }
     }
 
@@ -525,7 +538,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             for (entry in targets) {
                 val relative = FileManagerLogic.combinePath(_remotePath.value, entry.name)
                 val destination = FileManagerLogic.combinePath(destFolder, entry.name)
-                if (runManage(rootId, relative, operation, destinationPath = destination) != null) errors++
+                if (runManage(rootId, relative, operation, destinationPath = destination).failed) errors++
             }
             _statusText.value = multiResultText(targets.size, errors)
             _isLoading.value = false
@@ -533,14 +546,38 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    /** Sends one file_manage_request and awaits its response; returns an error message or null on success. */
+    /**
+     * How one file_manage_request ended.
+     *
+     * The point of the type is that [TimedOut] and [HostRefused] are different events that need
+     * different words. Before it, runManage returned a String? and its timeout branch handed back
+     * the DELETE-specific message for every operation it serves - delete, rename, mkdir, copy and
+     * move - so a mkdir that timed out literally read "New folder failed: Delete timed out.", a
+     * rename that timed out was flattened into the same sentence as a rename the host refused, and
+     * copy/move lost the reason entirely. Delete was correct only by accident, because the
+     * hardcoded string happened to be its own. (RemEx-201d.)
+     */
+    private sealed interface ManageOutcome {
+        data object Ok : ManageOutcome
+
+        /** The host never answered. Nothing is known about whether it acted. */
+        data object TimedOut : ManageOutcome
+
+        /** The host answered and said no. [message] is its own user-facing wording. */
+        data class HostRefused(val message: String) : ManageOutcome
+    }
+
+    private val ManageOutcome.failed: Boolean
+        get() = this !is ManageOutcome.Ok
+
+    /** Sends one file_manage_request and awaits its response. */
     private suspend fun runManage(
         rootId: String,
         relativePath: String,
         operation: String,
         newName: String? = null,
         destinationPath: String? = null,
-    ): String? {
+    ): ManageOutcome {
         val requestId = newRequestId()
         val deferred = CompletableDeferred<JSONObject>()
         pendingManageOps[requestId] = deferred
@@ -561,9 +598,13 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         else sendMessage(JSONObject().apply { put("type", "file_manage_request"); put("fileManageRequest", payload) })
         return try {
             val response = withTimeout(30_000) { deferred.await() }
-            response.optJSONObject("fileManageResponse")?.optMeaningfulString("errorMessage")
+            val hostError = response.optJSONObject("fileManageResponse")?.optMeaningfulString("errorMessage")
+            if (hostError == null) ManageOutcome.Ok else ManageOutcome.HostRefused(hostError)
         } catch (_: TimeoutCancellationException) {
-            app().getString(R.string.file_transfer_delete_timeout)
+            // Deliberately carries no message. Naming the operation is the CALLER's job - this
+            // function serves five of them and cannot know which one it is being used for, which is
+            // exactly how the delete-specific wording used to leak into the others.
+            ManageOutcome.TimedOut
         } finally {
             pendingManageOps.remove(requestId)
         }
@@ -638,7 +679,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
         val error = respObj.optMeaningfulString("errorMessage")
         if (error != null) {
-            _statusText.value = app().getString(failRes, error)
+            Log.w(TAG, "Root manage failed: $error")
+            _statusText.value = app().getString(failRes)
         } else {
             _statusText.value = app().getString(successRes)
             updateRootsFromResponse(respObj)
@@ -893,9 +935,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 Log.i(TAG, "Upload cancelled for $transferId")
             } catch (e: Exception) {
                 Log.e(TAG, "Upload failed", e)
-                val message = e.message ?: app().getString(R.string.file_transfer_unknown_error)
-                _statusText.value = app().getString(R.string.file_transfer_upload_failed, message)
-                FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_upload_failed, message))
+                _statusText.value = app().getString(R.string.file_transfer_upload_failed)
+                FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_upload_failed))
                 resetTransferState()
             }
         }
@@ -1024,7 +1065,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             // Surface a failed folder browse instead of silently showing an empty picker: without
             // this the copy/move destination sheet looked like an empty folder on any error.
             response.optMeaningfulString("errorMessage")?.let { error ->
-                _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+                Log.w(TAG, "Browse failed: $error")
+                _statusText.value = app().getString(R.string.file_transfer_browse_error)
                 _destinationEntries.value = emptyList()
                 return
             }
@@ -1043,7 +1085,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _isRefreshing.value = false
         val errorMessage = response.optMeaningfulString("errorMessage")
         if (errorMessage != null) {
-            _statusText.value = app().getString(R.string.file_transfer_browse_error, errorMessage)
+            Log.w(TAG, "Browse failed: $errorMessage")
+            _statusText.value = app().getString(R.string.file_transfer_browse_error)
             return
         }
         val path = response.optString("relativePath", _remotePath.value)
@@ -1059,22 +1102,18 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         recomputeDisplayed()
     }
 
-    private fun parseEntries(arr: JSONArray?): List<RemoteFileEntry> {
-        val list = mutableListOf<RemoteFileEntry>()
-        if (arr == null) return list
-        for (i in 0 until arr.length()) {
-            val item = arr.getJSONObject(i)
-            list.add(
-                RemoteFileEntry(
-                    name = item.optString("name"),
-                    isDirectory = item.optBoolean("isDirectory"),
-                    sizeBytes = item.optLong("sizeBytes"),
-                    modifiedUnixMs = item.optLong("modifiedUnixMs"),
-                )
+    // Shared parse lives in FileManagerLogic (RemEx-4xhj) — ShareToPcViewModel consumes the same
+    // `entries` shape (folders only, for its destination picker). This screen additionally needs
+    // sizeBytes/modifiedUnixMs for the full listing, so it maps onto RemoteFileEntry itself.
+    private fun parseEntries(arr: JSONArray?): List<RemoteFileEntry> =
+        FileManagerLogic.parseFileEntries(arr).map {
+            RemoteFileEntry(
+                name = it.name,
+                isDirectory = it.isDirectory,
+                sizeBytes = it.sizeBytes,
+                modifiedUnixMs = it.modifiedUnixMs,
             )
         }
-        return list
-    }
 
     private fun handleManageResponse(obj: JSONObject) {
         val requestId = obj.optJSONObject("fileManageResponse")?.optString("requestId") ?: return
@@ -1091,7 +1130,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _fullBrowseGranted.value = response.optBoolean("fullBrowseGranted", false)
         val error = response.optMeaningfulString("errorMessage")
         if (error != null) {
-            _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+            Log.w(TAG, "Browse failed: $error")
+            _statusText.value = app().getString(R.string.file_transfer_browse_error)
         }
         val arr = response.optJSONArray("volumes") ?: JSONArray()
         val list = mutableListOf<RemoteVolume>()
@@ -1118,7 +1158,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _isLoading.value = false
         val error = response.optMeaningfulString("errorMessage")
         if (error != null) {
-            _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+            Log.w(TAG, "Browse failed: $error")
+            _statusText.value = app().getString(R.string.file_transfer_browse_error)
             return
         }
         _searchTruncated.value = response.optBoolean("truncated", false)
@@ -1146,7 +1187,8 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         _propertiesLoading.value = false
         val error = response.optMeaningfulString("errorMessage")
         if (error != null) {
-            _statusText.value = app().getString(R.string.file_transfer_browse_error, error)
+            Log.w(TAG, "Browse failed: $error")
+            _statusText.value = app().getString(R.string.file_transfer_browse_error)
             _properties.value = null
             return
         }
@@ -1231,9 +1273,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             }
         } else {
             cleanupDownload(deletePartial = true)
-            val message = errorMessage ?: app().getString(R.string.file_transfer_unknown_error)
-            _statusText.value = app().getString(R.string.file_transfer_transfer_failed, message)
-            FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_transfer_failed, message))
+            Log.w(TAG, "Transfer failed: ${errorMessage ?: "no detail"}")
+            _statusText.value = app().getString(R.string.file_transfer_transfer_failed)
+            FileTransferNotificationManager.showTransferFailed(app(), app().getString(R.string.file_transfer_transfer_failed))
         }
         resetTransferState()
     }
@@ -1250,22 +1292,21 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    private fun parseRoots(arr: JSONArray): List<RemoteSharedRoot> = buildList {
-        for (i in 0 until arr.length()) {
-            val item = arr.getJSONObject(i)
-            add(
-                RemoteSharedRoot(
-                    rootId = item.optString("rootId"),
-                    displayName = item.optString("displayName"),
-                    isWritable = item.optBoolean("isWritable"),
-                    canRename = item.optBoolean("canRename"),
-                    canMove = item.optBoolean("canMove"),
-                    canDelete = item.optBoolean("canDelete"),
-                    canRemoveRoot = item.optBoolean("canRemoveRoot"),
-                )
+    // Shared parse lives in FileManagerLogic (RemEx-4xhj) — ShareToPcViewModel consumes the same
+    // `roots` shape. Only the mapping to this screen's richer RemoteSharedRoot (canRename/canMove/
+    // canDelete/canRemoveRoot) stays here; error handling for the response stays in the caller.
+    private fun parseRoots(arr: JSONArray): List<RemoteSharedRoot> =
+        FileManagerLogic.parseSharedRoots(arr).map {
+            RemoteSharedRoot(
+                rootId = it.rootId,
+                displayName = it.displayName,
+                isWritable = it.isWritable,
+                canRename = it.canRename,
+                canMove = it.canMove,
+                canDelete = it.canDelete,
+                canRemoveRoot = it.canRemoveRoot,
             )
         }
-    }
 
     private fun cleanupDownload(deletePartial: Boolean) {
         val download = activeDownload ?: return
@@ -1339,7 +1380,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         } catch (e: Exception) {
             Log.e(TAG, "SendMessage failed", e)
             _statusText.value =
-                app().getString(R.string.file_transfer_send_error, e.message ?: "")
+                app().getString(R.string.file_transfer_send_error)
         }
     }
 }

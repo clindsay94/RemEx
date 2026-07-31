@@ -2,6 +2,13 @@ package com.clindsay94.remex.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +34,7 @@ import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,9 +50,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -61,10 +70,11 @@ import com.clindsay94.remex.ui.components.FileManagerQuickAccess
 import com.clindsay94.remex.ui.components.FileManagerSelectionBar
 import com.clindsay94.remex.ui.components.FileManagerTextDialog
 import com.clindsay94.remex.ui.components.FileManagerToolbar
-import com.clindsay94.remex.ui.components.RemexScreenHeader
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FileTransferScreen(
     onNavigateToConnection: () -> Unit = {},
@@ -182,167 +192,257 @@ fun FileTransferScreen(
         )
     }
 
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         topBar = {
-            RemexScreenHeader(
+            RemexFlexibleTopBar(
                 title = stringResource(R.string.screen_file_transfer_title),
-                subtitle = "$rootLabel • $remotePath",
+                // Name the read-only state next to the folder it applies to, so a user looking at
+                // greyed-out upload and new-folder buttons has the reason on screen (RemEx-dc57).
+                // Note this passes selectedRoot?.isWritable, NOT canWrite - see the rule in
+                // buildLocationSubtitle for why the difference matters.
+                subtitle = FileManagerLogic.buildLocationSubtitle(
+                    rootLabel = rootLabel,
+                    path = remotePath,
+                    selectedRootIsWritable = selectedRoot?.isWritable,
+                    readOnlyLabel = stringResource(R.string.file_transfer_read_only_root),
+                ),
+                scrollBehavior = topBarScrollBehavior,
             )
         },
     ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = padding)) {
-            if (!isConnected) {
+        // Connected/disconnected cross-fades instead of hard-swapping via an early return
+        // (RemEx-xgc7).
+        val connectionFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+        AnimatedContent(
+            targetState = isConnected,
+            transitionSpec = { fadeIn(connectionFadeSpec) togetherWith fadeOut(connectionFadeSpec) },
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = padding),
+            label = "file_manager_connection",
+        ) { connected ->
+            if (!connected) {
                 DisconnectedContent(onNavigateToConnection)
-                return@Column
-            }
+            } else {
+                Column(modifier = Modifier.fillMaxSize()) {
 
-            FileManagerToolbar(
-                searchQuery = searchQuery,
-                onSearchChange = vm::setSearchQuery,
-                sortOption = sortOption,
-                onSort = vm::setSort,
-                viewMode = viewMode,
-                onToggleViewMode = vm::toggleViewMode,
-                canWrite = canWrite && !searchActive,
-                onNewFolder = { showNewFolder = true },
-                onUpload = { uploadLauncher.launch("*/*") },
-                modifier = Modifier.padding(vertical = 4.dp),
-            )
+                    FileManagerToolbar(
+                        searchQuery = searchQuery,
+                        onSearchChange = vm::setSearchQuery,
+                        sortOption = sortOption,
+                        onSort = vm::setSort,
+                        viewMode = viewMode,
+                        onToggleViewMode = vm::toggleViewMode,
+                        canWrite = canWrite && !searchActive,
+                        onNewFolder = { showNewFolder = true },
+                        onUpload = { uploadLauncher.launch("*/*") },
+                        modifier = Modifier.padding(vertical = 4.dp),
+                    )
 
-            FileManagerQuickAccess(
-                roots = remoteRoots,
-                volumes = volumes,
-                selectedRootId = selectedRootId,
-                canBrowseDevice = capabilities?.fullBrowse == true,
-                onSelectRoot = vm::selectRoot,
-                onSelectVolume = vm::selectVolume,
-                onBrowseDevice = vm::loadVolumes,
-                modifier = Modifier.padding(bottom = 4.dp),
-            )
+                    FileManagerQuickAccess(
+                        roots = remoteRoots,
+                        volumes = volumes,
+                        selectedRootId = selectedRootId,
+                        canBrowseDevice = capabilities?.fullBrowse == true,
+                        onSelectRoot = vm::selectRoot,
+                        onSelectVolume = vm::selectVolume,
+                        onBrowseDevice = vm::loadVolumes,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
 
-            if (!searchActive) {
-                FileManagerBreadcrumbs(
-                    crumbs = FileManagerLogic.buildBreadcrumbs(rootLabel, remotePath),
-                    onNavigate = vm::navigateToPath,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                )
-            }
+                    AnimatedVisibility(
+                        visible = !searchActive,
+                        enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                        exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                    ) {
+                        FileManagerBreadcrumbs(
+                            crumbs = FileManagerLogic.buildBreadcrumbs(rootLabel, remotePath),
+                            onNavigate = vm::navigateToPath,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        )
+                    }
 
-            if (isSelectionMode) {
-                FileManagerSelectionBar(
-                    selectedCount = selectedEntryNames.size,
-                    canWrite = canWrite,
-                    canDelete = canDelete,
-                    onClose = vm::clearSelection,
-                    onSelectAll = vm::selectAll,
-                    onCopy = { vm.openDestinationPicker(); destinationMode = FileManageOperations.COPY },
-                    onMove = { vm.openDestinationPicker(); destinationMode = FileManageOperations.MOVE },
-                    onDelete = vm::deleteSelectedEntries,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
-            }
+                    AnimatedVisibility(
+                        visible = isSelectionMode,
+                        enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                        exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                    ) {
+                        FileManagerSelectionBar(
+                            selectedCount = selectedEntryNames.size,
+                            canWrite = canWrite,
+                            canDelete = canDelete,
+                            onClose = vm::clearSelection,
+                            onSelectAll = vm::selectAll,
+                            onCopy = { vm.openDestinationPicker(); destinationMode = FileManageOperations.COPY },
+                            onMove = { vm.openDestinationPicker(); destinationMode = FileManageOperations.MOVE },
+                            onDelete = vm::deleteSelectedEntries,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        )
+                    }
 
-            if (searchActive && searchTruncated) {
-                Text(
-                    text = stringResource(R.string.file_manager_search_truncated),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 2.dp),
-                )
-            }
+                    // The three stacked header notices grow/shrink instead of shoving the list in
+                    // one frame (RemEx-z01v).
+                    AnimatedVisibility(
+                        visible = searchActive && searchTruncated,
+                        enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                        exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.file_manager_search_truncated),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 2.dp),
+                        )
+                    }
 
-            if (statusText.isNotBlank()) {
-                Text(
-                    text = statusText,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 2.dp),
-                )
-            }
+                    // Remembers its last non-blank value so the shrink-out exit still has text.
+                    var lastStatusText by remember { mutableStateOf(statusText) }
+                    if (statusText.isNotBlank()) lastStatusText = statusText
+                    AnimatedVisibility(
+                        visible = statusText.isNotBlank(),
+                        enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                        exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                    ) {
+                        Text(
+                            text = lastStatusText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 2.dp),
+                        )
+                    }
 
-            if (isTransferring) {
-                RemexLinearWavyProgress(progress = transferProgress, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
-                OutlinedButton(onClick = vm::cancelLegacyTransfer, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.file_transfer_cancel))
-                }
-            }
-
-            Box(modifier = Modifier.weight(1f)) {
-                PullToRefreshBox(
-                    isRefreshing = isRefreshing,
-                    onRefresh = vm::refresh,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    when {
-                        isLoading && displayedEntries.isEmpty() -> {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                RemexLoadingIndicator(contained = true)
+                    AnimatedVisibility(
+                        visible = isTransferring,
+                        enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                        exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                            fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                    ) {
+                        Column {
+                            RemexLinearWavyProgress(progress = transferProgress, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
+                            OutlinedButton(onClick = vm::cancelLegacyTransfer, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.file_transfer_cancel))
                             }
                         }
-                        remoteRoots.isEmpty() && volumes.isEmpty() -> {
-                            CenteredMessage(stringResource(R.string.file_transfer_no_shared_folders))
-                        }
-                        displayedEntries.isEmpty() -> {
-                            CenteredMessage(
-                                if (searchActive) stringResource(R.string.file_manager_no_results)
-                                else stringResource(R.string.file_transfer_empty)
-                            )
-                        }
-                        viewMode == FileViewMode.GRID -> {
-                            LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 100.dp), modifier = Modifier.fillMaxSize()) {
-                                items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
-                                    FileManagerGridItem(
-                                        entry = entry,
-                                        isSelectionMode = isSelectionMode,
-                                        isSelected = entry.name in selectedEntryNames,
-                                        thumbnailBase64 = thumbnails[entry.relativePath ?: FileManagerLogic.combinePath(remotePath, entry.name)],
-                                        showOverflow = entry.name != FileManagerLogic.PARENT_ENTRY,
-                                        onRequestThumbnail = { vm.requestThumbnail(entry) },
-                                        onTap = {
-                                            if (isSelectionMode) vm.toggleEntrySelection(entry)
-                                            else if (entry.isDirectory) vm.navigateInto(entry)
-                                            else vm.showProperties(entry)
-                                        },
-                                        onLongPress = { vm.enterSelectionMode(entry) },
-                                        onOverflow = { contextMenuEntry = entry },
-                                    )
-                                }
+                    }
+
+                    Box(modifier = Modifier.weight(1f)) {
+                        PullToRefreshBox(
+                            isRefreshing = isRefreshing,
+                            onRefresh = vm::refresh,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            // The four body states (loading / no roots / empty / content) cross-fade through
+                            // AnimatedContent, keyed on kind + view mode. Entry-list changes deliberately do
+                            // NOT re-key the region: rows animate individually via animateItem below
+                            // (RemEx-598q reconciling RemEx-h9rd), so folder navigation, sorting, searching
+                            // and renames animate per row while LIST/GRID and state-kind changes cross-fade.
+                            val bodyState = when {
+                                isLoading && displayedEntries.isEmpty() ->
+                                    FileManagerBodyState(FileManagerBodyState.Kind.Loading, viewMode)
+                                remoteRoots.isEmpty() && volumes.isEmpty() ->
+                                    FileManagerBodyState(FileManagerBodyState.Kind.NoRoots, viewMode)
+                                displayedEntries.isEmpty() ->
+                                    FileManagerBodyState(FileManagerBodyState.Kind.Empty, viewMode)
+                                else -> FileManagerBodyState(FileManagerBodyState.Kind.Content, viewMode)
                             }
-                        }
-                        else -> {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
-                                    FileManagerListItem(
-                                        entry = entry,
-                                        isSelectionMode = isSelectionMode,
-                                        isSelected = entry.name in selectedEntryNames,
-                                        thumbnailBase64 = thumbnails[entry.relativePath ?: FileManagerLogic.combinePath(remotePath, entry.name)],
-                                        showDownload = true,
-                                        showOverflow = entry.name != FileManagerLogic.PARENT_ENTRY,
-                                        onRequestThumbnail = { vm.requestThumbnail(entry) },
-                                        onTap = {
-                                            if (isSelectionMode) vm.toggleEntrySelection(entry)
-                                            else vm.navigateInto(entry)
-                                        },
-                                        onLongPress = { vm.enterSelectionMode(entry) },
-                                        onDownload = { startDownload(entry) },
-                                        onOverflow = { contextMenuEntry = entry },
-                                    )
-                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            val effectsSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+                            val itemPlacementSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+                            AnimatedContent(
+                                targetState = bodyState,
+                                transitionSpec = { fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec) },
+                                modifier = Modifier.fillMaxSize(),
+                            ) { state ->
+                                when (state.kind) {
+                                    FileManagerBodyState.Kind.Loading -> {
+                                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                            RemexLoadingIndicator(contained = true)
+                                        }
+                                    }
+                                    FileManagerBodyState.Kind.NoRoots -> {
+                                        CenteredMessage(stringResource(R.string.file_transfer_no_shared_folders))
+                                    }
+                                    FileManagerBodyState.Kind.Empty -> {
+                                        CenteredMessage(
+                                            if (searchActive) stringResource(R.string.file_manager_no_results)
+                                            else stringResource(R.string.file_transfer_empty)
+                                        )
+                                    }
+                                    FileManagerBodyState.Kind.Content -> if (state.viewMode == FileViewMode.GRID) {
+                                        LazyVerticalGrid(columns = GridCells.Adaptive(minSize = 100.dp), modifier = Modifier.fillMaxSize()) {
+                                            items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
+                                                FileManagerGridItem(
+                                                    modifier = Modifier.animateItem(
+                                                        fadeInSpec = effectsSpec,
+                                                        placementSpec = itemPlacementSpec,
+                                                        fadeOutSpec = effectsSpec,
+                                                    ),
+                                                    entry = entry,
+                                                    isSelectionMode = isSelectionMode,
+                                                    isSelected = entry.name in selectedEntryNames,
+                                                    thumbnailBase64 = thumbnails[entry.relativePath ?: FileManagerLogic.combinePath(remotePath, entry.name)],
+                                                    showOverflow = entry.name != FileManagerLogic.PARENT_ENTRY,
+                                                    onRequestThumbnail = { vm.requestThumbnail(entry) },
+                                                    onTap = {
+                                                        if (isSelectionMode) vm.toggleEntrySelection(entry)
+                                                        else if (entry.isDirectory) vm.navigateInto(entry)
+                                                        else vm.showProperties(entry)
+                                                    },
+                                                    onLongPress = { vm.enterSelectionMode(entry) },
+                                                    onOverflow = { contextMenuEntry = entry },
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                            items(displayedEntries, key = { it.relativePath ?: it.name }) { entry ->
+                                                FileManagerListItem(
+                                                    modifier = Modifier.animateItem(
+                                                        fadeInSpec = effectsSpec,
+                                                        placementSpec = itemPlacementSpec,
+                                                        fadeOutSpec = effectsSpec,
+                                                    ),
+                                                    entry = entry,
+                                                    isSelectionMode = isSelectionMode,
+                                                    isSelected = entry.name in selectedEntryNames,
+                                                    thumbnailBase64 = thumbnails[entry.relativePath ?: FileManagerLogic.combinePath(remotePath, entry.name)],
+                                                    showDownload = true,
+                                                    showOverflow = entry.name != FileManagerLogic.PARENT_ENTRY,
+                                                    onRequestThumbnail = { vm.requestThumbnail(entry) },
+                                                    onTap = {
+                                                        if (isSelectionMode) vm.toggleEntrySelection(entry)
+                                                        else vm.navigateInto(entry)
+                                                    },
+                                                    onLongPress = { vm.enterSelectionMode(entry) },
+                                                    onDownload = { startDownload(entry) },
+                                                    onOverflow = { contextMenuEntry = entry },
+                                                )
+                                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+
+                    FileManagerQueuePanel(
+                        transfers = transferQueue,
+                        onPause = vm::pauseTransfer,
+                        onResume = vm::resumeTransfer,
+                        onCancel = vm::cancelTransfer,
+                        onClearFinished = vm::clearFinishedTransfers,
+                    )
                 }
             }
-
-            FileManagerQueuePanel(
-                transfers = transferQueue,
-                onPause = vm::pauseTransfer,
-                onResume = vm::resumeTransfer,
-                onCancel = vm::cancelTransfer,
-                onClearFinished = vm::clearFinishedTransfers,
-            )
         }
     }
 }
@@ -365,6 +465,19 @@ private fun DisconnectedContent(onNavigateToConnection: () -> Unit) {
             Button(onClick = onNavigateToConnection) { Text(stringResource(R.string.button_connect)) }
         }
     }
+}
+
+/**
+ * Key for the file-list region's AnimatedContent: state kind + view mode. The entry list is
+ * deliberately NOT part of the key — list changes animate per row via animateItem instead of
+ * cross-fading the whole region (RemEx-598q), and the exiting copy of a kind-change renders an
+ * empty list (invisible), so no stale-content artifact is possible.
+ */
+private data class FileManagerBodyState(
+    val kind: Kind,
+    val viewMode: FileViewMode,
+) {
+    enum class Kind { Loading, NoRoots, Empty, Content }
 }
 
 @Composable
@@ -396,8 +509,7 @@ private fun ContextMenuSheet(
         Column(modifier = Modifier.padding(bottom = 24.dp)) {
             Text(
                 text = entry.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMediumEmphasized,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),

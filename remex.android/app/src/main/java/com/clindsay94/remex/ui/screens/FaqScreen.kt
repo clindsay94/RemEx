@@ -36,7 +36,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -47,6 +46,11 @@ import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 private data class FaqItem(
         val questionRes: Int,
         val answerRes: Int,
+        /**
+         * Optional string resource substituted into [answerRes] as `%1$s`, so an answer that names
+         * another screen tracks that screen's own title instead of repeating it (RemEx-9vcw).
+         */
+        val answerArgRes: Int? = null,
         val releasesLink: Boolean = false
 )
 
@@ -63,12 +67,16 @@ private val faqItems =
                 FaqItem(questionRes = R.string.faq_q5, answerRes = R.string.faq_a5),
                 FaqItem(questionRes = R.string.faq_q6, answerRes = R.string.faq_a6),
                 FaqItem(questionRes = R.string.faq_q7, answerRes = R.string.faq_a7),
-                FaqItem(questionRes = R.string.faq_q8, answerRes = R.string.faq_a8),
+                FaqItem(questionRes = R.string.faq_q8, answerRes = R.string.faq_a8,
+                                answerArgRes = R.string.screen_dashboard_title),
                 FaqItem(questionRes = R.string.faq_q9, answerRes = R.string.faq_a9),
                 FaqItem(questionRes = R.string.faq_q10, answerRes = R.string.faq_a10),
                 FaqItem(questionRes = R.string.faq_q11, answerRes = R.string.faq_a11),
                 FaqItem(questionRes = R.string.faq_q12, answerRes = R.string.faq_a12),
-                FaqItem(questionRes = R.string.faq_q13, answerRes = R.string.faq_a13)
+                FaqItem(questionRes = R.string.faq_q13, answerRes = R.string.faq_a13),
+                FaqItem(questionRes = R.string.faq_q14, answerRes = R.string.faq_a14),
+                FaqItem(questionRes = R.string.faq_q15, answerRes = R.string.faq_a15),
+                FaqItem(questionRes = R.string.faq_q16, answerRes = R.string.faq_a16)
         )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,8 +102,7 @@ fun FaqScreen() {
         ) {
             Text(
                     text = stringResource(R.string.faq_header),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMediumEmphasized,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -152,8 +159,7 @@ private fun FaqCard(item: FaqItem) {
             ) {
                 Text(
                         text = stringResource(item.questionRes),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleSmallEmphasized,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f)
                 )
@@ -192,7 +198,13 @@ private fun FaqCard(item: FaqItem) {
                             color = MaterialTheme.colorScheme.outlineVariant
                     )
                     Text(
-                            text = stringResource(item.answerRes),
+                            text =
+                                    if (item.answerArgRes != null)
+                                            stringResource(
+                                                    item.answerRes,
+                                                    stringResource(item.answerArgRes)
+                                            )
+                                    else stringResource(item.answerRes),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

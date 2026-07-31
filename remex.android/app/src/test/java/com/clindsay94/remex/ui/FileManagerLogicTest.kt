@@ -148,4 +148,101 @@ class FileManagerLogicTest {
         assertFalse(FileManagerLogic.isThumbnailCandidate("notes.txt"))
         assertFalse(FileManagerLogic.isThumbnailCandidate("folder"))
     }
+
+    // ── Shared roots/entries parsing (RemEx-4xhj) ─────────────────────────────────
+    // FileTransferViewModel and the Share-to-PC screen both parse this exact `file_roots_response` /
+    // `file_browse_response` shape; these guard the shared parse both now delegate to.
+
+    @Test
+    fun parseSharedRoots_readsAllFields_andDefaultsMissingBooleansToFalse() {
+        val arr =
+            org.json.JSONArray(
+                """
+                [
+                  {"rootId":"r1","displayName":"Documents","isWritable":true,"canRename":true,
+                   "canMove":true,"canDelete":true,"canRemoveRoot":true},
+                  {"rootId":"r2","displayName":"Read Only"}
+                ]
+                """.trimIndent()
+            )
+        val roots = FileManagerLogic.parseSharedRoots(arr)
+        assertEquals(2, roots.size)
+        assertEquals("r1", roots[0].rootId)
+        assertTrue(roots[0].isWritable)
+        assertTrue(roots[0].canRemoveRoot)
+        assertEquals("r2", roots[1].rootId)
+        assertFalse(roots[1].isWritable)
+        assertFalse(roots[1].canRename)
+    }
+
+    @Test
+    fun parseSharedRoots_nullArray_yieldsEmptyList() {
+        assertTrue(FileManagerLogic.parseSharedRoots(null).isEmpty())
+    }
+
+    @Test
+    fun parseFileEntries_readsAllFields() {
+        val arr =
+            org.json.JSONArray(
+                """
+                [
+                  {"name":"Reports","isDirectory":true,"sizeBytes":0,"modifiedUnixMs":1000},
+                  {"name":"notes.txt","isDirectory":false,"sizeBytes":42,"modifiedUnixMs":2000}
+                ]
+                """.trimIndent()
+            )
+        val entries = FileManagerLogic.parseFileEntries(arr)
+        assertEquals(2, entries.size)
+        assertEquals("Reports", entries[0].name)
+        assertTrue(entries[0].isDirectory)
+        assertEquals("notes.txt", entries[1].name)
+        assertFalse(entries[1].isDirectory)
+        assertEquals(42L, entries[1].sizeBytes)
+        assertEquals(2000L, entries[1].modifiedUnixMs)
+    }
+
+    @Test
+    fun parseFileEntries_nullArray_yieldsEmptyList() {
+        assertTrue(FileManagerLogic.parseFileEntries(null).isEmpty())
+    }
+
+    // ── Header subtitle: the read-only marker (RemEx-dc57) ────────────────────
+
+    @Test
+    fun subtitle_marksASelectedReadOnlyRoot() {
+        val subtitle = FileManagerLogic.buildLocationSubtitle(
+            rootLabel = "Camera",
+            path = "/DCIM",
+            selectedRootIsWritable = false,
+            readOnlyLabel = "Read-only",
+        )
+        assertEquals("Camera • /DCIM • Read-only", subtitle)
+    }
+
+    @Test
+    fun subtitle_omitsMarker_forAWritableRoot() {
+        val subtitle = FileManagerLogic.buildLocationSubtitle(
+            rootLabel = "Downloads",
+            path = "/",
+            selectedRootIsWritable = true,
+            readOnlyLabel = "Read-only",
+        )
+        assertEquals("Downloads • /", subtitle)
+    }
+
+    /**
+     * The case the screen's own canWrite flag gets wrong: it is false both for a read-only root
+     * and for no selection at all, so driving the marker from it would label the empty "/"
+     * placeholder "Read-only" - untrue of anything, and shown before the user has chosen a folder.
+     */
+    @Test
+    fun subtitle_omitsMarker_whenNoRootIsSelected() {
+        val subtitle = FileManagerLogic.buildLocationSubtitle(
+            rootLabel = "/",
+            path = "/",
+            selectedRootIsWritable = null,
+            readOnlyLabel = "Read-only",
+        )
+        assertEquals("/ • /", subtitle)
+    }
 }

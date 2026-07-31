@@ -25,12 +25,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -54,6 +53,7 @@ import com.clindsay94.remex.MainActivity
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.ui.screens.FileManagerLogic
+import com.clindsay94.remex.ui.screens.RemexLoadingIndicator
 import com.clindsay94.remex.ui.theme.RemExTheme
 import kotlinx.coroutines.delay
 
@@ -329,13 +329,16 @@ private fun ReadyContent(
                 enabled = !sending && selectedRootId != null && roots.isNotEmpty(),
             ) {
                 if (sending) {
-                    CircularProgressIndicator(
+                    RemexLoadingIndicator(
                         modifier = Modifier.size(18.dp),
-                        strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Icon(Icons.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
                     Spacer(Modifier.width(8.dp))
                     Text(stringResourceCompat(R.string.share_to_pc_send))
                 }
@@ -380,7 +383,7 @@ private fun CenteredProgress(text: String) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        CircularProgressIndicator()
+        RemexLoadingIndicator()
         Spacer(Modifier.height(16.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium)
     }

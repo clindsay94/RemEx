@@ -1,6 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -11,7 +12,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -39,7 +43,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
@@ -55,10 +58,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.RemExTheme
 import com.clindsay94.remex.R
 import kotlinx.coroutines.delay
@@ -69,6 +72,9 @@ import kotlinx.coroutines.delay
  * debounce to avoid flashing during transient reconnection cycles.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** One full breathe of the connection chip's status dot (1.0x -> 1.4x, reversed). */
+private const val CONNECTION_CHIP_PULSE_MS = 1400
+
 @Composable
 fun NotConnectedBanner(
         isConnected: Boolean,
@@ -160,8 +166,7 @@ fun NotConnectedBanner(
                                 ) {
                                         Text(
                                                 stringResource(R.string.button_connect),
-                                                fontWeight = FontWeight.Bold,
-                                                style = MaterialTheme.typography.labelSmall
+                                                style = MaterialTheme.typography.labelSmallEmphasized
                                         )
                                 }
                         }
@@ -195,8 +200,7 @@ fun DisconnectedFullScreen(
                 Spacer(Modifier.height(24.dp))
                 Text(
                         stringResource(R.string.disconnected_requires_connection, screenName),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleMediumEmphasized,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurface
                 )
@@ -244,22 +248,29 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
                         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
                         label = "chip_dot_color"
                 )
-        val infiniteTransition = rememberInfiniteTransition(label = "chip_pulse")
-        val pulseScale by
-                infiniteTransition.animateFloat(
-                        initialValue = 1f,
-                        targetValue = if (isConnected) 1.4f else 1f,
-                        animationSpec =
-                                infiniteRepeatable(
-                                        animation =
-                                                tween(
-                                                        durationMillis = 1400,
-                                                        easing = FastOutSlowInEasing
-                                                ),
-                                        repeatMode = RepeatMode.Reverse
-                                ),
-                        label = "chip_pulse_scale"
-                )
+        // The infinite pulse is only composed while it is actually visible (connected) and
+        // motion is allowed — under reduce-motion the dot holds steady (RemEx-3gkr).
+        val reducedMotion = LocalReducedMotion.current
+        // State (not a plain Float): the value is read inside graphicsLayer so pulse frames
+        // stay in the draw phase and never recompose the chip.
+        val pulseScale =
+                if (isConnected && !reducedMotion) {
+                        val infiniteTransition = rememberInfiniteTransition(label = "chip_pulse")
+                        infiniteTransition.animateFloat(
+                                initialValue = 1f,
+                                targetValue = 1.4f,
+                                animationSpec =
+                                        infiniteRepeatable(
+                                                animation =
+                                                        tween(
+                                                                durationMillis = CONNECTION_CHIP_PULSE_MS,
+                                                                easing = FastOutSlowInEasing
+                                                        ),
+                                                repeatMode = RepeatMode.Reverse
+                                        ),
+                                label = "chip_pulse_scale"
+                        )
+                } else remember { mutableStateOf(1f) }
         // M3: SuggestionChip replaces Surface+Row for semantic chip semantics
         SuggestionChip(
                 onClick = {},
@@ -270,27 +281,33 @@ fun ConnectionStatusChip(isConnected: Boolean, modifier: Modifier = Modifier) {
                                         Modifier.size(6.dp)
                                                 .graphicsLayer {
                                                         if (isConnected) {
-                                                                scaleX = pulseScale
-                                                                scaleY = pulseScale
+                                                                scaleX = pulseScale.value
+                                                                scaleY = pulseScale.value
                                                         }
                                                 }
                                                 .background(color = dotColor, shape = CircleShape)
                         )
                 },
                 label = {
-                        Text(
-                                text =
-                                        if (isConnected) stringResource(R.string.status_connected)
-                                        else stringResource(R.string.snackbar_no_pc_connected),
-                                style = MaterialTheme.typography.labelSmall
-                        )
+                        val labelFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+                        AnimatedContent(
+                                targetState = isConnected,
+                                transitionSpec = {
+                                        fadeIn(labelFadeSpec) togetherWith fadeOut(labelFadeSpec)
+                                },
+                                label = "chip_label"
+                        ) { connected ->
+                                Text(
+                                        text =
+                                                if (connected) stringResource(R.string.status_connected)
+                                                else stringResource(R.string.snackbar_no_pc_connected),
+                                        style = MaterialTheme.typography.labelSmall
+                                )
+                        }
                 },
                 colors =
                         SuggestionChipDefaults.suggestionChipColors(
-                                containerColor =
-                                        MaterialTheme.colorScheme.surfaceContainerHighest.copy(
-                                                alpha = 0.92f
-                                        )
+                                containerColor = MaterialTheme.colorScheme.surfaceBright
                         )
         )
 }
@@ -338,8 +355,7 @@ fun RemexCircularWavyGauge(
                 )
                 Text(
                         text = centerLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMediumEmphasized,
                 )
         }
 }

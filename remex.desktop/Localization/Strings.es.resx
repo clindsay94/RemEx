@@ -14,26 +14,14 @@
   </resheader>
 
   
-  <data name="App_Name" xml:space="preserve">
-    <value>RemEx</value>
-  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Inicio</value>
   </data>
   <data name="Nav_Sensors" xml:space="preserve">
     <value>Sensores</value>
   </data>
-  <data name="Nav_Remote" xml:space="preserve">
-    <value>Remoto</value>
-  </data>
   <data name="Nav_Launcher" xml:space="preserve">
     <value>Lanzador</value>
-  </data>
-  <data name="Nav_Tasks" xml:space="preserve">
-    <value>Tareas</value>
-  </data>
-  <data name="Nav_Desktop" xml:space="preserve">
-    <value>Escritorio</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Configuración</value>
@@ -64,20 +52,11 @@
   <data name="Btn_Discover" xml:space="preserve">
     <value>Descubrir</value>
   </data>
-  <data name="Btn_Refresh" xml:space="preserve">
-    <value>⟳ Actualizar</value>
-  </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Iniciar</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
     <value>⏹ Detener</value>
-  </data>
-  <data name="Btn_Submit" xml:space="preserve">
-    <value>Enviar</value>
-  </data>
-  <data name="Btn_Ping" xml:space="preserve">
-    <value>Ping</value>
   </data>
 
   
@@ -86,12 +65,6 @@
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>CONTROLES DE ENERGÍA &amp; SISTEMA</value>
-  </data>
-  <data name="Remote_WolSection" xml:space="preserve">
-    <value>WAKE ON LAN</value>
-  </data>
-  <data name="Remote_WolDescription" xml:space="preserve">
-    <value>Envía un paquete mágico para despertar el PC objetivo.</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>NORMAL</value>
@@ -126,9 +99,6 @@
   <data name="Remote_RebootUefi" xml:space="preserve">
     <value>🔧  Reiniciar a UEFI</value>
   </data>
-  <data name="Remote_WolSend" xml:space="preserve">
-    <value>🔌  Enviar Paquete Wake-on-LAN</value>
-  </data>
 
   
   <data name="Settings_Header" xml:space="preserve">
@@ -149,17 +119,8 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>Dirección del PC</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>Clave de Acceso</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Guardar &amp; Reconectar</value>
-  </data>
-  <data name="Settings_RemoteDesktop" xml:space="preserve">
-    <value>ESCRITORIO REMOTO</value>
-  </data>
-  <data name="Settings_StreamFpsDesc" xml:space="preserve">
-    <value>Velocidad de fotogramas predeterminada para nuevas transmisiones</value>
   </data>
   <data name="Settings_Layout" xml:space="preserve">
     <value>DISEÑO</value>
@@ -179,50 +140,11 @@
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Seleccionar sensores para mostrar en la pantalla de inicio</value>
   </data>
-  <data name="Settings_AccountFormat" xml:space="preserve">
-    <value>Cuenta: {0}</value>
-  </data>
-  <data name="Settings_Username" xml:space="preserve">
-    <value>Nombre de usuario</value>
-  </data>
-  <data name="Settings_Password" xml:space="preserve">
-    <value>Contraseña</value>
-  </data>
-  <data name="Settings_RestartNote" xml:space="preserve">
-    <value>El cambio de idioma tendrá efecto después de reiniciar RemEx.</value>
-  </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Idioma</value>
   </data>
 
   
-  <data name="Home_Subtitle" xml:space="preserve">
-    <value>CENTRO DE COMANDO DE EJECUCIÓN REMOTA</value>
-  </data>
-  <data name="Home_QuickActions" xml:space="preserve">
-    <value>ACCIONES RÁPIDAS</value>
-  </data>
-  <data name="Home_SensorWorkspace" xml:space="preserve">
-    <value>Área de Sensores</value>
-  </data>
-  <data name="Home_PcRemote" xml:space="preserve">
-    <value>PC Remoto</value>
-  </data>
-  <data name="Home_Desktop" xml:space="preserve">
-    <value>Escritorio</value>
-  </data>
-  <data name="Home_Launcher" xml:space="preserve">
-    <value>Lanzador</value>
-  </data>
-  <data name="Home_Tasks" xml:space="preserve">
-    <value>Tareas</value>
-  </data>
-  <data name="Home_LiveTelemetry" xml:space="preserve">
-    <value>TELEMETRÍA EN VIVO</value>
-  </data>
-  <data name="Home_NoPinnedSensors" xml:space="preserve">
-    <value>No hay sensores fijados aún</value>
-  </data>
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
     <value>Abre el Área de Sensores, haz clic derecho en una tarjeta y fíjala al inicio.</value>
   </data>
@@ -303,9 +225,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Header" xml:space="preserve">
-    <value>VISTAZO RÁPIDO</value>
-  </data>
   <data name="TrayFlyout_Home" xml:space="preserve">
     <value>INICIO</value>
   </data>
@@ -362,41 +281,8 @@
   <data name="Canvas_Disconnect" xml:space="preserve">
     <value>✕ Desconectar</value>
   </data>
-  <data name="Canvas_LayoutSaved" xml:space="preserve">
-    <value>¡Diseño Guardado!</value>
-  </data>
-  <data name="Canvas_SyncRequested" xml:space="preserve">
-    <value>Sincronización solicitada…</value>
-  </data>
-  <data name="Dashboard_SystemTelemetry" xml:space="preserve">
-    <value>Telemetría del Sistema</value>
-  </data>
-  <data name="Dashboard_Samples" xml:space="preserve">
-    <value>MUESTRAS</value>
-  </data>
-  <data name="Dashboard_Uptime" xml:space="preserve">
-    <value>TIEMPO DE ACTIVIDAD</value>
-  </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Conectar</value>
-  </data>
-  <data name="Dashboard_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
-  </data>
-  <data name="Dashboard_Disconnect" xml:space="preserve">
-    <value>✕ Desconectar</value>
-  </data>
-  <data name="Dashboard_HostWatermark" xml:space="preserve">
-    <value>ws://PC:port/ws</value>
-  </data>
-  <data name="Dashboard_MenuSize" xml:space="preserve">
-    <value>📐 Tamaño</value>
-  </data>
-  <data name="Dashboard_MenuTheme" xml:space="preserve">
-    <value>🎨 Tema</value>
-  </data>
-  <data name="Dashboard_MenuGraph" xml:space="preserve">
-    <value>📊 Gráfico</value>
   </data>
 
   
@@ -433,12 +319,6 @@
   <data name="RemoteDesktop_Fullscreen" xml:space="preserve">
     <value>Salir</value>
   </data>
-  <data name="RemoteDesktop_CompactPad" xml:space="preserve">
-    <value>Compacto</value>
-  </data>
-  <data name="RemoteDesktop_FullPad" xml:space="preserve">
-    <value>Completo</value>
-  </data>
   <data name="RemoteDesktop_ResolutionFormat" xml:space="preserve">
     <value>Resolución: {0}</value>
   </data>
@@ -446,16 +326,10 @@
     <value>FPS: {0:F1}</value>
   </data>
   <data name="RemoteDesktop_QualityFormat" xml:space="preserve">
-    <value>Q: {0}</value>
+    <value>Calidad: {0}%</value>
   </data>
 
   
-  <data name="Custom_Header" xml:space="preserve">
-    <value>🎨  PERSONALIZACIÓN</value>
-  </data>
-  <data name="Custom_Subheader" xml:space="preserve">
-    <value>TEMAS &amp; PRESETS DEL MOTOR</value>
-  </data>
   <data name="Custom_BasePresets" xml:space="preserve">
     <value>PRESETS BASE</value>
   </data>
@@ -469,7 +343,7 @@
     <value>Opacidad del Vidrio</value>
   </data>
   <data name="Custom_AppWindowOpacity" xml:space="preserve">
-    <value>Window Opacity</value>
+    <value>Opacidad de la Ventana</value>
   </data>
   <data name="Custom_GlowStrength" xml:space="preserve">
     <value>Intensidad del Brillo</value>
@@ -485,12 +359,6 @@
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Restablecer a Valores del Tema</value>
-  </data>
-  <data name="Custom_Back" xml:space="preserve">
-    <value>← Centro de Comando</value>
-  </data>
-  <data name="Custom_RemoteCardShape" xml:space="preserve">
-    <value>Forma de Tarjeta Remota</value>
   </data>
   <data name="Custom_PresetStandardGlass" xml:space="preserve">
     <value>Standard Glass</value>
@@ -572,44 +440,17 @@
   <data name="Status_StreamConnecting" xml:space="preserve">
     <value>Conectando...</value>
   </data>
-  <data name="Status_StreamFailedFormat" xml:space="preserve">
-    <value>Fallido: {0}</value>
+  <data name="Status_StreamFailed" xml:space="preserve">
+    <value>No se pudo iniciar la transmisión. Prueba a reconectar.</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
     <value>Detenido</value>
   </data>
-  <data name="Status_FrameDecodeErrorFormat" xml:space="preserve">
-    <value>Error de decodificación de frame ({0} bytes): {1}: {2}</value>
+  <data name="Status_FrameDecodeError" xml:space="preserve">
+    <value>No se puede mostrar la pantalla remota: prueba a bajar la Calidad o desconecta y vuelve a conectar.</value>
   </data>
 
   
-  <data name="Service_NotInstalled" xml:space="preserve">
-    <value>No Instalado</value>
-  </data>
-  <data name="Service_Running" xml:space="preserve">
-    <value>En Ejecución</value>
-  </data>
-  <data name="Service_Stopped" xml:space="preserve">
-    <value>Detenido</value>
-  </data>
-  <data name="Service_Pending" xml:space="preserve">
-    <value>Pendiente…</value>
-  </data>
-  <data name="Service_Installed" xml:space="preserve">
-    <value>Instalado</value>
-  </data>
-  <data name="Service_Starting" xml:space="preserve">
-    <value>Iniciando…</value>
-  </data>
-  <data name="Service_Stopping" xml:space="preserve">
-    <value>Deteniendo…</value>
-  </data>
-  <data name="Service_Uninstalling" xml:space="preserve">
-    <value>Servicio desinstalado.</value>
-  </data>
-  <data name="Service_PasswordRequired" xml:space="preserve">
-    <value>Se requiere contraseña.</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
   </data>
@@ -619,24 +460,6 @@
   <data name="Service_HostUnavailableHint" xml:space="preserve">
     <value>Conéctate a un PC para inspeccionar las capacidades del tiempo de ejecución.</value>
   </data>
-  <data name="Service_Checking" xml:space="preserve">
-    <value>Comprobando…</value>
-  </data>
-  <data name="Service_StoppedMsg" xml:space="preserve">
-    <value>Detenido.</value>
-  </data>
-  <data name="Service_StopFailed" xml:space="preserve">
-    <value>Error al detener — ver registro.</value>
-  </data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>Credenciales actualizadas — reinicia el servicio para aplicar los cambios.</value>
-  </data>
-  <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>Fallido — ver registro.</value>
-  </data>
-  <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>La desinstalación pudo haber fallado — ver registro.</value>
-  </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>Conexión cancelada</value>
   </data>
@@ -644,7 +467,7 @@
     <value>Tiempo de espera de conexión agotado</value>
   </data>
   <data name="Status_FoundHostFormat" xml:space="preserve">
-    <value>Found PC: {0}</value>
+    <value>PC encontrado: {0}</value>
   </data>
   <data name="Status_FoundMultipleHostsFormat" xml:space="preserve">
     <value>Se encontraron {0} PCs RemEx en tu red.</value>
@@ -662,7 +485,7 @@
     <value>PC interactivo</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>PC de servicio</value>
+    <value>PC sin sesión de escritorio</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
     <value>PC sin interfaz</value>
@@ -687,9 +510,6 @@
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
     <value>Error: {0}</value>
-  </data>
-  <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>Usuario desconectado</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
     <value>Error de envío: {0}</value>
@@ -779,16 +599,16 @@
     <value>Comenzar ✓</value>
   </data>
   <data name="Tutorial_DontShowAgain" xml:space="preserve">
-    <value>Don't show this tutorial again</value>
+    <value>No volver a mostrar este tutorial</value>
   </data>
 
   <data name="Tutorial_P0_Title" xml:space="preserve">
     <value>Bienvenido a RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx convierte tu PC en un centro de mando remoto seguro. Desde tu teléfono puedes ver los sensores del hardware, abrir aplicaciones, gestionar archivos y procesos, y transmitir tu escritorio.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx se ejecuta en este PC y tu teléfono se conecta a él. Cada conexión está protegida con TLS y emparejamiento mediante PIN.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -799,8 +619,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
 Tu teléfono Android se conecta a él, no al revés.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Para acceso permanente (incluso sin haber iniciado sesión), puedes instalar el PC como un servicio de Windows o un demonio de Linux.
-Esto permite que tu teléfono se conecte en cualquier momento.</value>
+    <value>RemEx se inicia automáticamente cuando inicias sesión en este PC: mediante una tarea de inicio de sesión en Windows o una entrada de inicio automático en Linux. Así tu teléfono puede conectarse siempre que tengas la sesión iniciada. Los sensores y los comandos de energía siguen funcionando con la pantalla bloqueada, pero para transmitir o controlar el escritorio la sesión debe estar desbloqueada. Si el PC está apagado o con la sesión cerrada, enciéndelo con Wake-on-LAN e inicia sesión primero.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -810,10 +629,10 @@ Esto permite que tu teléfono se conecte en cualquier momento.</value>
     <value>Para un monitoreo detallado del hardware (más de 300 sensores), instala HWiNFO64; es gratuito para uso personal.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
-    <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+    <value>1. Descárgalo de hwinfo.com
+2. Ejecuta HWInfo → Settings (⚙) → Main Settings
+3. Marca 'Shared Memory Support' → OK
+4. HWInfo debe estar en ejecución para que RemEx lea sus sensores</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
     <value>⚠ La memoria compartida de HWiNFO se desactiva automáticamente después de 12 horas (versión gratuita).
@@ -846,13 +665,13 @@ Siempre disponibles, sin software adicional.</value>
 Las apps deben configurarse aquí primero.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value>
+    <value>1. Ve a la página del Lanzador (barra lateral)
+2. Haz clic en '+ Añadir programa'
+3. Busca el .exe o el acceso directo
+4. ¡Ábrelo desde tu aplicación Android!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
-    <value>Esto funciona incluso con el servicio independiente Remex.PC; configura las apps en el cliente de escritorio al menos una vez.</value>
+    <value>Tu teléfono solo puede iniciar los programas que añadas aquí — por seguridad, RemEx no abrirá nada que no esté en esta lista.</value>
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">
@@ -866,28 +685,28 @@ Ambos dispositivos deben estar en la misma red Wi-Fi / LAN.</value>
     <value>Si el descubrimiento automático no funciona, busca la IP de tu PC manualmente:</value>
   </data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve">
-    <value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value>
+    <value>Windows: CMD → ipconfig → 'Dirección IPv4'
+Linux: ip addr  o  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
     <value>Ingresa ws://&lt;IP&gt;:5005/ws en los ajustes de conexión de la app de Android.</value>
   </data>
 
   <data name="Tutorial_P8_QR_Title" xml:space="preserve">
-    <value>QR Code Pairing</value>
+    <value>Emparejamiento por código QR</value>
   </data>
   <data name="Tutorial_P8_QR_Body1" xml:space="preserve">
-    <value>The fastest way to connect your phone is by scanning a QR code. The PC generates a pairing code that contains everything your mobile app needs.</value>
+    <value>La forma más rápida de conectar tu teléfono es escanear un código QR. El PC genera un código de emparejamiento que contiene todo lo que necesita tu aplicación móvil.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the PC
-2. Click "Show QR Code"
-3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
-5. Point your camera at the code — you'll connect automatically!</value>
+    <value>1. Abre Ajustes → Conexión en el PC
+2. Haz clic en "Mostrar código QR"
+3. Abre la aplicación móvil RemEx
+4. Toca el icono del escáner QR en la pantalla de conexión
+5. Apunta la cámara al código: ¡se conectará automáticamente!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
-    <value>No typing, no IP addresses — just scan and go. The connection details are saved so you only need to scan once.</value>
+    <value>Sin escribir nada, sin direcciones IP: solo escanea y listo. Los datos de conexión se guardan, así que solo tendrás que escanear una vez.</value>
   </data>
   <data name="Tutorial_P9_Title" xml:space="preserve">
     <value>Transferencia de archivos y carpetas compartidas</value>
@@ -896,9 +715,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>La transferencia de archivos solo muestra las carpetas que el PC de tu PC ha compartido. Configúralas desde Configuración en el PC de escritorio para que tu teléfono vea las ubicaciones correctas.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. Abre Configuración → Carpetas compartidas en tu PC.
+2. Mantén RemEx Transfers con escritura habilitada para subidas rápidas de teléfono a PC.
+3. Deja las demás carpetas en solo lectura a menos que quieras que los dispositivos móviles las modifiquen.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>En tu teléfono, navega por una carpeta compartida, toca un archivo para descargarlo o sube archivos desde Android a cualquier carpeta con escritura habilitada.</value>
@@ -919,112 +738,16 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>Dejar vacío para desactivar</value>
-  </data>
-  <data name="Shell_Atmosphere" xml:space="preserve">
-    <value>ATMÓSFERA</value>
-  </data>
   <data name="Shell_About" xml:space="preserve">
     <value>About</value>
-  </data>
-  <data name="Shell_AutoSaveNote" xml:space="preserve">
-    <value>Se guarda automáticamente al cambiar.
-Persiste tras reiniciar.</value>
-  </data>
-  <data name="Shell_FineTuning" xml:space="preserve">
-    <value>AJUSTE FINO</value>
-  </data>
-  <data name="Shell_HostWatermark" xml:space="preserve">
-    <value>ws://PC:port/ws</value>
-  </data>
-  <data name="Shell_Initializing" xml:space="preserve">
-    <value>Inicializando panel...</value>
-  </data>
-  <data name="Shell_JpegQuality" xml:space="preserve">
-    <value>Calidad JPEG</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Abrir Configuración</value>
   </data>
-  <data name="Shell_PasswordWatermark" xml:space="preserve">
-    <value>Contraseña de Windows</value>
-  </data>
-  <data name="Shell_SettingsSubtitle" xml:space="preserve">
-    <value>Configuración &amp;
-Personalización</value>
-  </data>
-  <data name="Shell_SettingsTitle" xml:space="preserve">
-    <value>⚙ Configuración</value>
-  </data>
-  <data name="Shell_StreamSettings" xml:space="preserve">
-    <value>AJUSTES DE TRANSMISIÓN</value>
-  </data>
-  <data name="Shell_StreamSettingsDesc" xml:space="preserve">
-    <value>Configura la calidad de la transmisión de pantalla que el PC emite a los clientes conectados (teléfono, tablet).</value>
-  </data>
-  <data name="Shell_Subtitle" xml:space="preserve">
-    <value>Centro de Mando de Ejecución Remota</value>
-  </data>
-  <data name="Shell_TargetFps" xml:space="preserve">
-    <value>FPS Objetivo</value>
-  </data>
-  <data name="Shell_Theme" xml:space="preserve">
-    <value>TEMA</value>
-  </data>
-  <data name="Shell_UsernameWatermark" xml:space="preserve">
-    <value>.\Usuario</value>
-  </data>
-  <data name="Shell_Welcome" xml:space="preserve">
-    <value>BIENVENIDO</value>
-  </data>
 
   
-  <data name="Nav_DesktopTooltip" xml:space="preserve">
-    <value>Escritorio Remoto — Transmite la pantalla de tu PC en tiempo real</value>
-  </data>
-  <data name="Nav_HomeTooltip" xml:space="preserve">
-    <value>Inicio — Resumen y sensores fijados</value>
-  </data>
-  <data name="Nav_Launch" xml:space="preserve">
-    <value>Lanzar</value>
-  </data>
-  <data name="Nav_LauncherTooltip" xml:space="preserve">
-    <value>Lanzador de Apps — Inicia programas en tu PC remotamente</value>
-  </data>
-  <data name="Nav_FilesTooltip" xml:space="preserve">
-    <value>Transferencia de archivos — Explora carpetas compartidas del PC y mueve archivos entre el teléfono y el equipo</value>
-  </data>
-  <data name="Nav_RemoteTooltip" xml:space="preserve">
-    <value>Control Remoto — Energía, volumen y
-Wake-on-LAN</value>
-  </data>
-  <data name="Nav_SensorsTooltip" xml:space="preserve">
-    <value>Área de Sensores — Tarjetas de telemetría de arrastrar y soltar</value>
-  </data>
-  <data name="Nav_SettingsTooltip" xml:space="preserve">
-    <value>Configuración — Conexión, diseño y personalización</value>
-  </data>
-  <data name="Nav_TasksTooltip" xml:space="preserve">
-    <value>Administrador de Tareas — Ver y terminar procesos en ejecución</value>
-  </data>
 
   
-  <data name="Home_CancelTooltip" xml:space="preserve">
-    <value>Cancelar el intento de conexión</value>
-  </data>
-  <data name="Home_ConnectTooltip" xml:space="preserve">
-    <value>Conectar al PC de RemEx — asegúrate de que se esté ejecutando en tu PC</value>
-  </data>
-  <data name="Home_DesktopTooltip" xml:space="preserve">
-    <value>Transmite el escritorio de tu PC a este dispositivo en tiempo real</value>
-  </data>
-  <data name="Home_LauncherTooltip" xml:space="preserve">
-    <value>Inicia programas en tu PC sin estar frente al teclado</value>
-  </data>
-  <data name="Home_PcRemoteTooltip" xml:space="preserve">
-    <value>Controla tu PC remotamente — energía, volumen y Wake-on-LAN</value>
-  </data>
   <data name="Home_QrCodeButton" xml:space="preserve">
     <value>Código QR</value>
   </data>
@@ -1035,48 +758,25 @@ Wake-on-LAN</value>
     <value>Generar un código QR para conectar la app RemEx Android</value>
   </data>
   <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Show pairing PIN</value>
+    <value>Mostrar PIN de emparejamiento</value>
   </data>
   <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Display the 6-digit code your phone needs to pair with this PC</value>
+    <value>Muestra el código de 6 dígitos que tu teléfono necesita para emparejarse con este PC</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>PAIRING PIN</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
-    <value>Enter this code on your phone to complete pairing</value>
+    <value>Introduce este código en tu teléfono para completar el emparejamiento</value>
   </data>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
-    <value>Expires in {0}s</value>
-  </data>
-  <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
-    <value>Abre el área de sensores de arrastrar y soltar para monitorear
-la telemetría del PC</value>
-  </data>
-  <data name="Home_TasksTooltip" xml:space="preserve">
-    <value>Mira los procesos en ejecución y termina tareas en tu PC</value>
+    <value>Caduca en {0} s</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>Clave de autenticación opcional — debe coincidir con la establecida en el PC.
-Dejar vacío si no está configurada.</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>Dejar vacío para desactivar</value>
-  </data>
-  <data name="Settings_AutoSaveHint" xml:space="preserve">
-    <value>Los cambios se guardan automáticamente y persisten tras reiniciar.</value>
-  </data>
-  <data name="Settings_ConfigureLogin" xml:space="preserve">
-    <value>⚙ Configurar Inicio de Sesión</value>
-  </data>
-  <data name="Settings_DiscoverTooltip" xml:space="preserve">
-    <value>Autodescubrimiento de hosts RemEx en tu red local usando mDNS</value>
-  </data>
   <data name="Settings_General" xml:space="preserve">
     <value>GENERAL</value>
   </data>
@@ -1110,52 +810,11 @@ Dejar vacío si no está configurada.</value>
   <data name="Settings_Help" xml:space="preserve">
     <value>AYUDA</value>
   </data>
-  <data name="Settings_HostAddressTooltip" xml:space="preserve">
-    <value>Dirección WebSocket del PC RemEx (ej. ws://192.168.1.42:5005/ws).
-Busca tu IP con ipconfig (Windows) o ip addr (Linux).</value>
-  </data>
-  <data name="Settings_HwInfoTooltip" xml:space="preserve">
-    <value>HWiNFO (opcional, recomendado) monitorea más de 300 sensores incluyendo temperaturas de CPU, estadísticas de GPU, ventiladores y voltajes.
-Sin HWiNFO, RemEx usa contadores de rendimiento de Windows integrados (básicos: CPU/RAM/Disco/Red).
-Descarga HWiNFO en hwinfo.com → Ajustes → activa 'Shared Memory Support'.
-Nota: La memoria compartida de HWiNFO se desactiva tras 12 horas — reactívala en sus ajustes.</value>
-  </data>
-  <data name="Settings_Install" xml:space="preserve">
-    <value>📦 Instalar</value>
-  </data>
-  <data name="Settings_LanguageHeader" xml:space="preserve">
-    <value>IDIOMA</value>
-  </data>
-  <data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve">
-    <value>Abre primero el Área de Sensores para descubrir sensores.</value>
-  </data>
-  <data name="Settings_PasswordWatermark" xml:space="preserve">
-    <value>Contraseña de Windows para esta cuenta</value>
-  </data>
-  <data name="Settings_Refresh" xml:space="preserve">
-    <value>⟳ Actualizar</value>
-  </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
     <value>📖 Repetir Tutorial</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Ver de nuevo el tutorial de inicio</value>
-  </data>
-  <data name="Settings_SaveReconnectTooltip" xml:space="preserve">
-    <value>Guardar ajustes de conexión y reconectar al PC</value>
-  </data>
-  <data name="Settings_SnapToGridTooltip" xml:space="preserve">
-    <value>Al estar activado, las tarjetas se ajustan a la cuadrícula al reposicionarlas</value>
-  </data>
-  <data name="Settings_Uninstall" xml:space="preserve">
-    <value>🗑 Desinstalar</value>
-  </data>
-  <data name="Settings_UsernameHint" xml:space="preserve">
-    <value>Usa .\Usuario para cuentas locales.
-GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
-  </data>
-  <data name="Settings_UsernameWatermark" xml:space="preserve">
-    <value>.\Usuario o EQUIPO\Usuario</value>
   </data>
   <data name="Settings_FileTransferSection" xml:space="preserve">
     <value>CARPETAS COMPARTIDAS</value>
@@ -1163,34 +822,17 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
     <value>Elige qué carpetas de este PC aparecen en Transferencia de archivos. Las carpetas de solo lectura permiten navegar y descargar, mientras que las carpetas editables también aceptan subidas desde tu teléfono.</value>
   </data>
-  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve">
-    <value>CÓMO FUNCIONA LA TRANSFERENCIA DE ARCHIVOS</value>
-  </data>
-  <data name="Settings_FileTransferTutorialBody" xml:space="preserve">
-    <value>Tu teléfono solo ve las carpetas de esta lista. Orienta las subidas habituales a una carpeta escribible como Transferencias RemEx, y deja todo lo demás en solo lectura a menos que quieras que los dispositivos móviles lo modifiquen.</value>
-  </data>
-  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
-  </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Agregar carpeta</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
     <value>Restaurar predeterminados</value>
   </data>
-  <data name="Settings_FileTransferEmpty" xml:space="preserve">
-    <value>Todavía no hay carpetas compartidas configuradas. Agrega al menos una carpeta para que la Transferencia de archivos esté disponible.</value>
-  </data>
   <data name="Settings_FileTransferWritable" xml:space="preserve">
     <value>Permitir subidas</value>
   </data>
   <data name="Settings_FileTransferRemove" xml:space="preserve">
     <value>Eliminar</value>
-  </data>
-  <data name="Settings_FileTransferImmediate" xml:space="preserve">
-    <value>Los cambios se aplican inmediatamente en la pantalla de Transferencia de archivos.</value>
   </data>
   <data name="Settings_FileTransferPickerTitle" xml:space="preserve">
     <value>Seleccionar carpeta para compartir</value>
@@ -1230,9 +872,6 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
   <data name="FileTransfer_ReadOnly" xml:space="preserve">
     <value>Solo lectura</value>
   </data>
-  <data name="FileTransfer_PathLabel" xml:space="preserve">
-    <value>Ruta</value>
-  </data>
   <data name="FileTransfer_UpTooltip" xml:space="preserve">
     <value>Ir a la carpeta superior</value>
   </data>
@@ -1251,12 +890,6 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
   <data name="FileTransfer_DownloadTooltip" xml:space="preserve">
     <value>Elige dónde guardar el archivo remoto seleccionado</value>
   </data>
-  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve">
-    <value>Abrir carpeta</value>
-  </data>
-  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve">
-    <value>Abrir la carpeta remota seleccionada</value>
-  </data>
   <data name="FileTransfer_CancelTooltip" xml:space="preserve">
     <value>Cancelar la transferencia activa</value>
   </data>
@@ -1268,10 +901,10 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
     <value>El PC aún no ha expuesto ninguna carpeta compartida.</value>
   </data>
   <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
-    <value>Carpetas compartidas no disponibles: {0}</value>
+    <value>No se pudieron cargar las carpetas compartidas. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Error al explorar: {0}</value>
+    <value>No se pudo abrir esa carpeta. Comprueba que el dispositivo conectado siga emparejado y que la carpeta siga compartida, y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>Selector de archivos no disponible.</value>
@@ -1282,21 +915,6 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
   <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve">
     <value>El archivo seleccionado no está disponible como ruta local.</value>
   </data>
-  <data name="FileTransfer_UploadingFormat" xml:space="preserve">
-    <value>Subiendo {0}…</value>
-  </data>
-  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve">
-    <value>Subiendo {0}… {1:P0}</value>
-  </data>
-  <data name="FileTransfer_UploadComplete" xml:space="preserve">
-    <value>Subida completa.</value>
-  </data>
-  <data name="FileTransfer_UploadCancelled" xml:space="preserve">
-    <value>Subida cancelada.</value>
-  </data>
-  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve">
-    <value>Error al subir: {0}</value>
-  </data>
   <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve">
     <value>Diálogo de guardado no disponible.</value>
   </data>
@@ -1305,21 +923,6 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
   </data>
   <data name="FileTransfer_SavePathUnavailable" xml:space="preserve">
     <value>El destino seleccionado no está disponible como ruta local.</value>
-  </data>
-  <data name="FileTransfer_DownloadingFormat" xml:space="preserve">
-    <value>Descargando {0}…</value>
-  </data>
-  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve">
-    <value>Descargando {0}… {1:P0}</value>
-  </data>
-  <data name="FileTransfer_DownloadComplete" xml:space="preserve">
-    <value>Descarga completa.</value>
-  </data>
-  <data name="FileTransfer_DownloadCancelled" xml:space="preserve">
-    <value>Descarga cancelada.</value>
-  </data>
-  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve">
-    <value>Error al descargar: {0}</value>
   </data>
   <data name="FileTransfer_HintNoneSelected" xml:space="preserve">
     <value>Elige una carpeta compartida para explorar.</value>
@@ -1344,7 +947,7 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
     <value>Eliminado.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Error al eliminar: {0}</value>
+    <value>No se pudo eliminar ese elemento. Comprueba que no esté abierto en el dispositivo y que la carpeta permita cambios, y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>Eliminando {0} elementos…</value>
@@ -1371,7 +974,7 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
     <value>Nombre cambiado.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Error al cambiar el nombre: {0}</value>
+    <value>No se pudo renombrar ese elemento. Comprueba que el nuevo nombre no esté en uso y que la carpeta permita cambios, y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Confirmar</value>
@@ -1396,7 +999,7 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
     <value>SHA-256 calculado.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Error al calcular el hash: {0}</value>
+    <value>No se pudo comprobar ese archivo. Asegúrate de que el dispositivo conectado siga emparejado y que el archivo siga ahí, y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -1412,7 +1015,7 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
     <value>Carpeta añadida a las raíces compartidas.</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>No se pudo fijar la carpeta: {0}</value>
+    <value>No se pudo fijar esa carpeta. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
     <value>Quita esta carpeta compartida del menú desplegable</value>
@@ -1424,30 +1027,12 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
     <value>Carpeta compartida eliminada.</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>No se pudo quitar la carpeta: {0}</value>
+    <value>No se pudo quitar esa carpeta. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
 
   
-  <data name="Service_BtnInstall" xml:space="preserve">
-    <value>📦 Instalar</value>
-  </data>
-  <data name="Service_BtnLogin" xml:space="preserve">
-    <value>⚙ Sesión</value>
-  </data>
-  <data name="Service_BtnRemove" xml:space="preserve">
-    <value>🗑 Eliminar</value>
-  </data>
 
   
-  <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
-    <value>IP de Broadcast (255.255.255.255)</value>
-  </data>
-  <data name="Remote_WolMacWatermark" xml:space="preserve">
-    <value>Dirección MAC (AA:BB:CC:DD:EE:FF)</value>
-  </data>
-  <data name="Remote_WolPortWatermark" xml:space="preserve">
-    <value>Puerto</value>
-  </data>
 
   
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
@@ -1511,16 +1096,6 @@ GLADOS-V3\Connor se convertirá en .\Connor automáticamente.</value>
   </data>
 
   
-  <data name="AppLauncher_AddNewApp" xml:space="preserve">
-    <value>AGREGAR NUEVA APLICACIÓN</value>
-  </data>
-  <data name="AppLauncher_DisplayNameWatermark" xml:space="preserve">
-    <value>Nombre para Mostrar (ej.
-Chrome)</value>
-  </data>
-  <data name="AppLauncher_TargetPathWatermark" xml:space="preserve">
-    <value>Ruta de Destino (ej. C:\Archivos de programa\...)</value>
-  </data>
 
   
   <data name="TaskMgr_CpuLabel" xml:space="preserve">
@@ -1538,52 +1113,52 @@ Chrome)</value>
     <value>Omitir el tutorial — puedes repetirlo desde Configuración</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Title" xml:space="preserve">
-    <value>Glossary: Command Palette</value>
+    <value>Glosario: Paleta de comandos</value>
   </data>
   <data name="Tutorial_Glossary_CommandPalette_Body" xml:space="preserve">
-    <value>Press Ctrl+Shift+P to jump to screens, trigger quick actions, and search the command center instantly.</value>
+    <value>Pulsa Ctrl+Mayús+P para saltar entre pantallas, ejecutar acciones rápidas y buscar en el centro de mando al instante.</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Title" xml:space="preserve">
-    <value>Glossary: App Launcher</value>
+    <value>Glosario: Lanzador de aplicaciones</value>
   </data>
   <data name="Tutorial_Glossary_AppLauncher_Body" xml:space="preserve">
-    <value>Launch curated apps and scripts on the PC. Configure entries once on the PC, then start them remotely from RemEx.</value>
+    <value>Inicia aplicaciones y scripts seleccionados en el PC. Configura las entradas una vez en el PC y luego ábrelas de forma remota desde RemEx.</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Title" xml:space="preserve">
-    <value>Glossary: Task Manager</value>
+    <value>Glosario: Administrador de tareas</value>
   </data>
   <data name="Tutorial_Glossary_TaskManager_Body" xml:space="preserve">
-    <value>Inspect running PC processes, sort by usage, and end stuck tasks without leaving your chair.</value>
+    <value>Consulta los procesos que se ejecutan en el PC, ordénalos por uso y cierra las tareas bloqueadas sin levantarte de la silla.</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Title" xml:space="preserve">
-    <value>Glossary: Sensor Canvas</value>
+    <value>Glosario: Lienzo de sensores</value>
   </data>
   <data name="Tutorial_Glossary_SensorCanvas_Body" xml:space="preserve">
-    <value>Build a live telemetry wall by pinning sensors, resizing cards, and arranging them on the free-form canvas.</value>
+    <value>Crea un muro de telemetría en vivo fijando sensores, redimensionando tarjetas y organizándolas en el lienzo libre.</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Title" xml:space="preserve">
-    <value>Glossary: File Transfer</value>
+    <value>Glosario: Transferencia de archivos</value>
   </data>
   <data name="Tutorial_Glossary_FileTransfer_Body" xml:space="preserve">
-    <value>Browse only the folders the PC has shared, upload into writable locations, and download files with SHA-256 verification.</value>
+    <value>Explora solo las carpetas que el PC ha compartido, sube archivos a ubicaciones con escritura habilitada y descarga archivos con verificación SHA-256.</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Title" xml:space="preserve">
-    <value>Glossary: Remote Desktop</value>
+    <value>Glosario: Escritorio remoto</value>
   </data>
   <data name="Tutorial_Glossary_RemoteDesktop_Body" xml:space="preserve">
-    <value>Stream your PC screen with adjustable quality, scale, and FPS so you can balance clarity against bandwidth.</value>
+    <value>Transmite la pantalla de tu PC con calidad, escala y FPS ajustables para equilibrar nitidez y ancho de banda.</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Title" xml:space="preserve">
-    <value>Glossary: Quick Settings</value>
+    <value>Glosario: Ajustes rápidos</value>
   </data>
   <data name="Tutorial_Glossary_QuickSettings_Body" xml:space="preserve">
-    <value>On Android, add RemEx tiles to Quick Settings for instant actions like Lock, Sleep, Restart, or Wake-on-LAN.</value>
+    <value>En Android, añade mosaicos de RemEx a los Ajustes rápidos para acciones instantáneas como Bloquear, Suspender, Reiniciar o Wake-on-LAN.</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Title" xml:space="preserve">
-    <value>Glossary: Customization</value>
+    <value>Glosario: Personalización</value>
   </data>
   <data name="Tutorial_Glossary_Customization_Body" xml:space="preserve">
-    <value>Tune themes, palette strategy, fonts, card shapes, and opacity to match the way you monitor and control your setup.</value>
+    <value>Ajusta temas, estrategia de paleta, fuentes, formas de tarjeta y opacidad para adaptarlos a tu forma de supervisar y controlar tu equipo.</value>
   </data>
 
   
@@ -1611,10 +1186,10 @@ Chrome)</value>
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
-    <value>Desktop Client</value>
+    <value>RemEx en este PC</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>Your PC</value>
+    <value>Tu PC</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ ¡Considera dar una estrella en GitHub!</value>
@@ -1634,7 +1209,7 @@ Chrome)</value>
     <value>Apagar — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>El PC remoto se apagará. Todo el trabajo no guardado se perderá.</value>
+    <value>El PC remoto se apagará. Todo el trabajo no guardado se perderá. Encenderlo con RemEx no basta por sí solo: RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Apagar</value>
@@ -1643,7 +1218,7 @@ Chrome)</value>
     <value>Reiniciar — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>El PC remoto se reiniciará. Todo el trabajo no guardado se perderá.</value>
+    <value>El PC remoto se reiniciará. Todo el trabajo no guardado se perderá. RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Reiniciar</value>
@@ -1652,7 +1227,7 @@ Chrome)</value>
     <value>Forzar Apagado — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Esto apagará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá.</value>
+    <value>Esto apagará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá. Encenderlo con RemEx no basta por sí solo: RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Forzar Apagado</value>
@@ -1661,7 +1236,7 @@ Chrome)</value>
     <value>Forzar Reinicio — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Esto reiniciará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá.</value>
+    <value>Esto reiniciará inmediatamente el PC remoto. Todo el trabajo no guardado se perderá. RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Forzar Reinicio</value>
@@ -1670,7 +1245,7 @@ Chrome)</value>
     <value>Reiniciar a UEFI — ¿Estás seguro?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>El PC remoto se reiniciará y arrancará directamente en los ajustes del firmware UEFI. Todo el trabajo no guardado se perderá.</value>
+    <value>El PC remoto se reiniciará y arrancará directamente en los ajustes del firmware UEFI. Todo el trabajo no guardado se perderá. RemEx no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Reiniciar a UEFI</value>
@@ -1687,37 +1262,34 @@ Chrome)</value>
 
   
   <data name="About_KeyboardShortcuts" xml:space="preserve">
-    <value>Keyboard Shortcuts</value>
+    <value>Atajos de teclado</value>
   </data>
   <data name="About_CommandPalette" xml:space="preserve">
-    <value>Command Palette</value>
+    <value>Paleta de comandos</value>
   </data>
   <data name="About_UndoLayout" xml:space="preserve">
-    <value>Undo Layout Edit</value>
+    <value>Deshacer cambio de diseño</value>
   </data>
   <data name="About_RedoLayout" xml:space="preserve">
-    <value>Redo Layout Edit</value>
+    <value>Rehacer cambio de diseño</value>
   </data>
   <data name="About_CloseOverlays" xml:space="preserve">
-    <value>Close Overlays/Panels</value>
+    <value>Cerrar superposiciones/paneles</value>
   </data>
   <data name="About_WhatsNew" xml:space="preserve">
-    <value>What's New?</value>
-  </data>
-  <data name="About_Faq" xml:space="preserve">
-    <value>Frequently Asked Questions</value>
+    <value>¿Qué hay de nuevo?</value>
   </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>Vídeo por hardware H.264</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>Escritorio remoto acelerado por hardware mediante NVENC, QSV, AMF o VAAPI en el PC. Android decodifica con MediaCodec para una entrega por GPU sin copias. Vuelve automáticamente a MJPEG cuando no hay codificadores de hardware disponibles.</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>Seguridad y emparejamiento de dispositivos</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>Todo el tráfico está cifrado con TLS 1.3 si el cliente lo admite, y nunca por debajo de TLS 1.2. El primer emparejamiento usa intercambio de claves ECDH P-256 con un PIN de 6 dígitos: nunca viajan claves en texto plano. Después el cliente fija la huella SHA-256 del certificado del PC para todas las conexiones futuras.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Transferencia de archivos remota</value>
@@ -1732,77 +1304,89 @@ Chrome)</value>
     <value>Material 3 Expressive con física de resorte en todo: reordenamiento de listas, deslizar para actualizar, mosaicos de aplicaciones, indicadores animados. 8 mosaicos de configuración rápida para comandos de energía con un toque. Widgets de pantalla de inicio redimensionables. Retroalimentación háptica de dos etapas. SDK de destino 37 (Android 17).</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux e identidad renovada</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Compatibilidad de primer nivel con Linux: captura nativa con PipeWire, inyección completa de entrada en Wayland e inicio automático al iniciar sesión. Nuevo icono de lanzador premium, animación de arranque Cosmic Zoom, banner ANSI de inicio a color y copia de mapas de bits al portapapeles desde el lienzo.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
-    <value>What do I need to run on my PC?</value>
+    <value>¿Qué necesito ejecutar en mi PC?</value>
   </data>
   <data name="Faq_Q1_Answer" xml:space="preserve">
     <value>Necesitas RemEx ejecutándose en tu PC — es una única aplicación (remex.agent) que se ejecuta con privilegios elevados en tu sesión iniciada y se inicia automáticamente al iniciar sesión. Descarga el último instalador desde GitHub Releases, ejecútalo, y estará listo antes de emparejar.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>How do I pair my phone or second PC?</value>
+    <value>¿Cómo emparejo mi teléfono?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
+    <value>Abre Configuración → Conexión en esta ventana para mostrar un código QR y un PIN de emparejamiento de 6 dígitos. En tu teléfono, abre la aplicación RemEx y escanea el código QR para la configuración más rápida, o introduce el PIN cuando la aplicación lo pida. El emparejamiento siempre se hace desde el teléfono hacia este PC.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
-    <value>How do I find my PC's IP address?</value>
+    <value>¿Cómo encuentro la dirección IP de mi PC?</value>
   </data>
   <data name="Faq_Q3_Answer" xml:space="preserve">
-    <value>Windows: 'ipconfig' in Command Prompt. macOS: System Settings -&gt; Network. Linux: 'ip addr' in terminal. También puedes ver la IP directamente en la ventana de RemEx en tu PC.</value>
+    <value>Windows: 'ipconfig' en el Símbolo del sistema. macOS: Ajustes del Sistema → Red. Linux: 'ip addr' en el terminal. También puedes ver la IP directamente en la ventana de RemEx en tu PC.</value>
   </data>
   <data name="Faq_Q4_Question" xml:space="preserve">
-    <value>Auto-discovery isn't finding my PC. What should I check?</value>
+    <value>La detección automática no encuentra mi PC. ¿Qué debo comprobar?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Asegúrate de que RemEx se esté ejecutando en tu PC.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Asegúrate de que RemEx se esté ejecutando en tu PC.
+2. Ambos dispositivos deben estar en la misma red Wi-Fi / LAN.
+3. En Android 13 o superior, permite el acceso a Dispositivos cercanos. En Android 17 o superior, permite también el acceso a la Red local.
+4. Comprueba si tu router tiene activado el aislamiento de AP/cliente.
+5. Las redes corporativas o de invitados suelen bloquear la detección mDNS.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
-    <value>What is the default port?</value>
+    <value>¿Cuál es el puerto predeterminado?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>The default port is 5005. If port 5005 is in use, it will fall back to 5006. Puedes ver el puerto activo en la ventana de RemEx en tu PC.</value>
+    <value>El puerto predeterminado es 5005. Si ese puerto ya está en uso, RemEx primero intenta recuperarlo de una instancia obsoleta de sí mismo; si eso falla, pasa al siguiente puerto libre: 5006, 5007 y así hasta 5009. Puedes ver el puerto activo en la ventana de RemEx en tu PC.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
-    <value>Can I connect over the internet?</value>
+    <value>¿Puedo conectarme por internet?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
-    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+    <value>RemEx está diseñado para usarse en la red local (LAN). Para un acceso remoto seguro desde cualquier lugar, recomendamos Tailscale: una VPN WireGuard® sin configuración que conecta tus dispositivos sin abrir puertos ni exponer tu PC a internet. Abrir puertos en el router no se recomienda por motivos de seguridad.</value>
   </data>
   <data name="Faq_Q7_Question" xml:space="preserve">
-    <value>Remote Desktop is laggy. What can I do?</value>
+    <value>El Escritorio Remoto va con retraso. ¿Qué puedo hacer?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
-    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
+    <value>• Baja el control deslizante de Calidad.
+• Reduce los FPS objetivo — 15-20 suele ser suficiente.
+• Baja la Escala.
+• Usa una red local rápida. Lo mejor es Wi-Fi de 5 GHz o cable — esta es la causa más común de los retrasos.
+• No necesitas configurar la captura de pantalla. RemEx elige automáticamente el método más rápido que admite tu PC.</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
-    <value>What is Wake-on-LAN (WOL)?</value>
+    <value>¿Qué es Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN lets you power on your PC remotely. Enable it in your BIOS/UEFI and network adapter properties. Then enter your PC's MAC address in the Connection screen.</value>
+    <value>Wake-on-LAN te permite encender tu PC de forma remota. Actívalo en la BIOS/UEFI y en las propiedades del adaptador de red. Después introduce la dirección MAC de tu PC en la pantalla Conexión.&#xD;&#xA;&#xD;&#xA;Encender el PC no es lo mismo que recuperar el acceso. Wake-on-LAN enciende el equipo y este se detiene en la pantalla de inicio de sesión; RemEx solo se inicia cuando alguien inicia sesión en el propio PC.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
-    <value>How do I transfer files?</value>
+    <value>¿Cómo transfiero archivos?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+    <value>Abre Transferencia de archivos desde la barra lateral o la Paleta de Comandos. Solo verás las carpetas que el PC ha compartido: las que permiten escritura aceptan subidas y las de solo lectura únicamente permiten descargas.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
-    <value>Can I lock my PC remotely?</value>
+    <value>¿Puedo bloquear mi PC de forma remota?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+    <value>Sí. Usa la pantalla Control Remoto o la Paleta de Comandos en el PC, o añade el mosaico de Ajustes rápidos Bloquear PC en Android para hacerlo con un solo toque.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>¿Cómo configuro Tailscale para acceso remoto?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Instale Tailscale en su PC: tailscale.com/download (Windows) o ejecute: curl -fsSL https://tailscale.com/install.sh | sh (Linux).\n2. Inicie sesión y conéctese: siga las instrucciones del navegador (Windows) o ejecute: sudo tailscale up (Linux).\n3. Instale Tailscale en Android desde Play Store e inicie sesión con la misma cuenta.\n4. Busque la IP de Tailscale de su PC (comienza con 100.x.y.z) en la aplicación Tailscale o en login.tailscale.com.\n5. Ingrese esa IP en la pantalla de conexión de RemEx; ahora puede conectarse de forma segura desde cualquier lugar.</value>
+    <value>1. Instala Tailscale en tu PC: tailscale.com/download (Windows) o ejecuta: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Inicia sesión y conéctate: sigue las instrucciones del navegador (Windows) o ejecuta: sudo tailscale up (Linux).
+3. Instala Tailscale en Android desde Play Store e inicia sesión con la misma cuenta.
+4. Busca la IP de Tailscale de tu PC (empieza por 100.x.y.z) en la aplicación Tailscale o en login.tailscale.com.
+5. Introduce esa IP en la pantalla de conexión de RemEx; ahora puedes conectarte de forma segura desde cualquier lugar.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Deshacer</value>
@@ -1883,13 +1467,13 @@ Chrome)</value>
     <value>Borrar registros</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Registros del servicio en segundo plano</value>
+    <value>Registros de eventos del sistema</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Última consulta de registros de eventos del Visor de eventos de Windows o del diario systemd de Linux.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Consultar registros de servicio</value>
+    <value>Consultar registros de eventos del sistema</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Pantalla</value>
@@ -1908,9 +1492,6 @@ Chrome)</value>
   </data>
   <data name="Status_InvalidQrData" xml:space="preserve">
     <value>Datos de código QR no válidos</value>
-  </data>
-  <data name="Settings_ExecutableFileFilter" xml:space="preserve">
-    <value>Ejecutable</value>
   </data>
   <data name="Palette_Home" xml:space="preserve">
     <value>Inicio</value>
@@ -1999,11 +1580,11 @@ Chrome)</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Reiniciar PC</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Forzar Reinicio de PC</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Reiniciar PC a UEFI</value>
-  </data>
-  <data name="Palette_WakeOnLan" xml:space="preserve">
-    <value>Despertar por LAN</value>
   </data>
   <data name="Palette_Disconnect" xml:space="preserve">
     <value>Desconectar</value>
@@ -2090,37 +1671,13 @@ Chrome)</value>
     <value>ABRIR_ESPACIO</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ SIN_DATOS ]</value>
+    <value>No hay sensores fijados aún</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>INICIALIZAR SENSORES</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
     <value>// DIRECTIVAS</value>
-  </data>
-  <data name="Home_RemoteControl" xml:space="preserve">
-    <value>CONTROL_REMOTO</value>
-  </data>
-  <data name="Home_RemoteControlDesc" xml:space="preserve">
-    <value>Energía y acceso al sistema</value>
-  </data>
-  <data name="Home_AppLauncher" xml:space="preserve">
-    <value>LANZADOR_APPS</value>
-  </data>
-  <data name="Home_AppLauncherDesc" xml:space="preserve">
-    <value>Ejecutar procesos remotos</value>
-  </data>
-  <data name="Home_TaskMonitor" xml:space="preserve">
-    <value>MONITOR_TAREAS</value>
-  </data>
-  <data name="Home_TaskMonitorDesc" xml:space="preserve">
-    <value>Administrar hilos activos</value>
-  </data>
-  <data name="Home_FileSystem" xml:space="preserve">
-    <value>SISTEMA_ARCHIVOS</value>
-  </data>
-  <data name="Home_FileSystemDesc" xml:space="preserve">
-    <value>Transferencia remota de datos</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
     <value>ESTADO_ENLACE</value>
@@ -2170,12 +1727,6 @@ Chrome)</value>
   <data name="Custom_BorderCornerRadiusPixelsTooltip" xml:space="preserve">
     <value>Radio del borde en píxeles</value>
   </data>
-  <data name="Custom_CornerRadiusRemoteTooltip" xml:space="preserve">
-    <value>Personalizar la redondez de los bordes para botones de control remoto</value>
-  </data>
-  <data name="Custom_BorderCornerRadiusRemotePixelsTooltip" xml:space="preserve">
-    <value>Radio del botón remoto en píxeles</value>
-  </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
     <value>Ajustar el nivel de opacidad del efecto de vidrio esmerilado</value>
   </data>
@@ -2212,24 +1763,6 @@ Chrome)</value>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Seleccionar el estilo de animación de la pantalla de bienvenida</value>
   </data>
-  <data name="Settings_RefreshServiceTooltip" xml:space="preserve">
-    <value>Actualizar el estado del servicio del sistema</value>
-  </data>
-  <data name="Settings_ConfigureLoginTooltip" xml:space="preserve">
-    <value>Configurar credenciales de inicio de sesión del servicio (usuario/contraseña)</value>
-  </data>
-  <data name="Settings_InstallServiceTooltip" xml:space="preserve">
-    <value>Instalar el servicio de sistema RemEx como servidor automático en segundo plano</value>
-  </data>
-  <data name="Settings_StartServiceTooltip" xml:space="preserve">
-    <value>Iniciar el proceso del servicio del servidor RemEx</value>
-  </data>
-  <data name="Settings_StopServiceTooltip" xml:space="preserve">
-    <value>Detener el proceso del servicio del servidor RemEx</value>
-  </data>
-  <data name="Settings_UninstallServiceTooltip" xml:space="preserve">
-    <value>Desinstalar completamente el servicio RemEx del sistema</value>
-  </data>
   <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
     <value>Configurar la dirección del PC RemEx (protocolo websocket wss://)</value>
   </data>
@@ -2241,21 +1774,6 @@ Chrome)</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
     <value>Terminar la conexión de sesión activa con el Your PC</value>
-  </data>
-  <data name="Settings_ChangeLanguageTooltip" xml:space="preserve">
-    <value>Cambiar el idioma de visualización de la aplicación</value>
-  </data>
-  <data name="Settings_SelectPreferredLanguageTooltip" xml:space="preserve">
-    <value>Seleccione su idioma preferido (los cambios se aplican de inmediato)</value>
-  </data>
-  <data name="Settings_CompressQualityTooltip" xml:space="preserve">
-    <value>Configurar la calidad de compresión del espejo de escritorio (menor calidad mejora el rendimiento de red)</value>
-  </data>
-  <data name="Settings_TargetFrameRateTooltip" xml:space="preserve">
-    <value>Fotogramas por segundo objetivo para la compresión (valores mayores son más fluidos pero consumen más ancho de banda)</value>
-  </data>
-  <data name="Settings_ChooseTargetFpsTooltip" xml:space="preserve">
-    <value>Elegir FPS objetivo para la transmisión</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Activar guías de alineación para que los sensores se ajusten a la cuadrícula</value>
@@ -2269,98 +1787,8 @@ Chrome)</value>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Alternar barra lateral</value>
   </data>
-  <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
-    <value>Personalizar la redondez de las esquinas del borde predeterminado para paneles y tarjetas del tablero</value>
-  </data>
-  <data name="Tooltip_CornerRadiusSlider" xml:space="preserve">
-    <value>Radio de la esquina del borde en píxeles</value>
-  </data>
-  <data name="Tooltip_RemoteCardShape" xml:space="preserve">
-    <value>Personalizar la redondez de las esquinas de los bordes específicamente para las teclas de control remoto</value>
-  </data>
-  <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
-    <value>Radio de esquina de los botones remotos en píxeles</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Ajustar el nivel de opacidad de mezcla visual del efecto de cristal esmerilado premium</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Porcentaje de opacidad del cristal esmerilado</value>
-  </data>
-  <data name="Tooltip_GlowStrength" xml:space="preserve">
-    <value>Ajustar la intensidad del brillo del aura de neón de fondo alrededor de los bordes de los paneles</value>
-  </data>
-  <data name="Tooltip_GlowStrengthSlider" xml:space="preserve">
-    <value>Grosor/propagación del brillo de neón en píxeles</value>
-  </data>
-  <data name="Tooltip_AccentColor" xml:space="preserve">
-    <value>Seleccionar colores destacados de la paleta de temas</value>
-  </data>
-  <data name="Tooltip_AccentViolet" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Violeta neón</value>
-  </data>
-  <data name="Tooltip_AccentCyan" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Ciber cian</value>
-  </data>
-  <data name="Tooltip_AccentPink" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Rosa fuerte/Magenta</value>
-  </data>
-  <data name="Tooltip_AccentAmber" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Oro solar/Ámbar</value>
-  </data>
-  <data name="Tooltip_AccentGreen" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Verde esmeralda</value>
-  </data>
-  <data name="Tooltip_AccentRose" xml:space="preserve">
-    <value>Seleccionar el tema de color de acento Rosa carmesí</value>
-  </data>
-  <data name="Tooltip_SplashScreen" xml:space="preserve">
-    <value>Seleccionar el estilo de animación de la pantalla de bienvenida de inicio</value>
-  </data>
-  <data name="Tooltip_RefreshService" xml:space="preserve">
-    <value>Actualizar el estado del servicio del sistema</value>
-  </data>
-  <data name="Tooltip_ConfigureServiceLogin" xml:space="preserve">
-    <value>Configurar las credenciales de inicio de sesión del servicio (usuario/contraseña)</value>
-  </data>
-  <data name="Tooltip_InstallService" xml:space="preserve">
-    <value>Instalar el servicio del sistema RemEx como un servidor de fondo automático</value>
-  </data>
-  <data name="Tooltip_StartService" xml:space="preserve">
-    <value>Iniciar el proceso del servicio del servidor RemEx en segundo plano</value>
-  </data>
-  <data name="Tooltip_StopService" xml:space="preserve">
-    <value>Detener el proceso del servicio del servidor RemEx en segundo plano</value>
-  </data>
-  <data name="Tooltip_UninstallService" xml:space="preserve">
-    <value>Desinstalar completamente el servicio del sistema RemEx del sistema</value>
-  </data>
   <data name="Tooltip_SaveReconnect" xml:space="preserve">
     <value>Guardar la dirección de configuración del PC e intentar conectarse</value>
-  </data>
-  <data name="Tooltip_Disconnect" xml:space="preserve">
-    <value>Terminar la conexión de sesión activa con la Your PC</value>
-  </data>
-  <data name="Tooltip_LanguageSection" xml:space="preserve">
-    <value>Cambiar el idioma de visualización de la aplicación</value>
-  </data>
-  <data name="Tooltip_LanguageSelect" xml:space="preserve">
-    <value>Seleccione su idioma preferido (los cambios se aplican de inmediato)</value>
-  </data>
-  <data name="Tooltip_StreamQuality" xml:space="preserve">
-    <value>Configurar el nivel de calidad de compresión del flujo de imagen espejo del escritorio (una menor calidad aumenta el rendimiento de la red)</value>
-  </data>
-  <data name="Tooltip_StreamFps" xml:space="preserve">
-    <value>Velocidad de fotogramas objetivo para el motor de compresión de escritorio (valores más altos se ven más fluidos pero consumen más ancho de banda)</value>
-  </data>
-  <data name="Tooltip_StreamFpsSelect" xml:space="preserve">
-    <value>Elegir FPS objetivo para la transmisión</value>
-  </data>
-  <data name="Tooltip_SnapToGrid" xml:space="preserve">
-    <value>Habilitar guías de alineación para que los mosaicos de sensores se ajusten a incrementos estándar en el lienzo</value>
-  </data>
-  <data name="Tooltip_GridSize" xml:space="preserve">
-    <value>Incremento de ajuste de ubicación de cuadrícula en píxeles absolutos</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>¿Necesita ver el tutorial de nuevo?</value>
@@ -2383,12 +1811,6 @@ Chrome)</value>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Salir</value>
   </data>
-  <data name="Canvas_ExportTooltip" xml:space="preserve">
-    <value>Guardar lienzo como PNG en la carpeta Imágenes</value>
-  </data>
-  <data name="Canvas_CopyTooltip" xml:space="preserve">
-    <value>Copiar imagen instantánea directamente al portapapeles</value>
-  </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>Auto (inteligente)</value>
   </data>
@@ -2397,9 +1819,6 @@ Chrome)</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
     <value>Línea ╱╲╱</value>
-  </data>
-  <data name="Canvas_GraphArea" xml:space="preserve">
-    <value>Área ▓▓▓</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
     <value>Anillo ◍</value>
@@ -2424,24 +1843,6 @@ Chrome)</value>
   </data>
   <data name="Canvas_SetAlert" xml:space="preserve">
     <value>Configurar alerta...</value>
-  </data>
-  <data name="Boot_Remote" xml:space="preserve">
-    <value>REMOTO</value>
-  </data>
-  <data name="Boot_Execution" xml:space="preserve">
-    <value>EJECUCIÓN</value>
-  </data>
-  <data name="Boot_CommandCenter" xml:space="preserve">
-    <value>⚡ CENTRO DE CONTROL</value>
-  </data>
-  <data name="Boot_CommandYourPc" xml:space="preserve">
-    <value>CONTROLE SU PC</value>
-  </data>
-  <data name="Boot_Ote" xml:space="preserve">
-    <value>moto</value>
-  </data>
-  <data name="Boot_Ecution" xml:space="preserve">
-    <value>cución</value>
   </data>
   <data name="Dialog_ConfirmTitle" xml:space="preserve">
     <value>Confirmar</value>
@@ -2533,7 +1934,7 @@ Chrome)</value>
     <value>Mostrando las primeras {0} coincidencias — refina tu búsqueda para ver más.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Error en la búsqueda: {0}</value>
+    <value>No se pudo completar la búsqueda. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_SortLabel" xml:space="preserve">
     <value>Ordenar</value>
@@ -2575,7 +1976,7 @@ Chrome)</value>
     <value>Carpeta creada.</value>
   </data>
   <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
-    <value>No se pudo crear la carpeta: {0}</value>
+    <value>No se pudo crear la carpeta. Comprueba que ese nombre no esté ya en uso y que la carpeta permita cambios, y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_CopyBtn" xml:space="preserve">
     <value>Copiar</value>
@@ -2617,7 +2018,7 @@ Chrome)</value>
     <value>Copiar y mover solo funcionan dentro de la misma carpeta compartida.</value>
   </data>
   <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
-    <value>Error al pegar: {0}</value>
+    <value>No se pudieron pegar esos elementos aquí. Comprueba que la carpeta de destino permita cambios y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
     <value>Propiedades</value>
@@ -2629,7 +2030,7 @@ Chrome)</value>
     <value>PROPIEDADES</value>
   </data>
   <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
-    <value>No se pudieron cargar los detalles: {0}</value>
+    <value>No se pudieron cargar los detalles de ese elemento. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_PropSize" xml:space="preserve">
     <value>Tamaño</value>
@@ -2665,7 +2066,7 @@ Chrome)</value>
     <value>No se concedió acceso completo al dispositivo.</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
-    <value>No se pudieron listar las unidades: {0}</value>
+    <value>No se pudieron enumerar las unidades. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
     <value>TRANSFERENCIAS</value>
@@ -2775,138 +2176,11 @@ Chrome)</value>
   <data name="RemoteDesktop_FpsValue" xml:space="preserve">
     <value>{0} FPS</value>
   </data>
-  <data name="Settings_ServiceSection" xml:space="preserve">
-    <value>SERVICIO WINDOWS</value>
-  </data>
-  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
-    <value>WINDOWS SERVICE</value>
-  </data>
-  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX BACKGROUND SERVICE</value>
-  </data>
-  <data name="Settings_ServiceLogin" xml:space="preserve">
-    <value>INICIO DE SESIÓN DEL SERVICIO</value>
-  </data>
-  <data name="Settings_ServiceDesc" xml:space="preserve">
-    <value>El servicio se ejecuta en segundo plano para que RemEx pueda aceptar comandos remotos sin abrir la aplicación.</value>
-  </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Publicando Remex.PC…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Publicación fallida — ver registro.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Creando servicio…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Error al crear servicio — ver registro.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Configurando inicio de sesión…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Error al configurar credenciales — ver registro.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Otorgando derechos de inicio de sesión…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Deteniendo PC integrado…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Iniciando servicio…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Instalado &amp; iniciado.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Instalado — el inicio puede haber fallado, ver registro.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Instalando servicio systemd...</value>
-  </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Fallo en la instalación del servicio.</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Eliminando servicio systemd...</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Eliminando servicio…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Aplicando credenciales…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Localizando Remex.PC…</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>No se encontró Remex.PC.exe.</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Iniciado.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Error al iniciar — ver registro.</value>
-  </data>
-  <data name="Tutorial_P2_Title" xml:space="preserve">
-    <value>Ejecutar como Servicio de Windows</value>
-  </data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve">
-    <value>Para mantener RemEx funcionando 24/7 sin haber iniciado sesión, instálalo como un servicio de Windows:</value>
-  </data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
-  </data>
-  <data name="Tutorial_P2_Note" xml:space="preserve">
-    <value>El servicio se ejecuta bajo tu cuenta de usuario para que pueda acceder a tu sesión de escritorio para la captura de pantalla y el lanzamiento de apps.</value>
-  </data>
-  <data name="Tutorial_P3_Title" xml:space="preserve">
-    <value>Configuración del Servicio Linux</value>
-  </data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>En Linux, el PC de RemEx puede ejecutarse como un servicio de systemd para el inicio automático.</value>
-  </data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux PC archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-PC folder.
-4. Use systemctl --user status remex-PC to verify it is running.</value>
-  </data>
-  <data name="Tutorial_P3_Link" xml:space="preserve">
-    <value>Para instrucciones detalladas, consulta docs/linux-service-setup.md en GitHub</value>
-  </data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve">
-    <value>Ruta del Binario del PC</value>
-  </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Ruta a Remex.PC.exe (dejar vacío para detección automática)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Ruta a Remex.PC.exe.
-Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, etc.)</value>
-  </data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve">
-    <value>Autodetectar (o establecer ruta personalizada)</value>
-  </data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve">
-    <value>Para instrucciones detalladas, opciones de configuración y solución de problemas, consulta la guía completa:</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Seleccionar Remex.PC.exe</value>
-  </data>
   <data name="Nav_Commands" xml:space="preserve">
     <value>Comandos</value>
   </data>
   <data name="Nav_Processes" xml:space="preserve">
     <value>Procesos</value>
-  </data>
-  <data name="Nav_Connection" xml:space="preserve">
-    <value>Conexión</value>
   </data>
   <data name="Nav_Faq" xml:space="preserve">
     <value>Preguntas frecuentes</value>
@@ -2932,9 +2206,6 @@ Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, et
   <data name="Conn_DiscoverHosts" xml:space="preserve">
     <value>Buscar hosts en mi red</value>
   </data>
-  <data name="Conn_Pairing" xml:space="preserve">
-    <value>Emparejamiento</value>
-  </data>
   <data name="Conn_HostInfo" xml:space="preserve">
     <value>Host</value>
   </data>
@@ -2945,13 +2216,13 @@ Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, et
     <value>Haz clic en cualquier lugar para omitir</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
+    <value>Escaneo Original</value>
   </data>
   <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
+    <value>Zoom Cósmico</value>
   </data>
   <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
+    <value>Pong de Señal</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Actualización de software</value>
@@ -3031,29 +2302,14 @@ Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, et
   <data name="Canvas_CoachReplayTooltip" xml:space="preserve">
     <value>Ver consejo de lienzo nuevamente</value>
   </data>
-  <data name="Canvas_GraphBigValue" xml:space="preserve">
-    <value>Valor grande</value>
-  </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
     <value>Métrica dual</value>
-  </data>
-  <data name="Canvas_GraphHue" xml:space="preserve">
-    <value>Pulso de tonalidad</value>
-  </data>
-  <data name="Canvas_GraphRadial" xml:space="preserve">
-    <value>Medidor de anillo</value>
-  </data>
-  <data name="Canvas_GraphValueSpark" xml:space="preserve">
-    <value>Valor + chispa</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>Métrica secundaria</value>
   </data>
-  <data name="Canvas_SecondMetricNone" xml:space="preserve">
-    <value>Ninguno</value>
-  </data>
-  <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>Seleccionado: {0}</value>
+  <data name="Canvas_SelectedCountFormat" xml:space="preserve">
+    <value>Selección: {0}</value>
   </data>
   <data name="Custom_Typography" xml:space="preserve">
     <value>TIPOGRAFÍA</value>
@@ -3240,5 +2496,300 @@ Dejar vacío para detección automática (misma carpeta, carpetas adyacentes, et
   </data>
   <data name="SecondMetric_SetBtn" xml:space="preserve">
     <value>Establecer</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>Eliminar — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>Se eliminará permanentemente «{0}». Esta acción no se puede deshacer.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>Se eliminarán permanentemente {0} elementos ({1}). Esta acción no se puede deshacer.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Faq_Q12_Question" xml:space="preserve">
+    <value>Mi teléfono de repente se niega a conectarse y pide emparejar de nuevo. ¿Por qué?</value>
+  </data>
+  <data name="Faq_Q12_Answer" xml:space="preserve">
+    <value>Cuando tu teléfono se empareja por primera vez, memoriza la huella exacta del certificado de seguridad de este PC y solo volverá a confiar en ese certificado. Si el certificado cambia — por ejemplo tras reinstalar RemEx, restaurar este PC desde una copia de seguridad o cambiar de hardware — el teléfono rechaza la conexión en lugar de confiar en un posible impostor. Es un comportamiento de seguridad esperado, no un error. Para solucionarlo, elimina (desempareja) este PC en la pantalla Conexión de la aplicación del teléfono y vuelve a emparejar con el código QR o el nuevo PIN de 6 dígitos que se muestra en esta ventana.</value>
+  </data>
+  <data name="A11y_Close" xml:space="preserve">
+    <value>Cerrar</value>
+  </data>
+  <data name="A11y_Dismiss" xml:space="preserve">
+    <value>Descartar</value>
+  </data>
+  <data name="A11y_MoveUp" xml:space="preserve">
+    <value>Mover arriba</value>
+  </data>
+  <data name="A11y_MoveDown" xml:space="preserve">
+    <value>Mover abajo</value>
+  </data>
+  <data name="A11y_SensorLibrary" xml:space="preserve">
+    <value>Biblioteca de sensores</value>
+  </data>
+  <data name="Faq_Q13_Question" xml:space="preserve">
+    <value>¿Por qué RemEx necesita un permiso especial para funcionar?</value>
+  </data>
+  <data name="Faq_Q13_Answer" xml:space="preserve">
+    <value>RemEx guarda un certificado de seguridad que tu teléfono usa para reconocer este PC. Se almacena donde nada más puede leerlo, así que ningún otro programa —ni nadie más que inicie sesión en este PC— puede copiarlo y hacerse pasar por tu PC. Si RemEx no puede leer ese archivo, sigue abriéndose pero no puede aceptar conexiones, así que tu teléfono no puede alcanzarlo aunque siga apareciendo como emparejado.
+Windows: RemEx necesita permisos de administrador, porque solo los administradores pueden leer ese archivo protegido. Normalmente se inicia con permisos de administrador por sí solo al iniciar sesión, así que esto debería ser poco frecuente; pero si tu teléfono no puede conectarse, cierra RemEx, haz clic derecho, elige "Ejecutar como administrador" e inténtalo de nuevo. Linux: RemEx no necesita root y nunca deberías iniciarlo con sudo. El certificado está en tu propia carpeta personal y solo tú puedes leerlo. Si tu teléfono no puede conectarse, es probable que una instalación antigua de 'remex-host' haya dejado el certificado en manos de root; vuelve a ejecutar el instalador de RemEx y él lo repara por ti. En ambos casos tus teléfonos emparejados seguirán funcionando: el certificado en sí nunca cambia.</value>
+  </data>
+  <data name="Faq_Q14_Question" xml:space="preserve">
+    <value>¿Cómo evito que RemEx se inicie automáticamente al iniciar sesión?</value>
+  </data>
+  <data name="Faq_Q14_Answer" xml:space="preserve">
+    <value>Abre Configuración y desactiva "Iniciar al iniciar sesión". Eso es todo lo que necesita la mayoría: RemEx sigue instalado y puedes abrirlo tú cuando quieras, y si vuelves a activarlo se restaura el inicio automático.
+Detrás de ese interruptor, en Windows RemEx usa una tarea del Programador de tareas llamada "RemEx" —puedes verla en el Programador de tareas, dentro de la Biblioteca del Programador de tareas— y en Linux usa una entrada de inicio automático en ~/.config/autostart/remex-agent.desktop. Si algún día RemEx deja de iniciarse al iniciar sesión, desactiva el ajuste y vuelve a activarlo para recrearlo.</value>
+  </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>¿Terminar «{0}» (PID {1})? Se perderá cualquier trabajo sin guardar de ese programa.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>¿Eliminar «{0}» del lanzador? Esto no desinstala el programa.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>¿Dejar de compartir «{0}»? Tu teléfono ya no verá esta carpeta. Los archivos no se eliminan.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>¿Revocar el acceso de {0}? Ese teléfono perderá el acceso a los archivos hasta que lo emparejes y lo apruebes de nuevo.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>¿Reemplazar tus carpetas compartidas por las predeterminadas? Las carpetas que añadiste dejarán de compartirse. Los archivos no se eliminan.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>¿Borrar el registro de diagnóstico? Las entradas mostradas aquí se descartarán. Los archivos de registro ya guardados en el disco no se ven afectados.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Terminar proceso — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Eliminar programa — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Dejar de compartir — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Revocar acceso — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Restaurar predeterminados — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Borrar registros — ¿Estás seguro?</value>
+  </data>
+  <data name="TaskMgr_PidFormat" xml:space="preserve">
+    <value>PID: {0}</value>
+  </data>
+  <data name="TaskMgr_PathFormat" xml:space="preserve">
+    <value>Ruta: {0}</value>
+  </data>
+  <data name="TaskMgr_PublisherFormat" xml:space="preserve">
+    <value>Editor: {0}</value>
+  </data>
+  <data name="Canvas_Preset_Default" xml:space="preserve">
+    <value>Predeterminado</value>
+  </data>
+  <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
+    <value>Magenta y cian</value>
+  </data>
+  <data name="Canvas_Preset_SmokeGold" xml:space="preserve">
+    <value>Humo y oro</value>
+  </data>
+  <data name="Canvas_Preset_EmeraldNight" xml:space="preserve">
+    <value>Noche esmeralda</value>
+  </data>
+  <data name="Canvas_Preset_Sunset" xml:space="preserve">
+    <value>Atardecer</value>
+  </data>
+  <data name="Canvas_Preset_Arctic" xml:space="preserve">
+    <value>Ártico</value>
+  </data>
+  <data name="Canvas_Preset_NeonPurple" xml:space="preserve">
+    <value>Púrpura neón</value>
+  </data>
+  <data name="Canvas_Preset_Monochrome" xml:space="preserve">
+    <value>Monocromo</value>
+  </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
+  <data name="Custom_BgType_Acrylic" xml:space="preserve">
+    <value>Acrylic</value>
+  </data>
+  <data name="Custom_BgType_Glass" xml:space="preserve">
+    <value>Vidrio</value>
+  </data>
+  <data name="Custom_BgType_Gradient" xml:space="preserve">
+    <value>Degradado</value>
+  </data>
+  <data name="Custom_BgType_Wallpaper" xml:space="preserve">
+    <value>Fondo de pantalla</value>
+  </data>
+  <data name="Custom_BgType_Solid" xml:space="preserve">
+    <value>Color sólido</value>
+  </data>
+  <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
+    <value>Tonal Spot</value>
+  </data>
+  <data name="Custom_Scheme_Vibrant" xml:space="preserve">
+    <value>Vibrante</value>
+  </data>
+  <data name="Custom_Scheme_Expressive" xml:space="preserve">
+    <value>Expresivo</value>
+  </data>
+  <data name="Custom_Scheme_Rainbow" xml:space="preserve">
+    <value>Arcoíris</value>
+  </data>
+  <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
+    <value>Ensalada de frutas</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Según el contenido</value>
+  </data>
+  <data name="Custom_Scheme_Spritz" xml:space="preserve">
+    <value>Spritz</value>
+  </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>No se pudo terminar «{0}» (PID {1}). No se cambió nada. Actualiza la lista e inténtalo de nuevo.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>No se terminó nada. «{0}» (PID {1}) se cerró mientras decidías, y ese PID puede pertenecer ahora a otro programa. La lista se actualizó: busca el programa de nuevo e inténtalo otra vez.</value>
+  </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>Cerrar sesión — ¿Estás seguro?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>Todo lo que esté abierto en el PC remoto se cerrará y se perderá el trabajo no guardado. El PC seguirá encendido, pero RemEx se desconectará y no podrá volver a conectarse hasta que vuelvas a iniciar sesión en el propio PC.</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>Cerrar sesión</value>
+  </data>
+  <data name="Status_FailedGeneratePin" xml:space="preserve">
+    <value>No se pudo crear un PIN de emparejamiento</value>
+  </data>
+  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
+    <value>El PC no proporcionó un PIN de emparejamiento</value>
+  </data>
+  <data name="Status_PairingServiceUnavailable" xml:space="preserve">
+    <value>El emparejamiento no está disponible ahora</value>
+  </data>
+  <data name="Status_PairingFailed" xml:space="preserve">
+    <value>Error de emparejamiento. Comprueba el PIN en el PC</value>
+  </data>
+  <data name="Status_PairingCancelled" xml:space="preserve">
+    <value>Emparejamiento cancelado</value>
+  </data>
+  <data name="Status_InvalidSettings" xml:space="preserve">
+    <value>Revisa los ajustes de conexión</value>
+  </data>
+  <data name="Status_InvalidHostAddress" xml:space="preserve">
+    <value>Esa dirección de PC no es válida</value>
+  </data>
+  <data name="Status_LoadDisplaysFailed" xml:space="preserve">
+    <value>No se pudieron cargar las pantallas. Inténtalo de nuevo.</value>
+  </data>
+  <data name="RemoteDesktop_LoadingDisplays" xml:space="preserve">
+    <value>Cargando pantallas…</value>
+  </data>
+  <data name="RemoteDesktop_SelectDisplayTarget" xml:space="preserve">
+    <value>Elige primero una pantalla</value>
+  </data>
+  <data name="RemoteDesktop_SwitchingDisplay" xml:space="preserve">
+    <value>Cambiando de pantalla…</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlUnavailable" xml:space="preserve">
+    <value>Control de ventanas no disponible</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlFailed" xml:space="preserve">
+    <value>Error en el control de ventanas</value>
+  </data>
+  <data name="RemoteDesktop_WindowQueryFailed" xml:space="preserve">
+    <value>No se pudieron listar las ventanas. Inténtalo de nuevo.</value>
+  </data>
+  <data name="RemoteDesktop_WindowActionFailed" xml:space="preserve">
+    <value>Esa acción de ventana no funcionó.</value>
+  </data>
+  <data name="RemoteDesktop_BackendReady" xml:space="preserve">
+    <value>Control de ventanas listo ({0})</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>Control de ventanas mediante {0}</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>El control avanzado de ventanas no está disponible en este PC.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>desconocido</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>No se pudo cambiar de pantalla</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>un método desconocido</value>
+  </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>Despertar por LAN</value>
+  </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx no tiene permiso para cerrar ese programa. Puede que deba iniciarse como administrador en el PC.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>Ese programa ya no se está ejecutando. Actualiza la lista para ver qué hay abierto ahora.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>Ese programa ya no usa este identificador de proceso: ahora pertenece a {0}. No se cerró nada. Actualiza la lista y vuelve a intentarlo.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>No se pudo cerrar ese programa. Actualiza la lista y vuelve a intentarlo.</value>
+  </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>Esta carpeta está vacía.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>Ningún archivo coincide con esa búsqueda.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>Ninguna aplicación coincide con esa búsqueda.</value>
+  </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>¿Cómo cambio el aspecto de RemEx?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Usa el botón «Personalizar apariencia» para abrir el panel Personalizar.
+
+Puedes cambiar:
+• El tema (CyberNOC, Monolith, SolarFlare o BaseDarkGlass)
+• El color de acento y la paleta
+• El radio y la forma de las esquinas de las tarjetas
+• La tipografía y su tamaño
+• La opacidad de las tarjetas
+• El idioma de la aplicación, independientemente del de Windows o Linux</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>¿Puedo volver a ver el tutorial?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Sí. Abre Configuración y usa «Repetir tutorial» en la sección Ayuda. Puedes hacerlo tantas veces como quieras.</value>
+  </data>
+  <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
+    <value>El archivo descargado no coincidía con el que envió el PC, así que se eliminó. Vuelve a descargarlo.</value>
+  </data>
+  <data name="FileTransfer_ErrStoppedResponding" xml:space="preserve">
+    <value>La transferencia dejó de responder. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
+  </data>
+  <data name="FileTransfer_ErrGeneric" xml:space="preserve">
+    <value>No se pudo completar la transferencia. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
+  </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>Estado de la conexión: conectado</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>Estado de la conexión: sin conexión</value>
   </data>
 </root>

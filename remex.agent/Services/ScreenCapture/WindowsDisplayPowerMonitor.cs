@@ -1,8 +1,7 @@
-using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Threading;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 
 namespace Remex.Agent.Services.ScreenCapture;
 
@@ -45,7 +44,7 @@ internal sealed class WindowsDisplayPowerMonitor : IDisposable
 
     public WindowsDisplayPowerMonitor(ILogger logger)
     {
-        _logger = logger;
+        _logger = Guard.NotNull(logger);
         _wndProc = WndProcImpl;
         _pumpThread = new Thread(RunMessageLoop)
         {

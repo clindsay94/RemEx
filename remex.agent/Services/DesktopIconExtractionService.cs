@@ -1,9 +1,5 @@
-using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
-using System.Linq;
-using System.Collections.Generic;
 using Remex.Core.Services;
 
 namespace Remex.Agent.Services;
@@ -115,7 +111,7 @@ public class DesktopIconExtractionService : IIconExtractionService
                 }
             }
         }
-        catch { }
+        catch { /* an icon that cannot be extracted degrades to no icon; the launcher entry is still usable without one */ }
         return null;
     }
 

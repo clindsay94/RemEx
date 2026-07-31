@@ -1,4 +1,3 @@
-using System;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Remex.Desktop.ViewModels;

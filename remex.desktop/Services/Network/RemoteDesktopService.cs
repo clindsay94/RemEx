@@ -1,14 +1,9 @@
-using System;
 using System.Collections.Concurrent;
-using System.IO;
 using System.Net.Security;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Security.Cryptography.X509Certificates;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 
@@ -21,6 +16,21 @@ public class RemoteDesktopService : IDisposable
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ConcurrentDictionary<string, TaskCompletionSource<DesktopWindowResult>> _pendingWindowRequests = new();
     private bool _disposed;
+
+    /// <summary>
+    /// Pinned SPKI hashes captured immediately before each connect, so the TLS callback can be
+    /// fully synchronous. The previous version called <c>GetAllPinsAsync().GetAwaiter()
+    /// .GetResult()</c> inside the callback — blocking on async I/O from a TLS handshake thread.
+    /// </summary>
+    private IReadOnlyDictionary<string, string>? _pinSnapshot;
+
+    /// <summary>
+    /// Whether an EMPTY pin store may be trusted for this connect. True only for loopback, where
+    /// the peer is this machine's own embedded host and pinning adds nothing — the same policy
+    /// <c>ConnectionViewModel.PrepareTlsValidationForConnectAsync</c> applies to the control
+    /// channel, and the reason making this check effective does not break the PC's own session.
+    /// </summary>
+    private bool _allowFirstTimeTrust;
     private long _latestStreamSerial;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -44,6 +54,7 @@ public class RemoteDesktopService : IDisposable
     {
         Disconnect();
 
+        await PrepareTlsValidationAsync(hostAddress);
         _webSocket = CreateClientWebSocket();
         await _webSocket.ConnectAsync(BuildDesktopUri(hostAddress), ct);
 
@@ -53,6 +64,7 @@ public class RemoteDesktopService : IDisposable
 
     public async Task<DesktopDisplayCatalog> QueryDisplaysAsync(string hostAddress, CancellationToken ct = default)
     {
+        await PrepareTlsValidationAsync(hostAddress);
         using var socket = CreateClientWebSocket();
         await socket.ConnectAsync(BuildDesktopUri(hostAddress), ct);
 
@@ -389,19 +401,64 @@ public class RemoteDesktopService : IDisposable
         var hashBytes = System.Security.Cryptography.SHA256.HashData(spki);
         var hashBase64 = Convert.ToBase64String(hashBytes);
 
-        var store = App.Services?.GetService(typeof(Remex.Desktop.Services.Security.PinnedCertStore)) as Remex.Desktop.Services.Security.PinnedCertStore;
-        if (store != null)
+        var accepted = IsCertificateAcceptable(hashBase64, _pinSnapshot, _allowFirstTimeTrust);
+        if (!accepted)
         {
-            var pins = store.GetAllPinsAsync().GetAwaiter().GetResult();
-            if (pins.Values.Contains(hashBase64))
-            {
-                return true;
-            }
-
-            // Fallback for RemoteDesktop connecting.
+            System.Diagnostics.Debug.WriteLine(
+                $"[RemoteDesktopService] Rejecting host certificate SPKI {hashBase64}. If the host " +
+                "certificate legitimately rotated, the operator must re-pair.");
         }
+        return accepted;
+    }
 
-        return true;
+    /// <summary>
+    /// The pinning decision, as a pure function of the presented hash and the captured policy.
+    /// </summary>
+    /// <remarks>
+    /// Separated from the callback so it can be tested exhaustively without a TLS handshake, a DI
+    /// container or a socket. That matters more here than usual: the defect being fixed was not a
+    /// wrong rule but an UNUSED one — the old code computed the hash, looked it up, ignored the
+    /// answer and returned <c>true</c> (RemEx-mlce). A rule nobody consults reads exactly like a
+    /// rule that works.
+    /// </remarks>
+    internal static bool IsCertificateAcceptable(
+        string spkiHashBase64,
+        IReadOnlyDictionary<string, string>? pins,
+        bool allowFirstTimeTrust)
+    {
+        // No snapshot means PrepareTlsValidationAsync did not run. A missing store is NOT an empty
+        // store, and the safe answer to "I do not know" is no.
+        if (pins is null) return false;
+
+        // Pinned hosts exist: the presented cert must be one of them. Mirrors the control channel
+        // in ConnectionViewModel.AcceptSelfSignedCertificate, deliberately — the two channels talk
+        // to the same host and disagreeing about its certificate is its own kind of defect.
+        if (pins.Count > 0) return pins.Values.Contains(spkiHashBase64);
+
+        // Empty store: trusted only for loopback, where the peer is this machine's own host.
+        return allowFirstTimeTrust;
+    }
+
+    /// <summary>
+    /// Captures the pin snapshot and the empty-store policy for the connect that follows.
+    /// </summary>
+    /// <remarks>
+    /// Separate from the callback on purpose. A TLS validation callback runs on the handshake
+    /// thread and must not block on async I/O, which is what the previous
+    /// <c>.GetAwaiter().GetResult()</c> did — and it was moot anyway, because the result was
+    /// discarded and the method returned <c>true</c> regardless (RemEx-mlce).
+    /// </remarks>
+    private async Task PrepareTlsValidationAsync(string hostAddress)
+    {
+        var uri = BuildDesktopUri(hostAddress);
+        _allowFirstTimeTrust = uri.Host is "localhost" or "127.0.0.1" or "::1";
+
+        var store = App.Services?.GetService(typeof(Remex.Desktop.Services.Security.PinnedCertStore))
+            as Remex.Desktop.Services.Security.PinnedCertStore;
+
+        // A missing store is not an empty store: leaving the snapshot null makes the callback fail
+        // closed rather than fall through to the loopback allowance.
+        _pinSnapshot = store is null ? null : await store.GetAllPinsAsync();
     }
 
     private ClientWebSocket CreateClientWebSocket()

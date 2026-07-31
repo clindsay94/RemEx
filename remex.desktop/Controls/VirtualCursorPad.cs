@@ -1,5 +1,3 @@
-using System;
-using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -415,6 +413,6 @@ public class VirtualCursorPad : Control
                 await System.Threading.Tasks.Task.Delay(RepeatIntervalMs, ct);
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { /* cancellation is how the pad stops, not a failure */ }
     }
 }

@@ -67,10 +67,23 @@ public sealed class RemexSavefileServiceTests : IDisposable
     public async Task ImportAsync_AppliesLaunchers_PreservingAppEntryIdsAndFields()
     {
         var launcherDir = CreateTempDir();
+
+        // Real files in a temp directory, NOT hardcoded C:\Windows\System32 paths. ImportAsync
+        // warns when a launcher points at a path that no longer exists, and this test asserts
+        // there are no warnings - so the Windows paths made it fail on Linux, where they do not
+        // exist. The product was behaving correctly; the test's premise was wrong. Creating the
+        // targets here also drops the hidden dependency on the host actually having Notepad.
+        // (RemEx-6i1l.)
+        var appDir = CreateTempDir();
+        var notepadPath = Path.Combine(appDir, "notepad.exe");
+        var calculatorPath = Path.Combine(appDir, "calc.exe");
+        File.WriteAllText(notepadPath, string.Empty);
+        File.WriteAllText(calculatorPath, string.Empty);
+
         var entries = new List<AppEntry>
         {
-            new(Guid.NewGuid(), "Notepad", @"C:\Windows\System32\notepad.exe", "#FF00FF", null, 0),
-            new(Guid.NewGuid(), "Calculator", @"C:\Windows\System32\calc.exe", "#00FF00", "aWNvbg==", 1),
+            new(Guid.NewGuid(), "Notepad", notepadPath, "#FF00FF", null, 0),
+            new(Guid.NewGuid(), "Calculator", calculatorPath, "#00FF00", "aWNvbg==", 1),
         };
 
         var savefile = new RemexSavefile

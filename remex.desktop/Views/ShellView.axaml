@@ -62,7 +62,11 @@
 
         <!-- ═══ Settings overlay panel ═══ -->
         <Style Selector="Border.settings-overlay">
-            <Setter Property="RenderTransform" Value="translateX(420px)"/>
+            <!-- Must clear the panel's full width. It is Width=440 with MaxWidth=460, so the old
+                 420px left up to 40px of it still inside the viewport - invisible only because
+                 Opacity is 0, which means it was still hit-testable and still being composited.
+                 460 matches the widest the panel can be (RemEx-vm0j). -->
+            <Setter Property="RenderTransform" Value="translateX(460px)"/>
             <Setter Property="Opacity" Value="0"/>
             <Setter Property="IsHitTestVisible" Value="False"/>
             <Setter Property="Transitions">
@@ -113,7 +117,8 @@
             <SplitView Grid.Row="1" IsPaneOpen="{Binding IsDrawerOpen}" DisplayMode="CompactOverlay" OpenPaneLength="{Binding OpenPaneLength}" CompactPaneLength="{Binding CompactPaneLength}" PaneBackground="Transparent" IsVisible="{Binding !IsShellChromeHidden}">
 
                 <SplitView.Pane>
-                    <Border IsVisible="{Binding IsDesktop}">
+                    <!-- Wrapper retained as a plain container; its IsDesktop gate was always true (RemEx-f167). -->
+                    <Border>
                         <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,1,0">
                             <!-- Bold gradient rail: theme-accent bleeds from the top over a semi-opaque glass base -->
                             <Border.Background>
@@ -129,7 +134,7 @@
                                 <StackPanel Grid.Row="0" Margin="0,16,0,8">
                                     <Button Classes="nav-item" Width="48" Height="48" CornerRadius="{DynamicResource CornerRadiusLarge}"
                                             Command="{Binding ToggleDrawerCommand}" HorizontalAlignment="Center" Padding="0"
-                                            ToolTip.Tip="{conv:Localize Shell_ToggleDrawerTooltip}">
+                                            ToolTip.Tip="{conv:Localize Shell_ToggleDrawerTooltip}" AutomationProperties.Name="{conv:Localize Shell_ToggleDrawerTooltip}">
                                         <Border Width="44" Height="44" CornerRadius="22" ClipToBounds="True">
                                             <ctrl:BrandMark/>
                                         </Border>
@@ -140,7 +145,7 @@
                                                IsVisible="{Binding IsDrawerOpen}"/>
                                     
                                     <!-- Command Palette Hint -->
-                                    <Button Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" IsVisible="{Binding IsDrawerOpen}" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}">
+                                    <Button Command="{Binding OpenCommandPaletteCommand}" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,8,0,0" IsVisible="{Binding IsDrawerOpen}" ToolTip.Tip="{conv:Localize Shell_OpenCommandPaletteTooltip}" AutomationProperties.Name="{conv:Localize Shell_OpenCommandPaletteTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" Opacity="0.5">
                                             <Path Data="{StaticResource IconSearch}" Fill="{DynamicResource TextSecondaryBrush}" Width="11" Height="11" Stretch="Uniform" VerticalAlignment="Center"/>
                                             <TextBlock Text="Ctrl+K" FontSize="10" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
@@ -152,7 +157,7 @@
                                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                     <StackPanel Spacing="4" Margin="0,8">
                                         <!-- Home Dashboard -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Command="{Binding NavigateToHomeCommand}" ToolTip.Tip="{conv:Localize Nav_Home}">
+                                        <Button AutomationProperties.Name="{conv:Localize Nav_Home}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Command="{Binding NavigateToHomeCommand}" ToolTip.Tip="{conv:Localize Nav_Home}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconHome}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Home}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
@@ -160,7 +165,7 @@
                                         </Button>
 
                                         <!-- Live Sensors -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}" Command="{Binding NavigateToCanvasCommand}" ToolTip.Tip="{conv:Localize Nav_Sensors}">
+                                        <Button AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}" Command="{Binding NavigateToCanvasCommand}" ToolTip.Tip="{conv:Localize Nav_Sensors}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconSensors}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
@@ -168,7 +173,7 @@
                                         </Button>
 
                                         <!-- Commands (remote power/control commands) -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}" Command="{Binding NavigateToRemoteCommand}" ToolTip.Tip="{conv:Localize Nav_Commands}">
+                                        <Button AutomationProperties.Name="{conv:Localize Nav_Commands}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}" Command="{Binding NavigateToRemoteCommand}" ToolTip.Tip="{conv:Localize Nav_Commands}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconCommands}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Commands}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
@@ -176,7 +181,7 @@
                                         </Button>
 
                                         <!-- App Launcher -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}" Command="{Binding NavigateToAppLauncherCommand}" ToolTip.Tip="{conv:Localize Nav_Launcher}">
+                                        <Button AutomationProperties.Name="{conv:Localize Nav_Launcher}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}" Command="{Binding NavigateToAppLauncherCommand}" ToolTip.Tip="{conv:Localize Nav_Launcher}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconLauncher}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Launcher}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
@@ -184,7 +189,7 @@
                                         </Button>
 
                                         <!-- Processes (running programs / task manager) -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}" Command="{Binding NavigateToTaskManagerCommand}" ToolTip.Tip="{conv:Localize Nav_Processes}">
+                                        <Button AutomationProperties.Name="{conv:Localize Nav_Processes}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}" Command="{Binding NavigateToTaskManagerCommand}" ToolTip.Tip="{conv:Localize Nav_Processes}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconProcesses}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Processes}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
@@ -192,7 +197,7 @@
                                         </Button>
 
                                         <!-- File Explorer -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7}" Command="{Binding NavigateToFileTransferCommand}" ToolTip.Tip="{conv:Localize Nav_Files}">
+                                        <Button AutomationProperties.Name="{conv:Localize Nav_Files}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=7}" Command="{Binding NavigateToFileTransferCommand}" ToolTip.Tip="{conv:Localize Nav_Files}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconFiles}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Files}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
@@ -200,7 +205,7 @@
                                         </Button>
 
                                         <!-- Logs & Diagnostics -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8}" Command="{Binding NavigateToDiagnosticLogsCommand}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}">
+                                        <Button AutomationProperties.Name="{conv:Localize Shell_LogsDiagnostics}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=8}" Command="{Binding NavigateToDiagnosticLogsCommand}" ToolTip.Tip="{conv:Localize Shell_LogsDiagnostics}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconLogs}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Shell_LogsDiagnostics}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
@@ -211,7 +216,7 @@
 
                                         <!-- ═══ Settings family ═══ -->
                                         <!-- Settings -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9}" Command="{Binding NavigateToSettingsCommand}" ToolTip.Tip="{conv:Localize Nav_Settings}">
+                                        <Button AutomationProperties.Name="{conv:Localize Nav_Settings}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=9}" Command="{Binding NavigateToSettingsCommand}" ToolTip.Tip="{conv:Localize Nav_Settings}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconSettings}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Settings}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
@@ -219,7 +224,7 @@
                                         </Button>
 
                                         <!-- About (moved into settings cluster) -->
-                                        <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6}" Command="{Binding NavigateToAboutCommand}" ToolTip.Tip="{conv:Localize Shell_About}">
+                                        <Button AutomationProperties.Name="{conv:Localize Shell_About}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=6}" Command="{Binding NavigateToAboutCommand}" ToolTip.Tip="{conv:Localize Shell_About}">
                                             <Grid ColumnDefinitions="64,*">
                                                 <Path Grid.Column="0" Data="{StaticResource IconAbout}" Width="22" Height="22" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Shell_About}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
@@ -232,15 +237,7 @@
                                 <!-- ═══ Bottom: Connection Status ═══ -->
                                 <Border Grid.Row="2" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                     <Grid ColumnDefinitions="64,*">
-                                        <Ellipse Grid.Column="0" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <Ellipse.Fill>
-                                                <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
-                                            </Ellipse.Fill>
-                                            <Ellipse.Transitions>
-                                                <Transitions>
-                                                    <BrushTransition Property="Fill" Duration="0:0:0.4"/>
-                                                </Transitions>
-                                            </Ellipse.Transitions>
+                                        <Ellipse AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Grid.Column="0" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
                                         </Ellipse>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,12,0" IsVisible="{Binding IsDrawerOpen}">
                                             <TextBlock Text="{Binding Connection.StatusText}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
@@ -269,7 +266,7 @@
                                 <TextBlock Grid.Column="1" Text="{Binding ConnectionBannerMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                 <Button Grid.Column="2" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" Background="{DynamicResource SystemSuccessBrush}" Foreground="White" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,6,0" Cursor="Hand"/>
                                 <Button Grid.Column="3" Content="{conv:Localize Shell_OpenSettings}" Command="{Binding NavigateToSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Cursor="Hand"/>
-                                <Button Grid.Column="4" Command="{Binding DismissConnectionBannerCommand}" Background="Transparent" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
+                                <Button AutomationProperties.Name="{conv:Localize A11y_Dismiss}" Grid.Column="4" Command="{Binding DismissConnectionBannerCommand}" Background="Transparent" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
                                     <Path Data="{StaticResource IconClose}" Fill="{DynamicResource TextMutedBrush}" Width="10" Height="10" Stretch="Uniform"/>
                                 </Button>
                             </Grid>
@@ -285,7 +282,7 @@
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <Path Grid.Column="0" Data="{StaticResource IconWarning}" Fill="{DynamicResource SystemWarningBrush}" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <TextBlock Grid.Column="1" Text="{Binding LayoutLoadWarningMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                <Button Grid.Column="2" Command="{Binding DismissLayoutLoadWarningCommand}" Background="Transparent" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
+                                <Button AutomationProperties.Name="{conv:Localize A11y_Dismiss}" Grid.Column="2" Command="{Binding DismissLayoutLoadWarningCommand}" Background="Transparent" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
                                     <Path Data="{StaticResource IconClose}" Fill="{DynamicResource TextMutedBrush}" Width="10" Height="10" Stretch="Uniform"/>
                                 </Button>
                             </Grid>
@@ -363,7 +360,7 @@
                                 <TextBlock Text="{conv:Localize Personalize_Title}" FontSize="20" FontWeight="Black" />
                                 <TextBlock Text="{conv:Localize Personalize_Subtitle}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="1"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Background="Transparent" Padding="8" CornerRadius="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
+                            <Button AutomationProperties.Name="{conv:Localize A11y_Close}" Grid.Column="1" Command="{Binding CloseSettingsPanelCommand}" Background="Transparent" Padding="8" CornerRadius="8" BorderThickness="0" VerticalAlignment="Top" Cursor="Hand">
                                 <Path Data="{StaticResource IconClose}" Fill="{DynamicResource TextMutedBrush}" Width="10" Height="10" Stretch="Uniform"/>
                             </Button>
                         </Grid>
@@ -397,25 +394,10 @@
 
 
             <!-- ═══ FLOATING GEAR FAB (Bottom-Right) ═══ -->
-            <Button Grid.Row="1" Classes="gear-fab" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20" Command="{Binding ToggleSettingsPanelCommand}" ToolTip.Tip="{conv:Localize Personalize_FabTooltip}">
+            <Button AutomationProperties.Name="{conv:Localize Personalize_FabTooltip}" Grid.Row="1" Classes="gear-fab" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20" Command="{Binding ToggleSettingsPanelCommand}" ToolTip.Tip="{conv:Localize Personalize_FabTooltip}" IsVisible="{Binding !IsShellChromeHidden}">
                 <Path Data="{StaticResource IconPersonalize}" Fill="White" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Button.IsVisible>
-                    <MultiBinding Converter="{x:Static BoolConverters.And}">
-                        <Binding Path="!IsShellChromeHidden"/>
-                        <Binding Path="IsDesktop"/>
-                    </MultiBinding>
-                </Button.IsVisible>
             </Button>
 
-            <Button Grid.Row="1" Classes="gear-fab" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,90" Command="{Binding ToggleSettingsPanelCommand}" ToolTip.Tip="{conv:Localize Personalize_FabTooltip}">
-                <Path Data="{StaticResource IconPersonalize}" Fill="White" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Button.IsVisible>
-                    <MultiBinding Converter="{x:Static BoolConverters.And}">
-                        <Binding Path="!IsShellChromeHidden"/>
-                        <Binding Path="IsAndroid"/>
-                    </MultiBinding>
-                </Button.IsVisible>
-            </Button>
 
             <!-- ═══ WELCOME SPLASH — BOOT SEQUENCE ═══ -->
             <splash:SkiaSplashControl x:Name="BootSplash" Grid.RowSpan="2" IsVisible="{Binding ShowWelcomeSplash}" SplashStyle="{Binding Customization.SplashStyle}" ZIndex="999"/>
@@ -612,71 +594,6 @@
                 </Grid>
             </Border>
 
-            <!-- ═══ BOTTOM NAV BAR (ANDROID M3) ═══ -->
-            <Border Grid.Row="2" Background="{DynamicResource GlassBaseDarkBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0">
-                <Border.IsVisible>
-                    <MultiBinding Converter="{x:Static BoolConverters.And}">
-                        <Binding Path="IsAndroid"/>
-                        <Binding Path="!IsShellChromeHidden"/>
-                    </MultiBinding>
-                </Border.IsVisible>
-                <UniformGrid Columns="5" Height="80" Margin="0,4,0,12">
-                    <!-- Home -->
-                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Command="{Binding NavigateToHomeCommand}" VerticalAlignment="Stretch" Margin="4,0" Padding="0">
-                        <StackPanel Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <Panel>
-                                <Border Classes="nav-pill" />
-                                <PathIcon Data="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" Width="24" Height="24" HorizontalAlignment="Center" />
-                            </Panel>
-                            <TextBlock Text="{conv:Localize Nav_Home}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Sensors -->
-                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}" Command="{Binding NavigateToCanvasCommand}" VerticalAlignment="Stretch" Margin="4,0" Padding="0">
-                        <StackPanel Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <Panel>
-                                <Border Classes="nav-pill" />
-                                <PathIcon Data="M19.03 7.39l1.42-1.42c-4.3-4.29-11.41-4.29-15.71 0l1.42 1.42c3.52-3.51 9.34-3.51 12.87 0zM12 17c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" Width="24" Height="24" HorizontalAlignment="Center" />
-                            </Panel>
-                            <TextBlock Text="{conv:Localize Nav_Sensors}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Remote -->
-                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=2}" Command="{Binding NavigateToRemoteCommand}" VerticalAlignment="Stretch" Margin="4,0" Padding="0">
-                        <StackPanel Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <Panel>
-                                <Border Classes="nav-pill" />
-                                <PathIcon Data="M15 1H9v2h6V1zm-4 13h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" Width="24" Height="24" HorizontalAlignment="Center" />
-                            </Panel>
-                            <TextBlock Text="{conv:Localize Nav_Remote}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Launcher -->
-                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=3}" Command="{Binding NavigateToAppLauncherCommand}" VerticalAlignment="Stretch" Margin="4,0" Padding="0">
-                        <StackPanel Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <Panel>
-                                <Border Classes="nav-pill" />
-                                <PathIcon Data="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" Width="24" Height="24" HorizontalAlignment="Center" />
-                            </Panel>
-                            <TextBlock Text="{conv:Localize Nav_Launch}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Tasks -->
-                    <Button Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=4}" Command="{Binding NavigateToTaskManagerCommand}" VerticalAlignment="Stretch" Margin="4,0" Padding="0">
-                        <StackPanel Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <Panel>
-                                <Border Classes="nav-pill" />
-                                <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 14h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z" Width="24" Height="24" HorizontalAlignment="Center" />
-                            </Panel>
-                            <TextBlock Text="{conv:Localize Nav_Tasks}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </UniformGrid>
-            </Border>
         </Grid>
     </ctrl:DashboardBackgroundControl>
 </UserControl>

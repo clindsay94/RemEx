@@ -5,23 +5,28 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,26 +42,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FilterCenterFocus
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Button
@@ -84,33 +86,40 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius as GeoCornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size as GeoSize
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
-import com.clindsay94.remex.ui.components.RemexScreenHeader
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import com.clindsay94.remex.ui.theme.calculateAdaptivePadding
 import com.clindsay94.remex.ui.theme.cardShape
 import com.clindsay94.remex.ui.theme.materialShapesList
@@ -126,6 +135,15 @@ private fun PlainAnimatedVisibility(
 ) {
         AnimatedVisibility(visible = visible, modifier = modifier, content = content)
 }
+
+/** One full breathe of the connection orb's glow (0.3 → 0.8 alpha, reversed). */
+private const val CONNECTION_GLOW_PULSE_MS = 1500
+
+/** Presence tracker for canvas cards (RemEx-1ymv): drives enter/exit animation. */
+private class DashboardCardPresence(
+        val state: MutableTransitionState<Boolean>,
+        var lastCard: HomeCardState,
+)
 
 private data class AvailableCardItem(val id: String, val title: String, val subtitle: String, val group: String = "")
 
@@ -150,6 +168,8 @@ fun DashboardScreen(
         val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
         val cardOpacity by viewModel.cardOpacity.collectAsStateWithLifecycle()
         val pcCardShapePreset by viewModel.pcCardShapePreset.collectAsStateWithLifecycle()
+        val categoryShapePresets by
+                viewModel.categoryShapePresets.collectAsStateWithLifecycle(initialValue = emptyMap())
         val telemetryCardShapePreset by viewModel.telemetryCardShapePreset.collectAsStateWithLifecycle()
         val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
         val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
@@ -180,6 +200,7 @@ fun DashboardScreen(
                         cornerRadius = cornerRadius,
                         cardOpacity = cardOpacity,
                         pcCardShapePreset = pcCardShapePreset,
+                        categoryShapePresets = categoryShapePresets,
                         telemetryCardShapePreset = telemetryCardShapePreset,
                         draggingCardId = draggingCardId,
                         selectedCardIds = selectedCardIds,
@@ -223,7 +244,11 @@ fun DashboardScreen(
                 // First-run coach marks (RemEx-km0i.10), mounted last = top of z-order. Suppressed while a
                 // card is lifted or a group is selected (locked decision #7); the scrim blocks input, so
                 // no bottom sheet can open underneath a live hint.
-                if (coachStep >= 0 && draggingCardId == null && selectedCardIds.isEmpty()) {
+                AnimatedVisibility(
+                        visible = coachStep >= 0 && draggingCardId == null && selectedCardIds.isEmpty(),
+                        enter = fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()),
+                        exit = fadeOut(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()),
+                ) {
                         DashboardCoachOverlay(
                                 step = coachStep,
                                 menuAnchor = menuAnchor,
@@ -247,6 +272,7 @@ fun DashboardScreenContent(
         cornerRadius: Int,
         cardOpacity: Float,
         pcCardShapePreset: Float,
+        categoryShapePresets: Map<DashboardShapes.CardCategory, Float>,
         telemetryCardShapePreset: Float,
         draggingCardId: String?,
         selectedCardIds: Set<String>,
@@ -318,6 +344,11 @@ fun DashboardScreenContent(
                 }
 
         val density = androidx.compose.ui.platform.LocalDensity.current.density
+        // Scale-aware card bounds (RemEx-0i3x): labels grow with the system font scale, so
+        // rendered card bounds grow with it (capped at 1.3x). Positions and PERSISTED sizes
+        // are unchanged — only the rendered box scales, so layouts round-trip losslessly.
+        val cardFontScale =
+                androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.3f)
 
         var showCardDrawer by remember { mutableStateOf(false) }
         var pickerCardId by remember { mutableStateOf<String?>(null) }
@@ -383,10 +414,15 @@ fun DashboardScreenContent(
         val hScrollState = rememberScrollState()
         val vScrollState = rememberScrollState()
 
+        val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
         Surface(modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                        RemexScreenHeader(
+                Column(
+                        modifier = Modifier.fillMaxSize()
+                                .nestedScroll(topBarScrollBehavior.nestedScrollConnection)
+                ) {
+                        RemexFlexibleTopBar(
                                 title = stringResource(R.string.screen_dashboard_title),
+                                scrollBehavior = topBarScrollBehavior,
                                 actions = {
                                         // Replay the first-run coach marks anytime; disabled mid-gesture
                                         // so it never fights an active lift/selection (RemEx-km0i.10).
@@ -395,7 +431,7 @@ fun DashboardScreenContent(
                                                 enabled = selectedCardIds.isEmpty(),
                                         ) {
                                                 Icon(
-                                                        Icons.Filled.HelpOutline,
+                                                        Icons.AutoMirrored.Filled.HelpOutline,
                                                         contentDescription = stringResource(R.string.coach_replay),
                                                 )
                                         }
@@ -485,7 +521,7 @@ fun DashboardScreenContent(
                                                                         Text(
                                                                                 stringResource(
                                                                                         R.string
-                                                                                                .cd_customize_cards
+                                                                                                .dashboard_menu_customize_cards
                                                                                 )
                                                                         )
                                                                 },
@@ -540,7 +576,7 @@ fun DashboardScreenContent(
                                                                         Text(
                                                                                 stringResource(
                                                                                         R.string
-                                                                                                .cd_reset_zoom
+                                                                                                .dashboard_menu_reset_zoom
                                                                                 )
                                                                         )
                                                                 },
@@ -631,16 +667,57 @@ fun DashboardScreenContent(
                                                                                         )
                                                                 }
                                         ) {
+                                                // ── Card presence tracking (RemEx-1ymv): cards animate in on add and out on
+                                                // removal. Exiting cards render a snapshot with all pointer input consumed at
+                                                // the Initial pass, so a vanishing card can never be grabbed; the drag/reorder
+                                                // logic in DashboardInteraction.kt is untouched.
+                                                val cardPresence = remember { mutableStateMapOf<String, DashboardCardPresence>() }
                                                 visibleCards.forEach { card ->
-                                                        val xPx = (card.xDp * density).roundToInt()
-                                                        val yPx = (card.yDp * density).roundToInt()
+                                                        val presence = cardPresence.getOrPut(card.id) {
+                                                                DashboardCardPresence(MutableTransitionState(false), card)
+                                                        }
+                                                        presence.lastCard = card
+                                                        presence.state.targetState = true
+                                                }
+                                                cardPresence.forEach { (id, presence) ->
+                                                        if (visibleCards.none { it.id == id }) presence.state.targetState = false
+                                                }
+                                                cardPresence.entries.toList().forEach { (id, presence) ->
+                                                        val s = presence.state
+                                                        if (s.isIdle && !s.currentState && !s.targetState) cardPresence.remove(id)
+                                                }
+                                                // Render order is z-order in this Box, so it must stay
+                                                // deterministic: exiting cards first (beneath the live
+                                                // layout), then visibleCards in their list order — the
+                                                // presence MAP is only the tracker, never the order.
+                                                val orderedPresence =
+                                                        cardPresence.entries
+                                                                .filter { entry -> visibleCards.none { it.id == entry.key } }
+                                                                .map { it.key to it.value } +
+                                                                visibleCards.mapNotNull { card ->
+                                                                        cardPresence[card.id]?.let { card.id to it }
+                                                                }
+                                                orderedPresence.forEach { (presenceId, presence) ->
+                                                        key(presenceId) {
+                                                        val card = presence.lastCard
+                                                        val xPx = (card.xDp * density * cardFontScale).roundToInt()
+                                                        val yPx = (card.yDp * density * cardFontScale).roundToInt()
                                                         val cardShapePreset =
                                                                 DashboardShapes.resolveShapeIndex(
                                                                         card,
                                                                         pcCardShapePreset,
-                                                                        telemetryCardShapePreset
+                                                                        telemetryCardShapePreset,
+                                                                        categoryShapePresets
                                                                 )
 
+                                                        androidx.compose.animation.AnimatedVisibility(
+                                                                visibleState = presence.state,
+                                                                enter = scaleIn(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+                                                                        fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
+                                                                exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                                                                        fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+                                                                modifier = Modifier.offset { IntOffset(xPx, yPx) },
+                                                        ) {
                                                         DraggableDashboardCard(
                                                                 card = card,
                                                                 selectionActive = selectedCardIds.isNotEmpty(),
@@ -651,7 +728,10 @@ fun DashboardScreenContent(
                                                                 cornerRadius = cornerRadius,
                                                                 cardOpacity = cardOpacity,
                                                                 shapeIndex = cardShapePreset,
-                                                                canvasScale = { canvasScaleState.floatValue },
+                                                                // cardFontScale folds into the same divisor the
+                                                                // drag math already uses for pinch zoom, so drag
+                                                                // deltas stay finger-accurate (RemEx-0i3x).
+                                                                canvasScale = { canvasScaleState.floatValue * cardFontScale },
                                                                 onBeginCardDrag = onBeginCardDrag,
                                                                 onDragCardBy = onDragCardBy,
                                                                 onEndCardDrag = onEndCardDrag,
@@ -663,11 +743,22 @@ fun DashboardScreenContent(
                                                                 onTogglePin = onTogglePin,
                                                                 onResize = onResizeCard,
                                                                 modifier =
-                                                                        Modifier.offset {
-                                                                                IntOffset(xPx, yPx)
-                                                                        }
-                                                                                .width(card.widthDp.dp)
-                                                                                .height(card.heightDp.dp)
+                                                                        Modifier
+                                                                                .width(card.widthDp.dp * cardFontScale)
+                                                                                .height(card.heightDp.dp * cardFontScale)
+                                                                                .then(
+                                                                                        if (!presence.state.targetState)
+                                                                                                Modifier.pointerInput(Unit) {
+                                                                                                        awaitPointerEventScope {
+                                                                                                                while (true) {
+                                                                                                                        awaitPointerEvent(
+                                                                                                                                PointerEventPass.Initial
+                                                                                                                        ).changes.forEach { it.consume() }
+                                                                                                                }
+                                                                                                        }
+                                                                                                }
+                                                                                        else Modifier
+                                                                                )
                                                         ) {
                                                                 when (card.type.name) {
                                                                         "PC_STATUS" -> {
@@ -745,6 +836,7 @@ fun DashboardScreenContent(
                                                                 }
                                                         }
                                                 }
+                                                }
                                         }
                                 }
 
@@ -773,8 +865,7 @@ fun DashboardScreenContent(
                                                                         ),
                                                                 style =
                                                                         MaterialTheme.typography
-                                                                                .titleLarge,
-                                                                fontWeight = FontWeight.Bold
+                                                                                .titleLargeEmphasized
                                                         )
                                                         Text(
                                                                 text =
@@ -837,8 +928,7 @@ fun DashboardScreenContent(
                                                                                         lastDrawerGroup = availableCard.group
                                                                                         Text(
                                                                                                 text = availableCard.group,
-                                                                                                style = MaterialTheme.typography.labelLarge,
-                                                                                                fontWeight = FontWeight.Bold,
+                                                                                                style = MaterialTheme.typography.labelLargeEmphasized,
                                                                                                 color = MaterialTheme.colorScheme.primary,
                                                                                                 modifier = Modifier.padding(top = 12.dp, bottom = 2.dp, start = 4.dp)
                                                                                         )
@@ -1166,7 +1256,8 @@ fun DashboardScreenContent(
                                                                                 R.string.button_done
                                                                         )
                                                                 )
-                                                        }
+                                                                }
+                                                }
                                                 }
                                         }
                                 }
@@ -1283,8 +1374,7 @@ fun DashboardScreenContent(
                                                                         else draggingCard.title,
                                                                 style =
                                                                         MaterialTheme.typography
-                                                                                .bodyMedium,
-                                                                fontWeight = FontWeight.SemiBold
+                                                                                .bodyMediumEmphasized
                                                         )
                                                 }
                                         }
@@ -1392,9 +1482,41 @@ fun DashboardScreenContent(
                                                         )
                                                 },
                                                 text = {
+                                                        // This item ACTS - it calls onToggleConnection -
+                                                        // so it needs a verb, not the noun the card title
+                                                        // uses. It previously borrowed
+                                                        // dashboard_pc_status ("PC Status"), which reads
+                                                        // as a place to go rather than a thing to do, and
+                                                        // that key cannot simply be reworded because the
+                                                        // card title at the top of this file legitimately
+                                                        // needs the noun (RemEx-j8uo).
+                                                        //
+                                                        // RECONNECT, not Disconnect - onToggleConnection
+                                                        // is a misnomer. RemexClientManager
+                                                        // .toggleConnection is connect-ONLY, and this
+                                                        // client has no user-initiated disconnect at all
+                                                        // (_isConnected is set only by inbound native
+                                                        // callbacks). A "Disconnect" label would name an
+                                                        // action the code cannot perform, and since the
+                                                        // state never flips in response it would sit there
+                                                        // unchanged tap after tap. "Reconnect" describes
+                                                        // what actually happens when already connected:
+                                                        // connect() runs again and re-handshakes.
+                                                        // Missing-disconnect defect is filed separately.
+                                                        //
+                                                        // button_connect is shared with three other
+                                                        // sites, one of which uses it as a
+                                                        // contentDescription (AppLauncherScreen) - so a
+                                                        // reword aimed at a visible button would silently
+                                                        // change an accessibility label elsewhere. Kept
+                                                        // because "Connect" is the same imperative in the
+                                                        // same register at all four.
                                                         Text(
                                                                 stringResource(
-                                                                        R.string.dashboard_pc_status
+                                                                        if (isConnected)
+                                                                                R.string
+                                                                                        .button_reconnect
+                                                                        else R.string.button_connect
                                                                 )
                                                         )
                                                 }
@@ -1416,7 +1538,7 @@ fun DashboardScreenContent(
                                                 text = {
                                                         Text(
                                                                 stringResource(
-                                                                        R.string.cd_customize_cards
+                                                                        R.string.dashboard_menu_customize_cards
                                                                 )
                                                         )
                                                 }
@@ -1436,7 +1558,7 @@ fun DashboardScreenContent(
                                                         )
                                                 },
                                                 text = {
-                                                        Text(stringResource(R.string.cd_reset_zoom))
+                                                        Text(stringResource(R.string.dashboard_menu_reset_zoom))
                                                 }
                                         )
                                 }
@@ -1486,6 +1608,7 @@ private fun DashboardScreenPreview() {
             onMoveSelection = { _, _ -> },
             onTogglePinSelection = {},
             onRemoveSelection = {},
+            categoryShapePresets = emptyMap(),
             onClearSelection = {},
             onSetGroupShape = { _, _ -> },
             onSetCardEnabled = { _, _ -> }
@@ -1550,9 +1673,13 @@ private fun ConnectionOrbCard(
                         // Only run the infinite glow transition while its value is actually
                         // used (connected/connecting); when disconnected the orb is opaque and
                         // the animation would just burn battery. Conditional composable call is
-                        // fine here: the branch is keyed by stable state.
+                        // fine here: the branch is keyed by stable state. LinearEasing is the
+                        // M3-sanctioned curve for continuously-looping indicators; the duration
+                        // is the named token below. Under reduce motion the pulse is skipped
+                        // entirely and the glow holds at its midpoint (RemEx-bspj).
+                        val reducedMotion = LocalReducedMotion.current
                         val glowAlpha =
-                                if (isConnected || isConnecting) {
+                                if ((isConnected || isConnecting) && !reducedMotion) {
                                         val infiniteTransition =
                                                 rememberInfiniteTransition(label = "glow")
                                         infiniteTransition
@@ -1563,7 +1690,7 @@ private fun ConnectionOrbCard(
                                                                 infiniteRepeatable(
                                                                         animation =
                                                                                 tween(
-                                                                                        1500,
+                                                                                        CONNECTION_GLOW_PULSE_MS,
                                                                                         easing =
                                                                                                 LinearEasing
                                                                                 ),
@@ -1573,6 +1700,8 @@ private fun ConnectionOrbCard(
                                                         label = "glow_alpha"
                                                 )
                                                 .value
+                                } else if (isConnected || isConnecting) {
+                                        0.55f // steady midpoint of the 0.3–0.8 pulse
                                 } else 1f
 
                         Box(
@@ -1633,11 +1762,53 @@ private fun WakeOnLanCard(onWake: () -> Unit) {
                         Spacer(Modifier.width(8.dp))
                         Text(
                                 stringResource(R.string.dashboard_wake_pc_button),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                 }
         }
+}
+
+/**
+ * Horizontal intrusion (px from each card edge) of the clipping shape into the title row's
+ * vertical band (RemEx-0ukf). Measured against the same path the card clips with, at the top
+ * and bottom of the band, worst case per side — so a title inset derived from this is exact
+ * for every shape and morph progress, including resized cards, with no per-shape constants.
+ * Returns 0f to 0f for the discrete rounded-rectangle preset (no polygon clipping).
+ */
+private fun titleBandIntrusion(
+        shapePreset: Float,
+        cardWidthPx: Int,
+        cardHeightPx: Int,
+        bandTopPx: Float,
+        bandBottomPx: Float,
+        density: Density
+): Pair<Float, Float> {
+        if (shapePreset >= 23.5f || cardWidthPx <= 0 || cardHeightPx <= 0) return 0f to 0f
+        val outline =
+                cardShape(shapePreset, 0)
+                        .createOutline(
+                                GeoSize(cardWidthPx.toFloat(), cardHeightPx.toFloat()),
+                                LayoutDirection.Ltr,
+                                density
+                        )
+        val path = (outline as? Outline.Generic)?.path ?: return 0f to 0f
+        val shapeRegion = android.graphics.Region()
+        shapeRegion.setPath(
+                path.asAndroidPath(),
+                android.graphics.Region(0, 0, cardWidthPx, cardHeightPx)
+        )
+        var left = 0f
+        var right = 0f
+        for (y in floatArrayOf(bandTopPx, bandBottomPx)) {
+                val yTop = y.toInt().coerceIn(0, cardHeightPx - 1)
+                val slice = android.graphics.Region(0, yTop, cardWidthPx, yTop + 1)
+                slice.op(shapeRegion, android.graphics.Region.Op.INTERSECT)
+                if (slice.isEmpty) continue
+                val b = slice.bounds
+                left = maxOf(left, b.left.toFloat())
+                right = maxOf(right, (cardWidthPx - b.right).toFloat())
+        }
+        return left to right
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -1655,6 +1826,41 @@ private fun TelemetryCardContent(
         onOpenPicker: () -> Unit
 ) {
         val dynamicPadding = calculateAdaptivePadding(shapeIndex)
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val titleLineHeight = MaterialTheme.typography.labelSmall.lineHeight
+
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val contentWidthPx = constraints.maxWidth
+        val contentHeightPx = constraints.maxHeight
+        // Extra start/end inset for the title row (RemEx-0ukf): the uniform adaptive padding
+        // is measured at the card's widest band, but ellipse/hex/blob shapes intrude much
+        // further at the title row's height near the top. Measure the real intrusion at the
+        // title band against the clip path and pad only what the uniform inset doesn't cover.
+        // Rectangular presets measure zero intrusion, so their layout is untouched.
+        val (titleExtraStart, titleExtraEnd) =
+                remember(shapeIndex, contentWidthPx, contentHeightPx, dynamicPadding, titleLineHeight, density) {
+                        with(density) {
+                                // The Card's interior Box adds a 4dp frame around this content
+                                // (DashboardInteraction.kt), so the clip shape spans 8dp more
+                                // than our constraints in each dimension.
+                                val framePx = 4.dp.toPx()
+                                val paddingPx = dynamicPadding.toPx()
+                                val rowHeightPx = maxOf(24.dp.toPx(), titleLineHeight.toPx())
+                                val bandTop = framePx + paddingPx
+                                val (leftPx, rightPx) =
+                                        titleBandIntrusion(
+                                                shapePreset = shapeIndex,
+                                                cardWidthPx = (contentWidthPx + 2 * framePx).roundToInt(),
+                                                cardHeightPx = (contentHeightPx + 2 * framePx).roundToInt(),
+                                                bandTopPx = bandTop,
+                                                bandBottomPx = bandTop + rowHeightPx,
+                                                density = density
+                                        )
+                                val alreadyInset = framePx + paddingPx
+                                (leftPx - alreadyInset).coerceAtLeast(0f).toDp() to
+                                        (rightPx - alreadyInset).coerceAtLeast(0f).toDp()
+                        }
+                }
 
         Column(
                 modifier = Modifier.fillMaxSize().padding(dynamicPadding),
@@ -1662,14 +1868,15 @@ private fun TelemetryCardContent(
                 horizontalAlignment = Alignment.CenterHorizontally
         ) {
                 Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier =
+                                Modifier.fillMaxWidth()
+                                        .padding(start = titleExtraStart, end = titleExtraEnd),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                 ) {
                         Text(
                                 title,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelSmallEmphasized,
                                 maxLines = 1,
                                 overflow =
                                         androidx.compose.ui.text.style.TextOverflow
@@ -1704,6 +1911,7 @@ private fun TelemetryCardContent(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         showValueOverlay = showValueOverlay
                 )
+        }
         }
 }
 

@@ -142,6 +142,66 @@ android {
             // with "Method e in android.util.Log not mocked". See:
             // https://developer.android.com/r/studio-ui/build/not-mocked
             isReturnDefaultValues = true
+
+            // Hand the repo root to unit tests explicitly rather than letting them guess it from
+            // a working directory. PairingErrorCodesCoverageTest reads a C# file two levels up
+            // (remex.core/Native/PairingErrorCodes.cs) to prove the Kotlin mapping still covers
+            // every native cause; a relative-path guess would break the moment Gradle changed the
+            // test working directory, with an error saying nothing about why. (RemEx-odkk.)
+            all {
+                val repoRoot = rootProject.projectDir.parentFile
+                it.systemProperty("remex.repoRoot", repoRoot.absolutePath)
+
+                // And declare that C# file as a task INPUT. Without this, Gradle's up-to-date
+                // check has no idea the test depends on it, so editing ONLY that file leaves the
+                // test skipped as up-to-date — the guard would go quiet in exactly the situation
+                // it exists for. Verified: adding an unmapped code and re-running reported BUILD
+                // SUCCESSFUL until this line existed, and only --rerun-tasks revealed the failure.
+                it.inputs
+                        .file(File(repoRoot, "remex.core/Native/PairingErrorCodes.cs"))
+                        .withPropertyName("pairingErrorCodesSource")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+
+                // Same arrangement for the "end process" failure codes, and for the same reason:
+                // ProcessKillErrorCodesCoverageTest reads this file to prove every code the host
+                // can send is mapped to a localized string here. (RemEx-r37a.)
+                it.inputs
+                        .file(File(repoRoot, "remex.core/Models/ProcessKillErrorCodes.cs"))
+                        .withPropertyName("processKillErrorCodesSource")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+
+                // ScreenNameSubstitutionTests reads these three by text to prove a body that
+                // declares %1$s also supplies the argument. strings.xml is the one that NEEDS the
+                // declaration: editing a value does not change the R class, so without this a
+                // change that deletes a placeholder leaves the test up-to-date and unrun -- the
+                // same silent-skip RemEx-odkk documents. The two .kt files recompile anyway, but
+                // are declared alongside so the dependency is stated rather than inferred.
+                // KeycapAccessibleNameTests reads every locale file, and a translation-only edit
+                // changes no R id, so without these the guard sits up-to-date through exactly the
+                // change it exists to check (the RemEx-odkk trap, again).
+                listOf(
+                                "src/main/res/values/strings.xml",
+                                "src/main/res/values-es/strings.xml",
+                                "src/main/res/values-fr/strings.xml",
+                                "src/main/res/values-hi/strings.xml",
+                                "src/main/res/values-in/strings.xml",
+                                "src/main/res/values-pl/strings.xml",
+                                "src/main/res/values-pt-rBR/strings.xml",
+                                "src/main/res/values-tr/strings.xml",
+                                "src/main/res/values-uk/strings.xml",
+                                "src/main/java/com/clindsay94/remex/ui/screens/TutorialScreen.kt",
+                                "src/main/java/com/clindsay94/remex/ui/screens/FaqScreen.kt",
+                        )
+                        .forEach { path ->
+                            it.inputs
+                                    .file(File(projectDir, path))
+                                    .withPropertyName("screenNameSubstitution:" + path)
+                                    .withPathSensitivity(PathSensitivity.RELATIVE)
+                                    .optional(true)
+                        }
+            }
         }
     }
 

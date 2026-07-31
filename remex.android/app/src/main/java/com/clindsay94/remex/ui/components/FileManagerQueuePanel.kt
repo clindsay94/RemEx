@@ -1,5 +1,12 @@
 package com.clindsay94.remex.ui.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +22,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,10 +31,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
@@ -41,6 +52,7 @@ import com.clindsay94.remex.ui.screens.RemexLinearWavyProgress
  * per-item pause / resume / cancel, plus a "Clear finished" action. Bound to [FileTransferEngine]'s
  * queue by the caller.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FileManagerQueuePanel(
     transfers: List<QueuedTransfer>,
@@ -50,21 +62,43 @@ fun FileManagerQueuePanel(
     onClearFinished: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (transfers.isEmpty()) return
+    // Keep the last non-empty queue around so the exit animation shrinks over real rows
+    // instead of recomposing to an empty "0 transfers" shell mid-departure.
+    var lastNonEmpty by remember { mutableStateOf(transfers) }
+    if (transfers.isNotEmpty()) lastNonEmpty = transfers
+    AnimatedVisibility(
+        visible = transfers.isNotEmpty(),
+        enter = expandVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+            fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+        exit = shrinkVertically(MaterialTheme.motionScheme.defaultSpatialSpec()) +
+            fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+        modifier = modifier,
+    ) {
+        QueuePanelContent(lastNonEmpty, onPause, onResume, onCancel, onClearFinished)
+    }
+}
+
+@Composable
+private fun QueuePanelContent(
+    transfers: List<QueuedTransfer>,
+    onPause: (String) -> Unit,
+    onResume: (String) -> Unit,
+    onCancel: (String) -> Unit,
+    onClearFinished: () -> Unit,
+) {
     val hasFinished = transfers.any {
         it.state == TransferState.Done || it.state == TransferState.Cancelled || it.state == TransferState.Failed
     }
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 3.dp,
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(R.string.file_manager_transfers_title, transfers.size),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmallEmphasized,
                     modifier = Modifier.weight(1f),
                 )
                 if (hasFinished) {
@@ -76,7 +110,12 @@ fun FileManagerQueuePanel(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
             LazyColumn(modifier = Modifier.heightIn(max = 220.dp)) {
                 items(transfers, key = { it.id }) { transfer ->
-                    TransferRow(transfer, onPause, onResume, onCancel)
+                    TransferRow(
+                        transfer, onPause, onResume, onCancel,
+                        modifier = Modifier.animateItem(
+                            placementSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                        ),
+                    )
                 }
             }
         }
@@ -89,20 +128,17 @@ private fun TransferRow(
     onPause: (String) -> Unit,
     onResume: (String) -> Unit,
     onCancel: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isDownload = transfer.mode == FileTransferModes.DOWNLOAD
     val fraction =
         if (transfer.size > 0) (transfer.bytesTransferred.toFloat() / transfer.size).coerceIn(0f, 1f) else 0f
-    val active = transfer.state == TransferState.Active ||
-        transfer.state == TransferState.Negotiating ||
-        transfer.state == TransferState.Queued ||
-        transfer.state == TransferState.Verifying
     val finished = transfer.state == TransferState.Done ||
         transfer.state == TransferState.Cancelled ||
         transfer.state == TransferState.Failed
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = modifier.fillMaxWidth().padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -130,26 +166,52 @@ private fun TransferRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (!finished) {
+            // Shrink+fade instead of deleting the bar in one frame and snapping row height.
+            AnimatedVisibility(
+                visible = !finished,
+                enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec()) +
+                    fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
+            ) {
                 RemexLinearWavyProgress(progress = fraction, modifier = Modifier.fillMaxWidth().padding(top = 2.dp))
             }
         }
-        if (transfer.state == TransferState.Paused || transfer.state == TransferState.Failed) {
-            IconButton(onClick = { onResume(transfer.id) }) {
-                Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.file_manager_resume))
-            }
-        } else if (active) {
-            IconButton(onClick = { onPause(transfer.id) }) {
-                Icon(Icons.Default.Pause, contentDescription = stringResource(R.string.file_manager_pause))
-            }
-        }
-        if (!finished) {
-            IconButton(onClick = { onCancel(transfer.id) }) {
-                Icon(
-                    Icons.Default.Cancel,
-                    contentDescription = stringResource(R.string.file_transfer_cancel),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        // The pause/resume/cancel cluster swaps through AnimatedContent as the state
+        // machine advances; branches read the lambda's state so an exiting copy renders
+        // ITS state, not live state (RemEx-c6xp).
+        val actionFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+        AnimatedContent(
+            targetState = transfer.state,
+            transitionSpec = { fadeIn(actionFadeSpec) togetherWith fadeOut(actionFadeSpec) },
+            label = "transfer_actions",
+        ) { state ->
+            val stateActive = state == TransferState.Active ||
+                state == TransferState.Negotiating ||
+                state == TransferState.Queued ||
+                state == TransferState.Verifying
+            val stateFinished = state == TransferState.Done ||
+                state == TransferState.Cancelled ||
+                state == TransferState.Failed
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (state == TransferState.Paused || state == TransferState.Failed) {
+                    IconButton(onClick = { onResume(transfer.id) }) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.file_manager_resume))
+                    }
+                } else if (stateActive) {
+                    IconButton(onClick = { onPause(transfer.id) }) {
+                        Icon(Icons.Default.Pause, contentDescription = stringResource(R.string.file_manager_pause))
+                    }
+                }
+                if (!stateFinished) {
+                    IconButton(onClick = { onCancel(transfer.id) }) {
+                        Icon(
+                            Icons.Default.Cancel,
+                            contentDescription = stringResource(R.string.file_transfer_cancel),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
     }

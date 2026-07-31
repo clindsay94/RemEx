@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.FilterChip
@@ -52,11 +53,31 @@ fun FileManagerQuickAccess(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 roots.forEach { root ->
+                    // Selecting a read-only root silently disables upload, new-folder, paste,
+                    // rename and delete. Mark it on the chip so the reason is available BEFORE
+                    // the buttons go grey, rather than only after (RemEx-dc57).
+                    //
+                    // The read-only fact rides on the ICON's contentDescription, deliberately NOT
+                    // on the chip's stateDescription. FilterChip is a selectable component, so
+                    // Compose already publishes a selected/not-selected state for it, and
+                    // stateDescription REPLACES that rather than adding to it — marking these
+                    // chips that way would stop a screen-reader user hearing which folder is the
+                    // active one. Describing the icon keeps both facts. The writable folder icon
+                    // stays null-described because there it really is decorative: the chip's own
+                    // label already names the folder.
+                    val readOnly = !root.isWritable
+                    val readOnlyLabel = stringResource(R.string.file_transfer_read_only_root)
                     FilterChip(
                         selected = root.rootId == selectedRootId,
                         onClick = { onSelectRoot(root.rootId) },
                         label = { Text(root.displayName) },
-                        leadingIcon = { Icon(Icons.Default.Folder, contentDescription = null, modifier = Modifier.padding(1.dp)) },
+                        leadingIcon = {
+                            Icon(
+                                if (readOnly) Icons.Default.Lock else Icons.Default.Folder,
+                                contentDescription = if (readOnly) readOnlyLabel else null,
+                                modifier = Modifier.padding(1.dp),
+                            )
+                        },
                     )
                 }
             }

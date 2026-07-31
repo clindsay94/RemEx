@@ -1,6 +1,4 @@
-using System;
 using System.ComponentModel;
-using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -37,6 +35,7 @@ public partial class CanvasView : UserControl
         {
             _previousVm.PropertyChanged -= OnVmPropertyChanged;
             _previousVm.ShowSecondMetricRequested -= OnShowSecondMetricRequested;
+            _previousVm.OnConfirmationRequested = null;
         }
 
         _previousVm = DataContext as CanvasDashboardViewModel;
@@ -48,6 +47,10 @@ public partial class CanvasView : UserControl
             _previousVm.ShowSetAlertRequested += OnShowSetAlertRequested;
             _previousVm.ShowSecondMetricRequested += OnShowSecondMetricRequested;
             _previousVm.PropertyChanged += OnVmPropertyChanged;
+            // Guards Reboot to UEFI (RemEx-5vcb). Wired here rather than in OnLoaded so the
+            // delegate exists even if the button is somehow reached before the view first loads -
+            // without it the command fails closed and the button would silently do nothing.
+            _previousVm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
         }
 
         // Re-wire the minimap's PanRequested when the VM changes.
@@ -303,7 +306,7 @@ public partial class CanvasView : UserControl
         }
         catch (Exception ex)
         {
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Export failed: {ex.Message}");
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Export failed: {ex.Message}", succeeded: false);
         }
     }
 
@@ -323,7 +326,7 @@ public partial class CanvasView : UserControl
             var topLevel = TopLevel.GetTopLevel(this);
             if (topLevel?.Clipboard is null)
             {
-                (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Clipboard unavailable");
+                (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus("Clipboard unavailable", succeeded: false);
                 return;
             }
 
@@ -334,7 +337,7 @@ public partial class CanvasView : UserControl
         }
         catch (Exception ex)
         {
-            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Copy failed: {ex.Message}");
+            (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Copy failed: {ex.Message}", succeeded: false);
         }
     }
 }

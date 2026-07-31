@@ -42,7 +42,7 @@
         <!-- Buttons -->
         <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,16,0,0">
             <Button Grid.Column="1" Content="{local:Localize Btn_Clear}" Click="OnClear"
-                    Classes="glass-button" Foreground="#FF6B6B" MinWidth="72" Margin="0,0,8,0"/>
+                    Classes="glass-button" Foreground="{DynamicResource SystemErrorBrush}" MinWidth="72" Margin="0,0,8,0"/>
             <Button Grid.Column="2" Content="{local:Localize Btn_Cancel}" Click="OnCancel"
                     Classes="glass-button" MinWidth="80" Margin="0,0,8,0"/>
             <Button Grid.Column="3" Content="{local:Localize SecondMetric_SetBtn}" Click="OnSet"

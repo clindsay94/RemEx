@@ -4,7 +4,10 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.ui.platform.LocalView
 import android.graphics.BitmapFactory
 import android.util.Base64
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -41,14 +44,17 @@ import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import android.graphics.Bitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -150,13 +156,27 @@ fun AppLauncherScreenContent(
             }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                if (!uiState.isConnected && uiState.apps.isEmpty()) {
+                // Disconnected / empty / apps cross-fade instead of hard-swapping (RemEx-svue);
+                // tile animateItem and press-spring behavior inside the grid is untouched.
+                val launcherBody = when {
+                    !uiState.isConnected && uiState.apps.isEmpty() -> AppLauncherBody.Disconnected
+                    uiState.apps.isEmpty() -> AppLauncherBody.Empty
+                    else -> AppLauncherBody.Apps
+                }
+                val bodyFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+                AnimatedContent(
+                    targetState = launcherBody,
+                    transitionSpec = { fadeIn(bodyFadeSpec) togetherWith fadeOut(bodyFadeSpec) },
+                    modifier = Modifier.fillMaxSize(),
+                    label = "launcher_body",
+                ) { body ->
+                if (body == AppLauncherBody.Disconnected) {
                     DisconnectedFullScreen(
                         screenName = stringResource(R.string.screen_app_launcher_title),
                         onNavigateToConnection = onNavigateToConnection,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxSize()
                     )
-                } else if (uiState.apps.isEmpty()) {
+                } else if (body == AppLauncherBody.Empty) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -164,7 +184,7 @@ fun AppLauncherScreenContent(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
                                 Icons.AutoMirrored.Filled.Launch,
-                                contentDescription = stringResource(R.string.cd_launch_icon),
+                                contentDescription = null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                                 modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -193,8 +213,7 @@ fun AppLauncherScreenContent(
                         if (uiState.recentApps.isNotEmpty()) {
                             Text(
                                 text = stringResource(R.string.app_launcher_recent),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.titleSmallEmphasized,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(
                                     start = 16.dp, top = 12.dp, bottom = 8.dp
@@ -231,6 +250,7 @@ fun AppLauncherScreenContent(
                             }
                         }
                     }
+                }
                 }
             }
         }
@@ -327,14 +347,7 @@ fun AppGridItem(
                 contentAlignment = Alignment.Center
             ) {
                 if (app.iconBase64 != null) {
-                    val bitmap = remember(app.iconBase64) {
-                        try {
-                            val imageBytes = Base64.decode(app.iconBase64, Base64.DEFAULT)
-                            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
+                    val bitmap = rememberAppIconBitmap(app.iconBase64)
                     if (bitmap != null) {
                         Image(
                             bitmap = bitmap.asImageBitmap(),
@@ -362,8 +375,7 @@ fun AppGridItem(
             // App name centered below icon — no executable path shown
             Text(
                 text = app.name,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelMediumEmphasized,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -410,16 +422,7 @@ private fun RecentAppCarousel(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                val bitmap = remember(app.iconBase64) {
-                    app.iconBase64?.let {
-                        try {
-                            val bytes = Base64.decode(it, Base64.DEFAULT)
-                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
-                }
+                val bitmap = rememberAppIconBitmap(app.iconBase64)
                 if (bitmap != null) {
                     Image(
                         bitmap = bitmap.asImageBitmap(),
@@ -436,8 +439,7 @@ private fun RecentAppCarousel(
                 }
                 Text(
                     text = app.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.labelMediumEmphasized,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -446,4 +448,30 @@ private fun RecentAppCarousel(
             }
         }
     }
+}
+
+/** Which of the launcher's three body states is showing (drives the AnimatedContent swap). */
+private enum class AppLauncherBody { Disconnected, Empty, Apps }
+
+/**
+ * Decodes an app icon's base64 payload off the main thread, returning `null` (and thus the
+ * fallback launch icon) for a missing or corrupt icon rather than crashing or leaving a blank tile.
+ */
+@Composable
+private fun rememberAppIconBitmap(iconBase64: String?): Bitmap? {
+    val state = produceState<Bitmap?>(initialValue = null, key1 = iconBase64) {
+        value = if (iconBase64 == null) {
+            null
+        } else {
+            withContext(Dispatchers.Default) {
+                try {
+                    val bytes = Base64.decode(iconBase64, Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        }
+    }
+    return state.value
 }

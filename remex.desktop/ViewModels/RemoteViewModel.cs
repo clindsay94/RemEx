@@ -1,8 +1,5 @@
-using System;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Net.NetworkInformation;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Desktop.Services;
@@ -244,9 +241,14 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
         await ExecuteRemoteCommandAsync("Hibernate", LocalizationService.Instance["Wol_HibernateSent"]);
     }
 
+    // Lock, Sleep and Hibernate above are deliberately NOT confirmed: none of them closes a program
+    // or discards work. Sign Out does both, which is why it belongs with Shutdown and Restart rather
+    // than with them - its previous omission was an oversight, not a policy (RemEx-4b8m).
     [RelayCommand]
     private async Task SignOutPcAsync()
     {
+        if (!await ConfirmAsync("Confirm_SignOut_Title", "Confirm_SignOut_Message", "Confirm_SignOut_Btn"))
+            return;
         await ExecuteRemoteCommandAsync("SignOut", LocalizationService.Instance["Wol_SignOutSent"]);
     }
 

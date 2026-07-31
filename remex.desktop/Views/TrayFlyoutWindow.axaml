@@ -43,20 +43,14 @@
                     <TextBlock Text="{local:Localize Tray_LiveHeader}" FontFamily="{StaticResource Bungee_Shade}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4"/>
                     <TextBlock Text="{Binding Connection.StatusText}" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" FontWeight="SemiBold"/>
                 </StackPanel>
-                <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,0,0">
-                    <Ellipse.Fill>
-                        <SolidColorBrush Color="{Binding Connection.IsConnected, Converter={x:Static conv:BoolToColorConverter.Instance}, ConverterParameter=#22C55E|#F43F5E}"/>
-                    </Ellipse.Fill>
-                    <Ellipse.Transitions>
-                        <Transitions>
-                            <BrushTransition Property="Fill" Duration="0:0:0.4"/>
-                        </Transitions>
-                    </Ellipse.Transitions>
+                <Ellipse AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Grid.Column="1" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,0,0" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
                 </Ellipse>
             </Grid>
 
             <!-- Widget List -->
             <ScrollViewer Grid.Row="1" Margin="0,20" VerticalScrollBarVisibility="Hidden" MaxHeight="380">
+                <!-- Panel so the empty state can share the ScrollViewer, which takes one child. -->
+                <Panel>
                 <ListBox ItemsSource="{Binding PinnedSensors}" Background="Transparent" BorderThickness="0" Padding="0">
                     <ListBox.Styles>
                         <Style Selector="ListBoxItem">
@@ -97,6 +91,21 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+
+                <!-- With nothing pinned the flyout was simply blank, which reads as broken rather
+                     than as empty. HomeView already has a state for exactly this data, so its
+                     wording is reused rather than a fourth variant invented - no new strings, and
+                     the two surfaces cannot drift apart. Trimmed to the hint alone: the flyout is a
+                     small transient popup, not a place for a heading and a call-to-action button
+                     (RemEx-po2x). -->
+                <TextBlock Text="{local:Localize Home_NoPinnedSensorsHint}"
+                           IsVisible="{Binding !PinnedSensors.Count}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Margin="12,24"
+                           Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </Panel>
             </ScrollViewer>
 
             <!-- Actions -->
@@ -105,7 +114,7 @@
                     <Button Content="{local:Localize TrayFlyout_Home}" Classes="tray-btn" Command="{Binding NavigateToHomeCommand}" Click="OnOpenMainApp"/>
                     <Button Content="{local:Localize TrayFlyout_Workspace}" Classes="tray-btn" Command="{Binding NavigateToCanvasCommand}" Click="OnOpenMainApp"/>
                 </StackPanel>
-                <Button Grid.Column="1" Content="✕" Classes="tray-btn" Click="OnCloseFlyout" Padding="12,8"/>
+                <Button Grid.Column="1" Content="✕" Classes="tray-btn" AutomationProperties.Name="{local:Localize A11y_Close}" Click="OnCloseFlyout" Padding="12,8"/>
             </Grid>
         </Grid>
     </Border>

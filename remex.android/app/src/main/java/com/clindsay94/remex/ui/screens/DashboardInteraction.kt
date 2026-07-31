@@ -1,6 +1,9 @@
 package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -26,20 +29,24 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.components.hapticCommandAcknowledged
@@ -86,6 +93,32 @@ fun DraggableDashboardCard(
 ) {
     val view = LocalView.current
 
+    val liftScale = animateFloatAsState(
+        targetValue = if (isDragging) 1.03f else 1f,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "cardLiftScale"
+    )
+    val selectionBorderWidth by animateDpAsState(
+        targetValue = if (isSelected) 2.dp else 0.dp,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "cardSelectionBorderWidth"
+    )
+    val selectionBorderColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0f),
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "cardSelectionBorderColor"
+    )
+    val containerAlpha by animateFloatAsState(
+        targetValue = if (selectionActive && !isSelected) cardOpacity * 0.6f else cardOpacity,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "cardContainerAlpha"
+    )
+    val elevation by animateDpAsState(
+        targetValue = if (isDragging) 8.dp else 1.dp,
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "cardElevation"
+    )
+
     val gestureModifier = if (selectionActive) {
         Modifier
             .pointerInput(card.id, isSelected) {
@@ -130,17 +163,15 @@ fun DraggableDashboardCard(
         modifier = modifier.then(gestureModifier),
         shape = cardShape(shapeIndex, cornerRadius),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(
-                alpha = if (selectionActive && !isSelected) cardOpacity * 0.6f else cardOpacity
-            ),
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = containerAlpha),
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ),
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isDragging) 8.dp else 1.dp)
+        border = BorderStroke(selectionBorderWidth, selectionBorderColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Box(
             modifier = Modifier.fillMaxSize()
-                .then(if (isDragging) Modifier.scale(1.03f) else Modifier)
+                .graphicsLayer { scaleX = liftScale.value; scaleY = liftScale.value }
                 .padding(4.dp)
         ) {
             content()
@@ -156,7 +187,10 @@ fun DraggableDashboardCard(
                         view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                         onTogglePin(card.id)
                     },
-                    modifier = Modifier.align(Alignment.BottomStart).padding(12.dp).size(24.dp)
+                    modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
+                        // Surface(onClick) sets no semantic role; announce as a button (RemEx-qluo).
+                        .semantics { role = Role.Button }
+                        .minimumInteractiveComponentSize().size(24.dp)
                 ) {
                     Icon(
                         Icons.Default.PushPin,
@@ -289,7 +323,7 @@ fun DashboardSelectionActionBar(
 ) {
     val view = LocalView.current
     Surface(
-        shape = RoundedCornerShape(28.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 6.dp,
         modifier = modifier
@@ -304,7 +338,7 @@ fun DashboardSelectionActionBar(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(end = 8.dp)
             )
-            FilledTonalIconButton(onClick = { view.hapticCommandAcknowledged(); onTogglePin() }, modifier = Modifier.size(44.dp)) {
+            FilledTonalIconButton(onClick = { view.hapticCommandAcknowledged(); onTogglePin() }) {
                 Icon(
                     Icons.Default.PushPin,
                     contentDescription = stringResource(
@@ -313,17 +347,16 @@ fun DashboardSelectionActionBar(
                 )
             }
             Spacer(Modifier.width(4.dp))
-            FilledTonalIconButton(onClick = onReshape, modifier = Modifier.size(44.dp)) {
+            FilledTonalIconButton(onClick = onReshape) {
                 Icon(Icons.Default.Category, contentDescription = stringResource(R.string.cd_dashboard_reshape_selection))
             }
             Spacer(Modifier.width(4.dp))
-            FilledTonalIconButton(onClick = { view.hapticCommandAcknowledged(); onRemove() }, modifier = Modifier.size(44.dp)) {
+            FilledTonalIconButton(onClick = { view.hapticCommandAcknowledged(); onRemove() }) {
                 Icon(Icons.Default.DeleteOutline, contentDescription = stringResource(R.string.cd_dashboard_remove_selection))
             }
             Spacer(Modifier.width(4.dp))
             FilledTonalIconButton(
-                onClick = { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP); onDone() },
-                modifier = Modifier.size(44.dp)
+                onClick = { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP); onDone() }
             ) {
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_dashboard_exit_selection))
             }

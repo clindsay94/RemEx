@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
@@ -52,7 +50,7 @@ public partial class FileTransferView : UserControl
     private void OnDragOver(object? sender, DragEventArgs e)
     {
         // Only allow the drop when files are present and a writable folder is in view.
-        var canDrop = e.Data.Contains(DataFormats.Files)
+        var canDrop = e.DataTransfer.Contains(DataFormat.File)
             && DataContext is FileTransferViewModel { SelectedRemoteRoot.IsWritable: true };
         e.DragEffects = canDrop ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
@@ -63,7 +61,7 @@ public partial class FileTransferView : UserControl
         if (DataContext is not FileTransferViewModel vm)
             return;
 
-        var files = e.Data.GetFiles();
+        var files = e.DataTransfer.TryGetFiles();
         if (files is null)
             return;
 
@@ -86,6 +84,10 @@ public partial class FileTransferView : UserControl
             return;
 
         vm.SelectAllEntries = () => RemoteFileList.SelectAll();
+
+        // Was an inline lambda; moved to ConfirmationDialogHost when RemEx-6p1f needed the same one
+        // in four more views. Behaviour is identical, including returning false with no parent window.
+        vm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
 
         vm.PickUploadFileAsync = async options =>
         {

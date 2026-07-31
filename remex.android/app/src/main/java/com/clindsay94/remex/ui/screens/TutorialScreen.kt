@@ -3,6 +3,9 @@ package com.clindsay94.remex.ui.screens
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,7 +27,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.TextLinkStyles
@@ -43,7 +45,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -64,7 +65,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
-import androidx.compose.ui.unit.sp
+import com.clindsay94.remex.ui.theme.remexIconSquircle
 import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
@@ -80,6 +81,12 @@ private data class TutorialPage(
     val emoji: String,
     val titleRes: Int,
     val bodyRes: Int,
+    /**
+     * Optional string resource substituted into [bodyRes] as `%1$s`. Exists so a body that names
+     * another screen can name it by ITS OWN title resource rather than by a hand-copied duplicate,
+     * which drifted apart per-locale twice (RemEx-7gwa, RemEx-9vcw).
+     */
+    val bodyArgRes: Int? = null,
     val linkLabelRes: Int? = null,
     val linkUrl: String? = null,
     val actionLabelRes: Int? = null,
@@ -141,6 +148,7 @@ private val tutorialPages = listOf(
         emoji = "🚀",
         titleRes = R.string.tutorial_page6_title,
         bodyRes = R.string.tutorial_page6_body,
+        bodyArgRes = R.string.screen_dashboard_title,
         illustration = TutorialIllustration.READY
     ),
     TutorialPage(
@@ -178,6 +186,7 @@ fun TutorialScreenContent(
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(pageCount = { tutorialPages.size })
     val isLastPage = pagerState.currentPage == tutorialPages.size - 1
+    val motionScheme = MaterialTheme.motionScheme
 
     Column(
         modifier = Modifier
@@ -267,6 +276,10 @@ fun TutorialScreenContent(
         ) {
             AnimatedContent(
                 targetState = isLastPage,
+                transitionSpec = {
+                    val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                    fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                },
                 label = "buttonTransition"
             ) { lastPage ->
                 if (lastPage) {
@@ -349,7 +362,7 @@ private fun TutorialPageContent(
                 Box(
                     modifier = Modifier
                         .size(140.dp)
-                        .clip(RoundedCornerShape(percent = 30))
+                        .clip(remexIconSquircle)
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
@@ -366,7 +379,7 @@ private fun TutorialPageContent(
                 Box(
                     modifier = Modifier
                         .size(180.dp)
-                        .clip(RoundedCornerShape(percent = 35))
+                        .clip(remexIconSquircle)
                         .background(
                             MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
                         ),
@@ -385,7 +398,7 @@ private fun TutorialPageContent(
                 Box(
                     modifier = Modifier
                         .size(140.dp)
-                        .clip(RoundedCornerShape(percent = 35))
+                        .clip(remexIconSquircle)
                         .background(
                             MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
                         ),
@@ -393,7 +406,7 @@ private fun TutorialPageContent(
                 ) {
                     Text(
                         text = page.emoji,
-                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp)
+                        style = MaterialTheme.typography.displayLarge
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -402,8 +415,7 @@ private fun TutorialPageContent(
 
         Text(
             text = stringResource(page.titleRes),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineMediumEmphasized,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
@@ -411,11 +423,13 @@ private fun TutorialPageContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = stringResource(page.bodyRes),
+            text =
+                    if (page.bodyArgRes != null)
+                            stringResource(page.bodyRes, stringResource(page.bodyArgRes))
+                    else stringResource(page.bodyRes),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            lineHeight = 24.sp
+            textAlign = TextAlign.Center
         )
 
         if (page.batteryAction && page.actionLabelRes != null) {

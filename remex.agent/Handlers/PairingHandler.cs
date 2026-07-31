@@ -1,6 +1,7 @@
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Models.IPC;
@@ -26,10 +27,10 @@ public sealed class PairingHandler
         ICertificateService certificateService,
         PairedClientRegistry pairedClientRegistry)
     {
-        _logger = logger;
-        _pairingService = pairingService;
-        _certificateService = certificateService;
-        _pairedClientRegistry = pairedClientRegistry;
+        _logger = Guard.NotNull(logger);
+        _pairingService = Guard.NotNull(pairingService);
+        _certificateService = Guard.NotNull(certificateService);
+        _pairedClientRegistry = Guard.NotNull(pairedClientRegistry);
     }
 
     /// <summary>
@@ -50,7 +51,7 @@ public sealed class PairingHandler
             _logger.LogInformation("Pairing request received from client: {Name} v{Version} (ID: {ClientId})",
                 message.PairingRequest.ClientName,
                 message.PairingRequest.ClientVersion,
-                message.PairingRequest.ClientId ?? "Unknown");
+                Remex.Agent.Services.Security.LogRedaction.RedactClientId(message.PairingRequest.ClientId));
 
             // Reuse any desktop-generated active PIN session so QR/manual pairing and the
             // subsequent pairing_request are talking about the same host-side cryptographic
@@ -84,7 +85,9 @@ public sealed class PairingHandler
                 },
             };
 
-            _logger.LogInformation("Pairing response sent. PIN displayed on host: {Pin}", state.Pin);
+            // Never log the PIN value: the retained in-memory log buffer is a disclosure surface
+            // (VULN-1, RemEx-s032.1). The PIN is shown on the host screen for the user to read.
+            _logger.LogInformation("Pairing response sent. PIN is displayed on the host screen (not logged).");
             return response;
         }
         catch (Exception ex)

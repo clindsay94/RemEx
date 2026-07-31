@@ -81,7 +81,7 @@
                                                 <TextBlock Grid.Column="2" Text="{Binding Category}" Foreground="{DynamicResource TextMutedBrush}" Width="170" TextTrimming="CharacterEllipsis" Margin="0,0,8,0"/>
                                                 <TextBlock Grid.Column="3" Text="{Binding Message}" Foreground="{Binding Level, Converter={x:Static local:LogLevelToBrushConverter.Instance}}" TextWrapping="Wrap"/>
                                             </Grid>
-                                            <TextBlock Text="{Binding Exception}" IsVisible="{Binding Exception, Converter={x:Static ObjectConverters.IsNotNull}}" Foreground="#F43F5E" FontSize="11" TextWrapping="Wrap" Margin="84,0,0,0"/>
+                                            <TextBlock Text="{Binding Exception}" IsVisible="{Binding Exception, Converter={x:Static ObjectConverters.IsNotNull}}" Foreground="{DynamicResource SystemErrorBrush}" FontSize="11" TextWrapping="Wrap" Margin="84,0,0,0"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
@@ -90,7 +90,7 @@
                     </Grid>
                 </TabItem>
 
-                <!-- Tab 2: Service Logs -->
+                <!-- Tab 2: System Event Logs (key names still say Service for history) -->
                 <TabItem Header="{local:Localize Logs_ServiceTab}">
                     <Grid RowDefinitions="Auto,*" Margin="0,16,0,0">
                         <!-- Toolbar -->

@@ -132,6 +132,9 @@ remex.android/app/google-services.json
 # Claude Code auto-memory
 .claude/auto-memory/dirty-files*
 
+# Ralph loop per-session state (written by the ralph-loop plugin's stop hook, at whatever cwd it ran from)
+**/.claude/ralph-loop.local.md
+
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
@@ -146,4 +149,5 @@ FINAL_AUDIT_OPUS.md
 FINAL_AUDIT_SONNET.md
 /.beads/
 /docs/OLD DOCS
+.token-savior-cache.json
 .token-savior-cache.json

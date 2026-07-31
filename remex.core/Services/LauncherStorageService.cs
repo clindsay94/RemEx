@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using Remex.Core.Models;
 using Remex.Core.Serialization;
 
@@ -33,8 +29,9 @@ public class LauncherStorageService : ILauncherStorageService
         else
         {
             // Per-user folder used historically; ResolveDirectory relocates only Windows to the
-            // machine-wide ProgramData location so the LocalSystem host service and the interactive
-            // session agree. Android keeps its app-private Personal folder unchanged.
+            // machine-wide ProgramData location so the store survives a change of signed-in user
+            // (originally, so the LocalSystem host service and the interactive session agreed).
+            // Android keeps its app-private Personal folder unchanged.
             var legacyFolder = Path.Combine(
                 OperatingSystem.IsAndroid()
                     ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)

@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.IO;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using Remex.Core.Messages;
@@ -14,7 +13,8 @@ public sealed class FileTransferHandler(
     ILogger<FileTransferHandler> logger,
     IFileTransferService fileTransferService,
     IFileTrustService fileTrustService,
-    VolumeEnumerator volumeEnumerator)
+    VolumeEnumerator volumeEnumerator,
+    SharedRootReadResolver readResolver)
 {
     private const int ProgressChunkInterval = 10;
 
@@ -103,8 +103,7 @@ public sealed class FileTransferHandler(
                 throw new UnauthorizedAccessException("A shared root is required for remote browsing.");
 
             IReadOnlyList<FileEntry> entries;
-            var isConfiguredRoot = (await fileTransferService.ListRootsAsync(ct)).Any(r => r.RootId == req.RootId);
-            if (isConfiguredRoot)
+            if (await IsConfiguredRootAsync(req.RootId, ct))
             {
                 entries = await fileTransferService.BrowseAsync(req.RootId, req.RelativePath ?? string.Empty, ct);
             }
@@ -113,10 +112,7 @@ public sealed class FileTransferHandler(
                 // Not a configured shared root: treat as a full-device VOLUME browse. Gated on this paired
                 // client holding a full-browse consent grant (re-verified here, never trusting RootId), and
                 // on RootId being a genuine mounted volume. BrowseVolumeAsync bounds navigation within it.
-                if (string.IsNullOrWhiteSpace(clientId) || !await fileTrustService.IsFullBrowseGrantedAsync(clientId, ct))
-                    throw new UnauthorizedAccessException("Full-device browsing has not been granted for this device.");
-                var volume = volumeEnumerator.Enumerate().FirstOrDefault(v => v.Id == req.RootId)
-                    ?? throw new UnauthorizedAccessException($"Unknown shared root '{req.RootId}'.");
+                var volume = await ResolveConsentedVolumeAsync(req.RootId, clientId, ct);
                 entries = await fileTransferService.BrowseVolumeAsync(volume.Path, req.RelativePath ?? string.Empty, ct);
             }
             response = new RemexMessage
@@ -153,7 +149,7 @@ public sealed class FileTransferHandler(
         await MessageSerializer.SendAsync(ws, response, ct);
     }
 
-    public async Task HandleFileTransferStartAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileTransferStartAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var start = message.FileTransferStart;
         if (start is null) return;
@@ -164,9 +160,25 @@ public sealed class FileTransferHandler(
                 throw new UnauthorizedAccessException("A shared root is required for file transfer operations.");
 
             var remoteRelativePath = start.RemoteRelativePath ?? string.Empty;
-            Stream stream = start.Direction == "upload"
-                ? await fileTransferService.OpenForWriteAsync(start.RemoteRootId, remoteRelativePath, start.TotalBytes, ct)
-                : await fileTransferService.OpenForReadAsync(start.RemoteRootId, remoteRelativePath, ct);
+            Stream stream;
+            if (start.Direction == "upload")
+            {
+                // Full browse never exposes write on the volume itself (RemEx-hb1t) — but when the target
+                // resolves inside a pinned shared root, re-express the request against that root so the
+                // same folder behaves identically however it was reached (RemEx-hb1t.3). Genuinely
+                // un-pinned targets still refuse.
+                var (writeRootId, writeRelativePath) = await IsConfiguredRootAsync(start.RemoteRootId, ct)
+                    ? (start.RemoteRootId, remoteRelativePath)
+                    : await RemapUnconfiguredWriteTargetAsync(start.RemoteRootId, remoteRelativePath, ct);
+                stream = await fileTransferService.OpenForWriteAsync(writeRootId, writeRelativePath, start.TotalBytes, ct);
+            }
+            else
+            {
+                // Download accepts either a pinned shared root or a bare full-device-browsed volume
+                // (RemEx-39jw) — read-only, so this is safe to extend, unlike upload above. Same resolver as
+                // the v3 sender, so both download paths behave identically (RemEx-hb1t.6).
+                stream = await readResolver.OpenForReadAsync(start.RemoteRootId, remoteRelativePath, clientId, ct);
+            }
 
             var totalBytes = start.Direction == "download" && stream.CanSeek
                 ? stream.Length
@@ -338,26 +350,45 @@ public sealed class FileTransferHandler(
         RemexMessage response;
         try
         {
+            // Write-op parity with volume browsing (RemEx-hb1t.3): when the rootId isn't a pinned root,
+            // re-map the target(s) onto the pinned root that contains them — or refuse if none does.
+            var rootId = req.RootId;
+            var relativePath = req.RelativePath;
+            var destinationPath = req.DestinationPath;
+            if (!await IsConfiguredRootAsync(rootId, ct))
+            {
+                (rootId, relativePath) = await RemapUnconfiguredWriteTargetAsync(req.RootId, req.RelativePath, ct);
+                if (!string.IsNullOrWhiteSpace(destinationPath))
+                {
+                    // Copy/move destinations are relative to the same rootId — both endpoints must land in
+                    // the SAME pinned root, or a volume-mode request could hop across root boundaries.
+                    var (destRootId, destRelative) = await RemapUnconfiguredWriteTargetAsync(req.RootId, destinationPath, ct);
+                    if (destRootId != rootId)
+                        throw new UnauthorizedAccessException(UnpinnedWriteMessage);
+                    destinationPath = destRelative;
+                }
+            }
+
             switch (req.Operation)
             {
                 case FileManageOperations.Delete:
-                    await fileTransferService.DeleteAsync(req.RootId, req.RelativePath, ct);
+                    await fileTransferService.DeleteAsync(rootId, relativePath, ct);
                     break;
                 case FileManageOperations.Rename:
                     if (string.IsNullOrWhiteSpace(req.NewName))
                         throw new ArgumentException("NewName is required for rename.");
-                    await fileTransferService.RenameAsync(req.RootId, req.RelativePath, req.NewName, ct);
+                    await fileTransferService.RenameAsync(rootId, relativePath, req.NewName, ct);
                     break;
                 // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP3 ──
                 case FileManageOperations.Copy:
-                    if (string.IsNullOrWhiteSpace(req.DestinationPath))
+                    if (string.IsNullOrWhiteSpace(destinationPath))
                         throw new ArgumentException("DestinationPath is required for copy.");
-                    await fileTransferService.CopyAsync(req.RootId, req.RelativePath, req.DestinationPath, req.Overwrite, ct);
+                    await fileTransferService.CopyAsync(rootId, relativePath, destinationPath, req.Overwrite, ct);
                     break;
                 case FileManageOperations.Move:
-                    if (string.IsNullOrWhiteSpace(req.DestinationPath))
+                    if (string.IsNullOrWhiteSpace(destinationPath))
                         throw new ArgumentException("DestinationPath is required for move.");
-                    await fileTransferService.MoveAsync(req.RootId, req.RelativePath, req.DestinationPath, req.Overwrite, ct);
+                    await fileTransferService.MoveAsync(rootId, relativePath, destinationPath, req.Overwrite, ct);
                     break;
                 case FileManageOperations.Mkdir:
                     // Wire contract: RelativePath is the parent directory (empty = root) and NewName is the
@@ -365,8 +396,8 @@ public sealed class FileTransferHandler(
                     // name is validated here (rejects separators / "." / "..") before being combined.
                     if (!FilePathValidation.IsValidFileName(req.NewName, out var nameError))
                         throw new ArgumentException(nameError ?? "Invalid folder name.");
-                    var newDirRelativePath = CombineRelative(req.RelativePath, req.NewName!);
-                    await fileTransferService.CreateDirectoryAsync(req.RootId, newDirRelativePath, ct);
+                    var newDirRelativePath = CombineRelative(relativePath, req.NewName!);
+                    await fileTransferService.CreateDirectoryAsync(rootId, newDirRelativePath, ct);
                     break;
                 default:
                     throw new ArgumentException($"Unknown operation '{req.Operation}'.");
@@ -391,7 +422,7 @@ public sealed class FileTransferHandler(
         await MessageSerializer.SendAsync(ws, response, ct);
     }
 
-    public async Task HandleFileHashRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileHashRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileHashRequest;
         if (req is null) return;
@@ -399,7 +430,10 @@ public sealed class FileTransferHandler(
         RemexMessage response;
         try
         {
-            var hash = await fileTransferService.ComputeSha256Async(req.RootId, req.RelativePath, ct);
+            var hash = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.ComputeSha256Async(req.RootId, req.RelativePath, ct)
+                : await fileTransferService.ComputeVolumeSha256Async(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, req.RelativePath, ct);
             response = new RemexMessage
             {
                 Type = MessageTypes.FileHashResponse,
@@ -662,7 +696,7 @@ public sealed class FileTransferHandler(
     /// <c>truncated</c> is set when the cap is hit. Search runs against a configured shared root (already
     /// gated by pairing), the same as browse — it is not consent-gated.
     /// </summary>
-    public async Task HandleFileSearchRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileSearchRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileSearchRequest;
         if (req is null) return;
@@ -670,8 +704,11 @@ public sealed class FileTransferHandler(
         RemexMessage response;
         try
         {
-            var entries = await fileTransferService.SearchAsync(
-                req.RootId, req.RelativePath ?? string.Empty, req.Query, req.MaxResults, ct);
+            var relativePath = req.RelativePath ?? string.Empty;
+            var entries = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.SearchAsync(req.RootId, relativePath, req.Query, req.MaxResults, ct)
+                : await fileTransferService.SearchVolumeAsync(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, relativePath, req.Query, req.MaxResults, ct);
 
             var effectiveCap = req.MaxResults <= 0
                 ? FileTransferLimits.SearchMaxResults
@@ -711,7 +748,7 @@ public sealed class FileTransferHandler(
     /// Handles a <c>file_metadata_request</c> (plan §1.2): detailed metadata for a single file/directory
     /// (size, timestamps, item count, MIME type, read-only).
     /// </summary>
-    public async Task HandleFileMetadataRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileMetadataRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileMetadataRequest;
         if (req is null) return;
@@ -719,7 +756,10 @@ public sealed class FileTransferHandler(
         RemexMessage response;
         try
         {
-            var meta = await fileTransferService.GetMetadataAsync(req.RootId, req.RelativePath, ct);
+            var meta = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.GetMetadataAsync(req.RootId, req.RelativePath, ct)
+                : await fileTransferService.GetVolumeMetadataAsync(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, req.RelativePath, ct);
             response = new RemexMessage
             {
                 Type = MessageTypes.FileMetadataResponse,
@@ -757,7 +797,7 @@ public sealed class FileTransferHandler(
     /// Handles a <c>file_thumbnail_request</c> (plan §1.2): a small base64 JPEG for an image (images only in
     /// v1). A missing thumbnail (unsupported type / undecodable) returns a null <c>jpegBase64</c>, not an error.
     /// </summary>
-    public async Task HandleFileThumbnailRequestAsync(RemexMessage message, WebSocket ws, CancellationToken ct)
+    public async Task HandleFileThumbnailRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileThumbnailRequest;
         if (req is null) return;
@@ -766,7 +806,10 @@ public sealed class FileTransferHandler(
         try
         {
             var maxDim = req.MaxDim > 0 ? req.MaxDim : FileTransferLimits.ThumbnailDefaultMaxDim;
-            var jpegBase64 = await fileTransferService.GetThumbnailBase64Async(req.RootId, req.RelativePath, maxDim, ct);
+            var jpegBase64 = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.GetThumbnailBase64Async(req.RootId, req.RelativePath, maxDim, ct)
+                : await fileTransferService.GetVolumeThumbnailBase64Async(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, req.RelativePath, maxDim, ct);
             response = new RemexMessage
             {
                 Type = MessageTypes.FileThumbnailResponse,
@@ -792,6 +835,44 @@ public sealed class FileTransferHandler(
         }
 
         await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <inheritdoc cref="SharedRootReadResolver.IsConfiguredRootAsync"/>
+    private Task<bool> IsConfiguredRootAsync(string rootId, CancellationToken ct)
+        => readResolver.IsConfiguredRootAsync(rootId, ct);
+
+    /// <summary>
+    /// Resolves a RootId that is NOT a configured shared root to a genuine, consent-granted mounted volume
+    /// (RemEx-39jw). Used by the read-only volume ops (download/hash/search/metadata/thumbnail); full browse
+    /// never exposes write/delete (RemEx-hb1t), so callers that need a writable root must reject an
+    /// unconfigured RootId instead of calling this.
+    ///
+    /// <para>Delegates to <see cref="SharedRootReadResolver"/> — the shared decision point the v3 sender in
+    /// <see cref="TransferSessionManager"/> also uses. Keeping a second private copy here is what allowed the
+    /// two paths to disagree in RemEx-hb1t.6; do not re-inline it.</para>
+    /// </summary>
+    private Task<FileVolumeInfo> ResolveConsentedVolumeAsync(string rootId, string? clientId, CancellationToken ct)
+        => readResolver.ResolveConsentedVolumeAsync(rootId, clientId, ct);
+
+    private const string UnpinnedWriteMessage =
+        "This folder isn't one of the PC's shared folders. On the PC, add it to RemEx's shared folders, then try again.";
+
+    /// <summary>
+    /// Write-op parity for full-device browsing (RemEx-hb1t.3). The rootId is NOT a configured root: if it
+    /// is a genuine mounted volume and the target resolves INSIDE a pinned shared root, re-express the
+    /// request as (pinned rootId, re-based relative path) — the exact reference the client could have used
+    /// directly, so nothing is widened and the pinned root's permission flags still gate the operation.
+    /// No full-browse consent is required for the mapped case (unlike <see cref="ResolveConsentedVolumeAsync"/>,
+    /// which grants volume-wide read): the mapped operation grants nothing the pinned rootId doesn't already.
+    /// Genuinely un-pinned targets refuse with a plain-English pointer to the shared-folders list.
+    /// </summary>
+    private async Task<(string RootId, string RelativePath)> RemapUnconfiguredWriteTargetAsync(
+        string rootId, string relativePath, CancellationToken ct)
+    {
+        var volume = volumeEnumerator.Enumerate().FirstOrDefault(v => v.Id == rootId)
+            ?? throw new UnauthorizedAccessException($"Unknown shared root '{rootId}'.");
+        return await fileTransferService.TryMapVolumePathToConfiguredRootAsync(volume.Path, relativePath, ct)
+            ?? throw new UnauthorizedAccessException(UnpinnedWriteMessage);
     }
 
     /// <summary>

@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Remex.Agent.Services.FileTransfer;
+using Remex.Agent.Services.Security;
 using Remex.Core.Models;
 using Remex.Core.Services.FileTransfer;
 
@@ -19,7 +21,13 @@ public sealed class TransferSessionManagerTests
     private const string DestRoot = "root-a";
 
     private static TransferSessionManager NewManager(string stagingDir, FakeFileTransferService files)
-        => new(NullLogger<TransferSessionManager>.Instance, files, stagingDir);
+    {
+        // The receiver state machine under test never resolves a read root, so a resolver over the same
+        // (throwing) fake is enough here. The download-side tests below build a real one.
+        var resolver = new SharedRootReadResolver(
+            files, new Mock<IFileTrustService>().Object, new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
+        return new TransferSessionManager(NullLogger<TransferSessionManager>.Instance, files, resolver, stagingDir);
+    }
 
     private static FileTransferOffer Offer(
         string transferId, long size, bool resume = false, string mode = "upload",
@@ -251,6 +259,159 @@ public sealed class TransferSessionManagerTests
         }
     }
 
+    // ──────────────────────────────────────────────────────────────────────────
+    // v3 DOWNLOAD source resolution (RemEx-hb1t.6).
+    //
+    // The host sender resolves the offer's DestRoot through SharedRootReadResolver, so a file reached by
+    // full-device browsing — a bare mounted volume that is NOT a pinned shared root — downloads instead of
+    // failing with "Unknown shared root". RemEx-39jw added that fallback to the legacy v2 handler only; every
+    // real Android download uses this v3 path, so it stayed broken on device until these tests existed.
+    //
+    // These build the REAL FileTransferService / FileTrustService / VolumeEnumerator rather than the fake
+    // above: the bug was precisely that the fake stubbed both read entry points as NotSupportedException, so
+    // resolution was never exercised. The volume under test is the temp directory's own drive root, which is
+    // "C:\" on Windows and "/" on Linux — keeping these green on both CI platforms.
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Builds a manager whose download path resolves against a real volume enumerator and trust store.
+    /// <paramref name="pinVolumeRootAsSharedRoot"/> seeds the temp folder as a configured shared root, so the
+    /// same call can be driven down the pinned branch instead of the volume branch.
+    /// </summary>
+    private static (TransferSessionManager mgr, string baseTemp) NewDownloadManager(
+        string clientId, bool grantFullBrowse, bool pinVolumeRootAsSharedRoot = false)
+    {
+        var baseTemp = Directory.CreateTempSubdirectory("remex-v3dl-").FullName;
+
+        var files = new FileTransferService(
+            NullLogger<FileTransferService>.Instance, Path.Combine(baseTemp, "roots.json"));
+        files.SeedRootsForTests(pinVolumeRootAsSharedRoot
+            ? [("pinned-root", "Pinned", baseTemp, true, true, true, true, true)]
+            : []);
+
+        var registry = new PairedClientRegistry(
+            NullLogger<PairedClientRegistry>.Instance, Path.Combine(baseTemp, "paired_clients.json"));
+        registry.RegisterClient(clientId);
+        var trust = new FileTrustService(
+            NullLogger<FileTrustService>.Instance, registry,
+            Path.Combine(baseTemp, "file_transfer_trust.json"), TimeSpan.FromSeconds(5));
+        if (grantFullBrowse)
+            trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None).GetAwaiter().GetResult();
+
+        var resolver = new SharedRootReadResolver(
+            files, trust, new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
+        var mgr = new TransferSessionManager(
+            NullLogger<TransferSessionManager>.Instance, files, resolver,
+            Path.Combine(baseTemp, "staging"));
+        return (mgr, baseTemp);
+    }
+
+    /// <summary>Writes a file under <paramref name="baseTemp"/> and returns its drive root + volume-relative path.</summary>
+    private static async Task<(string volumeRoot, string relativePath, byte[] content)> SeedVolumeFileAsync(string baseTemp)
+    {
+        var content = RandomBytes(4096);
+        var filePath = Path.Combine(baseTemp, "downloaded.bin");
+        await File.WriteAllBytesAsync(filePath, content);
+        var volumeRoot = Path.GetPathRoot(baseTemp)!;
+        return (volumeRoot, Path.GetRelativePath(volumeRoot, filePath).Replace('\\', '/'), content);
+    }
+
+    [Fact]
+    public async Task Download_FromUnpinnedFullDeviceVolume_WithGrantedConsent_OpensTheFile()
+    {
+        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: true);
+        try
+        {
+            using (mgr)
+            {
+                var (volumeRoot, relativePath, expected) = await SeedVolumeFileAsync(baseTemp);
+
+                // volumeRoot is deliberately NOT a configured shared root: this is the exact user repro from
+                // RemEx-hb1t.4 — browse bare C:\, walk into an un-pinned folder, download. Before the fix this
+                // threw UnauthorizedAccessException("Unknown shared root 'C:\'").
+                await using var source = await mgr.OpenDownloadSourceAsync(ClientId, volumeRoot, relativePath, default);
+
+                var actual = new byte[expected.Length];
+                await source.ReadExactlyAsync(actual);
+                Assert.Equal(expected, actual);
+            }
+        }
+        finally
+        {
+            Directory.Delete(baseTemp, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Download_FromUnpinnedFullDeviceVolume_WithoutConsent_IsRefused()
+    {
+        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: false);
+        try
+        {
+            using (mgr)
+            {
+                var (volumeRoot, relativePath, _) = await SeedVolumeFileAsync(baseTemp);
+
+                // Fail-closed: the rootId names a real volume, but this device was never granted full browse.
+                var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                    () => mgr.OpenDownloadSourceAsync(ClientId, volumeRoot, relativePath, default));
+                Assert.Contains("Full-device browsing has not been granted", ex.Message);
+            }
+        }
+        finally
+        {
+            Directory.Delete(baseTemp, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Download_WithUnidentifiedClient_IsRefusedEvenWhenAnotherDeviceHasConsent()
+    {
+        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: true);
+        try
+        {
+            using (mgr)
+            {
+                var (volumeRoot, relativePath, _) = await SeedVolumeFileAsync(baseTemp);
+
+                // HandleOfferAsync passes `clientId ?? string.Empty`, so an unidentified peer reaches here with
+                // an empty id. It must never inherit another device's grant.
+                var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(
+                    () => mgr.OpenDownloadSourceAsync(string.Empty, volumeRoot, relativePath, default));
+                Assert.Contains("Full-device browsing has not been granted", ex.Message);
+            }
+        }
+        finally
+        {
+            Directory.Delete(baseTemp, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Download_FromPinnedSharedRoot_StillResolvesThroughTheConfiguredRoot()
+    {
+        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: false, pinVolumeRootAsSharedRoot: true);
+        try
+        {
+            using (mgr)
+            {
+                var content = RandomBytes(2048);
+                await File.WriteAllBytesAsync(Path.Combine(baseTemp, "pinned.bin"), content);
+
+                // No full-browse grant needed: the pinned branch must be unaffected by the volume fallback.
+                await using var source = await mgr.OpenDownloadSourceAsync(ClientId, "pinned-root", "pinned.bin", default);
+
+                var actual = new byte[content.Length];
+                await source.ReadExactlyAsync(actual);
+                Assert.Equal(content, actual);
+            }
+        }
+        finally
+        {
+            Directory.Delete(baseTemp, recursive: true);
+        }
+    }
+
     /// <summary>
     /// Minimal <see cref="IFileTransferService"/> test double: only <see cref="OpenForWriteAsync"/> is real
     /// (writes the verified partial to a temp destination directory and records the path); every other member
@@ -275,16 +436,22 @@ public sealed class TransferSessionManagerTests
         public Task<IReadOnlyList<FileEntry>> BrowseAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<FileEntry>> BrowseVolumeAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
+        public Task<Stream> OpenVolumeForReadAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task DeleteAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task RenameAsync(string rootId, string relativePath, string newName, CancellationToken ct) => throw new NotSupportedException();
         public Task<string> ComputeSha256Async(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
+        public Task<string> ComputeVolumeSha256Async(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<FileSharedRoot>> AddRootFromPathAsync(string sourceRootId, string sourceRelativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<FileSharedRoot>> RemoveRootAsync(string rootId, CancellationToken ct) => throw new NotSupportedException();
         public Task CopyAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct) => throw new NotSupportedException();
         public Task MoveAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct) => throw new NotSupportedException();
         public Task CreateDirectoryAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<FileSearchEntry>> SearchAsync(string rootId, string relativePath, string query, int maxResults, CancellationToken ct) => throw new NotSupportedException();
+        public Task<IReadOnlyList<FileSearchEntry>> SearchVolumeAsync(string volumeAbsolutePath, string relativePath, string query, int maxResults, CancellationToken ct) => throw new NotSupportedException();
         public Task<FileMetadata> GetMetadataAsync(string rootId, string relativePath, CancellationToken ct) => throw new NotSupportedException();
+        public Task<FileMetadata> GetVolumeMetadataAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => throw new NotSupportedException();
         public Task<string?> GetThumbnailBase64Async(string rootId, string relativePath, int maxDim, CancellationToken ct) => throw new NotSupportedException();
+        public Task<string?> GetVolumeThumbnailBase64Async(string volumeAbsolutePath, string relativePath, int maxDim, CancellationToken ct) => throw new NotSupportedException();
+        public Task<(string RootId, string RelativePath)?> TryMapVolumePathToConfiguredRootAsync(string volumeAbsolutePath, string relativePath, CancellationToken ct) => Task.FromResult<(string, string)?>(null);
     }
 }

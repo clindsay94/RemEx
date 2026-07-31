@@ -1,4 +1,3 @@
-using System;
 using Remex.Agent.Services.RemoteDesktop;
 using Xunit;
 

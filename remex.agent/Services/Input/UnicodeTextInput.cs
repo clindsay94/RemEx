@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Remex.Agent.Services.Input;
 
 /// <summary>

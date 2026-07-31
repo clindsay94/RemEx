@@ -35,7 +35,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -82,9 +85,15 @@ fun PersonalizationScreen(
         return
     }
 
+    val categoryShapePresets by
+            viewModel.categoryShapePresets.collectAsStateWithLifecycle(initialValue = emptyMap())
+
     PersonalizationScreenContent(
         settings = currentSettingsState,
         showHeader = showHeader,
+        onDynamicColorChange = viewModel::setDynamicColor,
+        categoryShapePresets = categoryShapePresets,
+        onCategoryShapeChange = viewModel::setCategoryShapePreset,
         onSave = { themeMode, palette, themeStyle, seedColor, themeSeedChroma, themeContrast, fontFamily, fontScale, cornerRadius, cardOpacity, pcCardShapePreset, telemetryCardShapePreset, appLauncherCardShapePreset, taskManagerCardShapePreset, remoteDesktopCardShapePreset, remoteControlCardShapePreset, remoteMouseCardShapePreset, splashStyle ->
             viewModel.save(
                 themeMode = themeMode,
@@ -143,6 +152,10 @@ private fun PersonalizationLoading(showHeader: Boolean) {
 fun PersonalizationScreenContent(
     settings: SettingsManager.PersonalizationPreferences,
     showHeader: Boolean,
+    onDynamicColorChange: (Boolean) -> Unit = {},
+    /** The user's per-category shape choices; absent entries mean "inherit". */
+    categoryShapePresets: Map<DashboardShapes.CardCategory, Float> = emptyMap(),
+    onCategoryShapeChange: (DashboardShapes.CardCategory, Float) -> Unit = { _, _ -> },
     onSave: (
         themeMode: String,
         themePalette: String,
@@ -169,6 +182,7 @@ fun PersonalizationScreenContent(
 
     var themeMode by remember { mutableStateOf(settings.themeMode) }
     var palette by remember { mutableStateOf(settings.themePalette) }
+    var dynamicColor by remember { mutableStateOf(settings.dynamicColor) }
     var themeStyle by remember { mutableStateOf(settings.themeStyle) }
     var seedColor by remember { mutableStateOf(settings.themeSeedColor) }
     var themeSeedChroma by remember { mutableFloatStateOf(settings.themeSeedChroma) }
@@ -452,7 +466,7 @@ fun PersonalizationScreenContent(
                                     onCheckedChange = { themeMode = option },
                                     modifier = Modifier.weight(1f)
                             ) {
-                                Text(option.replaceFirstChar { it.uppercase() }, maxLines = 1)
+                                Text(displayModeLabel(option), maxLines = 1)
                             }
                         }
                     }
@@ -468,10 +482,16 @@ fun PersonalizationScreenContent(
                                             "expressive",
                                             "fruit_salad",
                                             "rainbow",
-                                            "vibrant"
+                                            "vibrant",
+                                            // Both are implemented in Theme.kt's
+                                            // colorSchemeFromSeed and were simply never offered
+                                            // here, so they were unreachable (RemEx-6byw).
+                                            "neutral",
+                                            "monochrome"
                                      ),
                             selected = themeStyle,
-                            onSelected = { themeStyle = it }
+                            onSelected = { themeStyle = it },
+                            labelFor = { paletteStyleLabel(it) }
                     )
                 }
             }
@@ -553,6 +573,38 @@ fun PersonalizationScreenContent(
                             Icons.Default.Palette
                     )
 
+                    // Material You wallpaper color — only exists on API 31+, and the custom
+                    // palette branch in RemExTheme overrides it, so disable it there (RemEx-9429).
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                        stringResource(R.string.personalization_dynamic_color),
+                                        style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                        stringResource(
+                                                R.string.personalization_dynamic_color_desc
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                    checked = dynamicColor,
+                                    onCheckedChange = {
+                                        dynamicColor = it
+                                        onDynamicColorChange(it)
+                                    },
+                                    enabled = palette == "default"
+                            )
+                        }
+                    }
+
                     Text(
                             stringResource(R.string.personalization_palette_mode),
                             style = MaterialTheme.typography.labelMedium
@@ -569,7 +621,7 @@ fun PersonalizationScreenContent(
                                     onCheckedChange = { palette = option },
                                     modifier = Modifier.weight(1f)
                             ) {
-                                Text(option.replaceFirstChar { it.uppercase() }, maxLines = 1)
+                                Text(paletteModeLabel(option), maxLines = 1)
                             }
                         }
                     }
@@ -601,13 +653,15 @@ fun PersonalizationScreenContent(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Hue Slider
+                            // Hue Slider. The label carries the value, so it is cleared for
+                            // TalkBack and the HueSlider itself announces both (RemEx-qiz5).
                             Text(
                                     stringResource(
                                             R.string.personalization_hue_label,
                                             currentHct.hue.roundToInt()
                                     ),
-                                    style = MaterialTheme.typography.labelSmall
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.clearAndSetSemantics {}
                             )
                             HueSlider(
                                     value = currentHct.hue.toFloat(),
@@ -626,13 +680,20 @@ fun PersonalizationScreenContent(
                                     }
                             )
 
-                            // Chroma Slider
+                            // Chroma Slider. Like contrast below, the value is a bare number
+                            // with no typography for a translator to decide, so it needs no
+                            // resource of its own - and feeding the SAME Int to the label and to
+                            // stateDescription is what guarantees they can never disagree.
+                            val chromaAccessibilityLabel = stringResource(R.string.cd_chroma)
+                            val chromaValue = themeSeedChroma.roundToInt()
+                            val chromaValueText = chromaValue.toString()
                             Text(
                                     stringResource(
                                             R.string.personalization_chroma_label,
-                                            themeSeedChroma.roundToInt()
+                                            chromaValue
                                     ),
-                                    style = MaterialTheme.typography.labelSmall
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.clearAndSetSemantics {}
                             )
                             Slider(
                                     value = themeSeedChroma,
@@ -642,16 +703,26 @@ fun PersonalizationScreenContent(
                                                 HapticFeedbackConstants.CLOCK_TICK
                                         )
                                     },
-                                    valueRange = 0f..120f
+                                    valueRange = 0f..120f,
+                                    modifier =
+                                            Modifier.semantics {
+                                                contentDescription = chromaAccessibilityLabel
+                                                stateDescription = chromaValueText
+                                            }
                             )
 
-                            // Contrast Slider
+                            // Contrast Slider. The value is a bare number, so it needs no
+                            // resource of its own - it is the same "%.2f" the label already
+                            // formats, which respects the device locale's decimal separator.
+                            val contrastAccessibilityLabel = stringResource(R.string.cd_contrast)
+                            val contrastValueText = "%.2f".format(themeContrast)
                             Text(
                                     stringResource(
                                             R.string.personalization_contrast_label,
-                                            "%.2f".format(themeContrast)
+                                            contrastValueText
                                     ),
-                                    style = MaterialTheme.typography.labelSmall
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.clearAndSetSemantics {}
                             )
                             Slider(
                                     value = themeContrast,
@@ -661,7 +732,12 @@ fun PersonalizationScreenContent(
                                                 HapticFeedbackConstants.CLOCK_TICK
                                         )
                                     },
-                                    valueRange = -1.0f..1.0f
+                                    valueRange = -1.0f..1.0f,
+                                    modifier =
+                                            Modifier.semantics {
+                                                contentDescription = contrastAccessibilityLabel
+                                                stateDescription = contrastValueText
+                                            }
                             )
 
                             // Tonal Row
@@ -693,10 +769,7 @@ fun PersonalizationScreenContent(
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
-                                    textStyle =
-                                            MaterialTheme.typography.bodyMedium.copy(
-                                                    fontWeight = FontWeight.Bold
-                                            )
+                                    textStyle = MaterialTheme.typography.bodyMediumEmphasized
                             )
                         }
                     }
@@ -777,9 +850,14 @@ fun PersonalizationScreenContent(
                         }
                     }
 
+                    val fontScalePercent = (fontScale * 100).roundToInt()
+                    val fontScaleAccessibilityLabel = stringResource(R.string.cd_font_scale)
+                    val fontScalePercentText =
+                            stringResource(R.string.cd_percent_value, fontScalePercent)
                     Text(
-                            stringResource(R.string.personalization_font_scale_format, (fontScale * 100).roundToInt()),
-                            style = MaterialTheme.typography.labelMedium
+                            stringResource(R.string.personalization_font_scale_format, fontScalePercent),
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.clearAndSetSemantics {}
                     )
                     Slider(
                             value = fontScale,
@@ -787,7 +865,12 @@ fun PersonalizationScreenContent(
                             onValueChangeFinished = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                             },
-                            valueRange = 0.85f..1.4f
+                            valueRange = 0.85f..1.4f,
+                            modifier =
+                                    Modifier.semantics {
+                                        contentDescription = fontScaleAccessibilityLabel
+                                        stateDescription = fontScalePercentText
+                                    }
                     )
                 }
             }
@@ -809,9 +892,15 @@ fun PersonalizationScreenContent(
                             Icons.Default.Tune
                     )
 
+                    // Corner radius is in dp, not percent, so it needs its own value format
+                    // rather than reusing cd_percent_value.
+                    val cornerRadiusAccessibilityLabel = stringResource(R.string.cd_corner_radius)
+                    val cornerRadiusValueText =
+                            stringResource(R.string.cd_dp_value, cornerRadius)
                     Text(
                             stringResource(R.string.personalization_corner_base, cornerRadius),
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.clearAndSetSemantics {}
                     )
                     Slider(
                             value = cornerRadius.toFloat(),
@@ -819,15 +908,32 @@ fun PersonalizationScreenContent(
                             onValueChangeFinished = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                             },
-                            valueRange = 4f..36f
+                            valueRange = 4f..36f,
+                            modifier =
+                                    Modifier.semantics {
+                                        contentDescription = cornerRadiusAccessibilityLabel
+                                        stateDescription = cornerRadiusValueText
+                                    }
                     )
 
+                    // A11y pairing for this label + Slider (RemEx-porq). TalkBack previously announced
+                    // a bare "0.55" - no unit, no meaning - while the human-readable "Card Opacity: 55%"
+                    // sat in a SEPARATE, unrelated semantics node.
+                    //
+                    // clearAndSetSemantics on the label rather than leaving it announceable: the Slider
+                    // now carries the same information, and an announceable label beside it would make
+                    // TalkBack say the percentage twice. The Text stays fully visible to sighted users;
+                    // only its semantics are removed.
+                    // Hoisted deliberately: semantics {} is not a composable scope, so stringResource
+                    // cannot be called inside it.
+                    val cardOpacityPercent = (cardOpacity * 100).roundToInt()
+                    val cardOpacityAccessibilityLabel = stringResource(R.string.cd_card_opacity)
+                    val cardOpacityPercentText =
+                            stringResource(R.string.cd_percent_value, cardOpacityPercent)
                     Text(
-                            stringResource(
-                                    R.string.personalization_card_opacity,
-                                    (cardOpacity * 100).roundToInt()
-                            ),
-                            style = MaterialTheme.typography.labelMedium
+                            stringResource(R.string.personalization_card_opacity, cardOpacityPercent),
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.clearAndSetSemantics {}
                     )
                     Slider(
                             value = cardOpacity,
@@ -835,10 +941,45 @@ fun PersonalizationScreenContent(
                             onValueChangeFinished = {
                                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                             },
-                            valueRange = 0.1f..1.0f
+                            valueRange = 0.1f..1.0f,
+                            // contentDescription names the control; stateDescription supplies the value.
+                            //
+                            // WHY THIS WORKS - get it right before copying this to the other sliders
+                            // (RemEx-qiz5). The "0.55" is NOT derived from ProgressBarRangeInfo: M3's own
+                            // sliderSemantics explicitly sets stateDescription = value.formatForSemantics()
+                            // (Slider.kt), which for 0.55 is the literal string "0.55". This override wins
+                            // because SliderImpl applies its semantics INNER to the modifier passed in,
+                            // and semantics collapse walks tail->head with a plain overwrite - so the
+                            // OUTERMOST stateDescription is the one announced.
+                            //
+                            // Do NOT "fix" a slider by overriding progressBarRangeInfo instead. That feeds
+                            // info.rangeInfo, the SeekBar role and TalkBack's adjust-gesture maths; it must
+                            // keep reporting the true 0.1-1.0 range or the slider stops being adjustable.
+                            // It is deliberately left intact here.
+                            modifier =
+                                    Modifier.semantics {
+                                        contentDescription =
+                                                cardOpacityAccessibilityLabel
+                                        stateDescription =
+                                                cardOpacityPercentText
+                                    }
                     )
 
+                    // Per-category rows come first: they are the narrower setting, and the
+                    // resolver honours them ahead of the class rows below (RemEx-mycn). Generated
+                    // from the enum so a new CardCategory cannot be added without surfacing here.
+                    val categoryShapeConfigs =
+                            DashboardShapes.CardCategory.entries.map { category ->
+                                val label = stringResource(categoryShapeLabel(category))
+                                val current =
+                                        categoryShapePresets[category]
+                                                ?: DashboardShapes.SHAPE_PRESET_INHERIT
+                                (label to current) to
+                                        { v: Float -> onCategoryShapeChange(category, v) }
+                            }
+
                     val shapeConfigs =
+                            categoryShapeConfigs +
                             listOf(
                                     stringResource(R.string.personalization_shape_telemetry) to
                                             telemetryCardShapePreset to
@@ -897,8 +1038,7 @@ fun PersonalizationScreenContent(
                         val animatedShapePreset by
                                 animateFloatAsState(
                                         targetValue = sliderDisplayValue,
-                                        animationSpec =
-                                                androidx.compose.animation.core.spring(stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow),
+                                        animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
                                         label = "shape_morph_$label"
                                 )
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -909,15 +1049,22 @@ fun PersonalizationScreenContent(
                             ) {
                                 Text(
                                         label,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.Bold
+                                        style = MaterialTheme.typography.bodyMediumEmphasized
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // Cleared because the Slider below now announces this same
+                                    // shape name as its stateDescription. The category Text above
+                                    // is deliberately left announceable, but only as the row
+                                    // HEADING: unlike the other slider labels on this screen it
+                                    // carries no value, so leaving it cannot repeat one. Note it
+                                    // does NOT name the reset button beside it - this Row sets no
+                                    // mergeDescendants, so they are separate focus stops and all
+                                    // six reset buttons still announce identically (RemEx-pmo4).
                                     Text(
                                             shapeNameText,
-                                            style = MaterialTheme.typography.labelSmall,
+                                            style = MaterialTheme.typography.labelSmallEmphasized,
                                             color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.SemiBold
+                                            modifier = Modifier.clearAndSetSemantics {}
                                     )
                                     if (!isInherit) {
                                         IconButton(
@@ -926,9 +1073,16 @@ fun PersonalizationScreenContent(
                                         ) {
                                             Icon(
                                                     Icons.Default.Refresh,
+                                                    // Names the ROW it belongs to. Fifteen of
+                                                    // these buttons sit in one screen and the Row
+                                                    // sets no mergeDescendants, so a bare "Reset to
+                                                    // default shape" left a screen-reader user with
+                                                    // fifteen identical controls and no way to tell
+                                                    // which category each one resets (RemEx-pmo4).
                                                     contentDescription =
                                                             stringResource(
-                                                                    R.string.personalization_shape_reset_default
+                                                                    R.string.personalization_shape_reset_default,
+                                                                    label
                                                             ),
                                                     modifier = Modifier.size(16.dp)
                                             )
@@ -954,7 +1108,15 @@ fun PersonalizationScreenContent(
                                         },
                                         valueRange = 0f..maxShapes,
                                         steps = materialShapesList.size - 2,
-                                        modifier = Modifier.weight(1f)
+                                        // The meaningful value here is the shape NAME, not the
+                                        // index - "Circle" tells a TalkBack user what they just
+                                        // selected, "3.0" does not. One fix covers every visible
+                                        // shape slider, since they are all this one composable.
+                                        modifier =
+                                                Modifier.weight(1f).semantics {
+                                                    contentDescription = label
+                                                    stateDescription = shapeNameText
+                                                }
                                 )
                                 Box(
                                         modifier =
@@ -1049,24 +1211,79 @@ private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vect
     ) {
         Icon(
                 icon,
-                contentDescription = stringResource(R.string.cd_section_icon),
+                contentDescription = null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
         )
         Text(
                 title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Black,
+                style = MaterialTheme.typography.titleMediumEmphasized,
                 color = MaterialTheme.colorScheme.primary
         )
     }
+}
+
+/**
+ * Deliberately chips, not [SingleChoiceSegmentedButtonRow] (RemEx-0j8v): the only caller is the
+ * 5-option themeStyle group whose title-cased labels ("Fruit Salad", "Tonal Spot") wrap/clip at
+ * a 5-way split of phone width — the exact impractical case the bead's fallback clause names,
+ * confirmed by an Opus review of the attempted conversion. Revisit only if the option set
+ * shrinks to <=3 short labels.
+ */
+/** Resource id for a card category's shape-picker label. */
+private fun categoryShapeLabel(category: DashboardShapes.CardCategory): Int = when (category) {
+    DashboardShapes.CardCategory.PC_STATUS -> R.string.personalization_shape_cat_pc_status
+    DashboardShapes.CardCategory.CPU -> R.string.personalization_shape_cat_cpu
+    DashboardShapes.CardCategory.GPU -> R.string.personalization_shape_cat_gpu
+    DashboardShapes.CardCategory.RAM -> R.string.personalization_shape_cat_ram
+    DashboardShapes.CardCategory.TEMPERATURE -> R.string.personalization_shape_cat_temperature
+    DashboardShapes.CardCategory.NETWORK -> R.string.personalization_shape_cat_network
+    DashboardShapes.CardCategory.ACTION -> R.string.personalization_shape_cat_action
+    DashboardShapes.CardCategory.OTHER -> R.string.personalization_shape_cat_other
+}
+
+/** Localized label for a palette style identifier; falls back to the raw identifier. */
+@Composable
+private fun paletteStyleLabel(option: String): String = when (option) {
+    "tonal_spot" -> stringResource(R.string.personalization_style_tonal_spot)
+    "expressive" -> stringResource(R.string.personalization_style_expressive)
+    "fruit_salad" -> stringResource(R.string.personalization_style_fruit_salad)
+    "rainbow" -> stringResource(R.string.personalization_style_rainbow)
+    "vibrant" -> stringResource(R.string.personalization_style_vibrant)
+    "neutral" -> stringResource(R.string.personalization_style_neutral)
+    "monochrome" -> stringResource(R.string.personalization_style_monochrome)
+    else -> option.replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+/** Localized label for the light/dark/system selector. */
+@Composable
+private fun displayModeLabel(option: String): String = when (option) {
+    "system" -> stringResource(R.string.personalization_mode_system)
+    "light" -> stringResource(R.string.personalization_mode_light)
+    "dark" -> stringResource(R.string.personalization_mode_dark)
+    else -> option.replaceFirstChar { it.uppercase() }
+}
+
+/** Localized label for the default/custom palette selector. */
+@Composable
+private fun paletteModeLabel(option: String): String = when (option) {
+    "default" -> stringResource(R.string.personalization_palette_default)
+    "custom" -> stringResource(R.string.personalization_palette_custom)
+    else -> option.replaceFirstChar { it.uppercase() }
 }
 
 @Composable
 private fun SingleSelectChips(
         options: List<String>,
         selected: String,
-        onSelected: (String) -> Unit
+        onSelected: (String) -> Unit,
+        /**
+         * Maps an option identifier to its display text. Null keeps the identifier-prettifying
+         * fallback below, which is correct for the splash-style chips - those are brand proper
+         * nouns and must NOT be translated. Anything a user reads as ordinary words should pass a
+         * mapper instead (RemEx-6byw).
+         */
+        labelFor: (@Composable (String) -> String)? = null
 ) {
     val view = LocalView.current
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1079,9 +1296,10 @@ private fun SingleSelectChips(
                     },
                     label = {
                         Text(
-                                option.replace("_", " ").split(" ").joinToString(" ") {
-                                    it.replaceFirstChar { char -> char.uppercase() }
-                                }
+                                labelFor?.invoke(option)
+                                        ?: option.replace("_", " ").split(" ").joinToString(" ") {
+                                            it.replaceFirstChar { char -> char.uppercase() }
+                                        }
                         )
                     }
             )
@@ -1094,6 +1312,12 @@ private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
     val gradient = remember {
         Brush.horizontalGradient((0..360).map { Color.hsv(it.toFloat(), 1f, 1f) })
     }
+    // Hoisted: semantics {} is not a composable scope, so stringResource cannot be called
+    // inside it. See the card-opacity slider (RemEx-porq) for why both properties are needed -
+    // contentDescription alone leaves M3's own stateDescription in place, which is the raw
+    // float TalkBack was reading out.
+    val hueAccessibilityLabel = stringResource(R.string.cd_hue)
+    val hueValueText = stringResource(R.string.cd_degree_value, value.roundToInt())
     Box(modifier = Modifier.fillMaxWidth().height(32.dp).clip(CircleShape).background(gradient)) {
         Slider(
                 value = value,
@@ -1105,7 +1329,11 @@ private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
                                 activeTrackColor = Color.Transparent,
                                 inactiveTrackColor = Color.Transparent
                         ),
-                modifier = Modifier.fillMaxSize()
+                modifier =
+                        Modifier.fillMaxSize().semantics {
+                            contentDescription = hueAccessibilityLabel
+                            stateDescription = hueValueText
+                        }
         )
     }
 }
@@ -1121,7 +1349,7 @@ private fun TonalRow(hct: Hct) {
             val animatedColor by
                     animateColorAsState(
                             targetValue = targetColor,
-                            animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+                            animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
                             label = "TonalColorAnimation"
                     )
             Box(
@@ -1155,7 +1383,7 @@ private fun MiniCardPreview(
     val animatedColor by
             animateColorAsState(
                     targetValue = containerTarget,
-                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 300),
+                    animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
                     label = "MiniCardColorAnimation"
             )
 
@@ -1187,9 +1415,8 @@ private fun MiniCardPreview(
             }
             Text(
                     stringResource(R.string.personalization_preview),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = contentColor,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelSmallEmphasized,
+                    color = contentColor
             )
             Box(
                     modifier =

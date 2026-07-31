@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.RemexConnectionService
+import com.clindsay94.remex.ui.screens.PairingErrors
+import com.clindsay94.remex.ui.screens.PairingSurface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -334,27 +336,52 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                     Log.i("RemexManager", "Automatic pairing successful for $host")
                                 }
                             } else {
+                                // The native reason is a DIAGNOSTIC, not a message: it is always
+                                // English (Remex.Core is NativeAOT and cannot reach Android
+                                // resources) and it names ports, paths and cert internals. It goes
+                                // to the log; the cause code picks a translated sentence for the
+                                // user. (RemEx-6gkr)
+                                //
+                                // InlineConnect, NOT the pairing screen's wording: this failure
+                                // renders on ConnectionScreen, which has no Cancel button, and
+                                // connect() restarts pairing on every tap — so "retype the PIN and
+                                // tap Connect" is the recovery that works here.
+                                //
+                                // applicationContext because `settings.context` is whichever
+                                // context won the early-return in initialize() — usually
+                                // MainActivity, sometimes a widget's app context — and an Activity
+                                // there is retained for the process lifetime and may be long
+                                // destroyed. The app context is the one guaranteed to resolve the
+                                // current per-app locale, and is a no-op when it already is one.
+                                val failure = PairingErrors.parse(submitResult)
                                 Log.e(
                                         "RemexManager",
-                                        "Automatic pairing PIN submission failed: $submitResult"
+                                        "Automatic pairing PIN submission failed [${failure.code ?: "no code"}]: ${failure.detail}"
                                 )
-                                // Emit the cleaned native reason (localized on the native side)
-                                // instead of wrapping it in a hardcoded English prefix.
                                 _connectionError.tryEmit(
-                                        submitResult
-                                                .removePrefix("ERROR: ")
-                                                .ifBlank { "Pairing failed" }
+                                        context.applicationContext.getString(
+                                                PairingErrors.messageRes(
+                                                        failure.code,
+                                                        PairingSurface.InlineConnect
+                                                )
+                                        )
                                 )
                                 _isConnecting.value = false
                                 return
                             }
                         } else {
-                            Log.e("RemexManager", "Automatic pairing start failed: $pairResult")
+                            val failure = PairingErrors.parse(pairResult)
+                            Log.e(
+                                    "RemexManager",
+                                    "Automatic pairing start failed [${failure.code ?: "no code"}]: ${failure.detail}"
+                            )
                             _connectionError.tryEmit(
-                                    pairResult
-                                            .orEmpty()
-                                            .removePrefix("ERROR: ")
-                                            .ifBlank { "Pairing failed" }
+                                    context.applicationContext.getString(
+                                            PairingErrors.messageRes(
+                                                    failure.code,
+                                                    PairingSurface.InlineConnect
+                                            )
+                                    )
                             )
                             _isConnecting.value = false
                             return
@@ -399,15 +426,25 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                             "RemexManager",
                             "InitRemex returned blank — possible native-side failure for $host:$port"
                     )
-                    _connectionError.tryEmit("Connection failed: no response received")
+                    _connectionError.tryEmit(
+                            context.applicationContext.getString(
+                                    R.string.connection_error_no_response
+                            )
+                    )
                     _isConnecting.value = false
                 } else {
                     val json = JSONObject(result)
                     if (!json.optBoolean("success", false)) {
                         // Surface the native failure reason instead of silently stopping the
-                        // spinner with no error shown to the user.
+                        // spinner with no error shown to the user. The native reason (like the
+                        // pairing diagnostics above) is always English and untranslatable at the
+                        // source, so only the fallback for a blank reason is localized here.
                         _connectionError.tryEmit(
-                                json.optString("reason").ifBlank { "Connection failed" }
+                                json.optString("reason").ifBlank {
+                                    context.applicationContext.getString(
+                                            R.string.connection_error_generic
+                                    )
+                                }
                         )
                         _isConnecting.value = false
                     }
@@ -416,8 +453,15 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                 _isConnecting.value = false
             }
         } catch (e: UnsatisfiedLinkError) {
+            // "Native library not linked" is developer-grade diagnostic text; it must never reach
+            // the user card verbatim in any language, so the technical detail stays in the log and
+            // the user sees a plain, actionable message instead. (RemEx-hn05)
             Log.e("RemexManager", "JNI link failure during connect", e)
-            _connectionError.tryEmit("Native library not linked: ${e.message}")
+            _connectionError.tryEmit(
+                    settings.context.applicationContext.getString(
+                            R.string.connection_error_native_missing
+                    )
+            )
             _isConnecting.value = false
         } catch (e: Exception) {
             Log.e("RemexManager", "Connect failed", e)

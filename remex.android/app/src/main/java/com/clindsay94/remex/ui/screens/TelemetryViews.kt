@@ -1,7 +1,15 @@
 package com.clindsay94.remex.ui.screens
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,7 +32,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,10 +41,11 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,11 +67,15 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.R
 import com.clindsay94.remex.ui.telemetry.MetricKind
 import kotlin.math.abs
@@ -70,13 +84,60 @@ import kotlin.math.abs
 private fun cdView(context: android.content.Context, resId: Int, sensor: TelemetrySensor?): String =
     context.getString(resId, formatSensor(sensor).text)
 
+/**
+ * Placeholder shown when a card has no data yet.
+ *
+ * Distinguishes the two reasons that can be true, because they are not the same message. With a PC
+ * connected, "Collecting data" with a spinner is accurate - telemetry is on its way. With nothing
+ * connected it was a claim about activity that was not happening: every card sat at "--" under a
+ * perpetual shimmer, implying the app was working on it (RemEx-5mkc). The App Launcher and Task
+ * Manager already made this distinction; the dashboard did not.
+ *
+ * The spinner is dropped in the disconnected case rather than merely relabelled - a motion
+ * indicator IS the claim of progress, so leaving it spinning under "Not connected" would keep
+ * saying the thing the text just denied.
+ */
 @Composable
 private fun CollectingData() {
-    Text(
-        text = stringResource(R.string.dashboard_collecting_data),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    val connected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+
+    if (!connected) {
+        Text(
+            text = stringResource(R.string.dashboard_not_connected),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        RemexLoadingIndicator(modifier = Modifier.size(16.dp))
+        Text(
+            text = stringResource(R.string.dashboard_collecting_data),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * Swaps between [content] (the chart) and a motion-carrying [CollectingData] placeholder,
+ * fading through rather than the bare early-return/if-else pop each view previously did.
+ */
+@Composable
+private fun ChartOrCollecting(hasData: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val motionScheme = MaterialTheme.motionScheme
+    AnimatedContent(
+        targetState = hasData,
+        transitionSpec = {
+            val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+            fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+        },
+        modifier = modifier,
+        label = "chartOrCollecting"
+    ) { ready ->
+        if (ready) content() else CollectingData()
+    }
 }
 
 // ── The 10-view catalog ──────────────────────────────────────────────────────────────
@@ -112,10 +173,8 @@ fun ValueSparkView(sensor: TelemetrySensor?, history: List<Float>, modifier: Mod
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        if (history.size < 2) {
-            CollectingData()
-        } else {
+        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleLargeEmphasized)
+        ChartOrCollecting(hasData = history.size >= 2) {
             val s = rememberAutoscale(history)
             val c = MaterialTheme.colorScheme.primary
             Canvas(Modifier.fillMaxWidth().height(24.dp)) {
@@ -165,7 +224,7 @@ fun ArcGaugeView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
             drawArc(track, 135f, 270f, false, style = stroke)
             drawArc(fill, 135f, 270f * fraction, false, style = stroke)
         }
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(formatSensor(sensor).text, style = MaterialTheme.typography.titleMediumEmphasized)
     }
 }
 
@@ -173,14 +232,13 @@ fun ArcGaugeView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
 @Composable
 private fun BoxScope.ValueOverlayChip(sensor: TelemetrySensor?) {
     Surface(
-        shape = RoundedCornerShape(6.dp),
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
         modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
     ) {
         Text(
             formatSensor(sensor).text,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelSmallEmphasized,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
         )
     }
@@ -189,75 +247,78 @@ private fun BoxScope.ValueOverlayChip(sensor: TelemetrySensor?) {
 @Composable
 fun LineChartView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modifier = Modifier, showValue: Boolean = false) {
     val context = LocalContext.current
-    if (history.size < 2) { CollectingData(); return }
-    val s = rememberAutoscale(history)
-    val c = MaterialTheme.colorScheme.primary
-    Box(modifier) {
-        Canvas(
-            Modifier.fillMaxWidth().height(56.dp)
-                .semantics { contentDescription = cdView(context, R.string.cd_view_line, sensor) }
-        ) {
-            val stepX = size.width / (history.size - 1)
-            val p = Path()
-            history.forEachIndexed { i, v ->
-                val y = size.height - ((v - s.low) / s.range) * size.height
-                if (i == 0) p.moveTo(0f, y) else p.lineTo(i * stepX, y)
+    ChartOrCollecting(hasData = history.size >= 2, modifier = modifier) {
+        val s = rememberAutoscale(history)
+        val c = MaterialTheme.colorScheme.primary
+        Box {
+            Canvas(
+                Modifier.fillMaxWidth().height(56.dp)
+                    .semantics { contentDescription = cdView(context, R.string.cd_view_line, sensor) }
+            ) {
+                val stepX = size.width / (history.size - 1)
+                val p = Path()
+                history.forEachIndexed { i, v ->
+                    val y = size.height - ((v - s.low) / s.range) * size.height
+                    if (i == 0) p.moveTo(0f, y) else p.lineTo(i * stepX, y)
+                }
+                drawPath(p, c, style = Stroke(width = 4f, cap = StrokeCap.Round))
             }
-            drawPath(p, c, style = Stroke(width = 4f, cap = StrokeCap.Round))
+            if (showValue) ValueOverlayChip(sensor)
         }
-        if (showValue) ValueOverlayChip(sensor)
     }
 }
 
 @Composable
 fun AreaChartView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modifier = Modifier, showValue: Boolean = false) {
     val context = LocalContext.current
-    if (history.size < 2) { CollectingData(); return }
-    val s = rememberAutoscale(history)
-    val c = MaterialTheme.colorScheme.primary
-    Box(modifier) {
-        Canvas(
-            Modifier.fillMaxWidth().height(56.dp)
-                .semantics { contentDescription = cdView(context, R.string.cd_view_area, sensor) }
-        ) {
-            val stepX = size.width / (history.size - 1)
-            val p = Path().apply {
-                history.forEachIndexed { i, v ->
-                    val y = size.height - ((v - s.low) / s.range) * size.height
-                    if (i == 0) moveTo(0f, y) else lineTo(i * stepX, y)
+    ChartOrCollecting(hasData = history.size >= 2, modifier = modifier) {
+        val s = rememberAutoscale(history)
+        val c = MaterialTheme.colorScheme.primary
+        Box {
+            Canvas(
+                Modifier.fillMaxWidth().height(56.dp)
+                    .semantics { contentDescription = cdView(context, R.string.cd_view_area, sensor) }
+            ) {
+                val stepX = size.width / (history.size - 1)
+                val p = Path().apply {
+                    history.forEachIndexed { i, v ->
+                        val y = size.height - ((v - s.low) / s.range) * size.height
+                        if (i == 0) moveTo(0f, y) else lineTo(i * stepX, y)
+                    }
+                    lineTo(size.width, size.height); lineTo(0f, size.height); close()
                 }
-                lineTo(size.width, size.height); lineTo(0f, size.height); close()
+                drawPath(p, brush = Brush.verticalGradient(listOf(c.copy(alpha = 0.55f), c.copy(alpha = 0f))))
             }
-            drawPath(p, brush = Brush.verticalGradient(listOf(c.copy(alpha = 0.55f), c.copy(alpha = 0f))))
+            if (showValue) ValueOverlayChip(sensor)
         }
-        if (showValue) ValueOverlayChip(sensor)
     }
 }
 
 @Composable
 fun BarHistogramView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modifier = Modifier, showValue: Boolean = false) {
     val context = LocalContext.current
-    if (history.isEmpty()) { CollectingData(); return }
-    val s = rememberAutoscale(history)
-    val c = MaterialTheme.colorScheme.primary
-    Box(modifier) {
-        Canvas(
-            Modifier.fillMaxWidth().height(56.dp)
-                .semantics { contentDescription = cdView(context, R.string.cd_view_bar, sensor) }
-        ) {
-            val stepX = size.width / history.size
-            val barW = stepX * 0.7f
-            history.forEachIndexed { i, v ->
-                val h = ((v - s.low) / s.range) * size.height
-                drawRoundRect(
-                    color = c,
-                    topLeft = Offset(i * stepX + (stepX - barW) / 2f, size.height - h),
-                    size = Size(barW, h),
-                    cornerRadius = CornerRadius(3f, 3f)
-                )
+    ChartOrCollecting(hasData = history.isNotEmpty(), modifier = modifier) {
+        val s = rememberAutoscale(history)
+        val c = MaterialTheme.colorScheme.primary
+        Box {
+            Canvas(
+                Modifier.fillMaxWidth().height(56.dp)
+                    .semantics { contentDescription = cdView(context, R.string.cd_view_bar, sensor) }
+            ) {
+                val stepX = size.width / history.size
+                val barW = stepX * 0.7f
+                history.forEachIndexed { i, v ->
+                    val h = ((v - s.low) / s.range) * size.height
+                    drawRoundRect(
+                        color = c,
+                        topLeft = Offset(i * stepX + (stepX - barW) / 2f, size.height - h),
+                        size = Size(barW, h),
+                        cornerRadius = CornerRadius(3f, 3f)
+                    )
+                }
             }
+            if (showValue) ValueOverlayChip(sensor)
         }
-        if (showValue) ValueOverlayChip(sensor)
     }
 }
 
@@ -276,7 +337,7 @@ fun HuePulseTile(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
     val tint = lerp(cool, warm, animatedFraction)
     Box(
         modifier = modifier.fillMaxSize()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(tint.copy(alpha = 0.28f))
             .semantics { contentDescription = cdView(context, R.string.cd_view_hue_pulse, sensor) },
         contentAlignment = Alignment.Center
@@ -315,7 +376,7 @@ fun LedMeterView(sensor: TelemetrySensor?, history: List<Float>, modifier: Modif
                 )
             }
         }
-        Text(formatSensor(sensor).text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Text(formatSensor(sensor).text, style = MaterialTheme.typography.labelLargeEmphasized)
     }
 }
 
@@ -328,11 +389,11 @@ fun DualMetricOverlay(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    if (primaryHistory.size < 2) { CollectingData(); return }
+    ChartOrCollecting(hasData = primaryHistory.size >= 2, modifier = modifier) {
     val sPrimary = rememberAutoscale(primaryHistory)
     val primaryColor = MaterialTheme.colorScheme.primary
     val secondaryColor = MaterialTheme.colorScheme.tertiary
-    Box(modifier.semantics { contentDescription = cdView(context, R.string.cd_view_dual_metric, primary) }) {
+    Box(Modifier.semantics { contentDescription = cdView(context, R.string.cd_view_dual_metric, primary) }) {
         Canvas(Modifier.fillMaxWidth().height(56.dp)) {
             val stepX = size.width / (primaryHistory.size - 1)
             val areaPath = Path().apply {
@@ -356,17 +417,18 @@ fun DualMetricOverlay(
             }
         }
         Surface(
-            shape = RoundedCornerShape(6.dp),
+            shape = MaterialTheme.shapes.small,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f),
             modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
         ) {
             Column(Modifier.padding(4.dp)) {
-                Text(formatSensor(primary).text, style = MaterialTheme.typography.labelSmall, color = primaryColor, fontWeight = FontWeight.Bold)
+                Text(formatSensor(primary).text, style = MaterialTheme.typography.labelSmallEmphasized, color = primaryColor)
                 if (secondary != null) {
-                    Text(formatSensor(secondary).text, style = MaterialTheme.typography.labelSmall, color = secondaryColor, fontWeight = FontWeight.Bold)
+                    Text(formatSensor(secondary).text, style = MaterialTheme.typography.labelSmallEmphasized, color = secondaryColor)
                 }
             }
         }
+    }
     }
 }
 
@@ -418,18 +480,28 @@ private val VIEW_CATALOG = listOf(
 )
 
 @Composable
-private fun ViewPickerCell(
+internal fun ViewPickerCell(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     preview: @Composable () -> Unit
 ) {
-    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+    val borderColor by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "viewPickerBorderColor"
+    )
+    val borderWidth by animateDpAsState(
+        targetValue = if (selected) 2.dp else 1.dp,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "viewPickerBorderWidth"
+    )
     Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .border(if (selected) 2.dp else 1.dp, borderColor, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
+        modifier = modifier
+            .clip(MaterialTheme.shapes.medium)
+            .border(borderWidth, borderColor, MaterialTheme.shapes.medium)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -455,10 +527,11 @@ fun DisplayModePickerSheet(
     onSetValueOverlay: (String, Boolean) -> Unit
 ) {
     val view = LocalView.current
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberBottomSheetState(SheetValue.Hidden)
     var awaitingSecondary by remember { mutableStateOf(false) }
     var titleDraft by remember(cardId) { mutableStateOf(currentTitle) }
     val focusManager = LocalFocusManager.current
+    val motionScheme = MaterialTheme.motionScheme
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         if (!awaitingSecondary) {
@@ -476,78 +549,105 @@ fun DisplayModePickerSheet(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
             )
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+                    .toggleable(
+                        value = currentShowValueOverlay,
+                        role = Role.Switch,
+                        onValueChange = { enabled ->
+                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                            onSetValueOverlay(cardId, enabled)
+                        }
+                    ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(stringResource(R.string.dashboard_show_value_overlay), style = MaterialTheme.typography.bodyMedium)
                 Switch(
                     checked = currentShowValueOverlay,
-                    onCheckedChange = { enabled ->
-                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                        onSetValueOverlay(cardId, enabled)
-                    }
+                    onCheckedChange = null
                 )
             }
         }
-        if (awaitingSecondary) {
-            Text(
-                stringResource(R.string.dashboard_dual_metric_pick_secondary),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                items(otherSensors) { candidate ->
-                    Text(
-                        candidate.name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.fillMaxWidth()
-                            .clickable {
-                                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                                onPickDisplayMode(cardId, TelemetryDisplayMode.DUAL_METRIC, candidate.id)
-                            }
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    )
+        AnimatedContent(
+            targetState = awaitingSecondary,
+            transitionSpec = {
+                val spatialSpec = motionScheme.defaultSpatialSpec<IntOffset>()
+                val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                if (targetState) {
+                    (slideInHorizontally(spatialSpec) { it } + fadeIn(effectsSpec))
+                        .togetherWith(slideOutHorizontally(spatialSpec) { -it } + fadeOut(effectsSpec))
+                } else {
+                    (slideInHorizontally(spatialSpec) { -it } + fadeIn(effectsSpec))
+                        .togetherWith(slideOutHorizontally(spatialSpec) { it } + fadeOut(effectsSpec))
                 }
-            }
-        } else {
-            Text(
-                stringResource(R.string.dashboard_view_picker_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(96.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth().padding(16.dp)
-            ) {
-                item {
-                    ViewPickerCell(
-                        label = stringResource(R.string.dashboard_view_auto),
-                        selected = currentMode == TelemetryDisplayMode.AUTO,
-                        onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                            onPickDisplayMode(cardId, TelemetryDisplayMode.AUTO, null)
+            },
+            label = "secondarySensorPane"
+        ) { showSecondary ->
+            if (showSecondary) {
+                Column {
+                    Text(
+                        stringResource(R.string.dashboard_dual_metric_pick_secondary),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                        items(otherSensors, key = { it.id }) { candidate ->
+                            Text(
+                                candidate.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.fillMaxWidth()
+                                    .animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
+                                    .clickable {
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        onPickDisplayMode(cardId, TelemetryDisplayMode.DUAL_METRIC, candidate.id)
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                            )
                         }
-                    ) {
-                        TelemetryViewDispatch(TelemetryDisplayMode.AUTO, sensor, history, null, emptyList(), Modifier.fillMaxSize())
                     }
                 }
-                items(VIEW_CATALOG) { entry ->
-                    ViewPickerCell(
-                        label = stringResource(entry.labelRes),
-                        selected = currentMode == entry.mode,
-                        onClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                            if (entry.mode == TelemetryDisplayMode.DUAL_METRIC) {
-                                awaitingSecondary = true
-                            } else {
-                                onPickDisplayMode(cardId, entry.mode, null)
+            } else {
+                Column {
+                    Text(
+                        stringResource(R.string.dashboard_view_picker_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(96.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp)
+                    ) {
+                        item {
+                            ViewPickerCell(
+                                label = stringResource(R.string.dashboard_view_auto),
+                                selected = currentMode == TelemetryDisplayMode.AUTO,
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    onPickDisplayMode(cardId, TelemetryDisplayMode.AUTO, null)
+                                }
+                            ) {
+                                TelemetryViewDispatch(TelemetryDisplayMode.AUTO, sensor, history, null, emptyList(), Modifier.fillMaxSize())
                             }
                         }
-                    ) {
-                        TelemetryViewDispatch(entry.mode, sensor, history, null, emptyList(), Modifier.fillMaxSize())
+                        items(VIEW_CATALOG, key = { it.mode }) { entry ->
+                            ViewPickerCell(
+                                label = stringResource(entry.labelRes),
+                                selected = currentMode == entry.mode,
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    if (entry.mode == TelemetryDisplayMode.DUAL_METRIC) {
+                                        awaitingSecondary = true
+                                    } else {
+                                        onPickDisplayMode(cardId, entry.mode, null)
+                                    }
+                                },
+                                modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
+                            ) {
+                                TelemetryViewDispatch(entry.mode, sensor, history, null, emptyList(), Modifier.fillMaxSize())
+                            }
+                        }
                     }
                 }
             }

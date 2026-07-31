@@ -1,5 +1,4 @@
 using System.Runtime.Versioning;
-using System.Threading.Tasks;
 using Remex.Agent.Services.Input.Linux;
 using Xunit;
 

@@ -1,5 +1,3 @@
-using System;
-
 namespace Remex.Agent.Services.RemoteDesktop;
 
 /// <summary>A capture-scale change decided by <see cref="AdaptiveScaleController"/>, with a human-readable reason for logging.</summary>

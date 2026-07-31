@@ -1,12 +1,7 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Models.IPC;
@@ -401,8 +396,8 @@ public static class AndroidNativeExports
             {
                 try
                 {
-                    var (host, port, clientId, accessKey) = GetDesktopEndpoint();
-                    await RemexDesktopClient.Current.StartStreamAsync(host, port, config, clientId, accessKey);
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.StartStreamAsync(host, port, config, clientId, spkiHash);
                 }
                 catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"StartDesktopStream failed: {ex.Message}"); }
             });
@@ -442,8 +437,8 @@ public static class AndroidNativeExports
             {
                 try
                 {
-                    var (host, port, clientId, accessKey) = GetDesktopEndpoint();
-                    await RemexDesktopClient.Current.SendPointerBatchAsync(host, port, batch, clientId, accessKey);
+                    var (host, port, clientId, spkiHash) = GetDesktopEndpoint();
+                    await RemexDesktopClient.Current.SendPointerBatchAsync(host, port, batch, clientId, spkiHash);
                 }
                 catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendDesktopPointerBatch failed: {ex.Message}"); }
             });
@@ -453,7 +448,7 @@ public static class AndroidNativeExports
     {
         if (_pairingWebSocket != null)
         {
-            try { _pairingWebSocket.Dispose(); } catch { }
+            try { _pairingWebSocket.Dispose(); } catch { /* best-effort cleanup: a socket that fails to dispose is already unusable, and throwing here would replace the real pairing outcome with a teardown error */ }
             _pairingWebSocket = null;
         }
 
@@ -485,13 +480,13 @@ public static class AndroidNativeExports
                     ClearActivePairingState();
 
                     if (string.IsNullOrEmpty(hostUrl))
-                        return "ERROR: Host URL is required";
+                        return $"ERROR: {PairingErrorCodes.ArgMissing}: Host URL is required";
                     if (string.IsNullOrEmpty(clientName))
-                        return "ERROR: Client name is required";
+                        return $"ERROR: {PairingErrorCodes.ArgMissing}: Client name is required";
                     if (string.IsNullOrEmpty(clientVersion))
-                        return "ERROR: Client version is required";
+                        return $"ERROR: {PairingErrorCodes.ArgMissing}: Client version is required";
                     if (string.IsNullOrWhiteSpace(clientId))
-                        return "ERROR: Client ID is required";
+                        return $"ERROR: {PairingErrorCodes.ArgMissing}: Client ID is required";
 
                     // Phase 0: TCP probe. Distinguishes L4 reachability (host/firewall) from L6/L7 issues
                     // (TLS, HTTP upgrade). Without this, ConnectAsync hangs for the full TLS budget on
@@ -503,7 +498,7 @@ public static class AndroidNativeExports
                     }
                     catch (UriFormatException ufx)
                     {
-                        return $"ERROR: Invalid host URL '{hostUrl}': {ufx.Message}";
+                        return $"ERROR: {PairingErrorCodes.HostUrlInvalid}: Invalid host URL '{hostUrl}': {ufx.Message}";
                     }
 
                     Console.Error.WriteLine($"[Pairing] Phase 0 — TCP probe {uri.Host}:{uri.Port} (10s budget)");
@@ -513,12 +508,12 @@ public static class AndroidNativeExports
                         var probeWon = probeTask.Wait(TimeSpan.FromSeconds(10));
                         if (!probeWon)
                         {
-                            return $"ERROR: TCP probe to {uri.Host}:{uri.Port} timed out after 10s — host unreachable, firewall, or wrong IP/port";
+                            return $"ERROR: {PairingErrorCodes.TcpTimeout}: TCP probe to {uri.Host}:{uri.Port} timed out after 10s — host unreachable, firewall, or wrong IP/port";
                         }
                         if (probeTask.IsFaulted)
                         {
                             var inner = probeTask.Exception?.GetBaseException();
-                            return $"ERROR: TCP probe to {uri.Host}:{uri.Port} refused — {inner?.GetType().Name}: {inner?.Message}";
+                            return $"ERROR: {PairingErrorCodes.TcpRefused}: TCP probe to {uri.Host}:{uri.Port} refused — {inner?.GetType().Name}: {inner?.Message}";
                         }
                         Console.Error.WriteLine($"[Pairing] TCP probe OK — {uri.Host}:{uri.Port} accepted a connection");
                     }
@@ -539,7 +534,7 @@ public static class AndroidNativeExports
                         }
                         catch (OperationCanceledException) when (connectCts.IsCancellationRequested)
                         {
-                            return $"ERROR: TLS/upgrade timed out after 20s — TCP reached {uri.Host}:{uri.Port} but TLS handshake or WebSocket upgrade did not complete (check host cert and that path '{uri.AbsolutePath}' is mapped)";
+                            return $"ERROR: {PairingErrorCodes.TlsTimeout}: TLS/upgrade timed out after 20s — TCP reached {uri.Host}:{uri.Port} but TLS handshake or WebSocket upgrade did not complete (check host cert and that path '{uri.AbsolutePath}' is mapped)";
                         }
                     }
 
@@ -560,16 +555,16 @@ public static class AndroidNativeExports
                         }
                         catch (OperationCanceledException) when (handshakeCts.IsCancellationRequested)
                         {
-                            try { ws.Dispose(); } catch { }
-                            return "ERROR: Pairing handshake timed out — host did not return PairingResponse within 60s";
+                            try { ws.Dispose(); } catch { /* best-effort cleanup of a socket that never got promoted; see ClearActivePairingState */ }
+                            return $"ERROR: {PairingErrorCodes.PairTimeout}: Pairing handshake timed out — host did not return PairingResponse within 60s";
                         }
                     }
 
                     if (_activePairingResponse == null)
                     {
                         _activePairingClient = null;
-                        try { ws.Dispose(); } catch { }
-                        return "ERROR: Host responded but PairingResponse payload was missing";
+                        try { ws.Dispose(); } catch { /* as above */ }
+                        return $"ERROR: {PairingErrorCodes.PairMalformed}: Host responded but PairingResponse payload was missing";
                     }
 
                     _activePairingClient = client;
@@ -582,14 +577,14 @@ public static class AndroidNativeExports
                 {
                     _activePairingClient = null;
                     Console.Error.WriteLine($"[Pairing] StartPairing failed: {ex.GetType().Name}: {ex.Message}");
-                    return $"ERROR: {ex.GetType().Name}: {ex.Message}";
+                    return $"ERROR: {PairingErrorCodes.Unexpected}: {ex.GetType().Name}: {ex.Message}";
                 }
                 finally
                 {
                     // If we created a socket but didn't promote it to _pairingWebSocket, dispose it now.
                     if (ws != null)
                     {
-                        try { ws.Dispose(); } catch { }
+                        try { ws.Dispose(); } catch { /* as above */ }
                     }
                 }
             }
@@ -611,11 +606,11 @@ public static class AndroidNativeExports
                 try
                 {
                     if (string.IsNullOrEmpty(pin))
-                        return "ERROR: PIN is required";
+                        return $"ERROR: {PairingErrorCodes.ArgMissing}: PIN is required";
                     if (_pairingWebSocket == null || _activePairingResponse == null)
-                        return "ERROR: No active pairing session";
+                        return $"ERROR: {PairingErrorCodes.NoSession}: No active pairing session";
                     if (_activePairingClient == null)
-                        return "ERROR: Pairing session lost client key state";
+                        return $"ERROR: {PairingErrorCodes.SessionKeyLost}: Pairing session lost client key state";
 
                     Console.Error.WriteLine("[Pairing] Submitting PIN — sending PairingComplete, awaiting host confirmation (30s budget)");
 
@@ -630,7 +625,7 @@ public static class AndroidNativeExports
                         catch (OperationCanceledException) when (completeCts.IsCancellationRequested)
                         {
                             ClearActivePairingState();
-                            return "ERROR: PIN submission timed out — host did not confirm within 30s";
+                            return $"ERROR: {PairingErrorCodes.PinConfirmTimeout}: PIN submission timed out — host did not confirm within 30s";
                         }
                     }
 
@@ -648,13 +643,13 @@ public static class AndroidNativeExports
 
                     // PIN HMAC mismatch or host rejected — tear down so the user can retry cleanly.
                     ClearActivePairingState();
-                    return "ERROR: Pairing verification failed (incorrect PIN or session expired)";
+                    return $"ERROR: {PairingErrorCodes.PinRejected}: Pairing verification failed (incorrect PIN or session expired)";
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine($"[Pairing] SubmitPairingPin failed: {ex.GetType().Name}: {ex.Message}");
                     ClearActivePairingState();
-                    return $"ERROR: {ex.GetType().Name}: {ex.Message}";
+                    return $"ERROR: {PairingErrorCodes.Unexpected}: {ex.GetType().Name}: {ex.Message}";
                 }
             }
         });
@@ -673,7 +668,7 @@ public static class AndroidNativeExports
                 try
                 {
                     if (_pairingWebSocket == null || _activePairingClient == null || _activePairingResponse == null)
-                        return "ERROR: No active pairing session";
+                        return $"ERROR: {PairingErrorCodes.NoSession}: No active pairing session";
 
                     // Fast path for older hosts: they never advertised the capability, so don't even
                     // send the request — that would just burn the full 5s budget waiting for a host
@@ -693,14 +688,14 @@ public static class AndroidNativeExports
                         }
                         catch (OperationCanceledException) when (fetchCts.IsCancellationRequested)
                         {
-                            return "ERROR: PIN fetch timed out";
+                            return $"ERROR: {PairingErrorCodes.PinFetchTimeout}: PIN fetch timed out";
                         }
                     }
 
                     // Null == the host declined (untrusted transport) OR there is no active PIN —
                     // indistinguishable by design (mirrors GET /pairing-pin's 404-for-both).
                     if (pinInfo is null)
-                        return "ERROR: PIN not available";
+                        return $"ERROR: {PairingErrorCodes.PinUnavailable}: PIN not available";
 
                     return $"OK:{pinInfo.Pin}|{pinInfo.ExpiresAtUnixMs}";
                 }
@@ -710,7 +705,7 @@ public static class AndroidNativeExports
                     // this export. Whatever went wrong auto-fetching the PIN, the pairing session must
                     // stay valid so the user can still type the PIN in manually.
                     Console.Error.WriteLine($"[Pairing] FetchPairingPin failed: {ex.GetType().Name}: {ex.Message}");
-                    return $"ERROR: {ex.GetType().Name}: {ex.Message}";
+                    return $"ERROR: {PairingErrorCodes.Unexpected}: {ex.GetType().Name}: {ex.Message}";
                 }
             }
         });

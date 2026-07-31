@@ -1,11 +1,9 @@
-using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Threading;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 using Remex.Core.Services; // CaptureScaling (relocated to Remex.Core so the WGC project can share it)
 
 namespace Remex.Agent.Services.ScreenCapture;
@@ -89,9 +87,6 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate uint ReleaseFn(IntPtr self);
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate void GetImmediateContextFn(IntPtr self, out IntPtr ppContext);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     private delegate int  CreateTexture2DFn(IntPtr self, IntPtr pDesc, IntPtr pInitialData, out IntPtr ppTex);
@@ -239,7 +234,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     public DxgiDesktopCapture(ILogger logger)
     {
-        _logger = logger;
+        _logger = Guard.NotNull(logger);
         // Deferred: DXGI device/duplication not opened until the first actual capture.
         // The idle service must not hold a Desktop Duplication consumer slot with no
         // active client — that contends with Windows Remote Desktop's own consumer

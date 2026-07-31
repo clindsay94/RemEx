@@ -1,17 +1,11 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Net.Security;
 using System.Net.WebSockets;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
 using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
@@ -62,7 +56,27 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
     [NotifyCanExecuteChangedFor(nameof(DisconnectCommand))]
     [NotifyCanExecuteChangedFor(nameof(SendPingCommand))]
+    [NotifyPropertyChangedFor(nameof(ConnectionStatusAccessibleName))]
     private bool _isConnected;
+
+    /// <summary>
+    /// Accessible name for the connection status indicator: what it IS, plus its state.
+    /// </summary>
+    /// <remarks>
+    /// The dot used to take its name from <see cref="StatusText"/>, a general-purpose transient
+    /// message. A screen reader therefore announced whatever that last held - a command result, a
+    /// pairing note - as the NAME of the connection indicator, which is both wrong and unstable:
+    /// the same element answered to a different name minute to minute (RemEx-x12a).
+    /// <para>
+    /// Two states only, tracking <see cref="IsConnected"/>, which is exactly what the dot conveys
+    /// visually through its <c>connected</c> class. Sighted and screen-reader users now get the same
+    /// information from it rather than two different things.
+    /// </para>
+    /// </remarks>
+    public string ConnectionStatusAccessibleName =>
+        IsConnected
+            ? LocalizationService.Instance["A11y_ConnectionConnected"]
+            : LocalizationService.Instance["A11y_ConnectionDisconnected"];
 
     [ObservableProperty]
     [NotifyDataErrorInfo]
@@ -382,6 +396,24 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // Unconditional, and deliberately OUTSIDE the idle guard below. This one derives from
+        // IsConnected, so [NotifyPropertyChangedFor] on _isConnected only re-raises it when the
+        // connection actually flips - never on a language switch. A screen reader would keep
+        // announcing the indicator's name in the previous language until the state happened to
+        // change, which for a stable connection is indefinitely (RemEx-6ddx).
+        Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(ConnectionStatusAccessibleName));
+
+            // Re-raised for the same reason, from different triggers: HostRuntimeSummary only fires
+            // when HostCapabilities changes, so on a stable connection it would hold the previous
+            // language indefinitely. PairingPinExpiresInText is refreshed every second by the
+            // countdown, so it self-heals in under a second - included anyway, because a rule with
+            // an exemption list is a rule nobody can check mechanically.
+            OnPropertyChanged(nameof(HostRuntimeSummary));
+            OnPropertyChanged(nameof(PairingPinExpiresInText));
+        });
+
         // Refresh idle status when language changes
         if (!IsConnecting && !IsAutoReconnecting)
         {
@@ -449,44 +481,111 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     }
 
     [RelayCommand]
-    public async Task LockAsync() => await SendCommandAsync("Lock");
+    public async Task LockAsync() => await SendPowerCommandAsync("Lock", "Wol_LockSent");
 
     [RelayCommand]
-    public async Task SleepAsync() => await SendCommandAsync("Sleep");
+    public async Task SleepAsync() => await SendPowerCommandAsync("Sleep", "Wol_SleepSent");
 
     [RelayCommand]
-    public async Task HibernateAsync() => await SendCommandAsync("Hibernate");
+    public async Task HibernateAsync() => await SendPowerCommandAsync("Hibernate", "Wol_HibernateSent");
 
     [RelayCommand]
-    public async Task SignOutAsync() => await SendCommandAsync("SignOut");
+    public async Task SignOutAsync() => await SendPowerCommandAsync("SignOut", "Wol_SignOutSent");
 
     [RelayCommand]
-    public async Task ShutdownAsync() => await SendCommandAsync("Shutdown");
+    public async Task ShutdownAsync() => await SendPowerCommandAsync("Shutdown", "Wol_ShutdownSent");
 
     [RelayCommand]
-    public async Task ForceShutdownAsync() => await SendCommandAsync("ForceShutdown");
+    public async Task ForceShutdownAsync() => await SendPowerCommandAsync("ForceShutdown", "Wol_ForceShutdownSent");
 
     [RelayCommand]
-    public async Task RestartAsync() => await SendCommandAsync("Restart");
+    public async Task RestartAsync() => await SendPowerCommandAsync("Restart", "Wol_RestartSent");
+
+    // ForceRestart existed only on RemoteViewModel, bound straight from RemoteView.axaml, so the
+    // command palette - which wires exclusively through shell.Connection.* - had no way to reach it and
+    // was missing an action every other surface has. (RemEx-6cda.)
+    [RelayCommand]
+    public async Task ForceRestartAsync() => await SendPowerCommandAsync("ForceRestart", "Wol_ForceRestartSent");
 
     [RelayCommand]
-    public async Task RestartToUefiAsync() => await SendCommandAsync("RestartToUefi");
+    public async Task RestartToUefiAsync() => await SendPowerCommandAsync("RestartToUefi", "Wol_RebootUefiSent");
 
-    [RelayCommand]
-    public async Task WakeOnLanAsync()
+    /// <summary>
+    /// Sends a power command and reports the outcome, in both directions.
+    /// </summary>
+    /// <remarks>
+    /// The command palette and the Canvas lock button invoke these <c>[RelayCommand]</c>s directly,
+    /// so the <c>(ok, message)</c> tuple <see cref="SendCommandAsync"/> returns has to be surfaced
+    /// HERE. Discarding it made the palette silent whether the command worked or not - including
+    /// when <see cref="SendCommandAsync"/> returns <c>(false, "Not connected")</c>, which is the
+    /// case a user most needs to be told about. (RemEx-diyv.)
+    ///
+    /// Both directions are reported deliberately: a failure-only message would be inconsistent with
+    /// silence on success, and would leave the user unable to tell "it worked" from "nothing
+    /// happened". <c>RemoteViewModel.ExecuteRemoteCommandAsync</c> surfaces the same tuple into its
+    /// own <c>WolStatusText</c> for the Remote screen's buttons, which take a different path and are
+    /// unaffected by this - the two paths are disjoint, so nothing is reported or recorded twice.
+    /// </remarks>
+    private async Task SendPowerCommandAsync(string action, string sentMessageKey)
     {
-        // This needs parameters usually, but for a simple widget toggle it might use defaults
-        await SendCommandAsync("WakeOnLan");
+        var (ok, message) = await SendCommandAsync(action);
+
+        StatusText = ok
+            ? string.Format(
+                LocalizationService.Instance["Wol_SuccessFormat"],
+                LocalizationService.Instance[sentMessageKey])
+            : string.Format(LocalizationService.Instance["Wol_ErrorFormat"], message);
+
+        // Only accepted commands reach the Home activity feed, matching RemoteViewModel: the feed
+        // is a record of what the PC actually did, not of what was attempted.
+        // Fully qualified: this file imports System.Diagnostics, which has its own ActivityKind.
+        if (ok)
+            ActivityService.Instance.Record(Services.ActivityKind.CommandRun, action);
     }
 
-    public async Task<Remex.Core.Models.IPC.CommandResponse> KillProcessWithResponseAsync(int processId, bool elevated = false)
+    // WakeOnLanAsync used to live here, sending "WakeOnLan" with no parameters on the guess that
+    // the host "might use defaults". It does not: PingPongHandler's WAKEONLAN branch returns
+    // (false, "Missing MacAddress parameter.") when no MAC is supplied, so the command could never
+    // do anything. Its only caller was the command palette, and the tuple was discarded, so it
+    // failed silently on every invocation since it was written. Removed rather than repaired,
+    // because a working palette entry needs the Remote screen's configured MAC and its
+    // not-connected local-send fallback - see RemEx-efse. Wake-on-LAN itself is
+    // unaffected and still works from the Remote screen. (RemEx-paa7.)
+
+    /// <param name="expectedName">
+    /// The process name the user was shown, sent so the host can refuse if the PID has changed hands
+    /// since. Omitted when null — the host then kills unverified, which is what it did for every
+    /// client before RemEx-druh.
+    /// </param>
+    /// <param name="expectedStartUnixMs">
+    /// When this client last saw that PID start. Lets the host tell a RELAUNCH of the same
+    /// program into the same PID from the instance the user actually confirmed.
+    /// </param>
+    public async Task<Remex.Core.Models.IPC.CommandResponse> KillProcessWithResponseAsync(
+        int processId,
+        bool elevated = false,
+        string? expectedName = null,
+        long? expectedStartUnixMs = null)
     {
         if (_webSocket?.State != WebSocketState.Open) return new Remex.Core.Models.IPC.CommandResponse(false, "Not connected", null);
+        var parameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } };
+
+        // The client-side re-check in TaskManagerViewModel cannot close this on its own: it is
+        // separated from the kill by a network round trip, and the PID can change hands inside it.
+        // Sending the name lets the host check identity and kill in one step (RemEx-druh).
+        if (!string.IsNullOrWhiteSpace(expectedName))
+            parameters["ExpectedName"] = expectedName;
+
+        // Omitted rather than sent as 0 when unknown: the host treats an absent value as
+        // unchecked, and 0 would be a real timestamp that matches nothing (RemEx-on4n).
+        if (expectedStartUnixMs is long startMs)
+            parameters["ExpectedStartUnixMs"] = startMs.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
         var msg = new RemexMessage
         {
             Type = MessageTypes.Command,
             CommandAction = elevated ? "KillProcessElevated" : "KillProcess",
-            CommandParameters = new System.Collections.Generic.Dictionary<string, string> { { "ProcessId", processId.ToString() } }
+            CommandParameters = parameters
         };
         try
         {
@@ -507,6 +606,25 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     public bool SupportsRemoteDesktop => HostCapabilities?.SupportsRemoteDesktop ?? true;
 
+    /// <summary>
+    /// The localized label for how the host is running. Note that the wire value "service" is
+    /// legacy naming for a non-interactive/Session-0 Windows process, NOT a service install —
+    /// there is none (RemEx-9z0f). Exposed so callers show this instead of the raw wire token.
+    /// </summary>
+    /// <remarks>
+    /// NOT BOUND IN XAML, and correctly so - it is consumed by <c>AboutViewModel.UpdateHostVersion</c>
+    /// and by <see cref="HostRuntimeSummary"/> below, both of which surface it through their own bound
+    /// properties. Recorded because a scan for "localized property that no view binds" flags this and
+    /// reads as dead code twice over (RemEx-r5pm); it is not.
+    /// </remarks>
+    public string HostRuntimeLabel => HostCapabilities?.RuntimeMode switch
+    {
+        "interactive" => LocalizationService.Instance["Status_InteractiveHost"],
+        "service" => LocalizationService.Instance["Status_ServiceHost"],
+        "headless" => LocalizationService.Instance["Status_HeadlessHost"],
+        _ => LocalizationService.Instance["Status_Host"]
+    };
+
     public string HostRuntimeSummary
     {
         get
@@ -516,18 +634,18 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 return IsConnected ? LocalizationService.Instance["Status_ConnectedToHost"] : LocalizationService.Instance["Status_HostNotConnected"];
             }
 
-            var runtimeLabel = HostCapabilities.RuntimeMode switch
-            {
-                "interactive" => LocalizationService.Instance["Status_InteractiveHost"],
-                "service" => LocalizationService.Instance["Status_ServiceHost"],
-                "headless" => LocalizationService.Instance["Status_HeadlessHost"],
-                _ => LocalizationService.Instance["Status_Host"]
-            };
+            var runtimeLabel = HostRuntimeLabel;
+
 
             return $"{runtimeLabel} on {HostCapabilities.Platform}";
         }
     }
 
+    /// <remarks>
+    /// NOT BOUND IN XAML, and correctly so - consumed by <c>SettingsViewModel.UpdateHostCapabilitySummary</c>
+    /// and by <c>RemoteDesktopViewModel</c>, which expose it through their own bound properties. Flagged
+    /// as apparently-dead by the RemEx-6ddx scan and checked; it is not (RemEx-r5pm).
+    /// </remarks>
     public string RemoteDesktopAvailabilitySummary =>
         SupportsRemoteDesktop
             ? LocalizationService.Instance["Status_RemoteDesktopAvailable"]
@@ -625,7 +743,30 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// <summary>
     /// How long to wait for a command response before giving up.
     /// </summary>
-    private const int CommandTimeoutSeconds = 10;
+    /// <remarks>
+    /// Settable so <c>ConnectionViewModelTests</c> can shorten it; production never assigns it. It
+    /// is a <see cref="TimeSpan"/> rather than a count of seconds purely so the timeout test costs
+    /// milliseconds rather than adding ten seconds to the suite (RemEx-h01r).
+    /// </remarks>
+    internal TimeSpan CommandTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
+    private IWebSocketSender? _commandSender;
+
+    /// <summary>
+    /// How correlated commands reach the wire. Defaults to the real guarded socket send.
+    /// </summary>
+    internal IWebSocketSender CommandSender
+    {
+        get => _commandSender ??= new GuardedSocketSender(this);
+        set => _commandSender = value;
+    }
+
+    /// <summary>The production sender: the existing lock-guarded socket write, behind the seam.</summary>
+    private sealed class GuardedSocketSender(ConnectionViewModel owner) : IWebSocketSender
+    {
+        public Task SendAsync(RemexMessage message, CancellationToken ct)
+            => owner.SendGuardedAsync(message, ct);
+    }
 
     /// <summary>
     /// Pending command awaiters keyed by correlation ID.
@@ -639,17 +780,17 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// message, and awaits the matching response with a <see cref="CommandTimeoutSeconds"/>
     /// timeout.  Cleans up the dictionary entry regardless of outcome.
     /// </summary>
-    private async Task<RemexMessage> SendCommandAndWaitAsync(RemexMessage msg, CancellationToken ct = default)
+    internal async Task<RemexMessage> SendCommandAndWaitAsync(RemexMessage msg, CancellationToken ct = default)
     {
         var correlationId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pendingCommands[correlationId] = tcs;
         try
         {
-            await SendGuardedAsync(msg with { CorrelationId = correlationId }, ct);
+            await CommandSender.SendAsync(msg with { CorrelationId = correlationId }, ct);
             try
             {
-                return await tcs.Task.WaitAsync(TimeSpan.FromSeconds(CommandTimeoutSeconds), ct);
+                return await tcs.Task.WaitAsync(CommandTimeout, ct);
             }
             catch (TimeoutException)
             {
@@ -659,6 +800,44 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         finally
         {
             _pendingCommands.TryRemove(correlationId, out _);
+        }
+    }
+
+    /// <summary>
+    /// Hands a <c>command_response</c> to the caller waiting on its correlation ID.
+    /// </summary>
+    /// <remarks>
+    /// Called by the receive loop, and directly by tests. Keeping it as ONE method is the point:
+    /// a test that re-implemented this matching would keep passing while the real loop broke.
+    /// </remarks>
+    internal void DeliverCommandResponse(RemexMessage message)
+    {
+        if (message.CorrelationId is string cid
+            && _pendingCommands.TryGetValue(cid, out var matchedTcs))
+        {
+            // Normal path: correlation ID present and matches a pending request
+            matchedTcs.TrySetResult(message);
+        }
+        else if (message.CorrelationId is null && !_pendingCommands.IsEmpty)
+        {
+            // Fallback for hosts that do not echo correlation IDs back in their
+            // CommandResponse messages (i.e. unpatched / older host versions).
+            // LIMITATION: With multiple concurrent in-flight commands this path
+            // delivers the response to at most one caller (the first whose TCS
+            // accepts it); all remaining concurrent callers will eventually time
+            // out.  Upgrade the host so it echoes CorrelationId to avoid this.
+            if (_pendingCommands.Count > 1)
+                Debug.WriteLine(
+                    "[ConnectionViewModel] WARNING: Fallback correlation path taken with " +
+                    $"{_pendingCommands.Count} concurrent in-flight commands. " +
+                    "Only one caller will receive this response; the rest will time out. " +
+                    "Upgrade the host to a version that echoes CorrelationId.");
+
+            foreach (var entry in _pendingCommands)
+            {
+                if (entry.Value.TrySetResult(message))
+                    break;
+            }
         }
     }
 
@@ -929,33 +1108,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                         break;
 
                     case MessageTypes.CommandResponse:
-                        if (message.CorrelationId is string cid
-                            && _pendingCommands.TryGetValue(cid, out var matchedTcs))
-                        {
-                            // Normal path: correlation ID present and matches a pending request
-                            matchedTcs.TrySetResult(message);
-                        }
-                        else if (message.CorrelationId is null && !_pendingCommands.IsEmpty)
-                        {
-                            // Fallback for hosts that do not echo correlation IDs back in their
-                            // CommandResponse messages (i.e. unpatched / older host versions).
-                            // LIMITATION: With multiple concurrent in-flight commands this path
-                            // delivers the response to at most one caller (the first whose TCS
-                            // accepts it); all remaining concurrent callers will eventually time
-                            // out.  Upgrade the host so it echoes CorrelationId to avoid this.
-                            if (_pendingCommands.Count > 1)
-                                Debug.WriteLine(
-                                    "[ConnectionViewModel] WARNING: Fallback correlation path taken with " +
-                                    $"{_pendingCommands.Count} concurrent in-flight commands. " +
-                                    "Only one caller will receive this response; the rest will time out. " +
-                                    "Upgrade the host to a version that echoes CorrelationId.");
-
-                            foreach (var entry in _pendingCommands)
-                            {
-                                if (entry.Value.TrySetResult(message))
-                                    break;
-                            }
-                        }
+                        DeliverCommandResponse(message);
                         break;
 
                     case MessageTypes.LauncherSync when message.LauncherEntries is not null:
@@ -1450,9 +1603,10 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     return;
                 }
             }
-            // Fallback for single view / mobile (though this is track 1C desktop mostly)
-            // Just show it. Note: ShowDialog requires a window, mobile needs different navigation.
-            // But we're desktop client right now.
+            // Fallback when no owner window is available — a single-view (non-window) lifetime, or
+            // a null ShellViewModel / MainWindow. Not reachable in practice: this UI only runs as
+            // the PC's classic desktop app, where a MainWindow is always present by the time a PIN
+            // is requested. If it ever were taken, the method returns a null PIN.
         });
         return result;
     }

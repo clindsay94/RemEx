@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
 using Remex.Core.Services;
@@ -41,14 +36,21 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                 var info = new ProcessInfo
                 {
                     Id = p.Id,
-                    Name = p.ProcessName
+                    Name = p.ProcessName,
+                    StartTimeUnixMs = TryReadStartUnixMs(p)
                 };
 
                 try
                 {
                     info = info with { MemoryUsage = p.WorkingSet64 };
                 }
-                catch { }
+                catch
+                {
+                    // Silent per-property degradation, not an error. WorkingSet64 throws for protected and
+                    // system processes even from an elevated host, and for any process that exits between the
+                    // enumeration and this read. The row is still worth listing with the memory figure absent -
+                    // dropping it would hide a running process from the user entirely.
+                }
 
                 try
                 {
@@ -71,8 +73,14 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                         info = info with { CpuUsage = usage };
                     }
                 }
-                catch (System.ComponentModel.Win32Exception) { }
-                catch (InvalidOperationException) { }
+                catch (System.ComponentModel.Win32Exception)
+                {
+                    // As above: TotalProcessorTime is unreadable for protected processes.
+                }
+                catch (InvalidOperationException)
+                {
+                    // And InvalidOperationException is the process having exited mid-enumeration.
+                }
                 catch (Exception ex)
                 {
                     _logger.LogTrace(ex, "Unexpected error getting CPU time for {Pid}", p.Id);
@@ -96,11 +104,22 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                             var fi = new FileInfo(path);
                             info = info with { InstallDate = fi.CreationTime };
                         }
-                        catch { }
+                        catch
+                        {
+                            // The executable exists but its creation time is unreadable - a permissions or
+                            // reparse-point case. The install date is cosmetic; the row is not.
+                        }
                     }
                 }
-                catch (System.ComponentModel.Win32Exception) { }
-                catch (InvalidOperationException) { }
+                catch (System.ComponentModel.Win32Exception)
+                {
+                    // MainModule is the most commonly denied of these: it is refused for every process at a
+                    // higher integrity level, which is most of the ones worth protecting.
+                }
+                catch (InvalidOperationException)
+                {
+                    // Exited between enumeration and read.
+                }
                 catch (Exception ex)
                 {
                     _logger.LogTrace(ex, "Unexpected error getting module info for {Pid}", p.Id);
@@ -119,11 +138,67 @@ public class WindowsProcessMonitorService : IProcessMonitorService
         });
     }
 
-    public ProcessKillResult KillProcess(int processId)
+
+    /// <summary>
+    /// A process's start time as Unix milliseconds UTC, or null when it cannot be read.
+    /// </summary>
+    /// <remarks>
+    /// <c>Process.StartTime</c> throws for protected and system processes even from an elevated
+    /// host, so this must degrade the value rather than the row — a process with no readable start
+    /// time is still listed and still killable, just unverified on that axis. (RemEx-on4n.)
+    /// </remarks>
+    private static long? TryReadStartUnixMs(Process p)
+    {
+        try
+        {
+            return new DateTimeOffset(p.StartTime.ToUniversalTime(), TimeSpan.Zero).ToUnixTimeMilliseconds();
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    public ProcessKillResult KillProcess(int processId, string? expectedName = null, long? expectedStartUnixMs = null)
     {
         try
         {
             var p = Process.GetProcessById(processId);
+
+            // Check identity immediately before killing. This is the whole reason the check lives
+            // on the host: any client-side version is separated from the kill by a network round
+            // trip, during which the PID can change hands (RemEx-druh).
+            //
+            // Not literally atomic, and the comment should not claim it is: ProcessName is read
+            // from the snapshot GetProcessById took, and Kill() re-resolves the PID when it opens
+            // its handle. What this removes is the round trip and the user's thinking time — the
+            // residual window is a handful of instructions rather than seconds.
+            //
+            // Both the process list and this check read the name from Process.ProcessName, so the
+            // two agree by construction. That is NOT true on Linux, which has a second, truncated
+            // spelling — see the note in LinuxProcessMonitorService.
+            if (!ProcessKillGuard.IsExpectedProcess(expectedName, p.ProcessName)
+                || !ProcessKillGuard.IsExpectedStartTime(expectedStartUnixMs, TryReadStartUnixMs(p)))
+            {
+                _logger.LogWarning(
+                    "Refused to end process {Pid}: expected {Expected} but found {Actual}.",
+                    processId, expectedName, p.ProcessName);
+                return new ProcessKillResult(
+                    false,
+                    ProcessKillErrorCodes.Format(
+                        ProcessKillErrorCodes.IdentityMismatch,
+                        ProcessKillGuard.MismatchMessage(processId, expectedName, p.ProcessName),
+                        p.ProcessName));
+            }
+
             p.Kill(entireProcessTree: true);
             return new ProcessKillResult(true, "Process killed.");
         }
@@ -132,23 +207,34 @@ public class WindowsProcessMonitorService : IProcessMonitorService
             _logger.LogWarning(ex, "Access denied killing process {Pid}; elevation is required.", processId);
             return new ProcessKillResult(
                 false,
-                "Access denied. Run the host as Administrator or retry with KillProcessElevated.",
+                ProcessKillErrorCodes.Format(
+                    ProcessKillErrorCodes.AccessDenied,
+                    "Access denied. Run the host as Administrator or retry with KillProcessElevated."),
                 true);
         }
         catch (ArgumentException ex)
         {
             _logger.LogWarning(ex, "Process {Pid} could not be found.", processId);
-            return new ProcessKillResult(false, "Process could not be found.");
+            return new ProcessKillResult(
+                false,
+                ProcessKillErrorCodes.Format(
+                    ProcessKillErrorCodes.NotRunning, "Process could not be found."));
         }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Process {Pid} has already exited.", processId);
-            return new ProcessKillResult(false, "Process has already exited.");
+            return new ProcessKillResult(
+                false,
+                ProcessKillErrorCodes.Format(
+                    ProcessKillErrorCodes.NotRunning, "Process has already exited."));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to kill process {Pid}", processId);
-            return new ProcessKillResult(false, $"Failed to kill process {processId}.");
+            return new ProcessKillResult(
+                false,
+                ProcessKillErrorCodes.Format(
+                    ProcessKillErrorCodes.Failed, $"Failed to kill process {processId}."));
         }
     }
 

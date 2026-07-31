@@ -220,6 +220,33 @@
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
 
+            <!-- ═══ CONNECTION STATUS INDICATOR (RemEx-udds) ═══
+             Colour resolves through theme tokens so all four themes apply, and the .connected
+             class flips with the binding. The base style is the disconnected state; .connected
+             overrides it. Replaces literal colours previously held in a BoolToColorConverter
+             ConverterParameter, which DynamicResource could not reach. -->
+        <Style Selector="Ellipse.status-dot">
+            <Setter Property="Fill" Value="{DynamicResource SystemErrorBrush}"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Fill" Duration="0:0:0.4"/>
+            </Transitions>
+        </Setter>
+        </Style>
+        <Style Selector="Ellipse.status-dot.connected">
+            <Setter Property="Fill" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <Style Selector="Ellipse.status-ring">
+            <Setter Property="Stroke" Value="{DynamicResource SystemErrorBrush}"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Stroke" Duration="0:0:0.4"/>
+            </Transitions>
+        </Setter>
+        </Style>
+        <Style Selector="Ellipse.status-ring.connected">
+            <Setter Property="Stroke" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
     </Application.Styles>
 
     <TrayIcon.Icons>

@@ -3,8 +3,6 @@ using System.Collections.Concurrent;
 using System.Net.Security;
 using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using System.Threading.Tasks;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Serialization;
@@ -22,6 +20,12 @@ public sealed class RemexDesktopClient : IDisposable
     private Task? _receiveLoopTask;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<DesktopWindowResult>> _pendingWindowRequests = new();
     private bool _isStreaming;
+
+    // VULN-2 (RemEx-s032.2): the reconnect secret established at pairing, base64-encoded. Remembered on
+    // the singleton so reconnects after a drop can re-answer the host's proof-of-possession challenge on
+    // the /ws/desktop channel without the caller re-supplying it. Null until the first paired connect.
+    private string? _clientId;
+    private string? _reconnectSecretBase64;
 
     public event Action<byte[]>? FrameReceived;
 
@@ -47,44 +51,83 @@ public sealed class RemexDesktopClient : IDisposable
 
     private RemexDesktopClient() { }
 
-    public async Task ConnectAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
+    /// <summary>
+    /// Fail-closed guard (RemEx-s032.5 / VULN-5). The JNI trust-manager overrides exported by
+    /// <c>AndroidNativeExports</c> unconditionally force the Android OS trust manager to accept ANY
+    /// certificate — by design, because <see cref="ClientWebSocket.Options"/>'s
+    /// <c>RemoteCertificateValidationCallback</c> is meant to be the sole authority for TLS trust on this
+    /// connection. If that callback were ever installed conditionally (only when a pin is present) and a
+    /// caller connected with no pin, <see cref="SslStream"/> would fall through to the OS trust manager —
+    /// which the JNI overrides force to accept anything — and TLS would silently accept ANY certificate
+    /// (full MITM). Calling this before <see cref="ConnectAsync"/> touches the socket makes an empty pin
+    /// impossible to reach in production: no pin, no connection, full stop.
+    /// </summary>
+    internal static void EnsurePinnedOrThrow(string? spkiHash)
     {
+        if (string.IsNullOrWhiteSpace(spkiHash))
+        {
+            throw new InvalidOperationException(
+                "Refusing to connect without a pinned certificate SPKI hash (fail-closed).");
+        }
+    }
+
+    public async Task ConnectAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default, string? reconnectSecretBase64 = null)
+    {
+        EnsurePinnedOrThrow(spkiHash);
+
         await DisconnectAsync();
+
+        _clientId = clientId;
+        // Remember the secret across reconnects; a null on a later call keeps the previously supplied one.
+        if (!string.IsNullOrWhiteSpace(reconnectSecretBase64))
+        {
+            _reconnectSecretBase64 = reconnectSecretBase64;
+        }
 
         var wsUri = BuildDesktopUri(host, port, clientId);
         _webSocket = new ClientWebSocket();
 
-        if (!string.IsNullOrEmpty(spkiHash))
+        // Defense in depth: ALWAYS install the validation callback (never leave the socket to fall
+        // through to the OS trust manager), and reject outright if somehow reached with no pin
+        // configured. EnsurePinnedOrThrow above already guarantees spkiHash is non-empty here, but this
+        // callback stands on its own so a future refactor of the early guard can't silently reopen VULN-5.
+        _webSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
         {
-            _webSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
-            {
-                if (cert == null) return false;
-                using var cert2 = new X509Certificate2(cert);
-                var actualSpki = cert2.PublicKey.ExportSubjectPublicKeyInfo();
-                var actualHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(actualSpki));
-                return actualHash == spkiHash;
-            };
-        }
+            if (string.IsNullOrWhiteSpace(spkiHash)) return false;
+            if (cert == null) return false;
+            using var cert2 = new X509Certificate2(cert);
+            var actualSpki = cert2.PublicKey.ExportSubjectPublicKeyInfo();
+            var actualHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(actualSpki));
+            return actualHash == spkiHash;
+        };
 
         await _webSocket.ConnectAsync(wsUri, ct);
+
+        // VULN-2 (RemEx-s032.2): the host challenges the /ws/desktop channel for proof-of-possession as
+        // the FIRST frame after accept (non-loopback only; the Android client is always remote). Answer it
+        // synchronously here — before the receive loop starts and before StartStreamAsync sends any
+        // DesktopStart — so the proof is guaranteed to be the first frame the host reads back, not racing a
+        // stream-control message. Skipped only when no reconnect secret is known (unpaired/legacy path,
+        // which the host will then reject — the correct fail-closed outcome).
+        await CompleteReconnectProofAsync(ct);
 
         _receiveCts = new CancellationTokenSource();
         _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_receiveCts.Token));
     }
 
-    public async Task EnsureConnectedAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
+    public async Task EnsureConnectedAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default, string? reconnectSecretBase64 = null)
     {
         if (IsConnected)
         {
             return;
         }
 
-        await ConnectAsync(host, port, clientId, spkiHash, ct);
+        await ConnectAsync(host, port, clientId, spkiHash, ct, reconnectSecretBase64);
     }
 
-    public async Task StartStreamAsync(string host, int port, DesktopConfig? config, string? clientId = null, string? spkiHash = null, CancellationToken ct = default)
+    public async Task StartStreamAsync(string host, int port, DesktopConfig? config, string? clientId = null, string? spkiHash = null, CancellationToken ct = default, string? reconnectSecretBase64 = null)
     {
-        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct);
+        await EnsureConnectedAsync(host, port, clientId, spkiHash, ct, reconnectSecretBase64);
 
         var resolvedConfig = config ?? DefaultConfig;
 
@@ -305,14 +348,14 @@ public sealed class RemexDesktopClient : IDisposable
         _pendingWindowRequests.Clear();
         if (_receiveLoopTask != null)
         {
-            try { await _receiveLoopTask; } catch { }
+            try { await _receiveLoopTask; } catch { /* draining the receive loop after cancelling it - see RemexNativeClient */ }
         }
 
         if (_webSocket != null)
         {
             if (_webSocket.State == WebSocketState.Open)
             {
-                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { }
+                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { /* a polite close on a socket that may already be gone */ }
             }
             _webSocket.Dispose();
             _webSocket = null;
@@ -323,6 +366,80 @@ public sealed class RemexDesktopClient : IDisposable
         _receiveCts = null;
         _receiveLoopTask = null;
         Disconnected?.Invoke();
+    }
+
+    /// <summary>
+    /// VULN-2 (RemEx-s032.2): answers the host's PAIR-1 proof-of-possession challenge on the
+    /// <c>/ws/desktop</c> channel. Reads the first frame (a <c>reconnect_challenge</c> carrying a host
+    /// nonce), replies with <c>HMAC-SHA256(reconnectSecret, nonce)</c>, and returns — all before the
+    /// receive loop or any stream-control message, so the proof is the first frame the host reads back.
+    /// No-op when no reconnect secret is configured (the host then rejects the unproven socket).
+    /// </summary>
+    private async Task CompleteReconnectProofAsync(CancellationToken ct)
+    {
+        // Prefer an explicitly-supplied secret (tests / explicit callers); otherwise borrow the one the
+        // sibling /ws control client authenticated with, so the Android path needs no extra JNI plumbing.
+        var secretBase64 = _reconnectSecretBase64 ?? RemexNativeClient.Current.ReconnectSecretBase64;
+        if (string.IsNullOrWhiteSpace(secretBase64) || _webSocket is null)
+        {
+            return;
+        }
+
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+
+        var buffer = ArrayPool<byte>.Shared.Rent(64 * 1024);
+        try
+        {
+            using var ms = new System.IO.MemoryStream();
+            WebSocketReceiveResult result;
+            do
+            {
+                result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), linked.Token);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    return;
+                }
+                ms.Write(buffer, 0, result.Count);
+            }
+            while (!result.EndOfMessage);
+
+            var msg = RemexJson.Deserialize(ms.ToArray(), RemexJsonSerializerContext.Default.RemexMessage);
+            if (msg?.Type != MessageTypes.ReconnectChallenge || msg.ReconnectChallenge is null)
+            {
+                // The host did not challenge (only happens on loopback, which the Android client never is).
+                // Nothing to prove; the already-consumed frame is not a stream message, so just return.
+                return;
+            }
+
+            var secret = Convert.FromBase64String(secretBase64);
+            try
+            {
+                var nonce = Convert.FromBase64String(msg.ReconnectChallenge.NonceBase64);
+                var proof = System.Security.Cryptography.HMACSHA256.HashData(secret, nonce);
+                var reply = new RemexMessage
+                {
+                    Type = MessageTypes.ReconnectProof,
+                    ProtocolVersion = 2,
+                    ClientId = _clientId,
+                    ReconnectProof = new ReconnectProof
+                    {
+                        ClientId = _clientId,
+                        ProofHmacBase64 = Convert.ToBase64String(proof),
+                    },
+                };
+                var bytes = RemexJson.SerializeToUtf8Bytes(reply, RemexJsonSerializerContext.Default.RemexMessage);
+                await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, linked.Token);
+            }
+            finally
+            {
+                System.Security.Cryptography.CryptographicOperations.ZeroMemory(secret);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
     private async Task ReceiveLoopAsync(CancellationToken ct)

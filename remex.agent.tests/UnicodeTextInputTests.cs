@@ -1,4 +1,3 @@
-using System.Linq;
 using Remex.Agent.Services.Input;
 using Xunit;
 

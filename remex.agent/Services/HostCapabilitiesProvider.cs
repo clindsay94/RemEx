@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using Remex.Core.Guards;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Agent.Services.Input;
@@ -38,8 +39,8 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         IScreenCaptureService screenCapture,
         IInputSimulationService inputSimulation)
     {
-        _screenCapture = screenCapture;
-        _inputSimulation = inputSimulation;
+        _screenCapture = Guard.NotNull(screenCapture);
+        _inputSimulation = Guard.NotNull(inputSimulation);
         _cached = new Lazy<HostCapabilities>(Build, isThreadSafe: true);
     }
 
@@ -128,8 +129,16 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         return Environment.UserInteractive && Process.GetCurrentProcess().SessionId != 0;
     }
 
-    private static string GetRuntimeMode(bool isInteractiveSession)
-    {
+    /// <summary>
+    /// Classifies how this process is running. NOTE: the "service" identifier is legacy naming from
+    /// the removed Windows-service design (RemEx-aep) — it does NOT mean RemEx is installed as a
+    /// service, because no such install exists. It simply means Windows reported a non-interactive
+    /// or Session-0 process, i.e. the same condition Linux reports as "headless". Kept as-is
+    /// because the identifier is part of the serialized HostCapabilities contract; its consumers
+    /// are PC-side only (ConnectionViewModel, AboutViewModel). The user-facing label was
+    /// corrected to say "no desktop session" rather than "Service PC" (RemEx-9z0f).
+    /// </summary>
+    private static string GetRuntimeMode(bool isInteractiveSession)    {
         if (OperatingSystem.IsWindows())
         {
             return isInteractiveSession ? "interactive" : "service";
@@ -167,7 +176,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             return windowsReport?.SupportsRemoteDesktopSession ?? isInteractiveSession
                 ? (true, windowsReport?.CaptureBackendDegradedReason)
                 : (false, windowsReport?.RemoteDesktopUnavailableReason
-                    ?? "Remote desktop requires an interactive logged-in user session. The service can stay online for commands, but a logged-in companion is required for screen streaming and input.");
+                    ?? "Remote desktop needs RemEx to be running inside a signed-in Windows session. RemEx normally starts on its own when you sign in — if you are seeing this, sign in and start RemEx from the Start menu.");
         }
 
         if (OperatingSystem.IsLinux())

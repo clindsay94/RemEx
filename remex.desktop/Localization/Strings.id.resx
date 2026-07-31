@@ -14,26 +14,14 @@
   </resheader>
 
   
-  <data name="App_Name" xml:space="preserve">
-    <value>RemEx</value>
-  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Beranda</value>
   </data>
   <data name="Nav_Sensors" xml:space="preserve">
     <value>Sensor</value>
   </data>
-  <data name="Nav_Remote" xml:space="preserve">
-    <value>Jarak Jauh</value>
-  </data>
   <data name="Nav_Launcher" xml:space="preserve">
     <value>Peluncur</value>
-  </data>
-  <data name="Nav_Tasks" xml:space="preserve">
-    <value>Tugas</value>
-  </data>
-  <data name="Nav_Desktop" xml:space="preserve">
-    <value>Desktop</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Pengaturan</value>
@@ -64,20 +52,11 @@
   <data name="Btn_Discover" xml:space="preserve">
     <value>Temukan</value>
   </data>
-  <data name="Btn_Refresh" xml:space="preserve">
-    <value>⟳ Segarkan</value>
-  </data>
   <data name="Btn_Start" xml:space="preserve">
     <value>▶ Mulai</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
     <value>⏹ Hentikan</value>
-  </data>
-  <data name="Btn_Submit" xml:space="preserve">
-    <value>Kirim</value>
-  </data>
-  <data name="Btn_Ping" xml:space="preserve">
-    <value>Ping</value>
   </data>
 
   
@@ -86,12 +65,6 @@
   </data>
   <data name="Remote_Subheader" xml:space="preserve">
     <value>KONTROL DAYA &amp; SISTEM</value>
-  </data>
-  <data name="Remote_WolSection" xml:space="preserve">
-    <value>WAKE ON LAN</value>
-  </data>
-  <data name="Remote_WolDescription" xml:space="preserve">
-    <value>Kirim paket ajaib untuk membangunkan PC target.</value>
   </data>
   <data name="Remote_Graceful" xml:space="preserve">
     <value>NORMAL</value>
@@ -126,9 +99,6 @@
   <data name="Remote_RebootUefi" xml:space="preserve">
     <value>🔧 Reboot ke UEFI</value>
   </data>
-  <data name="Remote_WolSend" xml:space="preserve">
-    <value>🔌 Kirim Paket Wake-on-LAN</value>
-  </data>
 
   
   <data name="Settings_Header" xml:space="preserve">
@@ -149,17 +119,8 @@
   <data name="Settings_HostAddress" xml:space="preserve">
     <value>Alamat PC</value>
   </data>
-  <data name="Settings_AccessKey" xml:space="preserve">
-    <value>Kunci Akses</value>
-  </data>
   <data name="Settings_SaveReconnect" xml:space="preserve">
     <value>Simpan &amp; Hubungkan Ulang</value>
-  </data>
-  <data name="Settings_RemoteDesktop" xml:space="preserve">
-    <value>DESKTOP JARAK JAUH</value>
-  </data>
-  <data name="Settings_StreamFpsDesc" xml:space="preserve">
-    <value>Kecepatan bingkai default untuk streaming baru</value>
   </data>
   <data name="Settings_Layout" xml:space="preserve">
     <value>TATA LETAK</value>
@@ -179,50 +140,11 @@
   <data name="Settings_PinnedSensorsDesc" xml:space="preserve">
     <value>Pilih sensor untuk ditampilkan di layar beranda</value>
   </data>
-  <data name="Settings_AccountFormat" xml:space="preserve">
-    <value>Akun: {0}</value>
-  </data>
-  <data name="Settings_Username" xml:space="preserve">
-    <value>Nama pengguna</value>
-  </data>
-  <data name="Settings_Password" xml:space="preserve">
-    <value>Kata sandi</value>
-  </data>
-  <data name="Settings_RestartNote" xml:space="preserve">
-    <value>Perubahan bahasa akan berlaku setelah memulai ulang RemEx.</value>
-  </data>
   <data name="Settings_Language" xml:space="preserve">
     <value>Bahasa</value>
   </data>
 
   
-  <data name="Home_Subtitle" xml:space="preserve">
-    <value>PUSAT KOMANDO EKSEKUSI JARAK JAUH</value>
-  </data>
-  <data name="Home_QuickActions" xml:space="preserve">
-    <value>AKSI CEPAT</value>
-  </data>
-  <data name="Home_SensorWorkspace" xml:space="preserve">
-    <value>Ruang Kerja Sensor</value>
-  </data>
-  <data name="Home_PcRemote" xml:space="preserve">
-    <value>PC Jarak Jauh</value>
-  </data>
-  <data name="Home_Desktop" xml:space="preserve">
-    <value>Desktop</value>
-  </data>
-  <data name="Home_Launcher" xml:space="preserve">
-    <value>Peluncur</value>
-  </data>
-  <data name="Home_Tasks" xml:space="preserve">
-    <value>Tugas</value>
-  </data>
-  <data name="Home_LiveTelemetry" xml:space="preserve">
-    <value>TELEMETRI LANGSUNG</value>
-  </data>
-  <data name="Home_NoPinnedSensors" xml:space="preserve">
-    <value>Belum ada sensor yang disematkan</value>
-  </data>
   <data name="Home_NoPinnedSensorsHint" xml:space="preserve">
     <value>Buka Ruang Kerja Sensor, klik kanan kartu, dan sematkan ke Beranda.</value>
   </data>
@@ -303,9 +225,6 @@
   </data>
 
   
-  <data name="TrayFlyout_Header" xml:space="preserve">
-    <value>KILASAN LANGSUNG</value>
-  </data>
   <data name="TrayFlyout_Home" xml:space="preserve">
     <value>BERANDA</value>
   </data>
@@ -362,41 +281,8 @@
   <data name="Canvas_Disconnect" xml:space="preserve">
     <value>✕ Putuskan</value>
   </data>
-  <data name="Canvas_LayoutSaved" xml:space="preserve">
-    <value>Tata Letak Disimpan!</value>
-  </data>
-  <data name="Canvas_SyncRequested" xml:space="preserve">
-    <value>Sinkronisasi diminta…</value>
-  </data>
-  <data name="Dashboard_SystemTelemetry" xml:space="preserve">
-    <value>Telemetri Sistem</value>
-  </data>
-  <data name="Dashboard_Samples" xml:space="preserve">
-    <value>SAMPEL</value>
-  </data>
-  <data name="Dashboard_Uptime" xml:space="preserve">
-    <value>WAKTU AKTIF</value>
-  </data>
   <data name="Dashboard_Connect" xml:space="preserve">
     <value>⚡ Hubungkan</value>
-  </data>
-  <data name="Dashboard_Ping" xml:space="preserve">
-    <value>📡 Ping</value>
-  </data>
-  <data name="Dashboard_Disconnect" xml:space="preserve">
-    <value>✕ Putuskan</value>
-  </data>
-  <data name="Dashboard_HostWatermark" xml:space="preserve">
-    <value>ws://PC:port/ws</value>
-  </data>
-  <data name="Dashboard_MenuSize" xml:space="preserve">
-    <value>📐 Ukuran</value>
-  </data>
-  <data name="Dashboard_MenuTheme" xml:space="preserve">
-    <value>🎨 Tema</value>
-  </data>
-  <data name="Dashboard_MenuGraph" xml:space="preserve">
-    <value>📊 Grafik</value>
   </data>
 
   
@@ -433,12 +319,6 @@
   <data name="RemoteDesktop_Fullscreen" xml:space="preserve">
     <value>Keluar</value>
   </data>
-  <data name="RemoteDesktop_CompactPad" xml:space="preserve">
-    <value>Kompak</value>
-  </data>
-  <data name="RemoteDesktop_FullPad" xml:space="preserve">
-    <value>Penuh</value>
-  </data>
   <data name="RemoteDesktop_ResolutionFormat" xml:space="preserve">
     <value>Resolusi: {0}</value>
   </data>
@@ -446,16 +326,10 @@
     <value>FPS: {0:F1}</value>
   </data>
   <data name="RemoteDesktop_QualityFormat" xml:space="preserve">
-    <value>Q: {0}</value>
+    <value>Kualitas: {0}%</value>
   </data>
 
   
-  <data name="Custom_Header" xml:space="preserve">
-    <value>🎨 KUSTOMISASI</value>
-  </data>
-  <data name="Custom_Subheader" xml:space="preserve">
-    <value>TEMA &amp; PRESET MESIN</value>
-  </data>
   <data name="Custom_BasePresets" xml:space="preserve">
     <value>PRESET DASAR</value>
   </data>
@@ -485,12 +359,6 @@
   </data>
   <data name="Custom_Reset" xml:space="preserve">
     <value>Atur Ulang ke Default Tema</value>
-  </data>
-  <data name="Custom_Back" xml:space="preserve">
-    <value>← Pusat Komando</value>
-  </data>
-  <data name="Custom_RemoteCardShape" xml:space="preserve">
-    <value>Bentuk Kartu Jarak Jauh</value>
   </data>
   <data name="Custom_PresetStandardGlass" xml:space="preserve">
     <value>Standard Glass</value>
@@ -572,44 +440,17 @@
   <data name="Status_StreamConnecting" xml:space="preserve">
     <value>Menghubungkan...</value>
   </data>
-  <data name="Status_StreamFailedFormat" xml:space="preserve">
-    <value>Gagal: {0}</value>
+  <data name="Status_StreamFailed" xml:space="preserve">
+    <value>Tidak dapat memulai streaming. Coba hubungkan ulang.</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
     <value>Dihentikan</value>
   </data>
-  <data name="Status_FrameDecodeErrorFormat" xml:space="preserve">
-    <value>Kesalahan dekode frame ({0} bytes): {1}: {2}</value>
+  <data name="Status_FrameDecodeError" xml:space="preserve">
+    <value>Tidak dapat menampilkan layar jarak jauh — coba turunkan Kualitas, atau putuskan lalu sambungkan kembali.</value>
   </data>
 
   
-  <data name="Service_NotInstalled" xml:space="preserve">
-    <value>Belum Terinstal</value>
-  </data>
-  <data name="Service_Running" xml:space="preserve">
-    <value>Berjalan</value>
-  </data>
-  <data name="Service_Stopped" xml:space="preserve">
-    <value>Dihentikan</value>
-  </data>
-  <data name="Service_Pending" xml:space="preserve">
-    <value>Menunggu…</value>
-  </data>
-  <data name="Service_Installed" xml:space="preserve">
-    <value>Terinstal</value>
-  </data>
-  <data name="Service_Starting" xml:space="preserve">
-    <value>Memulai…</value>
-  </data>
-  <data name="Service_Stopping" xml:space="preserve">
-    <value>Menghentikan…</value>
-  </data>
-  <data name="Service_Uninstalling" xml:space="preserve">
-    <value>Layanan dihapus.</value>
-  </data>
-  <data name="Service_PasswordRequired" xml:space="preserve">
-    <value>Kata sandi diperlukan.</value>
-  </data>
   <data name="RemoteDesktop_ZoomFormat" xml:space="preserve">
     <value>Zoom: {0}×</value>
   </data>
@@ -618,24 +459,6 @@
   </data>
   <data name="Service_HostUnavailableHint" xml:space="preserve">
     <value>Hubungkan ke PC untuk memeriksa kemampuan runtime.</value>
-  </data>
-  <data name="Service_Checking" xml:space="preserve">
-    <value>Memeriksa…</value>
-  </data>
-  <data name="Service_StoppedMsg" xml:space="preserve">
-    <value>Dihentikan.</value>
-  </data>
-  <data name="Service_StopFailed" xml:space="preserve">
-    <value>Gagal menghentikan — lihat log.</value>
-  </data>
-  <data name="Service_CredentialsUpdated" xml:space="preserve">
-    <value>Kredensial diperbarui — restart layanan agar perubahan diterapkan.</value>
-  </data>
-  <data name="Service_CredentialsFailed" xml:space="preserve">
-    <value>Gagal — lihat log.</value>
-  </data>
-  <data name="Service_UninstallFailed" xml:space="preserve">
-    <value>Copot pemasangan mungkin gagal — lihat log.</value>
   </data>
   <data name="Status_ConnectionCancelled" xml:space="preserve">
     <value>Koneksi dibatalkan</value>
@@ -662,7 +485,7 @@
     <value>PC interaktif</value>
   </data>
   <data name="Status_ServiceHost" xml:space="preserve">
-    <value>PC layanan</value>
+    <value>PC tanpa sesi desktop</value>
   </data>
   <data name="Status_HeadlessHost" xml:space="preserve">
     <value>PC tanpa antarmuka</value>
@@ -687,9 +510,6 @@
   </data>
   <data name="Status_ErrorFormat" xml:space="preserve">
     <value>Kesalahan: {0}</value>
-  </data>
-  <data name="Status_UserDisconnected" xml:space="preserve">
-    <value>Pengguna terputus</value>
   </data>
   <data name="Status_SendErrorFormat" xml:space="preserve">
     <value>Kesalahan pengiriman: {0}</value>
@@ -786,9 +606,9 @@
     <value>Selamat Datang di RemEx</value>
   </data>
   <data name="Tutorial_P0_Body" xml:space="preserve">
-    <value>RemEx 2.0 turns your PC into a secure remote command center. Monitor hardware sensors, launch apps, manage files and processes, and stream your desktop from your phone or a second desktop client.
+    <value>RemEx mengubah PC Anda menjadi pusat komando jarak jauh yang aman. Dari ponsel Anda dapat memantau sensor perangkat keras, menjalankan aplikasi, mengelola berkas dan proses, serta melakukan streaming desktop.
 
-Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based pairing.</value>
+RemEx berjalan di PC ini dan ponsel Anda terhubung ke sana. Setiap koneksi dilindungi TLS dan pemasangan dengan PIN.</value>
   </data>
 
   <data name="Tutorial_P1_Title" xml:space="preserve">
@@ -798,7 +618,7 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Aplikasi desktop ini mencakup RemEx PC tertanam yang mulai secara otomatis. Ponsel Android Anda terhubung kepadanya — bukan sebaliknya.</value>
   </data>
   <data name="Tutorial_P1_Body2" xml:space="preserve">
-    <value>Untuk akses selalu aktif (bahkan saat Anda belum login), Anda dapat menginstal PC sebagai layanan Windows atau PC Linux. Ini memungkinkan ponsel Anda terhubung kapan saja.</value>
+    <value>RemEx berjalan otomatis saat Anda masuk ke PC ini — melalui tugas logon di Windows atau entri autostart di Linux. Jadi ponsel Anda dapat terhubung kapan saja selama Anda masuk. Pemantauan sensor dan perintah daya tetap berfungsi saat layar terkunci, tetapi untuk melakukan streaming atau mengendalikan desktop, sesi harus tidak terkunci. Jika PC dimatikan atau Anda keluar dari akun, bangunkan dengan Wake-on-LAN lalu masuk terlebih dahulu.</value>
   </data>
 
   <data name="Tutorial_P4_Title" xml:space="preserve">
@@ -808,10 +628,10 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Untuk pemantauan perangkat keras terperinci (300+ sensor), instal HWiNFO64 — gratis untuk penggunaan pribadi.</value>
   </data>
   <data name="Tutorial_P4_Steps" xml:space="preserve">
-    <value>1. Download from hwinfo.com
-2. Run HWInfo → Settings (⚙) → Main Settings
-3. Check 'Shared Memory Support' → OK
-4. HWInfo must be running for RemEx to read its sensors</value>
+    <value>1. Unduh dari hwinfo.com
+2. Jalankan HWInfo → Settings (⚙) → Main Settings
+3. Centang 'Shared Memory Support' → OK
+4. HWInfo harus tetap berjalan agar RemEx dapat membaca sensornya</value>
   </data>
   <data name="Tutorial_P4_Warning" xml:space="preserve">
     <value>⚠ Memori Bersama (Shared Memory) HWInfo otomatis dinonaktifkan setelah 12 jam (versi gratis). Aktifkan kembali secara berkala, atau pertimbangkan lisensi Pro.</value>
@@ -840,13 +660,13 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Peluncur Aplikasi memungkinkan Anda memulai program di PC dari ponsel Anda. Aplikasi harus dikonfigurasi di sini terlebih dahulu.</value>
   </data>
   <data name="Tutorial_P6_Steps" xml:space="preserve">
-    <value>1. Navigate to the Launcher page (sidebar)
-2. Click '+ Add Program'
-3. Browse to the .exe or shortcut
-4. Launch from your Android app!</value>
+    <value>1. Buka halaman Peluncur (bilah sisi)
+2. Klik '+ Tambah Program'
+3. Telusuri ke file .exe atau pintasan
+4. Jalankan dari aplikasi Android Anda!</value>
   </data>
   <data name="Tutorial_P6_Note" xml:space="preserve">
-    <value>Ini berfungsi bahkan dengan layanan mandiri Remex.PC — konfigurasikan aplikasi di klien desktop setidaknya satu kali.</value>
+    <value>Ponsel Anda hanya dapat memulai program yang Anda tambahkan di sini — demi keamanan, RemEx tidak akan menjalankan apa pun yang tidak ada dalam daftar ini.</value>
   </data>
 
   <data name="Tutorial_P7_Title" xml:space="preserve">
@@ -859,8 +679,8 @@ Your PC runs RemEx PC, and every connection is protected with TLS plus PIN-based
     <value>Jika penemuan otomatis tidak berfungsi, temukan IP PC Anda secara manual:</value>
   </data>
   <data name="Tutorial_P7_IpSteps" xml:space="preserve">
-    <value>Windows: CMD → ipconfig → 'IPv4 Address'
-Linux: ip addr  or  hostname -I</value>
+    <value>Windows: CMD → ipconfig → 'Alamat IPv4'
+Linux: ip addr  atau  hostname -I</value>
   </data>
   <data name="Tutorial_P7_Body3" xml:space="preserve">
     <value>Masukkan ws://&lt;IP&gt;:5005/ws di pengaturan koneksi aplikasi Android.</value>
@@ -873,11 +693,11 @@ Linux: ip addr  or  hostname -I</value>
     <value>Cara tercepat untuk menghubungkan ponsel Anda adalah dengan memindai kode QR. PC menghasilkan kode pairing yang berisi semua yang dibutuhkan aplikasi mobile Anda.</value>
   </data>
   <data name="Tutorial_P8_QR_Steps" xml:space="preserve">
-    <value>1. Open Settings → Connection on the PC
-2. Click "Show QR Code"
-3. Open the RemEx mobile app
-4. Tap the QR scanner icon on the connection screen
-5. Point your camera at the code — you'll connect automatically!</value>
+    <value>1. Buka Pengaturan → Koneksi di PC
+2. Klik "Tampilkan Kode QR"
+3. Buka aplikasi seluler RemEx
+4. Ketuk ikon pemindai QR di layar koneksi
+5. Arahkan kamera ke kode — sambungan terjadi otomatis!</value>
   </data>
   <data name="Tutorial_P8_QR_Body2" xml:space="preserve">
     <value>Tanpa mengetik, tanpa alamat IP — cukup pindai dan mulai. Detail koneksi disimpan sehingga Anda hanya perlu memindai sekali.</value>
@@ -889,9 +709,9 @@ Linux: ip addr  or  hostname -I</value>
     <value>Transfer File hanya menampilkan folder yang telah dibagikan oleh Your PC Anda. Konfigurasikan dari Pengaturan di PC desktop agar ponsel Anda melihat lokasi yang tepat.</value>
   </data>
   <data name="Tutorial_P9_Steps" xml:space="preserve">
-    <value>1. Open Settings → Shared Folders on the Your PC.
-2. Keep RemEx Transfers writable for quick phone → PC uploads.
-3. Leave other folders read-only unless you want mobile devices to modify them.</value>
+    <value>1. Buka Pengaturan → Folder Bersama di PC Anda.
+2. Jaga agar RemEx Transfers tetap dapat ditulis untuk unggahan cepat dari ponsel ke PC.
+3. Biarkan folder lain hanya-baca kecuali Anda ingin perangkat seluler mengubahnya.</value>
   </data>
   <data name="Tutorial_P9_Body2" xml:space="preserve">
     <value>Di ponsel Anda, jelajahi folder bersama, ketuk file untuk mengunduhnya, atau unggah dari Android ke folder yang dapat ditulis.</value>
@@ -912,109 +732,16 @@ Linux: ip addr  or  hostname -I</value>
   
 
   
-  <data name="Shell_AccessKeyWatermark" xml:space="preserve">
-    <value>Kosongkan untuk menonaktifkan</value>
-  </data>
-  <data name="Shell_Atmosphere" xml:space="preserve">
-    <value>ATMOSFER</value>
-  </data>
   <data name="Shell_About" xml:space="preserve">
     <value>Tentang</value>
-  </data>
-  <data name="Shell_AutoSaveNote" xml:space="preserve">
-    <value>Tersimpan otomatis saat ada perubahan. Bertahan setelah restart.</value>
-  </data>
-  <data name="Shell_FineTuning" xml:space="preserve">
-    <value>PENYETELAN HALUS</value>
-  </data>
-  <data name="Shell_HostWatermark" xml:space="preserve">
-    <value>ws://PC:port/ws</value>
-  </data>
-  <data name="Shell_Initializing" xml:space="preserve">
-    <value>Menginisialisasi dasbor...</value>
-  </data>
-  <data name="Shell_JpegQuality" xml:space="preserve">
-    <value>Kualitas JPEG</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Buka Pengaturan</value>
   </data>
-  <data name="Shell_PasswordWatermark" xml:space="preserve">
-    <value>Kata sandi Windows</value>
-  </data>
-  <data name="Shell_SettingsSubtitle" xml:space="preserve">
-    <value>Konfigurasi &amp; Kustomisasi</value>
-  </data>
-  <data name="Shell_SettingsTitle" xml:space="preserve">
-    <value>⚙ Pengaturan</value>
-  </data>
-  <data name="Shell_StreamSettings" xml:space="preserve">
-    <value>PENGATURAN STREAM</value>
-  </data>
-  <data name="Shell_StreamSettingsDesc" xml:space="preserve">
-    <value>Konfigurasikan kualitas stream layar yang disiarkan PC ke klien yang terhubung (ponsel, tablet).</value>
-  </data>
-  <data name="Shell_Subtitle" xml:space="preserve">
-    <value>Pusat Komando Eksekusi Jarak Jauh</value>
-  </data>
-  <data name="Shell_TargetFps" xml:space="preserve">
-    <value>Target FPS</value>
-  </data>
-  <data name="Shell_Theme" xml:space="preserve">
-    <value>TEMA</value>
-  </data>
-  <data name="Shell_UsernameWatermark" xml:space="preserve">
-    <value>.\Nama pengguna</value>
-  </data>
-  <data name="Shell_Welcome" xml:space="preserve">
-    <value>SELAMAT DATANG</value>
-  </data>
 
   
-  <data name="Nav_DesktopTooltip" xml:space="preserve">
-    <value>Desktop Jarak Jauh — Streaming layar PC Anda secara real-time</value>
-  </data>
-  <data name="Nav_HomeTooltip" xml:space="preserve">
-    <value>Beranda — Ringkasan dan sensor disematkan</value>
-  </data>
-  <data name="Nav_Launch" xml:space="preserve">
-    <value>Luncurkan</value>
-  </data>
-  <data name="Nav_LauncherTooltip" xml:space="preserve">
-    <value>Peluncur Aplikasi — Mulai program di PC Anda dari jarak jauh</value>
-  </data>
-  <data name="Nav_FilesTooltip" xml:space="preserve">
-    <value>Transfer File — Jelajahi folder bersama PC dan pindahkan file antara ponsel dan PC</value>
-  </data>
-  <data name="Nav_RemoteTooltip" xml:space="preserve">
-    <value>Kontrol Jarak Jauh — Daya, volume, dan Wake-on-LAN</value>
-  </data>
-  <data name="Nav_SensorsTooltip" xml:space="preserve">
-    <value>Ruang Kerja Sensor — Kartu telemetri seret dan lepas</value>
-  </data>
-  <data name="Nav_SettingsTooltip" xml:space="preserve">
-    <value>Pengaturan — Koneksi, tata letak, dan personalisasi</value>
-  </data>
-  <data name="Nav_TasksTooltip" xml:space="preserve">
-    <value>Pengelola Tugas — Lihat dan hentikan proses yang berjalan</value>
-  </data>
 
   
-  <data name="Home_CancelTooltip" xml:space="preserve">
-    <value>Batalkan upaya koneksi</value>
-  </data>
-  <data name="Home_ConnectTooltip" xml:space="preserve">
-    <value>Hubungkan ke PC RemEx — pastikan aplikasi ini berjalan di PC Anda</value>
-  </data>
-  <data name="Home_DesktopTooltip" xml:space="preserve">
-    <value>Streaming desktop PC Anda ke perangkat ini secara real-time</value>
-  </data>
-  <data name="Home_LauncherTooltip" xml:space="preserve">
-    <value>Mulai program di PC Anda tanpa harus berada di depan keyboard</value>
-  </data>
-  <data name="Home_PcRemoteTooltip" xml:space="preserve">
-    <value>Kendalikan PC Anda dari jarak jauh — daya, volume, dan Wake-on-LAN</value>
-  </data>
   <data name="Home_QrCodeButton" xml:space="preserve">
     <value>Kode QR</value>
   </data>
@@ -1039,32 +766,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_PairingPinExpiresIn" xml:space="preserve">
     <value>Kedaluwarsa dalam {0}s</value>
   </data>
-  <data name="Home_SensorWorkspaceTooltip" xml:space="preserve">
-    <value>Buka ruang kerja sensor seret dan lepas untuk memantau telemetri PC</value>
-  </data>
-  <data name="Home_TasksTooltip" xml:space="preserve">
-    <value>Lihat proses yang berjalan dan hentikan tugas di PC Anda</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>Tutup</value>
   </data>
 
   
-  <data name="Settings_AccessKeyTooltip" xml:space="preserve">
-    <value>Kunci autentikasi opsional — harus cocok dengan kunci yang diatur pada PC. Biarkan kosong jika tidak dikonfigurasi.</value>
-  </data>
-  <data name="Settings_AccessKeyWatermark" xml:space="preserve">
-    <value>Kosongkan untuk menonaktifkan</value>
-  </data>
-  <data name="Settings_AutoSaveHint" xml:space="preserve">
-    <value>Perubahan disimpan secara otomatis dan bertahan setelah restart.</value>
-  </data>
-  <data name="Settings_ConfigureLogin" xml:space="preserve">
-    <value>⚙ Konfigurasi Login</value>
-  </data>
-  <data name="Settings_DiscoverTooltip" xml:space="preserve">
-    <value>Temukan otomatis PC RemEx di jaringan lokal Anda menggunakan mDNS</value>
-  </data>
   <data name="Settings_General" xml:space="preserve">
     <value>UMUM</value>
   </data>
@@ -1098,47 +804,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_Help" xml:space="preserve">
     <value>BANTUAN</value>
   </data>
-  <data name="Settings_HostAddressTooltip" xml:space="preserve">
-    <value>Alamat WebSocket PC RemEx (misal ws://192.168.1.42:5005/ws). Temukan IP Anda dengan ipconfig (Windows) atau ip addr (Linux).</value>
-  </data>
-  <data name="Settings_HwInfoTooltip" xml:space="preserve">
-    <value>HWInfo (opsional, disarankan) memantau 300+ sensor perangkat keras termasuk suhu CPU per core, statistik GPU, kecepatan kipas, dan voltase. Tanpa HWInfo, RemEx menggunakan Windows Performance Counters bawaan (dasar CPU/RAM/Disk/Jaringan). Unduh HWInfo di hwinfo.com → Pengaturan → aktifkan 'Shared Memory Support'. Catatan: Memori bersama HWInfo otomatis dinonaktifkan setelah 12 jam — aktifkan kembali di pengaturan HWInfo.</value>
-  </data>
-  <data name="Settings_Install" xml:space="preserve">
-    <value>📦 Instal</value>
-  </data>
-  <data name="Settings_LanguageHeader" xml:space="preserve">
-    <value>BAHASA</value>
-  </data>
-  <data name="Settings_OpenSensorWorkspaceHint" xml:space="preserve">
-    <value>Buka Ruang Kerja Sensor terlebih dahulu untuk menemukan sensor.</value>
-  </data>
-  <data name="Settings_PasswordWatermark" xml:space="preserve">
-    <value>Kata sandi Windows untuk akun ini</value>
-  </data>
-  <data name="Settings_Refresh" xml:space="preserve">
-    <value>⟳ Segarkan</value>
-  </data>
   <data name="Settings_ReplayTutorial" xml:space="preserve">
     <value>📖 Putar Ulang Panduan</value>
   </data>
   <data name="Settings_ReplayTutorialTooltip" xml:space="preserve">
     <value>Tonton ulang panduan memulai</value>
-  </data>
-  <data name="Settings_SaveReconnectTooltip" xml:space="preserve">
-    <value>Simpan pengaturan koneksi dan hubungkan ulang ke PC</value>
-  </data>
-  <data name="Settings_SnapToGridTooltip" xml:space="preserve">
-    <value>Saat diaktifkan, kartu sensor akan mengunci ke garis grid terdekat saat dipindahkan</value>
-  </data>
-  <data name="Settings_Uninstall" xml:space="preserve">
-    <value>🗑 Copot Pemasangan</value>
-  </data>
-  <data name="Settings_UsernameHint" xml:space="preserve">
-    <value>Gunakan .\Nama pengguna untuk akun lokal. GLADOS-V3\Connor akan menjadi .\Connor secara otomatis.</value>
-  </data>
-  <data name="Settings_UsernameWatermark" xml:space="preserve">
-    <value>.\Nama pengguna atau MESIN\Nama pengguna</value>
   </data>
   <data name="Settings_FileTransferSection" xml:space="preserve">
     <value>FOLDER BERSAMA</value>
@@ -1146,34 +816,17 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_FileTransferDesc" xml:space="preserve">
     <value>Pilih folder mana di PC ini yang muncul di Transfer File. Folder hanya-baca memungkinkan penjelajahan dan unduhan, sedangkan folder yang dapat ditulis juga menerima unggahan dari ponsel Anda.</value>
   </data>
-  <data name="Settings_FileTransferTutorialTitle" xml:space="preserve">
-    <value>CARA KERJA TRANSFER FILE</value>
-  </data>
-  <data name="Settings_FileTransferTutorialBody" xml:space="preserve">
-    <value>Ponsel Anda hanya melihat folder yang tercantum di sini. Arahkan unggahan rutin ke folder yang dapat ditulis seperti RemEx Transfers, dan biarkan sisanya hanya-baca kecuali Anda ingin perangkat seluler mengubahnya.</value>
-  </data>
-  <data name="Settings_FileTransferTutorialSteps" xml:space="preserve">
-    <value>1. Add the PC folders you want RemEx to expose.
-2. Turn on uploads only for folders that should accept phone → PC files.
-3. Open File Transfer on your phone and browse the shared folders from there.</value>
-  </data>
   <data name="Settings_FileTransferAddFolder" xml:space="preserve">
     <value>+ Tambah Folder</value>
   </data>
   <data name="Settings_FileTransferRestoreDefaults" xml:space="preserve">
     <value>Pulihkan Default</value>
   </data>
-  <data name="Settings_FileTransferEmpty" xml:space="preserve">
-    <value>Belum ada folder bersama yang dikonfigurasi. Tambahkan setidaknya satu folder agar Transfer File tersedia.</value>
-  </data>
   <data name="Settings_FileTransferWritable" xml:space="preserve">
     <value>Izinkan unggahan</value>
   </data>
   <data name="Settings_FileTransferRemove" xml:space="preserve">
     <value>Hapus</value>
-  </data>
-  <data name="Settings_FileTransferImmediate" xml:space="preserve">
-    <value>Perubahan langsung diterapkan ke layar Transfer File.</value>
   </data>
   <data name="Settings_FileTransferPickerTitle" xml:space="preserve">
     <value>Pilih folder untuk dibagikan</value>
@@ -1213,9 +866,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_ReadOnly" xml:space="preserve">
     <value>Hanya baca</value>
   </data>
-  <data name="FileTransfer_PathLabel" xml:space="preserve">
-    <value>Jalur</value>
-  </data>
   <data name="FileTransfer_UpTooltip" xml:space="preserve">
     <value>Pergi ke folder induk</value>
   </data>
@@ -1234,12 +884,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_DownloadTooltip" xml:space="preserve">
     <value>Pilih tempat menyimpan file jarak jauh yang dipilih</value>
   </data>
-  <data name="FileTransfer_OpenFolderBtn" xml:space="preserve">
-    <value>Buka Folder</value>
-  </data>
-  <data name="FileTransfer_OpenFolderTooltip" xml:space="preserve">
-    <value>Buka folder jarak jauh yang dipilih</value>
-  </data>
   <data name="FileTransfer_CancelTooltip" xml:space="preserve">
     <value>Batalkan transfer aktif</value>
   </data>
@@ -1251,10 +895,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>PC belum mengekspos folder bersama apa pun.</value>
   </data>
   <data name="FileTransfer_SharedFoldersUnavailableFormat" xml:space="preserve">
-    <value>Folder bersama tidak tersedia: {0}</value>
+    <value>Tidak dapat memuat folder bersama. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_BrowseErrorFormat" xml:space="preserve">
-    <value>Kesalahan jelajah: {0}</value>
+    <value>Tidak dapat membuka folder tersebut. Pastikan perangkat yang terhubung masih disandingkan dan folder masih dibagikan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_PickerUnavailable" xml:space="preserve">
     <value>Pemilih file tidak tersedia.</value>
@@ -1265,21 +909,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_LocalPathUnavailable" xml:space="preserve">
     <value>File yang dipilih tidak tersedia sebagai jalur lokal.</value>
   </data>
-  <data name="FileTransfer_UploadingFormat" xml:space="preserve">
-    <value>Mengunggah {0}…</value>
-  </data>
-  <data name="FileTransfer_UploadingProgressFormat" xml:space="preserve">
-    <value>Mengunggah {0}… {1:P0}</value>
-  </data>
-  <data name="FileTransfer_UploadComplete" xml:space="preserve">
-    <value>Unggahan selesai.</value>
-  </data>
-  <data name="FileTransfer_UploadCancelled" xml:space="preserve">
-    <value>Unggahan dibatalkan.</value>
-  </data>
-  <data name="FileTransfer_UploadFailedFormat" xml:space="preserve">
-    <value>Gagal mengunggah: {0}</value>
-  </data>
   <data name="FileTransfer_SaveDialogUnavailable" xml:space="preserve">
     <value>Dialog simpan tidak tersedia.</value>
   </data>
@@ -1288,21 +917,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="FileTransfer_SavePathUnavailable" xml:space="preserve">
     <value>Tujuan yang dipilih tidak tersedia sebagai jalur lokal.</value>
-  </data>
-  <data name="FileTransfer_DownloadingFormat" xml:space="preserve">
-    <value>Mengunduh {0}…</value>
-  </data>
-  <data name="FileTransfer_DownloadingProgressFormat" xml:space="preserve">
-    <value>Mengunduh {0}… {1:P0}</value>
-  </data>
-  <data name="FileTransfer_DownloadComplete" xml:space="preserve">
-    <value>Unduhan selesai.</value>
-  </data>
-  <data name="FileTransfer_DownloadCancelled" xml:space="preserve">
-    <value>Unduhan dibatalkan.</value>
-  </data>
-  <data name="FileTransfer_DownloadFailedFormat" xml:space="preserve">
-    <value>Gagal mengunduh: {0}</value>
   </data>
   <data name="FileTransfer_HintNoneSelected" xml:space="preserve">
     <value>Pilih folder bersama untuk dijelajahi.</value>
@@ -1327,7 +941,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Dihapus.</value>
   </data>
   <data name="FileTransfer_DeleteFailedFormat" xml:space="preserve">
-    <value>Penghapusan gagal: {0}</value>
+    <value>Tidak dapat menghapus item tersebut. Pastikan item tidak sedang terbuka di perangkat dan folder mengizinkan perubahan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_DeletingMultipleFormat" xml:space="preserve">
     <value>Menghapus {0} item…</value>
@@ -1354,7 +968,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Nama diganti.</value>
   </data>
   <data name="FileTransfer_RenameFailedFormat" xml:space="preserve">
-    <value>Penggantian nama gagal: {0}</value>
+    <value>Tidak dapat mengganti nama item tersebut. Pastikan nama baru belum dipakai dan folder mengizinkan perubahan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_RenameConfirmBtn" xml:space="preserve">
     <value>Konfirmasi</value>
@@ -1379,7 +993,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>SHA-256 dihitung.</value>
   </data>
   <data name="FileTransfer_HashFailedFormat" xml:space="preserve">
-    <value>Hash gagal: {0}</value>
+    <value>Tidak dapat memeriksa file tersebut. Pastikan perangkat yang terhubung masih disandingkan dan file masih ada, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_HashLabel" xml:space="preserve">
     <value>SHA-256</value>
@@ -1395,7 +1009,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folder ditambahkan ke root bersama.</value>
   </data>
   <data name="FileTransfer_PinFailedFormat" xml:space="preserve">
-    <value>Tidak dapat menyematkan folder: {0}</value>
+    <value>Tidak dapat menyematkan folder tersebut. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_RemoveRootTooltip" xml:space="preserve">
     <value>Hapus folder bersama ini dari dropdown</value>
@@ -1407,30 +1021,12 @@ Linux: ip addr  or  hostname -I</value>
     <value>Folder bersama dihapus.</value>
   </data>
   <data name="FileTransfer_RemoveRootFailedFormat" xml:space="preserve">
-    <value>Tidak dapat menghapus folder: {0}</value>
+    <value>Tidak dapat menghapus folder tersebut. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
 
   
-  <data name="Service_BtnInstall" xml:space="preserve">
-    <value>📦 Instal</value>
-  </data>
-  <data name="Service_BtnLogin" xml:space="preserve">
-    <value>⚙ Login</value>
-  </data>
-  <data name="Service_BtnRemove" xml:space="preserve">
-    <value>🗑 Hapus</value>
-  </data>
 
   
-  <data name="Remote_WolBroadcastWatermark" xml:space="preserve">
-    <value>IP Siaran (255.255.255.255)</value>
-  </data>
-  <data name="Remote_WolMacWatermark" xml:space="preserve">
-    <value>Alamat MAC (AA:BB:CC:DD:EE:FF)</value>
-  </data>
-  <data name="Remote_WolPortWatermark" xml:space="preserve">
-    <value>Port</value>
-  </data>
 
   
   <data name="RemoteDesktop_ExitFullscreenTip" xml:space="preserve">
@@ -1494,15 +1090,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
 
   
-  <data name="AppLauncher_AddNewApp" xml:space="preserve">
-    <value>TAMBAH APLIKASI BARU</value>
-  </data>
-  <data name="AppLauncher_DisplayNameWatermark" xml:space="preserve">
-    <value>Nama Tampilan (misal Chrome)</value>
-  </data>
-  <data name="AppLauncher_TargetPathWatermark" xml:space="preserve">
-    <value>Jalur Target (misal C:\Program Files...)</value>
-  </data>
 
   
   <data name="TaskMgr_CpuLabel" xml:space="preserve">
@@ -1593,10 +1180,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
-    <value>Klien Desktop</value>
+    <value>RemEx di PC ini</value>
   </data>
   <data name="About_PCHost" xml:space="preserve">
-    <value>Your PC</value>
+    <value>PC Anda</value>
   </data>
   <data name="About_GitHubStar" xml:space="preserve">
     <value>⭐ Pertimbangkan untuk memberi bintang di GitHub!</value>
@@ -1616,7 +1203,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Matikan — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_Shutdown_Message" xml:space="preserve">
-    <value>PC jarak jauh akan dimatikan. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>PC jarak jauh akan dimatikan. Semua pekerjaan yang belum disimpan akan hilang. Membangunkannya dengan RemEx saja tidak cukup: RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_Shutdown_Btn" xml:space="preserve">
     <value>Matikan</value>
@@ -1625,7 +1212,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Restart — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_Restart_Message" xml:space="preserve">
-    <value>PC jarak jauh akan di-restart. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>PC jarak jauh akan di-restart. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
     <value>Restart</value>
@@ -1634,7 +1221,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Paksa Matikan — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_ForceShutdown_Message" xml:space="preserve">
-    <value>Ini akan segera mematikan PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>Ini akan segera mematikan PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang. Membangunkannya dengan RemEx saja tidak cukup: RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_ForceShutdown_Btn" xml:space="preserve">
     <value>Paksa Matikan</value>
@@ -1643,7 +1230,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Paksa Restart — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_ForceRestart_Message" xml:space="preserve">
-    <value>Ini akan segera me-restart PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>Ini akan segera me-restart PC jarak jauh. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_ForceRestart_Btn" xml:space="preserve">
     <value>Paksa Restart</value>
@@ -1652,7 +1239,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Boot ke UEFI — Apakah Anda yakin?</value>
   </data>
   <data name="Confirm_RebootUefi_Message" xml:space="preserve">
-    <value>PC jarak jauh akan di-restart dan boot langsung ke pengaturan firmware UEFI. Semua pekerjaan yang belum disimpan akan hilang.</value>
+    <value>PC jarak jauh akan di-restart dan boot langsung ke pengaturan firmware UEFI. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_RebootUefi_Btn" xml:space="preserve">
     <value>Boot ke UEFI</value>
@@ -1686,20 +1273,17 @@ Linux: ip addr  or  hostname -I</value>
   <data name="About_WhatsNew" xml:space="preserve">
     <value>Apa yang Baru?</value>
   </data>
-  <data name="About_Faq" xml:space="preserve">
-    <value>Pertanyaan yang Sering Diajukan</value>
-  </data>
   <data name="About_WhatsNew_Features" xml:space="preserve">
-    <value>Features</value>
+    <value>Video Perangkat Keras H.264</value>
   </data>
   <data name="About_WhatsNew_Features_Body" xml:space="preserve">
-    <value>End-to-End Encryption, QR Code Pairing, Remote File Transfer, Command Palette, System Tray, Dynamic Layouts</value>
+    <value>Desktop jarak jauh dengan akselerasi perangkat keras melalui NVENC, QSV, AMF, atau VAAPI di PC. Android mendekode dengan MediaCodec untuk pengiriman GPU tanpa salinan. Otomatis kembali ke MJPEG bila encoder perangkat keras tidak tersedia.</value>
   </data>
   <data name="About_WhatsNew_Fixes" xml:space="preserve">
-    <value>Fixes</value>
+    <value>Keamanan dan Pemasangan Perangkat</value>
   </data>
   <data name="About_WhatsNew_Fixes_Body" xml:space="preserve">
-    <value>Settings freeze (Linux), Async-void crashes, Alert memory leaks, Duplicate style blocks</value>
+    <value>Semua lalu lintas dienkripsi dengan TLS 1.3 bila klien mendukungnya, dan tidak pernah di bawah TLS 1.2. Pemasangan pertama memakai pertukaran kunci ECDH P-256 dengan PIN 6 digit — tidak ada kunci teks biasa yang pernah dikirim. Selanjutnya klien menyematkan sidik jari sertifikat SHA-256 milik PC untuk semua koneksi berikutnya.</value>
   </data>
   <data name="About_WhatsNew_FileTransfer" xml:space="preserve">
     <value>Transfer File Jarak Jauh</value>
@@ -1714,10 +1298,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Material 3 Ekspresif dengan fisika pegas di seluruh aplikasi — penataan ulang daftar, tarik untuk menyegarkan, ubin aplikasi, pengukur animasi. 8 ubin Pengaturan Cepat untuk perintah daya sekali ketuk. Widget layar beranda yang dapat diubah ukurannya. Umpan balik haptik dua tahap. Target SDK 37 (Android 17).</value>
   </data>
   <data name="About_WhatsNew_Issues" xml:space="preserve">
-    <value>Issues (Known)</value>
+    <value>Linux dan Identitas Baru</value>
   </data>
   <data name="About_WhatsNew_Issues_Body" xml:space="preserve">
-    <value>Bitmap-on-clipboard deferred to 2.x</value>
+    <value>Dukungan Linux kelas satu dengan pengambilan PipeWire native, injeksi input Wayland lengkap, dan mulai otomatis saat masuk. Ikon peluncur premium baru, animasi boot Cosmic Zoom, banner ANSI berwarna saat mulai, dan salin bitmap ke papan klip dari kanvas.</value>
   </data>
 
   <data name="Faq_Q1_Question" xml:space="preserve">
@@ -1727,10 +1311,10 @@ Linux: ip addr  or  hostname -I</value>
     <value>Anda memerlukan RemEx yang berjalan di PC Anda — ini adalah satu aplikasi tunggal (remex.agent) yang berjalan dengan hak istimewa (elevated) di dalam sesi Anda yang sedang masuk dan otomatis dimulai saat Anda masuk. Unduh installer terbaru dari GitHub Releases, jalankan, dan aplikasi sudah siap sebelum Anda melakukan pairing.</value>
   </data>
   <data name="Faq_Q2_Question" xml:space="preserve">
-    <value>Bagaimana cara memasangkan ponsel atau PC kedua?</value>
+    <value>Bagaimana cara memasangkan ponsel saya?</value>
   </data>
   <data name="Faq_Q2_Answer" xml:space="preserve">
-    <value>Scan the QR code found in the Settings -&gt; Connection section on the desktop client using the RemEx Android app, or enter the 6-digit PIN displayed on the PC.</value>
+    <value>Buka Pengaturan → Koneksi di jendela ini untuk menampilkan kode QR dan PIN pemasangan 6 digit. Di ponsel Anda, buka aplikasi RemEx dan pindai kode QR untuk penyiapan tercepat, atau masukkan PIN saat aplikasi memintanya. Pemasangan selalu dilakukan dari ponsel ke PC ini.</value>
   </data>
   <data name="Faq_Q3_Question" xml:space="preserve">
     <value>Bagaimana cara menemukan alamat IP PC saya?</value>
@@ -1742,49 +1326,61 @@ Linux: ip addr  or  hostname -I</value>
     <value>Auto-discovery tidak menemukan PC saya. Apa yang harus diperiksa?</value>
   </data>
   <data name="Faq_Q4_Answer" xml:space="preserve">
-    <value>1. Pastikan RemEx berjalan di PC Anda.\n2. Both devices must be on the same Wi-Fi / LAN.\n3. Check if your router has 'AP/Client Isolation' enabled.\n4. Corporate/guest networks often block discovery (mDNS).</value>
+    <value>1. Pastikan RemEx berjalan di PC Anda.
+2. Kedua perangkat harus berada di jaringan Wi-Fi / LAN yang sama.
+3. Di Android 13 ke atas, izinkan akses Perangkat di Sekitar. Di Android 17 ke atas, izinkan juga akses Jaringan Lokal.
+4. Periksa apakah router Anda mengaktifkan AP/Client Isolation.
+5. Jaringan perusahaan atau tamu sering memblokir penemuan mDNS.</value>
   </data>
   <data name="Faq_Q5_Question" xml:space="preserve">
     <value>Apa port default-nya?</value>
   </data>
   <data name="Faq_Q5_Answer" xml:space="preserve">
-    <value>Port default adalah 5005. Jika port 5005 sudah digunakan, akan beralih ke 5006. Anda dapat melihat port aktif di jendela RemEx di PC Anda.</value>
+    <value>Port default adalah 5005. Jika port itu sudah dipakai, RemEx pertama-tama mencoba mengambil alih dari instans lamanya sendiri yang masih berjalan; jika gagal, RemEx beralih ke port bebas berikutnya — 5006, 5007, dan seterusnya hingga 5009. Anda dapat melihat port aktif di jendela RemEx di PC Anda.</value>
   </data>
   <data name="Faq_Q6_Question" xml:space="preserve">
     <value>Bisakah saya terhubung melalui internet?</value>
   </data>
   <data name="Faq_Q6_Answer" xml:space="preserve">
-    <value>RemEx is designed for local network (LAN) use. You can use a VPN for remote access. Port forwarding is not recommended for security reasons.</value>
+    <value>RemEx dirancang untuk digunakan di jaringan lokal (LAN). Untuk akses jarak jauh yang aman dari mana saja, kami menyarankan Tailscale — VPN WireGuard® tanpa konfigurasi yang menghubungkan perangkat Anda tanpa penerusan port dan tanpa memaparkan PC Anda ke internet. Penerusan port tidak disarankan karena alasan keamanan.</value>
   </data>
   <data name="Faq_Q7_Question" xml:space="preserve">
     <value>Desktop jarak jauh lambat. Apa yang bisa saya lakukan?</value>
   </data>
   <data name="Faq_Q7_Answer" xml:space="preserve">
-    <value>• Lower the Quality slider.\n• Reduce Target FPS (15-20 is plenty).\n• Lower the Scale.\n• Ensure you are on a fast 5GHz Wi-Fi network.</value>
+    <value>• Turunkan penggeser Kualitas.
+• Kurangi Target FPS — 15-20 biasanya sudah cukup.
+• Turunkan Skala.
+• Gunakan jaringan lokal yang cepat. Wi-Fi 5 GHz atau koneksi kabel adalah yang terbaik — ini penyebab lag yang paling umum.
+• Anda tidak perlu mengatur perekaman layar. RemEx otomatis memilih metode tercepat yang didukung PC Anda.</value>
   </data>
   <data name="Faq_Q8_Question" xml:space="preserve">
     <value>Apa itu Wake-on-LAN (WOL)?</value>
   </data>
   <data name="Faq_Q8_Answer" xml:space="preserve">
-    <value>Wake-on-LAN memungkinkan Anda menyalakan PC dari jarak jauh. Aktifkan di BIOS/UEFI dan properti adaptor jaringan. Lalu masukkan alamat MAC PC Anda di layar Koneksi.</value>
+    <value>Wake-on-LAN memungkinkan Anda menyalakan PC dari jarak jauh. Aktifkan di BIOS/UEFI dan properti adaptor jaringan. Lalu masukkan alamat MAC PC Anda di layar Koneksi.&#xD;&#xA;&#xD;&#xA;Menyalakan PC tidak sama dengan mendapatkan aksesnya kembali. Wake-on-LAN menghidupkan mesin dan berhenti di layar masuk; RemEx baru berjalan setelah seseorang masuk di PC itu sendiri.</value>
   </data>
   <data name="Faq_Q9_Question" xml:space="preserve">
     <value>Bagaimana cara mentransfer file?</value>
   </data>
   <data name="Faq_Q9_Answer" xml:space="preserve">
-    <value>Navigate to the File Transfer section using the sidebar or command palette to browse, upload, and download files from configured shared folders.</value>
+    <value>Buka Transfer File dari bilah sisi atau Palet Perintah. Anda hanya akan melihat folder yang dibagikan oleh PC: folder yang dapat ditulis menerima unggahan, sedangkan folder hanya-baca hanya mengizinkan unduhan.</value>
   </data>
   <data name="Faq_Q10_Question" xml:space="preserve">
     <value>Bisakah saya mengunci PC dari jarak jauh?</value>
   </data>
   <data name="Faq_Q10_Answer" xml:space="preserve">
-    <value>Yes! Use the Lock PC Quick Settings tile on Android, or the Remote Control screen / Command Palette to lock your PC.</value>
+    <value>Ya. Gunakan layar Kontrol Jarak Jauh atau Palet Perintah di PC, atau tambahkan tile Pengaturan Cepat Kunci PC di Android untuk akses sekali sentuh.</value>
   </data>
   <data name="Faq_Q11_Question" xml:space="preserve">
     <value>Bagaimana cara mengatur Tailscale untuk akses jarak jauh?</value>
   </data>
   <data name="Faq_Q11_Answer" xml:space="preserve">
-    <value>1. Instal Tailscale di PC Anda: tailscale.com/download (Windows) atau jalankan: curl -fsSL https://scale.com/install.sh | sh (Linux).\n2. Masuk dan hubungkan: ikuti petunjuk browser (Windows) atau jalankan: sudo tailscale up (Linux).\n3. Instal Tailscale di Android dari Play Store dan masuk dengan akun yang sama.\n4. Temukan IP Tailscale PC Anda (dimulai dengan 100.x.y.z) di aplikasi Tailscale atau di login.tailscale.com.\n5. Masukkan IP tersebut di layar Koneksi RemEx — sekarang Anda dapat terhubung dengan aman dari mana saja.</value>
+    <value>1. Instal Tailscale di PC Anda: tailscale.com/download (Windows) atau jalankan: curl -fsSL https://tailscale.com/install.sh | sh (Linux).
+2. Masuk dan hubungkan: ikuti petunjuk browser (Windows) atau jalankan: sudo tailscale up (Linux).
+3. Instal Tailscale di Android dari Play Store dan masuk dengan akun yang sama.
+4. Temukan IP Tailscale PC Anda (dimulai dengan 100.x.y.z) di aplikasi Tailscale atau di login.tailscale.com.
+5. Masukkan IP tersebut di layar Koneksi RemEx — sekarang Anda dapat terhubung dengan aman dari mana saja.</value>
   </data>
   <data name="Canvas_Undo" xml:space="preserve">
     <value>Batal</value>
@@ -1865,13 +1461,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Bersihkan Log</value>
   </data>
   <data name="Logs_ServiceTab" xml:space="preserve">
-    <value>Log Layanan Latar Belakang</value>
+    <value>Log Peristiwa Sistem</value>
   </data>
   <data name="Logs_ServiceDesc" xml:space="preserve">
     <value>Kueri log peristiwa terbaru dari Windows Event Viewer atau Linux systemd journal.</value>
   </data>
   <data name="Logs_QueryService" xml:space="preserve">
-    <value>Kueri Log Layanan</value>
+    <value>Kueri Log Peristiwa Sistem</value>
   </data>
   <data name="RemoteDesktop_Display" xml:space="preserve">
     <value>Tampilan</value>
@@ -1890,9 +1486,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Status_InvalidQrData" xml:space="preserve">
     <value>Data kode QR tidak valid</value>
-  </data>
-  <data name="Settings_ExecutableFileFilter" xml:space="preserve">
-    <value>Eksekusi</value>
   </data>
   <data name="Palette_Home" xml:space="preserve">
     <value>Beranda</value>
@@ -1981,11 +1574,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Palette_RestartPc" xml:space="preserve">
     <value>Mulai Ulang PC</value>
   </data>
+  <data name="Palette_ForceRestartPc" xml:space="preserve">
+    <value>Paksa Mulai Ulang PC</value>
+  </data>
   <data name="Palette_RestartPcToUefi" xml:space="preserve">
     <value>Mulai Ulang PC ke UEFI</value>
-  </data>
-  <data name="Palette_WakeOnLan" xml:space="preserve">
-    <value>Wake on LAN</value>
   </data>
   <data name="Palette_Disconnect" xml:space="preserve">
     <value>Putuskan Koneksi</value>
@@ -2072,37 +1665,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>BUKA_RUANG_KERJA</value>
   </data>
   <data name="Home_NoDataFeed" xml:space="preserve">
-    <value>[ TIDAK_ADA_DATA ]</value>
+    <value>Belum ada sensor yang disematkan</value>
   </data>
   <data name="Home_InitializeSensors" xml:space="preserve">
     <value>INISIALISASI SENSOR</value>
   </data>
   <data name="Home_Directives" xml:space="preserve">
     <value>// DIREKTIF</value>
-  </data>
-  <data name="Home_RemoteControl" xml:space="preserve">
-    <value>KONTROL_JARAK_JAUH</value>
-  </data>
-  <data name="Home_RemoteControlDesc" xml:space="preserve">
-    <value>Akses &amp; daya sistem</value>
-  </data>
-  <data name="Home_AppLauncher" xml:space="preserve">
-    <value>PELUNCUR_APLIKASI</value>
-  </data>
-  <data name="Home_AppLauncherDesc" xml:space="preserve">
-    <value>Jalankan proses jarak jauh</value>
-  </data>
-  <data name="Home_TaskMonitor" xml:space="preserve">
-    <value>PEMANTAU_TUGAS</value>
-  </data>
-  <data name="Home_TaskMonitorDesc" xml:space="preserve">
-    <value>Kelola utas aktif</value>
-  </data>
-  <data name="Home_FileSystem" xml:space="preserve">
-    <value>SISTEM_BERKAS</value>
-  </data>
-  <data name="Home_FileSystemDesc" xml:space="preserve">
-    <value>Transfer data jarak jauh</value>
   </data>
   <data name="Home_LinkStatus" xml:space="preserve">
     <value>STATUS_SAMBUNGAN</value>
@@ -2152,17 +1721,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Custom_BorderCornerRadiusPixelsTooltip" xml:space="preserve">
     <value>Radius sudut batas dalam piksel</value>
   </data>
-  <data name="Custom_CornerRadiusRemoteTooltip" xml:space="preserve">
-    <value>Sesuaikan kebulatan sudut batas khusus untuk tombol kontrol jarak jauh</value>
-  </data>
-  <data name="Custom_BorderCornerRadiusRemotePixelsTooltip" xml:space="preserve">
-    <value>Radius sudut tombol jarak jauh dalam piksel</value>
-  </data>
   <data name="Custom_GlassOpacityTooltip" xml:space="preserve">
-    <value>Sesuaikan tingkat transparansi efek latar belakang kaca</value>
+    <value>Sesuaikan tingkat opasitas efek latar belakang kaca</value>
   </data>
   <data name="Custom_GlassFrostingOpacityPercentTooltip" xml:space="preserve">
-    <value>Persentase transparansi kaca</value>
+    <value>Persentase opasitas kaca</value>
   </data>
   <data name="Custom_NeonGlowTooltip" xml:space="preserve">
     <value>Sesuaikan intensitas cahaya neon di sekitar tepi panel</value>
@@ -2194,24 +1757,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Custom_WelcomeSplashTooltip" xml:space="preserve">
     <value>Pilih gaya animasi layar selamat datang</value>
   </data>
-  <data name="Settings_RefreshServiceTooltip" xml:space="preserve">
-    <value>Segarkan status layanan sistem</value>
-  </data>
-  <data name="Settings_ConfigureLoginTooltip" xml:space="preserve">
-    <value>Konfigurasikan kredensial masuk layanan (nama pengguna/kata sandi)</value>
-  </data>
-  <data name="Settings_InstallServiceTooltip" xml:space="preserve">
-    <value>Instal layanan sistem RemEx sebagai PC latar belakang otomatis</value>
-  </data>
-  <data name="Settings_StartServiceTooltip" xml:space="preserve">
-    <value>Mulai proses layanan PC RemEx latar belakang</value>
-  </data>
-  <data name="Settings_StopServiceTooltip" xml:space="preserve">
-    <value>Hentikan proses layanan PC RemEx latar belakang</value>
-  </data>
-  <data name="Settings_UninstallServiceTooltip" xml:space="preserve">
-    <value>Hapus instalan layanan RemEx latar belakang sepenuhnya dari sistem</value>
-  </data>
   <data name="Settings_ConfigureHostAddressTooltip" xml:space="preserve">
     <value>Konfigurasikan alamat PC RemEx (protokol websocket wss://)</value>
   </data>
@@ -2223,21 +1768,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Settings_DisconnectTooltip" xml:space="preserve">
     <value>Putuskan sambungan sesi aktif ke Your PC</value>
-  </data>
-  <data name="Settings_ChangeLanguageTooltip" xml:space="preserve">
-    <value>Ubah bahasa tampilan aplikasi</value>
-  </data>
-  <data name="Settings_SelectPreferredLanguageTooltip" xml:space="preserve">
-    <value>Pilih bahasa pilihan Anda (perubahan langsung diterapkan)</value>
-  </data>
-  <data name="Settings_CompressQualityTooltip" xml:space="preserve">
-    <value>Konfigurasikan kualitas kompresi aliran cermin desktop (kualitas lebih rendah meningkatkan kinerja jaringan)</value>
-  </data>
-  <data name="Settings_TargetFrameRateTooltip" xml:space="preserve">
-    <value>Target frame rate untuk kompresi desktop (nilai lebih tinggi terlihat lebih lancar tetapi mengonsumsi lebih banyak bandwidth)</value>
-  </data>
-  <data name="Settings_ChooseTargetFpsTooltip" xml:space="preserve">
-    <value>Pilih target FPS untuk streaming</value>
   </data>
   <data name="Settings_EnableAlignmentGuidesTooltip" xml:space="preserve">
     <value>Aktifkan panduan perataan agar ubin sensor sejajar dengan kisi-kisi</value>
@@ -2251,98 +1781,8 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Shell_ToggleDrawerTooltip" xml:space="preserve">
     <value>Alihkan Bilah Sisi</value>
   </data>
-  <data name="Tooltip_CornerRadiusBase" xml:space="preserve">
-    <value>Sesuaikan kebulatan sudut tepi bawaan untuk kartu dan panel dasbor umum</value>
-  </data>
-  <data name="Tooltip_CornerRadiusSlider" xml:space="preserve">
-    <value>Radius sudut batas dalam piksel</value>
-  </data>
-  <data name="Tooltip_RemoteCardShape" xml:space="preserve">
-    <value>Sesuaikan kebulatan sudut tepi khusus untuk tombol tindakan kendali jarak jauh</value>
-  </data>
-  <data name="Tooltip_RemoteCardShapeSlider" xml:space="preserve">
-    <value>Radius sudut tombol jarak jauh dalam piksel</value>
-  </data>
-  <data name="Tooltip_GlassOpacity" xml:space="preserve">
-    <value>Sesuaikan tingkat transparansi visual dari efek latar belakang glassmorphism premium</value>
-  </data>
-  <data name="Tooltip_GlassOpacitySlider" xml:space="preserve">
-    <value>Persentase transparansi kaca es</value>
-  </data>
-  <data name="Tooltip_GlowStrength" xml:space="preserve">
-    <value>Sesuaikan intensitas kilau aura neon aksen latar belakang di sekitar tepi panel</value>
-  </data>
-  <data name="Tooltip_GlowStrengthSlider" xml:space="preserve">
-    <value>Ketebalan/penyebaran kilau neon dalam piksel</value>
-  </data>
-  <data name="Tooltip_AccentColor" xml:space="preserve">
-    <value>Pilih sorotan palet warna tema</value>
-  </data>
-  <data name="Tooltip_AccentViolet" xml:space="preserve">
-    <value>Pilih tema warna aksen Violet Neon</value>
-  </data>
-  <data name="Tooltip_AccentCyan" xml:space="preserve">
-    <value>Pilih tema warna aksen Cyan Siber</value>
-  </data>
-  <data name="Tooltip_AccentPink" xml:space="preserve">
-    <value>Pilih tema warna aksen Merah Muda Terang/Magenta</value>
-  </data>
-  <data name="Tooltip_AccentAmber" xml:space="preserve">
-    <value>Pilih tema warna aksen Emas Solar/Amber</value>
-  </data>
-  <data name="Tooltip_AccentGreen" xml:space="preserve">
-    <value>Pilih tema warna aksen Hijau Zamrud</value>
-  </data>
-  <data name="Tooltip_AccentRose" xml:space="preserve">
-    <value>Pilih tema warna aksen Mawar Crimson</value>
-  </data>
-  <data name="Tooltip_SplashScreen" xml:space="preserve">
-    <value>Pilih gaya animasi pembuka selamat datang saat aplikasi dimulai</value>
-  </data>
-  <data name="Tooltip_RefreshService" xml:space="preserve">
-    <value>Segarkan status layanan sistem</value>
-  </data>
-  <data name="Tooltip_ConfigureServiceLogin" xml:space="preserve">
-    <value>Konfigurasikan kredensial masuk layanan (nama pengguna/kata sandi)</value>
-  </data>
-  <data name="Tooltip_InstallService" xml:space="preserve">
-    <value>Instal layanan sistem RemEx sebagai PC latar belakang otomatis</value>
-  </data>
-  <data name="Tooltip_StartService" xml:space="preserve">
-    <value>Mulai proses layanan PC RemEx latar belakang</value>
-  </data>
-  <data name="Tooltip_StopService" xml:space="preserve">
-    <value>Hentikan proses layanan PC RemEx latar belakang</value>
-  </data>
-  <data name="Tooltip_UninstallService" xml:space="preserve">
-    <value>Hapus instalan layanan sistem RemEx sepenuhnya dari sistem</value>
-  </data>
   <data name="Tooltip_SaveReconnect" xml:space="preserve">
     <value>Simpan alamat konfigurasi PC dan coba sambungkan</value>
-  </data>
-  <data name="Tooltip_Disconnect" xml:space="preserve">
-    <value>Putuskan koneksi sesi aktif ke Your PC</value>
-  </data>
-  <data name="Tooltip_LanguageSection" xml:space="preserve">
-    <value>Ubah konteks bahasa tampilan aplikasi</value>
-  </data>
-  <data name="Tooltip_LanguageSelect" xml:space="preserve">
-    <value>Pilih bahasa pilihan Anda (perubahan segera diterapkan)</value>
-  </data>
-  <data name="Tooltip_StreamQuality" xml:space="preserve">
-    <value>Konfigurasikan tingkat kualitas kompresi aliran gambar desktop (kualitas lebih rendah meningkatkan kinerja jaringan)</value>
-  </data>
-  <data name="Tooltip_StreamFps" xml:space="preserve">
-    <value>Target kecepatan bingkai (FPS) untuk mesin kompresi desktop (nilai yang lebih tinggi terlihat lebih mulus tetapi memakan lebih banyak bandwidth jaringan)</value>
-  </data>
-  <data name="Tooltip_StreamFpsSelect" xml:space="preserve">
-    <value>Pilih target FPS untuk streaming</value>
-  </data>
-  <data name="Tooltip_SnapToGrid" xml:space="preserve">
-    <value>Aktifkan panduan perataan agar ubin sensor sejajar dengan kisi standar di kanvas</value>
-  </data>
-  <data name="Tooltip_GridSize" xml:space="preserve">
-    <value>Peningkatan penempatan kisi dalam piksel absolut</value>
   </data>
   <data name="Settings_HelpPrompt" xml:space="preserve">
     <value>Perlu melihat panduan lagi?</value>
@@ -2365,12 +1805,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Keluar</value>
   </data>
-  <data name="Canvas_ExportTooltip" xml:space="preserve">
-    <value>Simpan kanvas sebagai PNG to folder Gambar</value>
-  </data>
-  <data name="Canvas_CopyTooltip" xml:space="preserve">
-    <value>Salin gambar cuplikan langsung ke papan klip</value>
-  </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>Otomatis (pintar)</value>
   </data>
@@ -2379,9 +1813,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Canvas_GraphLine" xml:space="preserve">
     <value>Garis ╱╲╱</value>
-  </data>
-  <data name="Canvas_GraphArea" xml:space="preserve">
-    <value>Area ▓▓▓</value>
   </data>
   <data name="Canvas_GraphRing" xml:space="preserve">
     <value>Cincin ◍</value>
@@ -2406,24 +1837,6 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="Canvas_SetAlert" xml:space="preserve">
     <value>Atur Peringatan...</value>
-  </data>
-  <data name="Boot_Remote" xml:space="preserve">
-    <value>JARAK JAUH</value>
-  </data>
-  <data name="Boot_Execution" xml:space="preserve">
-    <value>EKSEKUSI</value>
-  </data>
-  <data name="Boot_CommandCenter" xml:space="preserve">
-    <value>⚡ PUSAT KOMANDO</value>
-  </data>
-  <data name="Boot_CommandYourPc" xml:space="preserve">
-    <value>KENDALIKAN PC ANDA</value>
-  </data>
-  <data name="Boot_Ote" xml:space="preserve">
-    <value>ot</value>
-  </data>
-  <data name="Boot_Ecution" xml:space="preserve">
-    <value>kusi</value>
   </data>
   <data name="Dialog_ConfirmTitle" xml:space="preserve">
     <value>Konfirmasi</value>
@@ -2549,7 +1962,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Buat</value>
   </data>
   <data name="FileTransfer_CreateFolderFailedFormat" xml:space="preserve">
-    <value>Tidak dapat membuat folder: {0}</value>
+    <value>Tidak dapat membuat folder. Pastikan nama tersebut belum dipakai dan folder mengizinkan perubahan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_CreatingFolderFormat" xml:space="preserve">
     <value>Membuat folder “{0}”…</value>
@@ -2591,7 +2004,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Salin dan pindah hanya berfungsi dalam folder bersama yang sama.</value>
   </data>
   <data name="FileTransfer_PasteFailedFormat" xml:space="preserve">
-    <value>Tempel gagal: {0}</value>
+    <value>Tidak dapat menempelkan item tersebut di sini. Pastikan folder tujuan mengizinkan perubahan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_PasteTooltip" xml:space="preserve">
     <value>Tempel item yang disalin atau dipotong ke folder ini.</value>
@@ -2618,7 +2031,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Properti</value>
   </data>
   <data name="FileTransfer_PropertiesFailedFormat" xml:space="preserve">
-    <value>Tidak dapat memuat detail: {0}</value>
+    <value>Tidak dapat memuat detail item tersebut. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_PropertiesTitle" xml:space="preserve">
     <value>PROPERTI</value>
@@ -2672,7 +2085,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Ditambahkan ke antrean transfer.</value>
   </data>
   <data name="FileTransfer_SearchFailedFormat" xml:space="preserve">
-    <value>Pencarian gagal: {0}</value>
+    <value>Tidak dapat menyelesaikan pencarian. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_SearchResultsFormat" xml:space="preserve">
     <value>{0} hasil ditemukan.</value>
@@ -2705,7 +2118,7 @@ Linux: ip addr  or  hostname -I</value>
     <value>Akses perangkat penuh tidak diberikan.</value>
   </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
-    <value>Tidak dapat mencantumkan drive: {0}</value>
+    <value>Tidak dapat menampilkan daftar drive. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
   </data>
   <data name="FileTransfer_VolumesLoadedFormat" xml:space="preserve">
     <value>{0} drive tersedia.</value>
@@ -2749,137 +2162,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_TrustUpdated" xml:space="preserve">
     <value>Pengaturan kepercayaan diperbarui.</value>
   </data>
-  <data name="Settings_ServiceSection" xml:space="preserve">
-    <value>LAYANAN WINDOWS</value>
-  </data>
-  <data name="Settings_ServiceSection_Windows" xml:space="preserve">
-    <value>WINDOWS SERVICE</value>
-  </data>
-  <data name="Settings_ServiceSection_Linux" xml:space="preserve">
-    <value>LINUX BACKGROUND SERVICE</value>
-  </data>
-  <data name="Settings_ServiceLogin" xml:space="preserve">
-    <value>LOGIN LAYANAN</value>
-  </data>
-  <data name="Settings_ServiceDesc" xml:space="preserve">
-    <value>Layanan berjalan di latar belakang agar RemEx dapat menerima perintah jarak jauh tanpa membuka aplikasi.</value>
-  </data>
-  <data name="Service_Publishing" xml:space="preserve">
-    <value>Menerbitkan Remex.PC…</value>
-  </data>
-  <data name="Service_PublishFailed" xml:space="preserve">
-    <value>Penerbitan gagal — lihat log.</value>
-  </data>
-  <data name="Service_Creating" xml:space="preserve">
-    <value>Membuat layanan…</value>
-  </data>
-  <data name="Service_CreateFailed" xml:space="preserve">
-    <value>Gagal membuat layanan — lihat log.</value>
-  </data>
-  <data name="Service_ConfiguringLogin" xml:space="preserve">
-    <value>Mengonfigurasi login…</value>
-  </data>
-  <data name="Service_ConfigureFailed" xml:space="preserve">
-    <value>Gagal mengonfigurasi kredensial — lihat log.</value>
-  </data>
-  <data name="Service_GrantingRights" xml:space="preserve">
-    <value>Memberikan hak masuk…</value>
-  </data>
-  <data name="Service_StoppingEmbedded" xml:space="preserve">
-    <value>Menghentikan PC tertanam…</value>
-  </data>
-  <data name="Service_StartingService" xml:space="preserve">
-    <value>Memulai layanan…</value>
-  </data>
-  <data name="Service_InstalledStarted" xml:space="preserve">
-    <value>Terinstal &amp; dimulai.</value>
-  </data>
-  <data name="Service_InstalledStartFailed" xml:space="preserve">
-    <value>Terinstal — mulai mungkin gagal, lihat log.</value>
-  </data>
-  <data name="Service_InstallingLinux" xml:space="preserve">
-    <value>Menginstal layanan systemd…</value>
-  </data>
-  <data name="Service_InstallFailed" xml:space="preserve">
-    <value>Instalasi layanan gagal.</value>
-  </data>
-  <data name="Service_RemovingLinux" xml:space="preserve">
-    <value>Menghapus layanan systemd…</value>
-  </data>
-  <data name="Service_DeletingService" xml:space="preserve">
-    <value>Menghapus layanan…</value>
-  </data>
-  <data name="Service_ApplyingCredentials" xml:space="preserve">
-    <value>Menerapkan kredensial…</value>
-  </data>
-  <data name="Service_LocatingHost" xml:space="preserve">
-    <value>Menemukan Remex.PC…</value>
-  </data>
-  <data name="Service_HostNotFound" xml:space="preserve">
-    <value>Remex.PC.exe tidak ditemukan.</value>
-  </data>
-  <data name="Service_StartedMsg" xml:space="preserve">
-    <value>Dimulai.</value>
-  </data>
-  <data name="Service_StartFailed" xml:space="preserve">
-    <value>Gagal memulai — lihat log.</value>
-  </data>
-  <data name="Tutorial_P2_Title" xml:space="preserve">
-    <value>Jalankan sebagai Layanan Windows</value>
-  </data>
-  <data name="Tutorial_P2_Body1" xml:space="preserve">
-    <value>Untuk menjaga RemEx berjalan 24/7 tanpa perlu login, instal sebagai layanan Windows:</value>
-  </data>
-  <data name="Tutorial_P2_Steps" xml:space="preserve">
-    <value>1. Open Settings (⚙) → scroll to 'Windows Service'
-2. Set your Windows username and password
-3. Click 'Install as Service'
-4. The service starts automatically on boot</value>
-  </data>
-  <data name="Tutorial_P2_Note" xml:space="preserve">
-    <value>Layanan berjalan di bawah akun pengguna Anda sehingga dapat mengakses sesi desktop Anda untuk tangkapan layar dan peluncuran aplikasi.</value>
-  </data>
-  <data name="Tutorial_P3_Title" xml:space="preserve">
-    <value>Pengaturan Layanan Linux</value>
-  </data>
-  <data name="Tutorial_P3_Body1" xml:space="preserve">
-    <value>Di Linux, RemEx PC dapat berjalan sebagai layanan systemd untuk startup otomatis.</value>
-  </data>
-  <data name="Tutorial_P3_Steps" xml:space="preserve">
-    <value>1. Download the latest Linux PC archive from GitHub Releases.
-2. Extract it.
-3. Run ./install.sh install inside the remex-PC folder.
-4. Use systemctl --user status remex-PC to verify it is running.</value>
-  </data>
-  <data name="Tutorial_P3_Link" xml:space="preserve">
-    <value>Untuk instruksi rinci, lihat docs/linux-service-setup.md di GitHub</value>
-  </data>
-  <data name="Shell_HostBinaryPath" xml:space="preserve">
-    <value>Jalur Biner PC</value>
-  </data>
-  <data name="Shell_HostPathHint" xml:space="preserve">
-    <value>Jalur ke Remex.PC.exe (kosongkan untuk deteksi otomatis)</value>
-  </data>
-  <data name="Shell_HostPathTooltip" xml:space="preserve">
-    <value>Jalur ke Remex.PC.exe. Kosongkan untuk deteksi otomatis (folder yang sama, folder saudara, dll.)</value>
-  </data>
-  <data name="Shell_HostPathWatermark" xml:space="preserve">
-    <value>Deteksi otomatis (atau tetapkan jalur kustom)</value>
-  </data>
-  <data name="Tutorial_P3_Body2" xml:space="preserve">
-    <value>Untuk instruksi rinci, opsi konfigurasi, dan pemecahan masalah, lihat panduan lengkap:</value>
-  </data>
-  <data name="Settings_SelectHostTitle" xml:space="preserve">
-    <value>Pilih Remex.PC.exe</value>
-  </data>
   <data name="Nav_Commands" xml:space="preserve">
     <value>Perintah</value>
   </data>
   <data name="Nav_Processes" xml:space="preserve">
     <value>Proses</value>
-  </data>
-  <data name="Nav_Connection" xml:space="preserve">
-    <value>Koneksi</value>
   </data>
   <data name="Nav_Faq" xml:space="preserve">
     <value>FAQ</value>
@@ -2905,9 +2192,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Conn_DiscoverHosts" xml:space="preserve">
     <value>Temukan host di jaringan saya</value>
   </data>
-  <data name="Conn_Pairing" xml:space="preserve">
-    <value>Penyandingan</value>
-  </data>
   <data name="Conn_HostInfo" xml:space="preserve">
     <value>Host</value>
   </data>
@@ -2918,13 +2202,13 @@ Linux: ip addr  or  hostname -I</value>
     <value>Klik di mana saja untuk melewati</value>
   </data>
   <data name="Splash_Style_RemexCommand" xml:space="preserve">
-    <value>Original Scan</value>
+    <value>Pindaian Asli</value>
   </data>
   <data name="Splash_Style_CosmicZoom" xml:space="preserve">
-    <value>Cosmic Zoom</value>
+    <value>Zoom Kosmik</value>
   </data>
   <data name="Splash_Style_Pong" xml:space="preserve">
-    <value>Signal Pong</value>
+    <value>Pong Sinyal</value>
   </data>
   <data name="About_Update_Title" xml:space="preserve">
     <value>Pembaruan Perangkat Lunak</value>
@@ -3154,26 +2438,11 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_PlayStoreCardDesc" xml:space="preserve">
     <value>Unduh RemEx untuk Android di Google Play.</value>
   </data>
-  <data name="Canvas_GraphRadial" xml:space="preserve">
-    <value>Radial ◔</value>
-  </data>
-  <data name="Canvas_GraphBigValue" xml:space="preserve">
-    <value>Nilai Besar 42</value>
-  </data>
-  <data name="Canvas_GraphValueSpark" xml:space="preserve">
-    <value>Nilai + Spark ⌇</value>
-  </data>
-  <data name="Canvas_GraphHue" xml:space="preserve">
-    <value>Denyut Warna ◐</value>
-  </data>
   <data name="Canvas_GraphDual" xml:space="preserve">
     <value>Metrik Ganda ⑂</value>
   </data>
   <data name="Canvas_SecondMetric" xml:space="preserve">
     <value>Metrik Kedua</value>
-  </data>
-  <data name="Canvas_SecondMetricNone" xml:space="preserve">
-    <value>Hapus Metrik Kedua</value>
   </data>
   <data name="Canvas_ActionPin" xml:space="preserve">
     <value>Sematkan</value>
@@ -3184,8 +2453,8 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Canvas_ActionDone" xml:space="preserve">
     <value>Selesai</value>
   </data>
-  <data name="Canvas_SelectedLabel" xml:space="preserve">
-    <value>dipilih</value>
+  <data name="Canvas_SelectedCountFormat" xml:space="preserve">
+    <value>{0} dipilih</value>
   </data>
   <data name="Canvas_CoachTitle" xml:space="preserve">
     <value>Bangun dasbor Anda</value>
@@ -3216,5 +2485,300 @@ Linux: ip addr  or  hostname -I</value>
   </data>
   <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
     <value>Ukuran ikon</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Title" xml:space="preserve">
+    <value>Hapus — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_DeleteRemote_SingleFormat" xml:space="preserve">
+    <value>"{0}" akan dihapus secara permanen. Tindakan ini tidak dapat diurungkan.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_MultipleFormat" xml:space="preserve">
+    <value>{0} item akan dihapus secara permanen ({1}). Tindakan ini tidak dapat diurungkan.</value>
+  </data>
+  <data name="Confirm_DeleteRemote_Btn" xml:space="preserve">
+    <value>Hapus</value>
+  </data>
+  <data name="Faq_Q12_Question" xml:space="preserve">
+    <value>Ponsel saya tiba-tiba menolak terhubung dan meminta pemasangan ulang. Kenapa?</value>
+  </data>
+  <data name="Faq_Q12_Answer" xml:space="preserve">
+    <value>Saat pertama kali dipasangkan, ponsel Anda mengingat sidik jari sertifikat keamanan PC ini secara persis dan selanjutnya hanya akan memercayai sertifikat itu. Jika sertifikat berubah — misalnya setelah menginstal ulang RemEx, memulihkan PC ini dari cadangan, atau berpindah ke perangkat keras baru — ponsel menolak koneksi alih-alih memercayai peniru. Ini perilaku keamanan yang diharapkan, bukan bug. Untuk memperbaikinya, hapus (lepaskan pemasangan) PC ini di layar Koneksi aplikasi ponsel, lalu pasangkan lagi dengan kode QR atau PIN 6 digit baru yang ditampilkan di jendela ini.</value>
+  </data>
+  <data name="A11y_Close" xml:space="preserve">
+    <value>Tutup</value>
+  </data>
+  <data name="A11y_Dismiss" xml:space="preserve">
+    <value>Tutup pesan</value>
+  </data>
+  <data name="A11y_MoveUp" xml:space="preserve">
+    <value>Pindahkan ke atas</value>
+  </data>
+  <data name="A11y_MoveDown" xml:space="preserve">
+    <value>Pindahkan ke bawah</value>
+  </data>
+  <data name="A11y_SensorLibrary" xml:space="preserve">
+    <value>Pustaka sensor</value>
+  </data>
+  <data name="Faq_Q13_Question" xml:space="preserve">
+    <value>Mengapa RemEx memerlukan izin khusus untuk berjalan?</value>
+  </data>
+  <data name="Faq_Q13_Answer" xml:space="preserve">
+    <value>RemEx menyimpan sertifikat keamanan yang dipakai ponsel Anda untuk mengenali PC ini. Sertifikat itu disimpan di tempat yang tidak bisa dibaca hal lain, sehingga tidak ada program lain — dan tidak ada orang lain yang masuk ke PC ini — yang bisa menyalinnya dan berpura-pura menjadi PC Anda. Jika RemEx tidak bisa membaca berkas itu, RemEx tetap terbuka tetapi tidak dapat menerima koneksi, sehingga ponsel Anda tidak bisa menjangkaunya meskipun masih tampak sudah dipasangkan.
+Windows: RemEx memerlukan hak administrator, karena hanya administrator yang bisa membaca berkas terlindungi itu. Biasanya RemEx berjalan dengan hak administrator secara otomatis saat Anda masuk, jadi ini seharusnya jarang terjadi; tetapi jika ponsel Anda tidak bisa terhubung, tutup RemEx, klik kanan, pilih "Run as administrator", lalu coba lagi. Linux: RemEx tidak memerlukan root dan jangan pernah menjalankannya dengan sudo. Sertifikat berada di folder rumah Anda sendiri dan hanya Anda yang bisa membacanya. Jika ponsel Anda tidak bisa terhubung, kemungkinan instalasi 'remex-host' lama meninggalkan sertifikat milik root; jalankan lagi penginstal RemEx dan itu akan memperbaikinya untuk Anda. Dalam kedua kasus, ponsel yang sudah dipasangkan tetap berfungsi — sertifikatnya sendiri tidak pernah berubah.</value>
+  </data>
+  <data name="Faq_Q14_Question" xml:space="preserve">
+    <value>Bagaimana cara menghentikan RemEx berjalan otomatis saat saya masuk?</value>
+  </data>
+  <data name="Faq_Q14_Answer" xml:space="preserve">
+    <value>Buka Pengaturan dan matikan "Jalankan saat masuk". Itu sudah cukup bagi hampir semua orang: RemEx tetap terpasang dan Anda masih bisa menjalankannya sendiri kapan saja, dan menyalakannya kembali memulihkan mulai otomatis.
+Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — bisa Anda lihat di Task Scheduler pada Task Scheduler Library — dan Linux memakai entri autostart di ~/.config/autostart/remex-agent.desktop. Jika suatu saat RemEx berhenti berjalan saat masuk, matikan lalu nyalakan lagi pengaturan itu untuk membuatnya ulang.</value>
+  </data>
+  <data name="Confirm_KillProcess_Format" xml:space="preserve">
+    <value>Hentikan "{0}" (PID {1})? Pekerjaan yang belum disimpan di program itu akan hilang.</value>
+  </data>
+  <data name="Confirm_RemoveApp_Format" xml:space="preserve">
+    <value>Hapus "{0}" dari peluncur? Ini tidak menghapus instalasi program.</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Format" xml:space="preserve">
+    <value>Berhenti membagikan "{0}"? Ponsel Anda tidak akan melihat folder ini lagi. Berkasnya tidak dihapus.</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Format" xml:space="preserve">
+    <value>Cabut akses untuk {0}? Ponsel itu kehilangan akses berkas sampai Anda menyandingkan dan menyetujuinya lagi.</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Msg" xml:space="preserve">
+    <value>Ganti folder bersama Anda dengan default? Folder yang Anda tambahkan tidak akan dibagikan lagi. Berkasnya tidak dihapus.</value>
+  </data>
+  <data name="Confirm_ClearLogs_Msg" xml:space="preserve">
+    <value>Bersihkan log diagnostik? Entri yang ditampilkan di sini akan dibuang. Berkas log yang sudah tersimpan di disk tidak terpengaruh.</value>
+  </data>
+  <data name="Confirm_KillProcess_Title" xml:space="preserve">
+    <value>Hentikan Proses — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Title" xml:space="preserve">
+    <value>Hapus Program — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_RemoveApp_Btn" xml:space="preserve">
+    <value>Hapus</value>
+  </data>
+  <data name="Confirm_RemoveSharedFolder_Title" xml:space="preserve">
+    <value>Berhenti Membagikan — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_RevokeTrust_Title" xml:space="preserve">
+    <value>Cabut Akses — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_RestoreFolders_Title" xml:space="preserve">
+    <value>Pulihkan Default — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_ClearLogs_Title" xml:space="preserve">
+    <value>Bersihkan Log — Apakah Anda yakin?</value>
+  </data>
+  <data name="TaskMgr_PidFormat" xml:space="preserve">
+    <value>PID: {0}</value>
+  </data>
+  <data name="TaskMgr_PathFormat" xml:space="preserve">
+    <value>Jalur: {0}</value>
+  </data>
+  <data name="TaskMgr_PublisherFormat" xml:space="preserve">
+    <value>Penerbit: {0}</value>
+  </data>
+  <data name="Canvas_Preset_Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
+    <value>Magenta dan Sian</value>
+  </data>
+  <data name="Canvas_Preset_SmokeGold" xml:space="preserve">
+    <value>Asap dan Emas</value>
+  </data>
+  <data name="Canvas_Preset_EmeraldNight" xml:space="preserve">
+    <value>Malam Zamrud</value>
+  </data>
+  <data name="Canvas_Preset_Sunset" xml:space="preserve">
+    <value>Senja</value>
+  </data>
+  <data name="Canvas_Preset_Arctic" xml:space="preserve">
+    <value>Arktik</value>
+  </data>
+  <data name="Canvas_Preset_NeonPurple" xml:space="preserve">
+    <value>Ungu Neon</value>
+  </data>
+  <data name="Canvas_Preset_Monochrome" xml:space="preserve">
+    <value>Monokrom</value>
+  </data>
+  <data name="Custom_BgType_Mica" xml:space="preserve">
+    <value>Mica</value>
+  </data>
+  <data name="Custom_BgType_Acrylic" xml:space="preserve">
+    <value>Acrylic</value>
+  </data>
+  <data name="Custom_BgType_Glass" xml:space="preserve">
+    <value>Kaca</value>
+  </data>
+  <data name="Custom_BgType_Gradient" xml:space="preserve">
+    <value>Gradien</value>
+  </data>
+  <data name="Custom_BgType_Wallpaper" xml:space="preserve">
+    <value>Wallpaper</value>
+  </data>
+  <data name="Custom_BgType_Solid" xml:space="preserve">
+    <value>Warna Solid</value>
+  </data>
+  <data name="Custom_Scheme_TonalSpot" xml:space="preserve">
+    <value>Tonal Spot</value>
+  </data>
+  <data name="Custom_Scheme_Vibrant" xml:space="preserve">
+    <value>Cerah</value>
+  </data>
+  <data name="Custom_Scheme_Expressive" xml:space="preserve">
+    <value>Ekspresif</value>
+  </data>
+  <data name="Custom_Scheme_Rainbow" xml:space="preserve">
+    <value>Pelangi</value>
+  </data>
+  <data name="Custom_Scheme_FruitSalad" xml:space="preserve">
+    <value>Salad Buah</value>
+  </data>
+  <data name="Custom_Scheme_Content" xml:space="preserve">
+    <value>Berdasarkan Konten</value>
+  </data>
+  <data name="Custom_Scheme_Spritz" xml:space="preserve">
+    <value>Spritz</value>
+  </data>
+  <data name="TaskManager_KillFailed" xml:space="preserve">
+    <value>Tidak dapat menghentikan "{0}" (PID {1}). Tidak ada yang berubah. Segarkan daftar lalu coba lagi.</value>
+  </data>
+  <data name="TaskManager_KillTargetChanged" xml:space="preserve">
+    <value>Tidak ada yang dihentikan. "{0}" (PID {1}) tertutup saat Anda memutuskan, dan PID itu kini mungkin milik program lain. Daftar telah disegarkan — cari programnya lagi lalu coba sekali lagi.</value>
+  </data>
+  <data name="Confirm_SignOut_Title" xml:space="preserve">
+    <value>Keluar — Apakah Anda yakin?</value>
+  </data>
+  <data name="Confirm_SignOut_Message" xml:space="preserve">
+    <value>Semua yang terbuka di PC jarak jauh akan ditutup dan pekerjaan yang belum disimpan akan hilang. PC tetap menyala, tetapi RemEx akan terputus dan tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
+  </data>
+  <data name="Confirm_SignOut_Btn" xml:space="preserve">
+    <value>Keluar</value>
+  </data>
+  <data name="Status_FailedGeneratePin" xml:space="preserve">
+    <value>Tidak dapat membuat PIN pairing</value>
+  </data>
+  <data name="Status_FailedGeneratePinHost" xml:space="preserve">
+    <value>PC tidak memberikan PIN pairing</value>
+  </data>
+  <data name="Status_PairingServiceUnavailable" xml:space="preserve">
+    <value>Penyandingan tidak tersedia saat ini</value>
+  </data>
+  <data name="Status_PairingFailed" xml:space="preserve">
+    <value>Penyandingan gagal. Periksa PIN di PC</value>
+  </data>
+  <data name="Status_PairingCancelled" xml:space="preserve">
+    <value>Penyandingan dibatalkan</value>
+  </data>
+  <data name="Status_InvalidSettings" xml:space="preserve">
+    <value>Periksa pengaturan koneksi</value>
+  </data>
+  <data name="Status_InvalidHostAddress" xml:space="preserve">
+    <value>Alamat PC itu tidak valid</value>
+  </data>
+  <data name="Status_LoadDisplaysFailed" xml:space="preserve">
+    <value>Tidak dapat memuat tampilan. Coba lagi.</value>
+  </data>
+  <data name="RemoteDesktop_LoadingDisplays" xml:space="preserve">
+    <value>Memuat tampilan…</value>
+  </data>
+  <data name="RemoteDesktop_SelectDisplayTarget" xml:space="preserve">
+    <value>Pilih tampilan terlebih dahulu</value>
+  </data>
+  <data name="RemoteDesktop_SwitchingDisplay" xml:space="preserve">
+    <value>Mengganti tampilan…</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlUnavailable" xml:space="preserve">
+    <value>Kontrol jendela tidak tersedia</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlFailed" xml:space="preserve">
+    <value>Kontrol jendela gagal</value>
+  </data>
+  <data name="RemoteDesktop_WindowQueryFailed" xml:space="preserve">
+    <value>Tidak dapat menampilkan daftar jendela. Coba lagi.</value>
+  </data>
+  <data name="RemoteDesktop_WindowActionFailed" xml:space="preserve">
+    <value>Aksi jendela itu tidak berhasil.</value>
+  </data>
+  <data name="RemoteDesktop_BackendReady" xml:space="preserve">
+    <value>Kontrol jendela siap ({0})</value>
+  </data>
+  <data name="RemoteDesktop_WindowControlViaFormat" xml:space="preserve">
+    <value>Kontrol jendela melalui {0}</value>
+  </data>
+  <data name="RemoteDesktop_AdvancedWindowControlUnavailable" xml:space="preserve">
+    <value>Kontrol jendela lanjutan tidak tersedia di PC ini.</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknown" xml:space="preserve">
+    <value>tidak diketahui</value>
+  </data>
+  <data name="RemoteDesktop_DisplaySwitchFailed" xml:space="preserve">
+    <value>Tidak dapat mengganti tampilan</value>
+  </data>
+  <data name="RemoteDesktop_BackendUnknownInline" xml:space="preserve">
+    <value>backend tidak dikenal</value>
+  </data>
+  <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
+    <value>Wake on LAN</value>
+  </data>
+  <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
+    <value>RemEx tidak memiliki izin untuk menutup program tersebut. Program mungkin perlu dijalankan sebagai administrator di PC.</value>
+  </data>
+  <data name="TaskManager_KillErrNotRunning" xml:space="preserve">
+    <value>Program tersebut sudah tidak berjalan. Segarkan daftar untuk melihat apa yang terbuka sekarang.</value>
+  </data>
+  <data name="TaskManager_KillErrIdentityChangedFormat" xml:space="preserve">
+    <value>Program tersebut tidak lagi memakai ID proses ini — sekarang ID itu milik {0}. Tidak ada yang ditutup. Segarkan daftar lalu coba lagi.</value>
+  </data>
+  <data name="TaskManager_KillErrFailed" xml:space="preserve">
+    <value>Program tersebut tidak dapat ditutup. Segarkan daftar lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_FolderEmpty" xml:space="preserve">
+    <value>Folder ini kosong.</value>
+  </data>
+  <data name="FileTransfer_NoSearchResults" xml:space="preserve">
+    <value>Tidak ada file yang cocok dengan pencarian itu.</value>
+  </data>
+  <data name="AppLauncher_NoSearchResults" xml:space="preserve">
+    <value>Tidak ada aplikasi yang cocok dengan pencarian itu.</value>
+  </data>
+  <data name="Faq_Q15_Question" xml:space="preserve">
+    <value>Bagaimana cara mengubah tampilan RemEx?</value>
+  </data>
+  <data name="Faq_Q15_Answer" xml:space="preserve">
+    <value>Gunakan tombol "Personalize appearance" untuk membuka panel Personalize.
+
+Anda dapat mengubah:
+• Tema (CyberNOC, Monolith, SolarFlare, atau BaseDarkGlass)
+• Warna aksen dan palet
+• Radius dan bentuk sudut kartu
+• Jenis dan ukuran huruf
+• Keburaman kartu
+• Bahasa aplikasi, terpisah dari bahasa Windows atau Linux Anda</value>
+  </data>
+  <data name="Faq_Q16_Question" xml:space="preserve">
+    <value>Bisakah saya menonton tutorialnya lagi?</value>
+  </data>
+  <data name="Faq_Q16_Answer" xml:space="preserve">
+    <value>Ya. Buka Pengaturan dan gunakan "Putar Ulang Tutorial" di bagian Bantuan. Anda dapat melakukannya sesering yang Anda mau.</value>
+  </data>
+  <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
+    <value>Berkas yang diunduh tidak cocok dengan yang dikirim PC, jadi berkas itu dihapus. Coba unduh lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrStoppedResponding" xml:space="preserve">
+    <value>Transfer berhenti merespons. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrGeneric" xml:space="preserve">
+    <value>Transfer tidak dapat diselesaikan. Pastikan perangkat yang terhubung masih disandingkan, lalu coba lagi.</value>
+  </data>
+  <data name="A11y_ConnectionConnected" xml:space="preserve">
+    <value>Status koneksi: terhubung</value>
+  </data>
+  <data name="A11y_ConnectionDisconnected" xml:space="preserve">
+    <value>Status koneksi: tidak terhubung</value>
   </data>
 </root>

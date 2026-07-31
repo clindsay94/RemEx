@@ -67,18 +67,6 @@
                 <Button Content="{local:Localize AppLauncher_AddProgram}" Grid.Column="2" VerticalAlignment="Center" Classes="glass-button" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource AccentPrimaryBrush}" Padding="12,8" Command="{Binding OpenAddProgramDialogCommand}" />
             </Grid>
 
-            <!-- ═══ Android Add Panel ═══ -->
-            <Border Classes="glass-card" Padding="20" IsVisible="{Binding IsAndroidAddPanelOpen}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="{local:Localize AppLauncher_AddNewApp}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-                    <TextBox Text="{Binding AndroidNewAppName}" Watermark="{local:Localize AppLauncher_DisplayNameWatermark}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}"/>
-                    <TextBox Text="{Binding AndroidNewAppPath}" Watermark="{local:Localize AppLauncher_TargetPathWatermark}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                        <Button Content="{local:Localize Btn_Cancel}" Command="{Binding OpenAddProgramDialogCommand}" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}"/>
-                        <Button Content="{local:Localize Btn_Submit}" Command="{Binding SubmitAndroidNewAppCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" FontWeight="Bold"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
 
             <!-- ═══ Search ═══ -->
             <TextBox Watermark="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13" ToolTip.Tip="{local:Localize AppLauncher_DragDisabledWhileFiltered}"/>
@@ -102,7 +90,7 @@
 
                             <Grid RowDefinitions="*, Auto">
                                 <!-- Main Launch Button (Top Area) -->
-                                <Button Grid.Row="0" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
+                                <Button Grid.Row="0" Cursor="Hand" Background="Transparent" Padding="12" BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AutomationProperties.Name="{Binding DisplayName}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).LaunchAppCommand}" CommandParameter="{Binding}" IsEnabled="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).Connection.IsConnected}">
                                     <Grid RowDefinitions="*, Auto" HorizontalAlignment="Center">
                                         <Image Grid.Row="0" Source="{Binding IconBase64, Converter={StaticResource Base64ToImageConverter}}" Width="64" Height="64" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapInterpolationMode="HighQuality" />
 
@@ -113,13 +101,13 @@
                                 <!-- Action Toolbar (Bottom Area) -->
                                 <Border Grid.Row="1" Classes="card-actions" Background="{DynamicResource GlassOverlayBrush}" Padding="4,2">
                                     <Grid ColumnDefinitions="*, *, *, *">
-                                        <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="0" Content="←" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveLeft}" AutomationProperties.Name="{local:Localize AppLauncher_MoveLeft}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveLeftCommand}" CommandParameter="{Binding}" />
 
-                                        <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveRight}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="1" Content="→" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_MoveRight}" AutomationProperties.Name="{local:Localize AppLauncher_MoveRight}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).MoveRightCommand}" CommandParameter="{Binding}" />
 
-                                        <Button Grid.Column="2" Content="✎" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="14" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Edit}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).EditAppCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="2" Content="✎" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" Padding="0" FontSize="14" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Edit}" AutomationProperties.Name="{local:Localize AppLauncher_Edit}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).EditAppCommand}" CommandParameter="{Binding}" />
 
-                                        <Button Grid.Column="3" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" />
+                                        <Button Grid.Column="3" Content="✕" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" Padding="0" FontSize="16" HorizontalAlignment="Stretch" ToolTip.Tip="{local:Localize AppLauncher_Remove}" AutomationProperties.Name="{local:Localize AppLauncher_Remove}" Command="{Binding $parent[UserControl].((vm:AppLauncherViewModel)DataContext).RemoveAppCommand}" CommandParameter="{Binding}" />
                                     </Grid>
                                 </Border>
                             </Grid>
@@ -127,6 +115,12 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            <!-- Two distinct empty states, not one: nothing configured at all, versus nothing
+                 matching the current search. Keying the second on ShowNoSearchResults rather than
+                 on an empty FilteredApps is what keeps them from both firing at once and telling a
+                 user with no apps to refine a search they never made (RemEx-n69m). -->
+            <TextBlock Text="{local:Localize AppLauncher_NoSearchResults}" IsVisible="{Binding ShowNoSearchResults}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,24"/>
 
             <TextBlock Text="{local:Localize AppLauncher_NoApps}" IsVisible="{Binding !Launchers.Count}" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,40,0,0" FontStyle="Italic"/>
 

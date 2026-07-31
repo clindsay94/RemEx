@@ -1,9 +1,7 @@
-using System;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 using Remex.Core.Services.Security;
 
 namespace Remex.Agent.Services.Security;
@@ -45,7 +43,6 @@ public sealed class PairingService : IPairingService
     private int _failedHmacAttempts;
     private const int MaxFailedHmacAttempts = 5;
 
-    private const int PinLength = 6;
     // Short session lifetime limits the window for online brute-force. A legitimate user
     // receiving the PIN out-of-band and entering it on Android comfortably fits in ~2 minutes;
     // the session can always be restarted. Previously 600s, which left a 10-minute grinding window.
@@ -58,8 +55,8 @@ public sealed class PairingService : IPairingService
         ILogger<PairingService> logger,
         ICertificateService certificateService)
     {
-        _logger = logger;
-        _certificateService = certificateService;
+        _logger = Guard.NotNull(logger);
+        _certificateService = Guard.NotNull(certificateService);
     }
 
     public bool IsPairingActive =>
@@ -452,8 +449,10 @@ public sealed class PairingService : IPairingService
 
         _clientPublicKeyBase64 = null;
 
-        _logger.LogInformation("Pairing session started. PIN: {Pin}, Expires at: {Expiry}",
-            _activePin, DateTimeOffset.FromUnixTimeMilliseconds(_expiresAtUnixMs));
+        // Never log the PIN value: the retained in-memory log buffer is a disclosure surface
+        // (VULN-1, RemEx-s032.1). The PIN is surfaced to the user via the PinDisplayed event below.
+        _logger.LogInformation("Pairing session started. PIN is displayed on the host screen (not logged). Expires at: {Expiry}.",
+            DateTimeOffset.FromUnixTimeMilliseconds(_expiresAtUnixMs));
 
         try { PinDisplayed?.Invoke(_activePin, _expiresAtUnixMs); }
         catch (Exception ex) { _logger.LogWarning(ex, "PinDisplayed handler threw."); }

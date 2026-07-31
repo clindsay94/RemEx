@@ -1,9 +1,5 @@
-using System;
 using System.Diagnostics;
-using System.IO;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Remex.Core.Models;
 using Remex.Core.Services;
 
@@ -54,10 +50,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     {
         _themeService = themeService;
 
-        // Use SpecialFolder.Personal on Android for better persistence (survives uninstall/backup)
-        var baseFolder = OperatingSystem.IsAndroid()
-            ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
-            : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var baseFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
         var appData = Path.Combine(baseFolder, "Remex");
 
@@ -136,16 +129,11 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         _pendingProfile = profile;
         CurrentProfile = profile;
 
-        // On Android, we save immediately to prevent data loss if the app is killed
-        if (OperatingSystem.IsAndroid())
-        {
-            _ = SaveInternalAsync(profile);
-            return;
-        }
-
         _debounceTimer?.Dispose();
         _debounceTimer = new Timer(
-            _ => _ = FlushAsync(),
+            // A timer callback cannot await, and a dropped fault here means the debounced save
+            // never happened and nothing said so - the user loses the layout they just edited.
+            _ => FlushAsync().FireAndForget("flush the debounced dashboard layout save"),
             null,
             DebounceMs,
             Timeout.Infinite);
@@ -175,19 +163,19 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             var json = JsonSerializer.Serialize(profile, JsonOptions);
             await File.WriteAllTextAsync(_filePath, json);
 
-            if (OperatingSystem.IsAndroid())
-            {
-                System.Diagnostics.Debug.WriteLine($"[RemexPersistence] Saved profile to: {_filePath}");
-            }
-
             ProfileSaved?.Invoke();
         }
         catch (Exception ex)
         {
-            if (OperatingSystem.IsAndroid())
-            {
-                System.Diagnostics.Debug.WriteLine($"[RemexPersistence] ERROR saving profile: {ex.Message}");
-            }
+            // The Android guard that used to wrap this made it unreachable, so a failed save
+            // has been reporting NOTHING. Deleting the guard and its body along with it would
+            // have left a bare swallow here, which is worse: the user silently loses their
+            // dashboard layout. Un-gated instead, so the diagnostic actually runs.
+            //
+            // Debug.WriteLine is a stopgap - it compiles out of Release. This service takes no
+            // ILogger today, and giving it one is RemEx-t4tc's job (bare catch-swallow blocks),
+            // not a dead-branch cleanup's. Recorded there rather than quietly widened here.
+            System.Diagnostics.Debug.WriteLine($"[RemexPersistence] ERROR saving profile: {ex.Message}");
         }
         finally
         {

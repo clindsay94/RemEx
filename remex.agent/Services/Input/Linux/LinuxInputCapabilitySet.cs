@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.Versioning;
 using Remex.Agent.Services.RemoteDesktop.Linux;
 

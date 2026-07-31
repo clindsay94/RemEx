@@ -39,9 +39,9 @@
             <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
         </Style>
         <Style Selector="Button.remote-btn-warn">
-            <Setter Property="Background" Value="#15FFD93D"/>
-            <Setter Property="Foreground" Value="#FFD93D"/>
-            <Setter Property="BorderBrush" Value="#FFD93D"/>
+            <Setter Property="Background" Value="{DynamicResource SystemWarningBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource SystemWarningBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemWarningBrush}"/>
         </Style>
     </UserControl.Styles>
 
@@ -81,37 +81,37 @@
             <!-- ═══ Graceful Controls ═══ -->
             <TextBlock Text="{local:Localize Remote_Graceful}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="3" IsEnabled="{Binding Connection.IsConnected}">
-                <Button Classes="remote-btn" Command="{Binding LockPcCommand}" Margin="0,0,4,8">
+                <Button AutomationProperties.Name="{local:Localize Remote_Lock}" Classes="remote-btn" Command="{Binding LockPcCommand}" Margin="0,0,4,8">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Lock}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🔒" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Classes="remote-btn" Command="{Binding SignOutPcCommand}" Margin="4,0,4,8">
+                <Button AutomationProperties.Name="{local:Localize Remote_SignOut}" Classes="remote-btn" Command="{Binding SignOutPcCommand}" Margin="4,0,4,8">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_SignOut}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🚪" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Classes="remote-btn remote-btn-warn" Command="{Binding ShutdownPcCommand}" Margin="4,0,0,8">
+                <Button AutomationProperties.Name="{local:Localize Remote_Shutdown}" Classes="remote-btn remote-btn-warn" Command="{Binding ShutdownPcCommand}" Margin="4,0,0,8">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Shutdown}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="⏻" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Classes="remote-btn remote-btn-warn" Command="{Binding RestartPcCommand}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Remote_Restart}" Classes="remote-btn remote-btn-warn" Command="{Binding RestartPcCommand}" Margin="0,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Restart}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🔄" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Classes="remote-btn" Command="{Binding SleepPcCommand}" Margin="4,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Remote_Sleep}" Classes="remote-btn" Command="{Binding SleepPcCommand}" Margin="4,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Sleep}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🌙" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Classes="remote-btn" Command="{Binding HibernatePcCommand}" Margin="4,0,0,0">
+                <Button AutomationProperties.Name="{local:Localize Remote_Hibernate}" Classes="remote-btn" Command="{Binding HibernatePcCommand}" Margin="4,0,0,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_Hibernate}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="❄️" FontSize="30" HorizontalAlignment="Center"/>
@@ -120,21 +120,21 @@
             </UniformGrid>
 
             <!-- ═══ Forced Controls ═══ -->
-            <TextBlock Text="{local:Localize Remote_Forced}" FontSize="11" FontWeight="SemiBold" Foreground="#FF6B6B" LetterSpacing="2"/>
+            <TextBlock Text="{local:Localize Remote_Forced}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource SystemErrorBrush}" LetterSpacing="2"/>
             <UniformGrid Columns="3" IsEnabled="{Binding Connection.IsConnected}">
-                <Button Classes="remote-btn remote-btn-danger" Command="{Binding ForceShutdownPcCommand}" Margin="0,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Remote_ForceShutdown}" Classes="remote-btn remote-btn-danger" Command="{Binding ForceShutdownPcCommand}" Margin="0,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_ForceShutdown}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="⏻" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Classes="remote-btn remote-btn-danger" Command="{Binding ForceRestartCommand}" Margin="4,0,4,0">
+                <Button AutomationProperties.Name="{local:Localize Remote_ForceRestart}" Classes="remote-btn remote-btn-danger" Command="{Binding ForceRestartCommand}" Margin="4,0,4,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_ForceRestart}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="🔄" FontSize="30" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button Classes="remote-btn remote-btn-danger" Command="{Binding RestartToUefiCommand}" Margin="4,0,0,0">
+                <Button AutomationProperties.Name="{local:Localize Remote_RebootUefi}" Classes="remote-btn remote-btn-danger" Command="{Binding RestartToUefiCommand}" Margin="4,0,0,0">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{local:Localize Remote_RebootUefi}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="⚙️" FontSize="30" HorizontalAlignment="Center"/>

@@ -44,10 +44,7 @@ namespace Remex.Desktop.Localization {
         // Navigation
         public static string Nav_Home => ResourceManager.GetString("Nav_Home", resourceCulture)!;
         public static string Nav_Sensors => ResourceManager.GetString("Nav_Sensors", resourceCulture)!;
-        public static string Nav_Remote => ResourceManager.GetString("Nav_Remote", resourceCulture)!;
         public static string Nav_Launcher => ResourceManager.GetString("Nav_Launcher", resourceCulture)!;
-        public static string Nav_Tasks => ResourceManager.GetString("Nav_Tasks", resourceCulture)!;
-        public static string Nav_Desktop => ResourceManager.GetString("Nav_Desktop", resourceCulture)!;
         public static string Nav_Settings => ResourceManager.GetString("Nav_Settings", resourceCulture)!;
 
         // Common Buttons
@@ -58,16 +55,12 @@ namespace Remex.Desktop.Localization {
         public static string Btn_Apply => ResourceManager.GetString("Btn_Apply", resourceCulture)!;
         public static string Btn_Browse => ResourceManager.GetString("Btn_Browse", resourceCulture)!;
         public static string Btn_Discover => ResourceManager.GetString("Btn_Discover", resourceCulture)!;
-        public static string Btn_Refresh => ResourceManager.GetString("Btn_Refresh", resourceCulture)!;
         public static string Btn_Start => ResourceManager.GetString("Btn_Start", resourceCulture)!;
         public static string Btn_Stop => ResourceManager.GetString("Btn_Stop", resourceCulture)!;
-        public static string Btn_Submit => ResourceManager.GetString("Btn_Submit", resourceCulture)!;
 
         // Remote View
         public static string Remote_Header => ResourceManager.GetString("Remote_Header", resourceCulture)!;
         public static string Remote_Subheader => ResourceManager.GetString("Remote_Subheader", resourceCulture)!;
-        public static string Remote_WolSection => ResourceManager.GetString("Remote_WolSection", resourceCulture)!;
-        public static string Remote_WolDescription => ResourceManager.GetString("Remote_WolDescription", resourceCulture)!;
         public static string Remote_Graceful => ResourceManager.GetString("Remote_Graceful", resourceCulture)!;
         public static string Remote_Forced => ResourceManager.GetString("Remote_Forced", resourceCulture)!;
         public static string Remote_Lock => ResourceManager.GetString("Remote_Lock", resourceCulture)!;
@@ -79,7 +72,6 @@ namespace Remex.Desktop.Localization {
         public static string Remote_ForceShutdown => ResourceManager.GetString("Remote_ForceShutdown", resourceCulture)!;
         public static string Remote_ForceRestart => ResourceManager.GetString("Remote_ForceRestart", resourceCulture)!;
         public static string Remote_RebootUefi => ResourceManager.GetString("Remote_RebootUefi", resourceCulture)!;
-        public static string Remote_WolSend => ResourceManager.GetString("Remote_WolSend", resourceCulture)!;
 
         // Settings
         public static string Settings_Header => ResourceManager.GetString("Settings_Header", resourceCulture)!;
@@ -88,35 +80,16 @@ namespace Remex.Desktop.Localization {
         public static string Settings_SavedStatus => ResourceManager.GetString("Settings_SavedStatus", resourceCulture)!;
         public static string Settings_Connection => ResourceManager.GetString("Settings_Connection", resourceCulture)!;
         public static string Settings_HostAddress => ResourceManager.GetString("Settings_HostAddress", resourceCulture)!;
-        public static string Settings_AccessKey => ResourceManager.GetString("Settings_AccessKey", resourceCulture)!;
         public static string Settings_SaveReconnect => ResourceManager.GetString("Settings_SaveReconnect", resourceCulture)!;
-        public static string Settings_RemoteDesktop => ResourceManager.GetString("Settings_RemoteDesktop", resourceCulture)!;
-        public static string Settings_StreamFpsDesc => ResourceManager.GetString("Settings_StreamFpsDesc", resourceCulture)!;
         public static string Settings_Layout => ResourceManager.GetString("Settings_Layout", resourceCulture)!;
         public static string Settings_SnapToGrid => ResourceManager.GetString("Settings_SnapToGrid", resourceCulture)!;
         public static string Settings_SnapToGridDesc => ResourceManager.GetString("Settings_SnapToGridDesc", resourceCulture)!;
         public static string Settings_GridSize => ResourceManager.GetString("Settings_GridSize", resourceCulture)!;
         public static string Settings_PinnedSensors => ResourceManager.GetString("Settings_PinnedSensors", resourceCulture)!;
         public static string Settings_PinnedSensorsDesc => ResourceManager.GetString("Settings_PinnedSensorsDesc", resourceCulture)!;
-        public static string Settings_ServiceSection => ResourceManager.GetString("Settings_ServiceSection", resourceCulture)!;
-        public static string Settings_ServiceLogin => ResourceManager.GetString("Settings_ServiceLogin", resourceCulture)!;
-        public static string Settings_ServiceDesc => ResourceManager.GetString("Settings_ServiceDesc", resourceCulture)!;
-        public static string Settings_AccountFormat => ResourceManager.GetString("Settings_AccountFormat", resourceCulture)!;
-        public static string Settings_Username => ResourceManager.GetString("Settings_Username", resourceCulture)!;
-        public static string Settings_Password => ResourceManager.GetString("Settings_Password", resourceCulture)!;
-        public static string Settings_RestartNote => ResourceManager.GetString("Settings_RestartNote", resourceCulture)!;
         public static string Settings_Language => ResourceManager.GetString("Settings_Language", resourceCulture)!;
 
         // Home
-        public static string Home_Subtitle => ResourceManager.GetString("Home_Subtitle", resourceCulture)!;
-        public static string Home_QuickActions => ResourceManager.GetString("Home_QuickActions", resourceCulture)!;
-        public static string Home_SensorWorkspace => ResourceManager.GetString("Home_SensorWorkspace", resourceCulture)!;
-        public static string Home_PcRemote => ResourceManager.GetString("Home_PcRemote", resourceCulture)!;
-        public static string Home_Desktop => ResourceManager.GetString("Home_Desktop", resourceCulture)!;
-        public static string Home_Launcher => ResourceManager.GetString("Home_Launcher", resourceCulture)!;
-        public static string Home_Tasks => ResourceManager.GetString("Home_Tasks", resourceCulture)!;
-        public static string Home_LiveTelemetry => ResourceManager.GetString("Home_LiveTelemetry", resourceCulture)!;
-        public static string Home_NoPinnedSensors => ResourceManager.GetString("Home_NoPinnedSensors", resourceCulture)!;
         public static string Home_NoPinnedSensorsHint => ResourceManager.GetString("Home_NoPinnedSensorsHint", resourceCulture)!;
 
         // Task Manager
@@ -146,7 +119,6 @@ namespace Remex.Desktop.Localization {
         public static string AddProgram_IconPreview => ResourceManager.GetString("AddProgram_IconPreview", resourceCulture)!;
 
         // Tray Flyout
-        public static string TrayFlyout_Header => ResourceManager.GetString("TrayFlyout_Header", resourceCulture)!;
         public static string TrayFlyout_Home => ResourceManager.GetString("TrayFlyout_Home", resourceCulture)!;
         public static string TrayFlyout_Workspace => ResourceManager.GetString("TrayFlyout_Workspace", resourceCulture)!;
 
@@ -166,8 +138,6 @@ namespace Remex.Desktop.Localization {
         public static string Canvas_Ping => ResourceManager.GetString("Canvas_Ping", resourceCulture)!;
         public static string Canvas_CancelConnect => ResourceManager.GetString("Canvas_CancelConnect", resourceCulture)!;
         public static string Canvas_Disconnect => ResourceManager.GetString("Canvas_Disconnect", resourceCulture)!;
-        public static string Canvas_LayoutSaved => ResourceManager.GetString("Canvas_LayoutSaved", resourceCulture)!;
-        public static string Canvas_SyncRequested => ResourceManager.GetString("Canvas_SyncRequested", resourceCulture)!;
 
         // Remote Desktop
         public static string RemoteDesktop_Header => ResourceManager.GetString("RemoteDesktop_Header", resourceCulture)!;
@@ -180,15 +150,11 @@ namespace Remex.Desktop.Localization {
         public static string RemoteDesktop_ToggleCursorPad => ResourceManager.GetString("RemoteDesktop_ToggleCursorPad", resourceCulture)!;
         public static string RemoteDesktop_ToggleFullscreen => ResourceManager.GetString("RemoteDesktop_ToggleFullscreen", resourceCulture)!;
         public static string RemoteDesktop_Fullscreen => ResourceManager.GetString("RemoteDesktop_Fullscreen", resourceCulture)!;
-        public static string RemoteDesktop_CompactPad => ResourceManager.GetString("RemoteDesktop_CompactPad", resourceCulture)!;
-        public static string RemoteDesktop_FullPad => ResourceManager.GetString("RemoteDesktop_FullPad", resourceCulture)!;
         public static string RemoteDesktop_ResolutionFormat => ResourceManager.GetString("RemoteDesktop_ResolutionFormat", resourceCulture)!;
         public static string RemoteDesktop_FpsFormat => ResourceManager.GetString("RemoteDesktop_FpsFormat", resourceCulture)!;
         public static string RemoteDesktop_QualityFormat => ResourceManager.GetString("RemoteDesktop_QualityFormat", resourceCulture)!;
 
         // Customization
-        public static string Custom_Header => ResourceManager.GetString("Custom_Header", resourceCulture)!;
-        public static string Custom_Subheader => ResourceManager.GetString("Custom_Subheader", resourceCulture)!;
         public static string Custom_BasePresets => ResourceManager.GetString("Custom_BasePresets", resourceCulture)!;
         public static string Custom_AdvancedTuning => ResourceManager.GetString("Custom_AdvancedTuning", resourceCulture)!;
         public static string Custom_CornerRadius => ResourceManager.GetString("Custom_CornerRadius", resourceCulture)!;
@@ -198,8 +164,6 @@ namespace Remex.Desktop.Localization {
         public static string Custom_BackgroundMode => ResourceManager.GetString("Custom_BackgroundMode", resourceCulture)!;
         public static string Custom_Atmosphere => ResourceManager.GetString("Custom_Atmosphere", resourceCulture)!;
         public static string Custom_Reset => ResourceManager.GetString("Custom_Reset", resourceCulture)!;
-        public static string Custom_Back => ResourceManager.GetString("Custom_Back", resourceCulture)!;
-        public static string Custom_RemoteCardShape => ResourceManager.GetString("Custom_RemoteCardShape", resourceCulture)!;
 
         // Status Messages
         public static string Status_Disconnected => ResourceManager.GetString("Status_Disconnected", resourceCulture)!;
@@ -223,40 +187,8 @@ namespace Remex.Desktop.Localization {
         public static string Status_PadFullTooltip => ResourceManager.GetString("Status_PadFullTooltip", resourceCulture)!;
 
         // Service Status
-        public static string Service_NotInstalled => ResourceManager.GetString("Service_NotInstalled", resourceCulture)!;
-        public static string Service_Running => ResourceManager.GetString("Service_Running", resourceCulture)!;
-        public static string Service_Stopped => ResourceManager.GetString("Service_Stopped", resourceCulture)!;
-        public static string Service_Pending => ResourceManager.GetString("Service_Pending", resourceCulture)!;
-        public static string Service_Installed => ResourceManager.GetString("Service_Installed", resourceCulture)!;
-        public static string Service_Starting => ResourceManager.GetString("Service_Starting", resourceCulture)!;
-        public static string Service_Stopping => ResourceManager.GetString("Service_Stopping", resourceCulture)!;
-        public static string Service_Uninstalling => ResourceManager.GetString("Service_Uninstalling", resourceCulture)!;
-        public static string Service_PasswordRequired => ResourceManager.GetString("Service_PasswordRequired", resourceCulture)!;
-        public static string Service_Publishing => ResourceManager.GetString("Service_Publishing", resourceCulture)!;
-        public static string Service_PublishFailed => ResourceManager.GetString("Service_PublishFailed", resourceCulture)!;
-        public static string Service_Creating => ResourceManager.GetString("Service_Creating", resourceCulture)!;
-        public static string Service_CreateFailed => ResourceManager.GetString("Service_CreateFailed", resourceCulture)!;
-        public static string Service_ConfiguringLogin => ResourceManager.GetString("Service_ConfiguringLogin", resourceCulture)!;
-        public static string Service_ConfigureFailed => ResourceManager.GetString("Service_ConfigureFailed", resourceCulture)!;
-        public static string Service_GrantingRights => ResourceManager.GetString("Service_GrantingRights", resourceCulture)!;
-        public static string Service_StoppingEmbedded => ResourceManager.GetString("Service_StoppingEmbedded", resourceCulture)!;
-        public static string Service_StartingService => ResourceManager.GetString("Service_StartingService", resourceCulture)!;
-        public static string Service_InstalledStarted => ResourceManager.GetString("Service_InstalledStarted", resourceCulture)!;
-        public static string Service_InstalledStartFailed => ResourceManager.GetString("Service_InstalledStartFailed", resourceCulture)!;
-        public static string Service_DeletingService => ResourceManager.GetString("Service_DeletingService", resourceCulture)!;
-        public static string Service_ApplyingCredentials => ResourceManager.GetString("Service_ApplyingCredentials", resourceCulture)!;
         public static string Service_HostUnavailable => ResourceManager.GetString("Service_HostUnavailable", resourceCulture)!;
         public static string Service_HostUnavailableHint => ResourceManager.GetString("Service_HostUnavailableHint", resourceCulture)!;
-        public static string Service_Checking => ResourceManager.GetString("Service_Checking", resourceCulture)!;
-        public static string Service_LocatingHost => ResourceManager.GetString("Service_LocatingHost", resourceCulture)!;
-        public static string Service_HostNotFound => ResourceManager.GetString("Service_HostNotFound", resourceCulture)!;
-        public static string Service_StartedMsg => ResourceManager.GetString("Service_StartedMsg", resourceCulture)!;
-        public static string Service_StartFailed => ResourceManager.GetString("Service_StartFailed", resourceCulture)!;
-        public static string Service_StoppedMsg => ResourceManager.GetString("Service_StoppedMsg", resourceCulture)!;
-        public static string Service_StopFailed => ResourceManager.GetString("Service_StopFailed", resourceCulture)!;
-        public static string Service_CredentialsUpdated => ResourceManager.GetString("Service_CredentialsUpdated", resourceCulture)!;
-        public static string Service_CredentialsFailed => ResourceManager.GetString("Service_CredentialsFailed", resourceCulture)!;
-        public static string Service_UninstallFailed => ResourceManager.GetString("Service_UninstallFailed", resourceCulture)!;
         public static string Status_ConnectionCancelled => ResourceManager.GetString("Status_ConnectionCancelled", resourceCulture)!;
         public static string Status_ConnectionTimedOut => ResourceManager.GetString("Status_ConnectionTimedOut", resourceCulture)!;
 
@@ -278,28 +210,10 @@ namespace Remex.Desktop.Localization {
         public static string Wol_SignOutSent => ResourceManager.GetString("Wol_SignOutSent", resourceCulture)!;
 
         // Phase 4: Live Localization keys
-        public static string AppLauncher_AddNewApp => ResourceManager.GetString("AppLauncher_AddNewApp", resourceCulture)!;
-        public static string AppLauncher_DisplayNameWatermark => ResourceManager.GetString("AppLauncher_DisplayNameWatermark", resourceCulture)!;
-        public static string AppLauncher_TargetPathWatermark => ResourceManager.GetString("AppLauncher_TargetPathWatermark", resourceCulture)!;
         public static string Canvas_GraphType => ResourceManager.GetString("Canvas_GraphType", resourceCulture)!;
         public static string Canvas_LockPC => ResourceManager.GetString("Canvas_LockPC", resourceCulture)!;
         public static string Canvas_RebootUefi => ResourceManager.GetString("Canvas_RebootUefi", resourceCulture)!;
         public static string Canvas_TogglePinToHome => ResourceManager.GetString("Canvas_TogglePinToHome", resourceCulture)!;
-        public static string Home_CancelTooltip => ResourceManager.GetString("Home_CancelTooltip", resourceCulture)!;
-        public static string Home_ConnectTooltip => ResourceManager.GetString("Home_ConnectTooltip", resourceCulture)!;
-        public static string Home_DesktopTooltip => ResourceManager.GetString("Home_DesktopTooltip", resourceCulture)!;
-        public static string Home_LauncherTooltip => ResourceManager.GetString("Home_LauncherTooltip", resourceCulture)!;
-        public static string Home_PcRemoteTooltip => ResourceManager.GetString("Home_PcRemoteTooltip", resourceCulture)!;
-        public static string Home_SensorWorkspaceTooltip => ResourceManager.GetString("Home_SensorWorkspaceTooltip", resourceCulture)!;
-        public static string Home_TasksTooltip => ResourceManager.GetString("Home_TasksTooltip", resourceCulture)!;
-        public static string Nav_DesktopTooltip => ResourceManager.GetString("Nav_DesktopTooltip", resourceCulture)!;
-        public static string Nav_HomeTooltip => ResourceManager.GetString("Nav_HomeTooltip", resourceCulture)!;
-        public static string Nav_Launch => ResourceManager.GetString("Nav_Launch", resourceCulture)!;
-        public static string Nav_LauncherTooltip => ResourceManager.GetString("Nav_LauncherTooltip", resourceCulture)!;
-        public static string Nav_RemoteTooltip => ResourceManager.GetString("Nav_RemoteTooltip", resourceCulture)!;
-        public static string Nav_SensorsTooltip => ResourceManager.GetString("Nav_SensorsTooltip", resourceCulture)!;
-        public static string Nav_SettingsTooltip => ResourceManager.GetString("Nav_SettingsTooltip", resourceCulture)!;
-        public static string Nav_TasksTooltip => ResourceManager.GetString("Nav_TasksTooltip", resourceCulture)!;
         public static string RemoteDesktop_ExitFullscreenTip => ResourceManager.GetString("RemoteDesktop_ExitFullscreenTip", resourceCulture)!;
         public static string RemoteDesktop_Host => ResourceManager.GetString("RemoteDesktop_Host", resourceCulture)!;
         public static string RemoteDesktop_HostWatermark => ResourceManager.GetString("RemoteDesktop_HostWatermark", resourceCulture)!;
@@ -315,76 +229,21 @@ namespace Remex.Desktop.Localization {
         public static string RemoteDesktop_TogglePen => ResourceManager.GetString("RemoteDesktop_TogglePen", resourceCulture)!;
         public static string RemoteDesktop_ToggleStylusModeTip => ResourceManager.GetString("RemoteDesktop_ToggleStylusModeTip", resourceCulture)!;
         public static string RemoteDesktop_TouchHint => ResourceManager.GetString("RemoteDesktop_TouchHint", resourceCulture)!;
-        public static string Remote_WolBroadcastWatermark => ResourceManager.GetString("Remote_WolBroadcastWatermark", resourceCulture)!;
-        public static string Remote_WolMacWatermark => ResourceManager.GetString("Remote_WolMacWatermark", resourceCulture)!;
-        public static string Remote_WolPortWatermark => ResourceManager.GetString("Remote_WolPortWatermark", resourceCulture)!;
-        public static string Service_BtnInstall => ResourceManager.GetString("Service_BtnInstall", resourceCulture)!;
-        public static string Service_BtnLogin => ResourceManager.GetString("Service_BtnLogin", resourceCulture)!;
-        public static string Service_BtnRemove => ResourceManager.GetString("Service_BtnRemove", resourceCulture)!;
-        public static string Settings_AccessKeyTooltip => ResourceManager.GetString("Settings_AccessKeyTooltip", resourceCulture)!;
-        public static string Settings_AccessKeyWatermark => ResourceManager.GetString("Settings_AccessKeyWatermark", resourceCulture)!;
-        public static string Settings_AutoSaveHint => ResourceManager.GetString("Settings_AutoSaveHint", resourceCulture)!;
-        public static string Settings_ConfigureLogin => ResourceManager.GetString("Settings_ConfigureLogin", resourceCulture)!;
-        public static string Settings_DiscoverTooltip => ResourceManager.GetString("Settings_DiscoverTooltip", resourceCulture)!;
         public static string Settings_General => ResourceManager.GetString("Settings_General", resourceCulture)!;
         public static string Settings_Help => ResourceManager.GetString("Settings_Help", resourceCulture)!;
-        public static string Settings_HostAddressTooltip => ResourceManager.GetString("Settings_HostAddressTooltip", resourceCulture)!;
-        public static string Settings_HwInfoTooltip => ResourceManager.GetString("Settings_HwInfoTooltip", resourceCulture)!;
-        public static string Settings_Install => ResourceManager.GetString("Settings_Install", resourceCulture)!;
-        public static string Settings_LanguageHeader => ResourceManager.GetString("Settings_LanguageHeader", resourceCulture)!;
-        public static string Settings_OpenSensorWorkspaceHint => ResourceManager.GetString("Settings_OpenSensorWorkspaceHint", resourceCulture)!;
-        public static string Settings_PasswordWatermark => ResourceManager.GetString("Settings_PasswordWatermark", resourceCulture)!;
-        public static string Settings_Refresh => ResourceManager.GetString("Settings_Refresh", resourceCulture)!;
         public static string Settings_ReplayTutorial => ResourceManager.GetString("Settings_ReplayTutorial", resourceCulture)!;
         public static string Settings_ReplayTutorialTooltip => ResourceManager.GetString("Settings_ReplayTutorialTooltip", resourceCulture)!;
-        public static string Settings_SaveReconnectTooltip => ResourceManager.GetString("Settings_SaveReconnectTooltip", resourceCulture)!;
-        public static string Settings_SnapToGridTooltip => ResourceManager.GetString("Settings_SnapToGridTooltip", resourceCulture)!;
-        public static string Settings_Uninstall => ResourceManager.GetString("Settings_Uninstall", resourceCulture)!;
-        public static string Settings_UsernameHint => ResourceManager.GetString("Settings_UsernameHint", resourceCulture)!;
-        public static string Settings_UsernameWatermark => ResourceManager.GetString("Settings_UsernameWatermark", resourceCulture)!;
-        public static string Shell_AccessKeyWatermark => ResourceManager.GetString("Shell_AccessKeyWatermark", resourceCulture)!;
-        public static string Shell_Atmosphere => ResourceManager.GetString("Shell_Atmosphere", resourceCulture)!;
-        public static string Shell_AutoSaveNote => ResourceManager.GetString("Shell_AutoSaveNote", resourceCulture)!;
-        public static string Shell_FineTuning => ResourceManager.GetString("Shell_FineTuning", resourceCulture)!;
-        public static string Shell_HostBinaryPath => ResourceManager.GetString("Shell_HostBinaryPath", resourceCulture)!;
-        public static string Shell_HostPathHint => ResourceManager.GetString("Shell_HostPathHint", resourceCulture)!;
-        public static string Shell_HostPathTooltip => ResourceManager.GetString("Shell_HostPathTooltip", resourceCulture)!;
-        public static string Shell_HostPathWatermark => ResourceManager.GetString("Shell_HostPathWatermark", resourceCulture)!;
-        public static string Shell_HostWatermark => ResourceManager.GetString("Shell_HostWatermark", resourceCulture)!;
-        public static string Shell_Initializing => ResourceManager.GetString("Shell_Initializing", resourceCulture)!;
-        public static string Shell_JpegQuality => ResourceManager.GetString("Shell_JpegQuality", resourceCulture)!;
         public static string Shell_OpenSettings => ResourceManager.GetString("Shell_OpenSettings", resourceCulture)!;
-        public static string Shell_PasswordWatermark => ResourceManager.GetString("Shell_PasswordWatermark", resourceCulture)!;
-        public static string Shell_SettingsSubtitle => ResourceManager.GetString("Shell_SettingsSubtitle", resourceCulture)!;
-        public static string Shell_SettingsTitle => ResourceManager.GetString("Shell_SettingsTitle", resourceCulture)!;
-        public static string Shell_StreamSettings => ResourceManager.GetString("Shell_StreamSettings", resourceCulture)!;
-        public static string Shell_StreamSettingsDesc => ResourceManager.GetString("Shell_StreamSettingsDesc", resourceCulture)!;
-        public static string Shell_Subtitle => ResourceManager.GetString("Shell_Subtitle", resourceCulture)!;
-        public static string Shell_TargetFps => ResourceManager.GetString("Shell_TargetFps", resourceCulture)!;
-        public static string Shell_Theme => ResourceManager.GetString("Shell_Theme", resourceCulture)!;
-        public static string Shell_UsernameWatermark => ResourceManager.GetString("Shell_UsernameWatermark", resourceCulture)!;
-        public static string Shell_Welcome => ResourceManager.GetString("Shell_Welcome", resourceCulture)!;
         public static string TaskMgr_CpuLabel => ResourceManager.GetString("TaskMgr_CpuLabel", resourceCulture)!;
         public static string TaskMgr_MemLabel => ResourceManager.GetString("TaskMgr_MemLabel", resourceCulture)!;
         public static string Tutorial_P1_Diagram => ResourceManager.GetString("Tutorial_P1_Diagram", resourceCulture)!;
-        public static string Tutorial_P3_Body2 => ResourceManager.GetString("Tutorial_P3_Body2", resourceCulture)!;
         public static string Tutorial_SkipTooltip => ResourceManager.GetString("Tutorial_SkipTooltip", resourceCulture)!;
 
         // Phase 4: misc-views keys
         public static string AddProgram_WatermarkColor => ResourceManager.GetString("AddProgram_WatermarkColor", resourceCulture)!;
         public static string AddProgram_WatermarkName => ResourceManager.GetString("AddProgram_WatermarkName", resourceCulture)!;
         public static string AddProgram_WatermarkPath => ResourceManager.GetString("AddProgram_WatermarkPath", resourceCulture)!;
-        public static string Btn_Ping => ResourceManager.GetString("Btn_Ping", resourceCulture)!;
         public static string Dashboard_Connect => ResourceManager.GetString("Dashboard_Connect", resourceCulture)!;
-        public static string Dashboard_Disconnect => ResourceManager.GetString("Dashboard_Disconnect", resourceCulture)!;
-        public static string Dashboard_HostWatermark => ResourceManager.GetString("Dashboard_HostWatermark", resourceCulture)!;
-        public static string Dashboard_MenuGraph => ResourceManager.GetString("Dashboard_MenuGraph", resourceCulture)!;
-        public static string Dashboard_MenuSize => ResourceManager.GetString("Dashboard_MenuSize", resourceCulture)!;
-        public static string Dashboard_MenuTheme => ResourceManager.GetString("Dashboard_MenuTheme", resourceCulture)!;
-        public static string Dashboard_Ping => ResourceManager.GetString("Dashboard_Ping", resourceCulture)!;
-        public static string Dashboard_Samples => ResourceManager.GetString("Dashboard_Samples", resourceCulture)!;
-        public static string Dashboard_SystemTelemetry => ResourceManager.GetString("Dashboard_SystemTelemetry", resourceCulture)!;
-        public static string Dashboard_Uptime => ResourceManager.GetString("Dashboard_Uptime", resourceCulture)!;
         public static string TrayFlyout_Title => ResourceManager.GetString("TrayFlyout_Title", resourceCulture)!;
     }
 }

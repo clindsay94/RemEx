@@ -3,10 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Remex.Desktop.Services;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
-using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia.Threading;
 
 namespace Remex.Desktop.ViewModels;

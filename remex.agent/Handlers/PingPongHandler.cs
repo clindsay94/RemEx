@@ -217,6 +217,35 @@ public sealed class PingPongHandler(
                     continue;
                 }
 
+                // Pairing is NOT sufficient for the three messages that mutate the launcher
+                // allowlist. VULN-3 (RemEx-s032.3) hardened LAUNCHAPP by requiring the target to
+                // match a persisted launcher entry, and that mitigation only means anything while
+                // the list is curated by the person at the PC. Before this gate a paired client
+                // could add any local path with launcher_add - or replace the entire list in one
+                // message with launcher_sync - and then launch it as the always-elevated host
+                // (RemEx-q6xt).
+                //
+                // Loopback is the PC's own UI talking to its embedded host, which is the only
+                // sender that legitimately writes this list. Android never sends these types; it
+                // only ever asks with launcher_sync_request. Note this restricts the INBOUND
+                // direction only - the host still emits launcher_sync to clients on connect.
+                if (!isLoopback && RequiresLoopback(message.Type))
+                {
+                    logger.LogWarning(
+                        "Rejecting {Type} from a non-loopback connection — the launcher allowlist " +
+                        "may only be changed on the PC itself.",
+                        message.Type);
+                    var notLocal = new RemexMessage
+                    {
+                        Type = MessageTypes.CommandResponse,
+                        CommandSuccess = false,
+                        CommandMessage = "The list of programs can only be changed on the PC itself.",
+                        CorrelationId = message.CorrelationId,
+                    };
+                    await MessageSerializer.SendAsync(webSocket, notLocal, ct);
+                    continue;
+                }
+
                 switch (message.Type)
                 {
                     case MessageTypes.Ping:
@@ -267,6 +296,16 @@ public sealed class PingPongHandler(
                     case MessageTypes.LauncherSync when message.LauncherEntries is not null:
                         await launcherStorage.SaveEntriesAsync(message.LauncherEntries);
                         logger.LogInformation("Launcher list synced from client ({Count} entries).", message.LauncherEntries.Count);
+                        break;
+
+                    // The read counterpart to the three mutating launcher types above, and the only
+                    // launcher message Android sends (pull-to-refresh on the App Launcher screen).
+                    // Deliberately not loopback-gated: re-reading a list the host already pushes on
+                    // connect grants nothing extra. Mirrors LayoutRequest → LayoutSync below.
+                    case MessageTypes.LauncherSyncRequest:
+                        var reqEntries = await launcherStorage.LoadEntriesAsync();
+                        await MessageSerializer.SendAsync(webSocket, new RemexMessage { Type = MessageTypes.LauncherSync, LauncherEntries = reqEntries }, ct);
+                        logger.LogInformation("Launcher list sent to client on request ({Count} entries).", reqEntries.Count);
                         break;
 
                     case MessageTypes.ProcessListRequest:
@@ -368,7 +407,7 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.FileTransferStart:
-                        await fileTransferHandler.HandleFileTransferStartAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileTransferStartAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     case MessageTypes.FileTransferChunk:
@@ -388,7 +427,7 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.FileHashRequest:
-                        await fileTransferHandler.HandleFileHashRequestAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileHashRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     case MessageTypes.FileRootManageRequest:
@@ -412,15 +451,15 @@ public sealed class PingPongHandler(
 
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP3 ──
                     case MessageTypes.FileSearchRequest:
-                        await fileTransferHandler.HandleFileSearchRequestAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileSearchRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     case MessageTypes.FileMetadataRequest:
-                        await fileTransferHandler.HandleFileMetadataRequestAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileMetadataRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     case MessageTypes.FileThumbnailRequest:
-                        await fileTransferHandler.HandleFileThumbnailRequestAsync(message, webSocket, ct);
+                        await fileTransferHandler.HandleFileThumbnailRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
                     // ── 2.1 File Sharing Overhaul (protocolVersion 3) — WP-jjdb: consent-response + push ──
@@ -511,7 +550,7 @@ public sealed class PingPongHandler(
 
             // Cancel background stream
             streamCts.Cancel();
-            try { await streamTask; } catch (OperationCanceledException) { } catch (Exception ex) { logger.LogTrace(ex, "Stream task ended with error."); }
+            try { await streamTask; } catch (OperationCanceledException) { /* expected on cancel; the sibling catch below reports anything else */ } catch (Exception ex) { logger.LogTrace(ex, "Stream task ended with error."); }
 
             if (webSocket.State == WebSocketState.Open)
             {
@@ -533,19 +572,19 @@ public sealed class PingPongHandler(
             switch (message.CommandAction!.ToUpperInvariant())
             {
                 case "SHUTDOWN":
-                    await commandService.Shutdown(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.Shutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Shutdown executed.");
                 case "FORCESHUTDOWN":
-                    await commandService.ForceShutdown(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.ForceShutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Force shutdown executed.");
                 case "RESTART":
-                    await commandService.Restart(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.Restart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Restart executed.");
                 case "FORCERESTART":
-                    await commandService.ForceRestart(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.ForceRestart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Force restart executed.");
                 case "RESTARTTOUEFI":
-                    await commandService.RestartToUefi(ParseDelaySeconds(message.CommandParameters));
+                    await commandService.RestartToUefi(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
                     return MakeCommandResponse(true, "Restart to UEFI executed.");
                 case "SLEEP":
                     await commandService.Sleep();
@@ -563,7 +602,13 @@ public sealed class PingPongHandler(
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
                         && int.TryParse(pidStr, out var pid))
                     {
-                        var killResult = processMonitorService.KillProcess(pid);
+                        // ExpectedName is optional on the wire: a client older than RemEx-druh
+                        // simply omits it and is killed unverified, exactly as before. Nothing
+                        // breaks on an older phone; it just does not gain the protection.
+                        message.CommandParameters.TryGetValue("ExpectedName", out var expectedName);
+                        message.CommandParameters.TryGetValue("ExpectedStartUnixMs", out var startStr);
+                        var expectedStart = long.TryParse(startStr, out var parsedStart) ? parsedStart : (long?)null;
+                        var killResult = processMonitorService.KillProcess(pid, expectedName, expectedStart);
                         return MakeCommandResponse(
                             killResult.Success,
                             killResult.Success
@@ -575,7 +620,10 @@ public sealed class PingPongHandler(
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var epidStr) == true
                         && int.TryParse(epidStr, out var epid))
                     {
-                        var killResult = processMonitorService.KillProcess(epid);
+                        message.CommandParameters.TryGetValue("ExpectedName", out var eExpectedName);
+                        message.CommandParameters.TryGetValue("ExpectedStartUnixMs", out var eStartStr);
+                        var eExpectedStart = long.TryParse(eStartStr, out var eParsedStart) ? eParsedStart : (long?)null;
+                        var killResult = processMonitorService.KillProcess(epid, eExpectedName, eExpectedStart);
                         return MakeCommandResponse(
                             killResult.Success,
                             killResult.Success
@@ -665,6 +713,27 @@ public sealed class PingPongHandler(
     /// Returns true when the message type must be rejected before the connection has completed
     /// pairing. Ping and the pairing handshake messages are intentionally exempt.
     /// </summary>
+    /// <summary>
+    /// Message types that a paired-but-remote client still may not send: the three that MUTATE the
+    /// launcher allowlist.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="RequiresPairing"/> because it answers a different question. That one
+    /// asks "has this connection authenticated"; this asks "is this connection the PC itself". The
+    /// allowlist is the thing VULN-3's LAUNCHAPP check is measured against, so being able to rewrite
+    /// it over the wire makes that mitigation self-referential (RemEx-q6xt).
+    /// <para>
+    /// <see cref="MessageTypes.LauncherSyncRequest"/> is deliberately absent: asking for the list is
+    /// a read, and it is what the Android client actually sends. (When this gate was written that
+    /// type had no constant to name it — RemEx-vpxx added one along with the host case that answers
+    /// it, so the exclusion can now be stated in the type system rather than in prose.)
+    /// </para>
+    /// </remarks>
+    internal static bool RequiresLoopback(string type) =>
+        type is MessageTypes.LauncherAdd
+             or MessageTypes.LauncherRemove
+             or MessageTypes.LauncherSync;
+
     private static bool RequiresPairing(string type) => type switch
     {
         MessageTypes.Ping => false,
@@ -733,26 +802,6 @@ public sealed class PingPongHandler(
         {
             CryptographicOperations.ZeroMemory(reconnectSecret);
         }
-    }
-
-    private static int ParseDelaySeconds(Dictionary<string, string>? parameters)
-    {
-        if (parameters == null)
-        {
-            return 0;
-        }
-
-        foreach (var key in new[] { "DelaySeconds", "Seconds", "TimerSeconds" })
-        {
-            if (parameters.TryGetValue(key, out var raw)
-                && int.TryParse(raw, out var parsed)
-                && parsed > 0)
-            {
-                return Math.Clamp(parsed, 0, 315360000);
-            }
-        }
-
-        return 0;
     }
 
     private async Task StreamTelemetryAsync(WebSocket webSocket, CancellationToken ct)

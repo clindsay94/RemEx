@@ -2,6 +2,16 @@ package com.clindsay94.remex.ui.screens
 
 import android.os.Build
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,13 +27,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -83,6 +93,8 @@ fun TaskManagerScreen(
     )
 }
 
+private enum class TaskManagerListState { DISCONNECTED, LOADING, LIST }
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TaskManagerScreenContent(
@@ -97,7 +109,9 @@ fun TaskManagerScreenContent(
         onRefreshProcesses: () -> Unit,
         onUpdateSearchQuery: (String) -> Unit,
         onUpdateSortField: (ProcessSortField) -> Unit,
-        onKillProcess: (Int) -> Unit,
+        // Takes the whole ProcessInfo, not just the id: the host verifies the name before
+        // ending anything, so the PID alone is no longer enough to act on (RemEx-druh).
+        onKillProcess: (ProcessInfo) -> Unit,
         onNavigateToConnection: () -> Unit,
         modifier: Modifier = Modifier,
         killError: String? = null,
@@ -106,6 +120,7 @@ fun TaskManagerScreenContent(
         onClearLoadError: () -> Unit = {},
 ) {
     val view = LocalView.current
+    val motionScheme = MaterialTheme.motionScheme
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(killError) {
@@ -186,49 +201,69 @@ fun TaskManagerScreenContent(
                         onUpdateSortField = onUpdateSortField
                 )
 
-                if (!isConnected && processes.isEmpty()) {
-                    DisconnectedFullScreen(
-                            screenName = stringResource(R.string.screen_task_manager_title),
-                            onNavigateToConnection = onNavigateToConnection,
-                            modifier = Modifier.weight(1f)
-                    )
-                } else if (processes.isEmpty() && isRefreshing) {
-                    Box(
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            RemexLoadingIndicator()
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                    stringResource(R.string.task_manager_fetching),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                val listState =
+                        when {
+                            !isConnected && processes.isEmpty() -> TaskManagerListState.DISCONNECTED
+                            processes.isEmpty() && isRefreshing -> TaskManagerListState.LOADING
+                            else -> TaskManagerListState.LIST
+                        }
+                AnimatedContent(
+                        targetState = listState,
+                        transitionSpec = {
+                            val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                            fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                        },
+                        modifier = Modifier.weight(1f),
+                        label = "taskManagerListState"
+                ) { state ->
+                    when (state) {
+                        TaskManagerListState.DISCONNECTED -> {
+                            DisconnectedFullScreen(
+                                    screenName = stringResource(R.string.screen_task_manager_title),
+                                    onNavigateToConnection = onNavigateToConnection,
+                                    modifier = Modifier.fillMaxSize()
                             )
                         }
-                    }
-                } else {
-                    val maxRam = remember(processes) { processes.maxOfOrNull { it.ram } ?: 1.0 }
-                    val maxCpu = remember(processes) { processes.maxOfOrNull { it.cpu } ?: 1.0 }
-                    LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 80.dp)
-                    ) {
-                        items(processes, key = { it.id }) { process ->
-                            ProcessCard(
-                                    process = process,
-                                    maxRam = maxRam,
-                                    maxCpu = maxCpu,
-                                    shapePreset = shapePreset,
-                                    cornerRadius = cornerRadius,
-                                    onKill = { onKillProcess(process.id) },
-                                    modifier =
-                                            Modifier.animateItem(
-                                                    placementSpec =
-                                                            MaterialTheme.motionScheme
-                                                                    .fastSpatialSpec()
-                                            )
-                            )
+                        TaskManagerListState.LOADING -> {
+                            Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    RemexLoadingIndicator()
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                            stringResource(R.string.task_manager_fetching),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                        TaskManagerListState.LIST -> {
+                            val maxRam = remember(processes) { processes.maxOfOrNull { it.ram } ?: 1.0 }
+                            val maxCpu = remember(processes) { processes.maxOfOrNull { it.cpu } ?: 1.0 }
+                            LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(bottom = 80.dp)
+                            ) {
+                                items(processes, key = { it.id }) { process ->
+                                    ProcessCard(
+                                            process = process,
+                                            maxRam = maxRam,
+                                            maxCpu = maxCpu,
+                                            shapePreset = shapePreset,
+                                            cornerRadius = cornerRadius,
+                                            onKill = { onKillProcess(process) },
+                                            modifier =
+                                                    Modifier.animateItem(
+                                                            placementSpec =
+                                                                    MaterialTheme.motionScheme
+                                                                            .fastSpatialSpec()
+                                                    )
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -293,7 +328,11 @@ private fun SearchBar(query: String, onUpdateQuery: (String) -> Unit, shape: Sha
                 placeholder = { Text(stringResource(R.string.task_manager_search_hint)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
-                    if (query.isNotEmpty()) {
+                    AnimatedVisibility(
+                            visible = query.isNotEmpty(),
+                            enter = scaleIn(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()),
+                            exit = scaleOut(MaterialTheme.motionScheme.fastSpatialSpec()) + fadeOut(MaterialTheme.motionScheme.fastEffectsSpec())
+                    ) {
                         IconButton(onClick = { onUpdateQuery("") }) {
                             Icon(
                                     Icons.Default.Close,
@@ -338,10 +377,26 @@ private fun FilterSortSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // CAPPED, not weighted. A Row measures non-weighted children first at their full intrinsic
+        // width, so an unbounded label took whatever it wanted and the chips absorbed the entire
+        // shortfall — clipping mid-glyph, since their default overflow is Clip. Invisible while this
+        // string was hardcoded English at ~48dp; localizing it made the label up to 2.5x wider
+        // (RemEx-0pxq).
+        //
+        // widthIn rather than weight(fill = false): giving BOTH children a weight makes totalWeight
+        // 2, and RowColumnMeasurePolicy computes each share up front with no redistribution pass —
+        // so a fill = false label shrinks to intrinsic while the chip row, whose weight defaults to
+        // fill = true, stays PINNED at its 50% share. The label's unused half is not handed back, it
+        // is simply lost, which cost English chips ~84dp and left dead space at the row's end. With
+        // only one weighted child the chip row gets the whole true remainder, so English is
+        // unchanged and only the long locales are capped.
         Text(
                 text = stringResource(R.string.sort_by),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.widthIn(max = 120.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
         )
         // M3 Expressive ToggleButtons in a plain Row. NOTE: we deliberately do NOT use the
         // Expressive ButtonGroup — its measure policy crashes in material3 1.5.0-alpha20
@@ -362,7 +417,7 @@ private fun FilterSortSection(
                         contentPadding =
                                 androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
                 ) {
-                    Text(label, maxLines = 1)
+                    Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -373,12 +428,18 @@ private fun FilterSortSection(
                     onUpdateSortField(currentSortField) // same field → toggles descending
                 }
         ) {
+            val sortArrowRotation by
+                    animateFloatAsState(
+                            targetValue = if (sortDescending) 0f else 180f,
+                            animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                            label = "sortArrowRotation"
+                    )
             Icon(
-                    imageVector =
-                            if (sortDescending) Icons.Default.ArrowDownward
-                            else Icons.Default.ArrowUpward,
-                    contentDescription = if (sortDescending) "Descending" else "Ascending",
-                    modifier = Modifier.size(20.dp)
+                    imageVector = Icons.Default.ArrowDownward,
+                    contentDescription =
+                            if (sortDescending) stringResource(R.string.sort_descending)
+                            else stringResource(R.string.sort_ascending),
+                    modifier = Modifier.size(20.dp).rotate(sortArrowRotation)
             )
         }
     }
@@ -455,16 +516,14 @@ private fun ProcessCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                         text = process.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMediumEmphasized,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                 )
                 Text(
                         text = stringResource(R.string.task_manager_pid_label, process.id),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.labelSmallEmphasized,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                 )
             }
 
@@ -502,6 +561,12 @@ private fun ProcessCard(
 
 @Composable
 private fun UsageIndicator(label: String, value: String, progress: Float, color: Color) {
+    val animatedProgress by
+            animateFloatAsState(
+                    targetValue = progress,
+                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                    label = "usageIndicatorProgress"
+            )
     Column {
         Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -510,20 +575,18 @@ private fun UsageIndicator(label: String, value: String, progress: Float, color:
         ) {
             Text(
                     text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelSmallEmphasized,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                     text = value,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.ExtraBold,
+                    style = MaterialTheme.typography.labelSmallEmphasized,
                     color = color
             )
         }
         Spacer(modifier = Modifier.height(2.dp))
         LinearProgressIndicator(
-                progress = { progress },
+                progress = { animatedProgress },
                 modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
                 color = color,
                 trackColor = color.copy(alpha = 0.1f),
@@ -543,33 +606,44 @@ private fun LoadErrorBanner(
         onRetry: () -> Unit,
         onDismiss: () -> Unit,
 ) {
-    if (message.isNullOrBlank()) return
-    Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            colors =
-                    CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+    // Remembers the last non-blank message so the shrink-out exit animation still has text to
+    // show after the caller clears `message` to null/blank.
+    var lastMessage by remember { mutableStateOf(message ?: "") }
+    LaunchedEffect(message) {
+        if (!message.isNullOrBlank()) lastMessage = message
+    }
+    AnimatedVisibility(
+            visible = !message.isNullOrBlank(),
+            enter = expandVertically(MaterialTheme.motionScheme.fastSpatialSpec()),
+            exit = shrinkVertically(MaterialTheme.motionScheme.fastSpatialSpec())
     ) {
-        Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Card(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                colors =
+                        CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
         ) {
-            Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(18.dp)
-            )
-            Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.weight(1f)
-            )
-            TextButton(onClick = onRetry) { Text(stringResource(R.string.task_manager_retry)) }
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_manager_dismiss)) }
+            Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(18.dp)
+                )
+                Text(
+                        text = lastMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.task_manager_retry)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.task_manager_dismiss)) }
+            }
         }
     }
 }

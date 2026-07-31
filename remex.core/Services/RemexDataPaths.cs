@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-
 namespace Remex.Core.Services;
 
 /// <summary>
@@ -10,10 +7,15 @@ namespace Remex.Core.Services;
 /// <para>
 /// On <b>Windows only</b>, state is stored machine-wide under
 /// <c>CommonApplicationData</c> (<c>C:\ProgramData\RemEx</c>) instead of per-user
-/// <c>LocalApplicationData</c>. The host runs as the <b>LocalSystem</b> Windows Service, whose
-/// <c>LocalApplicationData</c> resolves to the <c>systemprofile</c> path — different from the
-/// interactive user's profile. State written while the host ran interactively therefore became
-/// invisible once it ran as the service (clients appeared unpaired, launchers/layout/roots empty).
+/// <c>LocalApplicationData</c>, so host state is stable across accounts and kept out of a per-user
+/// profile. (Only the security-sensitive files — <c>cert.pfx</c> and <c>paired_clients.json</c> — get
+/// an explicit restrictive ACL on top; the rest inherit the ordinary ProgramData permissions.)
+/// This originally mattered because the host ran as the <b>LocalSystem</b> Windows
+/// Service, whose <c>LocalApplicationData</c> resolves to the <c>systemprofile</c> path — state written
+/// while the host ran interactively became invisible once it ran as the service (clients appeared
+/// unpaired, launchers/layout/roots empty). That service is gone and the host now always runs in the
+/// signed-in user's session, but machine-wide storage is still deliberate: it survives a change of
+/// signed-in user and keeps security-sensitive state out of a per-user profile.
 /// The TLS certificate already lives in <c>CommonApplicationData</c>; co-locating the rest keeps all
 /// host state consistent regardless of the account the host happens to run under.
 /// </para>
@@ -54,8 +56,8 @@ public static class RemexDataPaths
     /// Best-effort one-time migration of a single state file from the legacy per-user Windows
     /// location (<c>LocalApplicationData\Remex</c>) to the machine-wide location. No-op off Windows,
     /// when the target already exists, or when the legacy file is absent/unreadable by the current
-    /// account (notably the LocalSystem service, which cannot see the interactive user's profile —
-    /// that case requires a one-time re-pair / re-configure). Returns true when a file was copied.
+    /// account (for example a legacy file left in another user's profile — that case requires a
+    /// one-time re-pair / re-configure). Returns true when a file was copied.
     /// </summary>
     public static bool TryMigrateWindowsFile(string fileName)
     {

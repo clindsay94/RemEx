@@ -3,7 +3,7 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:controls="using:Remex.Desktop.Controls"
     xmlns:models="using:Remex.Core.Models"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.RemoteDesktopView" x:DataType="vm:RemoteDesktopViewModel" Focusable="True">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services" x:Class="Remex.Desktop.Views.RemoteDesktopView" x:DataType="vm:RemoteDesktopViewModel" Focusable="True">
 
     <UserControl.Resources>
         <local:BoolToDoubleConverter x:Key="BoolToDoubleConverter"/>
@@ -223,7 +223,11 @@
             <Panel>
                 <!-- Placeholder shown when not streaming -->
                 <StackPanel IsVisible="{Binding !IsStreaming}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-                    <TextBlock Text="D" FontSize="64" HorizontalAlignment="Center" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Black"/>
+                    <!-- Was a literal Text="D" at 64pt: a leftover from an icon-font placeholder that
+                         rendered as the bare letter D once the app stopped using that font. Now the
+                         real desktop-PC geometry, which also means it inherits the theme accent
+                         rather than depending on a glyph existing (RemEx-po2x). -->
+                    <Path Data="{StaticResource IconDesktopPC}" Fill="{DynamicResource AccentPrimaryBrush}" Width="64" Height="64" Stretch="Uniform" HorizontalAlignment="Center"/>
                     <TextBlock Text="{local:Localize RemoteDesktop_PlaceholderTitle}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="{local:Localize RemoteDesktop_PlaceholderHint}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="{Binding RemoteDesktopCapabilityText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="560" TextAlignment="Center"/>
@@ -308,12 +312,59 @@
 
         <!-- ═══ STATUS BAR ═══ -->
         <Border Grid.Row="4" Background="{DynamicResource GlassBaseDarkBrush}" Padding="16 6" IsVisible="{Binding !IsFullScreen}">
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
-                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="{Binding Resolution, StringFormat=Resolution: {0}}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
-                <TextBlock Grid.Column="2" Text="{Binding ActualFps, StringFormat=FPS: {0:F1}}" Foreground="{DynamicResource SystemSuccessBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
-                <TextBlock Grid.Column="3" Text="{Binding Quality, StringFormat=Q: {0}}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0"/>
-                <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" IsVisible="{Binding IsViewportZoomed}"/>
+            <!-- Columns 1-5 are Auto, so they claim their full desired width and column 0 absorbs only
+                 what is left. Until RemEx-suc9.1 localized them the metrics were hardcoded English and
+                 always narrow; uk "Роздільна здатність: {0}" and pl "Rozdzielczość: {0}" are roughly twice
+                 that, so on a narrow window the Auto columns can take everything and StatusText does not
+                 merely clip - the TextBlock does not clip itself and nothing here sets ClipToBounds, so it
+                 was PAINTED OVER the Resolution metric. MinWidth on column 0 reserves a floor, and it only
+                 binds when space is genuinely tight, unlike a MaxWidth on the metrics which would
+                 ellipsize them even when there is room.
+
+                 WHAT PAYS FOR THE 140px, so nobody has to re-derive it: Auto columns are never shrunk
+                 below their children's desired width (Grid arranges Auto as Max(MinSizeForArrange, ...)),
+                 so once the total exceeds the available width the trailing columns are arranged OUTSIDE
+                 the Grid and clipped by the window - un-ellipsized. The streaming dot goes first, then the
+                 tail of Quality/FPS. That band was already broken before this change; the floor moves its
+                 onset from roughly a 490px view width to roughly 630px. Making the overflow band itself
+                 graceful needs the metric cluster in a horizontal ScrollViewer, or star-sized metric
+                 columns with their own floors - filed separately, deliberately not done here.
+                 (RemEx-9a46.) -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="140"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" TextTrimming="CharacterEllipsis">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                            <Binding Path="[RemoteDesktop_ResolutionFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                            <Binding Path="Resolution"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBlock Grid.Column="2" Foreground="{DynamicResource SystemSuccessBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" TextTrimming="CharacterEllipsis">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                            <Binding Path="[RemoteDesktop_FpsFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                            <Binding Path="ActualFps"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBlock Grid.Column="3" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" TextTrimming="CharacterEllipsis">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
+                            <Binding Path="[RemoteDesktop_QualityFormat]" Source="{x:Static svc:LocalizationService.Instance}"/>
+                            <Binding Path="Quality"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <TextBlock Grid.Column="4" Text="{Binding ViewportZoomText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="16,0" IsVisible="{Binding IsViewportZoomed}" TextTrimming="CharacterEllipsis"/>
                 <Border Grid.Column="5" Width="8" Height="8" CornerRadius="4" IsVisible="{Binding IsStreaming}" Background="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
             </Grid>
         </Border>

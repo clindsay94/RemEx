@@ -2,6 +2,8 @@ package com.clindsay94.remex.service
 
 import android.content.Context
 import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.OpenableColumns
 import android.util.Base64
 import android.util.Log
 import com.clindsay94.remex.R
@@ -16,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -143,6 +144,14 @@ object FileTransferEngine {
     fun cancel(transferId: String) {
         sendControl(transferId, FileTransferControlActions.CANCEL)
         FileTransferChannelClient.unregisterSink(transferId)
+        val t = _queue.value.firstOrNull { it.id == transferId }
+        if (t != null && t.state != TransferState.Done) {
+            // Query + deleteDocument is ContentResolver I/O; cancel() is often invoked straight from a
+            // UI thread (or from a coroutine that is itself mid-cancellation), so hop onto the engine's
+            // own long-lived scope rather than a `withContext` that would silently no-op the cleanup if
+            // the caller's scope is already cancelled.
+            scope.launch { discardEmptyDownloadTarget(t) }
+        }
         updateState(transferId) { it.copy(state = TransferState.Cancelled) }
     }
 
@@ -199,6 +208,7 @@ object FileTransferEngine {
             updateState(t.id) { it.copy(state = TransferState.Negotiating, error = null) }
             if (!ensureChannel()) {
                 updateState(t.id) { it.copy(state = TransferState.Failed, error = "Not connected.") }
+                if (t.mode == FileTransferModes.DOWNLOAD) discardEmptyDownloadTarget(t)
                 return
             }
             when (t.mode) {
@@ -215,7 +225,7 @@ object FileTransferEngine {
             FileTransferChannelClient.invalidate()
             // A push/upload that dies mid-stream (thrown here, not via runUpload's own terminal
             // branches) still owes the user a Share-to-PC result, same as runDownload's notify.
-            if (t.mode != FileTransferModes.DOWNLOAD) notifyUploadFailed(t)
+            if (t.mode != FileTransferModes.DOWNLOAD) notifyUploadFailed(t) else discardEmptyDownloadTarget(t)
         }
     }
 
@@ -336,9 +346,15 @@ object FileTransferEngine {
         downloadDir().mkdirs()
         val existing = if (partial.exists()) partial.length() else 0L
         val resume = TransferResumeLogic.shouldRequestResume(existing, t.size)
-        val ready = negotiate(t, resumeRequested = resume) ?: return
+        val ready = negotiate(t, resumeRequested = resume)
+        if (ready == null) {
+            // negotiate() already marked the transfer Failed ("Peer did not respond.").
+            discardEmptyDownloadTarget(t)
+            return
+        }
         if (!ready.accepted) {
             updateState(t.id) { it.copy(state = TransferState.Failed, error = ready.declineReason ?: "Declined.") }
+            discardEmptyDownloadTarget(t)
             return
         }
         val startOffset = TransferResumeLogic.receiverResumeOffset(ready.startOffset, t.size)
@@ -403,6 +419,12 @@ object FileTransferEngine {
         try {
             // The PC sender's file_transfer_complete carries the authoritative full-file hash.
             val streamedOk = withTimeoutOrNull(TRANSFER_TIMEOUT_MS) { done.await() } ?: false
+            if (streamedOk) {
+                // The bar hits 100% here, but fsync + hash-wait + the full .part→SAF commit copy are
+                // still ahead — surface the same Verifying state uploads already use so big files
+                // don't sit on a frozen 100% Active bar (RemEx-hb1t.2).
+                updateState(t.id) { it.copy(state = TransferState.Verifying) }
+            }
             try { raf.fd.sync() } catch (e: Exception) {}
             raf.close()
             val expectedSha = awaitComplete(t.id)
@@ -419,9 +441,34 @@ object FileTransferEngine {
                 val err = if (!streamedOk) "Transfer incomplete." else "SHA-256 mismatch."
                 sendResult(t.id, false, actualSha, err)
                 updateState(t.id) { it.copy(state = TransferState.Failed, error = err) }
+                discardEmptyDownloadTarget(t)
             }
         } finally {
             FileTransferChannelClient.unregisterSink(t.id)
+        }
+    }
+
+    /**
+     * Deletes the pre-created SAF destination document of a download that ended without a successful
+     * commit (declined, timed out, failed, cancelled), so retries stop accumulating 0-byte ghosts
+     * ("name.ext", "name (1).ext", …). Deletes ONLY when the document verifiably reports zero length:
+     * the CreateDocument picker can hand back an EXISTING document the user chose to overwrite, and
+     * until [commitDownload] runs it still holds the user's original bytes. (RemEx-hb1t.1)
+     */
+    private fun discardEmptyDownloadTarget(t: QueuedTransfer) {
+        if (t.mode != FileTransferModes.DOWNLOAD) return
+        try {
+            val uri = Uri.parse(t.localUri)
+            val size =
+                appContext.contentResolver
+                    .query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)
+                    ?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null }
+            if (size == 0L) {
+                DocumentsContract.deleteDocument(appContext.contentResolver, uri)
+            }
+        } catch (e: Exception) {
+            // Best-effort cleanup: the ghost file is cosmetic; never let cleanup mask the real failure.
+            Log.w(TAG, "Could not clean up empty download target", e)
         }
     }
 
@@ -573,7 +620,7 @@ object FileTransferEngine {
         if (host.isBlank()) return false
         val clientId = settings.getOrCreateClientId()
         val spki = PinnedHostStore.getPin(appContext, host)?.takeIf { it.isNotBlank() } ?: return false
-        return FileTransferChannelClient.ensureConnected(host, port, clientId, spki)
+        return FileTransferChannelClient.ensureConnected(appContext, host, port, clientId, spki)
     }
 
     private fun downloadDir(): File = File(appContext.filesDir, "transfers/outgoing")

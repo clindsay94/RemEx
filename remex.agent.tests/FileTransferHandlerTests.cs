@@ -48,10 +48,14 @@ public sealed class FileTransferHandlerTests : IDisposable
         public override void Dispose() { }
     }
 
-    private static FileTransferHandler CreateHandler(IFileTransferService svc) =>
-        new(NullLogger<FileTransferHandler>.Instance, svc,
-            new Mock<IFileTrustService>().Object,
-            new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
+    private static FileTransferHandler CreateHandler(IFileTransferService svc)
+    {
+        var trust = new Mock<IFileTrustService>().Object;
+        var volumes = new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance);
+        return new FileTransferHandler(
+            NullLogger<FileTransferHandler>.Instance, svc, trust, volumes,
+            new SharedRootReadResolver(svc, trust, volumes));
+    }
 
     // ── Upload happy path ──────────────────────────────────────────────────────
 
@@ -64,6 +68,9 @@ public sealed class FileTransferHandlerTests : IDisposable
 
         var uploadStream = new MemoryStream();
         var fileService = new Mock<IFileTransferService>();
+        fileService
+            .Setup(s => s.ListRootsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<FileSharedRoot> { new() { RootId = "root-1", DisplayName = "Root 1", IsWritable = true } });
         fileService
             .Setup(s => s.OpenForWriteAsync("root-1", "upload/file.bin", data.Length, It.IsAny<CancellationToken>()))
             .ReturnsAsync(uploadStream);
@@ -86,7 +93,7 @@ public sealed class FileTransferHandlerTests : IDisposable
                 TotalBytes = data.Length,
                 Sha256Base64 = expectedSha256
             }
-        }, ws, ct);
+        }, ws, null, ct);
 
         await handler.HandleFileTransferChunkAsync(new RemexMessage
         {
@@ -148,7 +155,7 @@ public sealed class FileTransferHandlerTests : IDisposable
                 TotalBytes = data.Length,
                 Sha256Base64 = Convert.ToBase64String(new byte[32])
             }
-        }, ws, ct);
+        }, ws, null, ct);
 
         await handler.HandleFileTransferChunkAsync(new RemexMessage
         {
@@ -252,7 +259,7 @@ public sealed class FileTransferHandlerTests : IDisposable
                 TotalBytes = 1024,
                 Sha256Base64 = Convert.ToBase64String(new byte[32])
             }
-        }, ws, ct);
+        }, ws, null, ct);
 
         await handler.HandleFileTransferCancelAsync(new RemexMessage
         {
@@ -494,7 +501,7 @@ public sealed class FileTransferHandlerTests : IDisposable
                 Query = "match",
                 MaxResults = FileTransferLimits.SearchMaxResults,
             }
-        }, ws, CancellationToken.None);
+        }, ws, null, CancellationToken.None);
 
         var resp = LastSearch(ws);
         Assert.Equal(FileTransferLimits.SearchMaxResults, resp.Entries.Length);
@@ -520,7 +527,7 @@ public sealed class FileTransferHandlerTests : IDisposable
                 Query = "deepfile",
                 MaxResults = 50,
             }
-        }, ws, CancellationToken.None);
+        }, ws, null, CancellationToken.None);
 
         var resp = LastSearch(ws);
         Assert.False(resp.Truncated);
@@ -544,7 +551,7 @@ public sealed class FileTransferHandlerTests : IDisposable
         {
             Type = MessageTypes.FileMetadataRequest,
             FileMetadataRequest = new FileMetadataRequest { RequestId = "m1", RootId = "root-1", RelativePath = "doc.txt" }
-        }, ws, CancellationToken.None);
+        }, ws, null, CancellationToken.None);
 
         var resp = LastMetadata(ws);
         Assert.Null(resp.ErrorMessage);
@@ -570,7 +577,7 @@ public sealed class FileTransferHandlerTests : IDisposable
         {
             Type = MessageTypes.FileMetadataRequest,
             FileMetadataRequest = new FileMetadataRequest { RequestId = "m1", RootId = "root-1", RelativePath = "folder" }
-        }, ws, CancellationToken.None);
+        }, ws, null, CancellationToken.None);
 
         var resp = LastMetadata(ws);
         Assert.Null(resp.ErrorMessage);
@@ -589,7 +596,7 @@ public sealed class FileTransferHandlerTests : IDisposable
         {
             Type = MessageTypes.FileMetadataRequest,
             FileMetadataRequest = new FileMetadataRequest { RequestId = "m1", RootId = "root-1", RelativePath = "nope.txt" }
-        }, ws, CancellationToken.None);
+        }, ws, null, CancellationToken.None);
 
         Assert.NotNull(LastMetadata(ws).ErrorMessage);
     }
@@ -628,7 +635,7 @@ public sealed class FileTransferHandlerTests : IDisposable
                 RelativePath = "pic.png",
                 MaxDim = 128,
             }
-        }, ws, CancellationToken.None);
+        }, ws, null, CancellationToken.None);
 
         var resp = LastThumbnail(ws);
         Assert.Null(resp.ErrorMessage);
@@ -657,11 +664,228 @@ public sealed class FileTransferHandlerTests : IDisposable
                 RelativePath = "notes.txt",
                 MaxDim = 128,
             }
-        }, ws, CancellationToken.None);
+        }, ws, null, CancellationToken.None);
 
         var resp = LastThumbnail(ws);
         Assert.Null(resp.ErrorMessage);
         Assert.Null(resp.JpegBase64);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Full-device volume READ fallback (RemEx-39jw): RootId isn't a configured
+    // shared root, but is a genuine, consent-granted mounted volume. Read-only ops
+    // (download/metadata/hash/search/thumbnail) fall back to VolumeEnumerator +
+    // IFileTrustService.IsFullBrowseGrantedAsync, mirroring HandleFileBrowseRequestAsync.
+    // Write/delete ops deliberately do NOT get this fallback (RemEx-hb1t) — see
+    // HandleFileTransferStartAsync's upload branch, which is intentionally untouched.
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private (FileTransferHandler handler, VolumeEnumerator volumes, string baseTemp) CreateVolumeTestHandler(
+        string clientId, bool grantFullBrowse,
+        Func<string, (string rootId, string displayName, string absolutePath,
+                bool isWritable, bool canRename, bool canMove, bool canDelete, bool canRemoveRoot)[]>? seedRoots = null)
+    {
+        var baseTemp = Path.Combine(Path.GetTempPath(), "remex-vol-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(baseTemp);
+        _tempDirs.Add(baseTemp);
+
+        var configPath = Path.Combine(baseTemp, "roots.json");
+        var service = new FileTransferService(NullLogger<FileTransferService>.Instance, configPath);
+        // Empty by default — forces every RootId below through the volume fallback. A test that needs a
+        // pinned root inside the temp area passes a factory keyed on baseTemp (RemEx-hb1t.3 parity tests).
+        service.SeedRootsForTests(seedRoots?.Invoke(baseTemp) ?? []);
+
+        var registry = new PairedClientRegistry(
+            NullLogger<PairedClientRegistry>.Instance, Path.Combine(baseTemp, "paired_clients.json"));
+        registry.RegisterClient(clientId);
+        var trust = new FileTrustService(
+            NullLogger<FileTrustService>.Instance, registry, Path.Combine(baseTemp, "file_transfer_trust.json"), TimeSpan.FromSeconds(5));
+        if (grantFullBrowse)
+            trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None).GetAwaiter().GetResult();
+
+        var volumes = new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance);
+        var handler = new FileTransferHandler(
+            NullLogger<FileTransferHandler>.Instance, service, trust, volumes,
+            new SharedRootReadResolver(service, trust, volumes));
+        return (handler, volumes, baseTemp);
+    }
+
+    [Fact]
+    public async Task Metadata_FromFullDeviceVolume_WithGrantedConsent_Succeeds()
+    {
+        var (handler, volumes, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true);
+        var volumeRoot = Path.GetPathRoot(baseTemp)!;
+        Assert.Contains(volumes.Enumerate(), v => v.Id == volumeRoot); // sanity: host must expose this drive
+
+        var filePath = Path.Combine(baseTemp, "drive-file.txt");
+        await File.WriteAllBytesAsync(filePath, new byte[42]);
+        var relativePath = Path.GetRelativePath(volumeRoot, filePath).Replace('\\', '/');
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFileMetadataRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileMetadataRequest,
+            FileMetadataRequest = new FileMetadataRequest { RequestId = "m-vol", RootId = volumeRoot, RelativePath = relativePath }
+        }, ws, "client-a", CancellationToken.None);
+
+        var resp = LastMetadata(ws);
+        Assert.Null(resp.ErrorMessage);
+        Assert.Equal(42, resp.Size);
+    }
+
+    [Fact]
+    public async Task Metadata_FromFullDeviceVolume_WithoutConsent_ReturnsError()
+    {
+        var (handler, _, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: false);
+        var volumeRoot = Path.GetPathRoot(baseTemp)!;
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFileMetadataRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileMetadataRequest,
+            FileMetadataRequest = new FileMetadataRequest { RequestId = "m-vol", RootId = volumeRoot, RelativePath = "anything.txt" }
+        }, ws, "client-a", CancellationToken.None);
+
+        var resp = LastMetadata(ws);
+        Assert.NotNull(resp.ErrorMessage);
+        Assert.Contains("full-device browsing", resp.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Metadata_FromUnknownVolumeId_ReturnsError()
+    {
+        var (handler, _, _) = CreateVolumeTestHandler("client-a", grantFullBrowse: true);
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFileMetadataRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileMetadataRequest,
+            FileMetadataRequest = new FileMetadataRequest
+            {
+                RequestId = "m-vol", RootId = "nonexistent-volume-id-property-of-no-drive", RelativePath = "anything.txt"
+            }
+        }, ws, "client-a", CancellationToken.None);
+
+        var resp = LastMetadata(ws);
+        Assert.NotNull(resp.ErrorMessage);
+        Assert.Contains("Unknown shared root", resp.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Download_FromFullDeviceVolume_WithGrantedConsent_Succeeds()
+    {
+        // This is the exact scenario from the bug report: browsing a bare drive (not a pinned
+        // shared root) works, but downloading a file found there threw "Unknown shared root".
+        var (handler, volumes, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true);
+        var volumeRoot = Path.GetPathRoot(baseTemp)!;
+        Assert.Contains(volumes.Enumerate(), v => v.Id == volumeRoot);
+
+        var filePath = Path.Combine(baseTemp, "drive-file.bin");
+        await File.WriteAllBytesAsync(filePath, new byte[4096]);
+        var relativePath = Path.GetRelativePath(volumeRoot, filePath).Replace('\\', '/');
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFileTransferStartAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferStart,
+            FileTransferStart = new FileTransferStart
+            {
+                TransferId = "tx-volume-download",
+                Direction = "download",
+                RemotePath = filePath,
+                RemoteRootId = volumeRoot,
+                RemoteRelativePath = relativePath,
+                FileName = "drive-file.bin",
+                TotalBytes = 0,
+                Sha256Base64 = string.Empty,
+            }
+        }, ws, "client-a", CancellationToken.None);
+
+        // The download body streams on a detached Task (HandleFileTransferStartAsync only
+        // synchronously resolves the root and opens the stream) — poll briefly for completion.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!ws.ReceivedMessages.Any(m => m.Type == MessageTypes.FileTransferEnd) && DateTime.UtcNow < deadline)
+            await Task.Delay(25);
+
+        var end = ws.ReceivedMessages.LastOrDefault(m => m.Type == MessageTypes.FileTransferEnd)?.FileTransferEnd;
+        Assert.NotNull(end);
+        Assert.True(end!.Success, $"Expected the volume download to succeed but got: {end.ErrorMessage}");
+    }
+
+    [Fact]
+    public async Task Upload_ToUnpinnedVolumePath_RefusesWithSharedFolderHint()
+    {
+        // Full browse never exposes write on the volume itself (RemEx-hb1t). Since RemEx-hb1t.3 an
+        // unconfigured RootId is re-mapped when the target sits inside a pinned root — but this target
+        // is genuinely un-pinned (empty roots list), so the upload must refuse, pointing the user at
+        // the shared-folders list.
+        var (handler, _, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true);
+        var volumeRoot = Path.GetPathRoot(baseTemp)!;
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFileTransferStartAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferStart,
+            FileTransferStart = new FileTransferStart
+            {
+                TransferId = "tx-volume-upload",
+                Direction = "upload",
+                RemotePath = "new-file.bin",
+                RemoteRootId = volumeRoot,
+                RemoteRelativePath = "new-file.bin",
+                FileName = "new-file.bin",
+                TotalBytes = 4,
+                Sha256Base64 = Convert.ToBase64String(new byte[32]),
+            }
+        }, ws, "client-a", CancellationToken.None);
+
+        var end = ws.ReceivedMessages.LastOrDefault(m => m.Type == MessageTypes.FileTransferEnd)?.FileTransferEnd;
+        Assert.NotNull(end);
+        Assert.False(end!.Success);
+        Assert.Contains("shared folders", end.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Upload_ToVolumePathInsidePinnedRoot_RemapsAndSucceeds()
+    {
+        // RemEx-hb1t.3 write-op parity: the SAME folder must accept an upload whether addressed by its
+        // pinned rootId or reached via a full-device volume browse. The volume-mode reference here
+        // resolves inside the pinned root, so the handler re-maps it and the write proceeds.
+        var (handler, volumes, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true,
+            temp => [("root-pinned", "Pinned", Path.Combine(temp, "pinned"), true, true, true, true, false)]);
+        var volumeRoot = Path.GetPathRoot(baseTemp)!;
+        Assert.Contains(volumes.Enumerate(), v => v.Id == volumeRoot); // sanity: host must expose this drive
+
+        var pinnedDir = Path.Combine(baseTemp, "pinned");
+        Directory.CreateDirectory(pinnedDir);
+
+        var relativePath = Path.GetRelativePath(volumeRoot, Path.Combine(pinnedDir, "incoming.bin")).Replace('\\', '/');
+        var ws = new FakeWebSocket();
+        await handler.HandleFileTransferStartAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferStart,
+            FileTransferStart = new FileTransferStart
+            {
+                TransferId = "tx-volume-upload-pinned",
+                Direction = "upload",
+                RemotePath = "incoming.bin",
+                RemoteRootId = volumeRoot,
+                RemoteRelativePath = relativePath,
+                FileName = "incoming.bin",
+                TotalBytes = 4,
+                Sha256Base64 = Convert.ToBase64String(new byte[32]),
+            }
+        }, ws, "client-a", CancellationToken.None);
+
+        var end = ws.ReceivedMessages.LastOrDefault(m => m.Type == MessageTypes.FileTransferEnd)?.FileTransferEnd;
+        Assert.Null(end); // no failure reply — the write stream opened inside the pinned root
+        Assert.True(File.Exists(Path.Combine(pinnedDir, "incoming.bin")));
+
+        await handler.HandleFileTransferCancelAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferCancel,
+            FileTransferCancel = new FileTransferCancel { TransferId = "tx-volume-upload-pinned" }
+        });
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -688,11 +912,14 @@ public sealed class FileTransferHandlerTests : IDisposable
             Path.Combine(baseTemp, "file_transfer_trust.json"),
             TimeSpan.FromSeconds(5));
 
+        var files = new Mock<IFileTransferService>().Object;
+        var volumes = new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance);
         var handler = new FileTransferHandler(
             NullLogger<FileTransferHandler>.Instance,
-            new Mock<IFileTransferService>().Object,
+            files,
             trust,
-            new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
+            volumes,
+            new SharedRootReadResolver(files, trust, volumes));
 
         return (handler, trust);
     }

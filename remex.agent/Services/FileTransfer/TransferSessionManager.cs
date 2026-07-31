@@ -1,12 +1,8 @@
-using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.IO;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Guards;
 using Remex.Core.Messages;
@@ -65,14 +61,18 @@ public sealed class TransferSessionManager : IDisposable
 
     private readonly ILogger<TransferSessionManager> _logger;
     private readonly IFileTransferService _fileTransferService;
+    private readonly SharedRootReadResolver _readResolver;
     private readonly string _stagingDir;
 
     private readonly ConcurrentDictionary<string, ReceiveSession> _receiveSessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, SendSession> _sendSessions = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, FileChannel> _channels = new(StringComparer.Ordinal);
 
-    public TransferSessionManager(ILogger<TransferSessionManager> logger, IFileTransferService fileTransferService)
-        : this(logger, fileTransferService, stagingDir: null)
+    public TransferSessionManager(
+        ILogger<TransferSessionManager> logger,
+        IFileTransferService fileTransferService,
+        SharedRootReadResolver readResolver)
+        : this(logger, fileTransferService, readResolver, stagingDir: null)
     {
     }
 
@@ -80,10 +80,12 @@ public sealed class TransferSessionManager : IDisposable
     internal TransferSessionManager(
         ILogger<TransferSessionManager> logger,
         IFileTransferService fileTransferService,
+        SharedRootReadResolver readResolver,
         string? stagingDir)
     {
         _logger = Guard.NotNull(logger);
         _fileTransferService = Guard.NotNull(fileTransferService);
+        _readResolver = Guard.NotNull(readResolver);
 
         if (stagingDir is null)
         {
@@ -521,7 +523,7 @@ public sealed class TransferSessionManager : IDisposable
             existing.MarkSuperseded();
         _channels[key] = channel;
 
-        _logger.LogInformation("DIAG /ws/files channel loop STARTED for {ClientId} (wsState={State}).", key, ws.State);
+        _logger.LogInformation("DIAG /ws/files channel loop STARTED for {ClientId} (wsState={State}).", Remex.Agent.Services.Security.LogRedaction.RedactClientId(key), ws.State);
         var diagDataFrames = 0;
         try
         {
@@ -530,13 +532,13 @@ public sealed class TransferSessionManager : IDisposable
                 var frameBytes = await ReceiveBinaryAsync(ws, ct);
                 if (frameBytes is null)
                 {
-                    _logger.LogInformation("DIAG /ws/files recv returned null for {ClientId} after {N} data frame(s) (wsState={State}) — loop exiting.", key, diagDataFrames, ws.State);
+                    _logger.LogInformation("DIAG /ws/files recv returned null for {ClientId} after {N} data frame(s) (wsState={State}) — loop exiting.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(key), diagDataFrames, ws.State);
                     break; // socket closed or an oversize/protocol-invalid frame.
                 }
 
                 if (!FileFrameCodec.TryRead(frameBytes, out var envelope, out var payload) || envelope is null)
                 {
-                    _logger.LogWarning("Discarding malformed /ws/files frame ({Len} bytes) from {ClientId}.", frameBytes.Length, key);
+                    _logger.LogWarning("Discarding malformed /ws/files frame ({Len} bytes) from {ClientId}.", frameBytes.Length, Remex.Agent.Services.Security.LogRedaction.RedactClientId(key));
                     continue;
                 }
 
@@ -571,7 +573,7 @@ public sealed class TransferSessionManager : IDisposable
         }
         catch (WebSocketException ex)
         {
-            _logger.LogWarning(ex, "/ws/files channel error for {ClientId}.", key);
+            _logger.LogWarning(ex, "/ws/files channel error for {ClientId}.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(key));
         }
         finally
         {
@@ -648,6 +650,21 @@ public sealed class TransferSessionManager : IDisposable
     // Host sender (download): stream a host file out with ack-driven backpressure.
     // ─────────────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Testable seam: resolves a download's source <paramref name="rootId"/> and opens it for reading.
+    ///
+    /// <para>Goes through <see cref="SharedRootReadResolver"/> rather than
+    /// <see cref="IFileTransferService.OpenForReadAsync"/> so a file reached by full-device browsing — i.e. a
+    /// bare mounted volume that is not a pinned shared root — downloads instead of failing with
+    /// "Unknown shared root" (RemEx-hb1t.6). Calling the service directly here is what left every real
+    /// Android download broken after RemEx-39jw fixed only the legacy v2 handler.</para>
+    ///
+    /// <para>Fail-closed: an empty <paramref name="clientId"/> (unidentified peer) has no full-browse grant,
+    /// so the resolver refuses rather than widening access.</para>
+    /// </summary>
+    internal Task<Stream> OpenDownloadSourceAsync(string clientId, string rootId, string relativePath, CancellationToken ct)
+        => _readResolver.OpenForReadAsync(rootId, relativePath, clientId, ct);
+
     private async Task BeginSendAsync(string clientId, FileTransferOffer offer, WebSocket controlWs, CancellationToken ct)
     {
         string? nameError = null;
@@ -675,7 +692,7 @@ public sealed class TransferSessionManager : IDisposable
         Stream source;
         try
         {
-            source = await _fileTransferService.OpenForReadAsync(offer.DestRoot, hostRelativePath, ct);
+            source = await OpenDownloadSourceAsync(clientId, offer.DestRoot!, hostRelativePath, ct);
         }
         catch (Exception ex)
         {
@@ -953,7 +970,7 @@ public sealed class TransferSessionManager : IDisposable
 
         public void Cancel()
         {
-            try { _cts.Cancel(); } catch (ObjectDisposedException) { }
+            try { _cts.Cancel(); } catch (ObjectDisposedException) { /* the token source was already disposed by a concurrent teardown, which means the cancel it would have carried has already happened */ }
         }
     }
 

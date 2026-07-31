@@ -1,8 +1,7 @@
-using System;
+using Remex.Desktop.Services.FileTransfer;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
-using System.Threading;
-using System.Threading.Tasks;
+using System.ComponentModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -21,7 +20,7 @@ public enum FileTransferQueueKind
 
 /// <summary>
 /// A single entry in the local transfer queue (plan §1.4). Surfaced in the transfer-queue panel with its
-/// live state and progress. The desktop client drives the actual bytes over the existing (v2-compatible)
+/// live state and progress. The PC UI drives the actual bytes over the existing (v2-compatible)
 /// upload/download path; this item is the local, per-transfer view of that work.
 /// </summary>
 public sealed partial class FileTransferQueueItem : ObservableObject
@@ -67,6 +66,18 @@ public sealed partial class FileTransferQueueItem : ObservableObject
 
     public bool CanCancel => !IsTerminal;
 
+    /// <summary>
+    /// Re-raises the two labels that read <see cref="LocalizationService"/> at get-time. Called by the
+    /// owning <see cref="FileTransferQueue"/> on a language switch - the item itself deliberately does
+    /// not subscribe, because the service is a process-lifetime singleton and one subscription per
+    /// transfer would pin every completed item alive.
+    /// </summary>
+    internal void RaiseLocalizedLabels()
+    {
+        OnPropertyChanged(nameof(ModeLabel));
+        OnPropertyChanged(nameof(StateLabel));
+    }
+
     /// <summary>Localized one-word description of the transfer direction.</summary>
     public string ModeLabel => Kind switch
     {
@@ -101,11 +112,11 @@ public sealed partial class FileTransferQueueItem : ObservableObject
 /// <summary>
 /// Local, in-process transfer queue (plan §1.4): FIFO, one active transfer at a time. Persistence to
 /// <c>transfer_queue.json</c> and the binary <c>/ws/files</c> channel are the host-side responsibility
-/// (WP4); this queue drives the desktop client's transfers over the existing path and gives the UI a live,
+/// (WP4); this queue drives the PC UI's transfers over the existing path and gives the UI a live,
 /// cancellable view. UI mutations are marshalled through <see cref="_post"/> so it is safe from any thread
 /// and drivable synchronously in tests.
 /// </summary>
-public sealed class FileTransferQueue
+public sealed class FileTransferQueue : IDisposable
 {
     private readonly Action<Action> _post;
     private readonly ConcurrentQueue<FileTransferQueueItem> _pending = new();
@@ -131,7 +142,28 @@ public sealed class FileTransferQueue
     public FileTransferQueue(Action<Action>? post)
     {
         _post = post ?? (action => Dispatcher.UIThread.Post(action));
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
     }
+
+    /// <summary>
+    /// A language switch changes what <see cref="FileTransferQueueItem.ModeLabel"/> and
+    /// <see cref="FileTransferQueueItem.StateLabel"/> would return, but nothing on the item itself
+    /// changed, so no notification fires and the queue keeps showing the old language until the row's
+    /// state happens to change. Fan the change out to every item instead.
+    /// </summary>
+    private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e) =>
+        _post(() =>
+        {
+            foreach (var item in Items)
+                item.RaiseLocalizedLabels();
+        });
+
+    /// <summary>
+    /// Detaches from the <see cref="LocalizationService"/> singleton. Not optional: the service
+    /// outlives every view, so a queue that subscribes without detaching is pinned for the process
+    /// lifetime along with every item it holds.
+    /// </summary>
+    public void Dispose() => LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
 
     /// <summary>Adds a transfer to the tail of the queue and starts the pump if idle. Returns the new item.</summary>
     public FileTransferQueueItem Enqueue(FileTransferQueueKind kind, string fileName, Func<IProgress<double>, CancellationToken, Task> work)
@@ -229,7 +261,7 @@ public sealed class FileTransferQueue
         }
         catch (Exception ex)
         {
-            _post(() => item.ErrorMessage = ex.Message);
+            _post(() => item.ErrorMessage = DescribeFailure(ex));
             SetState(item, TransferState.Failed);
             item.Completion.TrySetResult();
         }
@@ -241,4 +273,27 @@ public sealed class FileTransferQueue
 
     private void SetState(FileTransferQueueItem item, TransferState state)
         => _post(() => item.State = state);
+
+    /// <summary>
+    /// Turns a transfer failure into text fit for the queue panel.
+    /// </summary>
+    /// <remarks>
+    /// This panel renders whatever it is given, so <c>ex.Message</c> put developer English on screen
+    /// in every language - "Download failed: SHA-256 integrity check failed.", the idle-watchdog
+    /// timeout, and so on (RemEx-s4p4).
+    /// <para>
+    /// Dispatch is by TYPE, never by message text. A host refusal carries wording the phone wrote
+    /// for a user and is shown verbatim; the two failures the PC itself detects get localized
+    /// sentences; anything else falls back to a generic one with the detail left to the log. Matching
+    /// on message content instead would silently revert to raw English the first time a message was
+    /// reworded.
+    /// </para>
+    /// </remarks>
+    private static string DescribeFailure(Exception ex) => ex switch
+    {
+        FileTransferHostException host => host.HostMessage,
+        FileTransferIntegrityException => LocalizationService.Instance["FileTransfer_ErrIntegrity"],
+        TimeoutException => LocalizationService.Instance["FileTransfer_ErrStoppedResponding"],
+        _ => LocalizationService.Instance["FileTransfer_ErrGeneric"],
+    };
 }

@@ -1,15 +1,9 @@
-using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Net.Security;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Models.IPC;
@@ -61,6 +55,34 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     // required). Decoded lazily when a challenge arrives.
     private string? _reconnectSecretBase64;
 
+    /// <summary>
+    /// VULN-2 (RemEx-s032.2): the base64 reconnect secret this control client authenticated with,
+    /// shared with the sibling <see cref="RemexDesktopClient"/> so the <c>/ws/desktop</c> channel can
+    /// answer the host's proof-of-possession challenge without re-plumbing the secret up from Kotlin.
+    /// Null before the first paired connect.
+    /// </summary>
+    internal string? ReconnectSecretBase64 => _reconnectSecretBase64;
+
+    /// <summary>
+    /// Fail-closed guard (RemEx-s032.5 / VULN-5). The JNI trust-manager overrides exported by
+    /// <c>AndroidNativeExports</c> unconditionally force the Android OS trust manager to accept ANY
+    /// certificate — by design, because <see cref="ClientWebSocket.Options"/>'s
+    /// <c>RemoteCertificateValidationCallback</c> is meant to be the sole authority for TLS trust on this
+    /// connection. If that callback were ever installed conditionally (only when a pin is present) and a
+    /// caller connected with no pin, <see cref="SslStream"/> would fall through to the OS trust manager —
+    /// which the JNI overrides force to accept anything — and TLS would silently accept ANY certificate
+    /// (full MITM). Calling this before <see cref="ConnectAsync"/> touches the socket makes an empty pin
+    /// impossible to reach in production: no pin, no connection, full stop.
+    /// </summary>
+    internal static void EnsurePinnedOrThrow(string? spkiHash)
+    {
+        if (string.IsNullOrWhiteSpace(spkiHash))
+        {
+            throw new InvalidOperationException(
+                "Refusing to connect without a pinned certificate SPKI hash (fail-closed).");
+        }
+    }
+
     public async Task ConnectAsync(
         string host,
         int port,
@@ -69,6 +91,8 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         string? reconnectSecretBase64 = null,
         CancellationToken ct = default)
     {
+        EnsurePinnedOrThrow(spkiHash);
+
         _clientId = clientId;
         _reconnectSecretBase64 = reconnectSecretBase64;
         await DisconnectAsync();
@@ -82,56 +106,63 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
 
         JniHelper.AndroidLogE("RemexNative", $"Attempting connection to {wsUri}");
 
-        if (!string.IsNullOrEmpty(spkiHash))
+        // Defense in depth: ALWAYS install the validation callback (never leave the socket to fall
+        // through to the OS trust manager), and reject outright if somehow reached with no pin
+        // configured. EnsurePinnedOrThrow above already guarantees spkiHash is non-empty here, but this
+        // callback stands on its own so a future refactor of the early guard can't silently reopen VULN-5.
+        _webSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
         {
-            _webSocket.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+            try
             {
-                try 
+                if (string.IsNullOrWhiteSpace(spkiHash))
                 {
-                    JniHelper.AndroidLogE("RemexNative", $"SSL Validation Callback triggered. Errors: {errors}");
-                    
-                    if (cert == null) 
-                    {
-                        JniHelper.AndroidLogE("RemexNative", "Certificate validation failed: Remote certificate is null");
-                        return false;
-                    }
-
-                    // Log cert info
-                    JniHelper.AndroidLogE("RemexNative", $"Cert Subject: {cert.Subject}");
-                    JniHelper.AndroidLogE("RemexNative", $"Cert Issuer: {cert.Issuer}");
-
-                    // Use the raw data to avoid potential PAL object mapping issues
-                    byte[] rawData = cert.Export(X509ContentType.Cert);
-                    if (rawData == null || rawData.Length == 0)
-                    {
-                        JniHelper.AndroidLogE("RemexNative", "Failed to export raw certificate data");
-                        return false;
-                    }
-
-                    using var cert2 = X509CertificateLoader.LoadCertificate(rawData);
-                    var spkiInfo = cert2.PublicKey.ExportSubjectPublicKeyInfo();
-                    var actualHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(spkiInfo));
-                    
-                    JniHelper.AndroidLogE("RemexNative", $"Actual SPKI Hash: {actualHash}");
-                    JniHelper.AndroidLogE("RemexNative", $"Expected SPKI Hash: {spkiHash}");
-                    
-                    if (actualHash == spkiHash) 
-                    {
-                        JniHelper.AndroidLogE("RemexNative", "Certificate hash matches! Validation successful.");
-                        return true;
-                    }
-                    
-                    JniHelper.AndroidLogE("RemexNative", "Certificate mismatch! Rejecting connection.");
+                    JniHelper.AndroidLogE("RemexNative", "Certificate validation rejected: no SPKI pin configured (fail-closed).");
                     return false;
                 }
-                catch (Exception ex)
+
+                JniHelper.AndroidLogE("RemexNative", $"SSL Validation Callback triggered. Errors: {errors}");
+
+                if (cert == null)
                 {
-                    JniHelper.AndroidLogE("RemexNative", $"CRITICAL ERROR in validation callback: {ex.Message}");
-                    JniHelper.AndroidLogE("RemexNative", ex.ToString());
+                    JniHelper.AndroidLogE("RemexNative", "Certificate validation failed: Remote certificate is null");
                     return false;
                 }
-            };
-        }
+
+                // Log cert info
+                JniHelper.AndroidLogE("RemexNative", $"Cert Subject: {cert.Subject}");
+                JniHelper.AndroidLogE("RemexNative", $"Cert Issuer: {cert.Issuer}");
+
+                // Use the raw data to avoid potential PAL object mapping issues
+                byte[] rawData = cert.Export(X509ContentType.Cert);
+                if (rawData == null || rawData.Length == 0)
+                {
+                    JniHelper.AndroidLogE("RemexNative", "Failed to export raw certificate data");
+                    return false;
+                }
+
+                using var cert2 = X509CertificateLoader.LoadCertificate(rawData);
+                var spkiInfo = cert2.PublicKey.ExportSubjectPublicKeyInfo();
+                var actualHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(spkiInfo));
+
+                JniHelper.AndroidLogE("RemexNative", $"Actual SPKI Hash: {actualHash}");
+                JniHelper.AndroidLogE("RemexNative", $"Expected SPKI Hash: {spkiHash}");
+
+                if (actualHash == spkiHash)
+                {
+                    JniHelper.AndroidLogE("RemexNative", "Certificate hash matches! Validation successful.");
+                    return true;
+                }
+
+                JniHelper.AndroidLogE("RemexNative", "Certificate mismatch! Rejecting connection.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                JniHelper.AndroidLogE("RemexNative", $"CRITICAL ERROR in validation callback: {ex.Message}");
+                JniHelper.AndroidLogE("RemexNative", ex.ToString());
+                return false;
+            }
+        };
 
         try
         {
@@ -187,14 +218,14 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         _connectionCts?.Cancel();
         if (_receiveLoopTask != null)
         {
-            try { await _receiveLoopTask; } catch { }
+            try { await _receiveLoopTask; } catch { /* draining the receive loop after cancelling it - whatever it surfaces describes the shutdown, not a fault */ }
         }
 
         if (_webSocket != null)
         {
             if (_webSocket.State == WebSocketState.Open)
             {
-                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { }
+                try { await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None); } catch { /* a polite close on a socket that may already be gone; the disconnect happens either way */ }
             }
             _webSocket.Dispose();
             _webSocket = null;
@@ -338,7 +369,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                 }
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { /* cancellation is how this wait normally ends */ }
         catch (Exception)
         {
             ConnectionStateChanged?.Invoke(false);

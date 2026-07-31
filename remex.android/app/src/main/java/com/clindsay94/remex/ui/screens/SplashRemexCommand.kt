@@ -40,7 +40,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
@@ -48,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import com.clindsay94.remex.ui.theme.materialShapesList
 import androidx.graphics.shapes.Morph
 import kotlinx.coroutines.delay
@@ -74,6 +74,11 @@ private class StreamParticle(var t: Float, var speed: Float, var radius: Float, 
  */
 @Composable
 fun SplashRemexCommand(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: () -> Unit) {
+        // Reduce motion: no scanline/sweep/zoom choreography — static terminal frame, finish now.
+        if (LocalReducedMotion.current) {
+                SplashReducedMotionFrame(onFinished, skipRequested, onSkipConsumed)
+                return
+        }
         val scope = rememberCoroutineScope()
         val view = LocalView.current
         var elapsed by remember { mutableStateOf(0f) }

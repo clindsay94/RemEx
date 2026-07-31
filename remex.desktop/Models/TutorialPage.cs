@@ -1,5 +1,3 @@
-using System;
-
 namespace Remex.Desktop.Models;
 
 /// <summary>Platform flags controlling which OS sees a tutorial page.</summary>

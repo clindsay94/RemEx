@@ -1,11 +1,5 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Guards;
 using Remex.Core.Models;
@@ -154,7 +148,7 @@ public sealed class FileTrustService : IFileTrustService
         if (!string.IsNullOrWhiteSpace(clientId) && _trust.TryRemove(clientId, out _))
         {
             PersistToDisk();
-            _logger.LogInformation("Revoked all file-transfer trust for client {ClientId}.", clientId);
+            _logger.LogInformation("Revoked all file-transfer trust for client {ClientId}.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId));
         }
         return Task.CompletedTask;
     }

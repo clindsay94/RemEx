@@ -10,10 +10,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MediumTopAppBar
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipAnchorPosition
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -76,6 +81,25 @@ fun RemexFlexibleTopBar(
     )
 }
 
+/**
+ * Wraps any icon-only control in an M3 [PlainTooltip] so long-press shows a visible label —
+ * the M3 requirement for icon-only affordances (RemEx-31wq). Pass the SAME string used for
+ * the icon's contentDescription so sighted long-press and TalkBack announce identical labels.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RemexTooltip(label: String, content: @Composable () -> Unit) {
+    TooltipBox(
+        // TooltipAnchorPosition.Above reproduces what the removed rememberPlainTooltipPositionProvider
+        // did: prefer above the anchor, fall back below when there is no room.
+        positionProvider =
+            TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+        tooltip = { PlainTooltip { Text(label) } },
+        state = rememberTooltipState(),
+        content = content,
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun rememberRemexTopBarScrollBehavior(): TopAppBarScrollBehavior =
@@ -111,19 +135,23 @@ private fun RemexFlexibleTopBarWithSubtitleAndActionsPreview() {
             title = "Main Title",
             subtitle = "Secondary subtitle",
             navigationIcon = {
-                IconButton(onClick = {}) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.cd_back)
-                    )
+                RemexTooltip(stringResource(R.string.cd_back)) {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back)
+                        )
+                    }
                 }
             },
             actions = {
-                IconButton(onClick = {}) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.nav_more_label)
-                    )
+                RemexTooltip(stringResource(R.string.nav_more_label)) {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.nav_more_label)
+                        )
+                    }
                 }
             }
         )

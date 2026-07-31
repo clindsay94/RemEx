@@ -1,7 +1,13 @@
 package com.clindsay94.remex.ui.theme
 
 import android.annotation.SuppressLint
+import android.app.UiModeManager
+import android.content.Context
+import android.database.ContentObserver
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.provider.Settings
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
@@ -16,7 +22,11 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Size
@@ -26,6 +36,7 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -49,29 +60,22 @@ import com.google.android.material.color.utilities.SchemeVibrant
 
 import com.clindsay94.remex.R
 
-// Standard M3 colors are already defined in Color.kt
+/**
+ * RemEx brand seed — the launcher/splash amber (see SplashBrand.Amber and
+ * ic_launcher_background's slate backdrop). The static fallback schemes below derive from it
+ * so pre-Android-S devices and dynamic-color-off users get a branded scheme instead of the
+ * Compose-template purple.
+ */
+private val BrandSeed = Color(0xFFFFB63D)
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
-    surfaceContainerHighest = Color(0xFF36343B),
-    surfaceContainerHigh = Color(0xFF2B2930),
-    surfaceContainer = Color(0xFF211F26),
-    surfaceContainerLow = Color(0xFF1D1B20),
-    surfaceContainerLowest = Color(0xFF0F0D13)
-)
+// Lazy is load-bearing: colorSchemeFromSeed reads top-level vals declared later in this file,
+// and Kotlin initializes top-level properties in file order — eager init here crashes the app
+// at class-load with an NPE inside the Material color utilities (verified on-device).
+// internal (not private) so FallbackSchemeBrandHueTest can assert the brand hue — the API<31
+// path these serve cannot be exercised on a modern emulator.
+internal val DarkColorScheme by lazy { colorSchemeFromSeed(BrandSeed, darkTheme = true) }
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-    surfaceContainerHighest = Color(0xFFE6E1E5),
-    surfaceContainerHigh = Color(0xFFECE6EA),
-    surfaceContainer = Color(0xFFF3EDF1),
-    surfaceContainerLow = Color(0xFFF7F2F7),
-    surfaceContainerLowest = Color(0xFFFFFFFF)
-)
+internal val LightColorScheme by lazy { colorSchemeFromSeed(BrandSeed, darkTheme = false) }
 
 @Immutable
 data class CustomColors(
@@ -90,19 +94,36 @@ val LocalCustomColors = staticCompositionLocalOf {
     )
 }
 
-private val DarkCustomColors = CustomColors(
-    success = Color(0xFF9CD67D),
-    onSuccess = Color(0xFF0C3900),
-    successContainer = Color(0xFF1F5107),
-    onSuccessContainer = Color(0xFFB8F397)
-)
+/**
+ * Success roles derived through the same DynamicScheme pipeline as [colorSchemeFromSeed]: a
+ * green tonal-spot scheme (seeded from the former hardcoded light success #386A20, so the hue
+ * family is unchanged) built for the current darkTheme + contrast. Its
+ * primary/onPrimary/primaryContainer/onPrimaryContainer become the four success roles, so
+ * success now tracks dark mode and the user's contrast setting like every other role instead
+ * of staying frozen at fixed hex values. Deliberately NOT seeded from the user's theme seed:
+ * success is a semantic color and must stay green.
+ *
+ * A function rather than top-level vals: Theme.kt top-level property init order is fragile
+ * (see the DarkColorScheme lazy note above) and callers cache via remember anyway.
+ */
+internal fun customColorsForScheme(darkTheme: Boolean, contrast: Double): CustomColors {
+    val successSeed = Hct.fromInt(0xFF386A20.toInt())
+    val scheme = SchemeTonalSpot(successSeed, darkTheme, contrast)
+    val m3 = MaterialDynamicColorsInstance
+    return CustomColors(
+        success = Color(m3.primary().getArgb(scheme)),
+        onSuccess = Color(m3.onPrimary().getArgb(scheme)),
+        successContainer = Color(m3.primaryContainer().getArgb(scheme)),
+        onSuccessContainer = Color(m3.onPrimaryContainer().getArgb(scheme)),
+    )
+}
 
-private val LightCustomColors = CustomColors(
-    success = Color(0xFF386A20),
-    onSuccess = Color(0xFFFFFFFF),
-    successContainer = Color(0xFFB8F397),
-    onSuccessContainer = Color(0xFF042100)
-)
+/**
+ * Squircle crop for app-icon-like previews (tutorial demo tiles, the About logo, Settings'
+ * app icon). Percent-based so it scales with the element; not part of the M3 dp scale, which
+ * is why it lives here as a named token rather than as per-site literals (RemEx-flro).
+ */
+val remexIconSquircle = RoundedCornerShape(percent = 30)
 
 val remexShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp),
@@ -249,6 +270,7 @@ fun cardShape(index: Float, cornerRadiusDp: Int): Shape {
     return MorphPolygonShape(morph, progress)
 }
 
+@Composable
 fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
     val shapeIndex = shapePreset.toInt()
     val progress = shapePreset - shapeIndex
@@ -287,7 +309,11 @@ fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
     val safety = currentSafety + (nextSafety - currentSafety) * progress
 
     // Base padding is 8dp, max padding for unsafe shapes is 24dp
-    return androidx.compose.ui.unit.lerp(24.dp, 8.dp, safety)
+    // Scale-aware (RemEx-0i3x): larger text must sit deeper inside unsafe shapes, so the
+    // inset grows with the effective font scale (capped so extreme scales don't hollow out
+    // the card interior entirely).
+    val fontScale = LocalDensity.current.fontScale.coerceIn(1f, 1.5f)
+    return androidx.compose.ui.unit.lerp(24.dp, 8.dp, safety) * fontScale
 }
 
 fun colorSchemeFromSeed(
@@ -337,6 +363,8 @@ fun colorSchemeFromSeed(
             surfaceContainer = Color(m3.surfaceContainer().getArgb(scheme)),
             surfaceContainerLow = Color(m3.surfaceContainerLow().getArgb(scheme)),
             surfaceContainerLowest = Color(m3.surfaceContainerLowest().getArgb(scheme)),
+            surfaceBright = Color(m3.surfaceBright().getArgb(scheme)),
+            surfaceDim = Color(m3.surfaceDim().getArgb(scheme)),
             outline = Color(m3.outline().getArgb(scheme)),
             outlineVariant = Color(m3.outlineVariant().getArgb(scheme)),
             scrim = Color(m3.scrim().getArgb(scheme)),
@@ -373,6 +401,8 @@ fun colorSchemeFromSeed(
             surfaceContainer = Color(m3.surfaceContainer().getArgb(scheme)),
             surfaceContainerLow = Color(m3.surfaceContainerLow().getArgb(scheme)),
             surfaceContainerLowest = Color(m3.surfaceContainerLowest().getArgb(scheme)),
+            surfaceBright = Color(m3.surfaceBright().getArgb(scheme)),
+            surfaceDim = Color(m3.surfaceDim().getArgb(scheme)),
             outline = Color(m3.outline().getArgb(scheme)),
             outlineVariant = Color(m3.outlineVariant().getArgb(scheme)),
             scrim = Color(m3.scrim().getArgb(scheme)),
@@ -381,6 +411,67 @@ fun colorSchemeFromSeed(
             inversePrimary = Color(m3.inversePrimary().getArgb(scheme))
         )
     }
+}
+
+/**
+ * True when the system "Remove animations" accessibility setting is on (animator duration
+ * scale = 0). The theme already swaps to the calmer standard [MotionScheme] automatically;
+ * screens with self-driven choreography (splash zooms, coach-mark loops, infinite pulses)
+ * should additionally consult this and suppress or shorten that motion themselves.
+ */
+val LocalReducedMotion = staticCompositionLocalOf { false }
+
+/**
+ * Maps the system animator duration scale to the app-wide [MotionScheme]: expressive springs
+ * normally, the non-bouncy standard scheme when the user has disabled animations (scale = 0).
+ */
+internal fun motionSchemeForAnimatorScale(animatorDurationScale: Float): MotionScheme =
+    if (animatorDurationScale == 0f) MotionScheme.standard() else MotionScheme.expressive()
+
+/**
+ * Reads Settings.Global.ANIMATOR_DURATION_SCALE and stays current via a ContentObserver, so
+ * toggling "Remove animations" while the app is running re-themes without a restart.
+ */
+@Composable
+private fun rememberAnimatorDurationScale(): Float {
+    val context = LocalContext.current
+    fun read(): Float = Settings.Global.getFloat(
+        context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+    )
+    var scale by remember(context) { mutableFloatStateOf(read()) }
+    DisposableEffect(context) {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                scale = read()
+            }
+        }
+        context.contentResolver.registerContentObserver(
+            Settings.Global.getUriFor(Settings.Global.ANIMATOR_DURATION_SCALE), false, observer
+        )
+        onDispose { context.contentResolver.unregisterContentObserver(observer) }
+    }
+    return scale
+}
+
+/**
+ * System contrast (-1..1) from UiModeManager on API 34+, kept live via a
+ * ContrastChangeListener; 0 (default) below API 34. Lets the success palette track the SAME
+ * contrast source as the main scheme when dynamic color is active (RemEx-84dj).
+ */
+@Composable
+private fun rememberSystemContrast(): Float {
+    if (Build.VERSION.SDK_INT < 34) return 0f
+    val context = LocalContext.current
+    val uiModeManager = remember(context) {
+        context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
+    }
+    var contrast by remember { mutableFloatStateOf(uiModeManager.contrast) }
+    DisposableEffect(uiModeManager) {
+        val listener = UiModeManager.ContrastChangeListener { c -> contrast = c }
+        uiModeManager.addContrastChangeListener(context.mainExecutor, listener)
+        onDispose { uiModeManager.removeContrastChangeListener(listener) }
+    }
+    return contrast
 }
 
 // WARNING: This file imports com.google.android.material.color.utilities.* (Hct, Hct.from, etc.)
@@ -407,8 +498,12 @@ fun RemExTheme(
         else -> isSystemInDarkTheme()
     }
 
-    val typography = remember(fontFamilyKey, fontScale) {
-        typographyForFontFamily(fontFamilyKey, fontScale)
+    // Clamp the in-app scale so it cannot compound with the system font-size setting past
+    // MAX_COMBINED_FONT_SCALE (RemEx-95ls); the system's own scale is always fully honored.
+    val systemFontScale = LocalDensity.current.fontScale
+    val effectiveFontScale = clampedAppFontScale(fontScale, systemFontScale)
+    val typography = remember(fontFamilyKey, effectiveFontScale) {
+        typographyForFontFamily(fontFamilyKey, effectiveFontScale)
     }
 
     val seedColor = remember(themeSeedColor, themePalette, themeSeedChroma) {
@@ -447,16 +542,28 @@ fun RemExTheme(
         else -> LightColorScheme
     }
 
-    val customColors = if (darkTheme) DarkCustomColors else LightCustomColors
+    // When dynamic color drives the main scheme, the success palette follows the SYSTEM
+    // contrast (the same source the dynamic scheme responds to); otherwise the app's
+    // themeContrast, matching the custom/static paths (RemEx-84dj).
+    val usesDynamicScheme = !themePalette.equals("custom", ignoreCase = true) &&
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val successContrast = if (usesDynamicScheme) rememberSystemContrast() else themeContrast
+    val customColors = remember(darkTheme, successContrast) {
+        customColorsForScheme(darkTheme, successContrast.toDouble())
+    }
 
+    val animatorDurationScale = rememberAnimatorDurationScale()
     CompositionLocalProvider(
-        LocalCustomColors provides customColors
+        LocalCustomColors provides customColors,
+        LocalReducedMotion provides (animatorDurationScale == 0f),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = typography,
             shapes = remexShapes,
-            motionScheme = MotionScheme.expressive(),
+            motionScheme = remember(animatorDurationScale) {
+                motionSchemeForAnimatorScale(animatorDurationScale)
+            },
             content = content
         )
     }

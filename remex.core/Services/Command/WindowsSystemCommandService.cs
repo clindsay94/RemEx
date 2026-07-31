@@ -1,11 +1,21 @@
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace Remex.Core.Services.Command;
 
+/// <remarks>
+/// Do NOT switch the restart flags below to <c>shutdown /g</c>. That arms Windows Automatic
+/// Restart Sign-On, which signs the user back in unattended after the reboot - and five
+/// user-facing confirmation strings now promise the opposite. <c>Confirm_Restart_Message</c>,
+/// <c>Confirm_ForceRestart_Message</c>, <c>Confirm_RebootUefi_Message</c>,
+/// <c>Confirm_Shutdown_Message</c> and <c>Confirm_ForceShutdown_Message</c> tell the user, in
+/// nine languages, that RemEx cannot reach the PC again until someone signs in on it, because
+/// the agent is started by a per-user logon task (Windows) or an XDG autostart entry (Linux)
+/// and neither fires at the sign-in screen. A "restore my apps after restart" improvement that
+/// flipped <c>/r</c> to <c>/r /g</c> would silently make all five strings false, and no test
+/// would fail. (RemEx-mkq1.)
+/// </remarks>
 public class WindowsSystemCommandService : ISystemCommandService
 {
     private const int HwndBroadcast = 0xffff;

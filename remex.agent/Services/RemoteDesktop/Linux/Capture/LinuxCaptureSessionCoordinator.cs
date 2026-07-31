@@ -1,8 +1,5 @@
-using System;
 using System.Runtime.Versioning;
-using System.Threading;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Agent.Services.RemoteDesktop.Linux;
@@ -104,7 +101,7 @@ public sealed class LinuxCaptureSessionCoordinator : IAsyncDisposable
         if (_captureLoop is not null)
         {
             try { await _captureLoop; }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException) { /* cancellation is how a capture session normally ends */ }
             catch (Exception ex) { _logger.LogWarning(ex, "Capture loop exit error."); }
         }
 

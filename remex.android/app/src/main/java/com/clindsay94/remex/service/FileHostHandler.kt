@@ -44,6 +44,11 @@ class FileHostHandler(
     private val rootMutator: RootMutator,
     private val stagingDir: File,
     private val scope: CoroutineScope,
+    /**
+     * Which PUSH transfer ids the user actually consented to. Defaulted so existing call sites and
+     * tests that never exercise push keep working; AndroidFileTransferHost passes the shared one.
+     */
+    private val pushConsent: PushConsentRegistry = PushConsentRegistry(),
 ) {
     private val receiveSessions = ConcurrentHashMap<String, HostReceiveSession>()
     private val sendSessions = ConcurrentHashMap<String, HostSendSession>()
@@ -484,8 +489,24 @@ class FileHostHandler(
         if (transferId.isBlank()) return
         when (mode) {
             FileTransferModes.DOWNLOAD -> beginHostSend(transferId, destRoot, destRelativePath, fileName)
-            FileTransferModes.UPLOAD, FileTransferModes.PUSH ->
+            FileTransferModes.UPLOAD ->
                 beginHostReceive(transferId, destRoot, destRelativePath, fileName, size, resumeRequested)
+
+            FileTransferModes.PUSH -> {
+                // A push is only allowed under an id this device minted after the user accepted a
+                // file_push_offer. Without this the consent prompt was merely conventional: a paired
+                // PC could invent an id, skip the offer, and land files in any writable shared root
+                // with no prompt shown (RemEx-z6lh).
+                //
+                // Checked HERE rather than in beginHostReceive because UPLOAD shares that function
+                // and must not be gated - an upload targets a folder the user already shared for
+                // writing, so the share is the consent.
+                if (!pushConsent.isGranted(transferId)) {
+                    sendReady(transferId, false, 0, "This push was not accepted on the device.")
+                    return
+                }
+                beginHostReceive(transferId, destRoot, destRelativePath, fileName, size, resumeRequested)
+            }
             else -> sendReady(transferId, false, 0, "Unsupported transfer mode.")
         }
     }
@@ -625,6 +646,9 @@ class FileHostHandler(
         req ?: return
         val transferId = req.optString("transferId")
         val expectedSha = if (req.has("sha256")) req.optString("sha256") else null
+        // The push grant dies with its transfer, so a completed id cannot be replayed as a fresh
+        // push later. Harmless for UPLOAD ids, which were never in the registry (RemEx-z6lh).
+        pushConsent.release(transferId)
         val session = receiveSessions.remove(transferId) ?: return
         channel.unregisterSink(transferId)
         scope.launch {
@@ -638,6 +662,7 @@ class FileHostHandler(
         val transferId = req.optString("transferId")
         when (req.optString("action")) {
             FileTransferControlActions.CANCEL, FileTransferControlActions.PAUSE -> {
+                pushConsent.release(transferId)
                 receiveSessions.remove(transferId)?.let {
                     channel.unregisterSink(transferId)
                     // Cancel deletes the partial; pause keeps it. Both stop the live session.

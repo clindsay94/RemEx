@@ -1,13 +1,8 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -139,9 +134,30 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         RebuildVisible();
     }
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
+    /// <summary>
+    /// Discards the in-memory diagnostic log. Async only so the confirmation can be awaited; the
+    /// MVVM Toolkit still generates <c>ClearLogsCommand</c>, so the existing binding is unaffected.
+    /// </summary>
     [RelayCommand]
-    public void ClearLogs()
+    public async Task ClearLogsAsync()
     {
+        // These entries are the only copy of anything not yet flushed to disk, and there is no undo,
+        // so confirm first (RemEx-6p1f). Fails CLOSED: with no dialog wired the log is kept.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_ClearLogs_Title"],
+                LocalizationService.Instance["Confirm_ClearLogs_Msg"],
+                LocalizationService.Instance["Logs_Clear"]))
+        {
+            return;
+        }
+
         InMemoryLogSink.Clear();
         _all.Clear();
         VisibleEntries.Clear();
@@ -224,12 +240,15 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         return JsonSerializer.Serialize(payload, LogExportJsonContext.Default.ListLogEntryExport);
     }
 
-    // ─────────────────── Service logs tab (host background service — unchanged) ───────────────────
+    // ─── System event logs tab: entries RemEx wrote to the OS log, NOT a service. There is no
+    // RemEx service; remex.agent runs in the signed-in user's session. Windows reads the
+    // Application event log by source; the Linux branch still targets the retired remex-host
+    // unit and is tracked as RemEx-2vfx. ────────────────────────────────────────────────────────
 
     [RelayCommand]
     public async Task FetchServiceLogsAsync()
     {
-        ServiceLogsText = "Querying host background service logs...\n";
+        ServiceLogsText = "Reading system event log entries written by RemEx...\n";
         try
         {
             if (OperatingSystem.IsWindows())
@@ -240,7 +259,7 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
 
                 var (_, output) = await RunCommandAsync("powershell.exe", $"-Command \"{powershellCmd}\"");
                 ServiceLogsText = string.IsNullOrWhiteSpace(output)
-                    ? "No background service event logs found for 'Remex.Agent' source.\nEnsure the service is installed and has run previously."
+                    ? "No Windows event log entries found for RemEx.\nThis is normal — RemEx only writes here for serious startup problems, so an empty list usually means nothing has gone wrong."
                     : output.Trim();
             }
             else if (OperatingSystem.IsLinux())
@@ -250,12 +269,12 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
             }
             else
             {
-                ServiceLogsText = "Background service logs are only supported on Windows and Linux.";
+                ServiceLogsText = "System event logs are only available on Windows and Linux.";
             }
         }
         catch (Exception ex)
         {
-            ServiceLogsText = $"Failed to fetch service logs: {ex.Message}";
+            ServiceLogsText = $"Could not read the system event log: {ex.Message}";
         }
     }
 

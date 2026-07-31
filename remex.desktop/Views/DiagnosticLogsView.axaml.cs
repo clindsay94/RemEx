@@ -17,6 +17,9 @@ public partial class DiagnosticLogsView : UserControl
         if (DataContext is not DiagnosticLogsViewModel vm)
             return;
 
+        // Guards Clear Logs (RemEx-6p1f).
+        vm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
+
         // Provide the save-file picker so log export can prompt the user to name the file.
         vm.PickSaveFileAsync = async options =>
         {

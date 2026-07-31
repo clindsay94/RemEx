@@ -148,12 +148,14 @@ class TransferQueueStore(private val dir: File) {
             current
         }
 
-    /** Removes finished entries (Done/Cancelled) so the queue file does not grow unbounded. */
+    /** Removes finished entries (Done/Cancelled/Failed) so the queue file does not grow unbounded. */
     fun pruneFinished(): List<QueuedTransfer> =
         synchronized(lock) {
             val current =
                 load().filterNot {
-                    it.state == TransferState.Done || it.state == TransferState.Cancelled
+                    it.state == TransferState.Done ||
+                        it.state == TransferState.Cancelled ||
+                        it.state == TransferState.Failed
                 }
             save(current)
             current

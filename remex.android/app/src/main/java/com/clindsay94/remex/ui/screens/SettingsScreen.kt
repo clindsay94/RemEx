@@ -6,10 +6,15 @@ import android.os.Parcelable
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
@@ -46,24 +50,28 @@ import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
+import com.clindsay94.remex.ui.theme.remexIconSquircle
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.FilePeerIdentity
-import com.clindsay94.remex.ui.components.RemexScreenHeader
+import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
+import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -185,9 +193,14 @@ private fun SettingsCategoryList(
     selectedCategory: SettingsCategory?,
     onCategoryClick: (SettingsCategory) -> Unit
 ) {
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         topBar = {
-            RemexScreenHeader(title = stringResource(R.string.screen_settings_title))
+            RemexFlexibleTopBar(
+                title = stringResource(R.string.screen_settings_title),
+                scrollBehavior = topBarScrollBehavior,
+            )
         }
     ) { innerPadding ->
         LazyColumn(
@@ -201,7 +214,8 @@ private fun SettingsCategoryList(
                 ExpressiveSettingsRow(
                     category = category,
                     selected = category == selectedCategory,
-                    onClick = { onCategoryClick(category) }
+                    onClick = { onCategoryClick(category) },
+                    modifier = Modifier.animateItem(placementSpec = MaterialTheme.motionScheme.fastSpatialSpec())
                 )
             }
         }
@@ -217,7 +231,8 @@ private fun SettingsCategoryList(
 private fun ExpressiveSettingsRow(
     category: SettingsCategory,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
     val interaction = remember { MutableInteractionSource() }
@@ -234,12 +249,20 @@ private fun ExpressiveSettingsRow(
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "settingsRowColor"
     )
-    val badgeColor =
-        if (selected) MaterialTheme.colorScheme.primary
-        else MaterialTheme.colorScheme.primaryContainer
-    val onBadgeColor =
-        if (selected) MaterialTheme.colorScheme.onPrimary
-        else MaterialTheme.colorScheme.onPrimaryContainer
+    val badgeColor by animateColorAsState(
+        targetValue =
+            if (selected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.primaryContainer,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "settingsRowBadgeColor"
+    )
+    val onBadgeColor by animateColorAsState(
+        targetValue =
+            if (selected) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onPrimaryContainer,
+        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
+        label = "settingsRowOnBadgeColor"
+    )
 
     Surface(
         onClick = {
@@ -249,7 +272,7 @@ private fun ExpressiveSettingsRow(
         interactionSource = interaction,
         shape = MaterialTheme.shapes.large,
         color = containerColor,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .graphicsLayer { scaleX = scale; scaleY = scale }
     ) {
@@ -261,7 +284,7 @@ private fun ExpressiveSettingsRow(
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(percent = 30))
+                    .clip(remexIconSquircle)
                     .background(badgeColor),
                 contentAlignment = Alignment.Center
             ) {
@@ -274,8 +297,7 @@ private fun ExpressiveSettingsRow(
             }
             Text(
                 text = stringResource(category.titleRes),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMediumEmphasized,
                 modifier = Modifier.weight(1f)
             )
             Icon(
@@ -320,9 +342,14 @@ private fun InputTab() {
                     initialValue = SettingsManager.RemoteDesktopPreferences()
             )
 
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         topBar = {
-            RemexScreenHeader(title = stringResource(R.string.settings_tab_input))
+            RemexFlexibleTopBar(
+                title = stringResource(R.string.settings_tab_input),
+                scrollBehavior = topBarScrollBehavior,
+            )
         }
     ) { innerPadding ->
         Column(
@@ -353,8 +380,7 @@ private fun InputTab() {
                                                 ),
                                                 preferences.pointerSpeed
                                         ),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                         Slider(
                                 value = preferences.pointerSpeed,
@@ -382,8 +408,7 @@ private fun InputTab() {
                                                 ),
                                                 preferences.verticalScrollSensitivity
                                         ),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                         Slider(
                                 value = preferences.verticalScrollSensitivity,
@@ -414,8 +439,7 @@ private fun InputTab() {
                                                 ),
                                                 preferences.horizontalScrollSensitivity
                                         ),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold
+                                style = MaterialTheme.typography.labelLargeEmphasized
                         )
                         Slider(
                                 value = preferences.horizontalScrollSensitivity,
@@ -459,9 +483,14 @@ private fun FileTransferSettingsTab() {
         }
     }
 
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+            modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
             topBar = {
-                RemexScreenHeader(title = stringResource(R.string.settings_tab_file_transfer))
+                RemexFlexibleTopBar(
+                        title = stringResource(R.string.settings_tab_file_transfer),
+                        scrollBehavior = topBarScrollBehavior,
+                )
             }
     ) { innerPadding ->
         Column(
@@ -474,8 +503,7 @@ private fun FileTransferSettingsTab() {
         ) {
             Text(
                     text = stringResource(R.string.settings_ft_shared_folders_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleSmallEmphasized,
                     color = MaterialTheme.colorScheme.primary
             )
 
@@ -485,7 +513,8 @@ private fun FileTransferSettingsTab() {
                     )
             ) {
                 Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(16.dp)
+                                .animateContentSize(animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
@@ -521,39 +550,47 @@ private fun FileTransferSettingsTab() {
                         )
                     } else {
                         sharedFolderUris.forEach { uriString ->
-                            val uri = Uri.parse(uriString)
-                            val displayName = uri.lastPathSegment
-                                    ?.substringAfterLast('/')
-                                    ?.substringAfterLast(':')
-                                    ?: uriString
-                            Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                        Icons.Default.FolderOpen,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                        text = displayName,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        modifier = Modifier.weight(1f),
-                                        maxLines = 1
-                                )
-                                IconButton(
-                                        onClick = {
-                                            scope.launch { settingsManager.removeSharedFolderUri(uriString) }
-                                        },
-                                        modifier = Modifier.size(32.dp)
+                            key(uriString) {
+                                val uri = Uri.parse(uriString)
+                                val displayName = uri.lastPathSegment
+                                        ?.substringAfterLast('/')
+                                        ?.substringAfterLast(':')
+                                        ?: uriString
+                                AnimatedVisibility(
+                                        visible = true,
+                                        enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()) +
+                                                expandVertically(MaterialTheme.motionScheme.fastSpatialSpec())
                                 ) {
-                                    Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = stringResource(R.string.settings_ft_remove_folder),
-                                            modifier = Modifier.size(16.dp)
-                                    )
+                                    Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                                Icons.Default.FolderOpen,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                                text = displayName,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                modifier = Modifier.weight(1f),
+                                                maxLines = 1
+                                        )
+                                        IconButton(
+                                                onClick = {
+                                                    scope.launch { settingsManager.removeSharedFolderUri(uriString) }
+                                                },
+                                                modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                    Icons.Default.Close,
+                                                    contentDescription = stringResource(R.string.settings_ft_remove_folder),
+                                                    modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -614,8 +651,7 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
 
     Text(
             text = stringResource(R.string.settings_ft_access_title),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleSmallEmphasized,
             color = MaterialTheme.colorScheme.primary
     )
 
@@ -638,7 +674,22 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
 
             // Full-device browse.
             Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                            .toggleable(
+                                    value = fullBrowseRoot != null,
+                                    role = Role.Switch,
+                                    onValueChange = { enabled ->
+                                        if (enabled) {
+                                            fullBrowseLauncher.launch(null)
+                                        } else {
+                                            scope.launch {
+                                                val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
+                                                settingsManager.clearFullBrowseRootUri()
+                                                settingsManager.setFileTrustFullBrowse(dev, false)
+                                            }
+                                        }
+                                    }
+                            ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -655,17 +706,7 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
                 }
                 Switch(
                         checked = fullBrowseRoot != null,
-                        onCheckedChange = { enabled ->
-                            if (enabled) {
-                                fullBrowseLauncher.launch(null)
-                            } else {
-                                scope.launch {
-                                    val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
-                                    settingsManager.clearFullBrowseRootUri()
-                                    settingsManager.setFileTrustFullBrowse(dev, false)
-                                }
-                            }
-                        }
+                        onCheckedChange = null
                 )
             }
 
@@ -673,7 +714,17 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
 
             // Auto-accept incoming pushes.
             Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                            .toggleable(
+                                    value = autoAccept,
+                                    role = Role.Switch,
+                                    onValueChange = { enabled ->
+                                        scope.launch {
+                                            val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
+                                            settingsManager.setFileTrustAutoAccept(dev, enabled)
+                                        }
+                                    }
+                            ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -690,12 +741,7 @@ private fun FileTransferAccessCard(settingsManager: SettingsManager) {
                 }
                 Switch(
                         checked = autoAccept,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                val dev = FilePeerIdentity.deviceId(settingsManager.hostFlow.first())
-                                settingsManager.setFileTrustAutoAccept(dev, enabled)
-                            }
-                        }
+                        onCheckedChange = null
                 )
             }
         }
@@ -709,9 +755,14 @@ private fun HelpTab(onReplayTutorial: (() -> Unit)?, onNavigateToAbout: (() -> U
     val settingsManager = remember { SettingsManager(context) }
     val scope = rememberCoroutineScope()
 
+    val topBarScrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
+        modifier = Modifier.nestedScroll(topBarScrollBehavior.nestedScrollConnection),
         topBar = {
-            RemexScreenHeader(title = stringResource(R.string.settings_help_title))
+            RemexFlexibleTopBar(
+                title = stringResource(R.string.settings_help_title),
+                scrollBehavior = topBarScrollBehavior,
+            )
         }
     ) { innerPadding ->
         Column(

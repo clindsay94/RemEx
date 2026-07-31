@@ -60,6 +60,11 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
+    /** Immediate (non-debounced) write — a switch flip should persist instantly (RemEx-9429). */
+    fun setDynamicColor(enabled: Boolean) {
+        viewModelScope.launch { settingsManager.setDynamicColor(enabled) }
+    }
+
     fun save(
         themeMode: String,
         themePalette: String,
@@ -100,5 +105,12 @@ class PersonalizationViewModel(application: Application) : AndroidViewModel(appl
             remoteMouseCardShapePreset = remoteMouseCardShapePreset,
             splashStyle = splashStyle
         )
+    }
+
+    /** The user's per-category card-shape choices; absent entries mean inherit. */
+    val categoryShapePresets = settingsManager.categoryShapePresetsFlow
+
+    fun setCategoryShapePreset(category: DashboardShapes.CardCategory, preset: Float) {
+        viewModelScope.launch { settingsManager.saveCategoryShapePreset(category, preset) }
     }
 }

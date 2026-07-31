@@ -1,14 +1,10 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
@@ -31,8 +27,6 @@ public sealed class RemoteDesktopHandler : IDisposable
     private readonly IHostCapabilitiesProvider _hostCapabilitiesProvider;
     private readonly BlockingCollection<InputEvent> _inputQueue = new(1000);
     private readonly Task _inputProcessingTask;
-
-    private static readonly TimeSpan FrameSendTimeout = TimeSpan.FromSeconds(5);
 
     // Upper bound on the target frame rate, shared with clients via DesktopConfig.MaxTargetFps so the
     // UI's "Unlimited" option and this host clamp agree on one number. 360 sits at or above the highest
@@ -84,12 +78,12 @@ public sealed class RemoteDesktopHandler : IDisposable
         IHostCapabilitiesProvider hostCapabilitiesProvider,
         Remex.Agent.Services.Session.IInteractiveSessionGuard sessionGuard)
     {
-        _logger = logger;
-        _screenCapture = screenCapture;
-        _inputSimulation = inputSimulation;
-        _windowControl = windowControl;
-        _hostCapabilitiesProvider = hostCapabilitiesProvider;
-        _sessionGuard = sessionGuard;
+        _logger = Guard.NotNull(logger);
+        _screenCapture = Guard.NotNull(screenCapture);
+        _inputSimulation = Guard.NotNull(inputSimulation);
+        _windowControl = Guard.NotNull(windowControl);
+        _hostCapabilitiesProvider = Guard.NotNull(hostCapabilitiesProvider);
+        _sessionGuard = Guard.NotNull(sessionGuard);
 
         // Start dedicated input processing thread
         _inputProcessingTask = Task.Factory.StartNew(ProcessInputQueue, TaskCreationOptions.LongRunning);
@@ -251,9 +245,9 @@ public sealed class RemoteDesktopHandler : IDisposable
                                 await Task.WhenAny(streamTask, receiveTask, cursorTask);
                                 await streamCts.CancelAsync();
 
-                                try { await streamTask; } catch (OperationCanceledException) { }
-                                try { await receiveTask; } catch (OperationCanceledException) { }
-                                try { await cursorTask; } catch (OperationCanceledException) { }
+                                try { await streamTask; } catch (OperationCanceledException) { /* we just cancelled it; this is the acknowledgement, not a failure */ }
+                                try { await receiveTask; } catch (OperationCanceledException) { /* as above - draining the task so teardown does not race it */ }
+                                try { await cursorTask; } catch (OperationCanceledException) { /* as above */ }
                             }
                         }
                         finally
@@ -633,7 +627,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                         }
 
                         // Notify sender loop
-                        try { frameAvailable.Release(); } catch (ObjectDisposedException) { }
+                        try { frameAvailable.Release(); } catch (ObjectDisposedException) { /* the sender loop already tore the semaphore down; there is nobody left to signal */ }
                     }
                     else if (!captureSucceeded)
                     {
@@ -793,7 +787,7 @@ public sealed class RemoteDesktopHandler : IDisposable
             {
                 await captureTask;
             }
-            catch { }
+            catch { /* draining the capture task during teardown: it has already been cancelled, and whatever it surfaces is about the shutdown rather than about a fault worth reporting */ }
             _activeH264Encoder = null;
             h264Encoder?.Dispose();
             frameAvailable.Dispose();
@@ -1022,7 +1016,7 @@ public sealed class RemoteDesktopHandler : IDisposable
             }
         }
         catch (OperationCanceledException) { /* normal */ }
-        catch (WebSocketException) { }
+        catch (WebSocketException) { /* the socket is already going away - the peer disconnecting is how this loop normally ends */ }
     }
 
     private async Task SendDesktopWindowResult(WebSocket webSocket, DesktopWindowResult result, string? correlationId, SemaphoreSlim sendLock, CancellationToken ct)

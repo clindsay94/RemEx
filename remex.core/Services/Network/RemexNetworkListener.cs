@@ -1,18 +1,14 @@
-using System;
 using System.Buffers.Binary;
-using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Exceptions;
+using Remex.Core.Guards;
 using Remex.Core.Models.IPC;
 using Remex.Core.Serialization;
 using Remex.Core.Services.Command;
@@ -59,10 +55,10 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         ICertificateService? certificateService = null,
         ICommandChannelAuthenticator? authenticator = null)
     {
-        _configuration = configuration;
-        _logger = logger;
-        _commandService = commandService;
-        _wakeOnLanService = wakeOnLanService;
+        _configuration = Guard.NotNull(configuration);
+        _logger = Guard.NotNull(logger);
+        _commandService = Guard.NotNull(commandService);
+        _wakeOnLanService = Guard.NotNull(wakeOnLanService);
         _certificateService = certificateService;
         _authenticator = authenticator;
         // Authentication is enforced application-side via _authenticator (paired-client identity);
@@ -173,7 +169,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         // StopListening is invoked multiple times on shutdown: BackgroundService.StopAsync,
         // BackgroundService.Dispose, and this singleton's own Dispose (which also disposes _cts).
         // Once _cts is disposed there is nothing left to cancel — tolerate it so host shutdown
-        // completes and releases the listening port / named pipe (a throw here otherwise aborts the
+        // completes and releases the listening port (a throw here otherwise aborts the
         // remaining hosted-service teardown).
         try
         {
@@ -181,6 +177,7 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         }
         catch (ObjectDisposedException)
         {
+            // the listener was disposed while accepting, which is how it shuts down
         }
         _tcpListener?.Stop();
         if (_listenTask != null && !_listenTask.IsCompleted)
@@ -442,19 +439,19 @@ public class RemexNetworkListener : INetworkListener, IDisposable
             switch (request.Action.ToUpperInvariant())
             {
                 case "SHUTDOWN":
-                    await _commandService.Shutdown(ParseDelaySeconds(request.Parameters));
+                    await _commandService.Shutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Shutdown command executed successfully.", null);
                 case "FORCESHUTDOWN":
-                    await _commandService.ForceShutdown(ParseDelaySeconds(request.Parameters));
+                    await _commandService.ForceShutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Force Shutdown command executed successfully.", null);
                 case "RESTART":
-                    await _commandService.Restart(ParseDelaySeconds(request.Parameters));
+                    await _commandService.Restart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Restart command executed successfully.", null);
                 case "FORCERESTART":
-                    await _commandService.ForceRestart(ParseDelaySeconds(request.Parameters));
+                    await _commandService.ForceRestart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Force Restart command executed successfully.", null);
                 case "RESTARTTOUEFI":
-                    await _commandService.RestartToUefi(ParseDelaySeconds(request.Parameters));
+                    await _commandService.RestartToUefi(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
                     return new CommandResponse(true, "Restart to UEFI command executed successfully.", null);
                 case "SLEEP":
                     await _commandService.Sleep();
@@ -546,23 +543,4 @@ public class RemexNetworkListener : INetworkListener, IDisposable
         _connectionGate?.Dispose();
     }
 
-    private static int ParseDelaySeconds(Dictionary<string, string>? parameters)
-    {
-        if (parameters == null)
-        {
-            return 0;
-        }
-
-        foreach (var key in new[] { "DelaySeconds", "Seconds", "TimerSeconds" })
-        {
-            if (parameters.TryGetValue(key, out var raw)
-                && int.TryParse(raw, out var parsed)
-                && parsed > 0)
-            {
-                return Math.Clamp(parsed, 0, 315360000);
-            }
-        }
-
-        return 0;
-    }
 }

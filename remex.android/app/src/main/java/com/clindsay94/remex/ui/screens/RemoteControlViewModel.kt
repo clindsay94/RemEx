@@ -1,6 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexCoreClient
@@ -15,6 +16,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+
+private const val TAG = "RemoteControlVM"
 
 class RemoteControlViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -92,7 +95,8 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                     _commandStatus.value = getApplication<Application>().getString(R.string.rc_failed_mac_not_configured)
                 }
             } catch (e: Exception) {
-                _commandStatus.value = getApplication<Application>().getString(R.string.rc_error_format, e.message ?: getApplication<Application>().getString(R.string.file_transfer_unknown_error))
+                Log.w(TAG, "Sending a power command failed", e)
+                _commandStatus.value = getApplication<Application>().getString(R.string.rc_error_format)
             }
         }
     }
@@ -212,7 +216,11 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                             getApplication<Application>().getString(R.string.rc_failed_format, message)
                         }
             } catch (e: Exception) {
-                _commandStatus.value = getApplication<Application>().getString(R.string.rc_failed_format, e.message ?: getApplication<Application>().getString(R.string.file_transfer_unknown_error))
+                // rc_failed_format keeps its placeholder because its other two uses interpolate
+                // the HOST's own message, which is worth showing. Only this site had an exception
+                // in it, so it moves to the placeholder-free key instead (RemEx-poj6).
+                Log.w(TAG, "Sending a remote-control command failed", e)
+                _commandStatus.value = getApplication<Application>().getString(R.string.rc_error_format)
             }
         }
     }

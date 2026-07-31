@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Guards;
 using Remex.Core.Services;
 using Remex.Agent.Services.RemoteDesktop.Linux.Portal;
 using Remex.Agent.Services.ScreenCapture;
@@ -49,9 +50,9 @@ public sealed class LinuxCaptureSessionLifetime : IAsyncDisposable
         IScreenCaptureService screenCapture,
         ILoggerFactory loggerFactory)
     {
-        _logger = logger;
-        _screenCapture = screenCapture;
-        _loggerFactory = loggerFactory;
+        _logger = Guard.NotNull(logger);
+        _screenCapture = Guard.NotNull(screenCapture);
+        _loggerFactory = Guard.NotNull(loggerFactory);
     }
 
     /// <summary>

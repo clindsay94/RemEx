@@ -116,12 +116,17 @@ class AppLauncherViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             if (remexCoreClient.isLibraryLoaded) {
                 _isRefreshing.value = true
+                // Must stay spelled exactly as MessageTypes.LauncherSyncRequest in Remex.Core —
+                // Kotlin cannot reference the C# constants, so the host answers this only because
+                // the two literals agree. A typo here is silent: the host logs one "Unknown message
+                // type" warning and drops it, and the screen just sits on the 5s timeout below.
+                // remex.agent.tests/LauncherSyncRequestTests.cs guards the pair (RemEx-vpxx).
                 val request = JSONObject().apply {
                     put("type", "launcher_sync_request")
                 }
                 remexCoreClient.SendMessage(request.toString())
-                // Spinner cleared by the launcherEntries collector when data arrives.
-                // Safety net: clear after 5s in case host doesn't respond.
+                // Spinner cleared by the launcherEntries collector when the host's launcher_sync
+                // arrives. Safety net: clear after 5s in case the host doesn't respond.
                 kotlinx.coroutines.delay(5000)
                 _isRefreshing.value = false
             }

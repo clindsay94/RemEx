@@ -20,7 +20,10 @@
         <KeyBinding Gesture="Escape" Command="{Binding DismissOverlaysCommand}" />
         <!-- Refresh / sync sensors -->
         <KeyBinding Gesture="F5" Command="{Binding NavigateToCanvasCommand}" />
-        <!-- Command palette -->
+        <!-- Command palette. Ctrl+Shift+P is the documented shortcut: the tutorial body and
+             Shell_OpenCommandPaletteTooltip both name it, in all 9 locales. Ctrl+K stays as an
+             undocumented alias so anyone who learned the old binding is not stranded. -->
+        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding OpenCommandPaletteCommand}" />
         <KeyBinding Gesture="Ctrl+K" Command="{Binding OpenCommandPaletteCommand}" />
         <!-- Canvas undo / redo -->
         <KeyBinding Gesture="Ctrl+Z" Command="{Binding CanvasUndoCommand}" />

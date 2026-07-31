@@ -2,11 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using System;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Desktop.Models;
 using Remex.Desktop.Services;
@@ -104,9 +100,7 @@ public partial class App : Application
     {
         try
         {
-            var baseFolder = OperatingSystem.IsAndroid()
-                ? Environment.GetFolderPath(Environment.SpecialFolder.Personal)
-                : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var baseFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var filePath = Path.Combine(baseFolder, "Remex", "dashboard_layout.json");
 
             if (!File.Exists(filePath)) return;
@@ -195,7 +189,9 @@ public partial class App : Application
                 is Remex.Core.Services.FileTransfer.IFileTrustService fileTrustService)
             {
                 fileTrustService.ConsentRequested += prompt =>
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => ShowFileConsentDialogAsync(fileTrustService, prompt));
+                    Avalonia.Threading.Dispatcher.UIThread.Post(
+                        () => ShowFileConsentDialogAsync(fileTrustService, prompt)
+                            .FireAndForget("show the file-consent dialog"));
             }
 
             if (OperatingSystem.IsWindows() && !CommandModeContext.IsServerMode)
@@ -210,12 +206,6 @@ public partial class App : Application
             }
 
             _ = viewModel.Connection.AutoConnectAsync();
-
-            if (OperatingSystem.IsAndroid())
-            {
-                viewModel.Connection.TelemetryReceived += (t) => TriggerPlatformWidgetUpdate();
-                viewModel.Connection.ProcessListReceived += (p) => TriggerPlatformWidgetUpdate();
-            }
 
             // P8-G: keep tray icon tooltip in sync with live sensor readings
             viewModel.Connection.TelemetryReceived += telemetry =>
@@ -295,7 +285,13 @@ public partial class App : Application
     /// host's <see cref="Remex.Core.Services.FileTransfer.IFileTrustService"/>. Dismissing the window (or a
     /// missing decision) resolves as a clean deny; the service's own 60-second timeout is the backstop.
     /// </summary>
-    private async void ShowFileConsentDialogAsync(
+    /// <remarks>
+    /// <c>async Task</c> rather than <c>async void</c>: an exception escaping an async void
+    /// method is raised on the synchronization context and takes the process down, rather than being
+    /// observable by the caller. The body is already try/catch-wrapped so this is a
+    /// belt-and-braces change, but the shape is what the convention asks for (RemEx-ajk3).
+    /// </remarks>
+    private async Task ShowFileConsentDialogAsync(
         Remex.Core.Services.FileTransfer.IFileTrustService service,
         Remex.Core.Services.FileTransfer.FileConsentPrompt prompt)
     {

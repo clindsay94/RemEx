@@ -22,7 +22,21 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
-data class ProcessInfo(val id: Int, val name: String, val cpu: Double, val ram: Double)
+/**
+ * One row of the PC's process list.
+ *
+ * [startTimeUnixMs] is null when the PC could not read it, which is normal for protected and
+ * system processes. It is echoed back when ending a process so the host can tell a RELAUNCH of
+ * the same program into the same PID from the instance the user actually confirmed - the name
+ * alone cannot (RemEx-on4n).
+ */
+data class ProcessInfo(
+        val id: Int,
+        val name: String,
+        val cpu: Double,
+        val ram: Double,
+        val startTimeUnixMs: Long? = null
+)
 
 enum class ProcessSortField {
     NAME,
@@ -171,7 +185,12 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                                         id = obj.getInt("id"),
                                         name = obj.getString("name"),
                                         cpu = obj.optDouble("cpuUsage", 0.0),
-                                        ram = obj.optDouble("memoryUsage", 0.0) / (1024 * 1024)
+                                        ram = obj.optDouble("memoryUsage", 0.0) / (1024 * 1024),
+                                        // Absent or JSON null both mean "the PC could not
+                                        // read it", which the host treats as unchecked.
+                                        startTimeUnixMs =
+                                                if (obj.isNull("startTimeUnixMs")) null
+                                                else obj.optLong("startTimeUnixMs").takeIf { it > 0L }
                                 )
                         )
                     }
@@ -297,7 +316,51 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    fun killProcess(pid: Int) {
+    /**
+     * Ends [process] on the PC.
+     *
+     * Sends the name alongside the PID so the host can refuse if that number has changed hands
+     * since this list was fetched. A PID is not an identity — operating systems recycle them — and
+     * this client previously sent a bare one with no check of any kind, so a stale list could end an
+     * unrelated program. The check is the host's rather than this screen's because only the host can
+     * read identity and kill in one step; anything done here is separated from the kill by a network
+     * round trip (RemEx-druh).
+     */
+    /**
+     * Maps a host kill failure to a localized message.
+     *
+     * The host authors these in English and cannot do otherwise — it does not know this phone's
+     * language, and the PC's .resx files are not this app's strings. So it tags failures as
+     * "code\u001Farg\u001FenglishFallback" and each client owns the wording, exactly as remote
+     * desktop already does in [RemoteDesktopViewModel.localizeDesktopError] (RemEx-728, RemEx-r37a).
+     *
+     * Untagged text and unknown codes fall back to the host's plain English rather than to something
+     * generic: an older PC sends untagged text, and a specific English reason beats a vague
+     * translated one.
+     */
+    private fun localizeKillFailure(raw: String): String {
+        if (raw.isEmpty()) return raw
+        val parts = raw.split('\u001F')
+        if (parts.size < 3) return raw // untagged legacy text — show as-is
+        val code = parts[0]
+        val arg = parts[1]
+        val fallback = parts.subList(2, parts.size).joinToString("\u001F")
+        val app = getApplication<Application>()
+        return when (code) {
+            "kill_access_denied" -> app.getString(R.string.task_manager_kill_err_access_denied)
+            "kill_not_running" -> app.getString(R.string.task_manager_kill_err_not_running)
+            "kill_identity_mismatch" ->
+                    if (arg.isNotBlank()) {
+                        app.getString(R.string.task_manager_kill_err_identity_changed, arg)
+                    } else {
+                        app.getString(R.string.task_manager_kill_err_not_running)
+                    }
+            "kill_failed" -> app.getString(R.string.task_manager_kill_err_failed)
+            else -> fallback.ifEmpty { raw }
+        }
+    }
+
+    fun killProcess(process: ProcessInfo) {
         viewModelScope.launch {
             if (RemexCoreClient.isLibraryLoaded) {
                 _killError.value = null
@@ -307,7 +370,11 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                             put(
                                     "parameters",
                                     JSONObject().apply {
-                                        put("ProcessId", pid.toString())
+                                        put("ProcessId", process.id.toString())
+                                        put("ExpectedName", process.name)
+                                        process.startTimeUnixMs?.let {
+                                            put("ExpectedStartUnixMs", it.toString())
+                                        }
                                     }
                             )
                         }
@@ -323,7 +390,8 @@ class TaskManagerViewModel(application: Application) : AndroidViewModel(applicat
                     Pair(responseJson?.isNotBlank() == true, null)
                 }
                 if (!success) {
-                    _killError.value = message ?: getApplication<Application>().getString(R.string.task_manager_kill_failed_format, pid)
+                    _killError.value = message?.let { localizeKillFailure(it) }
+                            ?: getApplication<Application>().getString(R.string.task_manager_kill_failed_format, process.id)
                 }
                 // Request a fresh process list immediately; the host will respond
                 // via the processList SharedFlow when it's ready.

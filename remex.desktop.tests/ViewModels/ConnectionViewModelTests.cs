@@ -1,17 +1,13 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Remex.Desktop;
+using Remex.Desktop.Services;
 using Remex.Desktop.Services.Security;
 using Remex.Desktop.ViewModels;
 using Remex.Core;
@@ -589,31 +585,86 @@ public class ConnectionViewModelCorrelationTests : IDisposable
         act.Should().NotThrow();
     }
 
-    // DONE_WITH_CONCERNS: The following two tests describe the intended behaviour but
-    // cannot be wired up without a WebSocket abstraction + injectable timeout.
+    // -- Correlated command send/receive (RemEx-h01r) -----------------------------
+    //
+    // Both behaviours were described in skipped tests from 2.0 and could not be written without a
+    // send seam. They drive the REAL DeliverCommandResponse the receive loop uses, rather than a
+    // re-implementation of correlation matching that could agree with itself while production broke.
 
-    // TODO 2.0.1: Implement IWebSocketSender abstraction and injectable timeout for correlation tests
-    [Fact(Skip =
-        "DONE_WITH_CONCERNS: Requires injectable CommandTimeoutSeconds and IWebSocketSender. " +
-        "When those exist, remove [Skip] and provide a mock sender that never delivers a response.")]
-    public async Task SendCommandAndWaitAsync_WhenHostNeverResponds_ShouldThrowOperationCanceledException()
+    /// <summary>Records what was sent and never replies.</summary>
+    private sealed class SilentSender : IWebSocketSender
     {
-        // Arrange: inject a mock sender that accepts the message but never replies.
-        // Act:     await SendCommandAndWaitAsync (via KillProcessWithResponseAsync or via reflection).
-        // Assert:  OperationCanceledException within CommandTimeoutSeconds.
-        await Task.CompletedTask; // placeholder
+        public List<RemexMessage> Sent { get; } = new();
+
+        public Task SendAsync(RemexMessage message, CancellationToken ct)
+        {
+            lock (Sent) Sent.Add(message);
+            return Task.CompletedTask;
+        }
     }
 
-    // TODO 2.0.1: Implement IWebSocketSender abstraction and injectable timeout for correlation tests
-    [Fact(Skip =
-        "DONE_WITH_CONCERNS: Requires IWebSocketSender mock that can replay correlated responses. " +
-        "When available, fire two concurrent SendCommandAndWaitAsync calls, deliver matching " +
-        "responses for each correlation ID, and assert each caller gets its own response.")]
-    public async Task SendCommandAndWaitAsync_ConcurrentCalls_EachReceivesCorrectResponse()
+    [Fact]
+    public async Task SendCommandAndWaitAsync_WhenHostNeverResponds_ThrowsOperationCanceled()
     {
-        // Arrange: mock sender that records outbound CorrelationIds.
-        // Act:     launch two concurrent tasks, reply to each with matching CorrelationId.
-        // Assert:  task-1 gets response-1, task-2 gets response-2.
-        await Task.CompletedTask; // placeholder
+        var vm = new ConnectionViewModel(null, null, null);
+        var sender = new SilentSender();
+        vm.CommandSender = sender;
+        vm.CommandTimeout = TimeSpan.FromMilliseconds(150);
+
+        var act = async () => await vm.SendCommandAndWaitAsync(
+            new RemexMessage { Type = MessageTypes.Command });
+
+        await act.Should().ThrowAsync<OperationCanceledException>(
+            "a command whose response never arrives must fail rather than hang the caller");
+
+        sender.Sent.Should().ContainSingle("the message goes out before the wait begins")
+            .Which.CorrelationId.Should().NotBeNullOrEmpty(
+                "the correlation ID is stamped on the way out, and is what a response is matched against");
+    }
+
+    [Fact]
+    public async Task SendCommandAndWaitAsync_ConcurrentCalls_EachReceivesItsOwnResponse()
+    {
+        var vm = new ConnectionViewModel(null, null, null);
+        var sender = new SilentSender();
+        vm.CommandSender = sender;
+        vm.CommandTimeout = TimeSpan.FromSeconds(5);
+
+        var first = vm.SendCommandAndWaitAsync(new RemexMessage { Type = MessageTypes.Command });
+        var second = vm.SendCommandAndWaitAsync(new RemexMessage { Type = MessageTypes.Command });
+
+        // Both must be in flight before either is answered. That is exactly the condition under
+        // which the former single pending-response field lost one of the two callers.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (true)
+        {
+            lock (sender.Sent)
+            {
+                if (sender.Sent.Count == 2) break;
+            }
+            DateTime.UtcNow.Should().BeBefore(deadline, "both commands should have been sent");
+            await Task.Delay(5);
+        }
+
+        string[] ids;
+        lock (sender.Sent) ids = sender.Sent.Select(m => m.CorrelationId!).ToArray();
+        ids.Should().OnlyHaveUniqueItems("each in-flight command needs its own correlation ID");
+
+        // Answered in REVERSE order, so a pass cannot mean "the replies happened to arrive in order".
+        vm.DeliverCommandResponse(new RemexMessage
+        {
+            Type = MessageTypes.CommandResponse,
+            CorrelationId = ids[1],
+            ErrorText = "second",
+        });
+        vm.DeliverCommandResponse(new RemexMessage
+        {
+            Type = MessageTypes.CommandResponse,
+            CorrelationId = ids[0],
+            ErrorText = "first",
+        });
+
+        (await first).ErrorText.Should().Be("first");
+        (await second).ErrorText.Should().Be("second");
     }
 }

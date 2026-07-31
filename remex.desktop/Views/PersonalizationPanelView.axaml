@@ -2,7 +2,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:models="using:Remex.Desktop.Models"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters"
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" xmlns:svc="using:Remex.Desktop.Services"
     x:Class="Remex.Desktop.Views.PersonalizationPanelView" x:DataType="vm:CustomizationViewModel">
 
     <UserControl.Styles>
@@ -14,8 +14,11 @@
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
+        <!-- The hover ring was literal White, which is invisible against SolarFlare's near-white
+             surface - so on that theme there was no hover feedback at all. TextPrimaryBrush is the
+             one key guaranteed to contrast with its own theme's background (RemEx-fy0a). -->
         <Style Selector="Button.accent-picker:pointerover">
-            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}"/>
         </Style>
     </UserControl.Styles>
 
@@ -25,7 +28,7 @@
         <TextBlock Text="{local:Localize Custom_BasePresets}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
         <UniformGrid Columns="5">
             <!-- Dynamic -->
-            <Button Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="Dynamic" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Dynamic}">
+            <Button AutomationProperties.Name="{local:Localize Custom_PresetDynamic}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="Dynamic" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Dynamic}">
                 <StackPanel Spacing="8">
                     <Border Height="36" CornerRadius="18" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="2">
                         <Border.Background>
@@ -40,28 +43,28 @@
                 </StackPanel>
             </Button>
             <!-- Base Dark Glass -->
-            <Button Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="BaseDarkGlass" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=BaseDarkGlass}">
+            <Button AutomationProperties.Name="{local:Localize Custom_PresetStandardGlass}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="BaseDarkGlass" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=BaseDarkGlass}">
                 <StackPanel Spacing="8">
                     <Border Height="36" Background="#1AFFFFFF" CornerRadius="8" BorderBrush="#2AFFFFFF" BorderThickness="1"/>
                     <TextBlock Text="{local:Localize Custom_PresetStandardGlass}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                 </StackPanel>
             </Button>
             <!-- Cyber-NOC -->
-            <Button Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="CyberNOC" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=CyberNOC}">
+            <Button AutomationProperties.Name="{local:Localize Custom_PresetCyberNOC}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="CyberNOC" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=CyberNOC}">
                 <StackPanel Spacing="8">
                     <Border Height="36" Background="#050505" CornerRadius="2" BorderBrush="#00F3FF" BorderThickness="1"/>
                     <TextBlock Text="{local:Localize Custom_PresetCyberNOC}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                 </StackPanel>
             </Button>
             <!-- Solar-Flare -->
-            <Button Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="SolarFlare" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=SolarFlare}">
+            <Button AutomationProperties.Name="{local:Localize Custom_PresetSolarFlare}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="SolarFlare" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=SolarFlare}">
                 <StackPanel Spacing="8">
                     <Border Height="36" Background="#CCFFFFFF" CornerRadius="12" BorderBrush="#FFB800" BorderThickness="1"/>
                     <TextBlock Text="{local:Localize Custom_PresetSolarFlare}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
                 </StackPanel>
             </Button>
             <!-- Monolith -->
-            <Button Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="Monolith" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Monolith}">
+            <Button AutomationProperties.Name="{local:Localize Custom_PresetMonolith}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="Monolith" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Monolith}">
                 <StackPanel Spacing="8">
                     <Border Height="36" Background="#2C2C2E" CornerRadius="4" BorderBrush="#444" BorderThickness="3"/>
                     <TextBlock Text="{local:Localize Custom_PresetMonolith}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -121,12 +124,12 @@
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_SelectColorPaletteTooltip}">
                     <TextBlock Text="{local:Localize Custom_AccentColor}" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                        <Button Classes="accent-picker" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF" ToolTip.Tip="{local:Localize Custom_SelectNeonVioletTooltip}"/>
-                        <Button Classes="accent-picker" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF" ToolTip.Tip="{local:Localize Custom_SelectCyberCyanTooltip}"/>
-                        <Button Classes="accent-picker" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF" ToolTip.Tip="{local:Localize Custom_SelectHotPinkTooltip}"/>
-                        <Button Classes="accent-picker" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800" ToolTip.Tip="{local:Localize Custom_SelectSolarGoldTooltip}"/>
-                        <Button Classes="accent-picker" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E" ToolTip.Tip="{local:Localize Custom_SelectEmeraldGreenTooltip}"/>
-                        <Button Classes="accent-picker" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E" ToolTip.Tip="{local:Localize Custom_SelectCrimsonRoseTooltip}"/>
+                        <Button Classes="accent-picker" Background="#6C4CFF" Command="{Binding SetAccentCommand}" CommandParameter="#6C4CFF" ToolTip.Tip="{local:Localize Custom_SelectNeonVioletTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectNeonVioletTooltip}"/>
+                        <Button Classes="accent-picker" Background="#00F3FF" Command="{Binding SetAccentCommand}" CommandParameter="#00F3FF" ToolTip.Tip="{local:Localize Custom_SelectCyberCyanTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectCyberCyanTooltip}"/>
+                        <Button Classes="accent-picker" Background="#FF00FF" Command="{Binding SetAccentCommand}" CommandParameter="#FF00FF" ToolTip.Tip="{local:Localize Custom_SelectHotPinkTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectHotPinkTooltip}"/>
+                        <Button Classes="accent-picker" Background="#FFB800" Command="{Binding SetAccentCommand}" CommandParameter="#FFB800" ToolTip.Tip="{local:Localize Custom_SelectSolarGoldTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectSolarGoldTooltip}"/>
+                        <Button Classes="accent-picker" Background="#22C55E" Command="{Binding SetAccentCommand}" CommandParameter="#22C55E" ToolTip.Tip="{local:Localize Custom_SelectEmeraldGreenTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectEmeraldGreenTooltip}"/>
+                        <Button Classes="accent-picker" Background="#F43F5E" Command="{Binding SetAccentCommand}" CommandParameter="#F43F5E" ToolTip.Tip="{local:Localize Custom_SelectCrimsonRoseTooltip}" AutomationProperties.Name="{local:Localize Custom_SelectCrimsonRoseTooltip}"/>
 
                         <ItemsControl ItemsSource="{Binding CustomAccentColors}">
                             <ItemsControl.ItemsPanel>
@@ -136,7 +139,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Classes="accent-picker" Background="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                                    <Button Classes="accent-picker" Background="{Binding}" AutomationProperties.Name="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -166,7 +169,20 @@
                 <TextBlock Text="{local:Localize Custom_Atmosphere}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
                 <Grid ColumnDefinitions="*,2*">
                     <TextBlock Text="{local:Localize Custom_BackgroundMode}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" ItemsSource="{Binding AvailableBackgroundTypes}" HorizontalAlignment="Left" Width="160"/>
+                    <ComboBox Grid.Column="1" SelectedItem="{Binding CanvasBackgroundType}" ItemsSource="{Binding AvailableBackgroundTypes}" HorizontalAlignment="Left" Width="160">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_BgType_">
+                                            <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                            <Binding/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                 </Grid>
                 <Grid ColumnDefinitions="*,2*" IsVisible="{Binding IsGlassModeSelected}">
                     <TextBlock Text="{local:Localize Custom_AppWindowOpacity}" VerticalAlignment="Center"/>
@@ -177,7 +193,20 @@
                 </Grid>
                 <Grid ColumnDefinitions="*,2*">
                     <TextBlock Text="{local:Localize Custom_SchemeVariant}" VerticalAlignment="Center"/>
-                    <ComboBox Grid.Column="1" SelectedItem="{Binding SchemeVariant}" ItemsSource="{Binding AvailableSchemeVariants}" HorizontalAlignment="Left" Width="160"/>
+                    <ComboBox Grid.Column="1" SelectedItem="{Binding SchemeVariant}" ItemsSource="{Binding AvailableSchemeVariants}" HorizontalAlignment="Left" Width="160">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:CompileBindings="False">
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{x:Static local:PrefixedLabelConverter.Instance}" ConverterParameter="Custom_Scheme_">
+                                            <Binding Path="CultureTag" Source="{x:Static svc:LocalizationService.Instance}"/>
+                                            <Binding/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                 </Grid>
 
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_WelcomeSplashTooltip}">
@@ -199,7 +228,7 @@
                         <TextBlock Text="{local:Localize Custom_HardwareSyncTitle}" FontSize="14" FontWeight="SemiBold"/>
                         <TextBlock Text="{local:Localize Custom_HardwareSyncDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                     </StackPanel>
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding SyncWithHardware}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left"/>
+                    <ToggleSwitch AutomationProperties.Name="{local:Localize Custom_HardwareSyncTitle}" Grid.Column="1" IsChecked="{Binding SyncWithHardware}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left"/>
                 </Grid>
             </StackPanel>
         </Border>
@@ -225,7 +254,10 @@
                 </Grid>
 
                 <!-- Shown only when a chosen font can't be loaded on this machine; the app falls back safely. -->
-                <Border Background="#22F59E0B" BorderBrush="#55F59E0B" BorderThickness="1" CornerRadius="8" Padding="12,8" IsVisible="{Binding HasFontWarning}">
+                <!-- Warning colours come from the theme, not literals: the amber pair below was
+                     mixed for a dark glass background and washes out on SolarFlare, whose surface
+                     is near-white. Both keys exist in all four themes (RemEx-fy0a). -->
+                <Border Background="{DynamicResource SystemWarningBackgroundBrush}" BorderBrush="{DynamicResource SystemWarningBrush}" BorderThickness="1" CornerRadius="8" Padding="12,8" IsVisible="{Binding HasFontWarning}">
                     <TextBlock Text="{Binding FontWarning}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                 </Border>
             </StackPanel>

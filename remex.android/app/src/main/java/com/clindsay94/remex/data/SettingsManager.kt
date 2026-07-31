@@ -82,12 +82,26 @@ class SettingsManager(val context: Context) {
                         floatPreferencesKey("remote_mouse_card_shape_preset_v2")
                 // One-time non-destructive migration off the universal clover default (decision #5).
                 val SHAPE_DEFAULTS_MIGRATED_V2_KEY = booleanPreferencesKey("shape_defaults_migrated_v2")
+                // A SEPARATE key, deliberately not a reuse of V2. V2 has already run on every
+                // existing install, so adding the five non-home buckets to its list would
+                // migrate new installs only and leave everyone else on the clover - the two
+                // populations would silently disagree about the default (RemEx-nkdv).
+                val SHAPE_DEFAULTS_MIGRATED_V3_KEY = booleanPreferencesKey("shape_defaults_migrated_v3")
+                // Per-CATEGORY shape overrides (RemEx-mycn). One key per DashboardShapes
+                // .CardCategory, all defaulting to INHERIT so an untouched install resolves
+                // exactly as before and no migration is needed.
+                val CATEGORY_SHAPE_PRESET_KEYS: Map<DashboardShapes.CardCategory, androidx.datastore.preferences.core.Preferences.Key<Float>> =
+                        DashboardShapes.CardCategory.entries.associateWith { category ->
+                                floatPreferencesKey("category_shape_preset_" + category.name.lowercase())
+                        }
                 // First-run Home Base coach marks: true once the user has seen or dismissed the
                 // dashboard coaching overlay. Reset re-arms it as first-run (RemEx-km0i.10).
                 val DASHBOARD_COACH_SEEN_KEY = booleanPreferencesKey("dashboard_coach_seen")
                 val THEME_SEED_COLOR_KEY = stringPreferencesKey("theme_seed_color")
                 val THEME_SEED_CHROMA_KEY = floatPreferencesKey("theme_seed_chroma")
                 val THEME_CONTRAST_KEY = floatPreferencesKey("theme_contrast")
+                // Material You wallpaper-based color (API 31+); on by default (RemEx-9429).
+                val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
 
                 val MOUSE_FAB_X_KEY = floatPreferencesKey("mouse_fab_x")
                 val MOUSE_FAB_Y_KEY = floatPreferencesKey("mouse_fab_y")
@@ -135,43 +149,44 @@ class SettingsManager(val context: Context) {
                 val themeSeedColor: String = "#6750A4", // Default M3 Purple
                 val themeSeedChroma: Float = 48.0f,
                 val themeContrast: Float = 0.0f,
+                val dynamicColor: Boolean = true,
                 val fontFamily: String = "default",
                 val fontScale: Float = 1.0f,
                 val cardCornerRadius: Int = 20,
                 val cardOpacity: Float = 1.0f,
                 val pcCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val telemetryCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
-                val appLauncherCardShapePreset: Float = 18.0f,
-                val taskManagerCardShapePreset: Float = 18.0f,
-                val remoteDesktopCardShapePreset: Float = 18.0f,
-                val remoteControlCardShapePreset: Float = 18.0f,
-                val remoteMouseCardShapePreset: Float = 18.0f,
+                val appLauncherCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
+                val taskManagerCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
+                val remoteDesktopCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
+                val remoteControlCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
+                val remoteMouseCardShapePreset: Float = DashboardShapes.SHAPE_PRESET_INHERIT,
                 val splashStyle: String = "RemexCommand"
         )
 
         val appLauncherCardShapePresetFlow: Flow<Float> =
                 context.dataStore.data.map { preferences ->
-                        preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: 18.0f
+                        preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT
                 }
 
         val taskManagerCardShapePresetFlow: Flow<Float> =
                 context.dataStore.data.map { preferences ->
-                        preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: 18.0f
+                        preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT
                 }
 
         val remoteDesktopCardShapePresetFlow: Flow<Float> =
                 context.dataStore.data.map { preferences ->
-                        preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: 18.0f
+                        preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT
                 }
 
         val remoteControlCardShapePresetFlow: Flow<Float> =
                 context.dataStore.data.map { preferences ->
-                        preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: 18.0f
+                        preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT
                 }
 
         val remoteMouseCardShapePresetFlow: Flow<Float> =
                 context.dataStore.data.map { preferences ->
-                        preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 18.0f
+                        preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT
                 }
 
         val mouseFabXFlow: Flow<Float> =
@@ -336,6 +351,7 @@ class SettingsManager(val context: Context) {
                                 themeSeedColor = preferences[THEME_SEED_COLOR_KEY] ?: "#6750A4",
                                 themeSeedChroma = preferences[THEME_SEED_CHROMA_KEY] ?: 48.0f,
                                 themeContrast = preferences[THEME_CONTRAST_KEY] ?: 0.0f,
+                                dynamicColor = preferences[DYNAMIC_COLOR_KEY] ?: true,
                                 fontFamily = preferences[FONT_FAMILY_KEY] ?: "default",
                                 fontScale = preferences[FONT_SCALE_KEY] ?: 1.0f,
                                 cardCornerRadius = preferences[CARD_CORNER_RADIUS_KEY] ?: 20,
@@ -344,12 +360,12 @@ class SettingsManager(val context: Context) {
                                 telemetryCardShapePreset =
                                         preferences[TELEMETRY_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                 appLauncherCardShapePreset =
-                                        preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
+                                        preferences[APP_LAUNCHER_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                 taskManagerCardShapePreset =
-                                        preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
-                                remoteDesktopCardShapePreset = preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
-                                remoteControlCardShapePreset = preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
-                                remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: 18.0f,
+                                        preferences[TASK_MANAGER_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                remoteDesktopCardShapePreset = preferences[REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                remoteControlCardShapePreset = preferences[REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
+                                remoteMouseCardShapePreset = preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] ?: DashboardShapes.SHAPE_PRESET_INHERIT,
                                 splashStyle = preferences[SPLASH_STYLE_KEY] ?: "RemexCommand"
                         )
                 }
@@ -498,6 +514,56 @@ class SettingsManager(val context: Context) {
                 }
         }
 
+        /**
+         * Extends the clover-kill migration to the five non-home buckets, which decision #5
+         * deliberately left at 18.0f when V2 shipped (RemEx-km0i.7, spec section 3.6).
+         *
+         * Non-destructive in the same way V2 is: it rewrites only a value that is ABSENT or still
+         * the legacy clover. A user who deliberately picked 18.0f for one of these screens keeps
+         * it - the two cases are indistinguishable in storage, and preserving a real choice matters
+         * more than migrating every last default.
+         */
+        /**
+         * The user's per-category shape choices. Absent entries mean INHERIT, so the map is sparse
+         * and an untouched install yields an empty map rather than eight explicit sentinels.
+         */
+        val categoryShapePresetsFlow: Flow<Map<DashboardShapes.CardCategory, Float>> =
+                context.dataStore.data.map { preferences ->
+                        CATEGORY_SHAPE_PRESET_KEYS.mapNotNull { (category, key) ->
+                                preferences[key]?.let { category to it }
+                        }
+                                .toMap()
+                }
+
+        suspend fun saveCategoryShapePreset(
+                category: DashboardShapes.CardCategory,
+                preset: Float,
+        ) {
+                val key = CATEGORY_SHAPE_PRESET_KEYS.getValue(category)
+                context.dataStore.edit { it[key] = preset }
+        }
+
+        suspend fun migrateShapeDefaultsV3() {
+                val prefs = context.dataStore.data.first()
+                if (prefs[SHAPE_DEFAULTS_MIGRATED_V3_KEY] == true) return
+                context.dataStore.edit { p ->
+                        listOf(
+                                        APP_LAUNCHER_CARD_SHAPE_PRESET_KEY,
+                                        TASK_MANAGER_CARD_SHAPE_PRESET_KEY,
+                                        REMOTE_DESKTOP_CARD_SHAPE_PRESET_KEY,
+                                        REMOTE_CONTROL_CARD_SHAPE_PRESET_KEY,
+                                        REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY,
+                                )
+                                .forEach { key ->
+                                        val stored = p[key]
+                                        if (stored == null || stored == DashboardShapes.LEGACY_CLOVER_INDEX) {
+                                                p[key] = DashboardShapes.SHAPE_PRESET_INHERIT
+                                        }
+                                }
+                        p[SHAPE_DEFAULTS_MIGRATED_V3_KEY] = true
+                }
+        }
+
         suspend fun saveMouseFabPosition(x: Float, y: Float) {
                 context.dataStore.edit { preferences ->
                         preferences[MOUSE_FAB_X_KEY] = x
@@ -546,6 +612,16 @@ class SettingsManager(val context: Context) {
                                 remoteControlCardShapePreset
                         preferences[REMOTE_MOUSE_CARD_SHAPE_PRESET_KEY] = remoteMouseCardShapePreset
                         preferences[SPLASH_STYLE_KEY] = splashStyle
+                }
+        }
+
+        /**
+         * Persists the Material You dynamic-color toggle immediately — a switch flip should
+         * not ride the debounced personalization save path (RemEx-9429).
+         */
+        suspend fun setDynamicColor(enabled: Boolean) {
+                context.dataStore.edit { preferences ->
+                        preferences[DYNAMIC_COLOR_KEY] = enabled
                 }
         }
 

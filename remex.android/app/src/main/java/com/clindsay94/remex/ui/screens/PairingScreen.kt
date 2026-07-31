@@ -1,11 +1,16 @@
 package com.clindsay94.remex.ui.screens
 
 import android.content.Context
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -45,6 +50,14 @@ data class PairingUiState(
     // screen can prompt the user to type the PIN shown on the PC. Never set on untrusted transports
     // (where we deliberately never attempt an auto-fetch), so it doesn't nag in the normal manual case.
     val autoPinFetchFailed: Boolean = false,
+    // True once a native SubmitPin call has returned one of the five reachable "ERROR: " causes
+    // (wrong PIN, expired session, lost key state, confirm timeout, unexpected exception). Every one
+    // of those causes the native side to call ClearActivePairingState(), so the pairing session this
+    // screen was using is gone for good — re-submitting, with the same or a different PIN, can only
+    // repeat the same failure. Submit must stay disabled once this is true; only Cancel (which
+    // disposes this screen/ViewModel and lets the user start a fresh pairing attempt) still works.
+    // See RemEx-aor9.
+    val sessionDead: Boolean = false,
 )
 
 class PairingViewModel : ViewModel() {
@@ -103,19 +116,47 @@ class PairingViewModel : ViewModel() {
             return false
         }
 
-        // Surface the actual native error rather than masking it; this helps both the user
-        // and the developer reading logcat understand whether the PIN was wrong, the session
-        // expired, or the WebSocket dropped.
         val message =
                 when {
-                    result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
+                    // Every reachable native SubmitPin failure lands here — wrong PIN, expired
+                    // session, lost key state, confirm timeout, or an unexpected exception. All
+                    // five are developer-grade English naming ports, paths and cert internals, so
+                    // the diagnostic is logged and the failure's cause code selects a localized
+                    // sentence for the user instead (RemEx-6gkr). Nothing logged it before, so
+                    // logcat gains what the screen loses.
+                    //
+                    // Four of the five resolve to advice that names Cancel, because Submit stays
+                    // enabled here while re-using a session that is already unusable — so "get a
+                    // fresh PIN and try again", followed literally in place, just comes back "No
+                    // active pairing session" and repeats forever. See the dead-session note in
+                    // PairingErrors, which also explains why the connection screen needs the
+                    // opposite advice. The fifth, an unexpected exception, is unclassified and
+                    // falls to the generic message.
+                    //
+                    // Careful if the Submit predicate ever loosens: SubmitPairingPinNative has a
+                    // SIXTH error return, "PIN is required" (ARG_MISSING), and it is the one case
+                    // that does NOT clear pairing state — so "get a fresh PIN" would be wrong
+                    // advice for it. It is unreachable only because Submit requires 6 digits.
+                    result.startsWith("ERROR: ") -> {
+                        val failure = parsePairingError(result)
+                        android.util.Log.w(
+                                "PairingViewModel",
+                                "PIN submission failed [${failure.code ?: "no code"}]: ${failure.detail}"
+                        )
+                        context.getString(pairingErrorMessageRes(failure.code))
+                    }
                     result.isBlank() -> context.getString(R.string.pairing_error_empty_response)
                     else -> {
                         android.util.Log.w("PairingViewModel", "Unknown pairing error: $result")
                         context.getString(R.string.pairing_error_unknown)
                     }
                 }
-        _uiState.value = PairingUiState(isLoading = false, pairingError = message)
+        // Every reachable "ERROR: " cause here clears the native pairing session
+        // (ClearActivePairingState()), so Submit must not stay enabled to invite a re-submit that can
+        // only repeat the same failure — see the sessionDead doc comment on PairingUiState.
+        val sessionDead = result.startsWith("ERROR: ")
+        _uiState.value =
+                PairingUiState(isLoading = false, pairingError = message, sessionDead = sessionDead)
         return false
     }
 
@@ -191,20 +232,35 @@ class PairingViewModel : ViewModel() {
                         autoPinFetchFailed = allowAutoPin && fetchedPin == null,
                 )
             } else {
+                // Every branch yields a COMPLETE, self-contained message, matching how submitPin()
+                // above builds its error. Keep it that way: nesting one advice-bearing string
+                // inside another gave the user two next steps, two sentence terminators, and — on
+                // the unknown branch — contradictory instructions, which is why RemEx-meqm was
+                // reverted twice before landing. RemEx-6gkr then removed the last wrapper here: the
+                // cause code selects a single finished sentence instead, which orphaned
+                // pairing_error_start_failed. Removing it, along with pairing_error_generic (which
+                // was already unreferenced before this change), is RemEx-fegh — kept separate so
+                // the 9-locale parity sweep stands on its own.
                 val message =
                         when {
-                            result.startsWith("ERROR: ") -> result.removePrefix("ERROR: ")
+                            result.startsWith("ERROR: ") -> {
+                                // Same as submitPin above: map the native cause code to a localized
+                                // sentence and log the diagnostic. This supersedes wrapping the raw
+                                // English detail in pairing_error_start_failed (RemEx-6gkr).
+                                val failure = parsePairingError(result)
+                                android.util.Log.w(
+                                        "PairingViewModel",
+                                        "Pairing start failed [${failure.code ?: "no code"}]: ${failure.detail}"
+                                )
+                                context.getString(pairingErrorMessageRes(failure.code))
+                            }
                             result.isBlank() -> context.getString(R.string.pairing_error_reach_failed)
                             else -> {
                                 android.util.Log.w("PairingViewModel", "Unknown pairing error: $result")
                                 context.getString(R.string.pairing_error_unknown)
                             }
                         }
-                _uiState.value =
-                        PairingUiState(
-                                isLoading = false,
-                                pairingError = context.getString(R.string.pairing_error_start_failed, message)
-                        )
+                _uiState.value = PairingUiState(isLoading = false, pairingError = message)
             }
         }
     }
@@ -221,6 +277,16 @@ class PairingViewModel : ViewModel() {
         val pin = raw.substring(3).substringBefore("|")
         return pin.takeIf { it.length == 6 && it.all { c -> c.isDigit() } }
     }
+
+    // The failure parser and the code→string mapping live in [PairingErrors] rather than here,
+    // because RemexClientManager's auto-pair path needs them too and is not a ViewModel. These
+    // delegates keep the call sites above short and keep the unit tests bound to this surface.
+    internal fun parsePairingError(raw: String?): PairingFailure = PairingErrors.parse(raw)
+
+    // This ViewModel only ever backs the dedicated pairing screen, so it binds the surface here
+    // rather than making every call site restate it.
+    internal fun pairingErrorMessageRes(code: String?): Int =
+            PairingErrors.messageRes(code, PairingSurface.Dedicated)
 
     fun resetPairingState() {
         // Called when the user explicitly retries (taps Retry / Cancel + reopen).
@@ -314,12 +380,22 @@ fun PairingScreenContent(
     onCancel: () -> Unit,
     onSubmitPin: () -> Unit
 ) {
+    val motionScheme = MaterialTheme.motionScheme
     Scaffold(topBar = {
         RemexFlexibleTopBar(title = stringResource(R.string.pairing_title))
     }) {
             padding ->
         Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+                // Was a fixed column with no scroll: at large font scale or in landscape the
+                // keyboard could cover Submit and Cancel with no way to reach them. Scroll
+                // gives an escape, imePadding keeps the viewport above the keyboard
+                // (RemEx-a9ci).
+                modifier =
+                        Modifier.fillMaxSize()
+                                .padding(padding)
+                                .imePadding()
+                                .verticalScroll(rememberScrollState())
+                                .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
         ) {
@@ -340,7 +416,26 @@ fun PairingScreenContent(
 
             // Shown only when a trusted-transport auto-fetch came back empty: guide the
             // non-technical user to read the PIN off their PC and type it in.
-            if (state.autoPinFetchFailed) {
+            AnimatedVisibility(
+                    visible = state.autoPinFetchFailed,
+                    enter =
+                            expandVertically(
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                            ) +
+                                    fadeIn(
+                                            animationSpec =
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                    ),
+                    exit =
+                            shrinkVertically(
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                            ) +
+                                    fadeOut(
+                                            animationSpec =
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                    ),
+                    label = "autoPinFetchFailed"
+            ) {
                 Text(
                         text = stringResource(R.string.pairing_auto_pin_failed),
                         style = MaterialTheme.typography.bodySmall,
@@ -375,7 +470,7 @@ fun PairingScreenContent(
                 ) {
                     Icon(
                             Icons.Default.ErrorOutline,
-                            contentDescription = stringResource(R.string.cd_error_icon),
+                            contentDescription = null /* decorative: the adjacent Text already says it (RemEx-xqli) */,
                             tint = MaterialTheme.colorScheme.error
                     )
                     Spacer(Modifier.width(8.dp))
@@ -404,15 +499,28 @@ fun PairingScreenContent(
                 Button(
                         onClick = onSubmitPin,
                         modifier = Modifier.weight(1f),
-                        enabled = pin.length == 6 && !state.isLoading
+                        // sessionDead means the native pairing session this screen was using is
+                        // already gone (see PairingUiState doc comment) — re-enabling Submit here
+                        // would just offer a retry that repeats "No active pairing session" forever.
+                        // Cancel (always enabled above) is the only path that still works.
+                        enabled = pin.length == 6 && !state.isLoading && !state.sessionDead
                 ) {
-                    if (state.isLoading) {
-                        RemexLoadingIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text(stringResource(R.string.pairing_submit))
+                    AnimatedContent(
+                            targetState = state.isLoading,
+                            transitionSpec = {
+                                    val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                                    fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                            },
+                            label = "pairingSubmitContent"
+                    ) { loading ->
+                        if (loading) {
+                            RemexLoadingIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text(stringResource(R.string.pairing_submit))
+                        }
                     }
                 }
             }

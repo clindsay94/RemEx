@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
@@ -63,7 +61,7 @@ public partial class AppLauncherView : UserControl
 
     private void OnFileDragOver(object? sender, DragEventArgs e)
     {
-        e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.DragEffects = e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
     }
 
@@ -72,9 +70,9 @@ public partial class AppLauncherView : UserControl
         try
         {
             if (DataContext is not AppLauncherViewModel vm) return;
-            if (!e.Data.Contains(DataFormats.Files)) return;
+            if (!e.DataTransfer.Contains(DataFormat.File)) return;
 
-            var files = e.Data.GetFiles();
+            var files = e.DataTransfer.TryGetFiles();
             if (files is null) return;
 
             var paths = files.OfType<IStorageFile>()
@@ -97,6 +95,9 @@ public partial class AppLauncherView : UserControl
 
         if (DataContext is AppLauncherViewModel viewModel)
         {
+            // Guards removing a launcher card (RemEx-6p1f).
+            viewModel.OnConfirmationRequested = ConfirmationDialogHost.For(this);
+
             viewModel.OnOpenAddProgramDialogRequested = async () =>
             {
                 var dialog = new AddProgramWindow();

@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
@@ -36,9 +31,24 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
             ? Launchers
             : Launchers.Where(a => a.DisplayName.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
-    partial void OnSearchTextChanged(string value) => OnPropertyChanged(nameof(FilteredApps));
+    /// <summary>True when apps exist but the current search matches none of them.</summary>
+    /// <remarks>
+    /// Deliberately NOT simply "FilteredApps is empty". That would fire when the launcher has no
+    /// apps at all, doubling up with the existing <c>AppLauncher_NoApps</c> message and telling the
+    /// user to refine a search they never made. The two states are distinct: nothing configured
+    /// versus nothing matching. (RemEx-n69m.)
+    /// </remarks>
+    public bool ShowNoSearchResults => Launchers.Count > 0 && !FilteredApps.Any();
 
-    partial void OnLaunchersChanged(ObservableCollection<AppEntry> value) => OnPropertyChanged(nameof(FilteredApps));
+    private void NotifyFilterChanged()
+    {
+        OnPropertyChanged(nameof(FilteredApps));
+        OnPropertyChanged(nameof(ShowNoSearchResults));
+    }
+
+    partial void OnSearchTextChanged(string value) => NotifyFilterChanged();
+
+    partial void OnLaunchersChanged(ObservableCollection<AppEntry> value) => NotifyFilterChanged();
 
     public AppLauncherViewModel(ConnectionViewModel connection, ShellViewModel shell, ILauncherStorageService storageService, RemexSavefileService? savefileService = null)
     {
@@ -163,11 +173,32 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
     [RelayCommand]
     private async Task RemoveAppAsync(AppEntry entry)
     {
         if (entry != null && Launchers.Contains(entry))
         {
+            // The card and its custom colour/icon are gone once removed, so confirm first
+            // (RemEx-6p1f). Fails CLOSED: with no dialog wired the card stays.
+            // Uses its own Btn key rather than AppLauncher_Remove, which is the ✕ button's TOOLTIP
+            // (AppLauncherView.axaml:110) — rewording a tooltip must not silently reword a dialog.
+            if (OnConfirmationRequested is null
+                || !await OnConfirmationRequested(
+                    LocalizationService.Instance["Confirm_RemoveApp_Title"],
+                    string.Format(
+                        LocalizationService.Instance["Confirm_RemoveApp_Format"],
+                        entry.DisplayName),
+                    LocalizationService.Instance["Confirm_RemoveApp_Btn"]))
+            {
+                return;
+            }
+
             Launchers.Remove(entry);
 
             if (Connection.IsConnected)
@@ -210,7 +241,7 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
         if (idx < 0) return;
 
         Launchers[idx] = updated;
-        OnPropertyChanged(nameof(FilteredApps));
+        NotifyFilterChanged();
         await PersistOrderAsync();
     }
 
@@ -230,53 +261,10 @@ public partial class AppLauncherViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenAddProgramDialog()
     {
-        if (OperatingSystem.IsAndroid())
-        {
-            IsAndroidAddPanelOpen = !IsAndroidAddPanelOpen;
-        }
-        else
-        {
-            OnOpenAddProgramDialogRequested?.Invoke();
-        }
-    }
-
-    [ObservableProperty]
-    private bool _isAndroidAddPanelOpen;
-
-    [ObservableProperty]
-    private string _androidNewAppName = string.Empty;
-
-    [ObservableProperty]
-    private string _androidNewAppPath = string.Empty;
-
-    [RelayCommand]
-    private async Task SubmitAndroidNewAppAsync()
-    {
-        if (string.IsNullOrWhiteSpace(AndroidNewAppName) || string.IsNullOrWhiteSpace(AndroidNewAppPath))
-            return;
-
-        var entry = NormalizeEntry(new AppEntry(
-            Guid.NewGuid(),
-            AndroidNewAppName,
-            AndroidNewAppPath,
-            "#4A3AFF",
-            null
-        ));
-
-        if (Connection.IsConnected)
-        {
-            var msg = new RemexMessage { Type = MessageTypes.LauncherAdd, LauncherEntry = entry };
-            await Connection.SendAsync(msg);
-        }
-        else
-        {
-            Launchers.Add(entry);
-            await SaveLaunchersAsync();
-        }
-
-        AndroidNewAppName = string.Empty;
-        AndroidNewAppPath = string.Empty;
-        IsAndroidAddPanelOpen = false;
+        // The Android in-place add panel was unreachable in this assembly and was removed with
+        // the rest of the dead Android chrome (RemEx-f167), along with its backing properties
+        // and SubmitAndroidNewAppAsync. The desktop dialog is the only path.
+        OnOpenAddProgramDialogRequested?.Invoke();
     }
 
     /// <summary>

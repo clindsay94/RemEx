@@ -1,19 +1,13 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Threading;
 using Remex.Core.Guards;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.Backup;
@@ -143,7 +137,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<FileTransferSharedRootItem> SharedRoots { get; } = new();
 
-    public bool SupportsSharedFolderConfiguration => !OperatingSystem.IsAndroid();
+    /// <summary>Always true on this platform; see the note on <see cref="SupportsTrustManagement"/>.</summary>
+    public bool SupportsSharedFolderConfiguration => true;
 
     public bool HasSharedRoots => SharedRoots.Count > 0;
 
@@ -157,8 +152,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<FileTrustDeviceItem> TrustedDevices { get; } = new();
 
-    /// <summary>True when the trust-management UI should be shown (embedded host present, not Android).</summary>
-    public bool SupportsTrustManagement => !OperatingSystem.IsAndroid() && ResolveTrustService() is not null;
+    /// <summary>
+    /// True when the trust-management UI should be shown, i.e. an embedded host is present.
+    /// </summary>
+    /// <remarks>
+    /// The "and not Android" half of this condition is gone because it could never be false:
+    /// remex.desktop targets net10.0, not net10.0-android, so <c>OperatingSystem.IsAndroid()</c>
+    /// is unreachable here (RemEx-f167). Kept as a property rather than inlined at the call site
+    /// because it gates a whole Settings section and the binding needs a name.
+    /// </remarks>
+    public bool SupportsTrustManagement => ResolveTrustService() is not null;
 
     public bool HasTrustedDevices => TrustedDevices.Count > 0;
 
@@ -221,14 +224,29 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
     {
+        // SetCulture raises "Item", "Item[]" and "" in sequence, so an unguarded handler runs three
+        // times per switch. Harmless when the body only re-raises notifications; this one re-reads
+        // state, so it does the work once. Borrowed from AboutViewModel, which was the only handler
+        // in the codebase getting this right.
+        if (!string.IsNullOrEmpty(e.PropertyName))
+            return;
+
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            // Refresh host info defaults if not connected
             if (_connection.HostCapabilities == null)
             {
+                // Not connected: these two are the placeholder wording, resolved here.
                 HostRuntimeText = LocalizationService.Instance["Service_HostUnavailable"];
                 HostCapabilityText = LocalizationService.Instance["Service_HostUnavailableHint"];
+                return;
             }
+
+            // CONNECTED - the case this handler used to skip entirely, and the case a user is
+            // normally in. Both properties hold a SNAPSHOT taken from the connection's localized
+            // summaries, so nothing about them changes when the language does; they simply kept the
+            // previous wording until host capabilities happened to change next. Recomputing from the
+            // source is the whole fix (RemEx-q3h0).
+            UpdateHostCapabilitySummary();
         });
     }
 
@@ -521,11 +539,30 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         await SaveSharedRootsAsync(LocalizationService.Instance["Settings_FileTransferFolderAdded"]);
     }
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// Guards the three destructive Settings actions: restoring default shared folders, removing a
+    /// shared folder, and revoking a device's trust (RemEx-6p1f).
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
     [RelayCommand]
     private async Task RestoreDefaultSharedFoldersAsync()
     {
         if (!SupportsSharedFolderConfiguration)
             return;
+
+        // Silently discards every folder the user added to sharing, so confirm first (RemEx-6p1f).
+        // Fails CLOSED: with no dialog wired the current folder list is left alone.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_RestoreFolders_Title"],
+                LocalizationService.Instance["Confirm_RestoreFolders_Msg"],
+                LocalizationService.Instance["Settings_FileTransferRestoreDefaults"]))
+        {
+            return;
+        }
 
         try
         {
@@ -626,6 +663,22 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         if (sender is not FileTrustDeviceItem item || ResolveTrustService() is not { } service)
             return;
+
+        // One mis-click here severs that phone's file access until the user pairs and approves it
+        // again, so confirm first (RemEx-6p1f). The confirmation lives in this handler rather than
+        // in FileTrustDeviceItem.Revoke() because this is where the revocation actually happens —
+        // the item only raises the event. Fails CLOSED: with no dialog wired, trust is kept.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_RevokeTrust_Title"],
+                string.Format(
+                    LocalizationService.Instance["Confirm_RevokeTrust_Format"],
+                    item.ShortId),
+                LocalizationService.Instance["Settings_TrustRevoke"]))
+        {
+            return;
+        }
+
         try
         {
             await service.RevokeAsync(item.ClientId, CancellationToken.None);
@@ -817,9 +870,53 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (sender is not FileTransferSharedRootItem item)
             return;
 
-        UnsubscribeSharedRoot(item);
-        SharedRoots.Remove(item);
-        OnPropertyChanged(nameof(HasSharedRoots));
+        // Removing a shared root revokes the phone's access to that whole folder tree, so confirm
+        // first (RemEx-6p1f). Same reasoning as trust revocation: the confirmation belongs in this
+        // handler, not in the item's Remove() command, because the removal happens here. Fails
+        // CLOSED: with no dialog wired the folder stays shared.
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_RemoveSharedFolder_Title"],
+                string.Format(
+                    LocalizationService.Instance["Confirm_RemoveSharedFolder_Format"],
+                    item.DisplayName),
+                LocalizationService.Instance["Settings_FileTransferRemove"]))
+        {
+            return;
+        }
+
+        try
+        {
+            // Re-find by RootId rather than trusting `item`'s object identity: while the
+            // confirmation dialog above was awaited, ReplaceSharedRoots may have rebuilt the whole
+            // collection (a host push or a savefile import), in which case `item` is a stale
+            // instance no longer present by reference and SharedRoots.Remove(item) would silently
+            // no-op. This is an access-REVOCATION path (a shared root grants the phone access to
+            // an entire folder tree), so we must not tell the user it was saved unless something
+            // was actually removed (RemEx-xqcx).
+            var current = SharedRoots.FirstOrDefault(root => root.RootId == item.RootId);
+            if (current is null)
+            {
+                // Already gone from the list - there is nothing to unsubscribe, remove, or save.
+                // Reporting "Saved" here would be a false confirmation of a revocation that never
+                // happened. No localized "already removed" string currently exists for this exact
+                // case, so we simply avoid the false-positive message rather than show nothing
+                // truthful; see handoff notes for the follow-up to add one.
+                return;
+            }
+
+            UnsubscribeSharedRoot(current);
+            SharedRoots.Remove(current);
+            OnPropertyChanged(nameof(HasSharedRoots));
+        }
+        catch (Exception ex)
+        {
+            // OnSharedRootRemoveRequested is async void (it must be, as an event handler), so an
+            // exception here would otherwise escape uncaught. SaveSharedRootsAsync below already
+            // has its own try/catch; this covers the unsubscribe/remove lines that ran before it.
+            ShowTransientStatus(string.Format(LocalizationService.Instance["Status_ErrorFormat"], ex.Message));
+            return;
+        }
 
         await SaveSharedRootsAsync(LocalizationService.Instance["Settings_FileTransferSaved"]);
     }

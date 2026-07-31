@@ -1,4 +1,3 @@
-using System;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using Remex.Desktop.ViewModels;
@@ -28,6 +27,9 @@ public partial class SettingsView : UserControl
     {
         if (DataContext is not SettingsViewModel vm)
             return;
+
+        // Guards restore-defaults, remove-shared-folder and revoke-trust (RemEx-6p1f).
+        vm.OnConfirmationRequested = ConfirmationDialogHost.For(this);
 
         vm.PickSharedFolderAsync = async options =>
         {

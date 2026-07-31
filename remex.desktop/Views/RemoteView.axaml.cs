@@ -1,4 +1,3 @@
-using System;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Remex.Desktop.ViewModels;
@@ -28,14 +27,9 @@ public partial class RemoteView : UserControl
 
         if (_previousViewModel is not null)
         {
-            _previousViewModel.OnConfirmationRequested = async (title, message, confirmText) =>
-            {
-                var dialog = new ConfirmationDialog(title, message, confirmText);
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel is Window parentWindow)
-                    return await dialog.ShowDialog<bool>(parentWindow);
-                return false;
-            };
+            // Was an inline lambda, identical to the one FileTransferView had; both now share
+            // ConfirmationDialogHost so the six sites RemEx-6p1f added did not make a seventh copy.
+            _previousViewModel.OnConfirmationRequested = ConfirmationDialogHost.For(this);
 
             _previousViewModel.CopyToClipboardAsync = async text =>
             {

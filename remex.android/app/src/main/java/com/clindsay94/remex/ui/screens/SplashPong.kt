@@ -22,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -40,6 +39,7 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import com.clindsay94.remex.BuildConfig
 import com.clindsay94.remex.R
+import com.clindsay94.remex.ui.theme.LocalReducedMotion
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlinx.coroutines.delay
@@ -59,6 +59,11 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: () -> Unit) {
+    // Reduce motion: no pong rally choreography — static terminal frame, finish now.
+    if (LocalReducedMotion.current) {
+        SplashReducedMotionFrame(onFinished, skipRequested, onSkipConsumed)
+        return
+    }
     val scope = rememberCoroutineScope()
     val view = LocalView.current
     val density = LocalDensity.current

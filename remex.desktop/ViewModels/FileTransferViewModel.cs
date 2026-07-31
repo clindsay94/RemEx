@@ -1,15 +1,12 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.FileTransfer;
 
@@ -36,6 +33,7 @@ public sealed record BreadcrumbSegment(string Label, string Path);
 public sealed partial class FileTransferViewModel : ObservableObject, IDisposable
 {
     private readonly ConnectionViewModel _connection;
+    private readonly ILogger<FileTransferViewModel> _logger;
     private readonly FileTransferClient _client;
 
     // Server-ordered snapshot of the current folder; the display list is a sorted projection of this.
@@ -58,14 +56,26 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     /// <summary>Wired by the view so the VM can select every entry in the list for a multi-select op.</summary>
     public Action? SelectAllEntries { get; set; }
 
-    public FileTransferViewModel(ConnectionViewModel connection)
+    public FileTransferViewModel(
+        ConnectionViewModel connection,
+        ILogger<FileTransferViewModel>? logger = null)
     {
         _connection = connection;
+        _logger = logger ?? NullLogger<FileTransferViewModel>.Instance;
         _client = new FileTransferClient(connection);
         TransferQueue = new FileTransferQueue();
         TransferQueue.Changed += OnQueueChanged;
         TransferQueue.ItemCompleted += OnTransferCompleted;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
+
+        // These two properties are created once and only ever mutated, never reassigned, so
+        // CollectionChanged really is a complete signal that their counts moved. That is worth
+        // stating because it is the assumption the empty states rest on: had either been an
+        // [ObservableProperty] that gets a fresh instance assigned, this subscription would follow
+        // the old instance and the empty state would silently stop updating.
+        RemoteEntries.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ShowEmptyFolder));
+        SearchResults.CollectionChanged += (_, _) => OnPropertyChanged(nameof(ShowNoSearchResults));
         _ = InitializeAsync();
     }
 
@@ -192,9 +202,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             if (SelectedRemoteRoot is null)
                 StatusText = LocalizationService.Instance["FileTransfer_NoSharedFolders"];
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Listing the phone's shared folders failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_SharedFoldersUnavailableFormat"], ex.Message);
+            _logger.LogWarning(ex, "Listing the phone's shared folders failed");
+            StatusText = LocalizationService.Instance["FileTransfer_SharedFoldersUnavailableFormat"];
         }
         finally
         {
@@ -283,7 +300,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_BrowseErrorFormat"], ex.Message);
+            _logger.LogWarning(ex, "Browsing the connected device failed");
+            StatusText = LocalizationService.Instance["FileTransfer_BrowseErrorFormat"];
         }
         finally
         {
@@ -405,6 +423,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowSearchResults))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyFolder))]
+    [NotifyPropertyChangedFor(nameof(ShowNoSearchResults))]
     private bool _isSearchActive;
 
     [ObservableProperty]
@@ -414,8 +434,30 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     public bool ShowSearchResults => IsSearchActive;
 
+    /// <summary>True when the current folder is genuinely empty, rather than still arriving.</summary>
+    /// <remarks>
+    /// The <see cref="IsLoading"/> term is not defensive padding — without it this flashes "this
+    /// folder is empty" on every navigation, in the gap before the listing arrives, which looks
+    /// exactly like a bug to the user. (RemEx-n69m.)
+    /// </remarks>
+    public bool ShowEmptyFolder => !IsLoading && !ShowSearchResults && RemoteEntries.Count == 0;
+
+    /// <summary>True when a search finished and matched nothing.</summary>
+    public bool ShowNoSearchResults => !IsLoading && ShowSearchResults && SearchResults.Count == 0;
+
+    /// <summary>
+    /// Set only while <see cref="ClearSearch"/> resets <see cref="SearchQuery"/> to empty. Clearing
+    /// the query raises this view model's own change callback, which would call back into
+    /// <see cref="ClearSearch"/> and run the teardown twice; the flag makes that callback a no-op.
+    /// All three call sites run on the UI thread, so a plain field is sufficient here.
+    /// </summary>
+    private bool _isClearingSearch;
+
     partial void OnSearchQueryChanged(string value)
     {
+        if (_isClearingSearch)
+            return;
+
         // Debounced live search; empty query clears back to the folder view.
         _searchCts?.Cancel();
         if (string.IsNullOrWhiteSpace(value) || !SupportsSearch || SelectedRemoteRoot is null)
@@ -467,10 +509,11 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 ? string.Format(LocalizationService.Instance["FileTransfer_SearchTruncatedFormat"], SearchResults.Count)
                 : string.Format(LocalizationService.Instance["FileTransfer_SearchResultsFormat"], SearchResults.Count);
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { /* the user navigated away or started another search; superseding one is normal */ }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_SearchFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Searching the connected device failed");
+            StatusText = LocalizationService.Instance["FileTransfer_SearchFailedFormat"];
         }
         finally
         {
@@ -483,8 +526,17 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         _searchCts?.Cancel();
         _searchCts = null;
         if (SearchQuery.Length != 0)
-            _searchQuery = string.Empty;
-        OnPropertyChanged(nameof(SearchQuery));
+        {
+            _isClearingSearch = true;
+            try
+            {
+                SearchQuery = string.Empty;
+            }
+            finally
+            {
+                _isClearingSearch = false;
+            }
+        }
         IsSearchActive = false;
         SearchTruncated = false;
         SearchResults.Clear();
@@ -506,6 +558,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     // ─── Upload / Download / Send (queued) ─────────────────────────────────────
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyFolder))]
+    [NotifyPropertyChangedFor(nameof(ShowNoSearchResults))]
     private bool _isLoading;
 
     [ObservableProperty]
@@ -637,6 +691,12 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     // ─── Delete (single + multi) ────────────────────────────────────────────────
 
+    /// <summary>
+    /// Delegate set by the View to display a confirmation dialog.
+    /// Parameters: (title, message, confirmButtonText). Returns true if the user confirmed.
+    /// </summary>
+    public Func<string, string, string, Task<bool>>? OnConfirmationRequested { get; set; }
+
     [RelayCommand(CanExecute = nameof(CanDeleteRemote))]
     private async Task DeleteRemoteAsync()
     {
@@ -644,6 +704,21 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
         var toDelete = EffectiveSelection();
         if (toDelete.Count == 0) return;
+
+        // Remote deletes are permanent — confirm before touching anything (RemEx-07jx).
+        var previewNames = string.Join(", ", toDelete.Take(3).Select(e => e.Name))
+            + (toDelete.Count > 3 ? "…" : string.Empty);
+        var message = toDelete.Count == 1
+            ? string.Format(LocalizationService.Instance["Confirm_DeleteRemote_SingleFormat"], toDelete[0].Name)
+            : string.Format(LocalizationService.Instance["Confirm_DeleteRemote_MultipleFormat"], toDelete.Count, previewNames);
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_DeleteRemote_Title"],
+                message,
+                LocalizationService.Instance["Confirm_DeleteRemote_Btn"]))
+        {
+            return;
+        }
 
         try
         {
@@ -666,7 +741,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_DeleteFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Deleting an item on the connected device failed");
+            StatusText = LocalizationService.Instance["FileTransfer_DeleteFailedFormat"];
         }
         finally
         {
@@ -761,9 +837,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
             await BrowseRemoteAsync();
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Pasting the clipboard selection failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_PasteFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Pasting the clipboard selection failed");
+            StatusText = LocalizationService.Instance["FileTransfer_PasteFailedFormat"];
         }
         finally
         {
@@ -831,7 +914,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_RenameFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Renaming an item on the connected device failed");
+            StatusText = LocalizationService.Instance["FileTransfer_RenameFailedFormat"];
         }
         finally
         {
@@ -890,9 +974,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             IsCreatingFolder = false;
             await BrowseRemoteAsync();
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Creating a folder on the phone failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_CreateFolderFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Creating a folder on the phone failed");
+            StatusText = LocalizationService.Instance["FileTransfer_CreateFolderFailedFormat"];
         }
         finally
         {
@@ -937,9 +1028,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         {
             SelectedMetadata = await _client.GetMetadataRemoteAsync(SelectedRemoteRoot.RootId, relativePath, CancellationToken.None);
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Loading item details from the phone failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_PropertiesFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Loading item details from the phone failed");
+            StatusText = LocalizationService.Instance["FileTransfer_PropertiesFailedFormat"];
         }
 
         if (!entry.IsDirectory && IsImageFile(entry.Name))
@@ -998,9 +1096,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
                 ? string.Format(LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], Volumes.Count)
                 : LocalizationService.Instance["FileTransfer_VolumesDenied"];
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Listing the phone's drives failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_VolumesFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Listing the phone's drives failed");
+            StatusText = LocalizationService.Instance["FileTransfer_VolumesFailedFormat"];
         }
         finally
         {
@@ -1035,7 +1140,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_HashFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Verifying a transferred file hash failed");
+            StatusText = LocalizationService.Instance["FileTransfer_HashFailedFormat"];
         }
         finally
         {
@@ -1063,9 +1169,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             ReplaceRemoteRoots(updatedRoots);
             StatusText = LocalizationService.Instance["FileTransfer_PinComplete"];
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Pinning the current folder failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_PinFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Pinning the current folder failed");
+            StatusText = LocalizationService.Instance["FileTransfer_PinFailedFormat"];
         }
         finally
         {
@@ -1091,9 +1204,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             ReplaceRemoteRoots(updatedRoots);
             StatusText = LocalizationService.Instance["FileTransfer_RemoveRootComplete"];
         }
+        catch (FileTransferHostException ex)
+        {
+            _logger.LogWarning(ex, "Removing the shared folder failed - the phone refused it");
+            // The phone answers these with copy a user can act on, so show it verbatim.
+            StatusText = ex.HostMessage;
+        }
         catch (Exception ex)
         {
-            StatusText = string.Format(LocalizationService.Instance["FileTransfer_RemoveRootFailedFormat"], ex.Message);
+            _logger.LogWarning(ex, "Removing the shared folder failed");
+            StatusText = LocalizationService.Instance["FileTransfer_RemoveRootFailedFormat"];
         }
         finally
         {
@@ -1118,10 +1238,23 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     // ─── Lifecycle ───────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// <see cref="RemoteRootHint"/> resolves its text from <see cref="LocalizationService"/> at
+    /// get-time, so a language switch changes what it would return without anything on this
+    /// view-model changing - and therefore without a notification. Re-raise it explicitly.
+    /// </summary>
+    private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e) =>
+        Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(RemoteRootHint)));
+
     public void Dispose()
     {
+        // Not optional: LocalizationService.Instance is a process-lifetime singleton, so staying
+        // subscribed would pin this view-model for the life of the app.
+        LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
+
         _connection.PropertyChanged -= OnConnectionPropertyChanged;
         TransferQueue.Changed -= OnQueueChanged;
+        TransferQueue.Dispose();
         TransferQueue.ItemCompleted -= OnTransferCompleted;
         _searchCts?.Cancel();
         _client.Dispose();

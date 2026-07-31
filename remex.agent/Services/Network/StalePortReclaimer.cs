@@ -1,16 +1,12 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace Remex.Agent.Services.Network;
 
 /// <summary>
 /// Reclaims the host's canonical listening port from a stale or duplicate Remex.Agent instance.
 ///
-/// Every client — the Android app and the desktop client — dials a fixed port
+/// The Android app — the only client — dials a fixed port
 /// (<see cref="Remex.Core.RemexConstants.DefaultPort"/>). If a previous host instance is still
 /// holding that port (left over from a crash, or a second launch), silently drifting the new
 /// instance onto a fallback port desyncs every client: they keep connecting to the dead/stale

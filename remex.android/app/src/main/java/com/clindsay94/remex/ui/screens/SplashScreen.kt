@@ -2,16 +2,19 @@ package com.clindsay94.remex.ui.screens
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,6 +60,40 @@ fun SplashScreen(splashStyle: String = "RemexCommand", onFinished: () -> Unit) {
             "CosmicZoom" -> SplashCosmicZoom(onFinished, skipRequested) { skipRequested = false }
             "Pong" -> SplashPong(onFinished, skipRequested) { skipRequested = false }
             else -> SplashRemexCommand(onFinished, skipRequested) { skipRequested = false }
+        }
+    }
+}
+
+/**
+ * Terminal splash frame for reduce-motion users (RemEx-n39x): the static brand mark on the
+ * brand backdrop — no Animatables, no infinite scanlines, no multi-second choreography.
+ * Finishes immediately so cold start is not held through motion the user asked not to see.
+ * Each splash variant gates on [com.clindsay94.remex.ui.theme.LocalReducedMotion] and
+ * delegates here when it is set.
+ */
+@Composable
+internal fun SplashReducedMotionFrame(
+    onFinished: () -> Unit,
+    skipRequested: Boolean,
+    onSkipConsumed: () -> Unit,
+) {
+    var completed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!completed) {
+            completed = true
+            onFinished()
+        }
+    }
+    LaunchedEffect(skipRequested) {
+        if (skipRequested) onSkipConsumed()
+    }
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        drawRect(brush = SplashBrand.backdropBrush(size))
+        with(SplashBrand) {
+            drawRemexIcon(
+                center = Offset(size.width / 2f, size.height / 2f),
+                sizePx = size.minDimension * 0.45f,
+            )
         }
     }
 }

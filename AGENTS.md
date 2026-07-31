@@ -53,164 +53,35 @@ These rules apply to ALL agents working in this repository. They are not overrid
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: active-loops -->
-### Remote Desktop Frame Fix — CLOSED
 
-**Root cause (resolved):** `RemoteDesktopHandler` formerly counted any non-empty pixel buffer as a captured frame. `DxgiDesktopCapture` returned its cached `_lastFrame`/`_lastRawFrame` indistinguishably on `DXGI_ERROR_ACCESS_LOST`; `DuplicationReinitThrottle` could replay a stale buffer for up to 8 s with `consecutiveFailures` never incrementing — client showed a frozen frame under a live cursor.
+### Carry-Forward Rules (distilled from closed 2.0-era work)
 
-**Fixes landed:**
-- **RemEx-hmj (CLOSED):** Deferred init — `DxgiDesktopCapture` no longer calls `DuplicateOutput` in its constructor; the slot is opened on first actual capture via `EnsureInitialized()`. Eliminates idle-slot-hold contention with Windows RDP.
-- **STALE_CACHE_ON_ACCESS_LOST (CLOSED):** `IScreenCaptureService` now returns `ScreenCaptureResult { Pixels, IsLive }`. `RemoteDesktopHandler` only resets `consecutiveFailures` on `IsLive = true`; stale replays now propagate to the coded-error path. `FakeScreenCaptureService` covers the `IsLive = false` path in `RemoteDesktopHandlerTests`.
-- **RemEx-960 (CLOSED):** Display-power pause — `WindowsDisplayPowerMonitor` (sealed, `[SupportedOSPlatform("windows")]`) hosts a message-only HWND on a dedicated background thread (`RemEx-DisplayPowerMonitor`) and registers `GUID_CONSOLE_DISPLAY_STATE`. `WindowsScreenCaptureService` forwards `IScreenCaptureService.IsDisplayPoweredOff` from it; the capture loop skips DXGI polling while the monitor is asleep, driving re-init attempts to zero during display-off. `WindowsDisplayPowerMonitor` fails open: if the window/notification cannot be created, `IsDisplayOff` stays `false` and capture behaves exactly as before.
+Full narratives and bead-by-bead history: `docs/OLD DOCS/AGENTS-2.0-archive.md`. These rules
+survive because breaking them reintroduces a known, hard-to-diagnose failure.
 
-### WGC Capture Backend — CLOSED (RemEx-g6r)
+**Windows capture:**
+- Backend ladder is WGC → DXGI → GDI (`WindowsScreenCaptureService`). Operator capture knobs go ONLY in `CaptureBackendPreference` (HKLM). `CaptureScaling` lives in `Remex.Core` — do not move or duplicate it.
+- `remex.agent.windows` is Windows-only WinRT isolation — never add cross-platform or Linux code there.
+- WinRT interop: `CreateForMonitor`/`CreateForWindow` take `IID_IGraphicsCaptureItem` (constant in `WgcDesktopCapture.cs`), NOT the runtimeclass GUID — the wrong GUID silently returns E_NOINTERFACE and WGC falls back as if never tried. Any WinRT ABI `IntPtr` crossing into a CsWinRT API must use `MarshalInspectable<T>.FromAbi`, never `Marshal.GetObjectForIUnknown`.
+- `DxgiDesktopCapture` / `WgcDesktopCapture` / `WindowsDisplayPowerMonitor` are GPU/session-bound: tests use `FakeScreenCaptureService` (`SafeHostTestDoubles.cs` registers safe doubles first in `RemexHostFactory`), never the live classes.
 
-**What landed:** Windows screen capture now uses a **WGC → DXGI → GDI** backend ladder. Windows.Graphics.Capture (WGC) is the preferred per-monitor path; DXGI Desktop Duplication is the fallback; GDI is the last resort. This targets the recurring DXGI driver-wedge / black-screen / cursor-only freeze bug class (`RemEx-crk`, `DXGI_ERROR_ACCESS_LOST`, `RemEx-ltd`) without any change to the wire protocol, H.264 encoder, Android client, or pairing.
+**Remote-desktop stream:**
+- All frame/cursor pacing routes through `PrecisionPacer`; DXGI re-init routes through `DuplicationReinitThrottle`. No `Task.Delay`-only pacing loops; never call `TryReinitializeDuplication` at frame rate.
+- FPS ceilings route through `DesktopConfig.MaxTargetFps`/`PacedMaxFps` (Android mirror: `RemoteDesktopViewModel.DESKTOP_MAX_FPS`/`DESKTOP_FPS_PACED_MAX`) — never reintroduce a hardcoded 120/360.
+- Wire magic bytes: `"RDXF"` = frame envelope, `"RDXC"` = binary cursor — never reuse either. Capability additions stay additive/gated; no `protocolVersion` bump unless breaking.
+- Windows GPU encode: `h264_nvenc_bgra` (BGRA fed directly to NVENC) is the ONLY supported GPU path. Never reintroduce `-vf hwupload_cuda,scale_cuda` — prebuilt Windows ffmpeg lacks the RGB→semiplanar kernel; it passes init then dies at runtime (0 fps black screen, fallback never fires).
 
-**New project:** `remex.agent.windows` (TFM `net10.0-windows10.0.19041.0`) — isolates all WinRT code so the Linux build is completely unaffected. Referenced from `remex.agent.csproj` only under the Windows condition, behind the `WGC_CAPTURE` compile constant. Do NOT add Linux or cross-platform code to this project.
+**Linux capture/portal:**
+- `OpenPipeWireRemote` MUST be called on the same D-Bus connection that owns the portal session (sender-scoped fd). A fresh connection is rejected by the portal and capture silently degrades to a ~1 FPS fallback.
+- The portal capture session stays warm for the PROCESS lifetime (`LinuxCaptureSessionLifetime`). Never reintroduce refcount-zero teardown or idle-grace closing — restore-after-close yields a connected stream that never produces buffers (RemEx-lq6h).
+- Keep the `SPA_FORMAT_VIDEO_maxFramerate` [1,120] choice-range in `pipewire_capture.c`'s EnumFormat pod — dropping it silently reinstates KWin's ~12 FPS damage-driven cadence.
 
-**Key components:**
-- `WgcDesktopCapture` — WGC implementation (`GraphicsCaptureItem` + `Direct3D11CaptureFramePool`). Captures cursor-less (`IsCursorCaptureEnabled = false`); yellow border suppressed (`IsBorderRequired = false` via `IGraphicsCaptureSession3`, no-ops cleanly on older Windows). Implements `IWgcCaptureSource`.
-- `IWgcCaptureSource` — new interface in `remex.core/Services/` defining the WGC contract; keeps WinRT out of Core itself.
-- `CaptureBackendPreference` — reads `HKLM\SOFTWARE\RemEx\Capture\Backend`; parses `Auto` (default) | `Wgc` | `Dxgi` | `Gdi`; fails open to `Auto` on any bad/missing value. Registered in DI via `HostBootstrapper` (Windows only). New operator knobs for capture must go here, not hardcoded.
-- `CaptureScaling` — **moved from `remex.agent` to `Remex.Core`** so both `remex.agent` and `remex.agent.windows` share the encoder-dimension formula. Do not move it back or duplicate it.
-- `WindowsScreenCaptureService` — drives the WGC → DXGI → GDI ladder using `CaptureBackendPreference`. As of RemEx-hvqv, WGC monitor-selection outcomes are logged at Information (selected) / Warning (failed / unresolved device name), de-duped via `_lastWgcSelectionStateKey` so the per-frame hot path logs once-per-state rather than at frame rate. Previously these logs were at Debug (invisible in both the in-memory `/debug/logs` sink and the Windows Event Log, which floor at Information and Warning respectively).
+**Android remote desktop:**
+- SurfaceView zoom/pan uses `Modifier.layout`, never `graphicsLayer` (which cannot move a native surface). The H.264 `AndroidView`'s `key()` must include `imageSize` alongside stream dims — a surface created against transient geometry freezes its content scale.
+- Preset changes go through `applyDesktopPreset(...)` atomically — never set quality/fps/scale individually. Stream start/stop, keyboard, and FPS toggles live in the fullscreen overlay; do not re-add a unified control bar to `RemoteDesktopScreen.kt`.
 
-**Testing seam:** WGC and DXGI both require an interactive session + GPU and are not headless-testable. CI coverage is at the `IScreenCaptureService` seam (`FakeScreenCaptureService`) and the HKLM preference parse (`CaptureBackendPreferenceTests`). The real backend matrix requires manual interactive validation.
+**Session guard:** `WindowsInteractiveSessionGuard` only re-locks sessions it actually unlocked — it must never disconnect its own session (black-screen + access-denied-input failure mode).
 
-**Agent rules (carry forward to all work in this area):**
-- `DxgiDesktopCapture` is `sealed` + `[SupportedOSPlatform("windows")]` + P/Invokes GPU — uninstantiable headless/in Session 0. Tests must use `FakeScreenCaptureService`, not the live class.
-- `WgcDesktopCapture` is likewise `[SupportedOSPlatform("windows")]` and requires WinRT + GPU — never instantiate in tests; always use `FakeScreenCaptureService`.
-- **WinRT interop IID pitfall (RemEx-hvqv):** `IGraphicsCaptureItemInterop::CreateForMonitor` and `CreateForWindow` take the **interface** IID (`IID_IGraphicsCaptureItem = 79c3f95b-31f7-4ec2-a464-632ef5d30760`), NOT the runtimeclass GUID from `typeof(GraphicsCaptureItem)`. Passing the runtimeclass GUID silently returns `E_NOINTERFACE` — WGC falls back to DXGI/GDI as if it were never tried, with no obvious error. Always use the `IID_IGraphicsCaptureItem` constant defined in `WgcDesktopCapture.cs` for any future `CreateForMonitor`/`CreateForWindow` calls.
-- **WinRT ABI pointer marshaling (RemEx-hvqv):** The `IDirect3DDevice` for the WGC frame pool must be projected via `WinRT.MarshalInspectable<IDirect3DDevice>.FromAbi(ptr)`, NOT `Marshal.GetObjectForIUnknown(ptr) as IDirect3DDevice`. The latter yields a legacy `__ComObject` that CsWinRT cannot re-marshal, causing `Direct3D11CaptureFramePool.CreateFreeThreaded` to throw `"Failed to create a CCW ... IDirect3DDevice: the specified cast is not valid"`. **RULE: any WinRT ABI `IntPtr` crossing into a CsWinRT projected API must use the CsWinRT `FromAbi` marshalers (`MarshalInspectable<T>.FromAbi` or `<Type>.FromAbi`) — never `Marshal.GetObjectForIUnknown`.**
-- `WindowsDisplayPowerMonitor` is also `[SupportedOSPlatform("windows")]` and requires a real message pump — never instantiate it in tests. The `IScreenCaptureService.IsDisplayPoweredOff` property defaults to `false`; fakes and Linux backends inherit that default automatically.
-- `remex.agent.windows` must stay Windows-only. Never add cross-platform or Linux code there.
-- `CaptureScaling` lives in `Remex.Core` (NativeAOT-safe). Do not move it back to `remex.agent` or create a duplicate.
-- `CaptureBackendPreference` is the single source of truth for operator capture knobs. New per-backend toggles go there.
-- Path casing is load-bearing on Linux: source dir is `remex.agent` (capital E-x); test projects are `remex.agent.tests` / `remex.core.tests` (lower e-x); solution is `Remex.sln`. Wrong casing passes on Windows, breaks on CachyOS.
-- Pre-existing test failures in `PairedClientRegistry`/`RemoteDesktopAuth`/`PairingHandler` (issue `RemEx-jgw`) are filtered from gates; gates assert a minimum test count so a zero-match filter cannot show green.
-- **Test host safe doubles (RemEx-21g):** `RemexHostFactory` default-registers three safe doubles FIRST in DI: `FakeScreenCaptureService` (pure managed, no DXGI/D3D/GDI), `NoOpInteractiveSessionGuard` (no `tscon` call), `NoOpSystemCommandService` (no lock/reboot/shutdown). Defined in `SafeHostTestDoubles.cs`. No integration test touches the GPU, locks the session, or runs a power command.
-- **Diagnosing WGC not serving (RemEx-hvqv):** Check Information/Warning logs for the WGC selection outcome — `_lastWgcSelectionStateKey` de-dupes these so they appear once per state change, not at frame rate. Three states: `ok:{deviceName}` (WGC selected), `fail:{deviceName}:{error}` (TrySelectMonitor failed), `unresolved:{displayId}` (Monitor mode but no Win32 device name resolved). If only DXGI/GDI is serving and no WGC Warning appears, the target is likely virtual-desktop mode (expected — WGC is per-monitor only).
-
-### remex.agent Execution Model — Interactive Elevated App (RemEx-aep, all 6 phases landed)
-
-**Status:** Phases 1–6 are committed on branch `2.0` and the build/tests are green (agent 291/291). Phase 1 (elevation manifest + logon-task auto-start), Phase 2 (second-process deletion), Phase 3 (collapse `LocalIpcServerService`/`RemExLocalIPC` to in-process DI), Phase 4 (Session-0 cleanup + keep-awake-only session guard), Phase 5 (Android `H264StreamDecoder` mid-stream SPS reconfigure — the headline image fix — + UIPI canary), Phase 6 (docs). **Pending:** Phase 1's runtime gate (`RemEx-aep.1`) — full checklist at `docs/superpowers/plans/aep1-runtime-verification-checklist.md` (deploy + sign-out/in: single High-integrity instance, no UAC, cert reused/SPKI unchanged, brick canary silent; `bd close RemEx-aep.1` when all assertions pass). The **Linux follow-up** (`RemEx-aep.7`) is **done**, and `RemEx-u0oc` completed the parity: Linux ships a single `remex-agent` package (`installer/linux/agent-install.sh` installs to `~/.local/share/remex-agent` with an XDG autostart `~/.config/autostart/remex-agent.desktop`, `Exec=… --minimized`, mirroring the Windows logon task). The headless SYSTEM `remex-host.service` was **removed** (pre-login power commands are a non-goal on Linux, as on Windows); the installer uninstalls it from existing machines and migrates a root-owned `/var/lib/remex/cert.pfx` to the per-user store SPKI-intact. The Linux cert path is per-user (`~/.local/share/Remex/cert.pfx`, beside `paired_clients.json`). The P0/P1 Linux security perms were runtime-validated on CachyOS (`RemEx-lr9`, closed).
-
-**What changed:** remex.agent is no longer a Windows Service. It is a single interactive elevated user-session Avalonia app, always elevated (`requireAdministrator` in `app.manifest`), auto-started by an elevated Task Scheduler logon task (task name: `"RemEx"`, LogonType=InteractiveToken, RunLevel=HighestAvailable).
-
-**Deleted subsystems (do not reference in new code or docs):**
-- `AgentCoordinator` — orchestrated the former two-process split (gone)
-- `HostControlServer` / `HostControlClient` — Named Pipe IPC between the old service and desktop app (gone)
-- `InteractiveDesktopHostLauncher` — launched the desktop app from Session 0 (gone)
-- `--agent` / `RunAgent` / `UseWindowsService` Program.cs paths (gone)
-
-**Surviving startup paths in `Program.cs`:**
-- Normal launch: single-instance Mutex guard → embedded `WebApplication` host → Avalonia GUI. A second instance defers to the running one.
-- `--doctor [--fix]`: Linux prerequisite report; exits without launching UI.
-
-**Auto-start:** `StartupRegistrationService` manages a Task Scheduler task named `"RemEx"` (name must stay stable — `autostart-remex.ps1` and verification steps query this exact name). `RemoveLegacyWindowsRunKey()` cleans up any legacy HKCU Run entry on startup; a lingering Run key would start a competing medium-integrity instance, win the single-instance guard, and reintroduce the UIPI input block (RemEx-hmk).
-
-**Elevation rationale — `requireAdministrator` is load-bearing, do not remove it:**
-1. **Cert safety:** high integrity keeps FullControl over `cert.pfx` / `paired_clients.json`. A medium-integrity start gets Administrators as deny-only, regenerates the cert, and bricks all SPKI-pinned Android pairings.
-2. **UIPI:** HIGH→HIGH `SendInput` is permitted; a medium-integrity sender is silently dropped by Windows UIPI, breaking remote input injection.
-3. **HKLM writes:** `CaptureBackendPreference` and other machine-wide settings require elevation.
-
-**Session 0 rules no longer apply:** remex.agent runs in the interactive user session. HKCU and `%APPDATA%` are valid for user-scoped state. Machine-wide config (`cert.pfx`, `paired_clients.json`, `CaptureBackendPreference`) stays in HKLM/ProgramData for correctness across re-logins.
-
-### Remote Desktop 2.0 Infrastructure — CLOSED (batch landed in [Unreleased])
-
-Key new components agents must know before touching remote desktop, capture, pairing, or session-guard code:
-
-**Binary cursor protocol (`DesktopCursorBinaryEnvelope`, magic `"RDXC"`):**
-- High-frequency cursor position (60–90×/s) travels as a fixed 32-byte binary packet over `/ws/desktop` binary channel, demultiplexed from H.264 frames by magic bytes. Do NOT reuse `"RDXC"` or `"RDXF"` (frame envelope magic).
-- Capability-gated via `DesktopClientCapabilities.SupportsBinaryCursor`. **No `protocolVersion` bump** — older hosts/clients stay on the JSON `desktop_cursor_state` path automatically.
-- NativeAOT-safe (`BinaryPrimitives`/spans). Requires Android rebuild when the JNI layer changes.
-- Key symbols: `DesktopCursorBinaryEnvelope`, `RemoteDesktopHandler.SendCursorBinaryAsync`, `RemexDesktopClient`, `AndroidNativeExports`.
-
-**`BgraFrameConverter` — no System.Drawing on the capture→encode hot path:**
-- When `scale = 1.0`, reads the mapped staging texture into a tightly-packed buffer via a single row-wise `Marshal.Copy` (no Bitmap, no GDI+ blit). Downscale path keeps GDI+ bilinear resampler. Output byte-count is asserted equal to the encoder's `-s WxH` and unit-tested.
-- For maximum FPS: capture at full resolution (`scale 1.0`) and let the phone downscale for display — NVENC handles full-res easily.
-- Key symbols: `BgraFrameConverter`, `WgcDesktopCapture`, `DxgiDesktopCapture`.
-
-**FPS ceiling raised 120 → 360 — shared `DesktopConfig.MaxTargetFps`/`PacedMaxFps` constants (RemEx-z377):**
-- `DesktopConfig.MaxTargetFps = 360` is now the single source of truth for both the wire clamp (`DesktopConfig.TargetFps` init clamps to this, not a literal `120`) and the host cap (`RemoteDesktopHandler.MaxTargetFps = DesktopConfig.MaxTargetFps`). Android mirrors it as `RemoteDesktopViewModel.DESKTOP_MAX_FPS = 360`. Always route new FPS ceilings through these constants — never reintroduce a hardcoded `120`/`360`.
-- `DesktopConfig.PacedMaxFps = 240` / Android `DESKTOP_FPS_PACED_MAX = 240` is the display cutover point: any value above it renders as the localized "Unlimited" string instead of a number (desktop `FpsDisplayConverter`; inline `targetFps > DESKTOP_FPS_PACED_MAX` checks in `ConnectionScreen`/`RemoteDesktopScreen`). 240 already exceeds every consumer display refresh and the H.264 encoder is throughput-bound below it at real resolutions, so the exact value above it is immaterial to the user — while the frame pacer stays safe (1000/360 ≈ 2.78 ms/tick).
-- Backward-compatible with **no `protocolVersion` bump**: a host built before this change still clamps an incoming `360` straight back to `120` via its own unchanged literal — safe degradation, not a wire break.
-- Android's `DesktopPreset.UNLIMITED` bundle (`DESKTOP_PRESET_BUNDLES`) now requests the real `DESKTOP_MAX_FPS` (360) instead of being pinned at 120.
-- Desktop capture defaults changed alongside this: `DashboardProfile.StreamQuality`/`StreamScale` now default to 100/1.0 (was 75/0.5).
-- Key symbols: `DesktopConfig.MaxTargetFps`/`PacedMaxFps`, `RemoteDesktopHandler.MaxTargetFps`, `RemoteDesktopViewModel.DESKTOP_MAX_FPS`/`DESKTOP_FPS_PACED_MAX`, `FpsDisplayConverter`, `DashboardProfile`.
-
-**`PrecisionPacer` — shared hybrid precision wait:**
-- Coarse `Task.Delay` + `Thread.SpinWait` busy-spin for the final milliseconds. Eliminates the ~15.6 ms Windows OS timer floor that previously capped 120 FPS targets at ~64 Hz.
-- Shared by the video-frame loop AND the cursor loop (`RemoteDesktopHandler`). Do not introduce separate `Task.Delay`-only pacing loops — route through `PrecisionPacer`.
-
-**`DuplicationReinitThrottle` — DXGI re-init rate limiter:**
-- One `DuplicateOutput` attempt per backoff window (1 s → 8 s escalating, reset on any confirmed-healthy frame). Prevents NVIDIA DWM wedge from back-to-back re-init storms on display power transitions.
-- 8 unit tests cover the throttle logic. Do not call `TryReinitializeDuplication` at frame-rate frequency.
-- Key symbols: `DuplicationReinitThrottle`, `DxgiDesktopCapture`.
-
-**`TransportTrust` — host-side Tailscale pairing PIN awareness:**
-- The pairing PIN is auto-served to a caller only when it is on loopback **or** when both caller and host-side address are Tailscale IPs (`100.64.0.0/10` or `fd7a:115c:a1e0::/48`). This gate now lives **solely** on the `/ws` `pairing_pin_request` path — the HTTP `GET /pairing-pin` and `POST /start-pairing` endpoints were retired (RemEx-0xp0).
-- Requiring the host-side address to also be Tailscale defeats a LAN attacker spoofing a `100.64.x.x` source via the LAN IP. Plain LAN/internet stay closed (404).
-- As of 2.3.0 (RemEx-1t0b) the `/ws` `pairing_pin_request` message shares this **exact same** `IsTrustedForPinAutoFetch` gate (computed at the `/ws` map site and passed into `PingPongHandler`/`PairingHandler`). It is an ASI-compliant replacement for the Android app's old trust-all HTTP fetch; it only *relays* an already-active PIN and never creates a session. As of RemEx-0xp0 the HTTP `GET /pairing-pin` and `POST /start-pairing` endpoints are **removed entirely** — the one-release retention window for shipped ≤2.2.4 apps has passed (fleet is on versionCode ≥33), so the trust-all HTTP surface is gone.
-- Key symbols: `TransportTrust`, `HostBootstrapper`, `PingPongHandler`, `PairingHandler`.
-
-**Keep-session-unlocked (security-sensitive, Windows-only):**
-- Settings toggle (off by default) that keeps the interactive session usable while a remote-desktop client is connected. Backed by `ISessionKeepUnlockedService` writing `ProgramData\RemEx\keep-session-unlocked.flag`. Prominent 8-language security warning shown while enabled.
-- `WindowsInteractiveSessionGuard` only reconnects/re-locks a session it **actually unlocked** — never disconnects its own session (`Process.GetCurrentProcess().SessionId`). A guard that disconnects the host's own session triggers the "black screen + access denied input" failure mode.
-- Key symbols: `IInteractiveSessionGuard`, `WindowsInteractiveSessionGuard`, `SessionGuardSettings`, `ISessionKeepUnlockedService`, `SettingsViewModel`.
-
-**Wire protocol carry-forward rules:**
-- All capability additions are additive/gated — no `protocolVersion` bump unless breaking.
-- `"RDXF"` = frame envelope magic (opt-in via `supportsFrameEnvelope`); `"RDXC"` = binary cursor magic. Never reuse either.
-- Legacy hosts that send untagged frames: client falls back to negotiated-codec routing automatically.
-
-**Linux portal PipeWire fast path — sender-scoped fd, CLOSED (RemEx-82fk):**
-- **Root cause:** `xdg-desktop-portal` scopes a RemoteDesktop/ScreenCast session's PipeWire node ACL to the D-Bus connection that created it. The native capture bridge previously called `OpenPipeWireRemote` on its own fresh sd-bus connection, which the portal rejects as a different sender — the ACL-protected screencast node was invisible, so capture silently fell back to a ~1 FPS per-frame spectacle+ffmpeg full-desktop path.
-- **Fix:** `LinuxPortalRemoteDesktopSessionService.StartSessionAsync` now calls `OpenPipeWireRemote` on the **same session-owning `Tmds.DBus.Connection`** used for `CreateSession`/`SelectSources`/`Start`, obtaining a portal-scoped fd that is threaded through `PortalStartResult.PipeWireFd` → `LinuxCaptureSessionCoordinator` → `LinuxPipeWireFrameSource`. Native side gained `remex_pw_session_create_v3(pw_fd, ...)` which connects PipeWire using this caller-provided fd (dup'd); `v2`/`v1` remain as fallbacks. **Never call `OpenPipeWireRemote` on a newly-opened connection — it must reuse the connection that owns the portal session.**
-- **KDE persist_mode fallback (`SelectSources`, RemEx-82fk CLOSED):** `SelectSources` requests `persist_mode=PersistUntilRevoked` (+ replays a saved `restore_token`) so reconnects skip the "Share your screen" prompt, for legacy portal-v1 sessions and ScreenCast-only fallback sessions. `xdg-desktop-portal-kde` rejects persistence specifically for RemoteDesktop sessions (`DBusException` with `ErrorName == "org.freedesktop.portal.Error.InvalidArgument"`, or message containing `"persist"`); on that error the call is retried once with `requestPersist=false` instead of failing the whole session.
-- **KDE prompt-free reconnect via RemoteDesktop portal v2 `SelectDevices` persistence (RemEx-mswt, CLOSED):** `xdg-desktop-portal-kde` rejects ScreenCast-level persistence on remote-desktop sessions by design, so the `SelectSources` fallback above kept capture alive on KDE but re-prompted "Share your screen?" on every connect. RemoteDesktop portal **version 2** (`xdg-desktop-portal` ≥ 1.16; Plasma 6, verified live on Plasma 6.7.2 / xdg-desktop-portal 1.22) moved session persistence to `SelectDevices` instead — `persist_mode` + `restore_token` go there, and the refreshed token comes back in the `Start` results (existing save/replay path unchanged). `LinuxPortalRemoteDesktopSessionService` now calls a new `GetPortalInterfaceVersionAsync` (plain D-Bus `Properties.Get` on the RemoteDesktop interface's `version` property; defaults to `1` — the lowest live version — if unreadable) and requests persistence in `SelectDevices` when `>= 2`, **skipping** `SelectSources` persistence in that case (KDE would reject it — RemEx-82fk). v1 portals and ScreenCast-only fallback sessions keep the legacy `SelectSources` path. **Both** the `SelectDevices` and `SelectSources` persist requests retry once without persistence on a hard rejection, so a failed persist request can never take down capture. First connect after this still prompts once to mint the token; every reconnect after that is prompt-free.
-
-**Linux RD: NVENC engagement + per-monitor crop via post-capture cropping (RemEx-nadp, CLOSED):** Root cause: on Wayland/dual-monitor a 5120×1440 full-virtual-desktop frame exceeds NVENC's practical fast path and the stream fell back to ~13 fps CPU MJPEG. Fix (`LinuxScreenCaptureService`, `LinuxJpegEncoder`): capture always grabs the full virtual-desktop frame; both encoders take optional `cropX/cropY/cropW/cropH` params and, when non-zero, `SKImage.Subset` the frame to the active target's rect before scale/encode — private `LinuxScreenCaptureService.TryGetActiveCrop(frameWidth, frameHeight, out x,y,w,h)` computes that rect from `_activeLeft/_activeTop/_activeWidth/_activeHeight` and is called from both the PipeWire raw-capture path and the JPEG path. Per-monitor capture no longer requires the capture backend itself to target a monitor — it works on Wayland, on any display server, and survives mid-session/topology-refresh with an active PipeWire session (the old restriction — Monitor mode blocked whenever a PipeWire coordinator was running or the display server wasn't X11 — is removed). `SetCaptureCoordinator` defaults a **fresh** multi-monitor PipeWire session to `DesktopCaptureMode.Monitor` on the primary display (crop to ~2560×1440) instead of `VirtualDesktop`, to stay under the 4096px H.264 limit and land on NVENC's fast path without a CPU downscale by default — but (RemEx-lq6h) an already-chosen monitor target (explicit client selection, or one carried over from a prior connection) now **survives session reopen**: `SetCaptureCoordinator` only applies the primary-monitor default when `_activeTarget` has no still-existing display, instead of unconditionally resetting to primary on every reconnect. New KDE/Wayland display enumeration: `TryDetectWithKScreenDoctor()` runs `kscreen-doctor -o` and parses per-output geometry via `ParseKScreenDisplays`/`KScreenGeometryRegex` — tried FIRST in `DetectScreenSize()` on Wayland, ahead of xrandr, because KWin is not a wlroots compositor (`wlr-randr` fails) and XWayland's `xrandr` view of KWin outputs is unreliable for per-monitor geometry, whereas `kscreen-doctor` talks to KScreen directly and reports true per-output geometry + the priority-1 primary. **Native PipeWire framerate negotiation:** `pipewire_capture.c` (`pw_thread_func`) also adds an explicit `SPA_FORMAT_VIDEO_maxFramerate` choice-range `[1,120]` (default 120) to the `SPA_PARAM_EnumFormat` pod, alongside the pixel-format enum — without it, KWin's ScreenCast implementation serves frames on a slow, damage-driven cadence (~12 fps observed) independent of on-screen activity or encoder speed, capping the stream regardless of the NVENC/crop fixes above. Same technique OBS and gnome-remote-desktop use to get a real framerate out of KWin. **Do not drop this param when touching the EnumFormat pod** — omitting it silently reintroduces the KWin FPS cap. Verified live on CachyOS/KDE: H.264 at 67–71 FPS per monitor and 49–57 FPS on the full 5120×1440 desktop.
-
-**Linux RD: self-healing H.264, warm portal session, drift-free absolute mouse, single cursor (RemEx-lq6h, CLOSED):** Four release-blocker fixes landed together, verified live on CachyOS/KDE across reconnects and monitor switches (477 tests pass):
-- **No permanent MJPEG demotion.** `RemoteDesktopHandler`'s stream loop used to demote `_activeCodec` to MJPEG forever on the first failed encoder rebuild (any transient GPU/driver/portal churn during a monitor switch or reconnect). It now keeps the negotiated codec: on a failed rebuild it tags frames `DesktopCodecKind.Mjpeg` (safe only because envelope-capable clients — `UseFrameEnvelope` — route each frame by its own per-frame codec tag) and retries H.264 on a `h264RetryCooldownMs = 3000` cooldown (`nextH264RetryMs`), logged via `LogWarning`. Envelope-less legacy clients (no `supportsFrameEnvelope`) keep the OLD permanent MJPEG fallback — they route frames only by the negotiated codec, so a mixed stream would misroute on them.
-- **Failed FFmpeg encoder probes now expire.** `FFmpegH264Encoder.ProbeCache` changed from `ConcurrentDictionary<string, bool>` to `ConcurrentDictionary<string, (bool Ok, long AtMs)>`. Positive verdicts are still cached for the process lifetime; a **negative** verdict is retried after `FailedProbeRetryMs = 30_000`. Previously one transient 5s probe timeout during display churn permanently pinned that `codec:widthxheight@fps` key to MJPEG until process restart.
-- **Raw/JPEG frame caches are now signature-guarded and liveness-aware.** `LinuxScreenCaptureService._lastRawFrame` / `_lastJpegFrame` are `record`s carrying `(ActiveLeft, ActiveTop, ActiveWidth, ActiveHeight, Scale)` alongside the bytes; a cached frame is only replayed when that signature still matches the CURRENT active target (offset included — two monitors can share dimensions). Replaying a stale-target frame after a monitor switch used to desync the H.264 encoder's fixed rawvideo input size into an endless reinit storm. New `CaptureRawScreenLiveAsync` (parity with Windows' `IScreenCaptureService.IsLive`) returns `ScreenCaptureResult { Pixels, IsLive }`: a same-target replay on a static screen (PipeWire is damage-driven, so no-new-frame is expected) is `IsLive = true`; a geometry-stale cache is never replayed (`IsLive = false`) instead of silently showing the wrong screen. Raw output dimensions use `CaptureScaling.ScaledEven(baseW/H, scale)` even AT `scale = 1.0` — an odd-sized monitor/crop must still even-align or the H.264 encoder's fixed input size mismatches the buffer.
-- **`LinuxCaptureSessionLifetime` keeps the portal capture session warm for the PROCESS lifetime**, not just while a client is connected — the single biggest behavior change. Closing a KDE ScreenCast session and restoring it shortly after (exactly what Android's disconnect→reconnect and monitor-switch flows do) reliably yields a stream where `pw_stream_connect` succeeds and KWin reports it valid, but **no buffer ever arrives, for minutes** — only a process restart reliably recovered. `ReleaseAsync` no longer tears down the coordinator/portal at refcount 0 (it now just decrements and returns `Task.CompletedTask`); teardown only happens on portal session loss (`OnPortalSessionLost`, which also nulls `_startTask` so the next `AcquireAsync` cold-starts) or process shutdown (`DisposeAsync`). **REGRESSION GUARD: do not reintroduce refcount-zero teardown** — it reintroduces the dead-stream bug. Side effect (intentional, documented): KDE's screen-sharing indicator stays on for the life of the agent process, honestly reflecting that the machine remains remotely controllable. Cold starts now verify first-frame production via `WaitForFirstFrameAsync` (3s timeout, consumes+returns the frame to `ArrayPool`) before wiring the stream in; a failed verification recreates the portal session **once** and re-verifies before giving up.
-- **Drift-free absolute mouse injection.** New chain: `LinuxInputSimulationService.MoveMouse` (constructor now takes an optional `LinuxCaptureSessionLifetime? captureLifetime`) tries `_captureLifetime.TryInjectPointerMotionAbsolute(x, y)` FIRST — this picks the portal stream whose compositor-space rect contains the point (or falls back to `LinuxScreenCaptureService.GetVirtualDesktopBounds()` when the portal omits stream geometry), converts to stream-relative coordinates, and calls `LinuxPortalRemoteDesktopSessionService.TryNotifyPointerMotionAbsolute(streamNodeId, streamX, streamY)` — a fire-and-forget D-Bus `NotifyPointerMotionAbsolute` call on the SAME unified RemoteDesktop+ScreenCast session that owns capture. The compositor clamps natively, so there is no cumulative drift. Only when this fails (no active session — e.g. no stream yet, or on other backends) does `MoveMouse` fall back to the old relative-delta emulation (`_lastVirtualX/_lastVirtualY` tracker), which is now itself always clamped. New `RemoteDesktopHandler.ClampToActiveBounds(x, y)` clamps every absolute pointer target to `_screenCapture.GetScreenSize()` bounds **before** it reaches `IInputSimulationService.MoveMouse` on ALL platforms (not Linux-only) — a client coordinate that overshoots the streamed display can never drive the cursor onto a monitor the remote user isn't viewing, and on Linux specifically can never desync the relative-motion fallback tracker.
-- **Single cursor.** `LinuxPortalRemoteDesktopSessionService` constructor gained a `PortalCursorMode cursorMode = PortalCursorMode.Hidden` parameter (was hardcoded `Embedded` in the `SelectSources` cursor_mode variant) — Android always renders its own cursor from the streamed `desktop_cursor_shape`/`desktop_cursor_state`, so a compositor-embedded cursor was a SECOND cursor baked into every frame. `Embedded` remains selectable for legacy host-composited clients.
-
-**Android `RemoteDesktopScreen` — key facts for agents (commits `31afdcb`–`8f43b4c` and series):**
-- **Unified control bar is gone.** The L/M/R click buttons, scroll, and zoom overlays were deleted (`31afdcb`). Do not re-add them to `RemoteDesktopScreen.kt`.
-- **Start/Stop stream buttons live in the fullscreen overlay** (`8f43b4c`). Do not add stream start/stop controls to the non-fullscreen UI — the fullscreen overlay is the canonical home for these actions.
-- **`RemoteDesktopUiState.streamRequested`** drives an immediate rotation to landscape on "Start" tap, before the stream is actually live. It is distinct from `isStreaming`.
-- **`lastSentAbsHost`** is the authoritative field for the last host-coordinate pointer position. Click actions (left/middle/right) must read this field, not raw pointer position, to avoid coordinate drift (RemEx-gd7).
-- **`ContentRect`** maps the actual video content area within the view box: H.264 fills the full box (stretched), MJPEG is letterboxed via `ContentScale.Fit`. Any gesture-to-host-coordinate translation must go through `ContentRect`.
-- **`lastFitKey`** tracks which `"$displayToken/$streamWidth/$streamHeight/$isLandscape"` tuple has received the orientation-aware initial zoom (encodes real stream dimensions, not just display token + orientation). Landscape phone → `zoomFactor = 1.0` (whole desktop visible, pinch to zoom in). Portrait phone → fit-to-height so the full host height fills the screen and the user pans L/R. Resets to `""` on stream stop; re-fires on display switch, phone rotation, or when the host sends authoritative metadata with different dimensions (resolution/monitor/DPI change mid-stream). Gated by `desktopMetaReady` — fit does NOT fire against the 1920×1080 placeholder. `LaunchedEffect` keys on `uiState.selectedDisplayToken` so it triggers on display switch (RD-A3, RemEx-4k4, commit `ad49f1d`).
-- **FPS overlay toggle is in the fullscreen control row** (RemEx-46q). `onToggleFpsOverlay` callback is wired there — do not add it elsewhere. It was orphaned when the unified control bar was removed; the fullscreen row is now the only caller.
-- **Keyboard toggle is in the fullscreen overlay row** (RemEx-46q). The keyboard must be reachable in immersive mode; the fullscreen overlay is the canonical home for it alongside Start/Stop stream and FPS overlay.
-- **IME re-invoke pattern — `toggleRemoteKeyboard` lambda** (RemEx-46q): use `InputMethodManager.showSoftInput()` as belt-and-braces alongside `keyboardController.show()`. A hidden `BasicTextField` retains Compose focus after a back-gesture IME dismiss, so a bare `requestFocus()/show()` is a no-op. The platform `InputMethodManager` call forces the IME up reliably in that state.
-- **Quality presets rebuilt to spec — `DesktopPreset` / `DESKTOP_PRESET_BUNDLES`** (RemEx-vj31, `RemoteDesktopViewModel`): the old 3-chip Performance/Balanced/Crisp set (labels/semantics didn't match the product plan) is replaced by named `{quality, targetFps, scale}` bundles: **Unlimited** (100%/`DESKTOP_MAX_FPS` (360, was 120 — RemEx-z377)/100% scale — the uncapped ceiling this pipeline can't always sustain; persistent "may vary" info caption + one-time Snackbar overflow warning on first select), **Smooth & Sharp** (95%/120fps/50% scale, **new default**), **Balanced** (85%/60fps/75% scale), **Data Saver** (60%/30fps/65% scale), **Custom** (reveals raw quality/fps/scale sliders — the scale slider is new; previously scale was only reachable via presets). Always call `applyDesktopPreset(preset, quality, fps, scale)` to change a named preset (atomic persist+push in one call — do not set quality/fps/scale individually); `selectCustomPreset()` switches to Custom without changing the underlying values. The preset id persists in DataStore (`desktop_preset` key) alongside quality/fps/scale so the sheet reopens on the correct chip instead of re-deriving it from raw numbers (which couldn't distinguish Custom from a coincidental match); installs upgrading from the old 3-preset system (no persisted preset id yet) resolve to Custom rather than falsely claiming a named preset that doesn't match their leftover values.
-- **"PC keys" modifier bar decoupled from the soft keyboard, gained Ctrl/AltGr + F-key/nav grid — `ModifierState`/`cycleModifier`/`computeChordApplication`** (RemEx-yi8o; RemEx-9krr, RemEx-bct CLOSED; `RemoteDesktopViewModel`/`RemoteDesktopScreenContent`/`RemoteDesktopChordApplication.kt`): the bar now toggles independently via `pcKeysBarVisible` (previously shown only alongside the IME, which could cover it) and renders above the IME via `imePadding()`. Shift/Ctrl/Alt/Win/**AltGr** (`VK_ALTGR = 165`/`VK_RMENU`, a fifth latching chip) are latching chips with 3-state cycling (`ModifierState`: OFF → ARMED (applies to the next keypress only) → LOCKED (held on the host until cycled back to OFF), `cycleModifier(vk)`). The modifier-wrap decision was extracted from `sendKeyPress` into a pure `computeChordApplication(modifierStates, physicallyDownModifiers, keyCode, modifierVirtualKeyCodes)` (new `RemoteDesktopChordApplication.kt`, unit-tested by `RemoteDesktopChordTest` on plain JVM — no ViewModel/DataStore/network involved). A single alphanumeric keystroke typed while a modifier is armed/locked routes as a real chord (Ctrl+C/V/A/Z, etc.) via `sendKeyPress`/`asciiAlphanumericVirtualKeyCode`/`singleCharacterInsertion`, instead of literal text; every other edit (multi-character, punctuation, autocomplete) keeps the existing text path unchanged. An expand chevron on the compact bar reveals a `FlowRow` grid of F1-F12 + Home/End/PgUp/PgDn/Insert, routed through the same plain keypress path the existing utility keys use (an armed/locked modifier wraps these for free, e.g. Ctrl+Home, with no new chord logic) — this closed out `RemEx-bct`'s remaining scope (the toggle buttons/latching modifiers/chord routing it also asked for had already shipped via RemEx-yi8o). F1-F12 labels are literal (never localized by any keyboard vendor); the 5 nav keys + AltGr + the chevron got real `cd_key_*`/`cd_more_keys` content-description strings across all 8 locales. **RemEx-rimh (fixed, ship-day polish pass):** an ARMED modifier used to silently persist onto an unrelated later keystroke whenever the next input was text injection (multi-character insert/autocomplete) rather than a plain single-character keypress, because text injection bypasses the key-event path entirely and could never consume the armed state. Fixed by `RemoteDesktopViewModel.spendArmedModifiers()`, called after every text-injection send: resets any ARMED modifier to OFF (LOCKED modifiers untouched) without emitting key events. **Not yet verified on real hardware** (RemEx-9krr is closed, but this specific verification is called out as pending in its close-reason): the Android chord sends right-Alt alone (extended-flagged, see the `WindowsInputSimulationService` entry below) — real AltGr hardware emits left-Ctrl + right-Alt together, and character-layer translation (€, @, {, etc.) may key off that combination, so this might not unlock the AltGr layer; needs confirmation on a real Windows target. If it doesn't work, file a new bead rather than reopening 9krr.
-- **Windows synthetic input: `KEYEVENTF_EXTENDEDKEY` on AltGr/Home/End/PgUp/PgDn/Insert (RemEx-9krr, `WindowsInputSimulationService.IsExtendedVirtualKey`):** `KeyDown`/`KeyUp` previously sent every key with `dwFlags = 0` (down) / `KEYEVENTF_KEYUP` (up) only — no extended-key handling existed anywhere in the file. Per Win32 docs, `VK_RMENU` (0xA5, AltGr) needs this flag or Windows can't reliably tell it apart from left-Alt. Scoped to ONLY the VKs newly introduced by the AltGr chip and F-key/nav grid above — arrows/Delete/RCONTROL already ship without the flag and already work, so they are intentionally left untouched here. Linux required no change (`LinuxInputEventTranslator` already maps AltGr/F-keys/nav-keys correctly).
-- **Fullscreen overlay row polish (RemEx-klq CLOSED; `RemoteDesktopScreen`):** the fullscreen top-end action row (Settings/FPS/Keyboard/PC-keys/Exit/Stop) had three near-identical inline `filledTonalIconButtonColors` blocks and repeated `16.dp`/`8.dp` padding literals; replaced with `FullscreenOverlayEdgePadding`/`FullscreenOverlayIconSpacing` constants + a shared `toggleIconButtonColors(active)` helper. Action order now matches the windowed `TopAppBar` for the actions both share (Keyboard, PC-keys, Settings, fullscreen-exit, Stop/Play); the fullscreen-only FPS toggle is slotted in without disturbing that shared order. Also fixed the fullscreen Settings button's hardcoded `"Settings"` content description to use the existing localized `R.string.cd_settings` (was never translated). **Open finding, not resolved here:** the two rows still have different action *sets* (Reset/zoom windowed-only, FPS fullscreen-only) — whether either belongs on both surfaces is an unresolved rendering/UX call.
-- **1440p FPS bottleneck: CPU color-convert in `FFmpegH264Encoder`, not NVENC core (RemEx-dptu CLOSED):** Plain `h264_nvenc` appends `-pix_fmt yuv420p`, forcing ffmpeg to CPU-swscale (BGRA→YUV) every frame — ~20 ms at 1440p → ~35 fps cap while the RTX GPU idles. **Fix landed:** `FFmpegH264Encoder.Initialize()` tries `"h264_nvenc_bgra"` first in `codecsToTry`; its args feed BGRA directly to NVENC (`-c:v h264_nvenc`, no `-vf`, no `-pix_fmt yuv420p`) — NVENC ingests `bgra`/`bgr0` natively via fixed-function hardware color convert (~1 ms). Falls through to `"h264_nvenc"` (CPU path) if NVENC is unavailable. Check `ActiveCodecName` in the host log: `"h264_nvenc_bgra"` = GPU/fast (unblocks 120 fps at full res); `"h264_nvenc"` = CPU/~35 fps cap. **RULE: do NOT reintroduce `-vf hwupload_cuda,scale_cuda=format=nv12` (or any RGB→YUV CUDA filter) for the Windows GPU path.** Every prebuilt Windows ffmpeg (Gyan + BtbN) ships `--enable-cuda-llvm` whose Clang-compiled `scale_cuda` lacks the RGB→semiplanar kernel — it passes init then dies at runtime (`CUDA_ERROR_NOT_FOUND` / "Unsupported conversion: rgb0 -> semiplanar8"), producing a 0 fps black screen. The init-time codec fallback never fires because the process dies after the pipeline starts. NVENC native BGRA is the only supported GPU path on Windows.
-- **Preset label strings** (`remote_desktop_preset_*`, `remote_desktop_presets_label`) live in `remex.android/app/src/main/res/values/strings.xml` (default locale only — 8 locale files still need translation; follow-up bead filed). This still applies to the rebuilt Unlimited/Smooth & Sharp/Balanced/Data Saver/Custom labels above. Do not hardcode preset label text in Kotlin/Compose. By contrast, the PC-keys-bar content-description strings (`cd_key_ctrl`, `cd_show_pc_keys`, etc.) ARE translated across all 8 locales — new user-facing strings should follow that bar, not the preset-label gap.
-- **Linux H.264 codec fallback — deterministic via one-shot capability probe (RemEx-h038 CLOSED):** A rawvideo-pipe ffmpeg only opens its encoder when the first frame arrives, so the old 900ms early-exit watch in `TryStartFFmpeg` could never see an encoder-open failure — `h264_vaapi` on NVIDIA (no VAAPI *encode* entrypoints; the driver is decode-only) logged `"successfully initialized"` then died on the first real frame, silently degrading the session to MJPEG (the Linux FPS regression). `FFmpegH264Encoder.Initialize()` now calls `ProbeCodec`/`RunEncoderProbe` once per codec before starting the real pipe: it encodes a single black frame using `BuildEncoderArgs` (shared with the real run — only the output tail differs: `-frames:v 1 -f null -` for the probe vs `-flush_packets 1 -f h264 -` for the stream) and reads the exit code. Verdicts are cached in a static `ProbeCache` keyed by `codec:widthxheight@fps` (qp excluded — it never decides openability), since `RemoteDesktopHandler` reinitializes the encoder on every on-demand keyframe. The Linux codec ladder also gained the Windows NVENC-BGRA fast path and is now `h264_nvenc_bgra → h264_nvenc → h264_vaapi → libx264` (Linux half of RemEx-whfp) — NVENC ingests BGRA natively, skipping the per-frame CPU swscale that plain `h264_nvenc` pays. Verified on CachyOS/RTX 5080: the vaapi probe exits 218 (correctly skipped), nvenc probes exit 0 at 4096×1152@120. **Failed-verdict TTL (RemEx-lq6h):** `ProbeCache` is now `ConcurrentDictionary<string, (bool Ok, long AtMs)>` — positive verdicts still cache for the process lifetime, but a negative verdict is retried after `FailedProbeRetryMs = 30_000` instead of being pinned forever; see the self-healing H.264 entry above.
-- **H.264 `AndroidView` must recreate on settled box geometry, not just resolution (RemEx-4fv3):** A `SurfaceView`'s content sublayer freezes its buffer→view scale at creation time. If the video `Box` (`imageSize`) is transiently smaller when the H.264 `AndroidView`'s `SurfaceView` is first created — e.g. during capture_unavailable→reconnect churn on a fresh connect, when the box is briefly ~half height — the content stays locked to that stale geometry (rendered at ~0.5x in the top-left quadrant) even after the box grows to full size. Compose re-layout (rotation) does NOT refresh a frozen content scale; only a teardown+recreate of the `SurfaceView` does. The `key()` wrapping the H.264 `AndroidView` factory must include `imageSize` alongside `streamPixelWidth`/`streamPixelHeight` so the surface rebuilds once the box settles. `imageSize` is stable during steady-state streaming (zoom/pan is applied via a separate `Modifier.layout` without a rebuild), so this does not churn the decoder.
-
-### Post-2.0 Ship-Day UI Polish Pass (`remex.android` screens, bead RemEx-87vl)
-
-A four-track audit (M3 motion, splash screens, user text, UX edge cases) fixed everything low-risk on the spot; deferred/riskier findings live in `docs/PRD-2.1-polish-backlog.md` — **gitignored** via the `docs/prd-*.md` pattern, so it is local-only and never appears in `git log`/`git diff`/PRs. Read it directly rather than searching git history for it.
-
-- **Hang fixes:** `PairingScreen.kt`'s `SubmitPairingPin`/`StartPairing` now wrap in `withTimeout(15_000)` (new `pairing_error_timeout` string) — previously could hang forever with no escape; Cancel is now always enabled so it stays the user's way out of a stuck loading state. `FileTransferViewModel.loadRemoteRoots()`/browse-request gained matching 30s `CompletableDeferred` timeout watchdogs (`file_transfer_pin_timeout`), mirroring the pre-existing manage-ops timeout pattern.
-- **Localization/a11y bugs:** `ConnectionScreen.kt`'s paired-status color check compared `status == "Connected"` against an already-localized display string (broken on non-English locales) — now uses the `isConnected` boolean. Hardcoded "Host discovered: X" snackbar → `host_discovered_snackbar`. `TaskManagerScreen.kt` clear-search icon and `PairingScreen.kt` error icon gained real content descriptions (were `null`/hardcoded English). All new string keys from this pass are translated in the default locale + all 8 locale files.
-- **Stale-error fix:** `ConnectionViewModel` now clears `_connectionError` whenever `isConnected` emits true, so a successful (re)connect can't show "Connected" next to a leftover error card from a prior failed attempt.
-- **M3 motion standardization:** `FaqScreen`, `PairingScreen`, `PersonalizationScreen`, `QrScannerScreen`, `RemoteControlScreen` AnimatedVisibility/`animateContentSize` blocks switched from ad-hoc `spring(StiffnessMediumLow)`/`tween(200)` specs to `MaterialTheme.motionScheme.fastSpatialSpec()`/`fastEffectsSpec()`. Use this pattern for any new AnimatedVisibility in these screens, not hand-picked spring/tween values.
-- **Stable LazyColumn keys:** `RemoteControlScreen`/`SettingsScreen` `items(...)` calls now pass a stable `key = { ... }`. Do the same for any new LazyColumn added to these screens.
-- **`SplashScreen.kt` theme + timing fixes:** title/subtitle colors were hardcoded `Color.White`/a fixed hex instead of theme-aware (`MaterialTheme.colorScheme.onBackground`, with a luminance-based fallback for the CosmicZoom subtitle) — the splash previously assumed a dark background always, breaking on light themes. Haptic "thud" is now gated to `splashStyle == "CosmicZoom"` only (RemexCommand has no lightning strike to sync it to). `drawStylizedRLogo` scale now multiplies by `density.density` — the raw-px canvas art wasn't scaling with the dp-sized text and rendered ~3x too small on real (non-1.0x-density) devices.
-- **`DashboardScreen.kt` battery fix:** `ConnectionOrbCard`'s infinite glow color transition now only runs while connected/connecting — it previously ran unconditionally, burning battery even while fully disconnected.
-- **`QrScannerScreen.kt`:** QR-pairing setup failures no longer surface the raw native exception message to the user; the exception is logged instead and a generic localized error is shown.
 <!-- END AUTO-MANAGED -->
 
 ### MCP Tool Discipline
@@ -234,14 +105,11 @@ No lazy code. Use the most correct, robust, maintainable approach. No stub metho
 
 Every code change must also update `CHANGELOG.md` (Keep a Changelog format). Update affected XML doc comments, `docs/` files, and version numbers when warranted. A task is not complete until docs are updated.
 
-### Beads for Task Tracking
-
-Use `bd` for ALL task tracking. Create an issue before writing code. Claim it. Close it when done. Never use TodoWrite, TaskCreate, or markdown TODO lists. Run `bd prime` for the full workflow context.
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (15382 symbols, 31258 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (15747 symbols, 32418 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -337,30 +205,6 @@ This protocol applies when ending a Beads implementation workflow. It is subordi
 - Do not commit or push without clear authority from the active profile or the current user request.
 - If a required sync or push is blocked, stop and report the exact command and error.
 <!-- END BEADS INTEGRATION -->
-
-<!-- BEGIN BEADS CODEX SETUP: generated by bd setup codex -->
-## Beads Issue Tracker
-
-Use Beads (`bd`) for durable task tracking in repositories that include it. Use the `beads` skill at `.agents/skills/beads/SKILL.md` (project install) or `~/.agents/skills/beads/SKILL.md` (global install) for Beads workflow guidance, then use the `bd` CLI for issue operations.
-
-### Quick Reference
-
-```bash
-bd ready                # Find available work
-bd show <id>            # View issue details
-bd update <id> --claim  # Claim work
-bd close <id>           # Complete work
-bd prime                # Refresh Beads context
-```
-
-### Rules
-
-- Use `bd` for all task tracking; do not create markdown TODO lists.
-- Run `bd prime` when Beads context is missing or stale. Codex 0.129.0+ can load Beads context automatically through native hooks; use `/hooks` to inspect or toggle them.
-- Keep persistent project memory in Beads via `bd remember`; do not create ad hoc memory files.
-
-**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
-<!-- END BEADS CODEX SETUP -->
 
 <!-- AUTO-MANAGED: project-description -->
 ## Overview
@@ -495,148 +339,13 @@ Protocols: WSS `/ws` (port 5005, telemetry/power/pairing/file transfer), WSS `/w
 <!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: release-gate -->
-## RemEx 2.0 Release Gate
+## RemEx 2.0 Release Gate — MET (historical)
 
-**Status: P0/P1 GATE MET — all 14 P0 beads and all 12 original P1 beads are CLOSED.** The release is conditionally shippable on Windows. The Linux runtime-parity validation (RemEx-lr9, P1) is CLOSED — runtime-validated on CachyOS. Remaining open items are out-of-scope follow-ups (RemEx-d8s client removal, RemEx-5i9 >60fps investigation, two deferred perf beads). The `REMEX_2.0_FINAL.md` ordered edit plan was deleted as stale 2.0 planning housekeeping once shipped (RemEx-z377 commit) — do not search for it; this section is now the durable record.
-
-### Release Status Summary
-
-| Gate | Result |
-|------|--------|
-| All P0 beads closed | PASSED (14/14) |
-| All P1 beads closed | PASSED (12/12) |
-| Linux runtime parity | PASSED (RemEx-lr9 — runtime-validated on CachyOS, closed 2026-07-01) |
-| Deferred perf (RD-6/RD-7) | DEFERRED — measurement-gated, logged on bead |
-| remex.desktop removal | DECIDED AGAINST (RemEx-d8s closed 2026-07-03 without deleting the folder — it's the permanent PC-side UI project) |
-
-### P0 Beads — ALL CLOSED
-
-| Bead | Issue | Status |
-|------|-------|--------|
-| `RemEx-htt` PROTO-1 | 8338 channel unauthenticated | **CLOSED** — `PairedClientChannelAuthenticator` |
-| `RemEx-a75` PAIR-5 | `/start-pairing` open to remote | **CLOSED** — endpoint removed entirely (RemEx-0xp0) |
-| `RemEx-lhd` PAIR-2 | PIN brute-force / 10-min window | **CLOSED** — 5-attempt-per-session cap + 120s session lifetime (`PairingService`) |
-| `RemEx-dta` PAIR-3 | Host private key world-readable | **CLOSED** — `CertificateService` PFX 0600 permissions |
-| `RemEx-m1i` IPC-1 | Pipe ACL `Everyone` writable | **CLOSED** — `LocalIpcServerService` ACL restricted to interactive user + LocalSystem |
-| `RemEx-n6u` IPC-2 | IPC pipe command auth bypass | **CLOSED** — `LocalIpcServerService` privileged-action gate |
-| `RemEx-4ky` PROTO-2 | Protocol version not enforced | **CLOSED** — `HostBootstrapper.EvaluateDesktopAuth` enforces `protocolVersion >= 2` |
-| `RemEx-288` PROTO-3 | Pairing endpoint missing auth gate | **CLOSED** — pairing endpoint auth hardened |
-| `RemEx-e3z` JNI-1 | JNI exceptions abort JVM | **CLOSED** — `[UnmanagedCallersOnly]` export guard catches managed exceptions |
-| `RemEx-9m1` JNI-2 | JNI null deref / unsafe marshal | **CLOSED** — JNI marshalling hardened |
-| `RemEx-ii3` RD-1 | H.264 encoder backpressure | **CLOSED** — `FFmpegH264Encoder` bounded channels |
-| `RemEx-fs5` RD-3 | H.264 output unbounded queue | **CLOSED** — `FFmpegH264Encoder` drop-oldest output channel |
-| `RemEx-bqc` RD-2 | H.264 keyframe / decoder recovery | **CLOSED** — `RemoteDesktopHandler` + `H264StreamDecoder` |
-| `RemEx-a13` NSD-1 | NSD discovery reliability | **CLOSED** — `NsdDiscoveryManager` API 34+/pre-34 strategy |
-
-### P1 Beads — ALL CLOSED
-
-| Bead | Issue | Status |
-|------|-------|--------|
-| `RemEx-3n6` PAIR-1 | clientId-only reconnect auth | **CLOSED** — `PairedClientRegistry` proof-of-possession |
-| `RemEx-rc4` PAIR-4 | Reconnect secret world-readable | **CLOSED** — `paired_clients.json` + reconnect-secret file 0600 permissions |
-| `RemEx-irl` IPC-4 | IPC pipe open to non-interactive users | **CLOSED** — ACL restricted |
-| `RemEx-qg2` IPC-5 | IPC pipe system-wide write access | **CLOSED** — ACL scoped to current interactive user SID |
-| `RemEx-oj8` IPC-6 | IPC-6 Linux pipe permissions | **CLOSED** — Linux branch uses `UnixFileMode` 0600 |
-| `RemEx-4ic` IPC-3 | IPC-3 pipe auth gap | **CLOSED** — pipe auth hardened |
-| `RemEx-ngs` NSD-4 | NSD-4 discovery hardening | **CLOSED** |
-| `RemEx-i8x` NSD-5 | NSD-5 Linux virtual-interface filtering | **CLOSED** — `MdnsAdvertisingService` Linux virtual-interface filter |
-| `RemEx-kx4` RD-5 | H.264 decoder output format change | **CLOSED** — `RemoteDesktopHandler` + `H264StreamDecoder` |
-| `RemEx-aa0` RD-4 | FFmpeg pump cancellation on dispose | **CLOSED** — `FFmpegH264Encoder` `_processCts` |
-| `RemEx-4uy` PROTO-4 | PROTO-4 hardening | **CLOSED** |
-| `RemEx-jny` PROTO-5 | PROTO-5 hardening | **CLOSED** |
-
-### P2/P3 Beads (closed via 2026-06-22 hardening)
-
-| Bead | Issue | Status |
-|------|-------|--------|
-| `RemEx-q6u` RD-8 | Hostile float coordinates (NaN/∞ → arbitrary pixel) | **CLOSED** — `CoordinateValidation.ClampAbsolute` / `ClampDelta` |
-| `RemEx-8ay` JNI-4 | Concurrent pairing race (dual `ClientWebSocket` dispose) | **CLOSED** — `PairingSyncRoot` in `AndroidNativeExports` |
-| `RemEx-85i` JNI-5 | JNI string marshalling outside `Export` guard | **CLOSED** — `ReadJString` moved inside `Export` |
-| `RemEx-ymb` JNI-3 | JNI-3 | **CLOSED** |
-| `RemEx-4bb` NSD-overlap | Overlapping NSD resolves / multicast-lock cycles | **CLOSED** — `discoveryJob` cancel-before-relaunch in `ConnectionViewModel` |
-| `RemEx-l79` / `RemEx-hht` | Stale / wrong-arch `.so` packaged into APK | **CLOSED** — content-tracked inputs + AArch64 ELF header check in `SyncRemexCoreSoTask` |
-| `RemEx-b3m` IPC-8 | `UnauthorizedAccessException` collapsed into generic IPC error | **CLOSED** — dedicated catch in `RemExLocalIPC` |
-| `RemEx-00x` NSD-6 | Untrusted mDNS SRV port/host injected into WebSocket URL | **CLOSED** — `MdnsDiscoveryService` SRV validation |
-| `RemEx-29e` PAIR-6 | HMAC comparison not constant-time | **CLOSED** — constant-time raw-byte HMAC in `PairingService` |
-| `RemEx-xk9` PAIR-7 | PAIR-7 | **CLOSED** |
-| `RemEx-79h` IPC-7 | IPC-7 | **CLOSED** |
-| `RemEx-kjq` RD-2 const | RD-2 const | **CLOSED** |
-| `RemEx-lbk` | 8338 docs P1 follow-up | **CLOSED** |
-
-### Post-Release-Gate Fixes (closed after 2.0 gate)
-
-| Bead | Issue | Status |
-|------|-------|--------|
-| `RemEx-i9e` | Pairing PIN auto-populate broken over Tailscale | **CLOSED** — `TransportTrust` host-side classifier; PIN served to verified Tailscale tunnels (`100.64.0.0/10` / `fd7a:115c:a1e0::/48`) in addition to loopback |
-| `RemEx-dqj` | Privileged IPC commands rejected when host runs interactively | **CLOSED** — `LocalIpcServerService.TryGetSelfAsActiveConsoleUserSid` fallback for non-LocalSystem console-session host |
-| `RemEx-sgj` | Pairing persistence throws `InvalidOperationException` when host runs interactively | **CLOSED** — `PairedClientRegistry.RestrictStorePermissionsWindows` uses assignable owner; catch extended |
-| `RemEx-xuo` | Android reconnect rejected (no proof-of-possession secret) | **CLOSED** — `RemexClientManager` persists reconnect secret via `PinnedHostStore`; clients must re-pair once |
-| `RemEx-0ov` | Android crashes on mDNS discovery (`RejectedExecutionException` kills process) | **CLOSED** — `NsdDiscoveryManager` executor uses `DiscardPolicy` instead of `AbortPolicy` |
-| `RemEx-l6o` | Keep-session-unlocked feature + interactive-host guard fix (locking own session on monitor switch) | **CLOSED** — `WindowsInteractiveSessionGuard` ref-counted; `_heldSessionId` only set when guard performs the reconnect; `ISessionKeepUnlockedService` + in-app toggle with localized security warning |
-
-| `RemEx-ubm` | Pointer (0,0) corner silently dropped / phantom corner click | **CLOSED** — `RemoteDesktopHandler.EnqueuePointerSampleAsInputEvent` uses absolute logical position directly (including 0,0); `mapLocalToHost` returns `Offset?` (null on error only) |
-| `RemEx-x0b` | H264 decoder init failure left a permanently-black stream | **CLOSED** — `H264StreamDecoder` signals ViewModel on init failure; ViewModel marks streaming stopped and triggers backoff reconnect |
-| `RemEx-5t4` | Silent black screen with no error when host is slow to produce first frame | **CLOSED** — frame-arrival watchdog in `RemoteDesktopViewModel` triggers reconnect after ~7s silence |
-| `RemEx-gim` | Stale frame from previous stream target shipped after target switch | **CLOSED** — send loop drops frames with mismatched `StreamSerial`; serial is host-authoritative |
-| `RemEx-w5v` | Codec switch (H.264 ↔ MJPEG) briefly misrouted frames (silent black gap) | **CLOSED** — `RemoteDesktopFrameEnvelope` `RDXF` per-frame header tags codec + serial; `supportsFrameEnvelope` client capability |
-| `RemEx-728` | Host stream errors shown in English only | **CLOSED** — `DesktopErrorCodes` stable codes on host; Android maps to localized strings (8 languages) |
-| `RemEx-hmk` | Legacy HKCU Run key started a MEDIUM-integrity competing host instance (UIPI input block) | **CLOSED** — `StartupRegistrationService` no longer creates the HKCU Run entry; interactive host removes any legacy entry on startup |
-| `RemEx-3um` | Android Gradle build broken on repeat/clean runs (native-lib copy destination repointed away from ABI-folder, `@InputFile` failing on fresh clean, `clean` racing against build tasks) | **CLOSED** — three `build.gradle.kts` fixes: copy destination reverted to ABI-folder convention, `@Internal` on `generatedArm64So`/`mergedArm64So`, single `mustRunAfter` ordering rule |
-| `RemEx-46q` | Android soft keyboard could not be re-summoned after back-gesture dismissal | **CLOSED** — `isRemoteKeyboardOpen` now derived from IME insets (`WindowInsets.ime.getBottom > 0`), not focus; keyboard button calls `LocalSoftwareKeyboardController.show()/.hide()` alongside `requestFocus()` (`RemoteDesktopScreen`) |
-| `RemEx-gd7` | L/M/R click buttons in Android fullscreen control bar sent clicks to `(0,0)` instead of cursor position | **CLOSED** — buttons now call `mapLocalToHost(Offset(cursorX, cursorY))`; click skipped if cursor position unavailable (`RemoteDesktopScreen`) |
-| `RemEx-4k4` | First-connect mis-framing: wrong monitor dimensions on initial stream | **CLOSED** — `WarmUpCapture()` now selects WGC monitor + primes DXGI; `GetScreenSize()` serves backend-derived dims (WGC→DXGI→GDI); `ActiveMonitorOrigin()` for cursor mapping; Android `desktopMetaReady` gates initial fit; `lastFitKey` encodes real stream dimensions |
-| `RemEx-nadp` | Linux/Wayland RD stuck ~13fps CPU MJPEG (NVENC idle) on full 5120×1440 dual-monitor frame | **CLOSED** — per-monitor post-capture crop (`LinuxScreenCaptureService.TryGetActiveCrop`) keeps a single monitor under the 4096px H.264 limit; `kscreen-doctor` KDE/Wayland display enumeration; native `pipewire_capture.c` `maxFramerate` request fixes KWin's ~12fps damage-driven cadence; fresh multi-monitor sessions default to primary monitor. Verified 67–71 FPS/monitor, 49–57 FPS full desktop on CachyOS/KDE |
-| `RemEx-lq6h` | Linux RD: permanent MJPEG fallback after any transient encoder failure, mouse drift, doubled cursor | **CLOSED** — self-healing H.264 (3s retry cooldown, MJPEG-tagged frames for envelope-capable clients, 30s-expiring negative probe cache); `LinuxCaptureSessionLifetime` keeps the portal session warm for the process lifetime (fixes multi-minute dead-stream on reconnect); drift-free absolute mouse via `NotifyPointerMotionAbsolute` on the unified portal session + `RemoteDesktopHandler.ClampToActiveBounds` (all platforms); `cursor_mode=Hidden` removes the doubled cursor. See the Linux RD entry above for full detail |
-| `RemEx-bct` | Android special-keys toolbar deferred remaining scope (F1-F12 + Home/End/PgUp/PgDn/Insert expand grid) | **CLOSED** — implemented in `RemoteDesktopScreen.kt`/`RemoteDesktopViewModel.kt`; toggle buttons, latching modifiers, and chord routing this bead also asked for had already shipped via RemEx-yi8o. Compiles clean; no device verification performed (headless env). See `RemEx-9krr` (closed, but real-hardware verification still pending per its close-reason) for the related AltGr gap |
-
-### Deferred Beads (measurement-gated, not release blockers)
-
-| Bead | Issue | Status |
-|------|-------|--------|
-| `RemEx-p0l` RD-6 | Per-frame heap allocations on DXGI capture hot path | **DEFERRED** — measurement-gated; profile under load before addressing |
-| `RemEx-m3a` RD-7 | MJPEG path forces per-frame StateFlow emission → Compose recomposition storm | **DEFERRED** — measurement-gated |
-
-### Remaining Open Follow-ups
-
-| Bead | Priority | Description |
-|------|----------|-------------|
-| `RemEx-d8s` | P2 — **CLOSED** (verify with `bd show RemEx-d8s` before citing) | Was "remove remex.desktop entirely." Closed without deleting the folder — `remex.desktop` remains a live `<ProjectReference>` of `remex.agent`. Do not describe removal as pending. |
-| `RemEx-5i9` | P3 — open | Android RD: investigate >60fps ceiling (DXGI capture / display-refresh bound, not codec). |
-| `RemEx-87vl` (docs) | P1–P3 — open | Post-2.0 polish backlog deferred from the ship-day audit (see "Post-2.0 Ship-Day UI Polish Pass" above for what already landed). Full itemized list in `docs/PRD-2.1-polish-backlog.md` (gitignored, local file — not in git history): guided re-pair flow on cert change, Wake PC failure feedback, splash skip/rotation/Android-12 SplashScreen API, M3 success-color token, nav fade-duration consistency, host/server/daemon→"PC" terminology sweep, jargon rewrites, dead desktop resx strings. |
-
-### Security Areas — Heightened Caution
-
-When touching any of these files, treat as security-critical and require user sign-off:
-- `remex.core/Services/Network/RemexNetworkListener.cs` — 8338 channel; `PairedClientChannelAuthenticator` gates dispatch (PROTO-1 closed); all PROTO P0/P1 beads closed
-- `remex.core/Services/Network/MdnsDiscoveryService.cs` — SRV port + host validated before WebSocket URL composition (NSD-6 closed); all NSD P0/P1 beads closed
-- `remex.core/Validation/CoordinateValidation.cs` — sanitizes untrusted float coordinates from remote clients; any change here affects all pointer/scroll/drag security
-- `remex.agent/Services/Security/PairingService.cs` — ECDH state machine with 5-attempt cap and ~120s timeout; constant-time raw-byte HMAC implemented (PAIR-6 closed); all PAIR P0/P1 beads closed
-- `remex.agent/Services/Security/CertificateService.cs` — SPKI hash management; PFX file permissions 0600 (PAIR-3 closed)
-- `remex.agent/Services/Security/PairedClientRegistry.cs` — proof-of-possession reconnect auth implemented (PAIR-1 closed); reconnect-secret file 0600 (PAIR-4 closed)
-- `remex.agent/HostBootstrapper.cs` — `EvaluateDesktopAuth` enforces paired clientId + protocolVersion ≥ 2 for `/ws/desktop` (PAIR-5 closed, PROTO-2 closed)
-- `remex.core/Native/JniHelper.cs` + `AndroidNativeExports.cs` — JNI-1/2/3/4/5 all closed; export guard catches managed exceptions before escaping `[UnmanagedCallersOnly]`
-- `remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt` — Tink AES-256-GCM AEAD encrypted SPKI hashes and PAIR-1 reconnect secrets; two DataStores; Android Keystore-backed; corruption self-recovery. Changes here affect all client-side certificate pinning and reconnect auth.
-- `remex.agent/Services/Security/TransportTrust.cs` — gates pairing PIN auto-fetch to loopback and verified Tailscale tunnels; must stay in sync with Android's `TransportTrust.kt`; breakage silently opens PIN to LAN callers or breaks tunnel auto-fill.
-- `remex.agent/Services/Session/WindowsInteractiveSessionGuard.cs` — calls `SetThreadExecutionState` to keep the interactive session alive (no sleep/lock) while a remote-desktop stream is engaged; no `tscon`/`WTSDisconnect`. Feature is off by default (gated by `ISessionKeepUnlockedService` flag); while engaged the screen will not auto-lock. Changes to engage/disengage logic require explicit user sign-off.
-
-### Cross-Platform Rule for All Orders
-
-Every order touching Windows ACL APIs (`PipeSecurity`, `WindowsIdentity`, `FileSecurity`, SIDs) **must** be guarded with `OperatingSystem.IsWindows()` and include a Linux branch using `UnixFileMode`/`SetUnixFileMode 0600` (owner-only). Linux runtime validation is complete — runtime-validated on CachyOS (RemEx-lr9, closed).
-
-### Design Decisions — Resolved 2026-06-22 (user-confirmed)
-
-- **8338 channel (PROTO-1): AUTHENTICATED-REMOTE.** Keep `IPAddress.Any`; do NOT bind loopback. The Android client connects from a SEPARATE device over the network, so loopback-binding would break all remote access — the product's core purpose. (Historical note: this decision predated RemEx-aep, which made the host an elevated in-session app; pre-login operation is no longer a goal, but the not-loopback conclusion stands because the client is always remote.) Fix: require a paired-client identity (`PairedClientRegistry` token) before `ExecuteCommandAsync` dispatch. **`PairedClientChannelAuthenticator` implements this — CLOSED.**
-- **`remex.desktop` removal (bead `RemEx-d8s`): CLOSED without deleting the folder.** `remex.agent` still references `remex.desktop.Services` in `Program.cs`, `StartupRegistrationService.cs`, `SessionKeepUnlockedService.cs`, `DesktopIconExtractionService.cs`, and has a real `<ProjectReference>` to `remex.desktop.csproj`. Current, intended end state: `remex.desktop` stays as the permanent PC-side UI project, compiled into `remex.agent`. Do not treat this as a still-pending removal.
-
-### Definition of Done (release)
-
-Every P0 and P1 bead closed — COMPLETE. Remaining criteria for final sign-off:
-- Green build on Windows (verified), Linux (CachyOS via `build-remex.ps1` — compile-verified; runtime-validated, RemEx-lr9 closed), and Android (`scripts/android-fresh.ps1`)
-- Green tests (`dotnet test Remex.sln`) — 428+ pass on Windows (includes 8 `DuplicationReinitThrottle` unit tests, `RemoteDesktopHandlerTests` for `IsLive = false` stale-replay path, `BgraFrameConverterTests`, and `DesktopCursorBinaryEnvelopeTests`)
-- Cross-platform parity verified for all ACL/file-permission/native code (Windows + Android verified; Linux runtime-validated on CachyOS, RemEx-lr9 closed)
-- `CHANGELOG.md` updated under `Security`/`Fixed`/`Changed`
-- `protocolVersion` bump coordinated only if a wire-format break is taken
-
+2.0 shipped; the repo is now at 2.4.x. The full gate record (P0–P3 bead tables, design
+decisions, definition of done) is archived at `docs/OLD DOCS/AGENTS-2.0-archive.md`.
+Two decisions from it still bind:
+- **Port 8338 stays `IPAddress.Any` (authenticated-remote).** Android connects from a separate device — loopback-binding breaks all remote access.
+- **`remex.desktop` stays.** RemEx-d8s closed WITHOUT deleting it; it is a live `<ProjectReference>` of `remex.agent`.
 <!-- END AUTO-MANAGED -->
 
 <!-- MANUAL -->

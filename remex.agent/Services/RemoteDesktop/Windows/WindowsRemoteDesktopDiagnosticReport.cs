@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -53,8 +51,8 @@ internal static class WindowsRemoteDesktopDiagnostics
         if (!supportsRemoteDesktopSession)
         {
             remoteDesktopUnavailableReason =
-                "Remote desktop requires a signed-in interactive Windows user session. " +
-                "Run Remex Desktop interactively, or configure the Windows service to log on as that user instead of Session 0.";
+                "Remote desktop needs RemEx to be running inside a signed-in Windows session. " +
+                "RemEx normally starts on its own when you sign in — if you are seeing this, sign in and start RemEx from the Start menu.";
             issues.Add(remoteDesktopUnavailableReason);
         }
 

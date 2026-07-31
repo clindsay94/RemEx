@@ -1,18 +1,14 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.Network;
 using Remex.Core.Models;
@@ -28,6 +24,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private readonly ShellViewModel _shell;
     private readonly RemoteDesktopService _desktopService;
     private readonly IImmersiveModeService? _immersiveMode;
+    private readonly ILogger<RemoteDesktopViewModel> _logger;
     private int _frameCount;
     private DateTime _fpsWindowStart = DateTime.UtcNow;
 
@@ -60,8 +57,37 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private double _actualFps;
 
-    [ObservableProperty]
-    private string _statusText = LocalizationService.Instance["Status_NotStreaming"];
+    // Held as a RESOLVER, not as resolved text. Every one of the ~20 places that set a status
+    // used to store an already-localized string, so a language switch could not reach any of them:
+    // the message simply stayed in the old language until the next user action replaced it. A
+    // resolver is re-invoked on each get, so re-raising the property is enough (RemEx-qlfj).
+    private Func<string>? _statusResolver;
+
+    /// <summary>Current one-line status, resolved in the caller's current language.</summary>
+    public string StatusText =>
+        _statusResolver?.Invoke() ?? LocalizationService.Instance["Status_NotStreaming"];
+
+    /// <summary>Sets the status from a resolver that is re-evaluated whenever the language changes.</summary>
+    private void SetStatus(Func<string> resolver)
+    {
+        _statusResolver = resolver;
+        OnPropertyChanged(nameof(StatusText));
+    }
+
+    /// <summary>
+    /// Sets the status to text authored by the HOST, shown verbatim and never localized here.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately a separate entry point rather than a resolver over a captured string. The host's
+    /// own wording is the most useful text in the flow and must not be replaced by a generic
+    /// sentence, which is the distinction RemEx-mznc and RemEx-s4p4 settled for file transfer by
+    /// dispatching on exception TYPE rather than on message text.
+    /// </remarks>
+    private void SetStatusLiteral(string hostText)
+    {
+        _statusResolver = () => hostText;
+        OnPropertyChanged(nameof(StatusText));
+    }
 
     /// <summary>True when the host reports an error (e.g. capture failure). Shown as overlay during streaming.</summary>
     [ObservableProperty]
@@ -144,8 +170,19 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private DesktopWindowInfo? _selectedWindow;
 
-    [ObservableProperty]
-    private string _windowControlStatusText = LocalizationService.Instance["RemoteDesktop_WindowControlUnavailable"];
+    // Same treatment, same reason (RemEx-qlfj).
+    private Func<string>? _windowControlStatusResolver;
+
+    /// <summary>Window-control status line, resolved in the caller's current language.</summary>
+    public string WindowControlStatusText =>
+        _windowControlStatusResolver?.Invoke()
+        ?? LocalizationService.Instance["RemoteDesktop_WindowControlUnavailable"];
+
+    private void SetWindowControlStatus(Func<string> resolver)
+    {
+        _windowControlStatusResolver = resolver;
+        OnPropertyChanged(nameof(WindowControlStatusText));
+    }
 
     [ObservableProperty]
     private int _windowResizeWidth = 1280;
@@ -210,11 +247,16 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     private readonly Dictionary<long, Bitmap> _cursorShapeCache = new();
     private readonly Dictionary<long, DesktopCursorShape> _cursorShapeInfoCache = new();
 
-    public RemoteDesktopViewModel(ConnectionViewModel connection, ShellViewModel shell, IImmersiveModeService? immersiveMode = null)
+    public RemoteDesktopViewModel(
+        ConnectionViewModel connection,
+        ShellViewModel shell,
+        IImmersiveModeService? immersiveMode = null,
+        ILogger<RemoteDesktopViewModel>? logger = null)
     {
         Connection = connection;
         _shell = shell;
         _immersiveMode = immersiveMode;
+        _logger = logger ?? NullLogger<RemoteDesktopViewModel>.Instance;
         _desktopService = new RemoteDesktopService();
         _desktopService.FrameReceived += OnFrameReceived;
         _desktopService.MetaReceived += OnMetaReceived;
@@ -224,6 +266,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         _desktopService.CursorShapeReceived += OnCursorShapeReceived;
         _desktopService.Disconnected += OnDisconnected;
         Connection.PropertyChanged += OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
 
         // Sync stream defaults from persisted Settings panel values.
         // Without this, the Quality/FPS sliders in Settings have no effect on the actual stream.
@@ -276,6 +319,37 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     public bool IsRemoteDesktopSupported => Connection.SupportsRemoteDesktop;
 
+    /// <summary>
+    /// Re-raises the localized computed properties when the user switches language.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="LocalizationService"/> raises <c>PropertyChanged</c> for the indexer on
+    /// <c>SetCulture</c>, which refreshes bindings that read it directly - but not properties that
+    /// merely CALL the indexer inside an expression body. Those have to be re-raised by name, which
+    /// three sibling view-models already do and this one did not, so these two labels kept their
+    /// old-language text until something unrelated happened to re-raise them (RemEx-6h3q).
+    /// <para>
+    /// No cascade rescued it: <c>ConnectionViewModel.OnLocaleChanged</c> reassigns its own
+    /// <c>StatusText</c> and never touches <c>IsConnected</c>, <c>HostCapabilities</c> or
+    /// <c>SupportsRemoteDesktop</c>, which are the only three triggers here that re-raise them.
+    /// </para>
+    /// </remarks>
+    private void OnLocaleChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            OnPropertyChanged(nameof(RemoteDesktopCapabilityText));
+            OnPropertyChanged(nameof(WindowControlCapabilityText));
+
+            // The two status lines resolve through their resolvers, so re-raising is the whole
+            // refresh - no need to know WHICH message is currently showing, which is what made the
+            // per-site approach unworkable (several messages set HasStreamError, so no condition
+            // distinguishes them).
+            OnPropertyChanged(nameof(StatusText));
+            OnPropertyChanged(nameof(WindowControlStatusText));
+        });
+    }
+
     public string RemoteDesktopCapabilityText =>
         Connection.IsConnected
             ? Connection.RemoteDesktopAvailabilitySummary
@@ -285,8 +359,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
 
     public string WindowControlCapabilityText =>
         SupportsAdvancedWindowControl
-            ? $"Window control via {Connection.HostCapabilities?.WindowControlBackend ?? "host"}"
-            : "Advanced window control is unavailable on this host.";
+            ? string.Format(
+                LocalizationService.Instance["RemoteDesktop_WindowControlViaFormat"],
+                // Substituted after a preposition ("via {0}"), so this fallback has to be a
+                // noun phrase. The bare-word RemoteDesktop_BackendUnknown reads as an adverb
+                // or a finite verb in several languages and is only grammatical in the
+                // parenthetical frame RemoteDesktop_BackendReady uses.
+                Connection.HostCapabilities?.WindowControlBackend
+                    ?? LocalizationService.Instance["RemoteDesktop_BackendUnknownInline"])
+            : LocalizationService.Instance["RemoteDesktop_AdvancedWindowControlUnavailable"];
 
     public bool HasDisplayTargets => AvailableDisplayTargets.Count > 0;
 
@@ -308,7 +389,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     {
         if (!IsRemoteDesktopSupported)
         {
-            StatusText = Connection.RemoteDesktopAvailabilitySummary;
+            SetStatus(() => Connection.RemoteDesktopAvailabilitySummary);
             HasStreamError = true;
             return;
         }
@@ -320,13 +401,13 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 await RefreshDisplayTargetsAsync();
                 if (SelectedDisplayTarget is null)
                 {
-                    StatusText = LocalizationService.Instance["RemoteDesktop_SelectDisplayTarget"];
+                    SetStatus(() => LocalizationService.Instance["RemoteDesktop_SelectDisplayTarget"]);
                     HasStreamError = true;
                     return;
                 }
             }
 
-            StatusText = LocalizationService.Instance["Status_StreamConnecting"];
+            SetStatus(() => LocalizationService.Instance["Status_StreamConnecting"]);
 
             await _desktopService.ConnectAsync(Connection.HostAddress);
 
@@ -355,7 +436,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             HasStreamError = false;
             _fpsWindowStart = DateTime.UtcNow;
             _frameCount = 0;
-            StatusText = LocalizationService.Instance["Status_Streaming"];
+            SetStatus(() => LocalizationService.Instance["Status_Streaming"]);
         }
         catch (Exception ex)
         {
@@ -373,7 +454,12 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 _desktopService.Disconnect();
             }
 
-            StatusText = string.Format(LocalizationService.Instance["Status_StreamFailedFormat"], ex.Message);
+            _logger.LogError(
+                ex,
+                "Failed to start the remote desktop stream for display {DisplayId} ({CaptureMode}).",
+                SelectedDisplayTarget?.DisplayId,
+                SelectedDisplayTarget?.CaptureMode);
+            SetStatus(() => LocalizationService.Instance["Status_StreamFailed"]);
         }
     }
 
@@ -391,7 +477,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             IsStreaming = false;
             IsSwitchingDisplay = false;
             HasStreamError = false;
-            StatusText = LocalizationService.Instance["Status_Stopped"];
+            SetStatus(() => LocalizationService.Instance["Status_Stopped"]);
             ActualFps = 0;
             ResetRemoteCursorOverlay();
         }
@@ -437,7 +523,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         try
         {
             IsLoadingDisplays = true;
-            StatusText = LocalizationService.Instance["RemoteDesktop_LoadingDisplays"];
+            SetStatus(() => LocalizationService.Instance["RemoteDesktop_LoadingDisplays"]);
 
             var catalog = await _desktopService.QueryDisplaysAsync(Connection.HostAddress);
             await Dispatcher.UIThread.InvokeAsync(() => ApplyDisplayCatalog(catalog, previousSelection));
@@ -445,15 +531,19 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             if (!IsStreaming)
             {
                 HasStreamError = false;
-                StatusText = LocalizationService.Instance["Status_NotStreaming"];
+                SetStatus(() => LocalizationService.Instance["Status_NotStreaming"]);
             }
         }
         catch (Exception ex)
         {
+            _logger.LogError(
+                ex,
+                "Failed to load the remote desktop display list from {HostAddress}.",
+                Connection.HostAddress);
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 ClearDisplayTargets();
-                StatusText = string.Format(LocalizationService.Instance["Status_LoadDisplaysFailedFormat"], ex.Message);
+                SetStatus(() => LocalizationService.Instance["Status_LoadDisplaysFailed"]);
                 HasStreamError = true;
             });
         }
@@ -478,7 +568,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         try
         {
             IsSwitchingDisplay = true;
-            StatusText = LocalizationService.Instance["RemoteDesktop_SwitchingDisplay"];
+            SetStatus(() => LocalizationService.Instance["RemoteDesktop_SwitchingDisplay"]);
             HasStreamError = false;
             ClearCurrentFrame();
             ResetRemoteCursorOverlay();
@@ -495,7 +585,15 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            StatusText = $"Display switch failed: {ex.Message}";
+            // The technical detail goes to the log, not to the status bar: that TextBlock is
+            // floored at 140px with CharacterEllipsis (RemEx-9a46), so an exception message
+            // would be trimmed to nothing useful anyway.
+            _logger.LogError(
+                ex,
+                "Failed to switch the remote desktop display target to {DisplayId} ({CaptureMode}).",
+                SelectedDisplayTarget?.DisplayId,
+                SelectedDisplayTarget?.CaptureMode);
+            SetStatus(() => LocalizationService.Instance["RemoteDesktop_DisplaySwitchFailed"]);
             HasStreamError = true;
         }
         finally
@@ -539,14 +637,14 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             CursorPadScale = 0.62;
             CursorPadMargin = new Thickness(0, 0, 14, 12);
             CursorPadModeText = LocalizationService.Instance["Status_PadCompact"];
-            StatusText = LocalizationService.Instance["Status_PadCompactTooltip"];
+            SetStatus(() => LocalizationService.Instance["Status_PadCompactTooltip"]);
         }
         else
         {
             CursorPadScale = 1.0;
             CursorPadMargin = new Thickness(0, 0, 24, 24);
             CursorPadModeText = LocalizationService.Instance["Status_PadFull"];
-            StatusText = LocalizationService.Instance["Status_PadFullTooltip"];
+            SetStatus(() => LocalizationService.Instance["Status_PadFullTooltip"]);
         }
     }
 
@@ -565,7 +663,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         // Connection.HostAddress is already bound via XAML
         // and auto-persists through ConnectionViewModel's property change handlers.
         ShowConnectionPanel = false;
-        StatusText = LocalizationService.Instance["Status_ConnectionSaved"];
+        SetStatus(() => LocalizationService.Instance["Status_ConnectionSaved"]);
     }
 
     [RelayCommand]
@@ -581,7 +679,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     {
         if (!IsStreaming || !SupportsAdvancedWindowControl)
         {
-            WindowControlStatusText = WindowControlCapabilityText;
+            SetWindowControlStatus(() => WindowControlCapabilityText);
             return;
         }
 
@@ -598,7 +696,11 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            WindowControlStatusText = string.Format(LocalizationService.Instance["RemoteDesktop_WindowQueryFailed"], ex.Message);
+            _logger.LogError(
+                ex,
+                "Failed to query remote windows with search text {WindowSearchText}.",
+                WindowSearchText);
+            SetWindowControlStatus(() => LocalizationService.Instance["RemoteDesktop_WindowQueryFailed"]);
         }
     }
 
@@ -659,16 +761,21 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     {
         if (!IsStreaming || !SupportsAdvancedWindowControl || SelectedWindow is null)
         {
-            WindowControlStatusText = WindowControlCapabilityText;
+            SetWindowControlStatus(() => WindowControlCapabilityText);
             return;
         }
+
+        // Captured before the call, not read in the catch: ApplyWindowResult re-resolves
+        // SelectedWindow from the refreshed list and falls back to the first entry if the id
+        // is gone, so reading it after a throw can name a window the action never ran on.
+        var windowId = SelectedWindow.Id;
 
         try
         {
             var action = new DesktopWindowAction
             {
                 Action = actionType,
-                WindowId = SelectedWindow.Id,
+                WindowId = windowId,
             };
 
             var result = await _desktopService.ExecuteWindowActionAsync(transform?.Invoke(action) ?? action);
@@ -681,15 +788,22 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            WindowControlStatusText = string.Format(LocalizationService.Instance["RemoteDesktop_WindowActionFailed"], ex.Message);
+            _logger.LogError(
+                ex,
+                "Failed to run window action {WindowAction} on window {WindowId}.",
+                actionType,
+                windowId);
+            SetWindowControlStatus(() => LocalizationService.Instance["RemoteDesktop_WindowActionFailed"]);
         }
     }
 
     private void ApplyWindowResult(DesktopWindowResult result)
     {
-        WindowControlStatusText = result.Success
-            ? string.Format(LocalizationService.Instance["RemoteDesktop_BackendReady"], result.Backend ?? "host")
-            : result.ErrorText ?? LocalizationService.Instance["RemoteDesktop_WindowControlFailed"];
+        SetWindowControlStatus(() => result.Success
+            ? string.Format(
+                LocalizationService.Instance["RemoteDesktop_BackendReady"],
+                result.Backend ?? LocalizationService.Instance["RemoteDesktop_BackendUnknown"])
+            : result.ErrorText ?? LocalizationService.Instance["RemoteDesktop_WindowControlFailed"]);
 
         if (result.Windows is null)
         {
@@ -745,9 +859,19 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             _consecutiveDecodeFailures++;
             if (_consecutiveDecodeFailures <= 3)
             {
+                // The frame size and exception type are diagnostics, not something a
+                // non-technical user can act on — they go to the log; the status bar gets
+                // a plain-English sentence with a next step. Logged on the same <= 3
+                // cadence as the status update so a sustained failure can't spam the log.
+                _logger.LogWarning(
+                    ex,
+                    "Remote desktop frame decode failed ({FrameBytes} bytes, consecutive failure {FailureCount})",
+                    jpegBytes.Length,
+                    _consecutiveDecodeFailures);
+
                 Dispatcher.UIThread.Post(() =>
                 {
-                    StatusText = string.Format(LocalizationService.Instance["Status_FrameDecodeErrorFormat"], jpegBytes.Length, ex.GetType().Name, ex.Message);
+                    SetStatus(() => LocalizationService.Instance["Status_FrameDecodeError"]);
                     HasStreamError = true;
                 });
             }
@@ -762,7 +886,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         {
             Dispatcher.UIThread.Post(async () =>
             {
-                StatusText = LocalizationService.Instance["Status_SelfConnection"];
+                SetStatus(() => LocalizationService.Instance["Status_SelfConnection"]);
                 await StopStreamAsync();
             });
             return;
@@ -785,7 +909,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
             Resolution = $"{meta.ScreenWidth}×{meta.ScreenHeight}";
             if (IsStreaming && !IsSwitchingDisplay)
             {
-                StatusText = LocalizationService.Instance["Status_Streaming"];
+                SetStatus(() => LocalizationService.Instance["Status_Streaming"]);
             }
         });
     }
@@ -870,7 +994,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
         {
             IsStreaming = false;
             IsSwitchingDisplay = false;
-            StatusText = LocalizationService.Instance["Status_Disconnected"];
+            SetStatus(() => LocalizationService.Instance["Status_Disconnected"]);
             ActualFps = 0;
             ResetRemoteCursorOverlay();
         });
@@ -880,7 +1004,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
-            StatusText = errorText;
+            SetStatusLiteral(errorText);
             HasStreamError = true;
         });
     }
@@ -903,9 +1027,9 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
                 if (!Connection.IsConnected && !IsStreaming)
                 {
                     ClearDisplayTargets();
-                    StatusText = LocalizationService.Instance["Status_NotStreaming"];
+                    SetStatus(() => LocalizationService.Instance["Status_NotStreaming"]);
                     HasStreamError = false;
-                    WindowControlStatusText = WindowControlCapabilityText;
+                    SetWindowControlStatus(() => WindowControlCapabilityText);
                 }
                 else if (Connection.IsConnected && IsRemoteDesktopSupported && !IsStreaming)
                 {
@@ -918,6 +1042,7 @@ public partial class RemoteDesktopViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         Connection.PropertyChanged -= OnConnectionPropertyChanged;
+        LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         _desktopService.FrameReceived -= OnFrameReceived;
         _desktopService.MetaReceived -= OnMetaReceived;
         _desktopService.ErrorReceived -= OnErrorReceived;

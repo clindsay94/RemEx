@@ -1,7 +1,5 @@
-using System;
 using System.ComponentModel;
 using System.Globalization;
-using System.Threading;
 
 namespace Remex.Desktop.Services;
 
@@ -20,6 +18,21 @@ public sealed class LocalizationService : INotifyPropertyChanged
     private CultureInfo _culture = CultureInfo.CurrentUICulture;
 
     private LocalizationService() { }
+
+    /// <summary>
+    /// The active culture's name, e.g. <c>en</c> or <c>pt-BR</c>.
+    /// </summary>
+    /// <remarks>
+    /// Exists so a binding can subscribe to culture changes without pretending to want a string.
+    /// <see cref="Converters.PrefixedLabelConverter"/> needs that: it labels ComboBox items whose
+    /// source is a plain <see cref="string"/>, which raises no notification of its own, so without
+    /// a notifying binding alongside it the labels render once and never refresh — leaving those
+    /// pickers in the previous language after a live switch. Binding a real resource key would work
+    /// today but breaks silently if that key is ever renamed; this property cannot be, and reads as
+    /// deliberate at the call site. The <see cref="string.Empty"/> notification below already covers
+    /// it, so nothing extra has to be raised.
+    /// </remarks>
+    public string CultureTag => _culture.Name;
 
     /// <summary>
     /// Gets a localized string by key from the resource manager.

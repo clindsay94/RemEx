@@ -94,7 +94,7 @@
                     <!-- Version Info Card -->
                     <Border Classes="glass-card" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12">
                         <StackPanel Spacing="16">
-                            <!-- Desktop Client Version -->
+                            <!-- This RemEx app's own version (remex.agent is one process — there is no separate desktop client) -->
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
                                     <Path Data="{StaticResource IconLaptop}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
@@ -106,7 +106,7 @@
                             <!-- Divider -->
                             <Border Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
 
-                            <!-- PC Host Version -->
+                            <!-- Embedded host connection status / version ("Your PC") -->
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
                                     <Path Data="{StaticResource IconDesktopPC}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>

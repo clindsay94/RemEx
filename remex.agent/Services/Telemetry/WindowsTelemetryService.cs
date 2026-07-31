@@ -1,14 +1,9 @@
-using System;
 using System.Diagnostics;
-using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Linq;
 using System.Management;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Messages;
 using Remex.Core.Services;
@@ -471,32 +466,6 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         int c = parent.LastIndexOf(':');
         var s = c >= 0 ? parent.Substring(c + 1) : parent;
         return s.Replace("AMD", " ").Replace("Intel", " ").Trim();
-    }
-
-    private string DetermineCategory(string label)
-    {
-        if (string.IsNullOrWhiteSpace(label)) return "Other";
-        var lower = label.ToLowerInvariant();
-
-        if (lower.Contains("cpu") || lower.Contains("core") || lower.Contains("thread") || lower.Contains("ccd"))
-            return "CPU";
-        
-        if (lower.Contains("gpu") || lower.Contains("pcie") || lower.Contains("video"))
-            return "GPU";
-            
-        if (lower.Contains("mem") || lower.Contains("ram") || lower.Contains("virtual") || lower.Contains("physical") || lower.Contains("ddr"))
-            return "Memory";
-
-        if (lower.Contains("net") || lower.Contains("wi-fi") || lower.Contains("ethernet") || lower.Contains("adapter"))
-            return "Network";
-
-        if (lower.Contains("disk") || lower.Contains("drive") || lower.Contains("nvme") || lower.Contains("sata") || lower.Contains("ssd") || lower.Contains("hdd"))
-            return "Disk";
-
-        if (lower.Contains("motherboard") || lower.Contains("sys") || lower.Contains("fan") || lower.Contains("pump") || lower.Contains("vrm"))
-            return "System";
-
-        return "Other";
     }
 
     private TelemetryPayload ReadWmiFallback()

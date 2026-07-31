@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.InteropServices;
 using Remex.Core.Services;
 using Xunit;

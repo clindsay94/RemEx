@@ -1,12 +1,9 @@
 package com.clindsay94.remex.ui.navigation
 
 import android.view.HapticFeedbackConstants
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -36,6 +33,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +46,6 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.navigationsuite.ExperimentalMaterial3AdaptiveNavigationSuiteApi
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
@@ -72,6 +69,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -102,9 +102,6 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-// M3 Expressive motion easing curves
-private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
-private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
 private const val PrimaryNavRoute = "primary_nav"
 
 // Routes that suppress the navigation chrome (full-screen / flow screens)
@@ -166,6 +163,7 @@ fun AppNavigation() {
 @OptIn(
         ExperimentalMaterial3Api::class,
         ExperimentalMaterial3AdaptiveNavigationSuiteApi::class,
+        ExperimentalMaterial3ExpressiveApi::class,
 )
 @Composable
 private fun AppNavigationContent(
@@ -227,7 +225,14 @@ private fun AppNavigationContent(
         val moreSheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded))
 
         // Close more sheet on route change
-        LaunchedEffect(currentRoute) { showMoreSheet = false }
+        // Close the More sheet when the route changes underneath it (deep links, pairing
+        // navigation) — but let the hide animation finish before unmounting (RemEx-rzzo).
+        LaunchedEffect(currentRoute) {
+                if (showMoreSheet) {
+                        moreSheetState.hide()
+                        showMoreSheet = false
+                }
+        }
 
         LaunchedEffect(currentRoute, selectedPrimaryIndex) {
                 if (
@@ -246,21 +251,26 @@ private fun AppNavigationContent(
 
         // Back handler: show exit confirmation when at the primary root destination
         val isAtRoot = currentRoute == PrimaryNavRoute
-        var backProgress by remember { mutableStateOf(0f) }
-        var isBackGestureActive by remember { mutableStateOf(false) }
+        // Animatable rather than a raw Float: mid-gesture the value snaps to the finger, but a
+        // cancelled (or completed) gesture springs the shell home instead of jumping to identity
+        // in one frame (RemEx-gblj). The graphicsLayer gates read value > 0f so the return spring
+        // stays visible after the gesture itself has ended.
+        val backProgress = remember { Animatable(0f) }
+        val backReturnSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
 
         PredictiveBackHandler(enabled = isAtRoot) { backEventFlow ->
                 try {
-                        isBackGestureActive = true
                         backEventFlow.collect { event ->
-                                backProgress = event.progress
+                                backProgress.snapTo(event.progress)
                         }
                         showExitDialog = true
-                        isBackGestureActive = false
-                        backProgress = 0f
+                        backProgress.animateTo(0f, backReturnSpec)
                 } catch (e: CancellationException) {
-                        isBackGestureActive = false
-                        backProgress = 0f
+                        // onBackCancelled() cancels THIS coroutine too (androidx source: it
+                        // cancels both the event channel and the handler job), so the return
+                        // spring must run on the composition scope that survives the gesture.
+                        scope.launch { backProgress.animateTo(0f, backReturnSpec) }
+                        throw e
                 }
         }
 
@@ -322,11 +332,11 @@ private fun AppNavigationContent(
                         modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                        if (isBackGestureActive) {
-                                                scaleX = 1.0f - (backProgress * 0.08f)
-                                                scaleY = 1.0f - (backProgress * 0.08f)
-                                                translationX = backProgress * 48f * view.context.resources.displayMetrics.density
-                                                alpha = 1.0f - (backProgress * 0.2f)
+                                        if (backProgress.value > 0f) {
+                                                scaleX = 1.0f - (backProgress.value * 0.08f)
+                                                scaleY = 1.0f - (backProgress.value * 0.08f)
+                                                translationX = backProgress.value * 48f * view.context.resources.displayMetrics.density
+                                                alpha = 1.0f - (backProgress.value * 0.2f)
                                         }
                                 }
                 ) {
@@ -356,17 +366,17 @@ private fun AppNavigationContent(
                                 enter =
                                         slideInVertically(
                                                 animationSpec =
-                                                        tween(350, easing = EmphasizedDecelerate),
+                                                        MaterialTheme.motionScheme.defaultSpatialSpec(),
                                         ) { it } +
-                                                fadeIn(tween(350, easing = EmphasizedDecelerate)),
+                                                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
                                 exit =
                                         slideOutVertically(
                                                 animationSpec =
-                                                        tween(200, easing = EmphasizedAccelerate),
+                                                        MaterialTheme.motionScheme.fastSpatialSpec(),
                                         ) { it } +
-                                                fadeOut(tween(200, easing = EmphasizedAccelerate)),
+                                                fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
                         ) {
-                                NavigationBar(modifier = Modifier.navigationBarsPadding()) {
+                                NavigationBar {
                                         // Primary 4 nav items
                                         navItems.forEachIndexed { index, screen ->
                                                 val isSelected =
@@ -376,24 +386,46 @@ private fun AppNavigationContent(
                                                         selected = isSelected,
                                                         onClick = { onNavItemClick(screen.route) },
                                                         icon = {
-                                                                // M3: Badge the Dashboard icon when
-                                                                // disconnected
-                                                                if (screen == Screen.Dashboard &&
-                                                                                !isConnected
+                                                                // A single BadgedBox keeps the icon identity
+                                                                // stable; the badge scales+fades in and out
+                                                                // (RemEx-pgzk). The TalkBack stateDescription
+                                                                // applies only while the badge shows (8d9k).
+                                                                val showDisconnectedBadge =
+                                                                        screen == Screen.Dashboard && !isConnected
+                                                                val disconnectedLabel =
+                                                                        stringResource(
+                                                                                R.string.status_disconnected
+                                                                        )
+                                                                BadgedBox(
+                                                                        badge = {
+                                                                                androidx.compose.animation.AnimatedVisibility(
+                                                                                        visible = showDisconnectedBadge,
+                                                                                        enter = scaleIn(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastSpatialSpec()
+                                                                                        ) + fadeIn(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastEffectsSpec()
+                                                                                        ),
+                                                                                        exit = scaleOut(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastSpatialSpec()
+                                                                                        ) + fadeOut(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastEffectsSpec()
+                                                                                        ),
+                                                                                ) {
+                                                                                        Badge()
+                                                                                }
+                                                                        },
+                                                                        modifier =
+                                                                                Modifier.semantics {
+                                                                                        if (showDisconnectedBadge) {
+                                                                                                stateDescription =
+                                                                                                        disconnectedLabel
+                                                                                        }
+                                                                                },
                                                                 ) {
-                                                                        BadgedBox(
-                                                                                badge = { Badge() }
-                                                                        ) {
-                                                                                Icon(
-                                                                                        imageVector =
-                                                                                                screen.icon,
-                                                                                        contentDescription =
-                                                                                                stringResource(
-                                                                                                        screen.titleRes
-                                                                                                ),
-                                                                                )
-                                                                        }
-                                                                } else {
                                                                         Icon(
                                                                                 imageVector =
                                                                                         screen.icon,
@@ -457,11 +489,11 @@ private fun AppNavigationContent(
                         modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                        if (isBackGestureActive) {
-                                                scaleX = 1.0f - (backProgress * 0.08f)
-                                                scaleY = 1.0f - (backProgress * 0.08f)
-                                                translationX = backProgress * 48f * view.context.resources.displayMetrics.density
-                                                alpha = 1.0f - (backProgress * 0.2f)
+                                        if (backProgress.value > 0f) {
+                                                scaleX = 1.0f - (backProgress.value * 0.08f)
+                                                scaleY = 1.0f - (backProgress.value * 0.08f)
+                                                translationX = backProgress.value * 48f * view.context.resources.displayMetrics.density
+                                                alpha = 1.0f - (backProgress.value * 0.2f)
                                         }
                                 }
                 ) {
@@ -471,15 +503,15 @@ private fun AppNavigationContent(
                                 enter =
                                         slideInHorizontally(
                                                 animationSpec =
-                                                        tween(350, easing = EmphasizedDecelerate),
+                                                        MaterialTheme.motionScheme.defaultSpatialSpec(),
                                         ) { -it } +
-                                                fadeIn(tween(350, easing = EmphasizedDecelerate)),
+                                                fadeIn(MaterialTheme.motionScheme.defaultEffectsSpec()),
                                 exit =
                                         slideOutHorizontally(
                                                 animationSpec =
-                                                        tween(200, easing = EmphasizedAccelerate),
+                                                        MaterialTheme.motionScheme.fastSpatialSpec(),
                                         ) { -it } +
-                                                fadeOut(tween(200, easing = EmphasizedAccelerate)),
+                                                fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()),
                         ) {
                                 NavigationRail(
                                         containerColor =
@@ -496,22 +528,46 @@ private fun AppNavigationContent(
                                                                                 index,
                                                         onClick = { onNavItemClick(screen.route) },
                                                         icon = {
-                                                                if (screen == Screen.Dashboard &&
-                                                                                !isConnected
+                                                                // A single BadgedBox keeps the icon identity
+                                                                // stable; the badge scales+fades in and out
+                                                                // (RemEx-pgzk). The TalkBack stateDescription
+                                                                // applies only while the badge shows (8d9k).
+                                                                val showDisconnectedBadge =
+                                                                        screen == Screen.Dashboard && !isConnected
+                                                                val disconnectedLabel =
+                                                                        stringResource(
+                                                                                R.string.status_disconnected
+                                                                        )
+                                                                BadgedBox(
+                                                                        badge = {
+                                                                                androidx.compose.animation.AnimatedVisibility(
+                                                                                        visible = showDisconnectedBadge,
+                                                                                        enter = scaleIn(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastSpatialSpec()
+                                                                                        ) + fadeIn(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastEffectsSpec()
+                                                                                        ),
+                                                                                        exit = scaleOut(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastSpatialSpec()
+                                                                                        ) + fadeOut(
+                                                                                                MaterialTheme.motionScheme
+                                                                                                        .fastEffectsSpec()
+                                                                                        ),
+                                                                                ) {
+                                                                                        Badge()
+                                                                                }
+                                                                        },
+                                                                        modifier =
+                                                                                Modifier.semantics {
+                                                                                        if (showDisconnectedBadge) {
+                                                                                                stateDescription =
+                                                                                                        disconnectedLabel
+                                                                                        }
+                                                                                },
                                                                 ) {
-                                                                        BadgedBox(
-                                                                                badge = { Badge() }
-                                                                        ) {
-                                                                                Icon(
-                                                                                        imageVector =
-                                                                                                screen.icon,
-                                                                                        contentDescription =
-                                                                                                stringResource(
-                                                                                                        screen.titleRes
-                                                                                                ),
-                                                                                )
-                                                                        }
-                                                                } else {
                                                                         Icon(
                                                                                 imageVector =
                                                                                         screen.icon,
@@ -626,13 +682,21 @@ private fun AppNavigationContent(
                                                 view.performHapticFeedback(
                                                         HapticFeedbackConstants.KEYBOARD_TAP
                                                 )
+                                                // Navigate only after the hide animation
+                                                // completes so the sheet slides out instead of
+                                                // being destroyed mid-animation (RemEx-rzzo).
                                                 scope
                                                         .launch { moreSheetState.hide() }
-                                                        .invokeOnCompletion {
+                                                        .invokeOnCompletion { cause ->
                                                                 if (!moreSheetState.isVisible)
                                                                         showMoreSheet = false
+                                                                // Only navigate when the hide ran
+                                                                // to completion — a preempted hide
+                                                                // (double-tap race) must not fire
+                                                                // a stale navigation.
+                                                                if (cause == null)
+                                                                        navigateTo(screen.route)
                                                         }
-                                                navigateTo(screen.route)
                                         },
                                         modifier =
                                                 Modifier.padding(
@@ -671,7 +735,7 @@ private fun AppNavigationContent(
 
 // ─── NavHost ─────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RemexNavHost(
         navController: androidx.navigation.NavHostController,
@@ -690,6 +754,15 @@ private fun RemexNavHost(
         pagerState: androidx.compose.foundation.pager.PagerState? = null,
         modifier: Modifier = Modifier,
 ) {
+        // NavHost's transition lambdas are NOT @Composable, so the motionScheme specs must be
+        // captured here in composable scope and closed over. Enters use the default (emphasized)
+        // tier, exits the fast tier — preserving the former slow-in / quick-out relationship.
+        val enterScaleSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+        val exitScaleSpec = MaterialTheme.motionScheme.fastSpatialSpec<Float>()
+        val enterSlideSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+        val exitSlideSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+        val enterFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+        val exitFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
         NavHost(
                 navController = navController,
                 startDestination = startDestination,
@@ -698,32 +771,32 @@ private fun RemexNavHost(
                 enterTransition = {
                         scaleIn(
                                 initialScale = 0.94f,
-                                animationSpec = tween(350, easing = EmphasizedDecelerate),
-                        ) + fadeIn(tween(350, easing = EmphasizedDecelerate))
+                                animationSpec = enterScaleSpec,
+                        ) + fadeIn(enterFadeSpec)
                 },
                 exitTransition = {
                         scaleOut(
                                 targetScale = 1.06f,
-                                animationSpec = tween(200, easing = EmphasizedAccelerate),
-                        ) + fadeOut(tween(200, easing = EmphasizedAccelerate))
+                                animationSpec = exitScaleSpec,
+                        ) + fadeOut(exitFadeSpec)
                 },
                 popEnterTransition = {
                         scaleIn(
                                 initialScale = 1.06f,
-                                animationSpec = tween(350, easing = EmphasizedDecelerate),
-                        ) + fadeIn(tween(350, easing = EmphasizedDecelerate))
+                                animationSpec = enterScaleSpec,
+                        ) + fadeIn(enterFadeSpec)
                 },
                 popExitTransition = {
                         scaleOut(
                                 targetScale = 0.94f,
-                                animationSpec = tween(200, easing = EmphasizedAccelerate),
-                        ) + fadeOut(tween(200, easing = EmphasizedAccelerate))
+                                animationSpec = exitScaleSpec,
+                        ) + fadeOut(exitFadeSpec)
                 },
         ) {
                 composable(
                         Screen.Splash.route,
-                        enterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
-                        exitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
+                        enterTransition = { fadeIn(enterFadeSpec) },
+                        exitTransition = { fadeOut(exitFadeSpec) },
                 ) {
                         SplashScreen(
                                 splashStyle = splashStyle,
@@ -742,8 +815,8 @@ private fun RemexNavHost(
 
                 composable(
                         Screen.Tutorial.route,
-                        enterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
-                        exitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
+                        enterTransition = { fadeIn(enterFadeSpec) },
+                        exitTransition = { fadeOut(exitFadeSpec) },
                 ) {
                         TutorialScreen(
                                 onFinished = {
@@ -780,14 +853,14 @@ private fun RemexNavHost(
                         Screen.QrScanner.route,
                         // QR scanner enters from bottom — modal feel
                         enterTransition = {
-                                slideInVertically(tween(350, easing = EmphasizedDecelerate)) {
+                                slideInVertically(enterSlideSpec) {
                                         it
-                                } + fadeIn(tween(350, easing = EmphasizedDecelerate))
+                                } + fadeIn(enterFadeSpec)
                         },
                         exitTransition = {
-                                slideOutVertically(tween(250, easing = EmphasizedAccelerate)) {
+                                slideOutVertically(exitSlideSpec) {
                                         it
-                                } + fadeOut(tween(250, easing = EmphasizedAccelerate))
+                                } + fadeOut(exitFadeSpec)
                         },
                 ) {
                         QrScannerScreen(
@@ -810,10 +883,10 @@ private fun RemexNavHost(
                                 androidx.navigation.navArgument("port") { type = androidx.navigation.NavType.IntType }
                         ),
                         enterTransition = {
-                                slideInVertically(tween(350, easing = EmphasizedDecelerate)) { it } + fadeIn(tween(350, easing = EmphasizedDecelerate))
+                                slideInVertically(enterSlideSpec) { it } + fadeIn(enterFadeSpec)
                         },
                         exitTransition = {
-                                slideOutVertically(tween(250, easing = EmphasizedAccelerate)) { it } + fadeOut(tween(250, easing = EmphasizedAccelerate))
+                                slideOutVertically(exitSlideSpec) { it } + fadeOut(exitFadeSpec)
                         }
                 ) { backStackEntry ->
                         val host = backStackEntry.arguments?.getString("host") ?: ""
@@ -839,10 +912,10 @@ private fun RemexNavHost(
                 composable(
                         Screen.RemoteDesktop.route,
                         // Full-screen immersive — pure crossfade, no spatial motion
-                        enterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
-                        exitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
-                        popEnterTransition = { fadeIn(tween(400, easing = LinearEasing)) },
-                        popExitTransition = { fadeOut(tween(400, easing = LinearEasing)) },
+                        enterTransition = { fadeIn(enterFadeSpec) },
+                        exitTransition = { fadeOut(exitFadeSpec) },
+                        popEnterTransition = { fadeIn(enterFadeSpec) },
+                        popExitTransition = { fadeOut(exitFadeSpec) },
                 ) { RemoteDesktopScreen() }
 
                 composable(Screen.Personalization.route) { PersonalizationScreen() }

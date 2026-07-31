@@ -9,8 +9,6 @@ using Remex.Agent.Services;
 using Remex.Agent.Services.Input;
 using Remex.Agent.Services.RemoteDesktop.Linux;
 using Remex.Agent.Services.RemoteDesktop.Windows;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Remex.Agent.Tests;
 
@@ -313,14 +311,14 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
                 if (r.MessageType == WebSocketMessageType.Close) break;
             }
         }
-        catch (OperationCanceledException) { }
-        catch (WebSocketException) { }
-        catch (System.IO.IOException) { }
+        catch (OperationCanceledException) { /* test teardown: the socket is being torn down deliberately, so these three are the expected ways the loop ends */ }
+        catch (WebSocketException) { /* as above */ }
+        catch (System.IO.IOException) { /* as above */ }
 
         if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
         {
             try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
-            catch { }
+            catch { /* best-effort test cleanup: a failure here would mask the assertion the test actually makes */ }
         }
     }
 
@@ -538,7 +536,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
         if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived)
         {
             try { await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
-            catch { }
+            catch { /* best-effort test cleanup, as above */ }
         }
     }
 
@@ -679,7 +677,7 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
     }
 
     [Fact]
-    public async Task DesktopStart_WhenWindowsDesktopBlocked_SendsActionableDesktopError()
+    public async Task DesktopConnect_WhenWindowsDesktopBlocked_ReportsWithoutBeingAsked()
     {
         var factory = GetFactory(new MockHostCapabilitiesProvider
         {
@@ -704,15 +702,18 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
         });
 
         var wsClient = factory.Server.CreateWebSocketClient();
-        var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws/desktop"), CancellationToken.None);
+        // Bounded, matching the rest of the file. Without it a regression that stops sending the
+        // unsolicited error does not fail here - it HANGS, because nothing else will ever arrive on
+        // this socket. Verified by flipping CurrentDesktopReady to true: the run blocked indefinitely.
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws/desktop"), cts.Token);
 
-        await MessageSerializer.SendAsync(ws, new RemexMessage
-        {
-            Type = MessageTypes.DesktopStart,
-            DesktopConfig = new DesktopConfig(),
-        }, CancellationToken.None);
-
-        var message = await MessageSerializer.ReceiveAsync(ws, CancellationToken.None);
+        // DELIBERATELY no desktop_start. RemoteDesktopHandler checks the Windows diagnostic report
+        // BEFORE its receive loop: on a blocked desktop it sends this error unsolicited and then
+        // CloseOutputAsync's, so it never reads a request. Sending one anyway is a race against that
+        // close, and losing it throws ObjectDisposedException on the client's own send rather than
+        // failing an assertion (RemEx-0v3w: ~1 run in 6). Re-adding a send here reintroduces the flake.
+        var message = await MessageSerializer.ReceiveAsync(ws, cts.Token);
         Assert.NotNull(message);
         Assert.Equal(MessageTypes.DesktopError, message!.Type);
         Assert.Contains("Winlogon", message.ErrorText);

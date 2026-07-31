@@ -364,6 +364,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         viewModelScope.launch {
             settingsManager.migrateShapeDefaultsV2()
+            settingsManager.migrateShapeDefaultsV3()
         }
 
         maybeAutoShowCoach()
@@ -911,4 +912,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             )
         }
     }
+
+    /** Per-category card-shape overrides; absent entries mean inherit (RemEx-mycn). */
+    val categoryShapePresets = settingsManager.categoryShapePresetsFlow
 }

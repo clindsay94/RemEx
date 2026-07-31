@@ -134,24 +134,38 @@ public partial class AboutViewModel : ObservableObject, IDisposable
             LocalizationService.Instance["About_WhatsNew_Issues_Body"]));
     }
 
-    /// <summary>Parses the most recent CHANGELOG version section into What's-New highlights (bold title + description).</summary>
-    private static List<WhatsNewItem> ParseChangelog(string markdown, int maxItems)
+    /// <summary>
+    /// Parses the newest *released* CHANGELOG section into What's-New highlights (bold title + description).
+    /// "## [Unreleased]" is skipped — its entries aren't shipped yet — and so is any released section with
+    /// no "- " bullets, otherwise an empty leading section makes this return 0 items and the About page
+    /// silently falls back to stale hardcoded highlights (RemEx-xtc2). Internal for unit testing.
+    /// </summary>
+    internal static List<WhatsNewItem> ParseChangelog(string markdown, int maxItems)
     {
         var items = new List<WhatsNewItem>();
         var lines = markdown.Replace("\r\n", "\n").Split('\n');
         int i = 0;
-        while (i < lines.Length && !lines[i].StartsWith("## [", StringComparison.Ordinal)) i++;
-        i++; // move past the first version heading (most recent section)
-        for (; i < lines.Length && items.Count < maxItems; i++)
+        while (i < lines.Length)
         {
-            if (lines[i].StartsWith("## [", StringComparison.Ordinal))
-                break; // stop at the next version — only surface the latest
-            var trimmed = lines[i].TrimStart();
-            if (!trimmed.StartsWith("- ", StringComparison.Ordinal))
-                continue;
-            var (title, description) = ParseBullet(trimmed.Substring(2));
-            if (!string.IsNullOrWhiteSpace(title))
-                items.Add(new WhatsNewItem(title, description));
+            while (i < lines.Length && !lines[i].StartsWith("## [", StringComparison.Ordinal)) i++;
+            if (i >= lines.Length) break;
+            var isUnreleased = lines[i].Contains("[Unreleased]", StringComparison.OrdinalIgnoreCase);
+            i++;
+            for (; i < lines.Length && items.Count < maxItems; i++)
+            {
+                if (lines[i].StartsWith("## [", StringComparison.Ordinal))
+                    break; // section over — decide below whether it produced anything
+                if (isUnreleased)
+                    continue;
+                var trimmed = lines[i].TrimStart();
+                if (!trimmed.StartsWith("- ", StringComparison.Ordinal))
+                    continue;
+                var (title, description) = ParseBullet(trimmed.Substring(2));
+                if (!string.IsNullOrWhiteSpace(title))
+                    items.Add(new WhatsNewItem(title, description));
+            }
+            if (items.Count > 0)
+                break; // newest non-empty released section found — only surface that one
         }
         return items;
     }
@@ -183,7 +197,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
 
     private void LoadFaq()
     {
-        for (int q = 1; q <= 11; q++)
+        for (int q = 1; q <= 16; q++)
         {
             FaqItems.Add(new FaqItem(
                 LocalizationService.Instance[$"Faq_Q{q}_Question"],
@@ -220,7 +234,9 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         var caps = _connection.HostCapabilities;
         var version = caps.Version;
         var platform = caps.Platform;
-        var runtime = caps.RuntimeMode;
+        // Localized label, not the raw wire token: RuntimeMode "service" is legacy naming for a
+        // non-interactive Windows process, not a service install (RemEx-9z0f).
+        var runtime = _connection.HostRuntimeLabel;
 
         if (!string.IsNullOrEmpty(version) && version != "unknown")
         {

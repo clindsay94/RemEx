@@ -6,13 +6,18 @@ import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,11 +30,11 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -120,6 +125,7 @@ fun ConnectionScreenContent(
         val view = LocalView.current
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
+        val motionScheme = MaterialTheme.motionScheme
 
         var hostInput by remember { mutableStateOf("") }
         var portInput by remember { mutableStateOf("") }
@@ -294,7 +300,16 @@ fun ConnectionScreenContent(
                 },
                 snackbarHost = { SnackbarHost(snackbarHostState) }
         ) { padding ->
-                if (connectionPrefs == null || desktopPrefs == null) {
+                val prefsLoaded = connectionPrefs != null && desktopPrefs != null
+                AnimatedContent(
+                        targetState = prefsLoaded,
+                        transitionSpec = {
+                                val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                                fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                        },
+                        label = "connectionPrefsLoaded"
+                ) { loaded ->
+                if (!loaded) {
                         Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
@@ -304,6 +319,14 @@ fun ConnectionScreenContent(
                                 modifier =
                                         Modifier.fillMaxSize()
                                                 .padding(padding)
+                                                // Before verticalScroll on purpose: this
+                                                // shrinks the scroll VIEWPORT when the
+                                                // keyboard opens, so the lower fields can be
+                                                // scrolled above it. Applied after the scroll
+                                                // it would only pad the content, leaving the
+                                                // viewport itself behind the keyboard
+                                                // (RemEx-a9ci).
+                                                .imePadding()
                                                 .verticalScroll(rememberScrollState())
                                                 .padding(24.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -435,8 +458,7 @@ fun ConnectionScreenContent(
                                                                 ),
                                                                 style =
                                                                         MaterialTheme.typography
-                                                                                .titleSmall,
-                                                                fontWeight = FontWeight.SemiBold,
+                                                                                .titleSmallEmphasized,
                                                                 color =
                                                                         MaterialTheme.colorScheme
                                                                                 .onPrimaryContainer
@@ -474,52 +496,63 @@ fun ConnectionScreenContent(
                                                         enabled = !isDiscovering,
                                                         modifier = Modifier.fillMaxWidth()
                                                 ) {
-                                                        if (isDiscovering) {
-                                                                RemexLoadingIndicator(
-                                                                        modifier =
-                                                                                Modifier.size(
-                                                                                        24.dp
-                                                                                ),
-                                                                        color =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onPrimary
-                                                                )
-                                                                Spacer(
-                                                                        modifier =
-                                                                                Modifier.width(8.dp)
-                                                                )
-                                                                Text(
-                                                                        stringResource(
-                                                                                R.string
-                                                                                        .connection_searching
-                                                                        )
-                                                                )
-                                                        } else {
-                                                                Icon(
-                                                                        Icons.Default.Search,
-                                                                        contentDescription = null
-                                                                )
-                                                                Spacer(
-                                                                        modifier =
-                                                                                Modifier.width(8.dp)
-                                                                )
-                                                                Text(
-                                                                        if (discoveredHost != null
-                                                                        ) {
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .connection_found_host,
-                                                                                        discoveredHost
-                                                                                                .host
+                                                        AnimatedContent(
+                                                                targetState = isDiscovering,
+                                                                transitionSpec = {
+                                                                        val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                                                                        fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                                                                },
+                                                                label = "discoverButtonContent"
+                                                        ) { discovering ->
+                                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                        if (discovering) {
+                                                                                RemexLoadingIndicator(
+                                                                                        modifier =
+                                                                                                Modifier.size(
+                                                                                                        24.dp
+                                                                                                ),
+                                                                                        color =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .onPrimary
+                                                                                )
+                                                                                Spacer(
+                                                                                        modifier =
+                                                                                                Modifier.width(8.dp)
+                                                                                )
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_searching
+                                                                                        )
                                                                                 )
                                                                         } else {
-                                                                                stringResource(
-                                                                                        R.string
-                                                                                                .connection_discover_button
+                                                                                Icon(
+                                                                                        Icons.Default.Search,
+                                                                                        contentDescription = null
+                                                                                )
+                                                                                Spacer(
+                                                                                        modifier =
+                                                                                                Modifier.width(8.dp)
+                                                                                )
+                                                                                Text(
+                                                                                        if (discoveredHost != null
+                                                                                        ) {
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_found_host,
+                                                                                                        discoveredHost
+                                                                                                                .host
+                                                                                                )
+                                                                                        } else {
+                                                                                                stringResource(
+                                                                                                        R.string
+                                                                                                                .connection_discover_button
+                                                                                                )
+                                                                                        }
                                                                                 )
                                                                         }
-                                                                )
+                                                                }
                                                         }
                                                 }
 
@@ -621,7 +654,9 @@ fun ConnectionScreenContent(
                                 Card(
                                         modifier =
                                                 Modifier.fillMaxWidth()
-                                                        .animateContentSize()
+                                                        .animateContentSize(
+                                                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                                                        )
                                                         .clickable {
                                                                 view.performHapticFeedback(
                                                                         HapticFeedbackConstants
@@ -669,23 +704,25 @@ fun ConnectionScreenContent(
                                                                         style =
                                                                                 MaterialTheme
                                                                                         .typography
-                                                                                        .titleSmall,
-                                                                        fontWeight =
-                                                                                FontWeight.SemiBold,
+                                                                                        .titleSmallEmphasized,
                                                                         color =
                                                                                 MaterialTheme
                                                                                         .colorScheme
                                                                                         .onSurfaceVariant
                                                                 )
                                                         }
+                                                        val helpChevronRotation by animateFloatAsState(
+                                                                targetValue = if (showHelpSection) 180f else 0f,
+                                                                animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+                                                                label = "helpChevronRotation"
+                                                        )
                                                         Icon(
-                                                                if (showHelpSection)
-                                                                        Icons.Default.ExpandLess
-                                                                else Icons.Default.ExpandMore,
+                                                                Icons.Default.ExpandMore,
                                                                 contentDescription = null,
                                                                 tint =
                                                                         MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
+                                                                                .onSurfaceVariant,
+                                                                modifier = Modifier.rotate(helpChevronRotation)
                                                         )
                                                 }
 
@@ -797,22 +834,6 @@ fun ConnectionScreenContent(
                                                                                                 stringResource(
                                                                                                         R.string
                                                                                                                 .connection_ip_windows
-                                                                                                )
-                                                                                )
-                                                                                HorizontalDivider()
-                                                                                IpInstructionRow(
-                                                                                        platform =
-                                                                                                stringResource(
-                                                                                                        R.string
-                                                                                                                .connection_platform_macos
-                                                                                                ),
-                                                                                        icon =
-                                                                                                Icons.Default
-                                                                                                        .Laptop,
-                                                                                        instruction =
-                                                                                                stringResource(
-                                                                                                        R.string
-                                                                                                                .connection_ip_macos
                                                                                                 )
                                                                                 )
                                                                                 HorizontalDivider()
@@ -1048,8 +1069,7 @@ fun ConnectionScreenContent(
                                                                 ),
                                                         style =
                                                                 MaterialTheme.typography
-                                                                        .titleMedium,
-                                                        fontWeight = FontWeight.SemiBold
+                                                                        .titleMediumEmphasized
                                                 )
 
                                                 Spacer(modifier = Modifier.height(8.dp))
@@ -1161,13 +1181,22 @@ fun ConnectionScreenContent(
                                         modifier = Modifier.fillMaxWidth(),
                                         enabled = !isConnecting && hostInput.isNotEmpty()
                                 ) {
-                                        if (isConnecting) {
-                                                RemexLoadingIndicator(
-                                                        modifier = Modifier.size(24.dp),
-                                                        color = MaterialTheme.colorScheme.onPrimary
-                                                )
-                                        } else {
-                                                Text(stringResource(R.string.button_save_connect))
+                                        AnimatedContent(
+                                                targetState = isConnecting,
+                                                transitionSpec = {
+                                                        val effectsSpec = motionScheme.defaultEffectsSpec<Float>()
+                                                        fadeIn(effectsSpec) togetherWith fadeOut(effectsSpec)
+                                                },
+                                                label = "connectButtonContent"
+                                        ) { connecting ->
+                                                if (connecting) {
+                                                        RemexLoadingIndicator(
+                                                                modifier = Modifier.size(24.dp),
+                                                                color = MaterialTheme.colorScheme.onPrimary
+                                                        )
+                                                } else {
+                                                        Text(stringResource(R.string.button_save_connect))
+                                                }
                                         }
                                 }
 
@@ -1177,6 +1206,15 @@ fun ConnectionScreenContent(
                                         modifier = Modifier.fillMaxWidth()
                                 ) {
                                         Column(modifier = Modifier.weight(1f)) {
+                                                val statusColor by animateColorAsState(
+                                                        targetValue =
+                                                                if (isConnected)
+                                                                        MaterialTheme.colorScheme.primary
+                                                                else
+                                                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        animationSpec = motionScheme.defaultEffectsSpec(),
+                                                        label = "connectionStatusColor"
+                                                )
                                                 Text(
                                                         text =
                                                                 stringResource(
@@ -1185,13 +1223,7 @@ fun ConnectionScreenContent(
                                                                         status
                                                                 ),
                                                         style = MaterialTheme.typography.bodyMedium,
-                                                        color =
-                                                                if (isConnected)
-                                                                        MaterialTheme.colorScheme
-                                                                                .primary
-                                                                else
-                                                                        MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
+                                                        color = statusColor
                                                 )
                                                 Text(
                                                         text = capabilitySummary,
@@ -1212,7 +1244,11 @@ fun ConnectionScreenContent(
                                                         ) != null
                                         }
 
-                                        if (isPaired) {
+                                        AnimatedVisibility(
+                                                visible = isPaired,
+                                                enter = expandVertically(motionScheme.fastSpatialSpec()) + fadeIn(motionScheme.fastEffectsSpec()),
+                                                exit = shrinkVertically(motionScheme.fastSpatialSpec()) + fadeOut(motionScheme.fastEffectsSpec())
+                                        ) {
                                                 Row(
                                                         verticalAlignment =
                                                                 Alignment.CenterVertically,
@@ -1274,6 +1310,7 @@ fun ConnectionScreenContent(
                                 }
                         }
                 }
+                }
         }
 }
 
@@ -1315,13 +1352,6 @@ private fun ConnectionScreenPreview() {
 @Composable
 private fun HelpStep(number: String, title: String, body: String?) {
         ListItem(
-                headlineContent = {
-                        Text(
-                                title,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold
-                        )
-                },
                 supportingContent =
                         body?.let {
                                 {
@@ -1341,9 +1371,8 @@ private fun HelpStep(number: String, title: String, body: String?) {
                                 Box(contentAlignment = Alignment.Center) {
                                         Text(
                                                 number,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onPrimary,
-                                                fontWeight = FontWeight.Bold
+                                                style = MaterialTheme.typography.labelSmallEmphasized,
+                                                color = MaterialTheme.colorScheme.onPrimary
                                         )
                                 }
                         }
@@ -1352,7 +1381,12 @@ private fun HelpStep(number: String, title: String, body: String?) {
                         ListItemDefaults.colors(
                                 containerColor = androidx.compose.ui.graphics.Color.Transparent
                         )
-        )
+        ) {
+                Text(
+                        title,
+                        style = MaterialTheme.typography.bodyMediumEmphasized
+                )
+        }
 }
 
 @Composable
@@ -1362,13 +1396,6 @@ private fun IpInstructionRow(
         instruction: String
 ) {
         ListItem(
-                headlineContent = {
-                        Text(
-                                platform,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
-                        )
-                },
                 supportingContent = {
                         Text(
                                 instruction,
@@ -1387,5 +1414,10 @@ private fun IpInstructionRow(
                         ListItemDefaults.colors(
                                 containerColor = androidx.compose.ui.graphics.Color.Transparent
                         )
-        )
+        ) {
+                Text(
+                        platform,
+                        style = MaterialTheme.typography.labelMediumEmphasized
+                )
+        }
 }
