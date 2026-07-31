@@ -2769,6 +2769,9 @@ You can change:
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Yes. Open Settings and use "Replay Tutorial" in the Help section. You can do this as often as you like.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
+    <value>The file is arriving faster than the folder you chose can save it, so the download could not finish. Try saving to a folder on this computer's main drive instead of a USB stick or network folder.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>The downloaded file did not match what the PC sent, so it was deleted. Try downloading it again.</value>
   </data>

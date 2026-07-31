@@ -2763,6 +2763,9 @@ Você pode mudar:
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Sim. Abra as Configurações e use "Repetir tutorial" na seção Ajuda. Você pode fazer isso quantas vezes quiser.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
+    <value>O arquivo está chegando mais rápido do que a pasta escolhida consegue salvá-lo, então o download não pôde ser concluído. Tente salvar em uma pasta na unidade principal deste computador em vez de um pen drive ou pasta de rede.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>O arquivo baixado não correspondeu ao que o PC enviou, então ele foi excluído. Baixe novamente.</value>
   </data>

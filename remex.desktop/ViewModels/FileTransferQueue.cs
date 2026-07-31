@@ -283,7 +283,7 @@ public sealed class FileTransferQueue : IDisposable
     /// timeout, and so on (RemEx-s4p4).
     /// <para>
     /// Dispatch is by TYPE, never by message text. A host refusal carries wording the phone wrote
-    /// for a user and is shown verbatim; the two failures the PC itself detects get localized
+    /// for a user and is shown verbatim; the failures the PC itself detects get localized
     /// sentences; anything else falls back to a generic one with the detail left to the log. Matching
     /// on message content instead would silently revert to raw English the first time a message was
     /// reworded.
@@ -293,6 +293,7 @@ public sealed class FileTransferQueue : IDisposable
     {
         FileTransferHostException host => host.HostMessage,
         FileTransferIntegrityException => LocalizationService.Instance["FileTransfer_ErrIntegrity"],
+        FileTransferBacklogException => LocalizationService.Instance["FileTransfer_ErrDestinationTooSlow"],
         TimeoutException => LocalizationService.Instance["FileTransfer_ErrStoppedResponding"],
         _ => LocalizationService.Instance["FileTransfer_ErrGeneric"],
     };

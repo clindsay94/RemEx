@@ -21,7 +21,31 @@ public sealed class FileTransferClient : IDisposable
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _transferEndWaiters = new();
     private readonly ConcurrentDictionary<string, IProgress<double>?> _progressReporters = new();
     private readonly ConcurrentDictionary<string, Channel<byte[]>> _downloadChannels = new();
+
+    /// <summary>
+    /// Bytes accepted for a download but not yet written to disk, per transfer.
+    /// </summary>
+    /// <remarks>
+    /// A separate dictionary rather than a field on the channel because the producer and the writer
+    /// live in different methods and only share a transfer id — the same reason the hashers and the
+    /// end-waiters are kept this way. Reaped in the same finally as all of them.
+    /// </remarks>
+    private readonly ConcurrentDictionary<string, StrongBox<long>> _downloadBacklogBytes = new();
     private readonly ConcurrentDictionary<string, IncrementalHash> _downloadHashers = new();
+
+    /// <summary>
+    /// Ceiling on unwritten download backlog before the transfer is abandoned (RemEx-gyf4).
+    /// </summary>
+    /// <remarks>
+    /// Chosen to be far above any transient stall — a disk pausing for a second at 100 MB/s queues
+    /// a tenth of this — and far below the point where the process is in trouble. It does NOT rescue
+    /// a destination that is persistently slower than the connection: nothing can, without flow
+    /// control in the protocol, because the backlog then grows without limit by construction. What
+    /// it buys is that such a transfer fails in seconds with a message naming the cause, instead of
+    /// consuming RAM proportional to the whole speed difference and taking the application with it.
+    /// </remarks>
+    internal const long MaxQueuedDownloadBytes = 256L * 1024 * 1024;
+
 
     /// <summary>
     /// Fails a transfer whose peer has gone silent, without bounding how long a large transfer
@@ -584,14 +608,57 @@ public sealed class FileTransferClient : IDisposable
         // eliminating the race condition that would exist with fire-and-forget WriteAsync.
         var channel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions { SingleReader = true });
         _downloadChannels[transferId] = channel;
+        var backlogBytes = new StrongBox<long>(0);
+        _downloadBacklogBytes[transferId] = backlogBytes;
         var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         _downloadHashers[transferId] = hasher;
 
+        // Cancellable so an abandoned transfer can stop the writer without draining: completing the
+        // channel instead makes ReadAllAsync flush everything still queued, which on the backlog path
+        // means writing the whole ceiling to the very disk that could not keep up, into a file about
+        // to be deleted.
+        //
+        // DELIBERATELY NOT LINKED TO ct, and that is the whole safety argument. Linked, a ct fired
+        // during the FINAL drain stops the writer mid-flush — and nothing downstream notices, because
+        // the digest is accumulated from bytes as they are RECEIVED, never re-read from the file. The
+        // integrity check would compare a complete hash against a truncated file and pass, and the
+        // queue would mark the transfer Done: a short file under the user's chosen name, reported as
+        // a finished download. Only DiscardPartialFileAsync may cancel this, so a successful drain
+        // cannot be interrupted.
+        using var writerCts = new CancellationTokenSource();
         var writeTask = Task.Run(async () =>
         {
-            await foreach (var data in channel.Reader.ReadAllAsync())
-                await fileStream.WriteAsync(data);
-        }, ct);
+            await foreach (var data in channel.Reader.ReadAllAsync(writerCts.Token))
+            {
+                await fileStream.WriteAsync(data, writerCts.Token);
+                // Retire the bytes only once they are actually on the stream, so the backlog
+                // measures what is genuinely outstanding rather than what has been dequeued.
+                RetireBacklog(backlogBytes, data.Length);
+            }
+        }, writerCts.Token);
+
+        // Every failure exit deletes the partial download through here — driven from the finally so
+        // a new exit cannot forget to call it.
+        async Task DiscardPartialFileAsync()
+        {
+            await writerCts.CancelAsync();
+            try { await writeTask; } catch { /* stopping it IS the point; nothing to report */ }
+
+            // THE FILE MUST BE CLOSED BEFORE IT CAN BE DELETED. It is opened FileShare.None, so a
+            // File.Delete while the stream is still alive throws a sharing violation — and the
+            // best-effort catch then swallowed it, leaving a truncated file under the FINAL name
+            // looking complete. That applied to the host-error and integrity paths too, so this is a
+            // pre-existing bug the RemEx-gyf4 review turned up rather than one the backlog ceiling
+            // introduced. ON WINDOWS: Linux maps FileShare to an advisory flock and unlink ignores
+            // it, so the delete already succeeded there (leaving the stream writing to an unlinked
+            // inode). Disposing twice is safe; the await using below disposes again.
+            // Best-effort like the delete below it, and for the same reason: DisposeAsync FLUSHES,
+            // and the realistic trigger is the exact scenario this feature exists for — a full or
+            // yanked USB stick. Unguarded it would skip the delete and replace the caller's real
+            // exception, so a "destination too slow" abandon would surface as a generic failure.
+            try { await fileStream.DisposeAsync(); } catch { /* best-effort */ }
+            try { File.Delete(localPath); } catch { /* best-effort */ }
+        }
 
         // Registration through the final await is wrapped in try/finally so a throw from EITHER
         // send (Start here — download has no per-chunk send, chunks arrive via OnFileTransferMessage)
@@ -601,6 +668,7 @@ public sealed class FileTransferClient : IDisposable
         // way (RemEx-w9lj): before this fix, a failed Start send left the transfer-end waiter,
         // progress reporter, channel, and hasher all stranded forever, and the writer task blocked
         // on the channel with nothing left to complete it.
+        bool completed = false;
         try
         {
             await _connection.SendAsync(new RemexMessage
@@ -621,15 +689,22 @@ public sealed class FileTransferClient : IDisposable
 
             var result = await _idleWatchdog.AwaitCompletionAsync(tcs, lastActivity, ct);
 
+            // Honour a cancel that landed during the wait rather than finishing the download anyway.
+            ct.ThrowIfCancellationRequested();
+
             // Signal the consumer that no more chunks are coming, then wait for all writes to
             // complete before the fileStream is disposed — prevents ObjectDisposedException on
             // pending writes.
             channel.Writer.TryComplete();
-            try { await writeTask; } catch (OperationCanceledException) { /* draining the writer after cancelling it - the cancel is the reason it stopped */ }
+            // Deliberately NOT catching OperationCanceledException here. Nothing can have cancelled
+            // the writer at this point — only DiscardPartialFileAsync does, and that runs in the
+            // finally — so a swallow would be unreachable today and a trap tomorrow: this exact
+            // catch is what hid the truncated-file bug while writerCts was linked to ct. A writer
+            // fault that DOES reach here (a full disk faulting WriteAsync) must propagate.
+            await writeTask;
 
             if (result.FileTransferEnd?.Success == false)
             {
-                try { File.Delete(localPath); } catch { /* best-effort */ }
                 throw FileTransferHostException.ForHostError(
                     result.FileTransferEnd.ErrorMessage,
                     $"Download failed: {result.FileTransferEnd.ErrorMessage}");
@@ -642,12 +717,25 @@ public sealed class FileTransferClient : IDisposable
             var actualHash = Convert.ToBase64String(hasher.GetHashAndReset());
             if (!string.IsNullOrEmpty(expectedHash) && expectedHash != actualHash)
             {
-                try { File.Delete(localPath); } catch { /* best-effort */ }
                 throw new FileTransferIntegrityException();
             }
+
+            completed = true;
         }
         finally
         {
+            // ONE cleanup decision for every exit, rather than a delete at each throw site. The
+            // paths that were missing it are the ordinary ones — user cancellation and the idle
+            // timeout both went straight to this finally and left a truncated file under the FINAL
+            // chosen filename, with no .part suffix to hint at it. Doing it here also means the next
+            // failure exit somebody adds is covered without having to remember.
+            if (!completed)
+            {
+                // Before the drain below, not after: abandoning must not flush a backlog into a file
+                // that is about to be deleted.
+                await DiscardPartialFileAsync();
+            }
+
             // Unblock the writer task even when we got here via a throw before the normal
             // TryComplete()/await above ran (e.g. SendAsync or tcs.Task faulted), then reap every
             // dictionary this transfer touched. Any writer-task fault surfaced here is swallowed
@@ -656,7 +744,13 @@ public sealed class FileTransferClient : IDisposable
             channel.Writer.TryComplete();
             try { await writeTask; } catch { /* cleanup only; real errors already propagated above */ }
 
+            // ORDER IS LOAD-BEARING, do not sort these. The producer looks up the channel first and
+            // the hasher last, so removing the channel first means no later chunk can be hashed
+            // without being queued. Removing the hasher first would open a window where a chunk is
+            // folded into the digest and never written, which surfaces as an integrity failure
+            // blaming the file rather than the teardown. Backlog box after the channel, same reason.
             _downloadChannels.TryRemove(transferId, out _);
+            _downloadBacklogBytes.TryRemove(transferId, out _);
             _transferEndWaiters.TryRemove(transferId, out _);
             _progressReporters.TryRemove(transferId, out _);
             _downloadHashers.TryRemove(transferId, out _);
@@ -664,6 +758,41 @@ public sealed class FileTransferClient : IDisposable
             hasher.Dispose();
         }
     }
+
+    /// <summary>
+    /// Accounts <paramref name="byteCount"/> against a download's unwritten backlog, accepting it
+    /// only while the total stays within <paramref name="limitBytes"/>.
+    /// </summary>
+    /// <param name="wouldQueue">What the backlog WOULD have become; meaningful only on rejection.</param>
+    /// <returns><c>true</c> when the chunk may be queued.</returns>
+    /// <remarks>
+    /// Pulled out of the dispatch handler so the accounting can be tested without a live connection
+    /// (RemEx-gyf4). The part worth pinning is not the comparison but the ROLLBACK: the counter is
+    /// bumped optimistically because the common path is acceptance, so a rejection has to put the
+    /// bytes back. Miss that and every refused chunk leaks a little of the ceiling, so a transfer
+    /// that recovers is abandoned anyway on a backlog that has never actually existed.
+    /// </remarks>
+    internal static bool TryReserveBacklog(
+        StrongBox<long> backlog, int byteCount, long limitBytes, out long wouldQueue)
+    {
+        wouldQueue = Interlocked.Add(ref backlog.Value, byteCount);
+        if (wouldQueue <= limitBytes)
+        {
+            return true;
+        }
+
+        Interlocked.Add(ref backlog.Value, -byteCount);
+        return false;
+    }
+
+    /// <summary>Retires bytes from a download's backlog once they are on the stream.</summary>
+    /// <remarks>
+    /// Trivial, and extracted anyway: it is the other half of <see cref="TryReserveBacklog"/> and the
+    /// only thing that makes the ceiling releasable. Inline in the writer loop it was a line no test
+    /// could reach — deleting it left every test green while every download over the ceiling failed.
+    /// </remarks>
+    internal static void RetireBacklog(StrongBox<long> backlog, int byteCount)
+        => Interlocked.Add(ref backlog.Value, -byteCount);
 
     private void OnFileTransferMessage(RemexMessage message)
     {
@@ -687,6 +816,31 @@ public sealed class FileTransferClient : IDisposable
                 if (_downloadChannels.TryGetValue(chunk.TransferId, out var ch))
                 {
                     var bytes = Convert.FromBase64String(chunk.DataBase64);
+
+                    // The channel stays UNBOUNDED and this stays a TryWrite that always succeeds.
+                    // Bounding it would be the obvious move and it is the wrong one here: this runs
+                    // on the connection's synchronous message dispatch, so there is no way to await
+                    // room, and a bounded TryWrite would return false and DROP the chunk — a
+                    // corrupt file reported later as an integrity failure, which is the worst
+                    // available outcome. Accounting for the backlog and abandoning the transfer
+                    // deliberately keeps the ordering guarantee the channel exists for while still
+                    // refusing to grow forever.
+                    if (_downloadBacklogBytes.TryGetValue(chunk.TransferId, out var backlog) &&
+                        !TryReserveBacklog(backlog, bytes.Length, MaxQueuedDownloadBytes, out var wouldQueue))
+                    {
+                        // Fail through the same waiter every other download failure uses, so the
+                        // existing finally reaps the channel, the writer task and the partial file.
+                        if (_transferEndWaiters.TryGetValue(chunk.TransferId, out var overflowWaiter))
+                        {
+                            overflowWaiter.TrySetException(
+                                new FileTransferBacklogException(wouldQueue, MaxQueuedDownloadBytes));
+                        }
+                        break;
+                    }
+
+                    // Hash only what is actually queued. Appending before the backlog check would
+                    // fold a chunk we then refused into the digest, turning an abandoned transfer
+                    // into an integrity error that blames the wrong thing.
                     if (_downloadHashers.TryGetValue(chunk.TransferId, out var hasher))
                         hasher.AppendData(bytes);
                     ch.Writer.TryWrite(bytes);

@@ -2767,6 +2767,9 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Evet. Ayarlar'ı açın ve Yardım bölümündeki "Eğitimi Yeniden Oynat" seçeneğini kullanın. Bunu istediğiniz kadar yapabilirsiniz.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
+    <value>Dosya, seçtiğiniz klasörün kaydedebileceğinden daha hızlı geliyor, bu yüzden indirme tamamlanamadı. USB bellek veya ağ klasörü yerine bu bilgisayarın ana sürücüsündeki bir klasöre kaydetmeyi deneyin.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>İndirilen dosya bilgisayarın gönderdiğiyle eşleşmedi, bu yüzden silindi. Yeniden indirmeyi deneyin.</value>
   </data>

@@ -2763,6 +2763,9 @@ Vous pouvez modifier :
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Oui. Ouvrez les Paramètres et utilisez « Revoir le tutoriel » dans la section Aide. Vous pouvez le faire aussi souvent que vous le souhaitez.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
+    <value>Le fichier arrive plus vite que le dossier choisi ne peut l'enregistrer, le téléchargement n'a donc pas pu se terminer. Essayez d'enregistrer dans un dossier du disque principal de cet ordinateur plutôt que sur une clé USB ou un dossier réseau.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>Le fichier téléchargé ne correspondait pas à celui envoyé par le PC ; il a été supprimé. Retéléchargez-le.</value>
   </data>

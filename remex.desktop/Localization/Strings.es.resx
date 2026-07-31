@@ -2777,6 +2777,9 @@ Puedes cambiar:
   <data name="Faq_Q16_Answer" xml:space="preserve">
     <value>Sí. Abre Configuración y usa «Repetir tutorial» en la sección Ayuda. Puedes hacerlo tantas veces como quieras.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
+    <value>El archivo llega más rápido de lo que la carpeta elegida puede guardarlo, así que la descarga no pudo terminar. Prueba a guardarlo en una carpeta de la unidad principal de este equipo en lugar de una memoria USB o una carpeta de red.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>El archivo descargado no coincidía con el que envió el PC, así que se eliminó. Vuelve a descargarlo.</value>
   </data>
