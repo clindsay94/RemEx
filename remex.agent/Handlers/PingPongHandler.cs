@@ -29,8 +29,25 @@ public sealed class PingPongHandler(
     PairingHandler pairingHandler,
     FileTransferHandler fileTransferHandler,
     TransferSessionManager transferSessionManager,
-    PairedClientRegistry pairedClientRegistry)
+    PairedClientRegistry pairedClientRegistry) : IDisposable
 {
+    /// <summary>
+    /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
+    /// </summary>
+    /// <remarks>
+    /// The same hazard RemEx-e2p4 fixed for the Remote Desktop stream: a key press is two messages
+    /// and a chord is six, so a client that vanishes between them leaves the modifier physically held
+    /// on the user's desktop, and only the host can clean that up because the client is what went
+    /// away.
+    ///
+    /// BE HONEST ABOUT WHAT THIS CURRENTLY PROTECTS. No shipping client sends <c>desktop_input</c>
+    /// over this socket: the Android side routes it through <c>HandleDesktopMessage</c> to
+    /// <c>/ws/desktop</c> instead, so the Remote Control screen's keystrokes are already covered by
+    /// the Remote Desktop handler. This branch of the protocol is still reachable and still presses
+    /// real keys, so leaving it as the one input path with no cleanup would be a trap for whoever
+    /// next sends input here — but it is defensive symmetry, not a live user-facing bug.
+    /// </remarks>
+    private readonly HeldKeyTracker _heldKeys = new();
     public async Task HandleAsync(WebSocket webSocket, bool isLoopback, bool isTrustedForPinAutoFetch, CancellationToken ct)
     {
         // Per-connection pairing gate. Loopback connections come from the embedded host on the
@@ -848,7 +865,14 @@ public sealed class PingPongHandler(
         }
     }
 
-    private void DispatchInput(InputEvent input)
+    /// <summary>Applies one input event to the host.</summary>
+    /// <remarks>
+    /// Internal rather than private so the held-key bookkeeping can be tested end to end — the path
+    /// that normally feeds it is a WebSocket, so without a seam the wiring between here and
+    /// <see cref="Dispose"/> is the kind of link that can be deleted with every test still green
+    /// (RemEx-73dc, and RemEx-y6x6 for why that matters).
+    /// </remarks>
+    internal void DispatchInput(InputEvent input)
     {
         try
         {
@@ -878,9 +902,11 @@ public sealed class PingPongHandler(
                     break;
                 case InputEventTypes.KeyDown when input.KeyCode.HasValue:
                     inputSimulation.KeyDown(input.KeyCode.Value);
+                    _heldKeys.Pressed(input.KeyCode.Value);
                     break;
                 case InputEventTypes.KeyUp when input.KeyCode.HasValue:
                     inputSimulation.KeyUp(input.KeyCode.Value);
+                    _heldKeys.Released(input.KeyCode.Value);
                     break;
                 case InputEventTypes.TypeText when input.Text is not null:
                     inputSimulation.TypeText(input.Text);
@@ -890,6 +916,44 @@ public sealed class PingPongHandler(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to dispatch input: {Type}", input.EventType);
+        }
+    }
+
+    /// <summary>
+    /// Releases every key this client still had down when its connection ended (RemEx-73dc).
+    /// </summary>
+    /// <remarks>
+    /// Reached because the connection site holds this in a <c>using</c>, so it runs on a clean close,
+    /// a dropped socket and an exception alike. Best-effort per key: one failing release must not
+    /// strand the rest, which for modifiers is the difference between a stuck Ctrl and a stuck
+    /// Ctrl+Shift+Alt.
+    ///
+    /// Unlike the Remote Desktop handler there is no input queue to drain first — this path
+    /// dispatches inline on the receive loop, so by the time the connection is being disposed no
+    /// further input can arrive.
+    /// </remarks>
+    public void Dispose()
+    {
+        var held = _heldKeys.TakeAll();
+        if (held.Count == 0)
+        {
+            return;
+        }
+
+        logger.LogInformation(
+            "Releasing {Count} key(s) still held by the client at disconnect: {Keys}",
+            held.Count, string.Join(", ", held));
+
+        foreach (var keyCode in held)
+        {
+            try
+            {
+                inputSimulation.KeyUp(keyCode);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to release held key {KeyCode} at disconnect.", keyCode);
+            }
         }
     }
 }

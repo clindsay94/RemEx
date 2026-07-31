@@ -342,7 +342,7 @@ public static class HostBootstrapper
             using var ws = await context.WebSockets.AcceptWebSocketAsync();
             var logger = context.RequestServices.GetRequiredService<ILogger<PingPongHandler>>();
             var telemetry = context.RequestServices.GetRequiredService<TelemetryBackgroundService>();
-            var handler = new PingPongHandler(
+            using var handler = new PingPongHandler(
                 logger,
                 telemetry,
                 context.RequestServices.GetRequiredService<Remex.Core.Services.Command.ISystemCommandService>(),
