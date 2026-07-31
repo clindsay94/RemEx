@@ -39,7 +39,11 @@ class SettingsManager(val context: Context) {
                 val DESKTOP_POINTER_SPEED_KEY = floatPreferencesKey("desktop_pointer_speed")
                 val DESKTOP_CURSOR_SCALE_KEY = floatPreferencesKey("desktop_cursor_scale")
                 // Persisted display-target selection token: "" (primary/default), "virtual"
-                // (both screens combined), or "monitor:<displayId>" for a specific monitor.
+                // (both screens combined), or "monitorkey:<persistentDisplayKey>" for a specific
+                // monitor. NOT "monitor:<displayId>" - that was the pre-RemEx-ynur format and is
+                // session-scoped, so it silently resolved to a different physical screen after a
+                // replug. Old values are deliberately left unrecognised so they fall through to the
+                // primary display rather than being reinterpreted.
                 val DESKTOP_DISPLAY_TARGET_KEY = stringPreferencesKey("desktop_display_target")
                 val VERTICAL_SCROLL_SENSITIVITY_KEY =
                         floatPreferencesKey("vertical_scroll_sensitivity")
@@ -407,9 +411,9 @@ class SettingsManager(val context: Context) {
                 context.dataStore.edit { it[DESKTOP_UNLIMITED_WARNING_SHOWN_KEY] = true }
         }
 
-        suspend fun saveRemoteDesktopDisplayTarget(token: String) {
+        suspend fun saveRemoteDesktopDisplayTarget(target: String) {
                 context.dataStore.edit { preferences ->
-                        preferences[DESKTOP_DISPLAY_TARGET_KEY] = token
+                        preferences[DESKTOP_DISPLAY_TARGET_KEY] = target
                 }
         }
 

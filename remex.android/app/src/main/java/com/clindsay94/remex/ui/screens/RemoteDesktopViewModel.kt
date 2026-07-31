@@ -124,15 +124,64 @@ val DESKTOP_PRESET_BUNDLES =
         )
 
 /**
- * A selectable remote-display target. [token] is the persisted identity:
- * "virtual" for the combined (both-screens) view, or "monitor:<displayId>" for a single display.
+ * The string stored for a chosen display — deliberately NOT its [DisplayTargetOption.token].
+ *
+ * A token embeds `displayId`, which the host renumbers whenever monitors change, so storing one
+ * means the remembered monitor silently becomes a different physical screen after a replug. It
+ * fails QUIETLY, because the stored value still resolves — it just resolves to the wrong thing.
+ * The host supplies a stable `persistentDisplayKey` for exactly this (RemEx-zftu).
+ *
+ * THE `monitorkey:` PREFIX IS WHAT MAKES THIS SAFE TO SHIP. Values written by earlier builds are
+ * `monitor:<displayId>`, and they must never be read as a persistent key. Under the new prefix
+ * they simply fail to match, and the selection falls through to the primary display — the correct
+ * handling of "we no longer know which monitor you meant". Silently reinterpreting them would
+ * reintroduce the bug wearing a different hat.
+ */
+internal fun rememberedTargetFor(option: DisplayTargetOption): String = when {
+    option.captureMode == "VirtualDesktop" -> "virtual"
+    // Older host with no stable key: remember nothing rather than remember the wrong thing.
+    option.persistentKey.isNullOrBlank() -> ""
+    else -> "monitorkey:${option.persistentKey}"
+}
+
+/** Does [option] correspond to the stored choice [remembered]? */
+internal fun matchesRememberedTarget(option: DisplayTargetOption, remembered: String): Boolean = when {
+    remembered.isBlank() -> false
+    remembered == "virtual" -> option.captureMode == "VirtualDesktop"
+    remembered.startsWith("monitorkey:") ->
+            !option.persistentKey.isNullOrBlank() &&
+                    option.persistentKey == remembered.removePrefix("monitorkey:")
+    // Legacy "monitor:<displayId>" and anything else unrecognised: deliberately no match.
+    else -> false
+}
+
+/**
+ * A selectable remote-display target for the current catalog.
+ *
+ * Deliberately has TWO identities. [token] selects within this session; [persistentKey] is what may
+ * be stored across sessions. Conflating them is what RemEx-ynur fixed.
  */
 data class DisplayTargetOption(
+        /**
+         * SESSION-SCOPED identity, for selection within this catalog only. It embeds displayId, which
+         * the host renumbers whenever monitors are added, removed or replugged, so persisting it
+         * makes the user's remembered monitor silently become a different screen. Store
+         * [persistentKey] instead (RemEx-ynur).
+         */
         val token: String,
         val label: String,
         val captureMode: String, // "VirtualDesktop" | "Monitor"
         val displayId: String?,
-        val isPrimary: Boolean
+        val isPrimary: Boolean,
+        /**
+         * The host's `persistentDisplayKey` for this monitor (RemEx-zftu) — more stable than
+         * [token], not a guarantee. The host documents its own limits: it survives reboots and
+         * same-port replugs but not a port change, and cannot tell two IDENTICAL panels apart when
+         * they are swapped. Null for the virtual desktop, and null when the host is too old to send
+         * one, in which case the choice is deliberately NOT remembered rather than remembered
+         * wrongly.
+         */
+        val persistentKey: String? = null
 )
 
 data class DesktopWindowModel(
@@ -439,7 +488,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     /** Guards against firing duplicate catalog queries while one is in flight. */
     private var catalogRequested = false
     /** Desired target token loaded from persisted prefs; resolved against the catalog on arrival. */
-    private var desiredDisplayToken: String = ""
+    /**
+     * The remembered display choice AS STORED, which is not a [DisplayTargetOption.token].
+     * See [rememberedTargetFor] for the format and why they differ (RemEx-ynur).
+     */
+    private var desiredDisplayTarget: String = ""
     /** Set when startStreaming() is waiting for the catalog before it can begin. */
     private var pendingStreamStart = false
     private var catalogTimeoutJob: Job? = null
@@ -537,7 +590,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                 scale = prefs.scale.coerceIn(0.25f, 1.0f),
                                 preset = DesktopPreset.fromId(prefs.preset)
                         )
-                desiredDisplayToken = prefs.displayTarget
+                desiredDisplayTarget = prefs.displayTarget
             }
         }
 
@@ -1043,6 +1096,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     val d = arr.optJSONObject(i) ?: continue
                     val displayId = d.optString("displayId")
                     if (displayId.isBlank()) continue
+                    val persistentKey = d.optString("persistentDisplayKey").takeIf { it.isNotBlank() }
                     val isPrimary = d.optBoolean("isPrimary", false)
                     val label =
                             if (isPrimary)
@@ -1057,7 +1111,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                     label = label,
                                     captureMode = "Monitor",
                                     displayId = displayId,
-                                    isPrimary = isPrimary
+                                    isPrimary = isPrimary,
+                                    persistentKey = persistentKey
                             )
                     )
                 }
@@ -1093,7 +1148,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
             // Resolve the selection: remembered choice → primary monitor → first option.
             val resolved =
-                    options.firstOrNull { it.token == desiredDisplayToken }
+                    options.firstOrNull { matchesRememberedTarget(it, desiredDisplayTarget) }
                             ?: options.firstOrNull {
                                 it.captureMode == "Monitor" && it.isPrimary
                             }
@@ -1122,8 +1177,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         if (option.token == _selectedDisplayToken.value) return
 
         _selectedDisplayToken.value = option.token
-        desiredDisplayToken = option.token
-        viewModelScope.launch { settingsManager.saveRemoteDesktopDisplayTarget(option.token) }
+        val remembered = rememberedTargetFor(option)
+        desiredDisplayTarget = remembered
+
+        // Only WRITE when there is something worth remembering. On a host too old to send a stable
+        // key this is empty, and storing it would wipe a good key the user set on another PC — the
+        // preference is global, not per-host. Skipping the write is behaviourally identical in this
+        // session (nothing here matches a key the host does not send, so it falls to primary either
+        // way) and keeps the good value for when they connect to the updated machine again.
+        if (remembered.isNotEmpty()) {
+            viewModelScope.launch { settingsManager.saveRemoteDesktopDisplayTarget(remembered) }
+        }
 
         if (_isStreaming.value) {
             restartStreamWithCurrentTarget()
