@@ -84,7 +84,10 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 private const val TAG = "RemoteDesktopScreen"
@@ -113,6 +116,20 @@ private const val INERTIA_FRAME_MS = 16L // ~60fps
 // Throttle interval for move events
 private const val MOVE_THROTTLE_MS = 33L // ~30Hz
 
+/**
+ * The four inputs pan-follow reacts to, combined so ONE collector can watch them all.
+ *
+ * Exists because the alternative is a `LaunchedEffect` keyed on the cursor position, which the host
+ * streams 60-90 times a second — so the effect was torn down and relaunched on every packet
+ * (RemEx-zc9r).
+ */
+private data class PanFollowInput(
+        val cursorX: Float,
+        val cursorY: Float,
+        val cursorVisible: Boolean,
+        val zoom: Float,
+)
+
 /** Stores context about the last completed tap for double-tap detection. */
 private data class TapContext(
         val time: Long, // uptimeMillis
@@ -133,8 +150,6 @@ data class RemoteDesktopUiState(
         val vScrollSensitivity: Float = 1.0f,
         val hScrollSensitivity: Float = 1.0f,
         val cursorScale: Float = 1.0f,
-        val hostCursorX: Float = -1f,
-        val hostCursorY: Float = -1f,
         val hostCursorVisible: Boolean = false,
         val cursorBitmap: ImageBitmap? = null,
         val cursorHotspotX: Int = 0,
@@ -254,8 +269,6 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val vScrollSensitivity by viewModel.verticalScrollSensitivity.collectAsStateWithLifecycle()
         val hScrollSensitivity by viewModel.horizontalScrollSensitivity.collectAsStateWithLifecycle()
         val cursorScale by viewModel.cursorScale.collectAsStateWithLifecycle()
-        val hostCursorX by viewModel.hostCursorX.collectAsStateWithLifecycle()
-        val hostCursorY by viewModel.hostCursorY.collectAsStateWithLifecycle()
         val hostCursorVisible by viewModel.hostCursorVisible.collectAsStateWithLifecycle()
         val cursorBitmap by viewModel.cursorShapeBitmap.collectAsStateWithLifecycle()
         val cursorHotspotX by viewModel.cursorHotspotX.collectAsStateWithLifecycle()
@@ -291,8 +304,6 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                         vScrollSensitivity = vScrollSensitivity,
                         hScrollSensitivity = hScrollSensitivity,
                         cursorScale = cursorScale,
-                        hostCursorX = hostCursorX,
-                        hostCursorY = hostCursorY,
                         hostCursorVisible = hostCursorVisible,
                         cursorBitmap = cursorBitmap,
                         cursorHotspotX = cursorHotspotX,
@@ -305,6 +316,9 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 
         RemoteDesktopScreenContent(
                 uiState = uiState,
+                // Passed as a Flow, not collected here: collecting would put the position back into
+                // composition, which is exactly what RemEx-zc9r removed.
+                hostCursor = viewModel.hostCursor,
                 currentBitmap = currentBitmap,
                 config = config,
                 onSetFullscreen = { isFullscreen = it },
@@ -372,6 +386,14 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
 @Composable
 fun RemoteDesktopScreenContent(
         uiState: RemoteDesktopUiState,
+        /**
+         * The host cursor position, as a STREAM rather than as state.
+         *
+         * Deliberately not part of [uiState]: the host sends 60-90 of these a second, and anything in
+         * uiState recomposes this whole screen on every one. A Flow parameter is stable, so emissions
+         * reach the one collector that wants them and nothing else notices (RemEx-zc9r).
+         */
+        hostCursor: kotlinx.coroutines.flow.Flow<HostCursorSample>,
         currentBitmap: android.graphics.Bitmap?,
         config: RemoteDesktopConfigState,
         onSetFullscreen: (Boolean) -> Unit,
@@ -637,59 +659,100 @@ fun RemoteDesktopScreenContent(
         // Smooth the remote cursor: the host streams its position at a limited rate, so animate the
         // overlay toward each new position (critically-damped spring) instead of stepping to it.
         // Snap on (re)appearance / display switch so the cursor doesn't slide across the whole screen.
+        // rememberUpdatedState because the effects below are keyed on Unit and therefore keep their
+        // FIRST-composition lambda forever. mapHostToLocal closes over streamPixelWidth/Height and
+        // currentBitmap, which are plain composable PARAMETERS captured by value — at first
+        // composition 0/0/null, so contentRect() would fall back to a hardcoded 1920x1080 aspect for
+        // the life of the screen and pan-follow would mis-map on every non-16:9 stream, silently and
+        // permanently. The old keyed effect hid this by rebuilding the closure on every packet; that
+        // accidental refresh is exactly what removing the restart took away. (RemEx-zc9r)
+        val currentMapHostToLocal by rememberUpdatedState<(Float, Float) -> Offset?> { hx, hy ->
+            mapHostToLocal(hx, hy, coerce = false)
+        }
+        val currentDensity by rememberUpdatedState(density)
+
         val animatedCursorX = remember { Animatable(0f) }
         val animatedCursorY = remember { Animatable(0f) }
         var cursorWasVisible by remember { mutableStateOf(false) }
-        LaunchedEffect(uiState.hostCursorX, uiState.hostCursorY, uiState.hostCursorVisible) {
-            if (!uiState.hostCursorVisible) {
-                cursorWasVisible = false
-                return@LaunchedEffect
-            }
-            if (!cursorWasVisible) {
-                cursorWasVisible = true
-                animatedCursorX.snapTo(uiState.hostCursorX)
-                animatedCursorY.snapTo(uiState.hostCursorY)
-                return@LaunchedEffect
-            }
-            val spec = spring<Float>(dampingRatio = 1f, stiffness = Spring.StiffnessMedium)
-            launch { animatedCursorX.animateTo(uiState.hostCursorX, spec) }
-            launch { animatedCursorY.animateTo(uiState.hostCursorY, spec) }
+        // KEYED ON Unit, NOT ON THE CURSOR. The host streams a position 60-90 times a second, and a
+        // keyed effect is torn down and relaunched on every one of them — hundreds of coroutine
+        // starts per second, on the main thread, stacked on top of frame delivery. collectLatest
+        // reproduces the keyed behaviour exactly (a new position cancels the in-flight block and its
+        // children) without the effect itself churning. Reading the flows directly rather than
+        // through uiState is the other half: it keeps the raw coordinates out of composition, so a
+        // cursor packet no longer recomposes this whole screen. (RemEx-zc9r)
+        LaunchedEffect(Unit) {
+            hostCursor
+                    .collectLatest { (x, y, visible) ->
+                        if (!visible) {
+                            cursorWasVisible = false
+                            return@collectLatest
+                        }
+                        if (!cursorWasVisible) {
+                            cursorWasVisible = true
+                            animatedCursorX.snapTo(x)
+                            animatedCursorY.snapTo(y)
+                            return@collectLatest
+                        }
+                        val spec = spring<Float>(dampingRatio = 1f, stiffness = Spring.StiffnessMedium)
+                        // coroutineScope, and it is load-bearing: collectLatest's action has NO
+                        // CoroutineScope receiver, so a bare `launch` here would bind to the
+                        // LaunchedEffect's own scope. The action would then complete immediately with
+                        // no children, collectLatest would have nothing to cancel, and the
+                        // cancel-and-retarget behaviour claimed above would not exist — leaving
+                        // correctness resting on Animatable's internal mutex instead of structured
+                        // concurrency. This suspends until both finish, so the launches are children
+                        // of the action and a new position genuinely cancels them.
+                        coroutineScope {
+                            launch { animatedCursorX.animateTo(x, spec) }
+                            launch { animatedCursorY.animateTo(y, spec) }
+                        }
+                    }
         }
 
         // Pan-follow: when zoomed, keep the streamed host cursor on screen by panning the view
         // toward it (edge-triggered via a deadzone), animated so it glides. Re-runs whenever the
         // host cursor moves; each run cancels the previous animation and re-targets.
-        LaunchedEffect(uiState.hostCursorX, uiState.hostCursorY, uiState.hostCursorVisible, zoomFactor) {
-            if (zoomFactor <= 1f) return@LaunchedEffect
-            // Don't chase a cursor that isn't on the streamed display — its coords are last-known/stale.
-            if (!uiState.hostCursorVisible) return@LaunchedEffect
-            if (System.currentTimeMillis() < suppressPanFollowUntilMs) return@LaunchedEffect
-            if (imageSize.width == 0 || imageSize.height == 0) return@LaunchedEffect
-            val local = mapHostToLocal(uiState.hostCursorX, uiState.hostCursorY, coerce = false)
-                ?: return@LaunchedEffect
-            val (targetX, targetY) = PanFollowCalculator.compute(
-                cursorLocalX = local.x,
-                cursorLocalY = local.y,
-                panX = panOffsetX,
-                panY = panOffsetY,
-                zoom = zoomFactor,
-                imageWidth = imageSize.width.toFloat(),
-                imageHeight = imageSize.height.toFloat(),
-            )
-            // This epsilon is load-bearing: when the host cursor sits past the max-pan clamp,
-            // compute() returns the same clamped target every tick; this skip prevents the
-            // animation from restarting forever. Do not remove.
-            // RD-A2: density-scaled (was a hardcoded 0.5f → sub-pixel on high-DPI panels, causing jitter
-            // at high zoom). ~0.75dp is a stable deadband across densities.
-            val panFollowEpsilonPx = with(density) { 0.75.dp.toPx() }
-            if (abs(targetX - panOffsetX) < panFollowEpsilonPx && abs(targetY - panOffsetY) < panFollowEpsilonPx) {
-                return@LaunchedEffect
-            }
-            val startX = panOffsetX
-            val startY = panOffsetY
-            animate(0f, 1f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { t, _ ->
-                panOffsetX = startX + (targetX - startX) * t
-                panOffsetY = startY + (targetY - startY) * t
+        // Same treatment, and zoomFactor stays a trigger via snapshotFlow so zooming still re-runs
+        // the follow even when the cursor has not moved. collectLatest preserves the
+        // cancel-and-retarget semantics the keyed effect had. (RemEx-zc9r)
+        LaunchedEffect(Unit) {
+            val panFollowInputs =
+                    combine(hostCursor, snapshotFlow { zoomFactor }) { c, zoom ->
+                        PanFollowInput(c.x, c.y, c.visible, zoom)
+                    }
+            panFollowInputs.collectLatest { (cursorX, cursorY, cursorVisible, zoom) ->
+                if (zoom <= 1f) return@collectLatest
+                // Don't chase a cursor that isn't on the streamed display — its coords are last-known/stale.
+                if (!cursorVisible) return@collectLatest
+                if (System.currentTimeMillis() < suppressPanFollowUntilMs) return@collectLatest
+                if (imageSize.width == 0 || imageSize.height == 0) return@collectLatest
+                val local = currentMapHostToLocal(cursorX, cursorY)
+                    ?: return@collectLatest
+                val (targetX, targetY) = PanFollowCalculator.compute(
+                    cursorLocalX = local.x,
+                    cursorLocalY = local.y,
+                    panX = panOffsetX,
+                    panY = panOffsetY,
+                    zoom = zoom,
+                    imageWidth = imageSize.width.toFloat(),
+                    imageHeight = imageSize.height.toFloat(),
+                )
+                // This epsilon is load-bearing: when the host cursor sits past the max-pan clamp,
+                // compute() returns the same clamped target every tick; this skip prevents the
+                // animation from restarting forever. Do not remove.
+                // RD-A2: density-scaled (was a hardcoded 0.5f → sub-pixel on high-DPI panels, causing jitter
+                // at high zoom). ~0.75dp is a stable deadband across densities.
+                val panFollowEpsilonPx = with(currentDensity) { 0.75.dp.toPx() }
+                if (abs(targetX - panOffsetX) < panFollowEpsilonPx && abs(targetY - panOffsetY) < panFollowEpsilonPx) {
+                    return@collectLatest
+                }
+                val startX = panOffsetX
+                val startY = panOffsetY
+                animate(0f, 1f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { t, _ ->
+                    panOffsetX = startX + (targetX - startX) * t
+                    panOffsetY = startY + (targetY - startY) * t
+                }
             }
         }
 
@@ -2191,7 +2254,8 @@ fun RemoteDesktopScreenContent(
                                         // its mapped on-screen position, so the user can see exactly
                                         // where they're pointing. Uses the same content rect as input
                                         // mapping, so the arrow, the video, and where clicks land all
-                                        // agree. hostCursorX/Y are host-desktop coords; -1 = none yet.
+                                        // agree. The cursor position is streamed rather than held in
+                                        // uiState (RemEx-zc9r); -1 = none yet.
                                         // RD-B: gate the overlay on visibility in COMPOSITION (changes rarely),
                                         // but read the ANIMATED cursor position + pan/zoom inside the Canvas DRAW
                                         // scope below, so the per-frame cursor animation invalidates only the draw
@@ -3735,6 +3799,7 @@ private fun RemoteDesktopScreenPreview() {
                 capabilityState = RemoteDesktopCapabilityState(supportsRemoteDesktop = true),
                 isFullscreen = false
             ),
+            hostCursor = kotlinx.coroutines.flow.emptyFlow(),
             currentBitmap = null,
             config = RemoteDesktopConfigState(quality = 70, targetFps = 60),
             onSetFullscreen = {},

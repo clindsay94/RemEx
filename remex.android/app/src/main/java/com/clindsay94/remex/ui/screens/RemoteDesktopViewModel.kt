@@ -155,6 +155,9 @@ internal fun matchesRememberedTarget(option: DisplayTargetOption, remembered: St
     else -> false
 }
 
+/** One host cursor position sample, streamed rather than held in composition (RemEx-zc9r). */
+data class HostCursorSample(val x: Float, val y: Float, val visible: Boolean)
+
 /**
  * A selectable remote-display target for the current catalog.
  *
@@ -225,13 +228,23 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _isStreaming = MutableStateFlow(false)
     val isStreaming: StateFlow<Boolean> = _isStreaming.asStateFlow()
 
-    // Cursor position from host (for trackpad mode visibility).
-    // Sentinel -1f means "not yet reported" so (0,0) is a valid visible position.
-    private val _hostCursorX = MutableStateFlow(-1f)
-    val hostCursorX: StateFlow<Float> = _hostCursorX.asStateFlow()
+    /**
+     * The host cursor as ONE value, published in a single assignment.
+     *
+     * The position and the visibility used to be three separate flows, and a consumer that needed all
+     * three had to `combine` them — which can emit up to three times per packet and can hand out torn
+     * intermediates (a new X with an old Y). Composition used to hide that by batching per frame; a
+     * flow collector does not. One flow, one write, one emission per packet, no tearing possible
+     * (RemEx-zc9r).
+     */
+    private val _hostCursor = MutableStateFlow(HostCursorSample(-1f, -1f, false))
+    val hostCursor: StateFlow<HostCursorSample> = _hostCursor.asStateFlow()
 
+    // Last known position, kept so a visibility-only update does not have to invent coordinates.
+    // Sentinel -1f means "not yet reported" so (0,0) is a valid visible position. Not exposed:
+    // consumers read [hostCursor], which carries both axes and visibility as one value.
+    private val _hostCursorX = MutableStateFlow(-1f)
     private val _hostCursorY = MutableStateFlow(-1f)
-    val hostCursorY: StateFlow<Float> = _hostCursorY.asStateFlow()
 
     // Cursor visibility is tracked separately from position. We must NOT encode "hidden" as a
     // negative coordinate: a monitor positioned left of/above the primary has legitimately
@@ -706,6 +719,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                             _hostCursorX.value = json.optDouble("cursorX", 0.0).toFloat()
                             _hostCursorY.value = json.optDouble("cursorY", 0.0).toFloat()
                         }
+                        _hostCursor.value = HostCursorSample(
+                                _hostCursorX.value, _hostCursorY.value, cursorVisible)
                     }
                     // Only update the codec when codecInfo is actually present. Live cursor-position
                     // updates arrive as lightweight DesktopMeta messages with no codecInfo, and must
@@ -1571,6 +1586,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 _hostCursorX.value = json.optInt("x", 0).toFloat()
                 _hostCursorY.value = json.optInt("y", 0).toFloat()
             }
+            _hostCursor.value = HostCursorSample(_hostCursorX.value, _hostCursorY.value, visible)
             val serial = json.optLong("shapeSerial", -1L)
             activeCursorShapeSerial = serial
             // Swap in the cached shape for this serial if we already have it; otherwise the shape
@@ -1603,6 +1619,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 _hostCursorX.value = x.toFloat()
                 _hostCursorY.value = y.toFloat()
             }
+            _hostCursor.value = HostCursorSample(_hostCursorX.value, _hostCursorY.value, visible)
             activeCursorShapeSerial = shapeSerial
             // Swap in the cached shape for this serial if present; the shape collector swaps it in later
             // when the matching desktop_cursor_shape (still JSON) arrives.
