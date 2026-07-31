@@ -211,6 +211,49 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val cursorShapeCache = java.util.concurrent.ConcurrentHashMap<Long, CursorShapeEntry>()
     @Volatile private var activeCursorShapeSerial = -1L
 
+    /**
+     * Off the main thread, but STRICTLY ONE AT A TIME.
+     *
+     * Every send from this view model — input, pointer batches, config, queries, keyframe requests —
+     * used to launch on plain `Dispatchers.IO`, a 64-thread dispatcher, so each send raced the others
+     * through JSON build and JNI marshalling and could reach the native side in any order.
+     *
+     * That is not a subtle problem here, because [sendKeyEvent] sends one message per event and a
+     * keystroke is several. Ctrl+Shift+C is SIX ordered messages — keyDown Ctrl, keyDown Shift,
+     * keyDown C, keyUp C, keyUp Shift, keyUp Ctrl — and any permutation was reachable. Two of them
+     * are bad in ways the user cannot undo from the phone: a modifier keyUp arriving before the key's
+     * keyDown sends a plain `c` instead of the copy they asked for, and a modifier keyUp that lands
+     * before its own keyDown leaves the modifier PHYSICALLY HELD DOWN on the host, turning every
+     * subsequent keystroke into a chord until they walk over to the PC. It also desyncs
+     * [physicallyDownModifiers], which believes it released a modifier the host still holds.
+     *
+     * `limitedParallelism(1)` keeps all that work off the main thread while restoring FIFO submission
+     * order. This is the UPSTREAM half of the guarantee: RemEx-krvz made the native side preserve
+     * whatever order it is handed, and this is what makes the order it is handed the order the user
+     * actually acted in. Neither half is sufficient alone. (RemEx-7rq3)
+     *
+     * TWO LIMITS WORTH KNOWING. FIFO holds up to a body's first SUSPENSION POINT — six of the seven
+     * have none, but `restartStreamWithCurrentTarget` has a `delay`, so its stop and start are not
+     * atomic and other sends interleave between them. That is deliberate: pinning the queue for the
+     * duration would stall input for no benefit.
+     *
+     * And not every send goes through here. `actuallyStartStreaming`, `stopStreaming` and
+     * `pushConfigIfStreaming` send inline on their caller's thread rather than launching, so they are
+     * ordered against each other but not against these. Converting them would turn synchronous calls
+     * into asynchronous ones their callers were not written for. `pushConfigIfStreaming` does not
+     * matter (capture config is idempotent state, not an ordered event), but `stopStreaming` does —
+     * see RemEx-e2p4.
+     *
+     * DECLARED HERE, ABOVE `init`, AND IT MUST STAY ABOVE IT. Kotlin runs initialisers in declaration
+     * order, and `init` reaches `requestDisplayCatalog` synchronously — `viewModelScope` is
+     * `Main.immediate`, so its collector runs inline in the constructor and a StateFlow delivers its
+     * current value before suspending. Declared below `init`, this is still null at that point and
+     * the screen dies with an NPE in its constructor. `Dispatchers.IO` was an object, so the old code
+     * could not hit this; no build gate catches it.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val sendDispatcher = Dispatchers.IO.limitedParallelism(1)
+
     private val _capabilityState = MutableStateFlow(RemoteDesktopCapabilityState())
     val capabilityState: StateFlow<RemoteDesktopCapabilityState> = _capabilityState.asStateFlow()
 
@@ -963,7 +1006,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         if (!RemexCoreClient.isLibraryLoaded) return
         catalogRequested = true
         Log.i(TAG, "Requesting display catalog from host")
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             val message = JSONObject().apply { put("type", "desktop_display_query") }
             RemexCoreClient.SendMessage(message.toString()).getOrNull()
         }
@@ -1088,7 +1131,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun restartStreamWithCurrentTarget() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             reconnectJob?.cancel()
             reconnectAttempts = 0
             if (RemexCoreClient.isLibraryLoaded) {
@@ -1139,7 +1182,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * .
      */
     fun sendPointerBatch(batchJson: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             if (!RemexCoreClient.isLibraryLoaded) return@launch
             RemexCoreClient.SendDesktopPointerBatch(batchJson).getOrNull()
         }
@@ -1355,7 +1398,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             return
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             val message =
                     JSONObject().apply {
                         put("type", "desktop_window_query")
@@ -1572,7 +1615,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun sendInput(input: JSONObject) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             if (!RemexCoreClient.isLibraryLoaded) {
                 return@launch
             }
@@ -1593,7 +1636,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * recognize the message type simply ignore it (no protocolVersion bump). (RemEx-bqc)
      */
     fun requestKeyframe() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             if (!RemexCoreClient.isLibraryLoaded || !_isStreaming.value) {
                 return@launch
             }
@@ -1613,7 +1656,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             return
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(sendDispatcher) {
             val actionJson =
                     JSONObject().apply {
                         put("requestId", java.util.UUID.randomUUID().toString().replace("-", ""))
