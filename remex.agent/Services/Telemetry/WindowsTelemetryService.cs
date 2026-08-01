@@ -81,7 +81,6 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
 
     // Performance Counters for fallback
     private PerformanceCounter? _cpuCounter;
-    private PerformanceCounter? _ramCounter;
     private PerformanceCounter? _diskReadCounter;
     private PerformanceCounter? _diskWriteCounter;
 
@@ -137,7 +136,6 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         try
         {
             _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            _ramCounter = new PerformanceCounter("Memory", "Available MBytes");
             _diskReadCounter = new PerformanceCounter("PhysicalDisk", "Disk Read Bytes/sec", "_Total");
             _diskWriteCounter = new PerformanceCounter("PhysicalDisk", "Disk Write Bytes/sec", "_Total");
 
@@ -162,33 +160,25 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         }
     }
 
+    private static readonly IReadOnlySet<string> NoSkippedCategories =
+        new HashSet<string>(StringComparer.Ordinal);
+
     public async Task<TelemetryPayload> GetTelemetryAsync(CancellationToken ct = default)
     {
-        // Run WMI/PerformanceCounter reads on a separate thread with a timeout
-        // to prevent thread-pool starvation when WMI is slow/stalled.
-        TelemetryPayload payload;
-        try
-        {
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(WmiFallbackTimeout);
-            payload = await Task.Run(ReadWmiFallback, timeoutCts.Token);
-            _cachedFallback = payload;
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            _logger.LogWarning("WMI/PerformanceCounter telemetry timed out after {Timeout}s — returning cached data.",
-                WmiFallbackTimeout.TotalSeconds);
-            payload = _cachedFallback ?? new TelemetryPayload();
-        }
-
+        // HWiNFO FIRST, which is the ordering this method depends on rather than a rearrangement for
+        // taste. Reading it is cheap — the reading addresses were resolved once, so a tick is a
+        // handful of ReadDouble calls against a mapped view — and knowing which categories it covers
+        // is the only way to skip the expensive WindowsPerf sections WITHOUT silently deleting the
+        // categories it does not cover. Read the other way round, as this used to be, the machine
+        // pays for three PerformanceCounter reads, GlobalMemoryStatusEx, a NIC statistics read and
+        // whatever WMI does, every tick at 1 Hz, and then discards most of it (RemEx-rxth).
+        IReadOnlyList<SensorReading> hwinfoSensors = Array.Empty<SensorReading>();
         if (_hwinfoAvailable)
         {
             try
             {
-                if (TryReadHwInfo(payload, out var updatedPayload))
-                {
-                    return EnsureRamTotal(updatedPayload);
-                }
+                if (TryReadHwInfo(EmptyPayload(), out var hwinfoOnly))
+                    hwinfoSensors = hwinfoOnly.Sensors;
             }
             catch (FileNotFoundException)
             {
@@ -203,7 +193,79 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
             }
         }
 
+        // Empty when HWiNFO produced nothing — a stalled or absent producer must fall all the way
+        // back, not quietly lose whatever it last happened to cover.
+        var skipCategories = hwinfoSensors.Count > 0
+            ? CoveredCategories(hwinfoSensors)
+            : NoSkippedCategories;
+
+        // Run WMI/PerformanceCounter reads on a separate thread with a timeout
+        // to prevent thread-pool starvation when WMI is slow/stalled.
+        TelemetryPayload payload;
+        try
+        {
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(WmiFallbackTimeout);
+            payload = await Task.Run(() => ReadWmiFallback(skipCategories), timeoutCts.Token);
+            _cachedFallback = payload;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            _logger.LogWarning("WMI/PerformanceCounter telemetry timed out after {Timeout}s — returning cached data.",
+                WmiFallbackTimeout.TotalSeconds);
+            payload = _cachedFallback ?? new TelemetryPayload();
+        }
+
+        // Still merged rather than concatenated, even though the skipped categories are exactly the
+        // ones the merge would drop: on the timeout path `payload` is _cachedFallback, captured on a
+        // tick whose HWiNFO coverage may have been different.
+        if (hwinfoSensors.Count > 0)
+            payload = payload with { Sensors = MergeHwInfoOverPerf(payload.Sensors, hwinfoSensors) };
+
         return EnsureRamTotal(payload);
+    }
+
+    /// <summary>An empty payload, used to read HWiNFO on its own before anything is merged into it.</summary>
+    private static TelemetryPayload EmptyPayload() =>
+        new() { Sensors = new System.Collections.Generic.List<SensorReading>() };
+
+    /// <summary>
+    /// The categories a set of HWiNFO readings covers — the set whose WindowsPerf equivalents the
+    /// overlay would displace, and therefore the set that does not need reading at all.
+    /// </summary>
+    internal static IReadOnlySet<string> CoveredCategories(IReadOnlyList<SensorReading> hwinfoSensors)
+    {
+        var covered = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var sensor in hwinfoSensors) covered.Add(sensor.Category);
+        return covered;
+    }
+
+    /// <summary>
+    /// Lays HWiNFO readings over the WindowsPerf ones: any WindowsPerf sensor in a category HWiNFO
+    /// also supplies is dropped, everything else is kept, and the HWiNFO readings are appended.
+    /// </summary>
+    /// <remarks>
+    /// Extracted from <see cref="TryReadHwInfo"/> so the rule is stated in one testable place
+    /// (RemEx-rxth). It is what makes the read-skipping safe to reason about — the skip set is
+    /// exactly the categories this method would have discarded — and it is deliberately still
+    /// applied even when those categories were skipped, because the fallback payload can come from
+    /// <c>_cachedFallback</c>, which was captured on a tick whose HWiNFO coverage may have differed.
+    ///
+    /// CATEGORY-SCOPED, NOT WHOLESALE, and that is not an implementation detail: HWiNFO's categories
+    /// come from the user's hardware, so on a machine where it reports no Disk or Network sensors the
+    /// WindowsPerf ones in those categories are the only source there is.
+    /// </remarks>
+    internal static List<SensorReading> MergeHwInfoOverPerf(
+        IReadOnlyList<SensorReading> fallbackSensors, IReadOnlyList<SensorReading> hwinfoSensors)
+    {
+        var covered = CoveredCategories(hwinfoSensors);
+
+        var merged = fallbackSensors
+            .Where(s => s.Source != "WindowsPerf" || !covered.Contains(s.Category))
+            .ToList();
+
+        merged.AddRange(hwinfoSensors);
+        return merged;
     }
 
     /// <summary>
@@ -319,19 +381,9 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
                 sensors.Add(template.Sensor with { Value = value, Unit = unit });
             }
 
-            // When HWiNFO data is available, filter out WindowsPerf sensors that overlap
-            // with HWiNFO data by category. If HWiNFO provides ANY sensor in a category,
-            // all WindowsPerf sensors in that same category are removed.
             if (sensors.Count > 0)
             {
-                var hwinfoCategories = sensors.Select(s => s.Category).ToHashSet();
-
-                var filteredFallback = fallback.Sensors
-                    .Where(s => s.Source != "WindowsPerf" || !hwinfoCategories.Contains(s.Category))
-                    .ToList();
-
-                filteredFallback.AddRange(sensors);
-                fallback = fallback with { Sensors = filteredFallback };
+                fallback = fallback with { Sensors = MergeHwInfoOverPerf(fallback.Sensors, sensors) };
             }
 
             result = fallback;
@@ -694,15 +746,39 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         return s.Replace("AMD", " ").Replace("Intel", " ").Trim();
     }
 
-    private TelemetryPayload ReadWmiFallback()
+    /// <summary>
+    /// Reads the WindowsPerf sensors, skipping any category in <paramref name="skipCategories"/>.
+    /// </summary>
+    /// <remarks>
+    /// The skip exists because on a machine with healthy HWiNFO this whole read used to run every
+    /// tick and then be thrown away — three PerformanceCounter reads, GlobalMemoryStatusEx, a NIC
+    /// statistics read and whatever WMI does, at 1 Hz for the life of the process (RemEx-rxth).
+    ///
+    /// IT IS PER-CATEGORY, NOT ALL-OR-NOTHING, and that is the whole correctness argument. The
+    /// HWiNFO overlay only displaces WindowsPerf sensors whose CATEGORY it also supplies (see
+    /// <see cref="MergeHwInfoOverPerf"/>), and which categories it supplies depends on the user's
+    /// hardware and HWiNFO configuration — commonly CPU and Memory, frequently not Disk or Network.
+    /// Skipping the read wholesale whenever HWiNFO is alive would therefore delete every sensor in a
+    /// category HWiNFO does not cover, silently, on exactly the machines that look healthiest.
+    ///
+    /// SKIPPING TICKS IS SAFE FOR THE RATE SOURCES, which was the other stated worry, because none of
+    /// them assumes a fixed interval: <c>PerformanceCounter.NextValue</c> on a rate counter averages
+    /// over the gap since its own previous call, and the NIC block divides by MEASURED elapsed time
+    /// from <c>_lastNetworkPoll</c> rather than by an assumed one second. A resumed category reports
+    /// an average over the skipped window instead of a wrong number.
+    /// </remarks>
+    private TelemetryPayload ReadWmiFallback(IReadOnlySet<string> skipCategories)
     {
         var sensors = new System.Collections.Generic.List<SensorReading>();
 
         // CPU — isolated so PerformanceCounter failures don't wipe all sensors
         try
         {
-            var cpuValue = _cpuCounter?.NextValue() ?? 0;
-            sensors.Add(new SensorReading { Name = "Total CPU Usage", Value = cpuValue, Unit = "%", Category = "CPU", Source = "WindowsPerf", Kind = MetricKind.CpuLoad, Id = "wmi:cpu:load" });
+            if (!skipCategories.Contains("CPU"))
+            {
+                var cpuValue = _cpuCounter?.NextValue() ?? 0;
+                sensors.Add(new SensorReading { Name = "Total CPU Usage", Value = cpuValue, Unit = "%", Category = "CPU", Source = "WindowsPerf", Kind = MetricKind.CpuLoad, Id = "wmi:cpu:load" });
+            }
         }
         catch (Exception ex)
         {
@@ -714,7 +790,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         {
             var memStatus = new MEMORYSTATUSEX();
             memStatus.dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
-            if (GlobalMemoryStatusEx(ref memStatus))
+            if (!skipCategories.Contains("Memory") && GlobalMemoryStatusEx(ref memStatus))
             {
                 var usedMemBytes = memStatus.ullTotalPhys - memStatus.ullAvailPhys;
                 sensors.Add(new SensorReading { Name = "Physical Memory Used", Value = usedMemBytes / 1e6, Unit = "MB", Category = "Memory", Source = "WindowsPerf" });
@@ -730,10 +806,13 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         // Disk Activity
         try
         {
-            var diskRead = _diskReadCounter?.NextValue() ?? 0;
-            var diskWrite = _diskWriteCounter?.NextValue() ?? 0;
-            sensors.Add(new SensorReading { Name = "Disk Read Rate", Value = diskRead / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
-            sensors.Add(new SensorReading { Name = "Disk Write Rate", Value = diskWrite / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
+            if (!skipCategories.Contains("Disk"))
+            {
+                var diskRead = _diskReadCounter?.NextValue() ?? 0;
+                var diskWrite = _diskWriteCounter?.NextValue() ?? 0;
+                sensors.Add(new SensorReading { Name = "Disk Read Rate", Value = diskRead / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
+                sensors.Add(new SensorReading { Name = "Disk Write Rate", Value = diskWrite / 1e6, Unit = "MB/s", Category = "Disk", Source = "WindowsPerf" });
+            }
         }
         catch (Exception ex)
         {
@@ -745,7 +824,10 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         {
             lock (_networkLock)
             {
-                if (_activeNic != null)
+                // Skipping leaves _lastNetworkPoll and the byte baselines untouched, so a later
+                // resumed tick divides the accumulated delta by the ACTUAL elapsed time and reports a
+                // correct average over the gap rather than a spike.
+                if (_activeNic != null && !skipCategories.Contains("Network"))
                 {
                     var stats = _activeNic.GetIPv4Statistics();
                     var now = DateTime.UtcNow;
@@ -869,7 +951,6 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         if (_disposed) return;
         _disposed = true;
         _cpuCounter?.Dispose();
-        _ramCounter?.Dispose();
         _diskReadCounter?.Dispose();
         _diskWriteCounter?.Dispose();
         InvalidateHwInfoCache();
