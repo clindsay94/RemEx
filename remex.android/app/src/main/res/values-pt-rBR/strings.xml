@@ -534,6 +534,8 @@
     <string name="rd_err_target_unavailable">A tela selecionada não está mais disponível.</string>
     <string name="rd_err_target_switch_unsupported">Esta sessão não pode trocar de tela durante a transmissão.</string>
     <string name="rd_err_runtime_unavailable">A área de trabalho remota não está disponível no seu PC no momento.</string>
+    <string name="rd_err_connect_timeout">Seu PC em %1$s não respondeu. Verifique se ele está ligado e conectado à mesma rede Wi‑Fi deste celular e tente de novo.</string>
+    <string name="rd_err_handshake_timeout">Seu PC em %1$s respondeu, mas parou de responder ao verificar este dispositivo. Ele pode ter entrado em suspensão. Tente conectar de novo.</string>
     <string name="cd_clear_search">Limpar pesquisa</string>
     <string name="pairing_error_timeout">O PC não respondeu. Verifique se ele está ligado e conectado à mesma rede e tente novamente.</string>
     <string name="host_discovered_snackbar">PC encontrado: %1$s</string>

@@ -534,6 +534,8 @@
     <string name="rd_err_target_unavailable">Seçilen ekran artık kullanılamıyor.</string>
     <string name="rd_err_target_switch_unsupported">Bu oturum yayın sırasında ekran değiştiremez.</string>
     <string name="rd_err_runtime_unavailable">Uzak masaüstü şu anda bilgisayarınızda kullanılamıyor.</string>
+    <string name="rd_err_connect_timeout">%1$s adresindeki bilgisayarınız yanıt vermedi. Açık olduğundan ve bu telefonla aynı Wi‑Fi ağına bağlı olduğundan emin olun, sonra tekrar deneyin.</string>
+    <string name="rd_err_handshake_timeout">%1$s adresindeki bilgisayarınız yanıt verdi ama bu cihazı doğrularken durdu. Uyku moduna geçmiş olabilir. Yeniden bağlanmayı deneyin.</string>
     <string name="cd_clear_search">Aramayı temizle</string>
     <string name="pairing_error_timeout">PC yanıt vermedi. Açık olduğundan ve aynı ağa bağlı olduğundan emin olun, ardından tekrar deneyin.</string>
     <string name="host_discovered_snackbar">PC bulundu: %1$s</string>

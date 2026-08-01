@@ -149,6 +149,17 @@ public sealed class RemexDesktopClient : IDisposable
     /// </remarks>
     internal static TimeSpan? ConnectTimeoutOverrideForTests { get; set; }
 
+    /// <summary>
+    /// Test-only override for the proof-of-possession deadline. Same seam and same caveats as
+    /// <see cref="ConnectTimeoutOverrideForTests"/>.
+    /// </summary>
+    /// <remarks>
+    /// Exists so the handshake-timeout path can be exercised in well under a second against a server
+    /// that accepts the socket and then says nothing. Without it that test would have to wait the
+    /// real ten, which is the kind of cost that gets a test deleted later.
+    /// </remarks>
+    internal static TimeSpan? ProofTimeoutOverrideForTests { get; set; }
+
     private static TimeSpan ConnectTimeout => ConnectTimeoutOverrideForTests ?? DefaultConnectTimeout;
 
     public async Task ConnectAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default, string? reconnectSecretBase64 = null)
@@ -203,9 +214,20 @@ public sealed class RemexDesktopClient : IDisposable
                 // window for a concurrent send to hit a NullReferenceException instead of the
                 // ObjectDisposedException it gets today — cleanup that reads as tidy and is a small
                 // step backwards.
-                throw new TimeoutException(
+                var english =
                     $"The PC at {host}:{port} did not answer within {ConnectTimeout.TotalSeconds:F0} seconds. "
-                    + "It is most likely asleep or off this network.");
+                    + "It is most likely asleep or off this network.";
+
+                // Report BEFORE throwing, because throwing alone does not reach the user. The native
+                // exports run this through an ordered work queue whose failure handler only writes to
+                // logcat (AndroidNativeExports.DesktopWork), so until RemEx-nl0z a connect that timed
+                // out produced a stalled screen and complete silence. ErrorReceived is the one channel
+                // that reaches the UI, and the tagged form lets the client translate it — this text is
+                // composed in Remex.Core, which is NativeAOT and has no access to Android resources, so
+                // an untagged message renders in English for all eight non-English locales.
+                ReportConnectFailure(DesktopErrorCodes.ConnectTimeout, english, $"{host}:{port}");
+
+                throw new TimeoutException(english);
             }
         }
 
@@ -215,10 +237,80 @@ public sealed class RemexDesktopClient : IDisposable
         // DesktopStart — so the proof is guaranteed to be the first frame the host reads back, not racing a
         // stream-control message. Skipped only when no reconnect secret is known (unpaired/legacy path,
         // which the host will then reject — the correct fail-closed outcome).
-        await CompleteReconnectProofAsync(ct);
+        try
+        {
+            await CompleteReconnectProofAsync(ct);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // The proof exchange has its own 10s deadline linked into the caller's token, so its
+            // expiry arrived as a bare OperationCanceledException — indistinguishable from the user
+            // deliberately stopping. That is the exact confusion the connect catch above was added to
+            // prevent, one call later: a host that completes TLS and then goes quiet read as "you
+            // cancelled". Same treatment, different code, because the advice differs — see
+            // DesktopErrorCodes.HandshakeTimeout.
+            var english = DescribeHandshakeTimeout(host, port);
+
+            ReportConnectFailure(DesktopErrorCodes.HandshakeTimeout, english, $"{host}:{port}");
+
+            throw new TimeoutException(english);
+        }
 
         _receiveCts = new CancellationTokenSource();
         _receiveLoopTask = Task.Run(() => ReceiveLoopAsync(_receiveCts.Token));
+    }
+
+    /// <summary>
+    /// The English fallback for <see cref="DesktopErrorCodes.HandshakeTimeout"/>.
+    /// </summary>
+    /// <remarks>
+    /// Split out ONLY so the wording and the code that carries it can be asserted without a live TLS
+    /// server. Be clear about what that does and does not buy: reaching the handshake requires a real
+    /// <c>wss://</c> endpoint whose certificate matches the pin, so the CATCH ITSELF — that the proof
+    /// exchange's own deadline is classified as a host timeout rather than as the user cancelling —
+    /// has no automated coverage. That gap is real and is tracked, not papered over; see the remarks
+    /// on <see cref="DesktopErrorCodes.HandshakeTimeout"/>, and RemEx-u5q0 for the harness that
+    /// would close it.
+    /// </remarks>
+    internal static string DescribeHandshakeTimeout(string host, int port) =>
+        $"The PC at {host}:{port} accepted the connection but stopped responding while "
+        + "verifying this device. It may have gone to sleep mid-connection.";
+
+    /// <summary>
+    /// Raises <see cref="ErrorReceived"/> with a tagged, translatable description of a connect-time
+    /// failure so it reaches the user rather than only the log.
+    /// </summary>
+    /// <remarks>
+    /// Raising rather than returning, and raising BEFORE the throw, is deliberate: the throw still
+    /// happens so callers and tests keep their existing contract, and the event is what actually
+    /// reaches the phone. Failures here are reported on the same channel as host-originated stream
+    /// errors, so the Android side needs no new plumbing.
+    /// <para>
+    /// THAT CHANNEL ALSO DRIVES THE CLIENT'S RECONNECT, which is why the codes matter beyond
+    /// translation. The client's ordinary reconnect budget is reset by every stream start, so routing
+    /// these through it unchanged would retry a PC that is not answering forever, at roughly one
+    /// fifteen-second connect every sixteen seconds. The Kotlin side therefore budgets anything
+    /// tagged with a connect-time code separately, on a counter that survives a stream start. If a
+    /// third connect-time code is added here, teach <c>isConnectFailure</c> about it too — an
+    /// unrecognised code falls back to the ordinary retry path, which is the safe default but not the
+    /// intended one for a PC that cannot be reached.
+    /// </para>
+    /// </remarks>
+    private void ReportConnectFailure(string code, string englishFallback, string arg)
+    {
+        try
+        {
+            ErrorReceived?.Invoke(DesktopErrorCodes.Format(code, englishFallback, arg));
+        }
+        catch (Exception ex)
+        {
+            // A subscriber that throws must not replace the failure being reported with its own: the
+            // caller is about to throw a description of the real problem, and losing that to a
+            // secondary fault would restore the silence this method exists to end. Swallowed, but not
+            // silently — an exception escaping the JNI callback chain is a real defect, and leaving
+            // no trace of it is how this class of bug survives.
+            JniHelper.AndroidLogE("RemexDesktop", $"Reporting {code} to the client failed: {ex.Message}");
+        }
     }
 
     public async Task EnsureConnectedAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default, string? reconnectSecretBase64 = null)
@@ -549,7 +641,7 @@ public sealed class RemexDesktopClient : IDisposable
             return;
         }
 
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        using var timeoutCts = new CancellationTokenSource(ProofTimeoutOverrideForTests ?? TimeSpan.FromSeconds(10));
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
 
         var buffer = ArrayPool<byte>.Shared.Rent(64 * 1024);

@@ -33,6 +33,30 @@ public static class DesktopErrorCodes
     public const string RuntimeUnavailable = "runtime_unavailable";
 
     /// <summary>
+    /// The desktop socket never answered. Arg = <c>host:port</c>. (RemEx-nl0z)
+    /// </summary>
+    /// <remarks>
+    /// The first code here that describes a failure the HOST never saw — every other one is composed
+    /// on the host and travels over an established stream. This one is raised client-side, which is
+    /// the point: before RemEx-nl0z a connect that timed out reached the user not at all. It was
+    /// thrown out of <c>ConnectAsync</c>, caught by the ordered work queue that drives the native
+    /// exports, and written to logcat, so the phone showed a stalled screen and no explanation.
+    /// </remarks>
+    public const string ConnectTimeout = "connect_timeout";
+
+    /// <summary>
+    /// The socket opened but the host stopped responding during the proof-of-possession exchange
+    /// that immediately follows it. Arg = <c>host:port</c>. (RemEx-nl0z)
+    /// </summary>
+    /// <remarks>
+    /// Deliberately distinct from <see cref="ConnectTimeout"/> even though both are "the PC went
+    /// quiet", because the advice differs: reaching this point proves the address, the network path
+    /// and the pinned certificate are all good, so "check the PC is awake and on this network" — the
+    /// right next step for a connect timeout — is misleading here.
+    /// </remarks>
+    public const string HandshakeTimeout = "handshake_timeout";
+
+    /// <summary>
     /// Builds the wire string <c>"code␟arg␟englishFallback"</c>. <paramref name="arg"/> is an
     /// optional machine-readable parameter (e.g. a frame count) the client can substitute into its
     /// localized template; pass null when there is none.

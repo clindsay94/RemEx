@@ -441,8 +441,19 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     @Volatile private var lastDecodeProgressMs = 0L
     @Volatile private var decodeStallRestarts = 0
 
+    // Connect-time failures — the PC never answered, or went quiet mid-handshake (RemEx-nl0z).
+    // SURVIVES STREAM STARTS for the same reason decodeStallRestarts does, and it is not optional
+    // here: actuallyStartStreaming sets reconnectAttempts = 0, so routing these through the ordinary
+    // reconnect budget would make maxReconnectAttempts unreachable and pin the backoff at its first
+    // step. Against a sleeping PC that is a 15-second connect plus a radio wake, once every sixteen
+    // seconds, until the user notices — the most expensive possible response to the one failure that
+    // retrying cannot fix. Reset when a frame actually arrives, and on manual stop.
+    @Volatile private var connectFailures = 0
+
     private fun onFrameArrived() {
         lastFrameArrivalMs = System.currentTimeMillis()
+        // A frame is proof the PC answered, so the connect-failure episode is over (RemEx-nl0z).
+        connectFailures = 0
     }
 
     /**
@@ -530,6 +541,21 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
+     * Whether a tagged desktop error describes a failure to REACH the PC rather than something going
+     * wrong on a PC that answered (RemEx-nl0z).
+     *
+     * Matched on the code, not the message, for the same reason the messages are localized at all:
+     * the text is composed in Remex.Core and varies by locale, so any comparison against it would be
+     * a check that silently passes in English and fails everywhere else. An untagged or unknown error
+     * is treated as NOT a connect failure — the conservative answer, since it keeps the pre-existing
+     * retry behaviour for everything this function does not recognise.
+     */
+    private fun isConnectFailure(raw: String?): Boolean {
+        val code = raw.orEmpty().substringBefore('\u001F', missingDelimiterValue = "")
+        return code == "connect_timeout" || code == "handshake_timeout"
+    }
+
+    /**
      * Maps a host desktop-error string to a localized message. The host may tag errors as
      * "code\u001Farg\u001FenglishFallback" (see Remex.Core DesktopErrorCodes); untagged/legacy errors
      * and unknown codes fall back to the host's plain English text. (RemEx-728)
@@ -551,6 +577,17 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             "target_switch_unsupported" ->
                     app.getString(R.string.rd_err_target_switch_unsupported)
             "runtime_unavailable" -> app.getString(R.string.rd_err_runtime_unavailable)
+            // Raised client-side rather than by the host (RemEx-nl0z). Both take host:port as the
+            // arg, and both are kept distinct because the next step differs: a connect timeout means
+            // the PC was never reached, while a handshake timeout means it WAS reached and the
+            // certificate matched, so telling the user to check the network would send them the
+            // wrong way.
+            "connect_timeout" ->
+                    if (arg.isNotEmpty()) app.getString(R.string.rd_err_connect_timeout, arg)
+                    else fallback.ifEmpty { raw }
+            "handshake_timeout" ->
+                    if (arg.isNotEmpty()) app.getString(R.string.rd_err_handshake_timeout, arg)
+                    else fallback.ifEmpty { raw }
             else -> fallback.ifEmpty { raw }
         }
     }
@@ -637,6 +674,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private var reconnectJob: Job? = null
     private var reconnectAttempts = 0
     private val maxReconnectAttempts = 5
+
+    // Lower than maxReconnectAttempts on purpose (RemEx-nl0z): each of these costs a full 15-second
+    // connect timeout against a PC that is not answering, so three is already about 50 seconds of
+    // trying before the phone stops and explains itself.
+    private val maxConnectFailures = 3
 
     var activeH264Decoder: H264StreamDecoder? = null
 
@@ -764,6 +806,28 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                 Log.e(TAG, "Desktop stream error: $errorText")
                 _desktopError.value = localizeDesktopError(errorText)
                 _isStreaming.value = false
+
+                // Connect-time failures are budgeted separately from stream errors (RemEx-nl0z).
+                // A stream error means the PC was there and something went wrong, so retrying is
+                // usually right; these mean the PC never answered at all, where each retry costs a
+                // 15-second connect and buys nothing. Their counter survives the stream start that
+                // resets reconnectAttempts, so this budget is the one that actually bounds them.
+                if (isConnectFailure(errorText)) {
+                    connectFailures++
+                    if (connectFailures >= maxConnectFailures) {
+                        Log.w(TAG, "Giving up after $connectFailures connect failures")
+                        // Nothing will restart the stream now, so the 1 Hz watchdog poll has nothing
+                        // left to watch. It is already inert (it gates on _isStreaming, cleared just
+                        // above), but leaving a timer running on the screen the user is now sitting
+                        // on reading an error is waste with no upside.
+                        cancelFrameWatchdog()
+                        // Deliberately no attemptReconnect: leave the explanation on screen. It is
+                        // the whole point of RemEx-nl0z that this case says something rather than
+                        // stalling silently, and a retry would clear it a second later.
+                        return@collect
+                    }
+                }
+
                 attemptReconnect()
             }
         }
@@ -1107,7 +1171,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         // Query it first; once it arrives (handleDisplayCatalog) the stream starts with the
         // chosen target. If the catalog never arrives, fall back to a legacy (host-default) start.
         if (!displaysLoaded) {
-            _desktopError.value = null
+            clearErrorIfFreshAttempt()
             pendingStreamStart = true
             requestDisplayCatalog()
             scheduleCatalogTimeoutFallback()
@@ -1117,13 +1181,33 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         actuallyStartStreaming()
     }
 
+    /**
+     * Clears the on-screen error, but ONLY when this start is not itself the consequence of one.
+     *
+     * A retry driven by a connect failure must not erase the explanation that triggered it, or the
+     * user gets a one-second flash of the message every sixteen seconds and a stalled screen in
+     * between — barely better than the silence RemEx-nl0z existed to fix.
+     *
+     * ONE FUNCTION BECAUSE THERE ARE TWO EXITS, and guarding only the obvious one is the bug this
+     * replaced. startStreaming returns early when the display catalog has not loaded, and that is
+     * durably reachable rather than transient — an empty catalog, a catalog that fails to parse, or
+     * a host whose control socket is up but never answers the display query all leave displaysLoaded
+     * false indefinitely. On exactly those hosts the unguarded clear reproduced the flashing message
+     * this exists to prevent.
+     */
+    private fun clearErrorIfFreshAttempt() {
+        if (connectFailures == 0) {
+            _desktopError.value = null
+        }
+    }
+
     private fun actuallyStartStreaming() {
         catalogTimeoutJob?.cancel()
         catalogTimeoutJob = null
         pendingStreamStart = false
 
         val config = buildConfigJson()
-        _desktopError.value = null
+        clearErrorIfFreshAttempt()
         // Wait for THIS stream's metadata before the initial fit fires (RemEx-4k4).
         _desktopMetaReady.value = false
         reconnectAttempts = 0
@@ -1313,6 +1397,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         reconnectJob = null
         reconnectAttempts = maxReconnectAttempts // Prevent auto-reconnect after manual stop
         decodeStallRestarts = 0 // Manual stop ends the episode; the next session gets fresh restarts (RemEx-vj7b)
+        connectFailures = 0 // Likewise: the user acted, so the next attempt starts with a full budget (RemEx-nl0z)
         cancelFrameWatchdog()
 
         catalogTimeoutJob?.cancel()

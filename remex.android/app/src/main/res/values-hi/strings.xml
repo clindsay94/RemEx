@@ -534,6 +534,8 @@
     <string name="rd_err_target_unavailable">चयनित डिस्प्ले अब उपलब्ध नहीं है।</string>
     <string name="rd_err_target_switch_unsupported">यह सत्र स्ट्रीमिंग के दौरान डिस्प्ले नहीं बदल सकता।</string>
     <string name="rd_err_runtime_unavailable">इस समय आपके पीसी पर रिमोट डेस्कटॉप उपलब्ध नहीं है।</string>
+    <string name="rd_err_connect_timeout">%1$s पर आपके पीसी ने जवाब नहीं दिया। पक्का करें कि वह चालू है और इस फ़ोन वाले Wi‑Fi नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
+    <string name="rd_err_handshake_timeout">%1$s पर आपके पीसी ने जवाब दिया, लेकिन इस डिवाइस की जाँच के दौरान रुक गया। हो सकता है वह स्लीप मोड में चला गया हो। दोबारा कनेक्ट करके देखें।</string>
     <string name="cd_clear_search">खोज साफ़ करें</string>
     <string name="pairing_error_timeout">पीसी ने जवाब नहीं दिया। जांचें कि वह चालू है और उसी नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
     <string name="host_discovered_snackbar">पीसी मिला: %1$s</string>

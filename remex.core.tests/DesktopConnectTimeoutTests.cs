@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Remex.Core.Models;
 using Remex.Core.Native;
 using Xunit;
 
@@ -80,6 +82,100 @@ public class DesktopConnectTimeoutTests : IDisposable
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             RemexDesktopClient.Current.ConnectAsync(
                 UnroutableHost, Port, spkiHash: SomeSpkiHash, ct: cts.Token));
+    }
+
+    [Fact]
+    public async Task AConnectTimeoutIsReportedToTheClientAndNotOnlyThrown()
+    {
+        // THE DEFECT RemEx-nl0z FOUND, which is worse than the one it was filed for. The bead was
+        // about the message being unlocalizable English; tracing where it surfaced showed it did not
+        // surface AT ALL. StartDesktopStream runs through OrderedAsyncWorkQueue, whose failure handler
+        // writes to logcat and nothing else, so throwing was the same as staying silent: the phone sat
+        // on a stalled screen with no explanation and no way to tell a sleeping PC from a broken app.
+        //
+        // ErrorReceived is the only channel that reaches the UI, so the assertion is that the failure
+        // arrives there. Asserting on the CODE rather than the sentence is the other half of the bead:
+        // the text is composed in Remex.Core, which cannot reach Android string resources, so the code
+        // is what the client translates and the English is only a fallback for an older client.
+        var reported = new List<string>();
+        void Capture(string text) => reported.Add(text);
+
+        RemexDesktopClient.Current.ErrorReceived += Capture;
+        try
+        {
+            await Assert.ThrowsAsync<TimeoutException>(() =>
+                RemexDesktopClient.Current.ConnectAsync(UnroutableHost, Port, spkiHash: SomeSpkiHash));
+        }
+        finally
+        {
+            RemexDesktopClient.Current.ErrorReceived -= Capture;
+        }
+
+        var report = Assert.Single(reported);
+        var parts = report.Split(DesktopErrorCodes.Delimiter);
+        Assert.Equal(3, parts.Length);
+        Assert.Equal(DesktopErrorCodes.ConnectTimeout, parts[0]);
+        Assert.Equal($"{UnroutableHost}:{Port}", parts[1]);
+        Assert.False(string.IsNullOrWhiteSpace(parts[2]),
+            "the English fallback must survive for a client too old to know the code");
+    }
+
+    [Fact]
+    public async Task CancellingTheConnectReportsNothingToTheUser()
+    {
+        // The counterpart to CancellingTheConnectIsNotReportedAsAnUnreachableHost above, one layer
+        // out. Telling the user their PC is unreachable because they pressed stop is the confusion
+        // that catch exists to prevent, and it would come straight back if the report were raised
+        // before the filter rather than inside it.
+        var reported = new List<string>();
+        void Capture(string text) => reported.Add(text);
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        RemexDesktopClient.Current.ErrorReceived += Capture;
+        try
+        {
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                RemexDesktopClient.Current.ConnectAsync(
+                    UnroutableHost, Port, spkiHash: SomeSpkiHash, ct: cts.Token));
+        }
+        finally
+        {
+            RemexDesktopClient.Current.ErrorReceived -= Capture;
+        }
+
+        Assert.Empty(reported);
+    }
+
+    [Fact]
+    public void TheHandshakeTimeoutNamesTheHostAndSaysWhatIsDifferentAboutIt()
+    {
+        // WHAT THIS COVERS AND WHAT IT DOES NOT, stated rather than implied, because the honest
+        // answer is "less than it looks like".
+        //
+        // COVERED: the wording of the handshake failure, and that it names the host. The message is
+        // one half of a pair — the client renders the localized string keyed on the CODE, and falls
+        // back to this English only when it is too old to know the code — so the fallback still has
+        // to be a sentence a user can act on.
+        //
+        // NOT COVERED: that the catch around the proof exchange actually classifies its own deadline
+        // as a host timeout rather than as the user cancelling. Reaching that code needs a live
+        // wss:// endpoint whose certificate matches the pin, since the client hardcodes the scheme
+        // and hashes the presented SPKI. Every test in this file points at an unroutable address and
+        // so fails one step earlier, at connect. Deleting that catch leaves the whole suite green.
+        // A hand-rolled TLS + RFC 6455 listener was written for this and abandoned: debugging the
+        // upgrade handshake had become the work rather than the bead. Tracked as its own issue so a
+        // reusable harness benefits the other RD paths that need one too, rather than being smuggled
+        // in here. RemEx-u5q0, which also records how far the abandoned attempt got and where it stuck.
+        var message = RemexDesktopClient.DescribeHandshakeTimeout("192.0.2.7", 5005);
+
+        Assert.Contains("192.0.2.7:5005", message);
+        Assert.NotEqual(
+            $"The PC at 192.0.2.7:5005 did not answer within {ShortTimeout.TotalSeconds:F0} seconds. "
+            + "It is most likely asleep or off this network.",
+            message);
+        Assert.DoesNotContain("network", message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

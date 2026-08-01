@@ -534,6 +534,8 @@
     <string name="rd_err_target_unavailable">Layar yang dipilih tidak lagi tersedia.</string>
     <string name="rd_err_target_switch_unsupported">Sesi ini tidak dapat mengganti layar saat streaming.</string>
     <string name="rd_err_runtime_unavailable">Desktop jarak jauh tidak tersedia di PC Anda saat ini.</string>
+    <string name="rd_err_connect_timeout">PC Anda di %1$s tidak menjawab. Pastikan PC menyala dan terhubung ke jaringan Wi‑Fi yang sama dengan ponsel ini, lalu coba lagi.</string>
+    <string name="rd_err_handshake_timeout">PC Anda di %1$s menjawab, tetapi berhenti merespons saat memeriksa perangkat ini. Mungkin PC tertidur. Coba hubungkan lagi.</string>
     <string name="cd_clear_search">Hapus pencarian</string>
     <string name="pairing_error_timeout">PC tidak merespons. Pastikan PC menyala dan terhubung ke jaringan yang sama, lalu coba lagi.</string>
     <string name="host_discovered_snackbar">PC ditemukan: %1$s</string>

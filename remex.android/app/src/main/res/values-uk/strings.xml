@@ -534,6 +534,8 @@
     <string name="rd_err_target_unavailable">Вибраний дисплей більше недоступний.</string>
     <string name="rd_err_target_switch_unsupported">Цей сеанс не може перемикати дисплеї під час трансляції.</string>
     <string name="rd_err_runtime_unavailable">Віддалений робочий стіл наразі недоступний на вашому ПК.</string>
+    <string name="rd_err_connect_timeout">Ваш ПК за адресою %1$s не відповів. Переконайтеся, що він увімкнений і підключений до тієї самої мережі Wi‑Fi, що й цей телефон, і спробуйте ще раз.</string>
+    <string name="rd_err_handshake_timeout">Ваш ПК за адресою %1$s відповів, але перестав відповідати під час перевірки цього пристрою. Можливо, він перейшов у режим сну. Спробуйте підключитися ще раз.</string>
     <string name="cd_clear_search">Очистити пошук</string>
     <string name="pairing_error_timeout">ПК не відповів. Перевірте, чи він увімкнений і підключений до тієї самої мережі, а потім спробуйте ще раз.</string>
     <string name="host_discovered_snackbar">Знайдено ПК: %1$s</string>
