@@ -65,9 +65,51 @@ data class RemoteDesktopCapabilityState(
         val unavailableReason: String? = null,
         val supportsCursorQuery: Boolean = false,
         val supportsAdvancedWindowControl: Boolean = false,
+        /**
+         * Whether the host can actually inject input, as opposed to merely stream (RemEx-q9zw).
+         *
+         * DEFAULTS TO TRUE, UNLIKE ITS SIBLINGS, AND THAT IS DELIBERATE. The others are opt-in
+         * features whose absence means "this host is too old to offer it", so defaulting them false
+         * is right. This one is a REFUSAL: the host only ever reports false to say it cannot inject.
+         * Defaulting it false would mean any host that omits the key loses all input, turning a
+         * missing field into a bricked session. Absence therefore means "assume yes", which is
+         * exactly today's behaviour.
+         *
+         * ONLY ONE THING CAN PRODUCE AN ABSENT KEY, and a first draft of this comment named two. The
+         * property is a non-nullable bool serialized with WhenWritingNull, so every host that has it
+         * emits it, false included; the only omitter is a build predating the field. A truncated
+         * payload does NOT arrive here - it throws in JSONObject() and lands in the collector's
+         * catch, which sets this false explicitly.
+         */
+        val supportsInputSimulation: Boolean = true,
         val inputBackend: String? = null,
         val windowBackend: String? = null
 )
+
+/**
+ * Parses the host capability payload.
+ *
+ * Split out of the collector so it can be tested. The gate it feeds decides whether input reaches
+ * the host at all, and the interesting cases - a key that is absent versus one explicitly false -
+ * are exactly the ones that never occur on the developer's own machine (RemEx-q9zw).
+ *
+ * Deliberately still THROWS on a malformed payload rather than returning a default: the collector's
+ * catch already handles that, and it sets a strictly safer state than this function could, having
+ * the Application context needed for the user-facing reason string.
+ */
+internal fun parseHostCapabilities(hostInfoJson: String): RemoteDesktopCapabilityState {
+    val json = JSONObject(hostInfoJson)
+    return RemoteDesktopCapabilityState(
+            supportsRemoteDesktop = json.optBoolean("supportsRemoteDesktop", false),
+            supportsCursorQuery = json.optBoolean("supportsCursorQuery", false),
+            supportsAdvancedWindowControl = json.optBoolean("supportsAdvancedWindowControl", false),
+            supportsInputSimulation = json.optBoolean("supportsInputSimulation", true),
+            inputBackend = json.optString("inputBackend").takeIf { it.isNotBlank() },
+            windowBackend = json.optString("windowControlBackend").takeIf { it.isNotBlank() },
+            unavailableReason =
+                    json.optString("remoteDesktopUnavailableReason").takeIf { it.isNotBlank() }
+    )
+}
 
 /**
  * Frame-rate ceiling shared with the host via DesktopConfig.MaxTargetFps. The FPS slider's top stop
@@ -766,27 +808,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             RemexClientManager.hostCapabilities.collect { hostInfo ->
                 try {
-                    val json = JSONObject(hostInfo)
-                    _capabilityState.value =
-                            RemoteDesktopCapabilityState(
-                                    supportsRemoteDesktop =
-                                            json.optBoolean("supportsRemoteDesktop", false),
-                                    supportsCursorQuery =
-                                            json.optBoolean("supportsCursorQuery", false),
-                                    supportsAdvancedWindowControl =
-                                            json.optBoolean("supportsAdvancedWindowControl", false),
-                                    inputBackend =
-                                            json.optString("inputBackend").takeIf {
-                                                it.isNotBlank()
-                                            },
-                                    windowBackend =
-                                            json.optString("windowControlBackend").takeIf {
-                                                it.isNotBlank()
-                                            },
-                                    unavailableReason =
-                                            json.optString("remoteDesktopUnavailableReason")
-                                                    .takeIf { it.isNotBlank() }
-                            )
+                    _capabilityState.value = parseHostCapabilities(hostInfo)
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse host capabilities", e)
                     _capabilityState.value =
@@ -794,6 +816,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                                     supportsRemoteDesktop = false,
                                     supportsCursorQuery = false,
                                     supportsAdvancedWindowControl = false,
+                                    // False here rather than the field's usual "assume yes" default:
+                                    // an unparseable payload also sets supportsRemoteDesktop false,
+                                    // so there is no session to input into and nothing is lost by
+                                    // agreeing.
+                                    supportsInputSimulation = false,
                                     unavailableReason = getApplication<Application>().getString(R.string.status_metadata_unavailable)
                             )
                 }
@@ -1451,6 +1478,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * .
      */
     fun sendPointerBatch(batchJson: String) {
+        if (!_capabilityState.value.supportsInputSimulation) return
         startPointerSenderIfNeeded()
         // UNLIMITED, so this cannot fail or block the input thread.
         pointerBatchQueue.trySend(batchJson)
@@ -1913,6 +1941,11 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun sendInput(input: JSONObject) {
+        // ONE OF THE TWO PLACES INPUT LEAVES THIS CLASS, the other being sendPointerBatch. Gating
+        // here rather than at each caller is what makes the guard total: mouse, keyboard, scroll and
+        // typed text all funnel through this, so a future input kind is covered by construction
+        // instead of by remembering (RemEx-q9zw).
+        if (!_capabilityState.value.supportsInputSimulation) return
         viewModelScope.launch(sendDispatcher) {
             if (!RemexCoreClient.isLibraryLoaded) {
                 return@launch
