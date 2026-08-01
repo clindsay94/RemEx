@@ -3187,6 +3187,22 @@ fun RemoteDesktopScreenContent(
                                                                         .onSurfaceVariant
                                                 )
 
+                                                // THIS SECTION IS EASY TO BELIEVE IS MISSING, and one
+                                                // investigation already concluded exactly that
+                                                // (RemEx-is52): it sits at the very bottom of the
+                                                // settings sheet, below the Input & Controls hint, so
+                                                // a reader who stops scrolling there sees nothing.
+                                                //
+                                                // It is also hidden entirely unless the host advertises
+                                                // supportsAdvancedWindowControl — which on Windows was
+                                                // hard-coded false for a while even though the host had
+                                                // a complete Win32 backend registered and dispatching.
+                                                // If this section is absent on a host you expect to
+                                                // support it, suspect the ADVERTISEMENT before
+                                                // suspecting this UI: see
+                                                // HostCapabilitiesProvider.SupportsAdvancedWindowControl.
+                                                // On Linux it additionally needs kdotool or xdotool on
+                                                // PATH (LinuxDesktopBackendProbe).
                                                 if (uiState.capabilityState
                                                                 .supportsAdvancedWindowControl
                                                 ) {

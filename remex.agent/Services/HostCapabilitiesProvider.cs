@@ -271,9 +271,40 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         return linuxBackend.SupportsCursorQuery;
     }
 
+    /// <summary>
+    /// Whether this host can list and manipulate desktop windows for the client's window panel.
+    /// </summary>
+    /// <remarks>
+    /// WINDOWS WAS ANSWERING FALSE WHILE FULLY CAPABLE, which is the bug this method carried
+    /// (RemEx-is52). <c>WindowsDesktopWindowControlService</c> is a complete Win32 implementation —
+    /// list, activate, raise, minimize, close, resize — and <c>HostBootstrapper</c> registers it for
+    /// <c>IDesktopWindowControlService</c> on Windows, overriding the unsupported default. The
+    /// handler dispatches <c>desktop_window_query</c> straight to it with no capability check of its
+    /// own, so the host would have served those queries perfectly well. Only this advertisement said
+    /// otherwise, and the Android client hides its entire window-control section on it — so a
+    /// working, registered, dispatched feature was invisible on the platform it was written for.
+    /// The check simply was never updated when the Win32 backend landed.
+    ///
+    /// The interactive-session requirement is real on both platforms: enumerating and focusing
+    /// windows means having a desktop to enumerate.
+    ///
+    /// Virtual-desktop MOVES remain unsupported on Windows (the virtual-desktop COM API is
+    /// undocumented) and that one action returns a clear, non-fatal error — which is a property of
+    /// the action, not a reason to withhold the whole capability.
+    /// </remarks>
     private static bool SupportsAdvancedWindowControl(bool isInteractiveSession, LinuxDesktopBackendStatus? linuxBackend)
     {
-        if (!OperatingSystem.IsLinux() || !isInteractiveSession)
+        if (!isInteractiveSession)
+        {
+            return false;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            return true;
+        }
+
+        if (!OperatingSystem.IsLinux())
         {
             return false;
         }
