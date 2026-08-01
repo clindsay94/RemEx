@@ -165,6 +165,24 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     public bool HasTrustedDevices => TrustedDevices.Count > 0;
 
+    /// <summary>
+    /// Test-only seam: supplies the trust service instead of resolving it from the embedded host.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ResolveTrustService"/> reaches into <c>EmbeddedHostServiceLocator</c>, which in a
+    /// test run has no host to find — so every trust action returned early and the destructive-action
+    /// coverage stopped at the guard rather than proving anything past it. Setting this also latches
+    /// the resolution flag, so the locator is never consulted (RemEx-e1re).
+    /// </remarks>
+    internal IFileTrustService? FileTrustServiceForTests
+    {
+        set
+        {
+            _fileTrustService = value;
+            _fileTrustServiceResolved = true;
+        }
+    }
+
     private IFileTrustService? ResolveTrustService()
     {
         if (_fileTrustServiceResolved)
@@ -659,9 +677,31 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Event plumbing only. The work lives in <see cref="RevokeTrustAsync"/> so it can be awaited.
+    /// </summary>
+    /// <remarks>
+    /// An <c>async void</c> handler cannot be awaited, so a test can raise the event but not know
+    /// when the handler finished — which left this destructive action, and the shared-root one below,
+    /// as the two of six that RemEx-w9ui could not cover with the fail-closed cases. Splitting the
+    /// body out costs one line and makes the same three cases apply here as everywhere else
+    /// (RemEx-e1re).
+    /// </remarks>
     private async void OnTrustRevokeRequested(object? sender, EventArgs e)
     {
-        if (sender is not FileTrustDeviceItem item || ResolveTrustService() is not { } service)
+        if (sender is FileTrustDeviceItem item) await RevokeTrustAsync(item);
+    }
+
+    /// <summary>
+    /// Revokes one paired device's file-access trust, after confirmation.
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than private purely so the fail-closed tests can await it; nothing in
+    /// production calls it except the handler above.
+    /// </remarks>
+    internal async Task RevokeTrustAsync(FileTrustDeviceItem item)
+    {
+        if (ResolveTrustService() is not { } service)
             return;
 
         // One mis-click here severs that phone's file access until the user pairs and approves it
@@ -865,11 +905,20 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         await SaveSharedRootsAsync(LocalizationService.Instance["Settings_FileTransferSaved"]);
     }
 
+    /// <summary>
+    /// Event plumbing only. The work lives in <see cref="RemoveSharedRootAsync"/> so it can be
+    /// awaited — see the note on <see cref="OnTrustRevokeRequested"/>.
+    /// </summary>
     private async void OnSharedRootRemoveRequested(object? sender, EventArgs e)
     {
-        if (sender is not FileTransferSharedRootItem item)
-            return;
+        if (sender is FileTransferSharedRootItem item) await RemoveSharedRootAsync(item);
+    }
 
+    /// <summary>
+    /// Removes one shared folder, after confirmation. Internal so the fail-closed tests can await it.
+    /// </summary>
+    internal async Task RemoveSharedRootAsync(FileTransferSharedRootItem item)
+    {
         // Removing a shared root revokes the phone's access to that whole folder tree, so confirm
         // first (RemEx-6p1f). Same reasoning as trust revocation: the confirmation belongs in this
         // handler, not in the item's Remove() command, because the removal happens here. Fails

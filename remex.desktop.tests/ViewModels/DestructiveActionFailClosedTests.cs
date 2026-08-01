@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Remex.Core.Logging;
 using Remex.Core.Models;
+using Remex.Core.Services.FileTransfer;
 using Remex.Core.Services;
 using Remex.Desktop.Services;
 using Remex.Desktop.Services.Backup;
@@ -522,27 +523,197 @@ public class DestructiveActionFailClosedTests
             "a confirmed restore must run the code after the guard, which reports the outcome");
     }
 
-    // ── Recorded reason: the two Settings sites NOT covered (RemEx-w9ui acceptance) ──
+    // ── The two Settings sites RemEx-w9ui had to leave uncovered, now covered (RemEx-e1re) ──
     //
-    // SettingsViewModel's other two confirmed actions — revoke device trust
-    // (OnTrustRevokeRequested) and remove a shared folder (OnSharedRootRemoveRequested) — are
-    // `async void` EVENT HANDLERS on FileTrustDeviceItem / FileTransferSharedRootItem, not commands.
-    // A test can raise the event but cannot await the handler, so only the two fail-closed cases
-    // would be deterministic: both short-circuit before any real await (`OnConfirmationRequested is
-    // null`, or a delegate returning an already-completed Task.FromResult(false)), so the handler
-    // runs to completion synchronously. The POSITIVE CONTROL is the one that cannot be made
-    // deterministic — it awaits a real service call, so the assertion would have to poll for a
-    // collection change with a timeout.
+    // Revoke device trust and remove a shared folder are `async void` EVENT HANDLERS on
+    // FileTrustDeviceItem / FileTransferSharedRootItem, not commands. A test could raise the event
+    // but not await the handler, so only the two fail-closed cases were deterministic — the POSITIVE
+    // CONTROL awaits a real service call and would have needed a polling timeout. Two-thirds of the
+    // pattern plus a flaky third is worth less than an honest gap, so the gap was recorded here
+    // instead. Each handler now forwards to an awaitable core, and the same three cases apply.
+
+    [Fact]
+    public async Task RevokeTrust_WithNoDialogWired_KeepsTheDevice()
+    {
+        var (vm, device) = SettingsWithTrustedDevice();
+
+        await vm.RevokeTrustAsync(device);
+
+        vm.TrustedDevices.Should().Contain(device,
+            "an unwired ViewModel must keep the device trusted; revoking severs that phone's file "
+            + "access until the user pairs and approves it again");
+    }
+
+    [Fact]
+    public async Task RevokeTrust_WhenUserDeclines_KeepsTheDevice()
+    {
+        var (vm, device) = SettingsWithTrustedDevice();
+        vm.OnConfirmationRequested = (_, _, _) => Task.FromResult(false);
+
+        await vm.RevokeTrustAsync(device);
+
+        vm.TrustedDevices.Should().Contain(device, "declining must have the same effect as no dialog at all");
+    }
+
+    // Positive control.
+    [Fact]
+    public async Task RevokeTrust_WhenUserConfirms_RemovesTheDevice()
+    {
+        var (vm, device) = SettingsWithTrustedDevice();
+        vm.OnConfirmationRequested = (_, _, _) => Task.FromResult(true);
+
+        await vm.RevokeTrustAsync(device);
+
+        vm.TrustedDevices.Should().NotContain(device,
+            "a confirmed revoke must run the code after the guard — without this, the two cases "
+            + "above would pass against an action that does nothing at all");
+    }
+
+    [Fact]
+    public async Task RevokeTrust_NamesTheDeviceInTheConfirmation()
+    {
+        var (vm, device) = SettingsWithTrustedDevice();
+        string? body = null;
+        vm.OnConfirmationRequested = (_, message, _) => { body = message; return Task.FromResult(false); };
+
+        await vm.RevokeTrustAsync(device);
+
+        body.Should().NotBeNull();
+        body.Should().Contain(device.ShortId,
+            "the user must be told WHICH device they are about to cut off, not just that they are");
+        body.Should().NotContain("Confirm_", "a resource key reaching the dialog means the lookup failed");
+    }
+
+    [Fact]
+    public async Task RemoveSharedFolder_WithNoDialogWired_KeepsTheFolder()
+    {
+        var (vm, root) = SettingsWithSharedRoot();
+
+        await vm.RemoveSharedRootAsync(root);
+
+        vm.SharedRoots.Should().Contain(root,
+            "an unwired ViewModel must keep the folder shared; removing revokes the phone's access "
+            + "to that whole folder tree");
+    }
+
+    [Fact]
+    public async Task RemoveSharedFolder_WhenUserDeclines_KeepsTheFolder()
+    {
+        var (vm, root) = SettingsWithSharedRoot();
+        vm.OnConfirmationRequested = (_, _, _) => Task.FromResult(false);
+
+        await vm.RemoveSharedRootAsync(root);
+
+        vm.SharedRoots.Should().Contain(root, "declining must have the same effect as no dialog at all");
+    }
+
+    // Positive control.
+    [Fact]
+    public async Task RemoveSharedFolder_WhenUserConfirms_RemovesTheFolder()
+    {
+        var (vm, root) = SettingsWithSharedRoot();
+        vm.OnConfirmationRequested = (_, _, _) => Task.FromResult(true);
+
+        await vm.RemoveSharedRootAsync(root);
+
+        vm.SharedRoots.Should().NotContain(root, "a confirmed removal must actually remove it");
+    }
+
+    [Fact]
+    public async Task RemoveSharedFolder_NamesTheFolderInTheConfirmation()
+    {
+        var (vm, root) = SettingsWithSharedRoot();
+        string? body = null;
+        vm.OnConfirmationRequested = (_, message, _) => { body = message; return Task.FromResult(false); };
+
+        await vm.RemoveSharedRootAsync(root);
+
+        body.Should().NotBeNull();
+        body.Should().Contain(root.DisplayName);
+        body.Should().NotContain("Confirm_");
+    }
+
+    // ── What is STILL not covered here, and it is one line each (RemEx-e1re) ──
     //
-    // That is the wrong trade. The bead is explicit that the positive control is what stops cases
-    // 1-2 passing against an action that is broken outright, so two-thirds of the pattern plus a
-    // flaky third is worth less than the honest gap recorded here. Both handlers additionally need
-    // a live trust service (ResolveTrustService()) or the machine-wide shared-roots store.
+    // Every test above calls the awaitable core directly. Nothing exercises the `async void`
+    // forwarders themselves — `if (sender is X item) await CoreAsync(item);` — nor the subscription
+    // that reaches them, so a wrong cast, a missing await, or a handler never wired to the item's
+    // event would leave all of this green while the button did nothing.
     //
-    // WHAT WOULD FIX IT, if this is ever worth doing: give each handler an awaitable core
-    // (`internal Task RevokeTrustAsync(FileTrustDeviceItem item)`) and let the `async void` handler
-    // be a one-line forwarder. That is a production change for testability, which is exactly what
-    // the bead says to prefer over building the DI graph — but it is a change to a security-adjacent
-    // path (trust revocation), so it wants its own bead and its own review rather than riding along
-    // in a test-only one. Filed as RemEx-e1re.
+    // TRIED AND FOUND UNREACHABLE, not skipped: driving the real path needs the item to exist with
+    // its subscription, and the only thing that subscribes is ReplaceTrustedDevices, reached from
+    // LoadTrustedDevicesAsync — which ends in `Dispatcher.UIThread.Post(...)`. Nothing pumps the
+    // Avalonia dispatcher in this assembly (there is no Avalonia.Headless reference anywhere in the
+    // repo), so the posted work never runs and the collection stays empty. Subscribing by hand in a
+    // test would exercise a wiring the production code does not use, which is worse than the gap.
+    //
+    // This is a far smaller residue than the one it replaced — that was "the entire action is
+    // untestable", this is "the one-line forwarder is". Closing it needs a headless dispatcher
+    // harness, which several other view-model paths would also benefit from - RemEx-r8c6.
+
+    /// <summary>A Settings view model with one trusted device and a trust service that accepts revokes.</summary>
+    /// <remarks>
+    /// The fake is required, not convenient: ResolveTrustService reaches into the embedded host
+    /// locator, which finds nothing in a test run, so without it every case returns at the same early
+    /// guard and the positive control proves nothing.
+    /// </remarks>
+    private static (SettingsViewModel Vm, FileTrustDeviceItem Device) SettingsWithTrustedDevice()
+    {
+        var vm = CreateSettings();
+        vm.FileTrustServiceForTests = new RevokeRecordingTrustService();
+
+        var device = new FileTrustDeviceItem("client-abcdef123456", fullBrowseGranted: true, autoAcceptIncoming: false);
+        vm.TrustedDevices.Add(device);
+        return (vm, device);
+    }
+
+    /// <summary>A Settings view model with one shared folder in its list.</summary>
+    /// <remarks>
+    /// WHAT IS DELIBERATELY NOT EXERCISED: the save. CreateSettings passes a null root-settings
+    /// service, so SaveSharedRootsAsync faults into its own catch and writes nothing — which is the
+    /// point, because the real one writes the MACHINE-WIDE shared-roots file and no test may touch
+    /// the operator's actual sharing configuration. The assertions are therefore on the collection,
+    /// which is the revocation itself; persisting it is a separate concern with its own error path.
+    /// </remarks>
+    private static (SettingsViewModel Vm, FileTransferSharedRootItem Root) SettingsWithSharedRoot()
+    {
+        var vm = CreateSettings();
+        var root = new FileTransferSharedRootItem("root-1", "Documents", Path.GetTempPath(), isWritable: true);
+
+        vm.SharedRoots.Add(root);
+        return (vm, root);
+    }
+
+    /// <summary>An IFileTrustService whose revoke succeeds and whose reads return nothing.</summary>
+    private sealed class RevokeRecordingTrustService : IFileTrustService
+    {
+        /// <summary>What GetAllAsync hands back, so a test can drive the real load path.</summary>
+        public List<FileTrustRecord> Records { get; } = [];
+
+        public Task<FileTrustRecord?> GetTrustAsync(string clientId, CancellationToken ct)
+            => Task.FromResult<FileTrustRecord?>(null);
+
+        public Task<IReadOnlyList<FileTrustRecord>> GetAllAsync(CancellationToken ct)
+            => Task.FromResult<IReadOnlyList<FileTrustRecord>>(Records);
+
+        public Task<bool> IsFullBrowseGrantedAsync(string clientId, CancellationToken ct) => Task.FromResult(false);
+
+        public Task<bool> IsAutoAcceptIncomingAsync(string clientId, CancellationToken ct) => Task.FromResult(false);
+
+        public Task SetFullBrowseGrantedAsync(string clientId, bool granted, CancellationToken ct) => Task.CompletedTask;
+
+        public Task SetAutoAcceptIncomingAsync(string clientId, bool autoAccept, CancellationToken ct) => Task.CompletedTask;
+
+        public Task RevokeAsync(string clientId, CancellationToken ct) => Task.CompletedTask;
+
+        public Task<FileConsentDecision> RequestConsentAsync(string clientId, FileConsentRequest request, CancellationToken ct)
+            => throw new NotSupportedException("the destructive-action tests never prompt for consent");
+
+        public void ResolveConsent(string consentId, bool granted, bool remember)
+            => throw new NotSupportedException("the destructive-action tests never prompt for consent");
+
+        // Never raised: nothing here requests consent. Present to satisfy the interface.
+        public event Action<FileConsentPrompt>? ConsentRequested { add { } remove { } }
+    }
+
 }
