@@ -680,10 +680,10 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             cropX == 0 &&
             cropY == 0)
         {
-            return $"scale={captureWidth}:{captureHeight}";
+            return $"scale={Arg(captureWidth)}:{Arg(captureHeight)}";
         }
 
-        return $"crop={cropWidth}:{cropHeight}:{cropX}:{cropY},scale={captureWidth}:{captureHeight}";
+        return $"crop={Arg(cropWidth)}:{Arg(cropHeight)}:{Arg(cropX)}:{Arg(cropY)},scale={Arg(captureWidth)}:{Arg(captureHeight)}";
     }
 
     internal static IReadOnlyList<DesktopDisplayInfo> ParseXrandrDisplays(string[] lines)
@@ -753,7 +753,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                     return grimResult;
 
                 // Convert PNG to JPEG with quality and scale
-                var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{tmpFile}\"";
+                var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {FfmpegQualityArgument(quality)} -y \"{tmpFile}\"";
                 return await RunProcessAsync("ffmpeg", ffmpegArgs, ct);
             }
             finally
@@ -790,7 +790,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             }
 
             // Crop to primary monitor first, then scale. If no primary detected, scale the full capture.
-            var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{tmpFile}\"";
+            var ffmpegArgs = $"-i \"{pngFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {FfmpegQualityArgument(quality)} -y \"{tmpFile}\"";
             return await RunProcessAsync("ffmpeg", ffmpegArgs, ct);
         }
         finally
@@ -808,7 +808,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var env = new Dictionary<string, string> { ["DISPLAY"] = _display };
             // -q sets JPEG quality. -z would suppress the cursor, so we omit it
             // to include the OS cursor in the captured frame.
-            var args = $"-q {quality} \"{tmpFile}\"";
+            var args = $"-q {Arg(quality)} \"{tmpFile}\"";
             var result = await RunProcessAsync(tool, args, ct, env);
             if (result != 0) return result;
 
@@ -816,7 +816,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var scaledFile = tmpFile + ".scaled.jpg";
             try
             {
-                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
+                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {FfmpegQualityArgument(quality)} -y \"{scaledFile}\"";
                 var scaleResult = await RunProcessAsync("ffmpeg", ffmpegArgs, ct, env);
                 if (scaleResult == 0 && File.Exists(scaledFile))
                 {
@@ -834,7 +834,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         if (toolName == "import")
         {
             var env = new Dictionary<string, string> { ["DISPLAY"] = _display };
-            var args = $"-window root -quality {quality} \"{tmpFile}\"";
+            var args = $"-window root -quality {Arg(quality)} \"{tmpFile}\"";
             var result = await RunProcessAsync(tool, args, ct, env);
             if (result != 0)
             {
@@ -844,7 +844,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var scaledFile = tmpFile + ".scaled.jpg";
             try
             {
-                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {Math.Max(1, 31 - quality * 31 / 100)} -y \"{scaledFile}\"";
+                var ffmpegArgs = $"-i \"{tmpFile}\" -vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -q:v {FfmpegQualityArgument(quality)} -y \"{scaledFile}\"";
                 var scaleResult = await RunProcessAsync("ffmpeg", ffmpegArgs, ct, env);
                 if (scaleResult == 0 && File.Exists(scaledFile))
                 {
@@ -867,8 +867,9 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     {
         var display = Environment.GetEnvironmentVariable("DISPLAY") ?? ":0";
         var env = new Dictionary<string, string> { ["DISPLAY"] = display };
-        var args = $"-f x11grab -video_size {_screenWidth}x{_screenHeight} -i {display}+{_screenLeft},{_screenTop} " +
-                   $"-frames:v 1 -q:v {Math.Max(1, 31 - quality * 31 / 100)} " +
+        var args = $"-f x11grab -video_size {Arg(_screenWidth)}x{Arg(_screenHeight)} " +
+                   $"-i {BuildX11GrabInputArgument(display, _screenLeft, _screenTop)} " +
+                   $"-frames:v 1 -q:v {FfmpegQualityArgument(quality)} " +
                    $"-vf \"{BuildCropScaleFilter(captureWidth, captureHeight)}\" -y \"{tmpFile}\"";
         return await RunProcessAsync("ffmpeg", args, ct, env);
     }
@@ -949,7 +950,52 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         SetDefaultSize();
     }
 
-    // Matches a kscreen-doctor "Geometry: X,Y WxH" line (ANSI colour codes stripped first).
+    /// <summary>
+    /// Writes a number into an argument for ffmpeg / scrot / import, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE MIRROR OF <see cref="TryParseInt"/>, AND IT BREAKS A DIFFERENT SET OF LOCALES
+    /// (RemEx-clum). Interpolating an <c>int</c> uses <c>CurrentCulture</c>, and 95 runtime cultures
+    /// render a negative one with a <c>NegativeSign</c> that is not the ASCII hyphen — sv-SE, lt-LT
+    /// and fi-FI use U+2212 MINUS SIGN, and the ar/fa/he families prefix a directional mark. ffmpeg
+    /// parses none of those.
+    /// </para>
+    /// <para>
+    /// The one value here that can actually be negative is the virtual-desktop origin fed to
+    /// x11grab: <c>_screenLeft</c>/<c>_screenTop</c> are the minimum over outputs, so a monitor left
+    /// of or above the primary makes them negative and capture then fails to start at all. Widths,
+    /// heights and quality levels cannot be negative, and a positive <c>int</c> has no
+    /// culture-sensitive rendering to get wrong — they go through this anyway for the reason
+    /// RemEx-hbma established: one rule with no exceptions is what keeps the signed cases safe by
+    /// construction rather than by anyone remembering which values carry a sign.
+    /// </para>
+    /// <para>
+    /// This was not an oversight handed down from the earlier sweeps. RemEx-hbma covered the input
+    /// tools and never touched this file; RemEx-tiih found this exact site while fixing the parse
+    /// direction here and deferred it deliberately, because it is the opposite direction and breaks a
+    /// different set of locales.
+    /// </para>
+    /// </remarks>
+    private static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Builds the ffmpeg <c>-q:v</c> operand from a 0-100 quality level (ffmpeg counts the other way,
+    /// 1 being best), formatted through <see cref="Arg"/>.
+    /// </summary>
+    private static string FfmpegQualityArgument(int quality) =>
+        Arg(Math.Max(1, 31 - quality * 31 / 100));
+
+    /// <summary>
+    /// Builds the x11grab <c>-i</c> operand: the X display plus the virtual-desktop origin.
+    /// </summary>
+    /// <remarks>
+    /// Extracted so the one genuinely negative-capable argument in this file can be asserted under a
+    /// hostile culture without running ffmpeg (RemEx-clum).
+    /// </remarks>
+    internal static string BuildX11GrabInputArgument(string display, int left, int top) =>
+        $"{display}+{Arg(left)},{Arg(top)}";
+
     /// <summary>
     /// Reads a number out of kscreen-doctor / xrandr / xdpyinfo output, invariantly.
     /// </summary>
@@ -992,6 +1038,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     private static int ParseInt(string text) =>
         int.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture);
 
+    // Matches a kscreen-doctor "Geometry: X,Y WxH" line (ANSI colour codes stripped first).
     private static readonly Regex KScreenGeometryRegex = new(
         @"Geometry:\s*(?<x>-?\d+),(?<y>-?\d+)\s+(?<w>\d+)x(?<h>\d+)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
