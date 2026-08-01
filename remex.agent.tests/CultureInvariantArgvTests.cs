@@ -10,7 +10,8 @@ using Xunit;
 namespace Remex.Agent.Tests;
 
 /// <summary>
-/// Pins that numbers reaching a shell tool are formatted with the invariant culture (RemEx-hbma).
+/// Pins that numbers crossing the shell-tool boundary are invariant in BOTH directions
+/// (RemEx-hbma for formatting, RemEx-j7el for parsing).
 ///
 /// <c>NumberFormatInfo.NegativeSign</c> IS NOT ALWAYS AN ASCII HYPHEN. Several locales define it as
 /// U+2212 MINUS SIGN, and a bare <c>int.ToString()</c> honours that. The result is an argument
@@ -40,7 +41,13 @@ public sealed class CultureInvariantArgvTests : IDisposable
 
     public CultureInvariantArgvTests()
     {
-        // A culture that formats negatives the way the bug requires, built rather than looked up.
+        // A culture that mistreats negatives in BOTH directions, built rather than looked up. Setting
+        // NegativeSign to something that is not the ASCII hyphen makes formatting emit it and parsing
+        // reject the hyphen, so one fixture covers the format bug (RemEx-hbma) and the parse bug
+        // (RemEx-j7el) at once - which is convenient here but must not be mistaken for the two being
+        // the same defect. The parse-breaking cultures are a SUBSET of the format-breaking ones, and
+        // the difference between the two sets is what makes them separate bugs; the controls below
+        // assert that relationship directly.
         var hostile = (CultureInfo)CultureInfo.InvariantCulture.Clone();
         hostile.NumberFormat.NegativeSign = "−";
         CultureInfo.CurrentCulture = hostile;
@@ -235,6 +242,138 @@ public sealed class CultureInvariantArgvTests : IDisposable
 
             Assert.DoesNotContain(".ToString()", code);
         }
+    }
+
+    /// <summary>
+    /// A culture shaped like <c>ar</c>: <c>NegativeSign</c> is ARABIC LETTER MARK followed by a
+    /// hyphen, which is what actually rejects the plain hyphen xdotool emits.
+    /// </summary>
+    /// <remarks>
+    /// A SECOND FIXTURE IS REQUIRED, AND FINDING THAT OUT WAS THE POINT OF THE CONTROL. The class
+    /// fixture sets <c>NegativeSign</c> to U+2212, which breaks FORMATTING - and a first draft of the
+    /// parse control asserted that the same culture breaks parsing. It does not: .NET accepts an
+    /// ASCII hyphen anyway where <c>NegativeSign</c> is U+2212, so the assertion failed immediately
+    /// and took a wrong assumption with it. Measured against every runtime culture: 57 reject
+    /// <c>"-1920"</c>, all of them in the ar, ckb, fa, he, ks, lrc, mzn, pa, ps, sd, ur and uz
+    /// families. Their signs take five distinct shapes, measured: U+061C U+002D (26 cultures),
+    /// U+200E U+002D U+200E (16, three characters), U+200E U+002D (9), U+200F U+002D (3) and
+    /// U+200E U+2212 (3, not ending in a hyphen at all). A first draft of this remark called them
+    /// uniformly two-character; the fixture reproduces the largest shape, not the only one.
+    /// </remarks>
+    private static CultureInfo ParseHostileCulture()
+    {
+        var culture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+        culture.NumberFormat.NegativeSign = "\u061C-";
+        return culture;
+    }
+
+    [Fact]
+    public void ParseBreakingCulturesAreASubsetOfFormatBreakingOnes()
+    {
+        // THE REASON THIS NEEDED ITS OWN BEAD, asserted rather than asserted-about - and the earlier
+        // framing of it was exactly backwards. A first version of this test was called
+        // "...AreDisjoint" and claimed the ar-shaped culture "does the reverse" of the fixture, while
+        // the assertion three lines below showed it breaking formatting too. Disjoint is impossible:
+        // rejecting "-1920" requires NegativeSign to differ from the ASCII hyphen, which is the same
+        // condition that makes formatting differ. Measured across 890 cultures: 95 break formatting,
+        // 57 break parsing, overlap 57, format-only 38.
+        //
+        // The 38 are what make these separate bugs. They use U+2212, so they emit an unparseable
+        // argument but read an ASCII hyphen back happily - meaning a fix aimed at formatting leaves
+        // parsing broken on 57 cultures and repairs nothing here. Same condition, opposite ends.
+        Assert.Equal("−1920", (-1920).ToString(CultureInfo.CurrentCulture));
+        Assert.True(int.TryParse("-1920", NumberStyles.Integer, CultureInfo.CurrentCulture, out _));
+
+        // The parse-hostile culture breaks BOTH, which is the subset relationship in one assertion.
+        var parseHostile = ParseHostileCulture();
+        Assert.Equal("\u061C-1920", (-1920).ToString(parseHostile));
+        Assert.False(int.TryParse("-1920", NumberStyles.Integer, parseHostile, out _));
+
+        // And the invariant culture is correct in both directions, which is the whole fix.
+        Assert.Equal("-1920", (-1920).ToString(CultureInfo.InvariantCulture));
+        Assert.True(int.TryParse("-1920", NumberStyles.Integer, CultureInfo.InvariantCulture, out var ok));
+        Assert.Equal(-1920, ok);
+
+        // Positives are unaffected in either direction, same as with formatting.
+        Assert.True(int.TryParse("1920", NumberStyles.Integer, parseHostile, out _));
+    }
+
+    [Fact]
+    public void WindowGeometryOnAMonitorLeftOfPrimaryStillParses()
+    {
+        // THE SYMPTOM THIS BEAD IS ABOUT. A window on a monitor left of or above the primary has a
+        // negative origin - the same -1920 case RemEx-r29r existed for - and xdotool reports it with
+        // an ASCII hyphen. Under the old CurrentCulture parse this silently returned false on an
+        // affected host, the geometry went missing with no error anywhere, and window control either
+        // reported the window wrong or refused to act on it.
+        //
+        // Run under the ar-shaped culture, not the class fixture: the fixture breaks formatting and
+        // would leave this green whether the fix were present or not.
+        var original = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = ParseHostileCulture();
+        try
+        {
+            Assert.True(LinuxDesktopWindowControlService.TryParse("-1920", out var x));
+            Assert.Equal(-1920, x);
+
+            Assert.True(LinuxDesktopWindowControlService.TryParse("-50", out var y));
+            Assert.Equal(-50, y);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
+    }
+
+    [Fact]
+    public void NonNegativeGeometryParsesByTheSameRule()
+    {
+        // Widths, heights, desktop indices and PIDs cannot be negative, and go through the same
+        // helper for the reason the formatting side does. Cannot fail on culture - stated so nobody
+        // reads it as coverage it is not, the same labelling the positive formatting cases carry.
+        Assert.True(LinuxDesktopWindowControlService.TryParse("1920", out var width));
+        Assert.Equal(1920, width);
+    }
+
+    [Fact]
+    public void TheCursorQueryAndWindowHandleHelpersAreInvariantToo()
+    {
+        // COVER FOR THE TWO HELPERS NOTHING ELSE PINNED. Review measured that reverting either the
+        // cursor-query parse or both halves of the Windows window-Id round trip to CurrentCulture
+        // left the whole agent suite green - so without this, two of the three fixed sites shipped
+        // untested. Direct assertions rather than a seam, because neither site is reachable without
+        // a live tool or a real HWND.
+        var original = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = ParseHostileCulture();
+        try
+        {
+            Assert.True(LinuxInputSimulationService.TryParseInvariant("-5", out var cursor));
+            Assert.Equal(-5, cursor);
+
+            // Window handles are non-negative in practice, so this one cannot fail on culture and is
+            // a characterization - the same label the positive formatting cases carry. It is fixed
+            // and asserted anyway because "self-consistent on one machine" stops being true the
+            // moment a payload is replayed somewhere else.
+            Assert.True(WindowsDesktopWindowControlService.TryParseHandle("65552", out var hwnd));
+            Assert.Equal(65552, hwnd.ToInt64());
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = original;
+        }
+    }
+
+    [Fact]
+    public void AnUnparseableFieldIsStillRejected()
+    {
+        // CANNOT DISCRIMINATE THE FIX, and says so: these three inputs fail under every culture and
+        // every plausible NumberStyles, so this passes identically before and after. It is here as a
+        // non-regression against the guard becoming permissive on the way to becoming invariant -
+        // geometry silently becoming zero instead of silently becoming null - not as evidence for
+        // anything this bead changed.
+        Assert.False(LinuxDesktopWindowControlService.TryParse("not-a-number", out _));
+        Assert.False(LinuxDesktopWindowControlService.TryParse(null, out _));
+        Assert.False(LinuxDesktopWindowControlService.TryParse("", out _));
     }
 
     [Fact]

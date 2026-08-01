@@ -218,8 +218,16 @@ public class LinuxInputSimulationService : IInputSimulationService
                 var y = 0;
                 foreach (var line in lines)
                 {
-                    if (line.StartsWith("X=")) int.TryParse(line.Substring(2), out x);
-                    if (line.StartsWith("Y=")) int.TryParse(line.Substring(2), out y);
+                    // Invariant for the same reason the arguments are (RemEx-j7el): xdotool writes an
+                    // ASCII hyphen, and 57 cultures reject that when NegativeSign is something else.
+                    // X11 screen coordinates are 0-based so these are not negative today, which is
+                    // exactly why the rule has no exceptions - the next reader should not have to know
+                    // which of these can go negative.
+                    // StringComparison.Ordinal because the prefix test is culture-sensitive too by
+                    // default (CA1310) - low risk for "X=", but it is the last culture dependency in
+                    // this method and leaving it would make the comment above only half true.
+                    if (line.StartsWith("X=", StringComparison.Ordinal)) TryParseInvariant(line.Substring(2), out x);
+                    if (line.StartsWith("Y=", StringComparison.Ordinal)) TryParseInvariant(line.Substring(2), out y);
                 }
                 return (x, y);
             }
@@ -517,6 +525,13 @@ public class LinuxInputSimulationService : IInputSimulationService
     /// </para>
     /// </remarks>
     private static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Reads a number out of a shell tool's output, invariantly. The mirror of <see cref="Arg"/>
+    /// (RemEx-j7el).
+    /// </summary>
+    internal static bool TryParseInvariant(string? text, out int value) =>
+        int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
 
     /// <summary>
     /// The virtual-desktop origin when nobody supplied one: <c>(0,0)</c>, which is what an X11
