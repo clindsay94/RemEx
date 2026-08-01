@@ -4,6 +4,8 @@ using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Services;
 
+using Remex.Core.Models;
+
 namespace Remex.Agent.Services.Input;
 
 [SupportedOSPlatform("windows")]
@@ -68,15 +70,29 @@ public class WindowsInputSimulationService : IInputSimulationService
         SendOrThrow("relative mouse move", input);
     }
 
+    /// <summary>
+    /// The single button table for this backend: protocol index to the matching
+    /// <c>MOUSEEVENTF_*</c> flag, for a press or a release.
+    /// </summary>
+    /// <remarks>
+    /// Down and up were two separate switches over the same three indices, which is two chances to
+    /// transcribe the pairing wrong and one way for a button to press as left and release as middle
+    /// — a stuck button, not a wrong click. Taking <c>pressed</c> as a parameter keeps the two rows
+    /// of each pair adjacent so they cannot diverge (RemEx-upxn).
+    /// <para>
+    /// Unknown indices fall back to left, matching both switches this replaced and the Linux tables.
+    /// </para>
+    /// </remarks>
+    private static uint ButtonFlag(int button, bool pressed) => button switch
+    {
+        MouseButtons.Middle => pressed ? MOUSEEVENTF_MIDDLEDOWN : MOUSEEVENTF_MIDDLEUP,
+        MouseButtons.Right => pressed ? MOUSEEVENTF_RIGHTDOWN : MOUSEEVENTF_RIGHTUP,
+        _ => pressed ? MOUSEEVENTF_LEFTDOWN : MOUSEEVENTF_LEFTUP,
+    };
+
     public void MouseDown(int button)
     {
-        uint flag = button switch
-        {
-            0 => MOUSEEVENTF_LEFTDOWN,
-            1 => MOUSEEVENTF_MIDDLEDOWN,
-            2 => MOUSEEVENTF_RIGHTDOWN,
-            _ => MOUSEEVENTF_LEFTDOWN
-        };
+        uint flag = ButtonFlag(button, pressed: true);
 
         var input = new INPUT
         {
@@ -88,13 +104,7 @@ public class WindowsInputSimulationService : IInputSimulationService
 
     public void MouseUp(int button)
     {
-        uint flag = button switch
-        {
-            0 => MOUSEEVENTF_LEFTUP,
-            1 => MOUSEEVENTF_MIDDLEUP,
-            2 => MOUSEEVENTF_RIGHTUP,
-            _ => MOUSEEVENTF_LEFTUP
-        };
+        uint flag = ButtonFlag(button, pressed: false);
 
         var input = new INPUT
         {

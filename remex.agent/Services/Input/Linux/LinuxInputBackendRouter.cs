@@ -6,6 +6,8 @@ using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Agent.Services.RemoteDesktop.Linux;
 
+using Remex.Agent.Services.Input;
+
 namespace Remex.Agent.Services.Input.Linux;
 
 /// <summary>
@@ -213,23 +215,11 @@ public sealed class LinuxInputBackendRouter : IInputSimulationService, IDisposab
 
     // ── Private helpers ──────────────────────────────────────────────────
 
-    private static uint ButtonToLinuxCode(int button) => button switch
-    {
-        0 => 272u,   // BTN_LEFT
-        1 => 274u,   // BTN_MIDDLE
-        2 => 273u,   // BTN_RIGHT
-        3 => 275u,   // BTN_SIDE
-        4 => 276u,   // BTN_EXTRA
-        _ => 272u,
-    };
+    /// <summary>evdev BTN_* code for the EIS backend. Single-sourced (RemEx-upxn).</summary>
+    private static uint ButtonToLinuxCode(int button) => MouseButtonCodes.ToEvdev(button);
 
-    private static int ButtonToXdotoolButton(int button) => button switch
-    {
-        0 => 1,
-        1 => 2,
-        2 => 3,
-        _ => 1,
-    };
+    /// <summary>xdotool's 1-based button number. Single-sourced (RemEx-upxn).</summary>
+    private static int ButtonToXdotoolButton(int button) => MouseButtonCodes.ToXdotool(button);
 
     private static void RunXdotool(string args)
     {

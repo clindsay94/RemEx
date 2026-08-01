@@ -1,6 +1,8 @@
 using System.Runtime.Versioning;
 using System.Text;
 
+using Remex.Agent.Services.Input;
+
 namespace Remex.Agent.Services.Input.Linux;
 
 /// <summary>
@@ -345,13 +347,5 @@ public static class LinuxInputEventTranslator
     /// so this never applied to the pointer path at all.
     /// </para>
     /// </remarks>
-    public static uint ButtonIndexToLinuxCode(int index) => index switch
-    {
-        0 => 272u,   // BTN_LEFT
-        1 => 274u,   // BTN_MIDDLE
-        2 => 273u,   // BTN_RIGHT
-        3 => 275u,   // BTN_SIDE
-        4 => 276u,   // BTN_EXTRA
-        _ => 272u,
-    };
+    public static uint ButtonIndexToLinuxCode(int index) => MouseButtonCodes.ToEvdev(index);
 }

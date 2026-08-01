@@ -366,30 +366,18 @@ public class LinuxInputSimulationService : IInputSimulationService
         }
     }
 
-    private static int MapButtonXdotool(int button) => button switch
-    {
-        0 => 1, // left
-        1 => 2, // middle
-        2 => 3, // right
-        _ => 1
-    };
+    /// <summary>xdotool's 1-based button number. Single-sourced (RemEx-upxn).</summary>
+    private static int MapButtonXdotool(int button) => MouseButtonCodes.ToXdotool(button);
 
-    private static int MapButtonYdotool(int button) => button switch
-    {
-        0 => 0x110, // BTN_LEFT
-        1 => 0x112, // BTN_MIDDLE
-        2 => 0x111, // BTN_RIGHT
-        _ => 0x110
-    };
+    /// <summary>
+    /// ydotool takes the raw evdev code, the same numbering the portal wants — these were two
+    /// separate tables spelling the same values in hex and decimal (RemEx-upxn).
+    /// </summary>
+    private static int MapButtonYdotool(int button) => (int)MouseButtonCodes.ToEvdev(button);
 
     // Linux BTN_ codes used by the portal NotifyPointerButton API.
-    private static int MapButtonLinux(int button) => button switch
-    {
-        0 => 0x110, // BTN_LEFT
-        1 => 0x112, // BTN_MIDDLE
-        2 => 0x111, // BTN_RIGHT
-        _ => 0x110
-    };
+    /// <summary>evdev BTN_* code for the portal's NotifyPointerButton. Single-sourced (RemEx-upxn).</summary>
+    private static int MapButtonLinux(int button) => (int)MouseButtonCodes.ToEvdev(button);
 
     /// <summary>
     /// Synchronously ensures the portal input session is active. The first caller blocks

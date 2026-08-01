@@ -1,8 +1,10 @@
+using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 
 using System.Runtime.Versioning;
 using Remex.Core.Models;
+using Remex.Agent.Services.Input;
 using Remex.Agent.Services.Input.Linux;
 using Remex.Agent.Services.RemoteDesktop.Linux;
 using Xunit;
@@ -133,61 +135,106 @@ public class LinuxPointerSampleTranslatorTests
     }
 
     /// <summary>
-    /// Every button mapping in the repo agrees on 0/1/2 = left/middle/right.
+    /// The one button table maps 0/1/2 to left/middle/right, and no backend keeps its own copy.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The real defect behind RemEx-kie3 was not one wrong table but SIX tables with no shared
-    /// definition and nothing comparing them: three in <c>LinuxInputSimulationService</c>, two in
-    /// <c>LinuxInputBackendRouter</c>, and the Windows flag switch. The live maps are private to
-    /// their platform services, and a Linux-only method cannot be invoked from a Windows test run
-    /// anyway, so this reads them as SOURCE — the property worth pinning is that the tables agree,
-    /// which is a textual fact about the pairs they contain.
+    /// This REPLACED a test that compared the SOURCE TEXT of six separate tables, which was the only
+    /// thing holding them in agreement. RemEx-upxn collapsed them onto <see cref="MouseButtonCodes"/>,
+    /// so agreement is now a compile-time fact and the mapping can be asserted by CALLING it — which
+    /// is worth strictly more than matching literals, because it survives the table being rewritten
+    /// in any style at all.
     /// </para>
     /// <para>
-    /// Asserted as "the inverted pair is absent" as well as "the correct pair is present", and
-    /// deliberately NOT by counting matches: pinning how many BTN_-based backends exist would make
-    /// correctly ADDING one fail this test, with a message about arity rather than about buttons.
+    /// THE TRANSCRIPTION TRAP IS THE POINT. BTN_MIDDLE is 274 and BTN_RIGHT is 273, so the evdev
+    /// codes run out of index order. Written out six times, one of them was eventually written
+    /// wrong — RemEx-kie3, where a left click performed a middle click. That kind of mistake never
+    /// crashes and never fails to work; it silently does the wrong thing.
     /// </para>
     /// </remarks>
     [Fact]
-    public void EveryHostButtonMapping_AgreesOnLeftMiddleRight()
+    public void TheSharedButtonTableMapsLeftMiddleRight()
+    {
+        Assert.Equal(272u, MouseButtonCodes.ToEvdev(MouseButtons.Left));
+        Assert.Equal(274u, MouseButtonCodes.ToEvdev(MouseButtons.Middle));
+        Assert.Equal(273u, MouseButtonCodes.ToEvdev(MouseButtons.Right));
+        Assert.Equal(275u, MouseButtonCodes.ToEvdev(MouseButtons.Side));
+        Assert.Equal(276u, MouseButtonCodes.ToEvdev(MouseButtons.Extra));
+
+        Assert.Equal(1, MouseButtonCodes.ToXdotool(MouseButtons.Left));
+        Assert.Equal(2, MouseButtonCodes.ToXdotool(MouseButtons.Middle));
+        Assert.Equal(3, MouseButtonCodes.ToXdotool(MouseButtons.Right));
+
+        // The protocol indices themselves, since Android hardcodes the same three and a change here
+        // without a change there is the two ends disagreeing about what a click is.
+        Assert.Equal(0, MouseButtons.Left);
+        Assert.Equal(1, MouseButtons.Middle);
+        Assert.Equal(2, MouseButtons.Right);
+    }
+
+    [Fact]
+    public void AnUnknownButtonIndexClicksLeftRatherThanFailing()
+    {
+        // Every table this replaced fell back to left, and that is deliberate rather than lazy: a
+        // malformed index off the wire should produce an ordinary click, not tear down the input
+        // path for the rest of the session.
+        Assert.Equal(272u, MouseButtonCodes.ToEvdev(99));
+        Assert.Equal(272u, MouseButtonCodes.ToEvdev(-1));
+        Assert.Equal(1, MouseButtonCodes.ToXdotool(99));
+
+        // Side and extra are 8 and 9 on xdotool, NOT 4 and 5 — those are the scroll wheel, and
+        // "completing" the table with them would turn a back-button press into a scroll. Pinned in
+        // that direction, so the three Linux backends give the same answer for the same index.
+        Assert.Equal(8, MouseButtonCodes.ToXdotool(MouseButtons.Side));
+        Assert.Equal(9, MouseButtonCodes.ToXdotool(MouseButtons.Extra));
+        Assert.NotEqual(4, MouseButtonCodes.ToXdotool(MouseButtons.Side));
+        Assert.NotEqual(5, MouseButtonCodes.ToXdotool(MouseButtons.Extra));
+    }
+
+    /// <summary>
+    /// No input backend has reintroduced a button table of its own.
+    /// </summary>
+    /// <remarks>
+    /// The one source-text assertion worth keeping, and it guards the property that made the
+    /// behavioural test above sufficient: a backend that grows its own local table is once again
+    /// free to drift, and every behavioural assertion here would stay green while it did.
+    /// <para>
+    /// WHAT IT ACTUALLY MATCHES, stated exactly rather than generously: mapping arms against the
+    /// evdev BTN_ codes for middle and right, in both spellings, plus a second MOUSEEVENTF switch.
+    /// It does NOT catch a regrown xdotool table (<c>0 =&gt; 1, 1 =&gt; 2, 2 =&gt; 3</c> is too
+    /// ordinary a literal to match on), nor one written with named constants or a switch statement.
+    /// It catches the copy-paste shape that actually occurred, which is worth having, and is not a
+    /// proof that no table exists.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void NoInputBackendKeepsItsOwnButtonTable()
     {
         var inputDir = Path.Combine(RepoRoot(), "remex.agent", "Services", "Input");
-        var linuxService = File.ReadAllText(Path.Combine(inputDir, "LinuxInputSimulationService.cs"));
-        var router = File.ReadAllText(Path.Combine(inputDir, "Linux", "LinuxInputBackendRouter.cs"));
-        var windowsService = File.ReadAllText(Path.Combine(inputDir, "WindowsInputSimulationService.cs"));
-
-        // xdotool numbers buttons 1/2/3; ydotool and the portal use BTN_ codes; Windows uses flags.
-        // In every one of them index 1 must be the MIDDLE button and index 2 the RIGHT button.
-        foreach (var (name, source) in new[]
-                 {
-                     ("LinuxInputSimulationService", linuxService),
-                     ("LinuxInputBackendRouter", router),
-                 })
+        var files = new[]
         {
-            Assert.True(source.Contains("1 => 2,") && source.Contains("2 => 3,"),
-                $"{name}: xdotool mapping must send index 1 to button 2 (middle) and 2 to 3 (right)");
-            Assert.Contains("1 => 274u,", source.Replace("0x112", "274u"));
-            Assert.Contains("2 => 273u,", source.Replace("0x111", "273u"));
+            Path.Combine(inputDir, "LinuxInputSimulationService.cs"),
+            Path.Combine(inputDir, "Linux", "LinuxInputBackendRouter.cs"),
+            Path.Combine(inputDir, "Linux", "LinuxInputEventTranslator.cs"),
+            Path.Combine(inputDir, "WindowsInputSimulationService.cs"),
+        };
 
-            // The inversion this bead fixed must not come back under any spelling.
-            Assert.DoesNotContain("1 => 0x111", source);   // 1 => BTN_RIGHT
-            Assert.DoesNotContain("2 => 0x112", source);   // 2 => BTN_MIDDLE
-            Assert.DoesNotContain("1 => 273u", source);
-            Assert.DoesNotContain("2 => 274u", source);
+        foreach (var file in files)
+        {
+            var source = File.ReadAllText(file);
+            var name = Path.GetFileName(file);
+
+            // The literals every one of these tables used to contain, in both spellings.
+            foreach (var literal in new[] { "=> 0x112", "=> 0x111", "=> 274u", "=> 273u", "=> 274", "=> 273" })
+            {
+                Assert.False(source.Contains(literal, StringComparison.Ordinal),
+                    $"{name} contains '{literal}', so a button table has come back. Route it through "
+                    + "MouseButtonCodes instead — six copies of this is what RemEx-kie3 came from.");
+            }
+
+            Assert.False(source.Contains("MOUSEEVENTF_MIDDLEDOWN,", StringComparison.Ordinal),
+                $"{name} looks like it has a second MOUSEEVENTF switch; ButtonFlag is the only one.");
         }
-
-        Assert.Contains("1 => MOUSEEVENTF_MIDDLEDOWN", windowsService);
-        Assert.Contains("2 => MOUSEEVENTF_RIGHTDOWN", windowsService);
-        Assert.Contains("1 => MOUSEEVENTF_MIDDLEUP", windowsService);
-        Assert.Contains("2 => MOUSEEVENTF_RIGHTUP", windowsService);
-        Assert.DoesNotContain("1 => MOUSEEVENTF_RIGHT", windowsService);
-        Assert.DoesNotContain("2 => MOUSEEVENTF_MIDDLE", windowsService);
-
-        // And the one method that is NOT wired to a platform must not drift from them again.
-        Assert.Equal(274u, LinuxInputEventTranslator.ButtonIndexToLinuxCode(1)); // BTN_MIDDLE
-        Assert.Equal(273u, LinuxInputEventTranslator.ButtonIndexToLinuxCode(2)); // BTN_RIGHT
     }
 
     // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path
