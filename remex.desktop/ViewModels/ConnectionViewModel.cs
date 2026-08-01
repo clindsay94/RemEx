@@ -750,15 +750,29 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// </remarks>
     internal TimeSpan CommandTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
-    private IWebSocketSender? _commandSender;
+    private IWebSocketSender? _outboundSender;
 
     /// <summary>
-    /// How correlated commands reach the wire. Defaults to the real guarded socket send.
+    /// How outbound messages reach the wire. Defaults to the real guarded socket send.
     /// </summary>
-    internal IWebSocketSender CommandSender
+    /// <remarks>
+    /// Named for commands when it was introduced (RemEx-h01r) because correlation was the only
+    /// caller. <see cref="SendAsync"/> now routes through it too, which is what makes file-transfer
+    /// wire behaviour observable at all: <see cref="SendGuardedAsync"/> returns early when the
+    /// socket is not open, so against a disconnected view model every send silently no-ops and a
+    /// test can prove nothing about what was or was not put on the wire. That gap is why RemEx-mubp
+    /// - a cancel emitted before the transfer it names - could exist with the suite green.
+    /// <para>
+    /// NOT EVERY OUTBOUND MESSAGE, despite the name. A few callers still reach
+    /// <see cref="SendGuardedAsync"/> directly - the process-list request, the ping, and the layout
+    /// update - so stubbing this does not silence them. They were left alone because routing them here
+    /// changes production paths for no test that needs it yet; route them when something does.
+    /// </para>
+    /// </remarks>
+    internal IWebSocketSender OutboundSender
     {
-        get => _commandSender ??= new GuardedSocketSender(this);
-        set => _commandSender = value;
+        get => _outboundSender ??= new GuardedSocketSender(this);
+        set => _outboundSender = value;
     }
 
     /// <summary>The production sender: the existing lock-guarded socket write, behind the seam.</summary>
@@ -787,7 +801,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         _pendingCommands[correlationId] = tcs;
         try
         {
-            await CommandSender.SendAsync(msg with { CorrelationId = correlationId }, ct);
+            await OutboundSender.SendAsync(msg with { CorrelationId = correlationId }, ct);
             try
             {
                 return await tcs.Task.WaitAsync(CommandTimeout, ct);
@@ -1022,7 +1036,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         }
     }
 
-    public Task SendAsync(RemexMessage message) => SendGuardedAsync(message);
+    public Task SendAsync(RemexMessage message) => OutboundSender.SendAsync(message, CancellationToken.None);
 
     /// <summary>
     /// The single outbound-send choke point. Acquires <see cref="_sendLock"/> so only one

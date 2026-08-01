@@ -608,7 +608,7 @@ public class ConnectionViewModelCorrelationTests : IDisposable
     {
         var vm = new ConnectionViewModel(null, null, null);
         var sender = new SilentSender();
-        vm.CommandSender = sender;
+        vm.OutboundSender = sender;
         vm.CommandTimeout = TimeSpan.FromMilliseconds(150);
 
         var act = async () => await vm.SendCommandAndWaitAsync(
@@ -627,7 +627,7 @@ public class ConnectionViewModelCorrelationTests : IDisposable
     {
         var vm = new ConnectionViewModel(null, null, null);
         var sender = new SilentSender();
-        vm.CommandSender = sender;
+        vm.OutboundSender = sender;
         vm.CommandTimeout = TimeSpan.FromSeconds(5);
 
         var first = vm.SendCommandAndWaitAsync(new RemexMessage { Type = MessageTypes.Command });
