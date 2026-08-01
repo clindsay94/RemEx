@@ -473,7 +473,12 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         if (process.ExitCode == 0)
             return true;
 
-        // stderrTask is complete once the child has exited and its pipe closed.
+        // The child has exited (WaitForExit above, and the timeout branch returns rather than
+        // falling through), so the pipe's write end is closed and EOF is guaranteed to arrive - this
+        // cannot hang. It is NOT guaranteed to be complete already, though: WaitForExit(int) does not
+        // wait for redirected-stream EOF the way the parameterless overload does, so this can block
+        // briefly while the reader drains. Harmless here - the probe thread has no
+        // SynchronizationContext - but it is a blocking wait, not a free read. (RemEx-r9tv)
         var stderr = stderrTask.GetAwaiter().GetResult().Trim();
         var stderrTail = stderr.Length > 400 ? stderr[^400..] : stderr;
         _logger.LogWarning(

@@ -177,6 +177,18 @@ public partial class Program
             CommandModeContext.Cleanup();
 
             // Gracefully shut down the embedded host when the UI exits.
+            //
+            // THE ONE BLOCKING TASK-WAIT IN THIS REPO THAT RUNS ON A THREAD AVALONIA GAVE A
+            // SynchronizationContext. This is the [STAThread] Main thread, and it gets here only
+            // AFTER StartWithClassicDesktopLifetime has returned, i.e. after the dispatcher loop has
+            // ended. If a hosted service's StopAsync yields and its continuation is posted back to a
+            // context that is still installed but no longer pumped, this blocks forever and the
+            // process never exits. Nobody has reported that, and shutdown has never been seen to
+            // hang - but it is the shape, and RemEx-r9tv found no other instance of it.
+            //
+            // If it ever does hang on exit, look here first: the fix is to run the shutdown without
+            // the context (a Task.Run, or an explicit SynchronizationContext.SetSynchronizationContext(null)
+            // for this block), NOT ConfigureAwait(false), which is banned repo-wide.
             if (_hostApp is not null)
             {
                 _hostApp.StopAsync().GetAwaiter().GetResult();

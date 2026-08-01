@@ -791,6 +791,16 @@ public sealed class RemexDesktopClient : IDisposable
         }
     }
 
+    /// <summary>
+    /// Unused. This class is a process singleton reached through <see cref="Current"/>, so nothing
+    /// owns it and nothing disposes it.
+    /// </summary>
+    /// <remarks>
+    /// Audited under RemEx-r9tv, which was looking for sync-over-async that could deadlock against a
+    /// captured SynchronizationContext. This one cannot, because it is never called — but if it ever
+    /// is, note that blocking on DisconnectAsync from a thread with a context is the shape that
+    /// deadlocks. Prefer awaiting <see cref="DisconnectAsync"/> directly.
+    /// </remarks>
     public void Dispose()
     {
         DisconnectAsync().GetAwaiter().GetResult();

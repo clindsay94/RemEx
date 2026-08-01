@@ -50,6 +50,35 @@ public sealed class PinnedCertStore
     /// <summary>
     /// Gets the pinned SPKI hash for a host synchronously.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// NO PRODUCTION CALLERS — only <c>PinnedCertStoreTests.GetPin_Sync_ReturnsStoredHash</c>.
+    /// Production reads pins through <see cref="GetAllPinsAsync"/>. DO NOT CALL THIS FROM THE UI
+    /// THREAD if that changes.
+    /// </para>
+    /// <para>
+    /// THE HAZARD, SCOPED EXACTLY. This is the only caller of the synchronous
+    /// <see cref="EnsureLoaded"/>, which blocks on <c>_lock</c>. The constructible deadlock is
+    /// against <see cref="EnsureLoadedAsync"/> alone: it holds the lock across
+    /// <c>File.ReadAllTextAsync</c>, awaited without <c>ConfigureAwait(false)</c> (banned repo-wide),
+    /// so an instance started on the UI thread posts its continuation back there. Block that thread
+    /// here and the continuation never runs, the lock is never released, and the app hangs holding
+    /// the certificate-pin store.
+    /// </para>
+    /// <para>
+    /// AND ONLY DURING FIRST LOAD. <see cref="SetPinAsync"/> and <see cref="RemovePinAsync"/> also
+    /// hold the lock across an await, but they <c>await EnsureLoadedAsync()</c> BEFORE taking it — so
+    /// by then <c>_loaded</c> is set and the synchronous path returns at its own guard without ever
+    /// reaching <c>_lock.Wait()</c>. A first draft of this note named those two as well, which
+    /// overstated it. (That guard reads a non-volatile <c>bool</c> outside the lock, which is a
+    /// separate small sin.)
+    /// </para>
+    /// <para>
+    /// Audited under RemEx-r9tv, which found this the only one of the repo's sync-over-async sites
+    /// that could deadlock at all. Documented rather than deleted because removing a public API — and
+    /// its test — is the operator's call; if you need a synchronous read, make it not take the lock.
+    /// </para>
+    /// </remarks>
     public string? GetPin(string hostId)
     {
         EnsureLoaded();
@@ -137,6 +166,10 @@ public sealed class PinnedCertStore
         }
     }
 
+    /// <summary>
+    /// Synchronous load. See the warning on <see cref="GetPin"/>, its only caller: this blocks on a
+    /// lock that the async paths hold across awaits, so calling it from the UI thread deadlocks.
+    /// </summary>
     private void EnsureLoaded()
     {
         if (_loaded) return;
