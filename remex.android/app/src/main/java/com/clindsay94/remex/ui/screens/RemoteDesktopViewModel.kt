@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.Log
+import androidx.compose.runtime.LongState
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
@@ -55,8 +57,6 @@ internal const val VK_WIN = 91
 /** VK_RMENU — right-Alt only, distinct from generic VK_ALT (RemEx-9krr). */
 internal const val VK_ALTGR = 165
 internal val MODIFIER_VIRTUAL_KEY_CODES = setOf(VK_SHIFT, VK_CTRL, VK_ALT, VK_WIN, VK_ALTGR)
-
-data class DesktopFrame(val bitmap: Bitmap, val timestamp: Long = System.nanoTime())
 
 data class RemoteDesktopCapabilityState(
         val supportsRemoteDesktop: Boolean = true,
@@ -222,8 +222,37 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     /** Previous frame bitmap kept for inBitmap reuse (avoids GC churn). */
     private var reusableBitmap: Bitmap? = null
 
-    private val _currentFrame = MutableStateFlow<DesktopFrame?>(null)
-    val currentFrame: StateFlow<DesktopFrame?> = _currentFrame.asStateFlow()
+    /**
+     * The bitmap on screen — the INSTANCE, not a per-frame wrapper.
+     *
+     * This used to be a `DesktopFrame(bitmap, timestamp = nanoTime())`, and the timestamp existed
+     * only to defeat StateFlow's equality check: inBitmap reuse means the same Bitmap object comes
+     * back from every decode, so an unwrapped flow would drop the emission. Defeating that check is
+     * what cost the screen a full recomposition per frame at 30-60 fps, for a value whose one use was
+     * `?.bitmap`. Being dropped as equal is now the DESIRED behaviour — composition should only wake
+     * when the instance actually changes, which happens on a geometry change — and repainting is
+     * handled by [frameTick] in the draw phase instead (RemEx-9esj).
+     */
+    private val _currentBitmap = MutableStateFlow<Bitmap?>(null)
+    val currentBitmap: StateFlow<Bitmap?> = _currentBitmap.asStateFlow()
+
+    /**
+     * Counts decoded MJPEG frames, as Compose state rather than a flow, so the remote-desktop Canvas
+     * can subscribe to it from its DRAW lambda alone (RemEx-9esj).
+     *
+     * A snapshot read inside a draw lambda invalidates only the draw phase. Read the same value in
+     * composition instead and every frame recomposes the whole screen — which is exactly what was
+     * happening: the frame wrapper stamped a fresh nanoTime per frame purely so StateFlow did not
+     * discard it as equal (the bitmap is reused in place, so the instance never changes), that
+     * timestamp was passed down as a composable parameter, and although nothing in the body still
+     * read it, changing it recomposed everything 30-60 times a second.
+     *
+     * It is therefore LOAD-BEARING for repaints: nothing else the draw lambda reads changes between
+     * frames, because the bitmap instance is identical. Stop incrementing this and the video freezes
+     * while the stream keeps running.
+     */
+    private val _frameTick = mutableLongStateOf(0L)
+    val frameTick: LongState = _frameTick
 
     private val _isStreaming = MutableStateFlow(false)
     val isStreaming: StateFlow<Boolean> = _isStreaming.asStateFlow()
@@ -338,6 +367,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val frameTimestampsMs = ArrayDeque<Long>()
     private val _fps = MutableStateFlow(0f)
     val fps: StateFlow<Float> = _fps.asStateFlow()
+
+    /**
+     * Publishes a freshly decoded frame. The two steps are bundled deliberately: [_frameTick] is what
+     * makes the Canvas repaint, so a decode path that set [_currentBitmap] without it would leave the
+     * picture frozen with no error anywhere (RemEx-9esj). Assigning the same instance is a no-op for
+     * the flow by design; the tick is what tells the draw phase there are new pixels in it.
+     */
+    private fun publishDecodedFrame(decoded: Bitmap) {
+        _currentBitmap.value = decoded
+        _frameTick.longValue++
+        recordFrameTimestamp()
+    }
 
     private fun recordFrameTimestamp() {
         val now = System.currentTimeMillis()
@@ -862,9 +903,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     )
                 }
                 reusableBitmap = decoded
-                // Wrap bitmap with a unique timestamp to bypass StateFlow equality checks
-                _currentFrame.value = DesktopFrame(decoded)
-                recordFrameTimestamp()
+                publishDecodedFrame(decoded)
                 lastDecodeProgressMs = System.currentTimeMillis()
             } else {
                 Log.e(TAG, "decodeFrame: BitmapFactory returned null for $length bytes")
@@ -877,10 +916,15 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             try {
                 val decoded = BitmapFactory.decodeByteArray(bytes, offset, length, decodeOptions)
                 if (decoded != null) {
-                    reusableBitmap?.takeIf { !it.isRecycled }?.recycle()
+                    // Deliberately NOT recycled here. The draw lambda may still hold the old bitmap,
+                    // and its isRecycled guard is evaluated during composition rather than at draw
+                    // time, so recycling before the replacement reaches composition can throw
+                    // "Cannot draw recycled bitmaps". Dropping the reference and letting the GC
+                    // reclaim it is the policy recycleCurrentFrame() already documents for exactly
+                    // this reason; this path had simply not followed it. The window is wider now that
+                    // repaints come from an independent draw-phase tick (RemEx-9esj).
                     reusableBitmap = decoded
-                    _currentFrame.value = DesktopFrame(decoded)
-                    recordFrameTimestamp()
+                    publishDecodedFrame(decoded)
                     lastDecodeProgressMs = System.currentTimeMillis()
                 }
             } catch (e2: Exception) {
@@ -896,7 +940,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun recycleCurrentFrame() {
-        _currentFrame.value = null
+        _currentBitmap.value = null
         // Don't recycle the bitmap eagerly — Compose may still be rendering the
         // previous frame.  Clearing the StateFlow reference lets the GC collect it
         // once the recomposition is done.

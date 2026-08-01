@@ -258,8 +258,7 @@ private fun SettingsPair(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
-        val currentFrame by viewModel.currentFrame.collectAsStateWithLifecycle()
-        val currentBitmap = currentFrame?.bitmap
+        val currentBitmap by viewModel.currentBitmap.collectAsStateWithLifecycle()
         val isStreaming by viewModel.isStreaming.collectAsStateWithLifecycle()
         val capabilityState by viewModel.capabilityState.collectAsStateWithLifecycle()
         val desktopError by viewModel.desktopError.collectAsStateWithLifecycle()
@@ -367,7 +366,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 },
                 getHostScreenSize = { viewModel.getHostScreenSize() },
                 getHostDesktopOffset = { viewModel.getHostDesktopOffset() },
-                currentFrameTimestamp = currentFrame?.timestamp,
+                frameTick = viewModel.frameTick,
                 fps = fps,
                 showFpsOverlay = showFpsOverlay,
                 onToggleFpsOverlay = { showFpsOverlay = !showFpsOverlay },
@@ -434,7 +433,7 @@ fun RemoteDesktopScreenContent(
         onMoveWindowToDesktop: (String, Int) -> Unit,
         getHostScreenSize: () -> Pair<Int, Int>,
         getHostDesktopOffset: () -> Pair<Int, Int> = { Pair(0, 0) },
-        currentFrameTimestamp: Long?,
+        frameTick: androidx.compose.runtime.LongState,
         fps: Float = 0f,
         showFpsOverlay: Boolean = false,
         onToggleFpsOverlay: () -> Unit = {},
@@ -1191,15 +1190,6 @@ fun RemoteDesktopScreenContent(
                                                 // ═══ UNIFIED GESTURE STATE MACHINE ═══
                                                 // Key on directTouch so the handler restarts when
                                                 // mode changes
-                                                .pointerInput(
-                                                        uiState.isStreaming,
-                                                        inputResetTrigger,
-                                                        uiState.directTouch
-                                                ) {
-                                                        if (!uiState.isStreaming)
-                                                                return@pointerInput
-
-                                                }
                                                 .pointerInput(
                                                         uiState.isStreaming,
                                                         inputResetTrigger,
@@ -2200,7 +2190,7 @@ fun RemoteDesktopScreenContent(
                                         } else {
                                                 if (safeFrame != null && !safeFrame.isRecycled) {
                                                         // RemEx-ki0t: this used to be
-                                                        // key(currentFrameTimestamp) { Image(...) }, which forced
+                                                        // key(<per-frame timestamp>) { Image(...) }, which forced
                                                         // Compose to tear down and rebuild the ENTIRE Image node
                                                         // (layout + graphicsLayer + modifier chain) on every
                                                         // incoming MJPEG frame just to force a redraw. A Canvas
@@ -2214,6 +2204,18 @@ fun RemoteDesktopScreenContent(
                                                         // is actually drawn.
                                                         val frameDescription =
                                                                 stringResource(R.string.cd_remote_desktop_frame)
+                                                        // One wrapper per bitmap INSTANCE, not per
+                                                        // frame. inBitmap reuse means this instance
+                                                        // is stable across frames and only changes
+                                                        // when the geometry does, so the allocation
+                                                        // was pure churn. Pixels are read live from
+                                                        // the underlying Bitmap at draw time, so a
+                                                        // cached wrapper still shows new content.
+                                                        // (RemEx-9esj)
+                                                        val frameImage =
+                                                                remember(safeFrame) {
+                                                                        safeFrame.asImageBitmap()
+                                                                }
                                                         Canvas(
                                                                 modifier =
                                                                         Modifier.fillMaxSize()
@@ -2228,10 +2230,21 @@ fun RemoteDesktopScreenContent(
                                                                                         translationY = panOffsetY
                                                                                 }
                                                         ) {
+                                                                // THE REPAINT TRIGGER. Read here and
+                                                                // nowhere else: a snapshot read in a
+                                                                // draw lambda invalidates only the
+                                                                // draw phase, so a new frame repaints
+                                                                // without recomposing or re-laying
+                                                                // out anything. Nothing else this
+                                                                // lambda reads changes between frames
+                                                                // — the bitmap instance is reused in
+                                                                // place — so removing this read
+                                                                // freezes the picture. (RemEx-9esj)
+                                                                frameTick.longValue
                                                                 val rect = contentRect()
                                                                 if (rect.w > 0f && rect.h > 0f) {
                                                                         drawImage(
-                                                                                image = safeFrame.asImageBitmap(),
+                                                                                image = frameImage,
                                                                                 dstOffset =
                                                                                         IntOffset(
                                                                                                 rect.x.roundToInt(),
@@ -3829,7 +3842,7 @@ private fun RemoteDesktopScreenPreview() {
             onResizeWindow = { _, _, _ -> },
             onMoveWindowToDesktop = { _, _ -> },
             getHostScreenSize = { Pair(1920, 1080) },
-            currentFrameTimestamp = 0L,
+            frameTick = androidx.compose.runtime.mutableLongStateOf(0L),
             fps = 60f,
             showFpsOverlay = true,
             onToggleFpsOverlay = {}
