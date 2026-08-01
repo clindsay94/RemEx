@@ -1690,7 +1690,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             return;
         }
 
-        _pinSnapshot = await store.GetAllPinsAsync().ConfigureAwait(false);
+        _pinSnapshot = await store.GetAllPinsAsync();
     }
 
     private async Task<Uri> PrepareTlsValidationForConnectAsync(bool allowTrustOnFirstUseForEmptyStore)
