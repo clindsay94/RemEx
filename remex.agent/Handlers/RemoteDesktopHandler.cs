@@ -1550,6 +1550,96 @@ public sealed class RemoteDesktopHandler : IDisposable
     // which makes the encoder fail to open. We downscale the encoded surface to fit and reuse the
     // exact same scale for capture so the raw BGRA buffer still matches the encoder's -s WxH input.
     private const int MaxH264EncodeDimension = 4096;
+
+    /// <summary>
+    /// Ceiling on the RAW bytes per second full-resolution capture may produce before the stream falls
+    /// back to capturing at the encoded size instead.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Capturing full-res and letting ffmpeg downscale is a large win at ordinary sizes — 20.7 ms of
+    /// capture-thread time drops to 1.7 ms at 2560x1440 (RemEx-evzv). But the ENCODED size is clamped
+    /// to the 4096px hardware limit while the RAW frame is not, so a very large virtual desktop
+    /// produces several times the bytes for identical output.
+    /// </para>
+    /// <para>
+    /// WHAT THIS ACTUALLY GUARDS IS ALLOCATION, NOT BANDWIDTH. There is no backpressure to hit: the
+    /// encoder's input channel is capacity-3 <c>DropWrite</c> and <c>EncodeFrame</c> submits with a
+    /// non-blocking <c>TryWrite</c>, so a saturated pipe silently DROPS frames rather than stalling
+    /// anything. The real cost is that <c>BgraFrameConverter</c> allocates a fresh unpooled array per
+    /// frame BEFORE submission, so a 7680x2160 desktop paced at 120 fps churns roughly 8 GB/s of Large
+    /// Object Heap — a large share of which is allocated and then thrown away at a full channel. This
+    /// budget is therefore a workaround for the unpooled capture buffer, which is its own issue and is
+    /// blocked on the same buffer-ownership question that reverted RemEx-lcp8. Say so plainly rather
+    /// than leaving a pipe-bandwidth story that does not match the code.
+    /// </para>
+    /// <para>
+    /// THE THRESHOLD IS CHOSEN TO CHANGE NOTHING THAT CURRENTLY WORKS, against the ~5.2 GB/s
+    /// anonymous-pipe figure measured on the reference machine:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>2560x1440 @120 — 1.77 GB/s — full-res, the case that motivated it</description></item>
+    /// <item><description>5120x1440 @120 — 3.54 GB/s — full-res</description></item>
+    /// <item><description>3840x2160 @120 — 3.98 GB/s — full-res, deliberately: demoting it would be a
+    /// silent regression on a common setup</description></item>
+    /// <item><description>7680x2160 @60 — 3.98 GB/s — full-res; the surface is huge, the rate is not</description></item>
+    /// <item><description>7680x2160 @120 — 7.96 GB/s — falls back; the bead's case</description></item>
+    /// </list>
+    /// <para>
+    /// ERR HIGH, NOT LOW. The two failure directions are asymmetric. Too high and the surplus frames
+    /// are dropped by the channel — the stream degrades smoothly to whatever rate keeps up. Too low and
+    /// capture goes back onto single-threaded GDI+ bilinear resampling at the largest source size,
+    /// which is a hard CPU cliff and precisely what RemEx-evzv existed to remove. A threshold nobody
+    /// can measure should fail toward the soft mode.
+    /// </para>
+    /// <para>
+    /// Bytes per SECOND, against the REQUESTED frame rate. Per-second because the same surface is fine
+    /// at 60 fps and not at 120; requested rather than achieved because the capture loop is paced at
+    /// the requested rate, so that is the true ceiling on allocation — and because feeding achieved fps
+    /// back in would make the capture size flap, and every flap is a full encoder rebuild. Systematically
+    /// conservative, which argues for a higher constant rather than a different unit.
+    /// </para>
+    /// <para>
+    /// NOTE THE BUDGET IS TOOTHLESS WHEN THE ENCODE SCALE IS ALREADY 1.0 — the fallback captures at the
+    /// encoded size, so when that equals the screen size there is nothing to give back. It bites only
+    /// where the 4096px clamp has actually reduced the encoded surface, which is the case it was written
+    /// for. Re-measure on the target hardware before changing it. (RemEx-zs7l)
+    /// </para>
+    /// </remarks>
+    private const long MaxFullResCaptureBytesPerSecond = 4_500_000_000L;
+
+    /// <summary>The raw capture size for an H.264 stream, and the scale that produces it.</summary>
+    /// <remarks>
+    /// Pulled out of <c>TryCreateH264Encoder</c> so the decision is testable without ffmpeg. Both
+    /// conditions have to hold for full-res capture, and each rules it out for its own reason: an odd
+    /// dimension means capturing at 1.0 still resamples (so full-res would be the SLOW path at the
+    /// largest possible size), and the byte budget means the pipe cannot carry the raw frames however
+    /// fast the capture is. Otherwise capture matches the encoded size, which is what shipped before
+    /// RemEx-evzv. (RemEx-zs7l)
+    /// </remarks>
+    internal static (int Width, int Height, double Scale) ChooseH264CaptureSize(
+        int screenWidth, int screenHeight, int targetWidth, int targetHeight, double encodeScale, int targetFps)
+    {
+        bool noResampleAtFullRes =
+            CaptureScaling.ScaledEven(screenWidth, 1.0) == screenWidth
+            && CaptureScaling.ScaledEven(screenHeight, 1.0) == screenHeight;
+
+        return noResampleAtFullRes && FullResCaptureFitsBudget(screenWidth, screenHeight, targetFps)
+            ? (screenWidth, screenHeight, 1.0)
+            : (targetWidth, targetHeight, encodeScale);
+    }
+
+    /// <summary>Raw BGRA bytes per second a full-resolution capture of this surface would produce.</summary>
+    internal static long FullResCaptureBytesPerSecond(int screenWidth, int screenHeight, int targetFps)
+        => (long)screenWidth * screenHeight * 4 * Math.Max(targetFps, 1);
+
+    /// <summary>
+    /// Whether capturing this surface at full resolution stays inside
+    /// <see cref="MaxFullResCaptureBytesPerSecond"/>.
+    /// </summary>
+    internal static bool FullResCaptureFitsBudget(int screenWidth, int screenHeight, int targetFps)
+        => screenWidth > 0 && screenHeight > 0
+           && FullResCaptureBytesPerSecond(screenWidth, screenHeight, targetFps) <= MaxFullResCaptureBytesPerSecond;
     private double _h264CaptureScale = 1.0;
 
     private static double ClampScaleForH264(int screenWidth, int screenHeight, double requestedScale)
@@ -1604,17 +1694,19 @@ public sealed class RemoteDesktopHandler : IDisposable
         // surface still needs a resample — which puts the capture back on the GDI+ path, now at FULL
         // resolution and therefore SLOWER than the 0.6 path it replaced, plus 14 MB on the pipe. Only
         // take the full-res route when it genuinely lands on the no-resample fast path.
-        int captureWidth = CaptureScaling.ScaledEven(screenWidth, 1.0);
-        int captureHeight = CaptureScaling.ScaledEven(screenHeight, 1.0);
-        bool fullResIsFastPath = captureWidth == screenWidth && captureHeight == screenHeight;
+        var (captureWidth, captureHeight, captureScale) =
+            ChooseH264CaptureSize(screenWidth, screenHeight, targetWidth, targetHeight, scale, _targetFps);
+        _h264CaptureScale = captureScale;
 
-        if (!fullResIsFastPath)
+        if (captureWidth != screenWidth && !FullResCaptureFitsBudget(screenWidth, screenHeight, _targetFps))
         {
-            captureWidth = targetWidth;
-            captureHeight = targetHeight;
+            _logger.LogInformation(
+                "Full-resolution capture of {W}x{H} at {Fps} fps would push {GBs:F1} GB/s of raw frames " +
+                "(budget {BudgetGBs:F1} GB/s); capturing at the encoded size {TW}x{TH} instead.",
+                screenWidth, screenHeight, _targetFps,
+                FullResCaptureBytesPerSecond(screenWidth, screenHeight, _targetFps) / 1e9,
+                MaxFullResCaptureBytesPerSecond / 1e9, targetWidth, targetHeight);
         }
-
-        _h264CaptureScale = fullResIsFastPath ? 1.0 : scale;
 
         var encoder = new FFmpegH264Encoder(_logger);
         if (encoder.Initialize(captureWidth, captureHeight, targetWidth, targetHeight, _targetFps, QualityToQp(_quality)))

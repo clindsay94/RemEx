@@ -22,6 +22,33 @@ public sealed record AdaptiveScaleDecision(double Scale, string Reason);
 /// the escalation/hysteresis schedule is unit-testable without a real encoder or GPU. Not internally
 /// synchronized: the capture loop is the sole caller, exactly like the rest of its per-iteration state.
 /// </para>
+/// <para>
+/// WHAT A RUNG-DOWN ACTUALLY MOVES DEPENDS ON WHICH CAPTURE BRANCH THE STREAM TOOK, and this is worth
+/// getting right because it used to be one answer and is now two. Before RemEx-evzv the scale this
+/// produces drove capture, pipe and encode together. Now
+/// <c>RemoteDesktopHandler.ChooseH264CaptureSize</c> picks between them per stream:
+/// </para>
+/// <list type="bullet">
+/// <item><description>
+/// <b>Full-resolution branch</b> (the common case: even dimensions, inside the capture byte budget) —
+/// capture is pinned at 1.0 and ffmpeg downscales, so a rung-down shrinks ONLY the encoded output. The
+/// same raw bytes are captured and submitted either way. It therefore relieves an encoder-bound stream
+/// and does nothing for a capture- or allocation-bound one, where it will step quality down repeatedly
+/// and never see FPS recover.
+/// </description></item>
+/// <item><description>
+/// <b>Fallback branch</b> (odd dimensions, or a surface over the byte budget) — capture is driven by
+/// the encode scale again, so a rung-down shrinks capture, submission and encode together, exactly as
+/// it did pre-evzv. Note the encode scale may be clamped by the 4096px hardware limit first, in which
+/// case the upper rungs are absorbed by that clamp and only the rungs below it move anything.
+/// </description></item>
+/// </list>
+/// <para>
+/// The controller runs on both: nothing here consults the byte budget. Letting it drive capture scale
+/// on the full-res branch when capture is the bottleneck remains possible and is deliberately NOT done
+/// — it needs a signal distinguishing an encoder-bound stream from a capture-bound one, which the
+/// achieved-FPS ratio alone does not provide. (RemEx-zs7l)
+/// </para>
 /// </summary>
 public sealed class AdaptiveScaleController
 {
