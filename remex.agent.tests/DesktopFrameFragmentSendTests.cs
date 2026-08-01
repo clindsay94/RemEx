@@ -161,8 +161,8 @@ public class DesktopFrameFragmentSendTests
         // sender B's payload. Assert each message carries ONE sender's bytes end to end.
         var firstMessage = socket.Fragments[1].Bytes;
         var secondMessage = socket.Fragments[3].Bytes;
-        Assert.Equal(1, firstMessage.Length);
-        Assert.Equal(1, secondMessage.Length);
+        Assert.Single(firstMessage);
+        Assert.Single(secondMessage);
         Assert.Equal(new byte[] { 0xAA, 0xBB }.Order(), new[] { firstMessage[0], secondMessage[0] }.Order());
         Assert.NotEqual(firstMessage[0], secondMessage[0]);
     }
