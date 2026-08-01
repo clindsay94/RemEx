@@ -155,6 +155,38 @@ internal fun matchesRememberedTarget(option: DisplayTargetOption, remembered: St
     else -> false
 }
 
+/**
+ * The capture modes a host says it can serve, from its display catalog.
+ *
+ * Absent or unparseable means the EMPTY set rather than "everything": a host that did not say cannot
+ * be assumed to support anything, and offering a target it will refuse is worse than offering none —
+ * the picker then shows choices that simply fail, with nothing explaining why (RemEx-e1x4).
+ */
+internal fun supportedCaptureModes(catalog: JSONObject): Set<String> {
+    val modes = catalog.optJSONArray("supportedCaptureModes") ?: return emptySet()
+    return (0 until modes.length())
+            .mapNotNull { modes.optString(it).takeIf { mode -> mode.isNotBlank() } }
+            .toSet()
+}
+
+/**
+ * Whether to offer per-monitor targets.
+ *
+ * This was unconditional while the whole-desktop option was already gated, so a host advertising only
+ * VirtualDesktop — which the fallback catalog does, because it could not enumerate outputs at all —
+ * still got a monitor picker whose every entry the host would reject (RemEx-e1x4).
+ */
+internal fun offersMonitorTargets(modes: Set<String>): Boolean = "Monitor" in modes
+
+/**
+ * Whether to offer the combined "both screens" target.
+ *
+ * Needs more than one display as well as host support: combining one screen with nothing is a target
+ * identical to that screen, under a name suggesting otherwise.
+ */
+internal fun offersVirtualTarget(modes: Set<String>, displayCount: Int): Boolean =
+        "VirtualDesktop" in modes && displayCount > 1
+
 /** One host cursor position sample, streamed rather than held in composition (RemEx-zc9r). */
 data class HostCursorSample(val x: Float, val y: Float, val visible: Boolean)
 
@@ -1140,17 +1172,12 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private fun handleDisplayCatalog(catalogJson: String) {
         try {
             val json = JSONObject(catalogJson)
-            val modes = json.optJSONArray("supportedCaptureModes")
-            val supportsVirtual =
-                    modes != null &&
-                            (0 until modes.length()).any {
-                                modes.optString(it) == "VirtualDesktop"
-                            }
+            val modes = supportedCaptureModes(json)
             val arr = json.optJSONArray("displays")
             val options = mutableListOf<DisplayTargetOption>()
             val displayCount = arr?.length() ?: 0
 
-            if (arr != null) {
+            if (arr != null && offersMonitorTargets(modes)) {
                 for (i in 0 until displayCount) {
                     val d = arr.optJSONObject(i) ?: continue
                     val displayId = d.optString("displayId")
@@ -1179,7 +1206,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
             // Offer the combined "both screens" view when the host supports it and there is
             // more than one physical display to combine.
-            if (supportsVirtual && displayCount > 1) {
+            if (offersVirtualTarget(modes, displayCount)) {
                 options.add(
                         DisplayTargetOption(
                                 token = "virtual",
@@ -1194,14 +1221,25 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             }
 
             if (options.isEmpty()) {
-                Log.w(TAG, "Display catalog had no usable targets")
+                Log.w(TAG, "Display catalog had no usable targets (modes=$modes)")
+
+                // Clear rather than keep the previous host's list. Targets are deliberately RETAINED
+                // across a stop or disconnect so the picker does not blank out, but this is a fresh
+                // catalog that offers nothing — and a stale monitor:<id> left selected here would be
+                // sent to a host that cannot serve Monitor at all, producing exactly the rejection
+                // this gating exists to prevent. Reachable by reconnecting to a degraded host after a
+                // monitor-capable one; harmless before, because this branch was effectively dead
+                // until the gating above made it the normal path for such a host. (RemEx-e1x4)
+                _displayTargets.value = emptyList()
+                _selectedDisplayToken.value = ""
+
                 if (pendingStreamStart) actuallyStartStreaming()
                 return
             }
 
             Log.i(
                     TAG,
-                    "Display catalog received: $displayCount display(s), ${options.size} option(s), supportsVirtual=$supportsVirtual"
+                    "Display catalog received: $displayCount display(s), ${options.size} option(s), modes=$modes"
             )
             _displayTargets.value = options
 
