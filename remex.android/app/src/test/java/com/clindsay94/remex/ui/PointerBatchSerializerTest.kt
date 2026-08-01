@@ -30,6 +30,8 @@ class PointerBatchSerializerTest {
             logicalX: Float = 10f,
             hoverDistance: Float? = null,
             tiltX: Float? = null,
+            tiltY: Float? = null,
+            orientation: Float? = null,
             history: List<PointerSampleData>? = null,
     ) = PointerSampleData(
             timestamp = 1234567890L,
@@ -44,6 +46,8 @@ class PointerBatchSerializerTest {
             pressure = 0.5f,
             hoverDistance = hoverDistance,
             tiltX = tiltX,
+            tiltY = tiltY,
+            orientation = orientation,
             buttonMask = 3,
             coalescedHistory = history,
     )
@@ -148,16 +152,70 @@ class PointerBatchSerializerTest {
     }
 
     @Test
-    fun `a non-finite axis does not destroy the whole batch`() {
+    fun `a non-finite REQUIRED axis falls back to zero rather than destroying the batch`() {
         // JSONObject.put THREW on NaN, so one bad axis failed the entire stroke. A driver reporting
-        // no tilt or pressure can produce it. Zero for that axis, batch intact.
+        // no pressure can produce it. Zero for that axis, batch intact.
+        //
+        // Zero is right for the REQUIRED axes specifically: logicalX/logicalY/dx/dy/pressure are
+        // non-nullable on the host (float, not float?), so "absent" is not a state they can express.
         val parsed = JSONObject(
-                RemoteDesktopPointerSerializer.toBatchJson(
-                        listOf(sample(logicalX = Float.NaN, tiltX = Float.POSITIVE_INFINITY))))
+                RemoteDesktopPointerSerializer.toBatchJson(listOf(sample(logicalX = Float.NaN))))
                 .getJSONArray("samples").getJSONObject(0)
 
         assertEquals(0.0, parsed.getDouble("logicalX"), 1e-9)
-        assertEquals(0.0, parsed.getDouble("tiltX"), 1e-9)
+    }
+
+    @Test
+    fun `a non-finite OPTIONAL axis is omitted rather than reported as zero`() {
+        // The distinction this test exists for (RemEx-unda). hoverDistance/tiltX/tiltY/orientation
+        // are float? on the host, so ABSENT is a state they can express and it means exactly "this
+        // device did not report it". Writing 0 instead asserts something specific and FALSE — a
+        // stylus lying perfectly flat, or touching the glass — and a consumer cannot distinguish
+        // that fabricated zero from a real measurement.
+        // All FOUR optional axes, not a representative two — the bead names four, and a future
+        // refactor could plausibly route one of them through the wrong helper.
+        val nonFinite = sample(
+                hoverDistance = Float.NaN,
+                tiltX = Float.POSITIVE_INFINITY,
+                tiltY = Float.NEGATIVE_INFINITY,
+                orientation = Float.NaN)
+
+        val parsed = JSONObject(RemoteDesktopPointerSerializer.toBatchJson(listOf(nonFinite)))
+                .getJSONArray("samples").getJSONObject(0)
+
+        assertTrue("a NaN hoverDistance must be absent, not 0", !parsed.has("hoverDistance"))
+        assertTrue("an infinite tiltX must be absent, not 0", !parsed.has("tiltX"))
+        assertTrue("an infinite tiltY must be absent, not 0", !parsed.has("tiltY"))
+        assertTrue("a NaN orientation must be absent, not 0", !parsed.has("orientation"))
+    }
+
+    @Test
+    fun `the same rule applies to a sample nested in coalesced history`() {
+        // appendSample recurses, so history entries go through the identical helpers — but history
+        // is where the high-frequency samples actually live during a stroke, so it is the last place
+        // a fabricated zero should survive.
+        val parsed = JSONObject(
+                RemoteDesktopPointerSerializer.toBatchJson(
+                        listOf(sample(history = listOf(sample(tiltX = Float.NaN, hoverDistance = 2.5f))))))
+                .getJSONArray("samples").getJSONObject(0)
+                .getJSONArray("coalescedHistory").getJSONObject(0)
+
+        assertTrue("a NaN tiltX in history must be absent too", !parsed.has("tiltX"))
+        assertEquals("a finite axis in history is unaffected", 2.5, parsed.getDouble("hoverDistance"), 1e-9)
+    }
+
+    @Test
+    fun `a finite optional axis is still reported`() {
+        // Omission must be driven by the value being unusable, not by the axis being optional. The
+        // batch-shape test above already covers finite hoverDistance/tiltX incidentally; this states
+        // the rule directly so it survives a rewrite of that test.
+        val parsed = JSONObject(
+                RemoteDesktopPointerSerializer.toBatchJson(
+                        listOf(sample(hoverDistance = 4.5f, tiltX = -12.25f))))
+                .getJSONArray("samples").getJSONObject(0)
+
+        assertEquals(4.5, parsed.getDouble("hoverDistance"), 1e-9)
+        assertEquals(-12.25, parsed.getDouble("tiltX"), 1e-9)
     }
 
     @Test
