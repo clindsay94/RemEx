@@ -30,6 +30,18 @@ namespace Remex.Agent.Tests;
 /// </remarks>
 public sealed class HwInfoSamplerTests : IDisposable
 {
+    /// <summary>
+    /// EVERY test in this class must be <c>[WindowsOnlyFact]</c>, not only the ones that obviously
+    /// touch shared memory: the fixture CONSTRUCTOR creates the named map, so an unmarked test throws
+    /// on Linux at construction — and the error points at the constructor rather than at the missing
+    /// attribute, which is a confusing place to start debugging (RemEx-z17h).
+    /// </summary>
+    private const string WindowsOnlyBecause =
+        "the sampler under test lives in WindowsTelemetryService, which is [SupportedOSPlatform(windows)] " +
+        "and reads HWiNFO through MemoryMappedFile.OpenExisting on a NAMED map. Named maps are Windows-only " +
+        "in .NET, so there is no Linux code path here left untested — this test fabricates the same named " +
+        "region to drive it";
+
     private const uint Signature = 0x53695748;   // "HWiS"
     private const long StaleAfterMs = 150;
 
@@ -134,7 +146,7 @@ public sealed class HwInfoSamplerTests : IDisposable
 
     private static TelemetryPayload EmptyPayload() => new() { Sensors = new List<SensorReading>() };
 
-    [Fact]
+    [WindowsOnlyFact(WindowsOnlyBecause)]
     public void ReadsSensorsFromTheSharedRegion()
     {
         WriteRegion(("Core 0", "°C", 42.0), ("Core 1", "°C", 43.5));
@@ -148,7 +160,7 @@ public sealed class HwInfoSamplerTests : IDisposable
         Assert.Equal(42.0, result.Sensors.First(s => s.Name.Contains("Core 0")).Value);
     }
 
-    [Fact]
+    [WindowsOnlyFact(WindowsOnlyBecause)]
     public void SecondTickPicksUpNewValues_WithoutRebuildingLabels()
     {
         // The core claim of the refactor: a tick re-reads ONLY the value doubles, and the cached
@@ -171,7 +183,7 @@ public sealed class HwInfoSamplerTests : IDisposable
         Assert.Equal(44.0, second.Sensors.First(s => s.Name.Contains("Core 1")).Value);
     }
 
-    [Fact]
+    [WindowsOnlyFact(WindowsOnlyBecause)]
     public void OutOfRangeTemperatureIsDroppedThenRecovers()
     {
         // The temperature sanity filter is deliberately NOT baked into the template, so a sensor
@@ -201,7 +213,7 @@ public sealed class HwInfoSamplerTests : IDisposable
     /// forever AND keep suppressing the WindowsPerf fallback, because TryReadHwInfo would keep
     /// returning true. This test is that scenario, minus the 30-second wait.
     /// </remarks>
-    [Fact]
+    [WindowsOnlyFact(WindowsOnlyBecause)]
     public void StalePollTimeReportsUnavailable_RatherThanReplayingTheLastValues()
     {
         WriteRegion(("Core 0", "°C", 42.0));
@@ -215,7 +227,7 @@ public sealed class HwInfoSamplerTests : IDisposable
         Assert.Empty(result.Sensors);
     }
 
-    [Fact]
+    [WindowsOnlyFact(WindowsOnlyBecause)]
     public void ResumedPollingIsPickedUpAgain()
     {
         WriteRegion(("Core 0", "°C", 42.0));
@@ -233,7 +245,7 @@ public sealed class HwInfoSamplerTests : IDisposable
         Assert.Equal(50.0, resumed.Sensors.Single().Value);
     }
 
-    [Fact]
+    [WindowsOnlyFact(WindowsOnlyBecause)]
     public void LayoutChangeRebuildsTheTemplates()
     {
         // A cached template set keyed on stale geometry would read values from the wrong offsets.
@@ -249,7 +261,7 @@ public sealed class HwInfoSamplerTests : IDisposable
         Assert.Equal(2, after.Sensors.Count);
     }
 
-    [Fact]
+    [WindowsOnlyFact(WindowsOnlyBecause)]
     public void BadSignatureIsRejected()
     {
         WriteRegion(("Core 0", "°C", 42.0));

@@ -214,6 +214,31 @@ This repo lives on a shared drive and must work equally on **Windows** and **Cac
 - `build-remex.ps1` is the canonical cross-platform build entry point. New build steps must be added for both platforms.
 - Before closing a task: verify the change works on both platforms, or explicitly note which OS was tested and file a follow-up beads issue for the other.
 
+### Running the test suite on Linux from a Windows box (WSL)
+
+You can actually check parity rather than promising it. The obvious command does **not** work — the
+WSL .NET install typically has only `Microsoft.NETCore.App`, not `Microsoft.AspNetCore.App`, so a
+plain `dotnet test` on `remex.agent.tests` dies with *"You must install or update .NET to run this
+application"*. Building self-contained bundles the ASP.NET runtime into the test output and needs no
+package install or other change to the WSL system:
+
+```bash
+wsl -- bash -lc "cd /mnt/z/RemEx && dotnet test remex.agent.tests/remex.agent.tests.csproj \
+  -c Release -p:RuntimeIdentifier=linux-x64 -p:SelfContained=true"
+```
+
+The same flags work for `remex.core.tests` and `remex.desktop.tests` (both are already Linux-clean;
+the desktop suite needs no display). Note this shares the `artifacts/` directory with the Windows
+build, so **rebuild on Windows afterwards** before trusting a Windows test run.
+
+**Windows-only tests are marked, not deleted.** `WindowsOnlyFactAttribute` (in `remex.agent.tests`)
+takes a mandatory reason and skips on non-Windows, so a Linux run is green and a real regression is
+visible instead of drowning in permanent noise. Use it when a test asserts a genuinely Windows-only
+primitive — named memory-mapped files, UNC path semantics — and never weaken a test so it passes on
+both; that trades away coverage on the platform the code actually runs on. There is deliberately no
+`Theory` counterpart until something needs one; see the note in `WindowsOnlyAttributes.cs` for the
+xUnit quirk that would complicate one.
+
 ## Code Quality Standards
 
 **No lazy code.** Every implementation must be the most correct, robust, and maintainable approach for the task. Rules:

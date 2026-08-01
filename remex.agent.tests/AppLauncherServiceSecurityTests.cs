@@ -64,7 +64,7 @@ public sealed class AppLauncherServiceSecurityTests
         Assert.True(AppLauncherService.IsLaunchAllowed(requestedPath, entries));
     }
 
-    [Fact]
+    [WindowsOnlyFact("the SANITY half asserts a UNC path matches the allowlist verbatim, which needs Windows path semantics — IsLaunchAllowed compares OrdinalIgnoreCase on Windows and Ordinal elsewhere, and a backslash is not a separator on Linux. The GUARD itself is platform-independent and is covered on every platform by IsRejectedNetworkPath_UncStyleInput_ReturnsTrue below")]
     public void UncPath_EvenIfSomehowPersistedInAllowlist_IsStillRejectedByNetworkGuard()
     {
         // Defense-in-depth: LaunchAppAsync checks IsRejectedNetworkPath BEFORE IsLaunchAllowed, so a
