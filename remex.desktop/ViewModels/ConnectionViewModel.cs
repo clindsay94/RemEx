@@ -880,6 +880,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             if (IsLoopbackHost(uri))
                 _isPairedWithCurrentHost = true;
 
+            UseInProcessTelemetryIfLocal(uri);
+
             if (!_isPairedWithCurrentHost)
             {
                 StatusText = LocalizationService.Instance["Status_Pairing"];
@@ -1237,6 +1239,8 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                     if (IsLoopbackHost(uri))
                         _isPairedWithCurrentHost = true;
 
+                    UseInProcessTelemetryIfLocal(uri);
+
                     // Success — adopt the new socket.
                     _webSocket = ws;
                     _receiveCts = new CancellationTokenSource();
@@ -1329,6 +1333,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     private void Cleanup()
     {
+        StopInProcessTelemetry();
         CancelAndDispose(ref _receiveCts);
         DisposeWebSocket(ref _webSocket);
 
@@ -1474,6 +1479,87 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         uri.Host is "localhost" or "127.0.0.1" or "::1";
 
     /// <summary>
+    /// True when this URI addresses this machine over loopback — the SAME set the host recognises
+    /// with <c>IPAddress.IsLoopback</c>.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately separate from <see cref="IsLoopbackHost"/>, which tests three literal strings and
+    /// is therefore NARROWER in two ways that matter here: <c>Uri.Host</c> returns the bracketed
+    /// <c>"[::1]"</c> for an IPv6 literal, so that arm has never matched anything, and
+    /// <c>IPAddress.IsLoopback</c> accepts all of <c>127.0.0.0/8</c> rather than just
+    /// <c>127.0.0.1</c>. Connecting to <c>wss://[::1]:5005/ws</c> or <c>wss://127.0.0.2:5005/ws</c>
+    /// would leave the host treating the connection as loopback and skipping the telemetry stream
+    /// while this UI waited for one — a dashboard that never populates behind a healthy "Connected".
+    ///
+    /// The two are not merged because <see cref="IsLoopbackHost"/> also gates the pairing bypass and
+    /// trust-on-first-use, which CLAUDE.md places behind explicit sign-off. Aligning it is filed
+    /// separately (RemEx-ite8).
+    /// </remarks>
+    private static bool IsLoopbackAddress(Uri uri) => uri.IsLoopback;
+
+    /// <summary>The broadcaster we are currently subscribed to, if any.</summary>
+    private Remex.Core.Services.ITelemetryBroadcaster? _inProcessTelemetry;
+
+    /// <summary>
+    /// Takes telemetry straight from the host in this process instead of off the socket, when the
+    /// socket is pointed at ourselves (RemEx-ite8).
+    /// </summary>
+    /// <remarks>
+    /// GATED ON LOOPBACK, and that is not a nicety. This reports the sample for the machine the UI is
+    /// running on, so doing it while connected to another host would show this PC's readings under
+    /// that PC's name — wrong data with nothing to indicate it. The host makes the matching decision
+    /// from the connection's remote IP and stops streaming telemetry to loopback clients, so the two
+    /// predicates MUST agree — see <see cref="IsLoopbackAddress"/> for why the obvious one does not.
+    ///
+    /// If the host is not in this process the subscription simply does not happen and the socket
+    /// keeps feeding the dashboard, which is also what a non-loopback connection does.
+    /// </remarks>
+    private void UseInProcessTelemetryIfLocal(Uri uri)
+    {
+        StopInProcessTelemetry();
+
+        if (!IsLoopbackAddress(uri))
+            return;
+
+        try
+        {
+            var broadcaster = Remex.Desktop.Services.EmbeddedHostServiceLocator
+                .Require<Remex.Core.Services.ITelemetryBroadcaster>();
+
+            broadcaster.TelemetryPublished += OnInProcessTelemetry;
+            _inProcessTelemetry = broadcaster;
+
+            // Seed from the sample already taken, so the dashboard is populated at once instead of
+            // sitting on "Collecting Data" until the next tick.
+            var current = broadcaster.CurrentTelemetry;
+            if (current is not null)
+                OnInProcessTelemetry(current);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // No embedded host in this process. Nothing is broken: the socket still carries telemetry.
+            _logger.LogDebug(ex, "No in-process telemetry available; using the socket.");
+        }
+    }
+
+    private void StopInProcessTelemetry()
+    {
+        if (_inProcessTelemetry is null)
+            return;
+
+        _inProcessTelemetry.TelemetryPublished -= OnInProcessTelemetry;
+        _inProcessTelemetry = null;
+    }
+
+    /// <summary>Raised on the sampler's thread, so everything it touches is posted to the UI thread.</summary>
+    private void OnInProcessTelemetry(TelemetryPayload payload) =>
+        Dispatcher.UIThread.Post(() =>
+        {
+            Telemetry = payload;
+            TelemetryReceived?.Invoke(payload);
+        });
+
+    /// <summary>
     /// TLS server-certificate validation callback. Enforces SPKI pinning against the snapshot
     /// captured by <see cref="LoadPinSnapshotAsync"/> immediately before each socket connect.
     ///
@@ -1609,6 +1695,10 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
 
     public void Dispose()
     {
+        // Not covered by Cleanup(): Dispose deliberately does a subset of it and never calls it. The
+        // broadcaster is a process-lifetime singleton, so a handler left attached here keeps firing
+        // into a disposed view model every second for the rest of the run (RemEx-ite8).
+        StopInProcessTelemetry();
         LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
         CancelAndDispose(ref _receiveCts);
         CancelAndDispose(ref _reconnectCts);

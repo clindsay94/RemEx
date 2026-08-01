@@ -132,9 +132,20 @@ public sealed class PingPongHandler(
             logger.LogWarning(ex, "Failed to sync layout on connect (JSON error).");
         }
 
-        // Start background telemetry stream
+        // Start background telemetry stream — but NOT for the PC's own UI. That connection is this
+        // same process talking to itself over loopback TLS, so streaming to it meant serializing the
+        // payload, encrypting it, sending it through the loopback adapter, decrypting it and rebuilding
+        // the whole record graph, once a second, forever, to hand a component in this process data it
+        // could already reach by reference. It subscribes to TelemetryBackgroundService directly
+        // instead (RemEx-ite8).
+        //
+        // The two sides agree by construction: a client reaching a localhost/127.0.0.1/::1 URI is
+        // routed over loopback, which is exactly what IPAddress.IsLoopback sees here, and
+        // ConnectionViewModel gates its in-process subscription on the same test it already uses to
+        // bypass pairing. The "some other process owns port 5005" case cannot arise — Program.cs holds
+        // a Local\RemExGuiHost single-instance mutex.
         using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var streamTask = StreamTelemetryAsync(webSocket, streamCts.Token);
+        var streamTask = isLoopback ? Task.CompletedTask : StreamTelemetryAsync(webSocket, streamCts.Token);
 
         try
         {

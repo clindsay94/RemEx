@@ -144,6 +144,9 @@ public static class HostBootstrapper
 
         builder.Services.AddSingleton<TelemetryBackgroundService>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<TelemetryBackgroundService>());
+        // Same instance again, under the interface the in-process UI can name (RemEx-ite8).
+        builder.Services.AddSingleton<Remex.Core.Services.ITelemetryBroadcaster>(
+            sp => sp.GetRequiredService<TelemetryBackgroundService>());
 
         builder.Services.AddSingleton<Remex.Core.Services.ILauncherStorageService, Remex.Core.Services.LauncherStorageService>();
         builder.Services.AddSingleton<Remex.Core.Services.IDashboardProfileStorageService, Remex.Core.Services.DashboardProfileStorageService>();

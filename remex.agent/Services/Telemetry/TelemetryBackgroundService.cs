@@ -11,7 +11,7 @@ namespace Remex.Agent.Services.Telemetry;
 /// </summary>
 public sealed class TelemetryBackgroundService(
     ITelemetryService telemetryService,
-    ILogger<TelemetryBackgroundService> logger) : BackgroundService
+    ILogger<TelemetryBackgroundService> logger) : BackgroundService, ITelemetryBroadcaster
 {
     /// <summary>
     /// One sample and the exact bytes that carry it, published together.
@@ -36,6 +36,16 @@ public sealed class TelemetryBackgroundService(
     /// first successful poll.
     /// </summary>
     public TelemetrySnapshot? CurrentSnapshot => Volatile.Read(ref _snapshot);
+
+    /// <inheritdoc />
+    public TelemetryPayload? CurrentTelemetry => CurrentSnapshot?.Payload;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// A throwing handler is swallowed at the raise site: the UI is not allowed to stop the sampler,
+    /// which every connected phone is also fed from.
+    /// </remarks>
+    public event Action<TelemetryPayload>? TelemetryPublished;
 
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -65,7 +75,19 @@ public sealed class TelemetryBackgroundService(
                     Timestamp = System.Diagnostics.Stopwatch.GetTimestamp(),
                 });
 
-                Volatile.Write(ref _snapshot, new TelemetrySnapshot(payload, frame));
+                var snapshot = new TelemetrySnapshot(payload, frame);
+                Volatile.Write(ref _snapshot, snapshot);
+
+                try
+                {
+                    TelemetryPublished?.Invoke(snapshot.Payload);
+                }
+                catch (Exception ex)
+                {
+                    // A broken in-process subscriber must not take the sampler down with it — every
+                    // connected phone is fed from this same loop.
+                    logger.LogWarning(ex, "A telemetry subscriber threw; continuing to sample.");
+                }
             }
             catch (OperationCanceledException)
             {
