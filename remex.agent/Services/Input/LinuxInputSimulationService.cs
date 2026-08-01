@@ -394,7 +394,7 @@ public class LinuxInputSimulationService : IInputSimulationService
     /// single message cannot fling the page.
     /// </remarks>
     internal static int WheelDetents(int delta) =>
-        delta == 0 ? 0 : Math.Sign(delta) * Math.Clamp(Math.Abs(delta) / 120, 1, 10);
+        delta == 0 ? 0 : Math.Sign(delta) * (int)Math.Clamp(Math.Abs((long)delta) / 120, 1, 10);
 
     /// <summary>
     /// Synchronously ensures the portal input session is active. The first caller blocks

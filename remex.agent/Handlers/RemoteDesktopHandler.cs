@@ -1120,7 +1120,13 @@ public sealed class RemoteDesktopHandler : IDisposable
                     _inputSimulation.MouseClick(input.Button.Value);
                     break;
                 case InputEventTypes.MouseScroll:
-                    _inputSimulation.MouseScroll(input.DeltaX ?? 0, input.DeltaY ?? 0);
+                    // Clamped, not passed through: an unbounded delta off the wire reaches Math.Abs
+                    // in the Linux backends, and int.MinValue throws there rather than saturating.
+                    // The escape kills this handler's input thread for the rest of the session
+                    // (RemEx-hnin).
+                    _inputSimulation.MouseScroll(
+                        CoordinateValidation.ClampScrollDelta(input.DeltaX),
+                        CoordinateValidation.ClampScrollDelta(input.DeltaY));
                     break;
                 case InputEventTypes.KeyDown when input.KeyCode.HasValue:
                     _inputSimulation.KeyDown(input.KeyCode.Value);

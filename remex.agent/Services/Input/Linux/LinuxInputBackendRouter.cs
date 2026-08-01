@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Validation;
 using Remex.Agent.Services.RemoteDesktop.Linux;
 
 using Remex.Agent.Services.Input;
@@ -115,16 +116,36 @@ public sealed class LinuxInputBackendRouter : IInputSimulationService, IDisposab
         if (deltaY != 0)
         {
             int btn = deltaY > 0 ? 4 : 5;
-            int clicks = Math.Max(1, Math.Abs(deltaY) / 120);
+            int clicks = ClickCount(deltaY);
             for (int i = 0; i < clicks; i++) RunXdotool($"click {btn}");
         }
         if (deltaX != 0)
         {
             int btn = deltaX > 0 ? 7 : 6;
-            int clicks = Math.Max(1, Math.Abs(deltaX) / 120);
+            int clicks = ClickCount(deltaX);
             for (int i = 0; i < clicks; i++) RunXdotool($"click {btn}");
         }
     }
+
+    /// <summary>
+    /// Wheel detents for a scroll delta, as a count of xdotool button presses.
+    /// </summary>
+    /// <remarks>
+    /// Two things were wrong here and only one of them threw. Widening to <see cref="long"/> before
+    /// taking the magnitude is because <c>Math.Abs(int.MinValue)</c> throws, and an escape from here
+    /// ends the remote-desktop session's input thread permanently (RemEx-hnin). The ceiling is the
+    /// other: this was <c>Math.Max(1, ...)</c> with no upper bound, so a large delta asked for one
+    /// <c>xdotool</c> process per detent — millions of them for a delta near <c>int.MaxValue</c>.
+    /// <para>
+    /// Ten is written as a literal rather than derived from
+    /// <see cref="CoordinateValidation.MaxScrollDelta"/> deliberately: this is a cap on how many
+    /// processes this loop may spawn, which is a property of this loop, not of the wire. Deriving it
+    /// would let a future widening of the wire bound silently raise the spawn ceiling here while
+    /// <c>LinuxInputSimulationService.WheelDetents</c> stayed at ten.
+    /// </para>
+    /// </remarks>
+    private static int ClickCount(int delta) =>
+        (int)Math.Clamp(Math.Abs((long)delta) / 120, 1, 10);
 
     public void KeyDown(int keyCode)
     {

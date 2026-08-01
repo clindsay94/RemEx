@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using Remex.Core.Validation;
 using Remex.Agent.Services;
 using Remex.Agent.Services.FileTransfer;
 using Remex.Agent.Services.Telemetry;
@@ -911,7 +912,11 @@ public sealed class PingPongHandler(
                     inputSimulation.MouseClick(input.Button.Value);
                     break;
                 case InputEventTypes.MouseScroll:
-                    inputSimulation.MouseScroll(input.DeltaX ?? 0, input.DeltaY ?? 0);
+                    // See the note on the identical case in RemoteDesktopHandler: an unclamped
+                    // delta off the wire can throw out of the Linux backends (RemEx-hnin).
+                    inputSimulation.MouseScroll(
+                        CoordinateValidation.ClampScrollDelta(input.DeltaX),
+                        CoordinateValidation.ClampScrollDelta(input.DeltaY));
                     break;
                 case InputEventTypes.KeyDown when input.KeyCode.HasValue:
                     inputSimulation.KeyDown(input.KeyCode.Value);
