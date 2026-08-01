@@ -128,7 +128,20 @@ public static class HostBootstrapper
             builder.Services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, Remex.Core.Services.Command.LinuxSystemCommandService>();
             builder.Services.AddSingleton<IProcessMonitorService, LinuxProcessMonitorService>();
             builder.Services.AddSingleton<IScreenCaptureService, Remex.Agent.Services.ScreenCapture.LinuxScreenCaptureService>();
-            builder.Services.AddSingleton<IInputSimulationService, Remex.Agent.Services.Input.LinuxInputSimulationService>();
+            // Factory rather than a plain type registration so the input service can be handed the
+            // virtual-desktop origin. It needs one because ydotool has no absolute pointer mode: its
+            // --absolute homes the pointer to the desktop's top-left and then moves by the operands,
+            // so those operands are an OFFSET, and the two only coincide when the origin is (0,0)
+            // (RemEx-dyvd). The type test lives here because this is the only place that knows the
+            // concrete capture service; GetVirtualDesktopBounds is deliberately not on the shared
+            // interface, where a default implementation would be wrong on Windows.
+            builder.Services.AddSingleton<IInputSimulationService>(sp =>
+                new Remex.Agent.Services.Input.LinuxInputSimulationService(
+                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Input.LinuxInputSimulationService>>(),
+                    sp.GetService<Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime>(),
+                    sp.GetRequiredService<IScreenCaptureService>() is Remex.Agent.Services.ScreenCapture.LinuxScreenCaptureService linuxCapture
+                        ? () => { var (left, top, _, _) = linuxCapture.GetVirtualDesktopBounds(); return (left, top); }
+                        : null));
             builder.Services.AddSingleton<IDesktopWindowControlService, LinuxDesktopWindowControlService>();
             builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime>();
         }

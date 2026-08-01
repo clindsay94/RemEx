@@ -64,13 +64,18 @@ public sealed class LinuxInputArgvTests
         WindowControlTool: LinuxDesktopTool.None,
         WindowControlToolPath: null);
 
-    private static (LinuxInputSimulationService Service, Recorder Recorder) New(LinuxDesktopTool tool)
+    private static (LinuxInputSimulationService Service, Recorder Recorder) New(
+        LinuxDesktopTool tool,
+        int originLeft = 0,
+        int originTop = 0)
     {
         var recorder = new Recorder();
         var service = new LinuxInputSimulationService(
             NullLogger<LinuxInputSimulationService>.Instance,
             Backend(tool),
-            recorder.Launcher);
+            recorder.Launcher,
+            captureLifetime: null,
+            virtualDesktopOrigin: () => (originLeft, originTop));
         return (service, recorder);
     }
 
@@ -209,26 +214,111 @@ public sealed class LinuxInputArgvTests
     }
 
     [Fact]
-    public void AnAbsoluteTargetOnAMonitorLeftOfPrimaryAlsoSurvives()
+    public void AnAbsoluteTargetIsTranslatedToAnOffsetFromTheDesktopsTopLeft()
     {
-        // The half of RemEx-r29r that was worse and easier to miss. Virtual-desktop coordinates are
-        // legitimately negative for a display positioned left of or above the primary — this repo
-        // says so itself in CoordinateValidation.ClampToRange, whose summary records that flooring at
-        // zero "makes left/top monitors unreachable" — so the same getopt behaviour meant the cursor
-        // could not be placed anywhere on such a monitor.
+        // WHAT THIS TEST ASSERTED CHANGED TWICE, and the sequence is the point. RemEx-fu9n pinned the
+        // broken argv (the coordinate never reached the tool); RemEx-r29r made it reach the tool but
+        // said in capitals that reaching it is not the same as landing right; RemEx-dyvd is the
+        // landing. ydotool has no absolute mode — --absolute slams the pointer to the minimum of the
+        // RELATIVE space and then moves by the operands — so the operands are an offset from the
+        // desktop's top-left, and passing a virtual-desktop coordinate is only correct when that
+        // origin happens to be (0,0).
         //
-        // WHAT THIS DOES NOT PROVE, because the distinction cost real effort to find: surviving
-        // getopt is not the same as landing in the right place. ydotool has no absolute mode; it
-        // emulates one by slamming the pointer to the REL minimum and then moving by the operands,
-        // so those operands are an offset from the pointer space's top-left, NOT a virtual-desktop
-        // coordinate. On any desktop whose origin is not (0,0) the cursor therefore lands off by the
-        // origin — for a positive coordinate too. That is RemEx-dyvd, and it needs a translation
-        // this method does not currently have the inputs for.
-        var (service, recorder) = New(LinuxDesktopTool.Ydotool);
+        // With the desktop starting at x = -1920, the target -1920 is its LEFT EDGE, so the offset is
+        // 0 and no motion follows the homing. Passing -1920 through untranslated instead homed to the
+        // edge and then moved a further -1920, which the compositor clamps — the cursor never leaves
+        // the corner.
+        var (service, recorder) = New(LinuxDesktopTool.Ydotool, originLeft: -1920);
 
         service.MoveMouse(-1920, 100);
 
-        Assert.Equal(["mousemove", "--absolute", "-x", "-1920", "-y", "100"], recorder.Single());
+        Assert.Equal(["mousemove", "--absolute", "-x", "0", "-y", "100"], recorder.Single());
+    }
+
+    [Fact]
+    public void AnAbsoluteOperandCanStillGoNegativeAndMustStillSurviveGetopt()
+    {
+        // COVERAGE THAT NEARLY VANISHED WITH THE FIX, spotted in review. For an in-bounds target the
+        // translation makes the operand non-negative by construction, so once this method started
+        // subtracting the origin, no absolute-path test exercised a negative operand any more — and a
+        // negative operand on the absolute path is exactly what RemEx-r29r existed to make survivable.
+        // Out-of-bounds targets are reachable: PingPongHandler dispatches mouseMove with no clamp at
+        // all, unlike the remote-desktop handler.
+        var (service, recorder) = New(LinuxDesktopTool.Ydotool, originLeft: -1920, originTop: -50);
+
+        service.MoveMouse(-4000, -300);
+
+        Assert.Equal(["mousemove", "--absolute", "-x", "-2080", "-y", "-250"], recorder.Single());
+    }
+
+    [Fact]
+    public void APositiveAbsoluteTargetIsTranslatedToo()
+    {
+        // THE HALF THAT MAKES THIS NOT A NEGATIVE-NUMBER BUG. RemEx-r29r fixed getopt eating negative
+        // operands; this is a different defect that survives it, and the giveaway is that it bites
+        // perfectly ordinary positive coordinates. On a desktop starting at x = -1920, a target of 300
+        // sits on the primary monitor — but untranslated it homed to -1920 and moved +300, landing at
+        // -1620, on the OTHER monitor entirely.
+        var (service, recorder) = New(LinuxDesktopTool.Ydotool, originLeft: -1920);
+
+        service.MoveMouse(300, 400);
+
+        Assert.Equal(["mousemove", "--absolute", "-x", "2220", "-y", "400"], recorder.Single());
+    }
+
+    [Fact]
+    public void AZeroOriginLeavesTheCoordinateExactlyAsItWas()
+    {
+        // The no-op case, which is every X11 desktop: the root window is 0-based by construction, so
+        // the translation subtracts nothing. Pinned because it is the reason this defect went
+        // unnoticed, and because a translation that quietly changed the common case would be a
+        // regression dressed as a fix.
+        var (service, recorder) = New(LinuxDesktopTool.Ydotool);
+
+        service.MoveMouse(300, 400);
+
+        Assert.Equal(["mousemove", "--absolute", "-x", "300", "-y", "400"], recorder.Single());
+    }
+
+    [Fact]
+    public void XdotoolIsDeliberatelyNotTranslated()
+    {
+        // NOT an oversight, and the sign would be wrong if it were copied. xdotool takes X11 screen
+        // coordinates, and on an X11 session the coordinates arriving here ARE X11 screen
+        // coordinates — the same space, so subtracting an origin would introduce the error it fixes
+        // for ydotool. Asserted with a non-zero origin precisely so the two branches cannot be
+        // "unified" later without failing something.
+        var (service, recorder) = New(LinuxDesktopTool.Xdotool, originLeft: -1920);
+
+        service.MoveMouse(300, 400);
+
+        Assert.Equal(["mousemove", "300", "400"], recorder.Single());
+    }
+
+    [Fact]
+    public void RelativeMovesAreNeverTranslatedBecauseADeltaHasNoOrigin()
+    {
+        // The boundary of the fix. A relative delta is a displacement, not a position, so an origin
+        // does not apply to it — translating one would turn every drag into a jump to somewhere near
+        // the desktop corner.
+        var (service, recorder) = New(LinuxDesktopTool.Ydotool, originLeft: -1920, originTop: -50);
+
+        service.MouseMoveRelative(-5, 7);
+
+        Assert.Equal(["mousemove", "-x", "-5", "-y", "7"], recorder.Single());
+    }
+
+    [Fact]
+    public void ScrollIsNeverTranslatedEither()
+    {
+        // Same reason as relative motion, and worth its own assertion because the scroll path shares
+        // both the mousemove verb and the -x/-y flags with the translated one — the only thing
+        // separating them is --wheel.
+        var (service, recorder) = New(LinuxDesktopTool.Ydotool, originLeft: -1920);
+
+        service.MouseScroll(0, 240);
+
+        Assert.Equal(["mousemove", "--wheel", "-x", "0", "-y", "2"], recorder.Single());
     }
 
     [Fact]

@@ -19,6 +19,19 @@ namespace Remex.Agent.Services.Input;
 /// </remarks>
 internal delegate string InputToolLauncher(LinuxDesktopTool backend, string toolPath, string[] arguments);
 
+/// <summary>
+/// Top-left corner of the whole virtual desktop, in the same coordinate space
+/// <see cref="LinuxInputSimulationService.MoveMouse"/> is given.
+/// </summary>
+/// <remarks>
+/// A delegate rather than an <c>IScreenCaptureService</c> dependency because the value wanted is
+/// <c>GetVirtualDesktopBounds</c>, which is on the concrete Linux capture service and not on the
+/// shared interface — and putting it there would need a default implementation that is wrong on
+/// Windows, where the active capture region and the virtual desktop genuinely differ. The composition
+/// root already knows the concrete type, so the one type test lives there (RemEx-dyvd).
+/// </remarks>
+internal delegate (int Left, int Top) VirtualDesktopOrigin();
+
 [SupportedOSPlatform("linux")]
 public class LinuxInputSimulationService : IInputSimulationService
 {
@@ -26,6 +39,7 @@ public class LinuxInputSimulationService : IInputSimulationService
     private readonly LinuxDesktopBackendStatus _backendStatus;
     private readonly string? _display;
     private readonly InputToolLauncher _launch;
+    private readonly VirtualDesktopOrigin _virtualDesktopOrigin;
 
     // Stage 5: router is set when a WaylandNative/PortalNoPen session is active.
     // When null, the legacy xdotool/ydotool path runs as before.
@@ -67,7 +81,24 @@ public class LinuxInputSimulationService : IInputSimulationService
     public LinuxInputSimulationService(
         ILogger<LinuxInputSimulationService> logger,
         Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime = null)
-        : this(logger, LinuxDesktopBackendProbe.Probe(), launcher: null, captureLifetime)
+        : this(logger, captureLifetime, virtualDesktopOrigin: null)
+    {
+    }
+
+    /// <summary>
+    /// Production constructor for the composition root, which is the only thing that knows where the
+    /// virtual-desktop origin comes from (RemEx-dyvd).
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than an extra public parameter so <see cref="VirtualDesktopOrigin"/> stays off
+    /// the public surface: it exists to serve one Linux backend's coordinate quirk, and nothing
+    /// outside this assembly has any business supplying one.
+    /// </remarks>
+    internal LinuxInputSimulationService(
+        ILogger<LinuxInputSimulationService> logger,
+        Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime,
+        VirtualDesktopOrigin? virtualDesktopOrigin)
+        : this(logger, LinuxDesktopBackendProbe.Probe(), launcher: null, captureLifetime, virtualDesktopOrigin)
     {
     }
 
@@ -102,13 +133,18 @@ public class LinuxInputSimulationService : IInputSimulationService
         ILogger<LinuxInputSimulationService> logger,
         LinuxDesktopBackendStatus backendStatus,
         InputToolLauncher? launcher = null,
-        Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime = null)
+        Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime = null,
+        VirtualDesktopOrigin? virtualDesktopOrigin = null)
     {
         _logger = logger;
         _captureLifetime = captureLifetime;
         _display = Environment.GetEnvironmentVariable("DISPLAY");
         _backendStatus = backendStatus;
         _launch = launcher ?? RunToolWithOutput;
+
+        // (0,0) is the right default rather than a placeholder: it is what an X11 desktop always
+        // reports, and it makes the translation below a no-op wherever the origin is already zero.
+        _virtualDesktopOrigin = virtualDesktopOrigin ?? DesktopOriginAtZero;
 
         // On Wayland, create a portal input injector so that pointer events work even
         // when xdotool / ydotool are not available or cannot inject into the compositor.
@@ -210,9 +246,30 @@ public class LinuxInputSimulationService : IInputSimulationService
         }
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("mousemove", "--absolute", "-x", Coordinate(x), "-y", Coordinate(y));
+        {
+            // YDOTOOL HAS NO ABSOLUTE MODE, AND ITS EMULATION IS NOT A COORDINATE SYSTEM (RemEx-dyvd).
+            // `--absolute` slams the pointer to the minimum of the RELATIVE pointer space and then
+            // moves by the operands (tool_mousemove.c: two REL emits of INT32_MIN, then the values),
+            // so what it wants is an OFFSET FROM THE DESKTOP'S TOP-LEFT, not a position. Those two
+            // coincide only when the virtual desktop's origin is (0,0), which is the case on X11 by
+            // construction — the root window is 0-based — and is why this went unnoticed. Where a
+            // compositor reports a non-zero origin, every target landed off by exactly that origin,
+            // POSITIVE COORDINATES INCLUDED: with the desktop starting at x = -1920, a target of 300
+            // homed to -1920 and then moved +300, landing at -1620, on the wrong monitor.
+            var (originLeft, originTop) = _virtualDesktopOrigin();
+            RunTool(
+                "mousemove",
+                "--absolute",
+                "-x", Coordinate(x - originLeft),
+                "-y", Coordinate(y - originTop));
+        }
         else
+        {
+            // NOT translated, and that is not an oversight. xdotool takes X11 screen coordinates, and
+            // the coordinates arriving here ARE X11 screen coordinates on an X11 session, so the two
+            // spaces are the same one. Subtracting an origin here would break the case it fixes above.
             RunTool("mousemove", Coordinate(x), Coordinate(y));
+        }
     }
 
     public void MouseMoveRelative(int dx, int dy)
@@ -439,6 +496,12 @@ public class LinuxInputSimulationService : IInputSimulationService
     /// </para>
     /// </remarks>
     private static string Coordinate(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// The virtual-desktop origin when nobody supplied one: <c>(0,0)</c>, which is what an X11
+    /// desktop always reports and what makes the ydotool translation a no-op.
+    /// </summary>
+    private static (int Left, int Top) DesktopOriginAtZero() => (0, 0);
 
     /// <summary>xdotool's 1-based button number. Single-sourced (RemEx-upxn).</summary>
     private static int MapButtonXdotool(int button) => MouseButtonCodes.ToXdotool(button);

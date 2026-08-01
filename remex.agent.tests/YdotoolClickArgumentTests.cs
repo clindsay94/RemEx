@@ -68,8 +68,8 @@ public sealed class YdotoolClickArgumentTests
         Assert.Equal(0x01, MouseButtonCodes.ToYdotool(MouseButtons.Right));
         Assert.Equal(0x02, MouseButtonCodes.ToYdotool(MouseButtons.Middle));
 
-        Assert.NotEqual(MouseButtonCodes.ToYdotool(MouseButtons.Middle), MouseButtons.Middle);
-        Assert.NotEqual(MouseButtonCodes.ToYdotool(MouseButtons.Right), MouseButtons.Right);
+        Assert.NotEqual(MouseButtons.Middle, MouseButtonCodes.ToYdotool(MouseButtons.Middle));
+        Assert.NotEqual(MouseButtons.Right, MouseButtonCodes.ToYdotool(MouseButtons.Right));
     }
 
     [Theory]
