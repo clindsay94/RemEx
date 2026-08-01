@@ -125,11 +125,41 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     /// the cache is seeded with every category rather than only the ones HWiNFO never covered.
     /// </summary>
     private bool _fallbackCacheSeeded;
-    private static readonly TimeSpan WmiFallbackTimeout = TimeSpan.FromSeconds(2);
+    /// <summary>
+    /// How long a tick waits for the counter warm-up, and for the WindowsPerf read itself.
+    /// </summary>
+    /// <remarks>
+    /// An instance field rather than a constant purely so tests can shrink it. Two seconds is the
+    /// right production value, but a test that deliberately holds the warm-up open then pays it in
+    /// real time — the first version of TelemetryWarmUpGateTests added 12 seconds to the agent suite
+    /// for two assertions, which is not a trade worth making for a regression guard (RemEx-s999).
+    /// </remarks>
+    private readonly TimeSpan _wmiFallbackTimeout;
 
     public WindowsTelemetryService(ILogger<WindowsTelemetryService> logger)
+        : this(logger, countersReady: null)
+    {
+    }
+
+    /// <summary>
+    /// Test seam (visible to <c>Remex.Agent.Tests</c> via <c>InternalsVisibleTo</c>): supplies the
+    /// warm-up task, so a test can hold it INCOMPLETE and observe what a tick does meanwhile.
+    /// </summary>
+    /// <remarks>
+    /// Exists because the prime-before-read invariant is otherwise unguarded: it rests on a single
+    /// bounded wait in <see cref="GetTelemetryAsync"/>, and deleting that line leaves the whole suite
+    /// green while restoring the artefacts RemEx-48kh was reverted for — an unprimed CPU counter
+    /// reporting 0% from an empty sample window, and a non-null NIC whose baseline was never taken
+    /// (RemEx-s999). Holding the warm-up open is the only way to reach that window deterministically;
+    /// racing the real one would be a flake generator.
+    ///
+    /// Null means production: build the counters on a background task, as the public constructor does.
+    /// </remarks>
+    internal WindowsTelemetryService(
+        ILogger<WindowsTelemetryService> logger, Task? countersReady, TimeSpan? fallbackTimeout = null)
     {
         _logger = logger;
+        _wmiFallbackTimeout = fallbackTimeout ?? TimeSpan.FromSeconds(2);
 
         // OFF THE STARTUP THREAD, BUT NOT DEFERRED — the distinction is the whole design here.
         //
@@ -158,7 +188,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         // and HwInfoStaleAfterMs, because Task.Run is reached through the `: this(logger)` chain.
         // Safe only because InitializeFallbackCounters reads nothing but _logger; do not give it a
         // dependency on a field that constructor sets.
-        _countersReady = Task.Run(InitializeFallbackCounters);
+        _countersReady = countersReady ?? Task.Run(InitializeFallbackCounters);
     }
 
     /// <summary>
@@ -171,9 +201,16 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     /// (RemEx-8coq). Driving a region this process writes itself is the only way to test that
     /// off-device, and it does not skip the fallback-counter initialisation the real one does.
     /// </remarks>
+    /// <remarks>
+    /// <paramref name="countersReady"/> defaults to null, meaning the production background warm-up.
+    /// Pass one to hold the warm-up open — a test that wants to observe the pre-warm-up window needs
+    /// to control HWiNFO too, or the assertions become machine-dependent: a live HWiNFO supplies
+    /// sensors whose categories displace the WindowsPerf ones being asserted about.
+    /// </remarks>
     internal WindowsTelemetryService(
-        ILogger<WindowsTelemetryService> logger, string sharedMemoryName, long staleAfterMs)
-        : this(logger)
+        ILogger<WindowsTelemetryService> logger, string sharedMemoryName, long staleAfterMs,
+        Task? countersReady = null, TimeSpan? fallbackTimeout = null)
+        : this(logger, countersReady, fallbackTimeout)
     {
         _sharedMemoryName = sharedMemoryName;
         HwInfoStaleAfterMs = staleAfterMs;
@@ -270,14 +307,14 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         var countersReady = true;
         try
         {
-            await _countersReady.WaitAsync(WmiFallbackTimeout, ct);
+            await _countersReady.WaitAsync(_wmiFallbackTimeout, ct);
         }
         catch (TimeoutException)
         {
             countersReady = false;
             _logger.LogWarning(
                 "Fallback counters are still warming up after {Timeout}s — serving cached telemetry for this tick.",
-                WmiFallbackTimeout.TotalSeconds);
+                _wmiFallbackTimeout.TotalSeconds);
         }
 
         if (!countersReady)
@@ -296,7 +333,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         try
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(WmiFallbackTimeout);
+            timeoutCts.CancelAfter(_wmiFallbackTimeout);
             payload = await Task.Run(() => ReadWmiFallback(skipCategories), timeoutCts.Token);
             _cachedByCategory = CacheReadCategories(_cachedByCategory, payload, skipCategories);
 
@@ -307,7 +344,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             _logger.LogWarning("WMI/PerformanceCounter telemetry timed out after {Timeout}s — returning cached data.",
-                WmiFallbackTimeout.TotalSeconds);
+                _wmiFallbackTimeout.TotalSeconds);
 
             // Uptime is recomputed rather than cached: it is TickCount64 formatting, so it cannot
             // stall and a stale one would be strictly worse than a fresh one.
