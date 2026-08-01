@@ -1076,9 +1076,6 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                 {
                     var sensor = new SensorViewModel();
 
-                    // Persist per-sensor customization (color, title, overlay, graph type) as it changes.
-                    sensor.PropertyChanged += OnSensorCustomizationChanged;
-
                     // Apply any persisted alert for this sensor.
                     if (_sensorAlerts.TryGetValue(sensorName, out var existingAlert))
                         sensor.Alert = existingAlert;
@@ -1136,6 +1133,25 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     {
                         sensorVm.AlertTriggered -= OnSensorAlertTriggered;
                         sensorVm.AlertTriggered += OnSensorAlertTriggered;
+
+                        // Wired HERE, with the alert handler, rather than only on first sight —
+                        // RemEx-9qgb, the same defect RemEx-k74x fixed for its sibling. Both are
+                        // detached together on disconnect, so both have to be re-attached together;
+                        // leaving one behind meant per-card customization silently stopped being
+                        // saved from the first reconnect on, and the user's theme, custom title,
+                        // overlay toggle and graph type were lost at restart. Keeping the two in one
+                        // block is the point: they were separated before, which is how one of them
+                        // got fixed and the other did not.
+                        //
+                        // SECOND, DELIBERATE EFFECT: this now attaches AFTER the persisted-state
+                        // restore rather than before it. ApplyPersistedSensorState sets five
+                        // properties that all match the save filter, so the old position made every
+                        // restored card request a save while the canvas was still half-materialized —
+                        // several redundant writes of dashboard_layout.json on the first tick after
+                        // launch. Nothing is lost by skipping them: a load has nothing new to persist,
+                        // and the other restore path still requests its save explicitly.
+                        sensorVm.PropertyChanged -= OnSensorCustomizationChanged;
+                        sensorVm.PropertyChanged += OnSensorCustomizationChanged;
                     }
                 }
 
@@ -1166,12 +1182,31 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Notifications that have reached <see cref="OnSensorCustomizationChanged"/>. Test seam.
+    /// </summary>
+    /// <remarks>
+    /// Counted BEFORE the save filter on purpose — it therefore counts Name/Value/Unit changes too,
+    /// which the filter below deliberately ignores. That is what lets a test prove the handler is
+    /// ATTACHED without provoking a real profile write: the alternative is not merely inconvenient
+    /// but unavailable, since the view model takes the sealed concrete layout service and the test
+    /// harness has none, so a provoked save throws rather than writing.
+    /// <para>
+    /// KNOWN LIMIT: counting before the filter cannot distinguish "attached" from "attached and still
+    /// routing the right property names". Drop <c>Theme</c> from the filter below and a test on this
+    /// counter stays green while the same user-visible symptom returns.
+    /// </para>
+    /// </remarks>
+    internal int SensorCustomizationNotifications { get; private set; }
+
+    /// <summary>
     /// Persists the layout when a user changes a sensor's customization (color theme, custom title,
     /// value-overlay visibility, or graph type). Telemetry updates (Name/Value/Unit) are ignored so
     /// the incoming reading stream does not spam saves.
     /// </summary>
     private void OnSensorCustomizationChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        SensorCustomizationNotifications++;
+
         if (e.PropertyName is nameof(SensorViewModel.Theme)
             or nameof(SensorViewModel.CustomTitle)
             or nameof(SensorViewModel.ShowValueOverlay)
@@ -1503,14 +1538,13 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         {
             sensor.AlertTriggered -= OnSensorAlertTriggered;
 
-            // THIS DETACH IS CURRENTLY UNPAIRED, and the comment it replaces was wrong about why it
-            // was safe. PropertyChanged is attached at exactly one place — inside the "first time
-            // seeing this sensor" branch — and that branch is skipped on reconnect, because the staged
-            // card keeps its view model. So there is no "reconnect path that recreates subscriptions":
-            // detaching here means customization changes stop being persisted from the first
-            // disconnect onward, and the user's card theme, title, overlay and graph type are lost on
-            // restart. Exactly the failure RemEx-k74x fixed for the ALERT handler, still live for this
-            // one; deliberately left for RemEx-9qgb rather than widened into that bead.
+            // Paired with the re-attach above, which is the whole of RemEx-9qgb: detaching here was
+            // always correct, but nothing re-attached on reconnect, so customization silently stopped
+            // being saved. Note the direction — a subscription stores a delegate on the SENSOR whose
+            // target is this dashboard, so it is the sensor that holds the dashboard alive, not the
+            // reverse; and the dashboard retains every view model through Cards/StagedCards anyway
+            // ("created on first sighting, never dropped on disconnect"). So this detach is not what
+            // releases the view models, whatever earlier comments here claimed.
             sensor.PropertyChanged -= OnSensorCustomizationChanged;
         }
 

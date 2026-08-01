@@ -174,6 +174,93 @@ public sealed class SensorIndexTests
     }
 
     [Fact]
+    public void CustomizationIsStillTrackedAfterADisconnectAndReconnect()
+    {
+        // THE SIBLING OF THE TEST ABOVE, and the reason it needed its own. Disconnecting detaches TWO
+        // handlers per sensor; RemEx-k74x re-attached the alert one and left this one behind, so
+        // per-card customization silently stopped being saved from the first reconnect onward — theme,
+        // custom title, overlay toggle and graph type applied live and were gone at restart. They are
+        // now wired in the same block precisely so one cannot be fixed without the other (RemEx-9qgb).
+        var vm = NewDashboard();
+
+        vm.ApplyTelemetry(new TelemetryPayload
+        {
+            Sensors = new List<SensorReading> { new() { Id = "cpu-pkg-0", Name = "CPU Package", Value = 10 } },
+        });
+
+        vm.CleanupSensorSubscriptions();
+
+        var before = vm.SensorCustomizationNotifications;
+
+        // Reconnect. The re-attach happens here, and the reading's own property changes then flow
+        // through the handler — which is what proves it is attached, without provoking a real save.
+        vm.ApplyTelemetry(new TelemetryPayload
+        {
+            Sensors = new List<SensorReading> { new() { Id = "cpu-pkg-0", Name = "CPU Package", Value = 20 } },
+        });
+
+        vm.SensorCustomizationNotifications.Should().BeGreaterThan(before,
+            "the customization handler must be re-attached on reconnect; before the fix nothing "
+            + "re-attached it and the user's card settings stopped being persisted");
+    }
+
+    [Fact]
+    public void ReconnectingDoesNotDoubleUpTheCustomizationHandler()
+    {
+        // The other direction, and the one that matters MORE here than it does for alerts: this
+        // handler fires on every customization change and each duplicate means another write of the
+        // whole layout profile to disk. A doubled alert is a visible annoyance; a doubled save is
+        // invisible until the writes pile up.
+        //
+        // Asserted as a CONSTANT DELTA rather than an absolute count, because the number of property
+        // changes one reading raises is an implementation detail of SensorViewModel — but it must not
+        // grow with the number of reconnects. Two sensors, so a handler attached to only one of them
+        // cannot pass by accident (the hole that let RemEx-228x's per-sensor bug through).
+        //
+        // EXACTLY WHAT THIS CATCHES, measured rather than assumed. There are two independent detaches
+        // — the idempotent `-=` at the attach site and the one in CleanupSensorSubscriptions — and
+        // removing EITHER alone leaves this green, because the other still nets each sensor back to
+        // one subscription. It goes red when BOTH are gone. So this is a guard on the PAIR, not on
+        // either half, which is the same shape as the bug it was written for: two things that are
+        // only correct together, and were quietly separated.
+        var vm = NewDashboard();
+        var value = 0;
+
+        int CycleDelta()
+        {
+            var before = vm.SensorCustomizationNotifications;
+            value += 10; // distinct every time: an unchanged value raises nothing
+            vm.ApplyTelemetry(new TelemetryPayload
+            {
+                Sensors = new List<SensorReading>
+                {
+                    new() { Id = "cpu-pkg-0", Name = "CPU Package", Value = value },
+                    new() { Id = "gpu-hot-0", Name = "GPU Hotspot", Value = value + 1 },
+                },
+            });
+            return vm.SensorCustomizationNotifications - before;
+        }
+
+        // The FIRST cycle is not a valid baseline and measuring it as one is how this test first
+        // failed: first sighting populates Name, Unit and Category from their defaults as well as
+        // Value, so it raises strictly more than a steady tick does (18 against 12 here). A reconnect
+        // keeps the existing view model — that is the whole reason the bug existed — so post-reconnect
+        // cycles are steady-state ones and must be compared against a steady-state baseline.
+        CycleDelta().Should().BeGreaterThan(0, "the handler must be attached at all on first sight");
+        var steadyState = CycleDelta();
+        steadyState.Should().BeGreaterThan(0, "a plain reading must keep reaching the handler");
+
+        for (int reconnect = 1; reconnect <= 3; reconnect++)
+        {
+            vm.CleanupSensorSubscriptions();
+            CycleDelta().Should().Be(steadyState,
+                $"after {reconnect} reconnect(s) each reading must still reach the handler exactly "
+                + "once per sensor; a larger delta means the re-attach stacked another subscription "
+                + "and every customization change now saves the profile more than once");
+        }
+    }
+
+    [Fact]
     public void ReconnectingDoesNotDoubleUpTheAlert()
     {
         // The other direction, and the reason the original code guarded on first-sight at all: wiring
