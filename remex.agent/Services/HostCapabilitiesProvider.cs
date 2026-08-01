@@ -220,9 +220,21 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         {
             if (!isInteractiveSession) return false;
 
-            // With Stage 5 input router: portal/EIS or legacy tools are all valid.
+            // NOT the Stage 5 router, which this comment used to credit and which nothing constructs
+            // (RemEx-7tkg). On the Wayland tiers what makes this true is LinuxInputSimulationService's
+            // own portal injector, which DetermineTier gates on the same portal availability.
+            //
+            // ON X11Degraded IT IS NOT TRUE AT ALL, AND THAT IS A LIVE BUG (RemEx-jvme). DetermineTier
+            // never probes xdotool or ydotool — any X11 session with a session bus returns
+            // X11Degraded — so on a box with neither tool installed this advertises input the host
+            // cannot perform, and every event becomes a log line. The tool-aware check below
+            // (SupportsBasicInput) is unreachable on Linux, because prereqReport is always assigned.
+            // Left as a bead rather than fixed here: this bead was scoped to correcting what the
+            // comments claim, and changing what the host advertises is a behaviour change that wants
+            // its own review. The first draft of this comment asserted the conclusion held; a reviewer
+            // asked to verify rather than accept it found it did not.
             if (prereqReport is not null)
-                return prereqReport.CanStream; // any tier that can stream can inject basic input
+                return prereqReport.CanStream; // overstated on X11Degraded - see the block above
 
             linuxBackend ??= LinuxDesktopBackendProbe.Probe();
             return linuxBackend.SupportsBasicInput;

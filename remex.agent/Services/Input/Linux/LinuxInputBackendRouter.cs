@@ -40,6 +40,43 @@ internal delegate void XdotoolLauncher(string[] arguments);
 ///
 /// This class owns the EIS and uinput sub-services and manages their lifecycle.
 /// </summary>
+/// <remarks>
+/// <para>
+/// NOT WIRED UP. NOTHING CONSTRUCTS THIS IN PRODUCTION (RemEx-7tkg). The table above describes what
+/// this class would route if it were reached; today it is reached by tests only. DI registers
+/// <c>LinuxInputSimulationService</c> as the <c>IInputSimulationService</c>, and the only way in is
+/// its <c>SetRouter</c>, which has no callers anywhere — <c>git log -S</c> finds exactly one commit
+/// touching that name, the one that introduced it. So the wiring was never written rather than
+/// written and lost, which matches the rest of the codebase: <c>RemoteDesktopHandler</c> says stylus
+/// data "will be preserved end-to-end once Stage 5 lands", present tense, still true.
+/// </para>
+/// <para>
+/// THREE things a future wiring has to do beyond calling <c>SetRouter</c>, and the third is the one
+/// that would ship a regression. First,
+/// <c>LinuxInputCapabilitySet</c> has no production construction site either, so the capabilities
+/// this class routes on would have to be computed and passed. Second, and worse because it fails
+/// quietly: <c>LinuxInputSimulationService</c> consults its router for only four members —
+/// <c>BackendName</c>, <c>EnqueuePointerSample</c>, <c>KeyDown</c> and <c>KeyUp</c> — so setting a
+/// router today routes the KEYBOARD here while every mouse event still goes to the shell path. That
+/// asymmetry is pinned by a test rather than left in this comment, because a comment cannot fail.
+/// </para>
+/// <para>
+/// Third, and the reason wiring this today would be actively worse than leaving it alone: the EIS
+/// backend underneath is a SCAFFOLD. <c>remex.agent.native.linux/src/libei_sender.c</c> loads libei
+/// and then returns <c>REMEX_OK</c> from every send function after discarding its arguments —
+/// <c>(void)dx; (void)dy; return REMEX_OK;</c> — with the real <c>ei_device_*</c> calls left as
+/// comments. On a WaylandNative host, where <c>_eis.IsAvailable</c> is the first thing every pointer
+/// and keyboard method here tests, wiring the router would route input into that stub and it would
+/// vanish silently while reporting success. (<c>TypeText</c> and <c>GetCursorPosition</c> never
+/// consult EIS at all, and <c>EnqueuePointerSample</c> tries the uinput tablet first for pen samples
+/// — which changes nothing about the conclusion, only about the word "every".) Recorded on RemEx-whxz, whose notes reached this same conclusion during
+/// an earlier review; this comment exists so the next person does not have to rediscover it.
+/// </para>
+/// <para>
+/// Kept rather than deleted on the strength of "no callers": libei/EIS is the strategic Wayland
+/// input path and this is most of the work for it, with its argv now under test (RemEx-n3z6).
+/// </para>
+/// </remarks>
 [SupportedOSPlatform("linux")]
 public sealed class LinuxInputBackendRouter : IInputSimulationService, IDisposable
 {

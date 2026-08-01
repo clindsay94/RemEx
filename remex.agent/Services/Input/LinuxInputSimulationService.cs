@@ -41,8 +41,10 @@ public class LinuxInputSimulationService : IInputSimulationService
     private readonly InputToolLauncher _launch;
     private readonly VirtualDesktopOrigin _virtualDesktopOrigin;
 
-    // Stage 5: router is set when a WaylandNative/PortalNoPen session is active.
-    // When null, the legacy xdotool/ydotool path runs as before.
+    // Stage 5 router. ALWAYS NULL IN PRODUCTION: nothing calls SetRouter, so the legacy portal /
+    // xdotool / ydotool paths below are what actually run on every Linux tier (RemEx-7tkg). The
+    // previous wording here — "router is set when a WaylandNative/PortalNoPen session is active" —
+    // described an intention in the present tense and read as a description of behaviour.
     private LinuxInputBackendRouter? _router;
 
     // Portal-based Wayland input injector.  Created on Wayland when the portal is
@@ -169,10 +171,18 @@ public class LinuxInputSimulationService : IInputSimulationService
     }
 
     /// <summary>
-    /// Sets the backend router for WaylandNative / PortalNoPen tiers.
-    /// When set, all input events are routed through the router rather than shell tools.
-    /// Pass null to revert to the legacy shell-tool path.
+    /// Sets the backend router for WaylandNative / PortalNoPen tiers. Pass null to revert to the
+    /// legacy shell-tool path.
     /// </summary>
+    /// <remarks>
+    /// NO PRODUCTION CALLER, AND "ALL INPUT EVENTS" WAS NEVER TRUE (RemEx-7tkg). The router is
+    /// consulted by exactly four members — <see cref="BackendName"/>,
+    /// <see cref="EnqueuePointerSample"/>, <see cref="KeyDown"/> and <see cref="KeyUp"/>. Every mouse
+    /// method checks the portal injector and then the shell tool, never the router, so setting one
+    /// today would route the keyboard through it and silently leave the pointer on the old path.
+    /// Whoever wires Stage 5 up has to extend the mouse methods as well; a test pins the current
+    /// split so that discovery happens at compile-and-test time rather than on a device.
+    /// </remarks>
     public void SetRouter(LinuxInputBackendRouter? router)
     {
         _router = router;
