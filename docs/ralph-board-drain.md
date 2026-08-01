@@ -126,11 +126,19 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
      Test projects also fail the build on their own warnings now, but do NOT treat a green
      `dotnet test` as proof of that: `--no-build` compiles nothing, and even a building run is
      incremental. The command above is the proof, for the test projects and the shipping ones alike.
-   - **Do NOT use `--no-build` when measuring an injection.** On this share, patch-test-restore
-     cycles can leave MSBuild's up-to-date check satisfied, so two different injections get measured
-     against the same stale assembly and "agree" for the wrong reason. Let `dotnet test` build, and
-     print the failing test NAMES rather than only the count, so a nonsensical result is visible
-     rather than plausible.
+   - **Measuring an injection: `dotnet build -t:Rebuild` FIRST, then `dotnet test --no-build`.**
+     Letting `dotnet test` build is not enough — it builds incrementally, and on this share a
+     patch-test-restore cycle can leave MSBuild's up-to-date check satisfied, so two different
+     injections get measured against the same stale assembly and "agree" for the wrong reason. That
+     has now happened twice, and the second time was against wording here that said only "let
+     `dotnet test` build" (RemEx-n3z6). Always print the failing test NAMES rather than only the
+     count: an impossible result is then visible instead of plausible, which is the only reason
+     either occurrence was caught.
+
+     ```
+     dotnet build <proj> -c Release --nologo -t:Rebuild
+     dotnet test  <proj> -c Release --nologo --no-build --filter "FullyQualifiedName~<Suite>"
+     ```
    - **Re-run every injection after the last edit to the tests.** Adding or renaming a test changes
      the counts, and a figure carried across a review round is a false claim even when it was true
      when first measured.
