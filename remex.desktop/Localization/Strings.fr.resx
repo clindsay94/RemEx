@@ -2766,6 +2766,12 @@ Vous pouvez modifier :
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>Le fichier arrive plus vite que le dossier choisi ne peut l'enregistrer, le téléchargement n'a donc pas pu se terminer. Essayez d'enregistrer dans un dossier du disque principal de cet ordinateur plutôt que sur une clé USB ou un dossier réseau.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>Le téléchargement n'a pas pu être enregistré. Le disque choisi est peut-être plein, ou une clé USB a peut-être été débranchée. Vérifiez qu'il reste de l'espace et que la clé est toujours branchée, puis réessayez.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>Le fichier n'a pas pu être lu. Il est peut-être ouvert dans un autre programme, ou le disque sur lequel il se trouve a été débranché. Fermez-le ailleurs, vérifiez que le disque est branché, puis réessayez.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>Le fichier téléchargé ne correspondait pas à celui envoyé par le PC ; il a été supprimé. Retéléchargez-le.</value>
   </data>

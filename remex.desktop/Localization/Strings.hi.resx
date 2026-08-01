@@ -2766,6 +2766,12 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>फ़ाइल उससे तेज़ आ रही है जितनी तेज़ी से चुना गया फ़ोल्डर उसे सहेज सकता है, इसलिए डाउनलोड पूरा नहीं हो सका। USB ड्राइव या नेटवर्क फ़ोल्डर के बजाय इस कंप्यूटर की मुख्य ड्राइव के किसी फ़ोल्डर में सहेजकर देखें।</value>
   </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>डाउनलोड सहेजा नहीं जा सका। हो सकता है चुनी गई ड्राइव में जगह न बची हो, या कोई USB ड्राइव निकाल दी गई हो। जाँचें कि जगह बची है और ड्राइव अब भी जुड़ी है, फिर दोबारा कोशिश करें।</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>फ़ाइल पढ़ी नहीं जा सकी। हो सकता है वह किसी दूसरे प्रोग्राम में खुली हो, या जिस ड्राइव पर वह है वह निकाल दी गई हो। उसे दूसरे प्रोग्राम में बंद करें, जाँचें कि ड्राइव जुड़ी है, फिर दोबारा कोशिश करें।</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>डाउनलोड की गई फ़ाइल PC से भेजी गई फ़ाइल से मेल नहीं खाती, इसलिए उसे हटा दिया गया। फिर से डाउनलोड करें।</value>
   </data>

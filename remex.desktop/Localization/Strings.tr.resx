@@ -2770,6 +2770,12 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>Dosya, seçtiğiniz klasörün kaydedebileceğinden daha hızlı geliyor, bu yüzden indirme tamamlanamadı. USB bellek veya ağ klasörü yerine bu bilgisayarın ana sürücüsündeki bir klasöre kaydetmeyi deneyin.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>İndirme kaydedilemedi. Seçtiğiniz sürücüde yer kalmamış veya bir USB bellek çıkarılmış olabilir. Yeterli yer olduğundan ve sürücünün hâlâ takılı olduğundan emin olup yeniden deneyin.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>Dosya okunamadı. Başka bir programda açık olabilir veya bulunduğu sürücü çıkarılmış olabilir. Dosyayı diğer programlarda kapatın, sürücünün takılı olduğundan emin olun ve yeniden deneyin.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>İndirilen dosya bilgisayarın gönderdiğiyle eşleşmedi, bu yüzden silindi. Yeniden indirmeyi deneyin.</value>
   </data>

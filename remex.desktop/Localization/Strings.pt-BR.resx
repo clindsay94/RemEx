@@ -2766,6 +2766,12 @@ Você pode mudar:
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>O arquivo está chegando mais rápido do que a pasta escolhida consegue salvá-lo, então o download não pôde ser concluído. Tente salvar em uma pasta na unidade principal deste computador em vez de um pen drive ou pasta de rede.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>Não foi possível salvar o download. A unidade escolhida pode estar sem espaço, ou um pen drive pode ter sido desconectado. Verifique se há espaço e se a unidade ainda está conectada, depois tente novamente.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>Não foi possível ler o arquivo. Ele pode estar aberto em outro programa, ou a unidade onde ele está pode ter sido desconectada. Feche-o nos outros programas, verifique se a unidade está conectada e tente novamente.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>O arquivo baixado não correspondeu ao que o PC enviou, então ele foi excluído. Baixe novamente.</value>
   </data>

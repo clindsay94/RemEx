@@ -536,7 +536,8 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         // degrade to no logger and discard every file-transfer failure diagnostic.
         _fileTransferViewModel ??= new FileTransferViewModel(
             Connection,
-            _services.GetRequiredService<ILogger<FileTransferViewModel>>());
+            _services.GetRequiredService<ILogger<FileTransferViewModel>>(),
+            _services.GetRequiredService<ILogger<FileTransferQueue>>());
         SetTransitionAndNavigate(7, _fileTransferViewModel);
     }
 

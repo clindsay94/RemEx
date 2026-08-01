@@ -58,12 +58,17 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     public FileTransferViewModel(
         ConnectionViewModel connection,
-        ILogger<FileTransferViewModel>? logger = null)
+        ILogger<FileTransferViewModel>? logger = null,
+        ILogger<FileTransferQueue>? queueLogger = null)
     {
         _connection = connection;
         _logger = logger ?? NullLogger<FileTransferViewModel>.Instance;
         _client = new FileTransferClient(connection);
-        TransferQueue = new FileTransferQueue();
+
+        // Passed explicitly, for the reason ShellViewModel already documents one level up: this view
+        // model is hand-constructed rather than DI-resolved, so a constructor default silently
+        // degrades to no logger and discards every transfer-failure diagnostic (RemEx-6tvh).
+        TransferQueue = new FileTransferQueue(post: null, logger: queueLogger);
         TransferQueue.Changed += OnQueueChanged;
         TransferQueue.ItemCompleted += OnTransferCompleted;
         _connection.PropertyChanged += OnConnectionPropertyChanged;

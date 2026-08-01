@@ -1,7 +1,9 @@
 using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.FileTransfer;
 using Remex.Desktop.ViewModels;
+using System.IO;
 using Xunit;
 
 namespace Remex.Desktop.Tests.ViewModels;
@@ -74,6 +76,87 @@ public class FileTransferQueueTests
         item.ErrorMessage.Should().NotBeNullOrWhiteSpace();
         item.ErrorMessage.Should().NotBe("FileTransfer_ErrGeneric",
             "a key resolving to its own name means the .resx entry is missing");
+    }
+
+    [Fact]
+    /// <summary>
+    /// A disk failure names the disk, instead of telling the user to check their pairing.
+    /// </summary>
+    /// <remarks>
+    /// RemEx-owc3 added an explicit flush so a full or unplugged destination fails loudly rather than
+    /// truncating silently. It then fell through to the generic sentence — "check the connected device
+    /// is still paired" — which is advice about the phone for a problem with the USB stick. The person
+    /// most likely to hit this is the one least able to work out what actually happened.
+    /// </remarks>
+    public async Task Work_ThatFailsOnDisk_NamesTheDiskRatherThanThePairing()
+    {
+        var queue = NewQueue();
+        var item = queue.Enqueue(
+            FileTransferQueueKind.Download, "big.iso", (_, _) => throw new IOException("There is not enough space on the disk."));
+
+        await item.Completion.Task;
+
+        item.State.Should().Be(TransferState.Failed);
+        item.ErrorMessage.Should().NotBeNullOrWhiteSpace();
+        item.ErrorMessage.Should().NotBe("FileTransfer_ErrDestinationUnavailable",
+            "a key resolving to its own name means the .resx entry is missing");
+        item.ErrorMessage.Should().NotBe(LocalizationService.Instance["FileTransfer_ErrGeneric"],
+            "the generic message tells the user to check their pairing, which is the wrong advice here");
+        item.ErrorMessage.Should().Be(LocalizationService.Instance["FileTransfer_ErrDestinationUnavailable"]);
+        item.ErrorMessage.Should().NotContain("enough space on the disk",
+            "the exception's own wording must not reach the panel — it is English in all nine languages");
+    }
+
+    [Fact]
+    /// <summary>
+    /// An upload that fails on disk describes the SOURCE, not a destination folder.
+    /// </summary>
+    /// <remarks>
+    /// THE CASE THAT MADE THIS DIRECTION-AWARE. Uploads read a local file, and the commonest
+    /// IOException there is a sharing violation — the document is open in Word or Excel. Reporting
+    /// that as "the download could not be saved, the drive you chose may be out of space" is not
+    /// vague, it is confidently wrong, which is a worse failure than the generic sentence this bead
+    /// set out to replace. (RemEx-6tvh)
+    /// </remarks>
+    public async Task Upload_ThatFailsOnDisk_DescribesTheSourceFileNotTheDestination()
+    {
+        var queue = NewQueue();
+        var item = queue.Enqueue(
+            FileTransferQueueKind.Upload, "budget.xlsx",
+            (_, _) => throw new IOException("The process cannot access the file because it is being used by another process."));
+
+        await item.Completion.Task;
+
+        item.ErrorMessage.Should().Be(LocalizationService.Instance["FileTransfer_ErrSourceUnavailable"]);
+        item.ErrorMessage.Should().NotBe(LocalizationService.Instance["FileTransfer_ErrDestinationUnavailable"],
+            "an upload has no destination folder on this machine to be out of space");
+        item.ErrorMessage.Should().NotBe("FileTransfer_ErrSourceUnavailable",
+            "a key resolving to its own name means the .resx entry is missing");
+    }
+
+    [Fact]
+    /// <summary>
+    /// The more specific failures keep their own messages even though they can derive from IOException.
+    /// </summary>
+    /// <remarks>
+    /// <c>FileTransferBacklogException</c> DERIVES FROM <c>IOException</c>, so the new arm could have
+    /// swallowed it and replaced a precise explanation with a generic disk one. It does not, and the
+    /// ordering that prevents it is enforced by the compiler rather than by this test — hoisting the
+    /// arm is CS8510, an unreachable pattern. (An injection was run specifically to check that, and it
+    /// failed to build rather than failing this test.) What this DOES pin is the mapping itself: that a
+    /// destination which cannot keep up still gets its own sentence rather than the disk one, which no
+    /// compiler can check. (RemEx-6tvh)
+    /// </remarks>
+    public async Task ADestinationTooSlowFailureIsNotReportedAsADiskProblem()
+    {
+        var queue = NewQueue();
+        var item = queue.Enqueue(
+            FileTransferQueueKind.Download, "big.iso", (_, _) => throw new FileTransferBacklogException(queuedBytes: 300_000_000, limitBytes: 268_435_456));
+
+        await item.Completion.Task;
+
+        item.ErrorMessage.Should().Be(LocalizationService.Instance["FileTransfer_ErrDestinationTooSlow"]);
+        item.ErrorMessage.Should().NotBe(LocalizationService.Instance["FileTransfer_ErrDestinationUnavailable"]);
     }
 
     /// <summary>

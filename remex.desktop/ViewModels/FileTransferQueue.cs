@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Core.Models;
@@ -119,6 +121,7 @@ public sealed partial class FileTransferQueueItem : ObservableObject
 public sealed class FileTransferQueue : IDisposable
 {
     private readonly Action<Action> _post;
+    private readonly ILogger<FileTransferQueue> _logger;
     private readonly ConcurrentQueue<FileTransferQueueItem> _pending = new();
     private readonly object _pumpLock = new();
     private bool _pumping;
@@ -139,9 +142,14 @@ public sealed class FileTransferQueue : IDisposable
     }
 
     /// <param name="post">UI-thread marshaller. Defaults to <see cref="Dispatcher.UIThread"/>; tests pass a synchronous invoker.</param>
-    public FileTransferQueue(Action<Action>? post)
+    /// <param name="logger">
+    /// Where a failure's real detail goes. Optional and null-defaulted to match the other view models,
+    /// so existing construction sites and tests are unaffected.
+    /// </param>
+    public FileTransferQueue(Action<Action>? post, ILogger<FileTransferQueue>? logger = null)
     {
         _post = post ?? (action => Dispatcher.UIThread.Post(action));
+        _logger = logger ?? NullLogger<FileTransferQueue>.Instance;
         LocalizationService.Instance.PropertyChanged += OnLocaleChanged;
     }
 
@@ -261,7 +269,11 @@ public sealed class FileTransferQueue : IDisposable
         }
         catch (Exception ex)
         {
-            _post(() => item.ErrorMessage = DescribeFailure(ex));
+            // Logged as well as shown. The message on screen is deliberately plain and short — it has
+            // to be usable by someone who does not know what an IOException is — so the exception is the
+            // only place the actual cause survives. Before this it survived nowhere (RemEx-6tvh).
+            _logger.LogWarning(ex, "File transfer {Name} failed.", item.FileName);
+            _post(() => item.ErrorMessage = DescribeFailure(ex, item.Kind));
             SetState(item, TransferState.Failed);
             item.Completion.TrySetResult();
         }
@@ -284,17 +296,40 @@ public sealed class FileTransferQueue : IDisposable
     /// <para>
     /// Dispatch is by TYPE, never by message text. A host refusal carries wording the phone wrote
     /// for a user and is shown verbatim; the failures the PC itself detects get localized
-    /// sentences; anything else falls back to a generic one with the detail left to the log. Matching
-    /// on message content instead would silently revert to raw English the first time a message was
-    /// reworded.
+    /// sentences; anything else falls back to a generic one, with the detail written to the log by the
+    /// caller. Matching on message content instead would silently revert to raw English the first time
+    /// a message was reworded.
+    /// </para>
+    /// <para>
+    /// The <see cref="IOException"/> arm exists because that is what a full or unplugged disk produces
+    /// once the transfer flushes explicitly (RemEx-owc3), and it used to fall through to the generic
+    /// sentence — which tells a user whose USB stick filled up to go and check their pairing.
+    /// </para>
+    /// <para>
+    /// IT NEEDS THE DIRECTION, which is why this takes a kind. A download writes a local DESTINATION,
+    /// so a disk failure there is about the folder it is being saved into. An upload READS a local
+    /// source, and the commonest IOException on that path is a sharing violation — the file is open in
+    /// Word or Excel — followed by the source file having moved. Describing that as "the folder you
+    /// chose may be full" is not vague, it is confidently wrong, which is worse than the generic
+    /// sentence it replaced. (RemEx-6tvh)
+    /// </para>
+    /// <para>
+    /// The arm is placed LAST because all three preceding exception types derive from
+    /// <see cref="IOException"/> — but that ordering does not rest on anyone remembering it: hoisting
+    /// this arm is a COMPILE ERROR (CS8510, unreachable pattern), so the switch cannot silently start
+    /// reporting a host refusal or a slow destination as a disk fault.
     /// </para>
     /// </remarks>
-    private static string DescribeFailure(Exception ex) => ex switch
+    private static string DescribeFailure(Exception ex, FileTransferQueueKind kind) => ex switch
     {
         FileTransferHostException host => host.HostMessage,
         FileTransferIntegrityException => LocalizationService.Instance["FileTransfer_ErrIntegrity"],
         FileTransferBacklogException => LocalizationService.Instance["FileTransfer_ErrDestinationTooSlow"],
         TimeoutException => LocalizationService.Instance["FileTransfer_ErrStoppedResponding"],
+        IOException => LocalizationService.Instance[
+            kind == FileTransferQueueKind.Download
+                ? "FileTransfer_ErrDestinationUnavailable"
+                : "FileTransfer_ErrSourceUnavailable"],
         _ => LocalizationService.Instance["FileTransfer_ErrGeneric"],
     };
 }

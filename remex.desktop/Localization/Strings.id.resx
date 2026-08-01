@@ -2769,6 +2769,12 @@ Anda dapat mengubah:
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>Berkas datang lebih cepat daripada kemampuan folder yang Anda pilih untuk menyimpannya, sehingga unduhan tidak dapat diselesaikan. Coba simpan ke folder di drive utama komputer ini, bukan ke flash disk USB atau folder jaringan.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>Unduhan tidak dapat disimpan. Drive yang Anda pilih mungkin kehabisan ruang, atau flash disk USB mungkin telah dicabut. Periksa apakah masih ada ruang dan drive masih tersambung, lalu coba lagi.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>Berkas tidak dapat dibaca. Mungkin sedang terbuka di program lain, atau drive tempat berkas itu berada telah dicabut. Tutup berkas di program lain, pastikan drive tersambung, lalu coba lagi.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>Berkas yang diunduh tidak cocok dengan yang dikirim PC, jadi berkas itu dihapus. Coba unduh lagi.</value>
   </data>

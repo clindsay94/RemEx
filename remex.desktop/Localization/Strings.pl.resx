@@ -2767,6 +2767,12 @@ Możesz zmienić:
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>Plik przychodzi szybciej, niż wybrany folder może go zapisać, więc pobieranie nie mogło się zakończyć. Spróbuj zapisać w folderze na dysku głównym tego komputera zamiast na pendrivie lub w folderze sieciowym.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>Nie udało się zapisać pobranego pliku. Na wybranym dysku może brakować miejsca lub pendrive mógł zostać odłączony. Sprawdź, czy jest wolne miejsce i czy dysk jest nadal podłączony, a potem spróbuj ponownie.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>Nie udało się odczytać pliku. Może być otwarty w innym programie lub dysk, na którym się znajduje, został odłączony. Zamknij go w innych programach, sprawdź, czy dysk jest podłączony, a potem spróbuj ponownie.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>Pobrany plik nie zgadzał się z tym, co wysłał komputer, więc został usunięty. Pobierz go ponownie.</value>
   </data>

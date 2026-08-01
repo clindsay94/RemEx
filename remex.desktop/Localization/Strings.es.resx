@@ -2780,6 +2780,12 @@ Puedes cambiar:
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>El archivo llega más rápido de lo que la carpeta elegida puede guardarlo, así que la descarga no pudo terminar. Prueba a guardarlo en una carpeta de la unidad principal de este equipo en lugar de una memoria USB o una carpeta de red.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>No se pudo guardar la descarga. Puede que la unidad elegida no tenga espacio o que se haya desconectado una memoria USB. Comprueba que haya espacio y que la unidad siga conectada, y vuelve a intentarlo.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>No se pudo leer el archivo. Puede que esté abierto en otro programa o que se haya desconectado la unidad donde está. Ciérralo en los demás programas, comprueba que la unidad siga conectada y vuelve a intentarlo.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>El archivo descargado no coincidía con el que envió el PC, así que se eliminó. Vuelve a descargarlo.</value>
   </data>

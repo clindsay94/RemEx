@@ -2772,6 +2772,12 @@ You can change:
   <data name="FileTransfer_ErrDestinationTooSlow" xml:space="preserve">
     <value>The file is arriving faster than the folder you chose can save it, so the download could not finish. Try saving to a folder on this computer's main drive instead of a USB stick or network folder.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationUnavailable" xml:space="preserve">
+    <value>The download could not be saved. The drive you chose may be out of space, or a USB stick may have been unplugged. Check there is space and the drive is still connected, then try again.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
+    <value>The file could not be read. It may be open in another program, or the drive it is on may have been disconnected. Close it elsewhere, check the drive is connected, then try again.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>The downloaded file did not match what the PC sent, so it was deleted. Try downloading it again.</value>
   </data>
