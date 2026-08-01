@@ -71,8 +71,65 @@ public sealed class AppVersionTests
 
         Assert.False(string.IsNullOrEmpty(informational));
 
-        var plus = informational!.IndexOf('+');
-        var expected = plus >= 0 ? informational[..plus] : informational;
-        Assert.Equal(expected, AppVersion.Resolve(DesktopAssembly));
+        // Was a hand-rolled copy of Resolve's old '+' trimming, which passed only because our
+        // informational version happens to be three-part; with a four-part or prerelease <Version>
+        // its expectation and Resolve would diverge and it would fail for a reason unrelated to what
+        // it claims to test. Now it asks the same reduction Resolve uses (RemEx-8jzu).
+        Assert.Equal(AppVersion.Normalize(informational), AppVersion.Resolve(DesktopAssembly));
+
+        // And the property the name actually promises, which the mirror never checked.
+        Assert.NotEqual(DesktopAssembly.GetName().Version!.ToString(), AppVersion.Resolve(DesktopAssembly));
+    }
+
+    /// <summary>
+    /// <see cref="AppVersion.Normalize"/> reduces a version reported by a REMOTE host to the same
+    /// display form this app uses for its own (RemEx-8jzu).
+    /// </summary>
+    /// <remarks>
+    /// The host builds its capabilities version from <c>GetName().Version</c>, which is always
+    /// widened to four components, so the About page showed "2.4.0" for this app and "2.4.0.0" for
+    /// the machine it was running on, one divider apart. Normalising at the display layer keeps the
+    /// wire payload — which the Android client parses — untouched.
+    /// </remarks>
+    [Theory]
+    [InlineData("2.4.0.0", "2.4.0")]
+    [InlineData("2.4.0", "2.4.0")]
+    [InlineData("2.4.1.7", "2.4.1")]
+    [InlineData("2.4.0+abc123", "2.4.0")]
+    [InlineData("2.4.0.0+abc123", "2.4.0")]
+    [InlineData("2.4", "2.4")]
+    public void Normalize_ReducesToTheDisplayForm(string raw, string expected)
+    {
+        Assert.Equal(expected, AppVersion.Normalize(raw));
+    }
+
+    [Fact]
+    public void Normalize_LeavesAValueThatIsNotAVersionAlone()
+    {
+        // The host sends the literal "unknown" when it cannot determine its own version, and the
+        // About page tests for exactly that string to decide what to render. Blanking or mangling it
+        // would turn a diagnosable value into an empty row.
+        Assert.Equal("unknown", AppVersion.Normalize("unknown"));
+        Assert.Equal("2.4.0-beta", AppVersion.Normalize("2.4.0-beta"));
+    }
+
+    [Fact]
+    public void Normalize_TreatsMissingInputAsAbsentRatherThanThrowing()
+    {
+        Assert.Equal(string.Empty, AppVersion.Normalize(null));
+        Assert.Equal(string.Empty, AppVersion.Normalize(""));
+        Assert.Equal(string.Empty, AppVersion.Normalize("   "));
+    }
+
+    [Fact]
+    public void Normalize_AgreesWithResolve_ForThisAssembly()
+    {
+        // The property that actually matters: the two rows on the About page cannot disagree,
+        // because both now go through the same reduction. Feeding Resolve's own output back through
+        // Normalize must be a no-op, and the four-part assembly version must reduce to it.
+        Assert.Equal(AppVersion.Display, AppVersion.Normalize(AppVersion.Display));
+        Assert.Equal(
+            AppVersion.Display,
+            AppVersion.Normalize(DesktopAssembly.GetName().Version!.ToString()));
     }
 }

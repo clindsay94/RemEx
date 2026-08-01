@@ -232,7 +232,10 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         }
 
         var caps = _connection.HostCapabilities;
-        var version = caps.Version;
+        // Normalised for DISPLAY ONLY — the wire value is untouched, so nothing the Android client
+        // parses changes. The host still reports four components ("2.4.0.0") while this app shows
+        // its own as three, and the two sit one divider apart on this page (RemEx-8jzu).
+        var version = AppVersion.Normalize(caps.Version);
         var platform = caps.Platform;
         // Localized label, not the raw wire token: RuntimeMode "service" is legacy naming for a
         // non-interactive Windows process, not a service install (RemEx-9z0f).
