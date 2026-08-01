@@ -148,6 +148,26 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// LAN address phones on the same network should use to reach this PC's host.
     /// Computed lazily from the loopback host address.
     /// </summary>
+    /// <remarks>
+    /// Recognises loopback with <see cref="IsLoopbackAddress"/> rather than its own literal list.
+    /// It previously tested <c>uri.Host is "localhost" or "127.0.0.1" or "::1"</c>, which missed two
+    /// forms and, on missing them, fell through to returning the address UNCHANGED — offering a
+    /// loopback URL as the address to type into a phone, which can never connect and reports no
+    /// error (RemEx-eskd). <c>Uri.Host</c> returns the bracketed <c>"[::1]"</c> for an IPv6 literal
+    /// so that arm never matched anything, and all of <c>127.0.0.0/8</c> is loopback while only
+    /// <c>127.0.0.1</c> was listed.
+    ///
+    /// LATENT IN THIS PROPERTY ONLY, and the distinction matters: nothing binds
+    /// <see cref="LanHostAddress"/> today (RemEx-19al decides whether to wire it up or delete it),
+    /// so no user hit it HERE. The identical defect in <c>GenerateQrCodeAsync</c> was NOT latent —
+    /// that command is bound in two views and put the loopback host straight into the pairing QR
+    /// payload. Both are fixed under RemEx-eskd. Do not read "latent" as applying to the defect.
+    ///
+    /// This is the display half of the split described on RemEx-19pj and grants no privilege: the
+    /// only thing widening it changes is whether the LAN IP is substituted into a string shown to
+    /// the user. The pairing-bypass and trust-on-first-use gate is <see cref="IsLoopbackHost"/>,
+    /// which is deliberately NOT changed here — it is behind operator sign-off (RemEx-19pj).
+    /// </remarks>
     public string? LanHostAddress
     {
         get
@@ -155,7 +175,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
             try
             {
                 var uri = new Uri(HostAddress);
-                if (uri.Host is "localhost" or "127.0.0.1" or "::1")
+                if (IsLoopbackAddress(uri))
                 {
                     var ip = _cachedLocalIpv4 ??= GetLocalIpv4Address();
                     if (ip is null) return null;
@@ -1397,17 +1417,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         try
         {
             var uri = new Uri(HostAddress);
-            var host = uri.Host;
+            // GetLocalIpv4Address by method group, NOT the _cachedLocalIpv4 field. The address is
+            // derived from the outbound route, so it changes on VPN up/down, Wi-Fi/Ethernet switch,
+            // dock/undock and DHCP renewal — and remex.agent autostarts at logon and runs all
+            // session. Caching it would make every later QR encode a dead address with no error on
+            // either end, which is the exact symptom this fix exists to remove, reintroduced by
+            // another route. A UDP connect that sends no data is not worth a staleness window here.
+            var host = ResolvePhoneReachableHost(uri, GetLocalIpv4Address);
             var port = uri.Port > 0 ? uri.Port : RemexConstants.DefaultPort;
-
-            // If the configured host is loopback, substitute the machine's LAN IPv4
-            // address so the QR code is scannable from a phone on the same network.
-            if (host == "localhost" || host == "127.0.0.1" || host == "::1")
-            {
-                var lanIp = GetLocalIpv4Address();
-                if (lanIp is not null)
-                    host = lanIp;
-            }
 
             var certService = App.Services.GetService<ICertificateService>() // optional service
                            ?? App.EmbeddedHostServices?.GetService<ICertificateService>(); // optional service
@@ -1520,6 +1537,30 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         }
     }
 
+    /// <summary>
+    /// The host a PHONE should be told to connect to, given the address this PC's UI is using.
+    /// Loopback becomes this machine's LAN IPv4 where one exists, because a phone cannot reach
+    /// loopback; anything else is already reachable and is returned unchanged.
+    /// </summary>
+    /// <remarks>
+    /// Extracted and made <c>internal</c> so it can be tested directly. The QR path is where this
+    /// defect actually shipped — <c>GenerateQrCodeCommand</c> is bound in ConnectionView and
+    /// SettingsView — but its only output is a rendered QR bitmap, so asserting on the substituted
+    /// host through the command would mean decoding a PNG and standing up an Avalonia render stack.
+    /// A named function is both cheaper to test and clearer about what the step is for.
+    ///
+    /// It previously inlined <c>host is "localhost" or "127.0.0.1" or "::1"</c>, which missed the
+    /// bracketed IPv6 form (<c>Uri.Host</c> keeps the brackets, so <c>"::1"</c> never matched) and
+    /// everything in <c>127.0.0.0/8</c> past <c>127.0.0.1</c>. On a miss the loopback host went into
+    /// the pairing payload unchanged and the phone scanned an address it can never reach — no error,
+    /// just a pairing that silently cannot work (RemEx-eskd).
+    ///
+    /// The LAN address is supplied lazily because obtaining it opens a socket; a non-loopback host
+    /// must not pay for that.
+    /// </remarks>
+    internal static string ResolvePhoneReachableHost(Uri uri, Func<string?> lanIpv4Provider) =>
+        IsLoopbackAddress(uri) ? lanIpv4Provider() ?? uri.Host : uri.Host;
+
     private static bool IsLoopbackHost(Uri uri) =>
         uri.Host is "localhost" or "127.0.0.1" or "::1";
 
@@ -1537,8 +1578,28 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
     /// while this UI waited for one — a dashboard that never populates behind a healthy "Connected".
     ///
     /// The two are not merged because <see cref="IsLoopbackHost"/> also gates the pairing bypass and
-    /// trust-on-first-use, which CLAUDE.md places behind explicit sign-off. Aligning it is filed
-    /// separately (RemEx-ite8).
+    /// trust-on-first-use, which CLAUDE.md places behind explicit sign-off. Aligning it is filed as
+    /// RemEx-19pj and is waiting on the operator, not on anyone's analysis.
+    ///
+    /// THE FULL INVENTORY, because a vague "don't duplicate this" is what let the same miss survive
+    /// in four places at once. These are the sites that CARRY OR ONCE CARRIED their own literal
+    /// copy of the predicate — not every site that asks the question, since
+    /// <c>UseInProcessTelemetryIfLocal</c> asks it too but has always delegated here:
+    ///
+    ///   1. <see cref="IsLoopbackHost"/> — 3 literals. Gates the pairing bypass and
+    ///      trust-on-first-use. NOT aligned; waiting on operator sign-off (RemEx-19pj).
+    ///   2. <c>RemoteDesktopService.PrepareTlsValidationAsync</c> (:423) — 3 literals. Gates
+    ///      trust-on-first-use for /ws/desktop. Also NOT aligned, same reason, and it was missing
+    ///      from RemEx-19pj's stated scope until RemEx-eskd added it.
+    ///   3. This method — correct.
+    ///   4. <see cref="LanHostAddress"/> — was a literal copy, now calls this (RemEx-eskd).
+    ///   5. <c>GenerateQrCodeAsync</c> — was a literal copy, now calls this (RemEx-eskd). This is
+    ///      the one that actually shipped the bug: the QR command is bound in two views, so a
+    ///      loopback host went into the pairing payload and the phone scanned an unreachable
+    ///      address.
+    ///
+    /// So two literal copies remain and both are on the sign-off side. Do not add a sixth: the
+    /// bracketed-IPv6 miss survived precisely because each site re-derived the predicate.
     /// </remarks>
     private static bool IsLoopbackAddress(Uri uri) => uri.IsLoopback;
 
