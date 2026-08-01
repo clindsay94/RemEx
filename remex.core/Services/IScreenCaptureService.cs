@@ -111,7 +111,12 @@ public interface IScreenCaptureService
                 new DesktopDisplayInfo
                 {
                     DisplayId = "default",
-                    PersistentDisplayKey = "default",
+                    // No persistent key: this branch could not enumerate displays at all, so the
+                    // host has no stable identity to offer and must not invent one. Empty is the
+                    // documented way to say that; "default" claimed an identity nobody established.
+                    // Costs nothing — there is exactly one display here, and the client selects the
+                    // primary when it remembers nothing. (RemEx-kiy1)
+                    PersistentDisplayKey = string.Empty,
                     Name = "Display",
                     IsPrimary = true,
                     Left = left,

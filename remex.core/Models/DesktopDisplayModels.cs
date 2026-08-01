@@ -85,9 +85,9 @@ public sealed record DesktopDisplayInfo
     /// <see cref="DesktopDisplayCatalog"/> before asking to capture it.
     /// <para>
     /// Linux derives it from the display's own identity — its UUID where available, otherwise the
-    /// output name; note the portal and single-output paths fall back to a literal <c>"default"</c>,
-    /// which identifies nothing in particular. Windows derives it from the monitor's device interface
-    /// path. (RemEx-zftu; before that fix Windows assigned it the same session-scoped string as
+    /// output name; the paths that cannot enumerate outputs at all send EMPTY rather than a literal
+    /// standing in for an identity nobody established (RemEx-kiy1). Windows derives it from the
+    /// monitor's device interface path. (RemEx-zftu; before that fix Windows assigned it the same session-scoped string as
     /// <see cref="DisplayId"/>, and it did not survive anything.)
     /// </para>
     /// <para>
@@ -110,13 +110,46 @@ public sealed record DesktopDisplayInfo
     /// user to a different physical screen later. Remember nothing instead.
     /// </para>
     /// <para>
-    /// THE WINDOWS HOST sends empty rather than an unstable-but-plausible value, because nothing on
-    /// the wire tells a client how much to trust the key and a degraded one would be stored as though
-    /// it were good (RemEx-i50k). THE LINUX HOST DOES NOT YET DO THIS: its xrandr path sets the key to
-    /// the output name, which is also its <see cref="DisplayId"/>. That is far less harmful than the
-    /// Windows case was — DRM connector names like <c>DP-1</c> are port-scoped and do not renumber
-    /// when other monitors change — but it does mean a non-empty key is not, on its own, proof that
-    /// the host had a stable source (RemEx-kiy1).
+    /// THE TWO HOSTS DIFFER HERE, deliberately, and a client must not assume otherwise. WINDOWS sends
+    /// empty whenever it has no monitor interface path, because its only alternative was the adapter
+    /// output name — byte-identical to <see cref="DisplayId"/>, and nothing on the wire would have told
+    /// a client the difference (RemEx-i50k). LINUX keeps sending its identifier on the paths where it
+    /// has one, and sends empty only from the fallbacks that could not enumerate outputs at all
+    /// (RemEx-kiy1). So on Linux a non-empty key is NOT by itself evidence the host had a
+    /// panel-identifying source.
+    /// </para>
+    /// <para>
+    /// WHY LINUX KEEPS A KEY THAT EQUALS ITS DisplayId, when Windows removing exactly that was the
+    /// point of RemEx-i50k. The axis is PORT-scoped versus ENUMERATION-scoped, not whether the two
+    /// strings match:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>
+    /// A Windows adapter output name is an enumeration index. Unplug another monitor and the survivor
+    /// takes a different number, so a stored key resolves to a DIFFERENT physical screen. That silent
+    /// wrong-monitor failure is what RemEx-zftu and RemEx-i50k exist for.
+    /// </description></item>
+    /// <item><description>
+    /// A DRM connector name like <c>DP-1</c> or <c>HDMI-A-1</c> names a PORT. It does not renumber when
+    /// other monitors are added or removed, so it keeps pointing at the same output. Where it does
+    /// change — a different graphics driver, or multi-GPU enumeration order — the string changes, so
+    /// the key simply stops matching and the client falls back to the primary display. A lost
+    /// preference, which is visible and harmless, not a wrong screen.
+    /// </description></item>
+    /// </list>
+    /// <para>
+    /// THE ASYMMETRY THAT REMAINS, stated rather than glossed: the Windows interface path embeds the
+    /// monitor's EDID hardware id as well as the output, so it identifies panel AND port. A connector
+    /// name identifies the port only. Plug a DIFFERENT monitor into the same port and Windows' key
+    /// changes — no match, fall back to primary — while Linux's key is unchanged and the client
+    /// silently gets a different physical panel. That is the same class of failure this field exists to
+    /// prevent, merely much rarer, and it is the reason Linux is not simply "as good as" Windows here.
+    /// Two GPUs presenting colliding connector names is a second, rarer instance.
+    /// </para>
+    /// <para>
+    /// The KScreen/kscreen-doctor path prefers a <c>uuid</c> where one is available, which is
+    /// EDID-derived and so does identify the panel; it falls back to the connector name, which puts it
+    /// in the case above.
     /// </para>
     /// </remarks>
     [JsonPropertyName("persistentDisplayKey")]

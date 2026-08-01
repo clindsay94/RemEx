@@ -603,16 +603,30 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         _activeTop = top;
     }
 
-    private DesktopDisplayInfo CreateFallbackDisplay() => new()
+    private DesktopDisplayInfo CreateFallbackDisplay() =>
+        CreateFallbackDisplay(_screenLeft, _screenTop, _screenWidth, _screenHeight);
+
+    /// <summary>
+    /// The single-display descriptor used when the host cannot enumerate its outputs.
+    /// </summary>
+    /// <remarks>
+    /// Static and shared by all three fallback sites, which each carried their own copy of this
+    /// literal — which is how they came to disagree with the documented contract in the first place.
+    /// <see cref="DesktopDisplayInfo.PersistentDisplayKey"/> is EMPTY, not <c>"default"</c>: this
+    /// branch established no stable identity and must not claim one. <c>DisplayId</c> stays
+    /// <c>"default"</c> because selection needs it, and because <c>GetDisplayCatalog</c> keys off that
+    /// exact sentinel to decide the host has no real displays to advertise. (RemEx-kiy1)
+    /// </remarks>
+    internal static DesktopDisplayInfo CreateFallbackDisplay(int left, int top, int width, int height) => new()
     {
         DisplayId = "default",
-        PersistentDisplayKey = "default",
+        PersistentDisplayKey = string.Empty,
         Name = "Display",
         IsPrimary = true,
-        Left = _screenLeft,
-        Top = _screenTop,
-        Width = _screenWidth,
-        Height = _screenHeight,
+        Left = left,
+        Top = top,
+        Width = width,
+        Height = height,
     };
 
     /// <summary>
@@ -1178,19 +1192,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                         _screenWidth = w;
                         _screenHeight = h;
                         _detectedDisplays =
-                        [
-                            new DesktopDisplayInfo
-                            {
-                                DisplayId = "default",
-                                PersistentDisplayKey = "default",
-                                Name = "Display",
-                                IsPrimary = true,
-                                Left = 0,
-                                Top = 0,
-                                Width = w,
-                                Height = h,
-                            },
-                        ];
+                        [CreateFallbackDisplay(0, 0, w, h)];
                         SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
                         return true;
                     }
@@ -1233,19 +1235,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                         _screenWidth = w;
                         _screenHeight = h;
                         _detectedDisplays =
-                        [
-                            new DesktopDisplayInfo
-                            {
-                                DisplayId = "default",
-                                PersistentDisplayKey = "default",
-                                Name = "Display",
-                                IsPrimary = true,
-                                Left = 0,
-                                Top = 0,
-                                Width = w,
-                                Height = h,
-                            },
-                        ];
+                        [CreateFallbackDisplay(0, 0, w, h)];
                         SetActiveBounds(_screenWidth, _screenHeight, _screenLeft, _screenTop);
                         return true;
                     }
