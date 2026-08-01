@@ -2775,6 +2775,12 @@ Anda dapat mengubah:
   <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
     <value>Berkas tidak dapat dibaca. Mungkin sedang terbuka di program lain, atau drive tempat berkas itu berada telah dicabut. Tutup berkas di program lain, pastikan drive tersambung, lalu coba lagi.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>RemEx tidak memiliki izin untuk menyimpan unduhan di sana. Folder mungkin terlindungi, atau berkas yang akan diganti bersifat hanya-baca. Coba folder lain atau nama berkas lain — biasanya folder Dokumen atau Unduhan bisa.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>RemEx tidak memiliki izin untuk membaca berkas itu. Berkas mungkin milik pengguna lain, atau izinnya tidak mengizinkan hal itu. Coba berkas di folder Anda sendiri, atau mintalah akses kepada pemilik PC.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>Berkas yang diunduh tidak cocok dengan yang dikirim PC, jadi berkas itu dihapus. Coba unduh lagi.</value>
   </data>

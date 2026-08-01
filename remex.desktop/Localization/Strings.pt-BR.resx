@@ -2772,6 +2772,12 @@ Você pode mudar:
   <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
     <value>Não foi possível ler o arquivo. Ele pode estar aberto em outro programa, ou a unidade onde ele está pode ter sido desconectada. Feche-o nos outros programas, verifique se a unidade está conectada e tente novamente.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>O RemEx não tem permissão para salvar o download ali. A pasta pode estar protegida, ou o arquivo que será substituído é somente leitura. Tente outra pasta ou outro nome de arquivo — Documentos ou Downloads normalmente funcionam.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>O RemEx não tem permissão para ler esse arquivo. Ele pode pertencer a outro usuário, ou suas permissões não permitem isso. Tente um arquivo nas suas próprias pastas, ou peça acesso ao proprietário do PC.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>O arquivo baixado não correspondeu ao que o PC enviou, então ele foi excluído. Baixe novamente.</value>
   </data>

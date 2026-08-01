@@ -2778,6 +2778,12 @@ You can change:
   <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
     <value>The file could not be read. It may be open in another program, or the drive it is on may have been disconnected. Close it elsewhere, check the drive is connected, then try again.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>RemEx does not have permission to save the download there. The folder may be protected, or the file being replaced may be read-only. Try a different folder or a different file name — your Documents or Downloads folder will normally work.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>RemEx does not have permission to read that file. It may belong to another user, or its permissions may not allow it. Try a file in your own folders, or ask the PC's owner for access.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>The downloaded file did not match what the PC sent, so it was deleted. Try downloading it again.</value>
   </data>

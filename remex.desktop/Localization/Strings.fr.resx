@@ -2772,6 +2772,12 @@ Vous pouvez modifier :
   <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
     <value>Le fichier n'a pas pu être lu. Il est peut-être ouvert dans un autre programme, ou le disque sur lequel il se trouve a été débranché. Fermez-le ailleurs, vérifiez que le disque est branché, puis réessayez.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>RemEx n'a pas l'autorisation d'enregistrer le téléchargement à cet endroit. Le dossier est peut-être protégé, ou le fichier à remplacer est en lecture seule. Essayez un autre dossier ou un autre nom de fichier — Documents ou Téléchargements conviennent en général.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>RemEx n'a pas l'autorisation de lire ce fichier. Il appartient peut-être à un autre utilisateur, ou ses autorisations ne le permettent pas. Essayez un fichier dans vos propres dossiers, ou demandez l'accès au propriétaire du PC.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>Le fichier téléchargé ne correspondait pas à celui envoyé par le PC ; il a été supprimé. Retéléchargez-le.</value>
   </data>

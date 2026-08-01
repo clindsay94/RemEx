@@ -136,6 +136,53 @@ public class FileTransferQueueTests
 
     [Fact]
     /// <summary>
+    /// A permissions failure names the permission, and does so per direction.
+    /// </summary>
+    /// <remarks>
+    /// THE CASE THE DISK ARM MISSED. <c>UnauthorizedAccessException</c> derives from
+    /// <c>SystemException</c>, not <c>IOException</c>, so adding a disk arm did nothing for it and a
+    /// read-only folder kept being reported as a pairing problem. Sitting outside that hierarchy is
+    /// precisely why it was overlooked, which is why it is asserted rather than assumed. (RemEx-60li)
+    /// </remarks>
+    public async Task APermissionsFailure_NamesThePermissionAndTheDirection()
+    {
+        var download = NewQueue();
+        var saving = download.Enqueue(
+            FileTransferQueueKind.Download, "report.pdf",
+            (_, _) => throw new UnauthorizedAccessException("Access to the path is denied."));
+
+        var upload = NewQueue();
+        var reading = upload.Enqueue(
+            FileTransferQueueKind.Upload, "report.pdf",
+            (_, _) => throw new UnauthorizedAccessException("Access to the path is denied."));
+
+        await saving.Completion.Task;
+        await reading.Completion.Task;
+
+        saving.ErrorMessage.Should().Be(LocalizationService.Instance["FileTransfer_ErrDestinationNotAllowed"]);
+        reading.ErrorMessage.Should().Be(LocalizationService.Instance["FileTransfer_ErrSourceNotAllowed"]);
+
+        // Each must resolve to real text, and neither may be the pairing advice this replaced.
+        foreach (var message in new[] { saving.ErrorMessage, reading.ErrorMessage })
+        {
+            message.Should().NotBeNullOrWhiteSpace();
+            message.Should().NotStartWith("FileTransfer_Err",
+                "a key resolving to its own name means the .resx entry is missing");
+            message.Should().NotBe(LocalizationService.Instance["FileTransfer_ErrGeneric"]);
+        }
+
+        // A denied path is not a full disk, and saying so would send the user to check free space.
+        saving.ErrorMessage.Should().NotBe(LocalizationService.Instance["FileTransfer_ErrDestinationUnavailable"]);
+        reading.ErrorMessage.Should().NotBe(LocalizationService.Instance["FileTransfer_ErrSourceUnavailable"]);
+
+        // Without this the direction proof leans on the two resx values happening to differ: make them
+        // identical by copy-paste and a direction-blind implementation would pass both assertions above.
+        saving.ErrorMessage.Should().NotBe(reading.ErrorMessage,
+            "the two directions must not collapse to one message");
+    }
+
+    [Fact]
+    /// <summary>
     /// The more specific failures keep their own messages even though they can derive from IOException.
     /// </summary>
     /// <remarks>

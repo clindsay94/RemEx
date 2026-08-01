@@ -314,10 +314,19 @@ public sealed class FileTransferQueue : IDisposable
     /// sentence it replaced. (RemEx-6tvh)
     /// </para>
     /// <para>
-    /// The arm is placed LAST because all three preceding exception types derive from
-    /// <see cref="IOException"/> — but that ordering does not rest on anyone remembering it: hoisting
+    /// The arm is placed after the three <see cref="IOException"/>-derived transfer exceptions — the
+    /// host refusal, the integrity failure and the backlog abandonment, all of which would otherwise be
+    /// swallowed by it — but that ordering does not rest on anyone remembering it: hoisting
     /// this arm is a COMPILE ERROR (CS8510, unreachable pattern), so the switch cannot silently start
     /// reporting a host refusal or a slow destination as a disk fault.
+    /// </para>
+    /// <para>
+    /// PERMISSIONS ARE A SEPARATE ARM BECAUSE THEY ARE NOT AN IOException.
+    /// <see cref="UnauthorizedAccessException"/> derives from <c>SystemException</c>, so it matched
+    /// nothing above and fell through to the generic "check your pairing" — for a read-only folder, a
+    /// download into a protected location, or a file whose ACL denies reading, none of which have
+    /// anything to do with pairing. That it sits outside the IOException hierarchy is exactly why it
+    /// was missed when the disk arm was added (RemEx-60li).
     /// </para>
     /// </remarks>
     private static string DescribeFailure(Exception ex, FileTransferQueueKind kind) => ex switch
@@ -330,6 +339,10 @@ public sealed class FileTransferQueue : IDisposable
             kind == FileTransferQueueKind.Download
                 ? "FileTransfer_ErrDestinationUnavailable"
                 : "FileTransfer_ErrSourceUnavailable"],
+        UnauthorizedAccessException => LocalizationService.Instance[
+            kind == FileTransferQueueKind.Download
+                ? "FileTransfer_ErrDestinationNotAllowed"
+                : "FileTransfer_ErrSourceNotAllowed"],
         _ => LocalizationService.Instance["FileTransfer_ErrGeneric"],
     };
 }

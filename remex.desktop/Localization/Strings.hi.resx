@@ -2772,6 +2772,12 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
     <value>फ़ाइल पढ़ी नहीं जा सकी। हो सकता है वह किसी दूसरे प्रोग्राम में खुली हो, या जिस ड्राइव पर वह है वह निकाल दी गई हो। उसे दूसरे प्रोग्राम में बंद करें, जाँचें कि ड्राइव जुड़ी है, फिर दोबारा कोशिश करें।</value>
   </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>RemEx के पास डाउनलोड को वहाँ सहेजने की अनुमति नहीं है। हो सकता है फ़ोल्डर सुरक्षित हो, या जिस फ़ाइल को बदला जा रहा है वह केवल पढ़ने के लिए हो। कोई दूसरा फ़ोल्डर या दूसरा नाम आज़माएँ — आमतौर पर दस्तावेज़ या डाउनलोड फ़ोल्डर काम करता है।</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>RemEx के पास उस फ़ाइल को पढ़ने की अनुमति नहीं है। हो सकता है वह किसी दूसरे उपयोगकर्ता की हो, या उसकी अनुमतियाँ इसकी इजाज़त न दें। अपने फ़ोल्डरों की कोई फ़ाइल आज़माएँ, या PC के मालिक से पहुँच माँगें।</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>डाउनलोड की गई फ़ाइल PC से भेजी गई फ़ाइल से मेल नहीं खाती, इसलिए उसे हटा दिया गया। फिर से डाउनलोड करें।</value>
   </data>

@@ -2786,6 +2786,12 @@ Puedes cambiar:
   <data name="FileTransfer_ErrSourceUnavailable" xml:space="preserve">
     <value>No se pudo leer el archivo. Puede que esté abierto en otro programa o que se haya desconectado la unidad donde está. Ciérralo en los demás programas, comprueba que la unidad siga conectada y vuelve a intentarlo.</value>
   </data>
+  <data name="FileTransfer_ErrDestinationNotAllowed" xml:space="preserve">
+    <value>RemEx no tiene permiso para guardar la descarga ahí. Puede que la carpeta esté protegida o que el archivo que se va a reemplazar sea de solo lectura. Prueba con otra carpeta u otro nombre de archivo: normalmente Documentos o Descargas funciona.</value>
+  </data>
+  <data name="FileTransfer_ErrSourceNotAllowed" xml:space="preserve">
+    <value>RemEx no tiene permiso para leer ese archivo. Puede que pertenezca a otro usuario o que sus permisos no lo permitan. Prueba con un archivo de tus propias carpetas o pide acceso al propietario del PC.</value>
+  </data>
   <data name="FileTransfer_ErrIntegrity" xml:space="preserve">
     <value>El archivo descargado no coincidía con el que envió el PC, así que se eliminó. Vuelve a descargarlo.</value>
   </data>
