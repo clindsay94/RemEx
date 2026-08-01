@@ -127,6 +127,97 @@ public sealed class SensorIndexTests
     }
 
     [Fact]
+    public void AlertsStillFireAfterADisconnectAndReconnect()
+    {
+        // THE BEAD, and a wider failure than the case-collision one next door: this lost alerts for
+        // EVERY sensor, after an ordinary reconnect.
+        //
+        // Disconnecting detaches every handler and empties the subscription set. That half always
+        // worked. What did not is the re-attach: the staged template card keeps its view model across
+        // the disconnect, so on the next tick the "first time seeing this sensor" branch — which was
+        // the only place that wired the handler — is skipped, and nothing ever wired it again.
+        // Threshold alerts were then dead for the life of the process, with cards still updating so
+        // the dashboard looked entirely healthy.
+        var vm = NewDashboard();
+
+        var fired = new List<SensorAlert>();
+        vm.SensorAlertFired += fired.Add;
+
+        vm.ApplyTelemetry(new TelemetryPayload
+        {
+            Sensors = new List<SensorReading> { new() { Id = "cpu-pkg-0", Name = "CPU Package", Value = 10 } },
+        });
+
+        foreach (var card in vm.StagedCards.Where(c => c.Sensor is not null))
+        {
+            card.Sensor!.Alert = new SensorAlert
+            {
+                SensorName = card.Sensor.Name,
+                Threshold = 50,
+                Direction = AlertDirection.Above,
+                Severity = AlertSeverity.Warning,
+            };
+        }
+
+        // The disconnect. Handlers detached, set emptied — but the view model survives on its card.
+        vm.CleanupSensorSubscriptions();
+
+        // Reconnect: the same sensor arrives again, now over its threshold.
+        vm.ApplyTelemetry(new TelemetryPayload
+        {
+            Sensors = new List<SensorReading> { new() { Id = "cpu-pkg-0", Name = "CPU Package", Value = 99 } },
+        });
+
+        fired.Should().ContainSingle(
+            "a reconnect must re-attach the alert handler; before the fix nothing did, and every "
+            + "sensor's threshold alerts were silently dead from the first disconnect onward");
+    }
+
+    [Fact]
+    public void ReconnectingDoesNotDoubleUpTheAlert()
+    {
+        // The other direction, and the reason the original code guarded on first-sight at all: wiring
+        // on every tick without the identity guard would attach a second handler and the user would
+        // get two notifications for one crossing. Several reconnects, still exactly one alert.
+        var vm = NewDashboard();
+
+        var fired = new List<SensorAlert>();
+        vm.SensorAlertFired += fired.Add;
+
+        vm.ApplyTelemetry(new TelemetryPayload
+        {
+            Sensors = new List<SensorReading> { new() { Id = "gpu-hot", Name = "GPU Hot Spot", Value = 10 } },
+        });
+
+        foreach (var card in vm.StagedCards.Where(c => c.Sensor is not null))
+        {
+            card.Sensor!.Alert = new SensorAlert
+            {
+                SensorName = card.Sensor.Name,
+                Threshold = 50,
+                Direction = AlertDirection.Above,
+                Severity = AlertSeverity.Warning,
+            };
+        }
+
+        for (int cycle = 0; cycle < 3; cycle++)
+        {
+            vm.CleanupSensorSubscriptions();
+            vm.ApplyTelemetry(new TelemetryPayload
+            {
+                Sensors = new List<SensorReading> { new() { Id = "gpu-hot", Name = "GPU Hot Spot", Value = 10 } },
+            });
+        }
+
+        vm.ApplyTelemetry(new TelemetryPayload
+        {
+            Sensors = new List<SensorReading> { new() { Id = "gpu-hot", Name = "GPU Hot Spot", Value = 99 } },
+        });
+
+        fired.Should().ContainSingle("three reconnects must leave one handler attached, not three");
+    }
+
+    [Fact]
     public void TheIndexAndTheAlertSubscriptionAgreeOnWhatAnIdentityIs()
     {
         // THE BUG. The card index compared identities ordinally while the alert-subscription set

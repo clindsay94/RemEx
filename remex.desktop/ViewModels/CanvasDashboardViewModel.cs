@@ -1083,14 +1083,6 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     if (_sensorAlerts.TryGetValue(sensorName, out var existingAlert))
                         sensor.Alert = existingAlert;
 
-                    // Subscribe once per stable sensor identity to prevent duplicate firings on
-                    // reconnect or a live host relabel (see SensorIdentity; RemEx-km0i.14).
-                    if (_subscribedSensorIdentities.Add(identity))
-                    {
-                        sensor.AlertTriggered -= OnSensorAlertTriggered;
-                        sensor.AlertTriggered += OnSensorAlertTriggered;
-                    }
-
                     // Keep one reusable template in staging so users can add more cards.
                     // Default size is a clean multiple of the 50px snap grid (4×3 cells) so
                     // freshly-dropped cards tile edge-to-edge without manual resizing.
@@ -1125,6 +1117,26 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     }
 
                     sensorVms.Add(sensor);
+                }
+
+                // Wire the alert handler for this identity — OUTSIDE the first-sight branch above,
+                // which is what RemEx-k74x fixed. Disconnecting calls CleanupSensorSubscriptions,
+                // which detaches every handler and empties this set; but the staged template card
+                // keeps its view model across the disconnect, so on reconnect the create branch is
+                // skipped and nothing ever re-attached. Threshold alerts were then dead for every
+                // sensor the dashboard had ever seen, for the rest of the process — silently, with
+                // cards still updating so the dashboard looked perfectly healthy.
+                //
+                // The set still makes this once per identity rather than once per tick, and the
+                // detach-then-attach keeps it idempotent besides. One view model is shared by every
+                // card for a sensor, so this cannot multiply firings by card count.
+                if (_subscribedSensorIdentities.Add(identity))
+                {
+                    foreach (var sensorVm in sensorVms)
+                    {
+                        sensorVm.AlertTriggered -= OnSensorAlertTriggered;
+                        sensorVm.AlertTriggered += OnSensorAlertTriggered;
+                    }
                 }
 
                 foreach (var sensorVm in sensorVms)
@@ -1491,10 +1503,14 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         {
             sensor.AlertTriggered -= OnSensorAlertTriggered;
 
-            // PropertyChanged is subscribed once per SensorViewModel at creation (line ~922) but was
-            // never detached here, so every sensor kept this view model alive for its own lifetime
-            // (a leak) and, on the reconnect/relabel path that recreates subscriptions, could leave
-            // OnSensorCustomizationChanged firing more than once per property change.
+            // THIS DETACH IS CURRENTLY UNPAIRED, and the comment it replaces was wrong about why it
+            // was safe. PropertyChanged is attached at exactly one place — inside the "first time
+            // seeing this sensor" branch — and that branch is skipped on reconnect, because the staged
+            // card keeps its view model. So there is no "reconnect path that recreates subscriptions":
+            // detaching here means customization changes stop being persisted from the first
+            // disconnect onward, and the user's card theme, title, overlay and graph type are lost on
+            // restart. Exactly the failure RemEx-k74x fixed for the ALERT handler, still live for this
+            // one; deliberately left for RemEx-9qgb rather than widened into that bead.
             sensor.PropertyChanged -= OnSensorCustomizationChanged;
         }
 
