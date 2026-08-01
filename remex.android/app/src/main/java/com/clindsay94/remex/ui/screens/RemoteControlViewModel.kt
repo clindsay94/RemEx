@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.R
@@ -261,7 +262,53 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val sendDispatcher = Dispatchers.IO.limitedParallelism(1)
 
+    /**
+     * The host's advertised capabilities, latest wins.
+     *
+     * DECLARED AFTER [sendDispatcher] AND AS A PROPERTY RATHER THAN IN AN `init` BLOCK, both on
+     * purpose. This class has no `init` block, and `SendDispatcherDeclarationOrderTest` exists
+     * because one that reached the send path synchronously was a real defect in the SIBLING view
+     * model, RemoteDesktopViewModel - this class has never had one. Adding one above the dispatcher
+     * would import that hazard rather than reintroduce it. A property initializer sidesteps the
+     * question entirely.
+     *
+     * `SharingStarted.Eagerly`, NOT the `WhileSubscribed` used by the settings flows above, and the
+     * difference is the whole thing working. Nothing ever collects this - it is read as `.value` at
+     * send time - so under `WhileSubscribed` the upstream would never be subscribed to, `.value`
+     * would sit at the initial state forever, and the gate below would be permanently open while
+     * looking correct. The settings flows can use `WhileSubscribed` because Compose collects them.
+     *
+     * On a parse failure the state falls back to refusing input rather than to the default. That is
+     * the opposite of the ABSENT-key rule, and deliberately: an absent key means an older host that
+     * should keep working, whereas an unparseable payload means we know nothing, and the sibling
+     * view model treats it the same way (RemEx-i8ty).
+     */
+    private val capabilityState =
+            RemexClientManager.hostCapabilities
+                    .map { hostInfo ->
+                        try {
+                            parseHostCapabilities(hostInfo)
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed to parse host capabilities", e)
+                            RemoteDesktopCapabilityState(
+                                    supportsRemoteDesktop = false,
+                                    supportsInputSimulation = false
+                            )
+                        }
+                    }
+                    .stateIn(
+                            viewModelScope,
+                            SharingStarted.Eagerly,
+                            RemoteDesktopCapabilityState()
+                    )
+
     private fun sendInput(input: JSONObject) {
+        // THE ONLY WAY INPUT LEAVES THIS CLASS, so gating here covers mouseMove, mouseClick,
+        // mouseScroll, typeText, keyDown and keyUp at once. This screen needs no video stream, so it
+        // is reachable on a host where remote desktop is off entirely - which made it a WIDER
+        // exposure than the remote-desktop path it was omitted from, not a narrower one (RemEx-i8ty,
+        // found by the review of RemEx-q9zw).
+        if (!capabilityState.value.supportsInputSimulation) return
         viewModelScope.launch(sendDispatcher) {
             if (RemexCoreClient.isLibraryLoaded) {
                 val message =
