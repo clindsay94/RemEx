@@ -21,6 +21,50 @@ public static class DesktopFrameEnvelope
     public const byte Version = 1;
     public const int HeaderSize = 28;
 
+    /// <summary>
+    /// Writes the <see cref="HeaderSize"/>-byte header for a payload of
+    /// <paramref name="payloadLength"/> bytes into <paramref name="destination"/>.
+    /// </summary>
+    /// <remarks>
+    /// Split out of <see cref="Wrap"/> so the sender can put the header on the wire WITHOUT first
+    /// copying the whole access unit behind it. At full frame rate that copy was the payload size
+    /// again for every frame sent, to prepend 28 bytes (RemEx-41xu).
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="destination"/> is shorter than <see cref="HeaderSize"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="payloadLength"/> is negative.</exception>
+    public static void WriteHeader(
+        Span<byte> destination,
+        int payloadLength,
+        long streamSerial,
+        long sequence,
+        DesktopCodecKind codec,
+        DesktopFrameFlags flags = DesktopFrameFlags.None)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(payloadLength);
+        if (destination.Length < HeaderSize)
+        {
+            throw new ArgumentException(
+                $"A frame header needs {HeaderSize} bytes; got {destination.Length}.", nameof(destination));
+        }
+
+        Magic.CopyTo(destination);
+        destination[4] = Version;
+        destination[5] = (byte)codec;
+        destination[6] = (byte)flags;
+        destination[7] = 0;
+        BinaryPrimitives.WriteInt64LittleEndian(destination.Slice(8, 8), streamSerial);
+        BinaryPrimitives.WriteInt64LittleEndian(destination.Slice(16, 8), sequence);
+        BinaryPrimitives.WriteInt32LittleEndian(destination.Slice(24, 4), payloadLength);
+    }
+
+    /// <summary>
+    /// Builds one contiguous header + payload buffer.
+    /// </summary>
+    /// <remarks>
+    /// The streaming sender uses <see cref="WriteHeader"/> and two WebSocket fragments instead, to
+    /// avoid copying the payload. This remains for callers that genuinely need one array — and it is
+    /// what <see cref="TryRead"/> is tested against, so the two halves stay provably consistent.
+    /// </remarks>
     public static byte[] Wrap(
         ReadOnlySpan<byte> payload,
         long streamSerial,
@@ -29,14 +73,7 @@ public static class DesktopFrameEnvelope
         DesktopFrameFlags flags = DesktopFrameFlags.None)
     {
         var buffer = new byte[HeaderSize + payload.Length];
-        Magic.CopyTo(buffer);
-        buffer[4] = Version;
-        buffer[5] = (byte)codec;
-        buffer[6] = (byte)flags;
-        buffer[7] = 0;
-        BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(8, 8), streamSerial);
-        BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(16, 8), sequence);
-        BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(24, 4), payload.Length);
+        WriteHeader(buffer, payload.Length, streamSerial, sequence, codec, flags);
         payload.CopyTo(buffer.AsSpan(HeaderSize));
         return buffer;
     }

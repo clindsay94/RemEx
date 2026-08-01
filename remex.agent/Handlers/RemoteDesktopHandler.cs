@@ -709,6 +709,12 @@ public sealed class RemoteDesktopHandler : IDisposable
             CapturedFrame? lastSentFrame = null;
             var sendStopwatch = new Stopwatch();
 
+            // Reused across every frame this loop sends. Safe to share because SendFramedBinaryAsync
+            // is awaited to completion and both of its fragments go out inside ONE acquisition of
+            // sendLock, so no other send can be interleaved between filling this and putting it on
+            // the wire. Local to this loop rather than a field: SendBinaryAsync has another caller.
+            var frameHeader = new byte[DesktopFrameEnvelope.HeaderSize];
+
             while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
                 // Wait for a frame to be available
@@ -741,16 +747,28 @@ public sealed class RemoteDesktopHandler : IDisposable
                 sendStopwatch.Restart();
                 try
                 {
-                    var payload = sessionState.UseFrameEnvelope
-                        ? DesktopFrameEnvelope.Wrap(
-                            currentFrame.Bytes,
+                    if (sessionState.UseFrameEnvelope)
+                    {
+                        // Header and payload go out as two fragments of ONE WebSocket message rather
+                        // than being concatenated into a new buffer first. That concatenation copied
+                        // the entire access unit every frame — at full rate, the whole stream's worth
+                        // of bytes again — purely to put 28 bytes in front of it. Fragmentation is a
+                        // transport detail: the wire format the client parses is unchanged, and its
+                        // receive loop already reassembles on EndOfMessage. (RemEx-41xu)
+                        DesktopFrameEnvelope.WriteHeader(
+                            frameHeader,
+                            currentFrame.Bytes.Length,
                             currentFrame.StreamSerial,
                             currentFrame.Sequence,
                             currentFrame.Codec,
-                            currentFrame.Flags)
-                        : currentFrame.Bytes;
+                            currentFrame.Flags);
 
-                    await SendBinaryAsync(webSocket, payload, sendLock, ct);
+                        await SendFramedBinaryAsync(webSocket, frameHeader, currentFrame.Bytes, sendLock, ct);
+                    }
+                    else
+                    {
+                        await SendBinaryAsync(webSocket, currentFrame.Bytes, sendLock, ct);
+                    }
 
                     totalSendMs += sendStopwatch.Elapsed.TotalMilliseconds;
                     totalFramesSent++;
@@ -1519,6 +1537,58 @@ public sealed class RemoteDesktopHandler : IDisposable
             }
 
             await MessageSerializer.SendAsync(webSocket, message, ct);
+        }
+        finally
+        {
+            sendLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Sends <paramref name="header"/> and <paramref name="payload"/> as two fragments of a single
+    /// binary message.
+    /// </summary>
+    /// <remarks>
+    /// BOTH FRAGMENTS GO OUT UNDER ONE ACQUISITION OF <paramref name="sendLock"/>, and that is the
+    /// whole safety argument. A WebSocket permits one message in flight per socket; releasing between
+    /// the two would let another sender interleave its own fragments into the middle of this message,
+    /// which the client would reassemble into a single corrupt frame — and because the envelope
+    /// validates by exact length, it would fail to parse and fall through to the legacy untagged path
+    /// rather than erroring. (RemEx-41xu)
+    /// </remarks>
+    internal async Task SendFramedBinaryAsync(
+        WebSocket webSocket,
+        ReadOnlyMemory<byte> header,
+        ReadOnlyMemory<byte> payload,
+        SemaphoreSlim sendLock,
+        CancellationToken ct)
+    {
+        await sendLock.WaitAsync(ct);
+        try
+        {
+            if (webSocket.State != WebSocketState.Open)
+            {
+                return;
+            }
+
+            await webSocket.SendAsync(header, WebSocketMessageType.Binary, endOfMessage: false, ct);
+
+            try
+            {
+                await webSocket.SendAsync(payload, WebSocketMessageType.Binary, endOfMessage: true, ct);
+            }
+            catch
+            {
+                // The header is on the wire and the message was never terminated. .NET marks the NEXT
+                // data send on this socket as a continuation of it whatever message type is asked for,
+                // so a subsequent send — the input loop's window_result runs on a different token and
+                // can still fire during teardown — would be spliced onto an orphaned header. The client
+                // would reassemble header + JSON, fail the envelope's exact-length check, and fall
+                // through to the legacy untagged path rather than erroring. Killing the socket is the
+                // only way to make that unreachable; it is already unusable for framed data.
+                try { webSocket.Abort(); } catch { /* already dead: nothing left to protect */ }
+                throw;
+            }
         }
         finally
         {
