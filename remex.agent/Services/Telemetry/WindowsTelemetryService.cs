@@ -99,6 +99,16 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     public WindowsTelemetryService(ILogger<WindowsTelemetryService> logger)
     {
         _logger = logger;
+
+        // EAGER ON PURPOSE, and it was tried the other way. Building these lazily on first use looks
+        // like free startup savings - the first PerformanceCounter loads the machine's counter
+        // catalog, measured at ~414 ms here - but this method does more than construct counters. It
+        // primes the CPU rate counter and takes the NIC byte baseline, and both are only meaningful
+        // AHEAD of the first read: prime microseconds before the first NextValue and the rate counter
+        // returns 0% from an empty sample window, and take the network baseline inside the same call
+        // that consumes it and the elapsed divisor becomes near-zero, turning one stray frame into a
+        // multi-megabyte-per-second reading. See RemEx-48kh; the deferral is only worth revisiting
+        // once RemEx-rxth lets a healthy HWiNFO skip this path entirely.
         InitializeFallbackCounters();
     }
 

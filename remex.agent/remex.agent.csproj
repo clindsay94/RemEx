@@ -20,6 +20,41 @@
          PipeSecurity/PipeAccessRights/MutexAcl are used directly in Services/IPC. The NoWarn
          attribute on <PackageReference> does not suppress restore-phase warnings; only this form does. -->
     <NoWarn>$(NoWarn);NU1510</NoWarn>
+
+    <!--
+      Ahead-of-time compile the IL on publish, so sign-in does not pay to JIT Avalonia and ASP.NET
+      Core from cold. A Task Scheduler logon task starts this app during the busiest moment of the
+      session, competing with everything else that starts then, and the work is identical on every
+      single boot (RemEx-48kh).
+
+      SET HERE RATHER THAN ON THE PUBLISH COMMANDS, and that is the point: there are five publish
+      call sites across four scripts - build-remex.ps1, installer/build-installer.ps1,
+      installer/build-linux.sh, scripts/autostart-remex.ps1 and scripts/update-local-install.ps1 -
+      and a flag repeated five times is a flag that will be missing from the sixth. Here it applies
+      by construction, including to a publish someone runs by hand.
+
+      GUARDED ON RuntimeIdentifier because ReadyToRun requires one: unconditional, a RID-less
+      `dotnet publish` of this project would fail with NETSDK1095 rather than simply skipping the
+      optimisation.
+
+      THE COST, MEASURED RATHER THAN WAVED AT, since it is a real trade and the operator ships this:
+      the win-x64 self-contained publish grows 175.2 MB -> 227.4 MB (+52.3 MB, +29.8%) on disk. What
+      the user downloads is the LZMA2 solid-compressed installer, where the same delta is
+      49.3 MB -> 61.9 MB (+12.5 MB, +25.4%) - smaller than the on-disk figure, because native code
+      still compresses, but not negligible. 279 of 382 published assemblies are compiled, including
+      Avalonia, Kestrel and CoreLib, and cross-publishing linux-x64 from Windows produces the same.
+
+      Composite is deliberately NOT enabled - it cross-compiles the framework into one image, trading
+      a much larger artifact and slower publishes for a gain on startup paths already covered here.
+      Narrowing to only this app's own assemblies is the WRONG lever rather than an untried one:
+      Avalonia and ASP.NET Core are the JIT cost, so excluding them removes most of the benefit. The
+      defensible narrowing is excluding assemblies never touched at startup, and naming those needs a
+      startup JIT profile nobody has taken.
+
+      And do NOT add ServerGarbageCollection: Workstation GC is the right default for a resident app
+      that spends most of its life idle.
+    -->
+    <PublishReadyToRun Condition="'$(RuntimeIdentifier)' != ''">true</PublishReadyToRun>
   </PropertyGroup>
 
   <!-- The consolidated Remex.Agent is both the Avalonia GUI host and the in-process ASP.NET host. -->
