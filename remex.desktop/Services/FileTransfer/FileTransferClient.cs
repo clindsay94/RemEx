@@ -69,6 +69,29 @@ public sealed class FileTransferClient : IDisposable
     /// </summary>
     public FileCapabilities? Capabilities { get; private set; }
 
+    /// <summary>
+    /// Transfers the idle watchdog still considers live. Zero when nothing is in flight.
+    /// </summary>
+    /// <remarks>
+    /// Exposed for tests: a leased-but-never-released transfer is invisible from outside otherwise,
+    /// which is how RemEx-kdly survived. <c>TransferIdleWatchdog</c> documents this counter as
+    /// existing for exactly that kind of assertion.
+    /// </remarks>
+    internal int ActiveTransferCount => _idleWatchdog.ActiveTransferCount;
+
+    /// <summary>
+    /// Entries the download path registers per transfer, across all five of its dictionaries.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="ActiveTransferCount"/> because that one watches the WATCHDOG, which is
+    /// a single registration out of six. A test asserting only on it stays green while the other five
+    /// are moved back outside the region that reaps them — which is five sixths of the leak returning
+    /// invisibly. Counting them all is what makes the assertion match the claim. (RemEx-kdly)
+    /// </remarks>
+    internal int PendingDownloadRegistrationCount =>
+        _transferEndWaiters.Count + _progressReporters.Count +
+        _downloadChannels.Count + _downloadBacklogBytes.Count + _downloadHashers.Count;
+
     public FileTransferClient(ConnectionViewModel connection)
     {
         _connection = connection;
@@ -586,9 +609,6 @@ public sealed class FileTransferClient : IDisposable
     {
         var transferId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _transferEndWaiters[transferId] = tcs;
-        _progressReporters[transferId] = progress;
-        var lastActivity = _idleWatchdog.Begin(transferId);
 
         using var reg = ct.Register(() =>
         {
@@ -607,11 +627,8 @@ public sealed class FileTransferClient : IDisposable
         // Unbounded channel ensures chunk ordering: the consumer writes sequentially,
         // eliminating the race condition that would exist with fire-and-forget WriteAsync.
         var channel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions { SingleReader = true });
-        _downloadChannels[transferId] = channel;
         var backlogBytes = new StrongBox<long>(0);
-        _downloadBacklogBytes[transferId] = backlogBytes;
         var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        _downloadHashers[transferId] = hasher;
 
         // Cancellable so an abandoned transfer can stop the writer without draining: completing the
         // channel instead makes ReadAllAsync flush everything still queued, which on the backlog path
@@ -668,6 +685,27 @@ public sealed class FileTransferClient : IDisposable
         // way (RemEx-w9lj): before this fix, a failed Start send left the transfer-end waiter,
         // progress reporter, channel, and hasher all stranded forever, and the writer task blocked
         // on the channel with nothing left to complete it.
+        // REGISTERED HERE, NOT AT THE TOP, so that everything registered is inside the try/finally
+        // that reaps it. The destination FileStream is opened above and can fail for entirely ordinary
+        // reasons — a read-only target file, a protected folder, a path that no longer exists — and
+        // when it did, the three entries registered before it were stranded permanently: a
+        // transfer-end waiter, a progress reporter, and a LIVE idle-watchdog lease, once per attempt.
+        // A user who now understands the error (RemEx-60li gave it a real message) will retry, and
+        // every retry leaked again.
+        //
+        // The comment below already stated the invariant — reap on every exit path the same way — but
+        // the registrations sat above the guarded region, so the invariant had a hole in exactly the
+        // window where local setup fails. UploadAsync never had it: its FileStream opens BEFORE its
+        // registrations, which is the asymmetry that gave this away. Registering last also makes the
+        // watchdog lease's lifetime equal to the period a transfer can actually stall, rather than
+        // starting it while opening a local file the peer is not involved in. (RemEx-kdly)
+        _transferEndWaiters[transferId] = tcs;
+        _progressReporters[transferId] = progress;
+        _downloadChannels[transferId] = channel;
+        _downloadBacklogBytes[transferId] = backlogBytes;
+        _downloadHashers[transferId] = hasher;
+        var lastActivity = _idleWatchdog.Begin(transferId);
+
         bool completed = false;
         try
         {
