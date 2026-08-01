@@ -32,7 +32,7 @@ public interface IH264Encoder : IDisposable
     /// <param name="rawPixelsBGRA">Raw 32-bit BGRA bytes of the screen frame.</param>
     /// <param name="forceKeyframe">If true, forces the encoder to produce a keyframe (I-frame) for this frame.</param>
     /// <returns>H.264 Annex B bytes (including start codes), or null if encoding failed.</returns>
-    byte[]? EncodeFrame(byte[] rawPixelsBGRA, bool forceKeyframe);
+    byte[]? EncodeFrame(ReadOnlyMemory<byte> rawPixelsBGRA, bool forceKeyframe);
 
     /// <summary>
     /// Requests an on-demand keyframe (IDR with fresh SPS/PPS). A client whose decoder desynced

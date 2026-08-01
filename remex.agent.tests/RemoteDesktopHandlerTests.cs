@@ -79,8 +79,8 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
 
         private DesktopCaptureTarget _target = new() { CaptureMode = DesktopCaptureMode.VirtualDesktop };
 
-        public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-            => Task.FromResult(FakeJpeg);
+        public Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult<ReadOnlyMemory<byte>>(FakeJpeg);
 
         public DesktopDisplayCatalog GetDisplayCatalog() => _catalog;
 
@@ -127,8 +127,8 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
     {
         private static readonly byte[] FakeFrame = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x02, 0x00, 0x00, 0xFF, 0xD9];
 
-        public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-            => Task.FromResult(FakeFrame);
+        public Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult<ReadOnlyMemory<byte>>(FakeFrame);
 
         public Task<ScreenCaptureResult> CaptureScreenLiveAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
             => Task.FromResult(new ScreenCaptureResult(FakeFrame, isLive: false));
@@ -151,8 +151,8 @@ public class RemoteDesktopHandlerTests : IClassFixture<RemexHostFactory>
 
         public bool IsDisplayPoweredOff => true;
 
-        public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-            => Task.FromResult(FakeFrame);
+        public Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult<ReadOnlyMemory<byte>>(FakeFrame);
 
         public Task<ScreenCaptureResult> CaptureScreenLiveAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
             => Task.FromResult(new ScreenCaptureResult(FakeFrame, isLive: false));

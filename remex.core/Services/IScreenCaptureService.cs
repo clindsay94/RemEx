@@ -16,14 +16,35 @@ namespace Remex.Core.Services;
 /// </remarks>
 public readonly struct ScreenCaptureResult
 {
-    public ScreenCaptureResult(byte[]? pixels, bool isLive)
+    public ScreenCaptureResult(ReadOnlyMemory<byte> pixels, bool isLive)
     {
         Pixels = pixels;
         IsLive = isLive;
     }
 
-    /// <summary>Encoded (JPEG) or raw (BGRA) pixel bytes; <c>null</c> or empty when capture produced nothing.</summary>
-    public byte[]? Pixels { get; }
+    /// <summary>Encoded (JPEG) or raw (BGRA) pixel bytes; empty when capture produced nothing.</summary>
+    /// <remarks>
+    /// <para>
+    /// A <see cref="ReadOnlyMemory{T}"/> rather than a <c>byte[]</c> so a JPEG encoder can hand back
+    /// the stream's own buffer instead of a trimmed copy. <c>MemoryStream.ToArray</c> allocates a
+    /// second array the size of the frame and copies into it; at MJPEG frame sizes that array is over
+    /// the Large Object Heap threshold, so it was an LOH allocation per frame (RemEx-hgox).
+    /// </para>
+    /// <para>
+    /// THE LENGTH IS WHY THIS IS A TYPE CHANGE AND NOT A ONE-LINE SWAP. <c>GetBuffer()</c> returns the
+    /// stream's backing array, which is larger than the data — it grows by doubling. Returning it as a
+    /// <c>byte[]</c> would make every consumer's <c>.Length</c> read the CAPACITY, so the frame header
+    /// would declare the wrong size and the zero-padded tail would go to the client. It compiles and
+    /// it runs; it just corrupts. Carrying the length in the type is what makes it safe.
+    /// </para>
+    /// <para>
+    /// NOT AN OWNERSHIP TRANSFER. Every producer allocates a fresh stream per capture and never reuses
+    /// it, so the referenced array is single-use and kept alive by this struct. Do not "optimise" that
+    /// into a pooled or reused stream without reading RemEx-lcp8 first: a caller here caches the
+    /// result and replays it, so a recycled buffer would be overwritten while still being sent.
+    /// </para>
+    /// </remarks>
+    public ReadOnlyMemory<byte> Pixels { get; }
 
     /// <summary>
     /// <c>true</c> when the capture pipeline is confirmed healthy this tick (a new frame, or a cached frame on
@@ -41,7 +62,7 @@ public interface IScreenCaptureService
     /// <param name="quality">JPEG quality 1-100.</param>
     /// <param name="scale">Resolution scale factor 0.25-1.0.</param>
     /// <param name="drawCursor">Whether to draw the cursor onto the bitmap.</param>
-    Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default);
+    Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default);
 
     /// <summary>
     /// Captures the primary screen and returns the raw 32-bit BGRA pixel bytes.
@@ -149,8 +170,8 @@ public interface IScreenCaptureService
     // Two distinctly-named helpers (overloading on byte[]? vs byte[] alone is a CS0111 error since they
     // differ only by nullability annotation) keep the call sites warning-free under nullable reference types.
     private static async Task<ScreenCaptureResult> AsLiveResult(Task<byte[]?> capture)
-        => new ScreenCaptureResult(await capture, isLive: true);
+        => new ScreenCaptureResult(await capture ?? ReadOnlyMemory<byte>.Empty, isLive: true);
 
-    private static async Task<ScreenCaptureResult> AsLiveResultNonNull(Task<byte[]> capture)
+    private static async Task<ScreenCaptureResult> AsLiveResultNonNull(Task<ReadOnlyMemory<byte>> capture)
         => new ScreenCaptureResult(await capture, isLive: true);
 }

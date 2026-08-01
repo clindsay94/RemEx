@@ -261,7 +261,24 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     }
 
     public Task<byte[]?> CaptureRawScreenAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-        => Task.FromResult(CaptureRawCore(scale, drawCursor, ct).Pixels);
+        => Task.FromResult(ToArrayOrNull(CaptureRawCore(scale, drawCursor, ct).Pixels));
+
+    /// <summary>
+    /// Materialises a capture result for the legacy <c>byte[]</c>-returning API.
+    /// </summary>
+    /// <remarks>
+    /// The RAW producers here already hand back an exact-size array, so this is a no-copy unwrap in
+    /// practice; the fallback exists only so a future producer returning a slice cannot silently ship
+    /// the wrong bytes through this older signature (RemEx-hgox).
+    /// </remarks>
+    private static byte[]? ToArrayOrNull(ReadOnlyMemory<byte> pixels)
+    {
+        if (pixels.IsEmpty) return null;
+        return System.Runtime.InteropServices.MemoryMarshal.TryGetArray(pixels, out var segment)
+            && segment.Array is { } array && segment.Offset == 0 && segment.Count == array.Length
+                ? array
+                : pixels.ToArray();
+    }
 
     public Task<ScreenCaptureResult> CaptureRawScreenLiveAsync(double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
         => Task.FromResult(CaptureRawCore(scale, drawCursor, ct));
@@ -336,8 +353,8 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         }
     }
 
-    public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-        => Task.FromResult(CaptureScreenCore(quality, scale, drawCursor, ct).Pixels ?? Array.Empty<byte>());
+    public Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+        => Task.FromResult(CaptureScreenCore(quality, scale, drawCursor, ct).Pixels);
 
     public Task<ScreenCaptureResult> CaptureScreenLiveAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
         => Task.FromResult(CaptureScreenCore(quality, scale, drawCursor, ct));
@@ -398,7 +415,13 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
             bitmap.Save(ms, jpegEncoder, encoderParams);
             LastCaptureFailureReason = null;
             // GDI BitBlt produces a fresh frame whenever it succeeds.
-            return new ScreenCaptureResult(ms.ToArray(), isLive: true);
+            // GetBuffer, not ToArray: ToArray allocates a second array the size of the frame and
+            // copies into it, and at MJPEG sizes that is a Large Object Heap allocation on every
+            // frame. The stream is local, fresh per call and never reused, so its buffer is
+            // single-use and safely outlives it. The LENGTH is what makes this safe to expose -
+            // GetBuffer returns the whole capacity, so anything reading .Length on the raw array
+            // would ship the zero-padded tail. (RemEx-hgox)
+            return new ScreenCaptureResult(ms.GetBuffer().AsMemory(0, (int)ms.Length), isLive: true);
         }
         catch (Exception ex)
         {
@@ -758,7 +781,7 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
     // JPEG-encodes a tightly-packed BGRA buffer (as produced by the WGC backend) for the MJPEG path.
     // BGRA byte order matches Format32bppArgb's in-memory layout, and 32bpp has no row padding, so the
     // width*height*4 bytes copy directly into the locked bitmap. Returns null if the buffer is undersized.
-    private static byte[]? EncodeBgraToJpeg(byte[] bgra, int width, int height, int quality)
+    private static ReadOnlyMemory<byte> EncodeBgraToJpeg(byte[] bgra, int width, int height, int quality)
     {
         if (width <= 0 || height <= 0 || bgra.Length < width * height * 4)
         {
@@ -781,7 +804,9 @@ public class WindowsScreenCaptureService : IScreenCaptureService, IDisposable
         var encoderParams = new EncoderParameters(1);
         encoderParams.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, (long)quality);
         bitmap.Save(ms, GetJpegEncoder(), encoderParams);
-        return ms.ToArray();
+        // See the note at the other JPEG site: GetBuffer avoids an LOH allocation per frame, and the
+        // length must travel with it. (RemEx-hgox)
+        return ms.GetBuffer().AsMemory(0, (int)ms.Length);
     }
 
     private static ImageCodecInfo? _cachedJpegEncoder;

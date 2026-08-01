@@ -45,8 +45,8 @@ public class FallbackDisplayKeyTests
     {
         public (int Width, int Height, int Left, int Top) GetScreenSize() => (1920, 1080, 0, 0);
 
-        public Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
-            => Task.FromResult(System.Array.Empty<byte>());
+        public Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+            => Task.FromResult(ReadOnlyMemory<byte>.Empty);
     }
 
     private static DesktopDisplayInfo TheOnlyDisplay()

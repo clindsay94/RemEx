@@ -17,7 +17,12 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     // capacity (a few frames) is intentional: if the encoder can't keep up, the freshest frames
     // matter, not a backlog, so EncodeFrame drops rather than blocking the capture thread. (RemEx-ii3)
     private const int InputChannelCapacity = 3;
-    private Channel<byte[]>? _inputChannel;
+    // ReadOnlyMemory rather than byte[] so a caller can hand over a slice of a larger buffer without
+    // trimming it first (RemEx-hgox). OWNERSHIP IS UNCHANGED by that: a ReadOnlyMemory over a GC array
+    // behaves exactly as the array did, and nothing here pools or recycles. Do not read this as a step
+    // toward pooling - see RemEx-lcp8, which has failed three times precisely because a recycled
+    // buffer can be overwritten while stdin is still reading it.
+    private Channel<ReadOnlyMemory<byte>>? _inputChannel;
     private Task? _writerTask;
 
     // Bounded output of encoded Annex-B access units. Replaces an unbounded queue so a stalled/slow
@@ -536,7 +541,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             });
             _droppingUntilIdr = false;
 
-            _inputChannel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(InputChannelCapacity)
+            _inputChannel = Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(InputChannelCapacity)
             {
                 // We still TryWrite (non-blocking) in EncodeFrame, but DropWrite makes the contract
                 // explicit: a full channel discards the newest frame rather than ever blocking.
@@ -595,7 +600,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// the capture thread is never blocked on a slow/busy encoder. Stops promptly when the token is
     /// cancelled (disconnect/dispose). (RemEx-ii3)
     /// </summary>
-    private async Task StdinWriterLoop(Stream stdin, ChannelReader<byte[]> reader, CancellationToken ct)
+    private async Task StdinWriterLoop(Stream stdin, ChannelReader<ReadOnlyMemory<byte>> reader, CancellationToken ct)
     {
         try
         {
@@ -802,7 +807,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         }
     }
 
-    public byte[]? EncodeFrame(byte[] rawPixelsBGRA, bool forceKeyframe)
+    public byte[]? EncodeFrame(ReadOnlyMemory<byte> rawPixelsBGRA, bool forceKeyframe)
     {
         // forceKeyframe is honored at the stream-control layer (RemoteDesktopHandler requests a real
         // on-demand IDR by reinitializing the encoder, which emits fresh SPS/PPS + an IDR). Within a

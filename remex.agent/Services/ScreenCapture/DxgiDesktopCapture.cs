@@ -28,7 +28,36 @@ internal sealed class DxgiDesktopCapture : IDisposable
     private IntPtr _d3dContext = IntPtr.Zero;
     private IntPtr _duplOutput = IntPtr.Zero;
     private IntPtr _stagingTexture = IntPtr.Zero;
-    private byte[]? _lastFrame;
+    /// <summary>Immutable holder so a frame and its length are published as ONE reference.</summary>
+    private sealed class EncodedFrame(ReadOnlyMemory<byte> bytes)
+    {
+        public readonly ReadOnlyMemory<byte> Bytes = bytes;
+    }
+
+    /// <summary>
+    /// The most recent encoded JPEG, replayed on every stale-desktop path below.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The frame carries a LENGTH now, because the encoder hands back its stream's own buffer rather
+    /// than a trimmed copy — that is the LOH allocation this saves (RemEx-hgox). This field is why the
+    /// length has to travel with the bytes: it is replayed indefinitely under the unchanged-desktop
+    /// optimisation, so a padded capacity would not be one bad frame but the same bad frame forever.
+    /// </para>
+    /// <para>
+    /// BEHIND A REFERENCE, AND THAT IS NOT COSMETIC. The replay read at the top of TryCapture happens
+    /// WITHOUT the lock — deliberately, it is the non-blocking fast path — and it is taken exactly
+    /// when another thread holds the lock, i.e. exactly when the writer may be mid-store. As a bare
+    /// byte[] that was race-free by construction: a reference store is atomic and the length is
+    /// intrinsic to the array. A ReadOnlyMemory is a 16-byte struct (object, offset, length) whose
+    /// copy is several moves and may TEAR. A torn read pairing the old array with the new length
+    /// makes Span hand out a span past the end of that array — Span does not re-validate — so the
+    /// send would read adjacent heap and either fault the elevated agent or transmit it to the phone.
+    /// Publishing one immutable reference restores the original atomicity; the extra object is a few
+    /// gen-0 bytes per fresh frame against the LOH array removed.
+    /// </para>
+    /// </remarks>
+    private volatile EncodedFrame? _lastFrame;
     private CursorShapeSnapshot? _lastPointerShape;
 
     private bool _disposed;
@@ -448,7 +477,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
     /// (DXGI_ERROR_WAIT_TIMEOUT), reducing CPU/bandwidth on static screens.
     /// Thread-safe: concurrent callers get the last frame without blocking.
     /// </summary>
-    public byte[]? TryCapture(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor, out bool isLive)
+    public ReadOnlyMemory<byte> TryCapture(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor, out bool isLive)
     {
         isLive = false;
         if (_disposed) return null;
@@ -459,7 +488,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         if (!_lock.Wait(0))
         {
             isLive = true;
-            return _lastFrame;
+            return _lastFrame?.Bytes ?? ReadOnlyMemory<byte>.Empty;
         }
 
         try
@@ -471,7 +500,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         catch (Exception ex)
         {
             _logger.LogDebug("DXGI capture error: {Msg}", ex.Message);
-            return _lastFrame; // stale: a thrown capture is a genuine failure
+            return _lastFrame?.Bytes ?? ReadOnlyMemory<byte>.Empty; // stale: a thrown capture is a genuine failure
         }
         finally
         {
@@ -719,7 +748,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         }
     }
 
-    private byte[]? CaptureInternal(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor, out bool isLive)
+    private ReadOnlyMemory<byte> CaptureInternal(int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor, out bool isLive)
     {
         isLive = false; // stale until a healthy path proves otherwise
         // AcquireNextFrame — slot 8 on IDXGIOutputDuplication
@@ -732,20 +761,20 @@ internal sealed class DxgiDesktopCapture : IDisposable
         {
             _reinitThrottle.RecordHealthyFrame(); // output alive, just no change — clears loss escalation
             isLive = true; // healthy static screen
-            return _lastFrame; // Desktop unchanged — bandwidth-efficient reuse
+            return _lastFrame?.Bytes ?? ReadOnlyMemory<byte>.Empty; // Desktop unchanged — bandwidth-efficient reuse
         }
 
         if (hr == DXGI_ERROR_ACCESS_LOST || hr == DXGI_ERROR_SESSION_DISCONNECTED)
         {
             _logger.LogInformation("DXGI access lost (hr=0x{Hr:X8}) — reinitializing.", hr);
             TryReinitializeDuplication();
-            return _lastFrame; // stale: output lost
+            return _lastFrame?.Bytes ?? ReadOnlyMemory<byte>.Empty; // stale: output lost
         }
 
         if (hr != S_OK)
         {
             _logger.LogDebug("AcquireNextFrame hr=0x{Hr:X8}", hr);
-            return _lastFrame; // stale: acquire failed
+            return _lastFrame?.Bytes ?? ReadOnlyMemory<byte>.Empty; // stale: acquire failed
         }
 
         _reinitThrottle.RecordHealthyFrame(); // acquired a real frame — output confirmed healthy
@@ -757,12 +786,12 @@ internal sealed class DxgiDesktopCapture : IDisposable
             if (frameInfo.AccumulatedFrames == 0 && _lastFrame is not null)
             {
                 isLive = true; // healthy output, no new content this tick
-                return _lastFrame;
+                return _lastFrame?.Bytes ?? ReadOnlyMemory<byte>.Empty;
             }
 
             // QI IDXGIResource → ID3D11Texture2D
             hr = QueryInterface(dxgiResource, IID_ID3D11Texture2D, out var srcTex);
-            if (hr != S_OK) return _lastFrame; // stale: couldn't read the acquired frame
+            if (hr != S_OK) return _lastFrame?.Bytes ?? ReadOnlyMemory<byte>.Empty; // stale: couldn't read the acquired frame
 
             try
             {
@@ -791,15 +820,15 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
         if (hr != S_OK)
         {
-            return _lastFrame; // stale: map failed
+            return _lastFrame?.Bytes ?? ReadOnlyMemory<byte>.Empty; // stale: map failed
         }
 
         try
         {
             var mapped = Marshal.PtrToStructure<MappedSubresource>(mappedPtr);
-            _lastFrame = EncodeToJpeg(mapped.pData, (int)mapped.RowPitch, Width, Height, quality, scale, jpegEncoder, drawCursor, DesktopLeft, DesktopTop);
+            _lastFrame = new EncodedFrame(EncodeToJpeg(mapped.pData, (int)mapped.RowPitch, Width, Height, quality, scale, jpegEncoder, drawCursor, DesktopLeft, DesktopTop));
             isLive = true; // fresh frame produced
-            return _lastFrame;
+            return _lastFrame?.Bytes ?? ReadOnlyMemory<byte>.Empty;
         }
         finally
         {
@@ -808,7 +837,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         }
     }
 
-    private static byte[] EncodeToJpeg(IntPtr pixelData, int rowPitch, int width, int height,
+    private static ReadOnlyMemory<byte> EncodeToJpeg(IntPtr pixelData, int rowPitch, int width, int height,
         int quality, double scale, ImageCodecInfo jpegEncoder, bool drawCursor, int originX, int originY)
     {
         // Wrap the DXGI-mapped BGRA memory as a read-only Bitmap (D3D11_MAP_READ).
@@ -851,7 +880,11 @@ internal sealed class DxgiDesktopCapture : IDisposable
             using var ep = new EncoderParameters(1);
             ep.Param[0] = new EncoderParameter(Encoder.Quality, (long)quality);
             output.Save(ms, jpegEncoder, ep);
-            return ms.ToArray();
+            // GetBuffer rather than ToArray - one fewer LOH allocation per frame. This result is
+            // CACHED and replayed on the stale-desktop paths, which is exactly why the length has to
+            // travel with the buffer: a byte[] here would replay the padded capacity indefinitely.
+            // (RemEx-hgox)
+            return ms.GetBuffer().AsMemory(0, (int)ms.Length);
         }
         finally
         {

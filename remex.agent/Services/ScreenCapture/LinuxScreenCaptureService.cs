@@ -233,7 +233,13 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             var jpegBytes = await CaptureScreenAsync(50, scale, drawCursor, ct);
             if (jpegBytes is { Length: > 0 })
             {
-                using var ms = new MemoryStream(jpegBytes);
+                // Wrap the frame in place rather than copying it out: ToArray here would
+                // reintroduce, on Linux, exactly the per-frame frame-sized copy RemEx-hgox removed.
+                // The fallback covers a memory that is not array-backed, which cannot happen today.
+                using var ms = System.Runtime.InteropServices.MemoryMarshal.TryGetArray(jpegBytes, out var jpegSegment)
+                    && jpegSegment.Array is { } jpegArray
+                        ? new MemoryStream(jpegArray, jpegSegment.Offset, jpegSegment.Count, writable: false)
+                        : new MemoryStream(jpegBytes.ToArray());
                 using var bmp = new System.Drawing.Bitmap(ms);
                 var rect = new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height);
                 var bmpData = bmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -363,7 +369,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         }
     }
 
-    public async Task<byte[]> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
+    public async Task<ReadOnlyMemory<byte>> CaptureScreenAsync(int quality = 50, double scale = 1.0, bool drawCursor = true, CancellationToken ct = default)
     {
         quality = Math.Clamp(quality, 1, 100);
         scale = Math.Clamp(scale, 0.25, 1.0);

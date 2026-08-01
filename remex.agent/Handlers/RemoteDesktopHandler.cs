@@ -398,7 +398,10 @@ public sealed class RemoteDesktopHandler : IDisposable
                 {
                     var captureSerial = sessionState.StreamSerial;
                     var configVersion = Volatile.Read(ref _encoderConfigVersion);
-                    byte[]? frameBytes = null;
+                    // ReadOnlyMemory, so the MJPEG path can hand over the encoder stream's own
+                    // buffer rather than a trimmed copy of it (RemEx-hgox). The H.264 branch below
+                    // still produces an exact-size array and converts implicitly.
+                    ReadOnlyMemory<byte> frameBytes = default;
                     DesktopCodecKind frameCodec = _activeCodec;
                     var frameFlags = DesktopFrameFlags.None;
 
@@ -586,8 +589,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                             }
                             else
                             {
-                                frameBytes = h264Encoder.EncodeFrame(rawPixels, forceKeyframe);
-                                if (frameBytes is { Length: > 0 })
+                                frameBytes = h264Encoder.EncodeFrame(rawPixels, forceKeyframe) ?? ReadOnlyMemory<byte>.Empty;
+                                if (!frameBytes.IsEmpty)
                                     frameFlags = forceKeyframe ? DesktopFrameFlags.KeyFrame : DesktopFrameFlags.None;
                                 // else: encoder warmup/pipelining — frameBytes stays null. NOT a failure.
                             }
@@ -605,14 +608,14 @@ public sealed class RemoteDesktopHandler : IDisposable
                         if (jpegResult.IsLive)
                         {
                             frameBytes = jpegResult.Pixels;
-                            captureSucceeded = frameBytes is { Length: > 0 };
+                            captureSucceeded = !frameBytes.IsEmpty;
                         }
                         // else: stale cached replay (IsLive == false) — leave frameBytes null and
                         // captureSucceeded false so a sustained freeze advances consecutiveFailures and
                         // trips the coded desktop_error instead of re-sending the last good frame (RemEx-ltd).
                     }
 
-                    if (frameBytes is { Length: > 0 })
+                    if (!frameBytes.IsEmpty)
                     {
                         consecutiveFailures = 0;
                         errorReported = false;
@@ -1596,7 +1599,16 @@ public sealed class RemoteDesktopHandler : IDisposable
         }
     }
 
-    private async Task SendBinaryAsync(WebSocket webSocket, byte[] payload, SemaphoreSlim sendLock, CancellationToken ct)
+    /// <summary>
+    /// Sends one complete binary WebSocket message.
+    /// </summary>
+    /// <remarks>
+    /// Takes <see cref="ReadOnlyMemory{T}"/> because a frame may be a slice of a larger buffer — the
+    /// MJPEG path hands over the encoder stream's own array, which is bigger than the frame
+    /// (RemEx-hgox). Passing that as a bare <c>byte[]</c> would ship the zero-padded tail. The
+    /// overload used below is the one <c>WebSocket</c> already prefers, so this is not an adapter.
+    /// </remarks>
+    private async Task SendBinaryAsync(WebSocket webSocket, ReadOnlyMemory<byte> payload, SemaphoreSlim sendLock, CancellationToken ct)
     {
         await sendLock.WaitAsync(ct);
         try
@@ -1606,7 +1618,7 @@ public sealed class RemoteDesktopHandler : IDisposable
                 return;
             }
 
-            await webSocket.SendAsync(new ArraySegment<byte>(payload), WebSocketMessageType.Binary, endOfMessage: true, ct);
+            await webSocket.SendAsync(payload, WebSocketMessageType.Binary, endOfMessage: true, ct);
         }
         finally
         {
@@ -2025,7 +2037,7 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     private sealed class CapturedFrame
     {
-        public byte[] Bytes { get; init; } = Array.Empty<byte>();
+        public ReadOnlyMemory<byte> Bytes { get; init; }
         public long StreamSerial { get; init; }
         public long Sequence { get; init; }
         public DesktopFrameFlags Flags { get; init; }
