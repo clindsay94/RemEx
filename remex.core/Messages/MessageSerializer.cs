@@ -62,6 +62,33 @@ public static class MessageSerializer
         }
     }
 
+    /// <summary>
+    /// Sends an already-serialized <see cref="RemexMessage"/>.
+    /// </summary>
+    /// <remarks>
+    /// For a message that goes to several sockets unchanged — telemetry is the one that matters, at
+    /// 60-100 KB per tick — so the JSON is produced once by the producer instead of once per
+    /// recipient (RemEx-0zbj). Shares <see cref="SendAsync"/>'s per-socket gate, because the
+    /// one-outstanding-send rule is a property of the socket and does not care where the bytes came
+    /// from. Callers must not mutate <paramref name="frame"/> after handing it over; it is shared.
+    /// </remarks>
+    public static async Task SendRawAsync(
+        WebSocket webSocket,
+        ReadOnlyMemory<byte> frame,
+        CancellationToken ct = default)
+    {
+        var gate = SendGates.GetValue(webSocket, static _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct);
+        try
+        {
+            await webSocket.SendAsync(frame, WebSocketMessageType.Text, endOfMessage: true, ct);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
     private const int MaxMessageSize = 4 * 1024 * 1024; // 4 MB safety limit
 
     /// <summary>

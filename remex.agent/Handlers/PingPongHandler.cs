@@ -827,21 +827,23 @@ public sealed class PingPongHandler(
         // hwmon entry briefly unreadable, websocket send hiccup) used to kill the loop
         // forever — the user would see "connected but telemetry never updates". Now
         // we log a warning and keep going; only WebSocket-state failures end the stream.
+        TelemetryBackgroundService.TelemetrySnapshot? lastSentSnapshot = null;
+
         while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
         {
             try
             {
-                var payload = telemetryBackgroundService.CurrentPayload;
-                if (payload != null)
-                {
-                    var message = new RemexMessage
-                    {
-                        Type = MessageTypes.Telemetry,
-                        Telemetry = payload,
-                        Timestamp = System.Diagnostics.Stopwatch.GetTimestamp()
-                    };
+                var snapshot = telemetryBackgroundService.CurrentSnapshot;
 
-                    await MessageSerializer.SendAsync(webSocket, message, ct);
+                // Only send a sample this connection has not already had. Normally every tick brings
+                // a new one, so this changes nothing; it matters when the sampler stalls — WMI can
+                // block for seconds — where the old code cheerfully re-sent an identical 60-100 KB
+                // envelope every second to every client. Reference equality is the right test: the
+                // sampler publishes a new snapshot object per successful poll. (RemEx-0zbj)
+                if (snapshot != null && !ReferenceEquals(snapshot, lastSentSnapshot))
+                {
+                    await MessageSerializer.SendRawAsync(webSocket, snapshot.Frame, ct);
+                    lastSentSnapshot = snapshot;
                 }
             }
             catch (OperationCanceledException) { return; }
