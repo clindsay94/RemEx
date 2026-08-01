@@ -42,7 +42,7 @@ public class AboutHostVersionTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private AboutViewModel ConnectedTo(string hostVersion)
+    private AboutViewModel ConnectedTo(string hostVersion, string platform = "windows")
     {
         var connection = new ConnectionViewModel { IsConnected = true };
         // null shell: AboutViewModel only stores it, and nothing on the version path reads it. The
@@ -59,7 +59,7 @@ public class AboutHostVersionTests : IDisposable
             // Lowercase because that is what HostCapabilitiesProvider.GetPlatform actually returns.
             // The bead's prose said "Windows" and the first version of this test copied it, which
             // would have pinned a wire shape the host never sends.
-            Platform = "windows",
+            Platform = platform,
             RuntimeMode = "interactive",
         };
 
@@ -97,6 +97,34 @@ public class AboutHostVersionTests : IDisposable
         var about = ConnectedTo("unknown");
 
         about.HostVersion.Should().NotContain("unknown");
-        about.HostVersion.Should().StartWith("windows (");
+
+        // "Windows", not the wire's lowercase "windows": the platform is a localized label now
+        // (RemEx-6s34). This assertion is what caught that change, which is what it is for.
+        about.HostVersion.Should().StartWith("Windows (");
+    }
+
+    [Fact]
+    public void AHostThatReportsNeitherVersionNorPlatformSaysOnlyThatItIsConnected()
+    {
+        // THE BRANCH NOBODY WAS TESTING. The fallback chain decides on the literal wire sentinel
+        // "unknown", and RemEx-6s34 made the value shown to the user a localized label — so if the
+        // branch had been left reading that label, localizing the unknown case later would have
+        // broken this silently, with every existing test still green. It reads the raw token now,
+        // and this pins that it does.
+        var about = ConnectedTo("unknown", platform: "unknown");
+
+        about.HostVersion.Should().NotContain("unknown",
+            "a wire sentinel must never be rendered to the user");
+        about.HostVersion.Should().Be(LocalizationService.Instance["Status_Connected"]);
+    }
+
+    [Fact]
+    public void AKnownPlatformStillNamesItselfWhenTheVersionIsMissing()
+    {
+        // The other side of the same branch: the token is not the sentinel, so the row falls back to
+        // naming the platform — as its localized name, not as the token.
+        var about = ConnectedTo("unknown", platform: "linux");
+
+        about.HostVersion.Should().StartWith("Linux (");
     }
 }

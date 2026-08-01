@@ -236,7 +236,13 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         // parses changes. The host still reports four components ("2.4.0.0") while this app shows
         // its own as three, and the two sit one divider apart on this page (RemEx-8jzu).
         var version = AppVersion.Normalize(caps.Version);
-        var platform = caps.Platform;
+        // TWO VALUES ON PURPOSE, and keeping them apart is the point. The label is what the user
+        // reads; the raw token is what the branch below decides on. Deciding on the label would mean
+        // comparing an English wire sentinel against a string that is nominally translated - correct
+        // only for as long as nobody localizes the unknown case, and silently wrong the moment
+        // somebody does. (RemEx-6s34)
+        var platform = _connection.HostPlatformLabel;
+        var platformToken = caps.Platform;
         // Localized label, not the raw wire token: RuntimeMode "service" is legacy naming for a
         // non-interactive Windows process, not a service install (RemEx-9z0f).
         var runtime = _connection.HostRuntimeLabel;
@@ -245,7 +251,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         {
             HostVersion = $"{version} ({platform}, {runtime})";
         }
-        else if (!string.IsNullOrEmpty(platform) && platform != "unknown")
+        else if (!string.IsNullOrEmpty(platformToken) && platformToken != "unknown")
         {
             HostVersion = $"{platform} ({runtime})";
         }

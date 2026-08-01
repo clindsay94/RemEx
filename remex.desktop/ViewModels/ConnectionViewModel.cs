@@ -625,6 +625,33 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
         _ => LocalizationService.Instance["Status_Host"]
     };
 
+    /// <summary>
+    /// The host's operating system, named rather than spelled the way the wire spells it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>HostCapabilitiesProvider.GetPlatform</c> emits the lowercase tokens <c>windows</c>,
+    /// <c>linux</c> and <c>macos</c>. Those are wire values, and interpolating one straight into a
+    /// sentence gave the About page "2.4.0 (windows, Interactive)" — lowercase mid-sentence beside a
+    /// correctly-cased label, and untranslated in all eight non-English locales. The runtime half of
+    /// that same string was given a localized label by RemEx-9z0f; this is the platform half, which
+    /// was left behind (RemEx-6s34).
+    /// </para>
+    /// <para>
+    /// AN UNKNOWN PLATFORM FALLS BACK TO THE RAW TOKEN rather than to a generic word. A host running
+    /// on something this client has no name for should still say what it is — "freebsd" is
+    /// imperfect but diagnosable, whereas "Unknown" throws the information away.
+    /// </para>
+    /// </remarks>
+    public string HostPlatformLabel => HostCapabilities?.Platform switch
+    {
+        "windows" => LocalizationService.Instance["Status_PlatformWindows"],
+        "linux" => LocalizationService.Instance["Status_PlatformLinux"],
+        "macos" => LocalizationService.Instance["Status_PlatformMacOs"],
+        var other when !string.IsNullOrWhiteSpace(other) => other,
+        _ => LocalizationService.Instance["Status_Host"],
+    };
+
     public string HostRuntimeSummary
     {
         get
@@ -634,10 +661,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable
                 return IsConnected ? LocalizationService.Instance["Status_ConnectedToHost"] : LocalizationService.Instance["Status_HostNotConnected"];
             }
 
-            var runtimeLabel = HostRuntimeLabel;
-
-
-            return $"{runtimeLabel} on {HostCapabilities.Platform}";
+            // A localized FORMAT rather than an interpolated " on ": the English word was hardcoded
+            // here, and its word order does not survive translation - Hindi and Turkish both put the
+            // platform first. (RemEx-6s34)
+            return string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                LocalizationService.Instance["Status_HostRuntimeOnPlatform"],
+                HostRuntimeLabel,
+                HostPlatformLabel);
         }
     }
 

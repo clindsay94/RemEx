@@ -481,6 +481,18 @@
   <data name="Status_HostNotConnected" xml:space="preserve">
     <value>PC no conectado</value>
   </data>
+  <data name="Status_PlatformWindows" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="Status_PlatformLinux" xml:space="preserve">
+    <value>Linux</value>
+  </data>
+  <data name="Status_PlatformMacOs" xml:space="preserve">
+    <value>macOS</value>
+  </data>
+  <data name="Status_HostRuntimeOnPlatform" xml:space="preserve">
+    <value>{0} en {1}</value>
+  </data>
   <data name="Status_InteractiveHost" xml:space="preserve">
     <value>PC interactivo</value>
   </data>
