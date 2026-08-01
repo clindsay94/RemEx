@@ -10,12 +10,13 @@ using Remex.Desktop.ViewModels;
 namespace Remex.Desktop.Services.FileTransfer;
 
 /// <summary>
-/// Client-side file transfer service. Uses the existing WebSocket connection
-/// in <see cref="ConnectionViewModel"/> to send/receive file transfer messages.
+/// Client-side file transfer service. Sends and receives file transfer messages over an existing
+/// connection, supplied as <see cref="IFileTransferConnection"/> — in production that is
+/// <see cref="ConnectionViewModel"/>, which already satisfies the interface.
 /// </summary>
 public sealed class FileTransferClient : IDisposable
 {
-    private readonly ConnectionViewModel _connection;
+    private readonly IFileTransferConnection _connection;
     private TaskCompletionSource<RemexMessage>? _rootsWaiter;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _browseWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _transferEndWaiters = new();
@@ -92,7 +93,7 @@ public sealed class FileTransferClient : IDisposable
         _transferEndWaiters.Count + _progressReporters.Count +
         _downloadChannels.Count + _downloadBacklogBytes.Count + _downloadHashers.Count;
 
-    public FileTransferClient(ConnectionViewModel connection)
+    public FileTransferClient(IFileTransferConnection connection)
     {
         _connection = connection;
         _connection.FileTransferMessageReceived += OnFileTransferMessage;

@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using QRCoder;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.FileTransfer;
 using Remex.Core;
 using Remex.Core.Exceptions;
 using Remex.Core.Guards;
@@ -28,7 +29,11 @@ using Remex.Desktop.Services.Security;
 
 namespace Remex.Desktop.ViewModels;
 
-public partial class ConnectionViewModel : ObservableValidator, IDisposable
+// IFileTransferConnection is satisfied by members that already existed — the FileTransferMessageReceived
+// event and SendAsync(RemexMessage). Declaring it adds no code here; it lets FileTransferClient depend
+// on the two things it uses instead of the whole view model, so the download unwind path became
+// testable (RemEx-qmnl).
+public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFileTransferConnection
 {
     private const int MaxLatencyPoints = 30;
     private const int MaxReconnectDelaySeconds = 30;
