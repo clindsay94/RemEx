@@ -295,6 +295,17 @@ public partial class SensorViewModel : ObservableObject
         OnPropertyChanged(nameof(ResolvedGraphType));
         OnPropertyChanged(nameof(IsDualMetric));
 
+        // The ONLY call site, which makes threshold evaluation a side effect of the per-sensor
+        // update work rather than something independent of it. That coupling is easy to break by
+        // accident: the NAIVE ways of narrowing the telemetry tick — skip sensors with no placed
+        // card, sample the tick while the window is hidden — stop evaluating alerts for whatever
+        // they skip, and a hidden window is where alerts matter most.
+        //
+        // NOT a claim that the tick cannot be narrowed safely. Splitting this method into an
+        // evaluate half (Value, RawReading, CheckAlert — always) and a present half (History plus
+        // the gauge notifications — only when something is on screen) would keep alerts at full
+        // rate. That was measured and judged not worth writing: the whole tick is ~0.14 ms at 250
+        // sensors. See RemEx-4q6l; DashboardTickCostTests pins the coupling from the outside.
         CheckAlert();
     }
 
