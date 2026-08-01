@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -949,6 +950,48 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     }
 
     // Matches a kscreen-doctor "Geometry: X,Y WxH" line (ANSI colour codes stripped first).
+    /// <summary>
+    /// Reads a number out of kscreen-doctor / xrandr / xdpyinfo output, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THESE TOOLS SPEAK ASCII AND THE HOST MIGHT NOT (RemEx-tiih). <c>int.Parse</c> and
+    /// <c>int.TryParse</c> without a provider use <c>CurrentCulture</c>, and 57 runtime cultures —
+    /// the ar, ckb, fa, he, ks, lrc, mzn, pa, ps, sd, ur and uz families — reject the ASCII sign
+    /// these tools emit, because their <c>NegativeSign</c> and <c>PositiveSign</c> carry a directional
+    /// mark such as U+061C or U+200E in front of it.
+    /// </para>
+    /// <para>
+    /// THE BLAST RADIUS IS WIDER THAN "NEGATIVE COORDINATES", which is how this was filed.
+    /// <see cref="XrandrGeometryRegex"/> matches <c>(?&lt;x&gt;[+-]\d+)</c> — a sign is REQUIRED, so
+    /// even a primary monitor at the origin arrives as <c>+0</c>. Measured: <c>"+0"</c>, <c>"+1920"</c>
+    /// and <c>"-1920"</c> are rejected by the same 57 cultures, while an unsigned <c>"1920"</c> is
+    /// rejected by none. On an affected host the xrandr path therefore failed to parse the geometry of
+    /// EVERY output, not merely of monitors left of or above the primary.
+    /// </para>
+    /// <para>
+    /// What that costs is not a cosmetic topology error. <c>_screenLeft</c>/<c>_screenTop</c> are the
+    /// minimum over outputs, and RemEx-dyvd made that origin load-bearing: <c>MoveMouse</c> subtracts
+    /// it before handing coordinates to ydotool, whose <c>--absolute</c> is emulated as home-then-move
+    /// and wants an offset rather than a position. A wrong origin aims the pointer at the wrong place,
+    /// silently.
+    /// </para>
+    /// <para>
+    /// Resolutions, dimensions and priorities cannot be negative and go through this anyway, for the
+    /// reason the formatting side does (RemEx-hbma): one rule with no exceptions is what keeps the
+    /// signed cases safe by construction rather than by anyone remembering which values carry a sign.
+    /// </para>
+    /// </remarks>
+    private static bool TryParseInt(string? text, out int value) =>
+        int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+
+    /// <summary>
+    /// Throwing form of <see cref="TryParseInt"/>, for the kscreen path whose caller already sits
+    /// inside a try/catch and treats a malformed line as a parse failure.
+    /// </summary>
+    private static int ParseInt(string text) =>
+        int.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture);
+
     private static readonly Regex KScreenGeometryRegex = new(
         @"Geometry:\s*(?<x>-?\d+),(?<y>-?\d+)\s+(?<w>\d+)x(?<h>\d+)",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -1027,7 +1070,15 @@ public class LinuxScreenCaptureService : IScreenCaptureService
     //       connected
     //       priority <n>        (priority 1 == primary)
     //       Geometry: X,Y WxH
-    private static List<DesktopDisplayInfo> ParseKScreenDisplays(string cleanOutput)
+    /// <summary>
+    /// Turns <c>kscreen-doctor -o</c> output into displays.
+    /// </summary>
+    /// <remarks>
+    /// Internal so the KDE path's parsing can be tested without kscreen-doctor. It is the only place
+    /// the throwing <see cref="ParseInt"/> is used, and testing that helper alone would not have shown
+    /// whether the geometry line reaches it at all (RemEx-tiih).
+    /// </remarks>
+    internal static List<DesktopDisplayInfo> ParseKScreenDisplays(string cleanOutput)
     {
         var result = new List<DesktopDisplayInfo>();
         var lines = cleanOutput.Split('\n');
@@ -1077,7 +1128,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             else if (line.Equals("connected", StringComparison.OrdinalIgnoreCase)) connected = true;
             else if (line.StartsWith("priority ", StringComparison.OrdinalIgnoreCase))
             {
-                if (int.TryParse(line["priority ".Length..].Trim(), out var pr) && pr == 1)
+                if (TryParseInt(line["priority ".Length..].Trim(), out var pr) && pr == 1)
                     isPrimary = true;
             }
             else
@@ -1085,10 +1136,10 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 var m = KScreenGeometryRegex.Match(line);
                 if (m.Success)
                 {
-                    geomX = int.Parse(m.Groups["x"].Value);
-                    geomY = int.Parse(m.Groups["y"].Value);
-                    geomW = int.Parse(m.Groups["w"].Value);
-                    geomH = int.Parse(m.Groups["h"].Value);
+                    geomX = ParseInt(m.Groups["x"].Value);
+                    geomY = ParseInt(m.Groups["y"].Value);
+                    geomW = ParseInt(m.Groups["w"].Value);
+                    geomH = ParseInt(m.Groups["h"].Value);
                 }
             }
         }
@@ -1191,7 +1242,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 if (line.Contains("dimensions:"))
                 {
                     var parts = line.Split(':')[1].Trim().Split(' ')[0].Split('x');
-                    if (parts.Length == 2 && int.TryParse(parts[0], out int w) && int.TryParse(parts[1], out int h))
+                    if (parts.Length == 2 && TryParseInt(parts[0], out int w) && TryParseInt(parts[1], out int h))
                     {
                         _screenLeft = 0;
                         _screenTop = 0;
@@ -1234,7 +1285,7 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                 {
                     var resPart = trimmed.Split("current:")[1].Trim().Split(' ')[0];
                     var res = resPart.Split('x');
-                    if (res.Length == 2 && int.TryParse(res[0], out int w) && int.TryParse(res[1], out int h))
+                    if (res.Length == 2 && TryParseInt(res[0], out int w) && TryParseInt(res[1], out int h))
                     {
                         _screenLeft = 0;
                         _screenTop = 0;
@@ -1352,8 +1403,8 @@ public class LinuxScreenCaptureService : IScreenCaptureService
 
             var dims = dimsSection.Split(" x ", StringSplitOptions.TrimEntries);
             if (dims.Length != 2 ||
-                !int.TryParse(dims[0], out width) ||
-                !int.TryParse(dims[1], out height))
+                !TryParseInt(dims[0], out width) ||
+                !TryParseInt(dims[1], out height))
             {
                 continue;
             }
@@ -1409,7 +1460,15 @@ public class LinuxScreenCaptureService : IScreenCaptureService
         return true;
     }
 
-    private static bool TryParseXrandrGeometry(
+    /// <summary>
+    /// Parses one xrandr geometry token such as <c>1920x1080+0+0</c> or <c>1920x1080-1920+0</c>.
+    /// </summary>
+    /// <remarks>
+    /// Internal so the regex and the parse can be tested together, which is where the defect lived:
+    /// the pattern REQUIRES a sign on x and y, so testing the helper alone would miss that every
+    /// output, not merely a left-of-primary one, went through a signed parse (RemEx-tiih).
+    /// </remarks>
+    internal static bool TryParseXrandrGeometry(
         string line,
         out int width,
         out int height,
@@ -1434,10 +1493,10 @@ public class LinuxScreenCaptureService : IScreenCaptureService
             if (!match.Success)
                 continue;
 
-            if (!int.TryParse(match.Groups["width"].Value, out width) ||
-                !int.TryParse(match.Groups["height"].Value, out height) ||
-                !int.TryParse(match.Groups["x"].Value, out x) ||
-                !int.TryParse(match.Groups["y"].Value, out y))
+            if (!TryParseInt(match.Groups["width"].Value, out width) ||
+                !TryParseInt(match.Groups["height"].Value, out height) ||
+                !TryParseInt(match.Groups["x"].Value, out x) ||
+                !TryParseInt(match.Groups["y"].Value, out y))
             {
                 continue;
             }
