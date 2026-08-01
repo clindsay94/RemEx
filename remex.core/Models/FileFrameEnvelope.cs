@@ -112,6 +112,44 @@ public static class FileFrameCodec
     }
 
     /// <summary>
+    /// Reads a binary frame produced by <see cref="Wrap"/>, yielding the payload as
+    /// <see cref="ReadOnlyMemory{T}"/> so it can be passed ACROSS AN AWAIT.
+    /// </summary>
+    /// <remarks>
+    /// The span overload cannot serve an async consumer at all: <c>ReadOnlySpan</c> is a
+    /// <c>ref struct</c> and may not live across an <c>await</c>, which is the ONLY reason the
+    /// <c>/ws/files</c> receive loop used to copy every payload with <c>ToArray()</c> before handing
+    /// it on. That copy was never defending anything — it was working around the language — and at
+    /// the 256 KB frame cap it was a Large Object Heap allocation per frame (RemEx-8su9).
+    ///
+    /// The payload is a VIEW into <paramref name="frame"/>, so the caller owns the lifetime: it must
+    /// not reuse the frame buffer until every consumer of the payload has completed. The receive
+    /// loop satisfies that by awaiting its handler before receiving again.
+    ///
+    /// Parsing is delegated to the span overload rather than repeated, so the two cannot disagree
+    /// about what a valid frame is.
+    /// </remarks>
+    public static bool TryRead(
+        ReadOnlyMemory<byte> frame,
+        out FileFrameEnvelope? envelope,
+        out ReadOnlyMemory<byte> payload)
+    {
+        payload = default;
+        if (!TryRead(frame.Span, out envelope, out var payloadSpan))
+            return false;
+
+        // The payload always sits at the TAIL — the span overload slices to the end of the frame —
+        // so its offset is derivable from the lengths without pointer arithmetic on the span.
+        //
+        // Nothing enforces that invariant structurally: if the format ever grew a trailer, this would
+        // point at the wrong offset while both overloads still reported success. The parity tests in
+        // FileFrameWriteIntoPooledBufferTests cover it at three payload lengths including zero; a
+        // trailer would mean giving the parse a private core that also yields the payload offset.
+        payload = frame[(frame.Length - payloadSpan.Length)..];
+        return true;
+    }
+
+    /// <summary>
     /// Reads a binary frame produced by <see cref="Wrap"/>. Returns false (without throwing) for any
     /// malformed frame — a truncated prefix, an out-of-range header length, or invalid header JSON.
     /// On success, <paramref name="payload"/> is a view into <paramref name="frame"/> (no copy).

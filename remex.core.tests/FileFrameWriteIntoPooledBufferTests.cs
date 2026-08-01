@@ -128,6 +128,43 @@ public class FileFrameWriteIntoPooledBufferTests
             "ever agree, the trap this test documents has stopped existing and the test should go");
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(4096)]
+    public void TheMemoryOverloadYieldsTheSamePayloadAsTheSpanOverload(int payloadLength)
+    {
+        // The memory overload exists so the payload can cross an await — a ReadOnlySpan is a ref
+        // struct and cannot. It derives the payload's offset from the LENGTHS rather than repeating
+        // the parse, so this pins that the derivation agrees with the authoritative span version,
+        // including at zero length where an off-by-one would be invisible in casual use.
+        var payload = new byte[payloadLength];
+        for (var i = 0; i < payloadLength; i++) payload[i] = (byte)(i % 241);
+        var frame = FileFrameCodec.Wrap(DataEnvelope(payloadLength), payload);
+
+        Assert.True(FileFrameCodec.TryRead(frame.AsSpan(), out var spanEnvelope, out var spanPayload));
+        Assert.True(FileFrameCodec.TryRead(frame.AsMemory(), out var memEnvelope, out var memPayload));
+
+        Assert.Equal(spanEnvelope!.TransferId, memEnvelope!.TransferId);
+        Assert.Equal(spanPayload.Length, memPayload.Length);
+        Assert.True(memPayload.Span.SequenceEqual(spanPayload));
+        Assert.True(memPayload.Span.SequenceEqual(payload));
+    }
+
+    [Fact]
+    public void TheMemoryOverloadRejectsAMalformedFrameJustAsTheSpanOverloadDoes()
+    {
+        // Delegating the parse means the two cannot disagree about validity — pinned rather than
+        // assumed, because a divergence here would let a malformed frame through on the async path
+        // only, which is the path production actually uses.
+        var truncated = new byte[] { 0x01, 0x02 };
+
+        Assert.False(FileFrameCodec.TryRead(truncated.AsSpan(), out _, out _));
+        Assert.False(FileFrameCodec.TryRead(truncated.AsMemory(), out var envelope, out var payload));
+        Assert.Null(envelope);
+        Assert.True(payload.IsEmpty);
+    }
+
     [Fact]
     public void ADestinationTooSmallForTheFrameIsRejectedRatherThanTruncated()
     {

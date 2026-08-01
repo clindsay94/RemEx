@@ -527,20 +527,30 @@ public sealed class TransferSessionManager : IDisposable
 
         _logger.LogInformation("DIAG /ws/files channel loop STARTED for {ClientId} (wsState={State}).", Remex.Agent.Services.Security.LogRedaction.RedactClientId(key), ws.State);
         var diagDataFrames = 0;
+
+        // ONE buffer for the whole channel, reused frame after frame, instead of a fresh array per
+        // frame. Safe because every consumer of a frame is awaited before the next receive can
+        // overwrite it — see the data-frame case below, and WriteChunkAsync, which writes the stream
+        // awaited and hashes synchronously and retains nothing (RemEx-8su9).
+        var receiveBuffer = ArrayPool<byte>.Shared.Rent(MaxFrameBytes);
         try
         {
             while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
-                var frameBytes = await ReceiveBinaryAsync(ws, ct);
-                if (frameBytes is null)
+                var frameLength = await ReceiveBinaryAsync(ws, receiveBuffer, ct);
+                if (frameLength < 0)
                 {
                     _logger.LogInformation("DIAG /ws/files recv returned null for {ClientId} after {N} data frame(s) (wsState={State}) — loop exiting.", Remex.Agent.Services.Security.LogRedaction.RedactClientId(key), diagDataFrames, ws.State);
                     break; // socket closed or an oversize/protocol-invalid frame.
                 }
 
+                // AsMemory, NOT receiveBuffer[..frameLength]: the range indexer on an ARRAY allocates
+                // and copies, which would have quietly reinstated the per-frame allocation this
+                // change exists to remove — and it compiles either way.
+                var frameBytes = receiveBuffer.AsMemory(0, frameLength);
                 if (!FileFrameCodec.TryRead(frameBytes, out var envelope, out var payload) || envelope is null)
                 {
-                    _logger.LogWarning("Discarding malformed /ws/files frame ({Len} bytes) from {ClientId}.", frameBytes.Length, Remex.Agent.Services.Security.LogRedaction.RedactClientId(key));
+                    _logger.LogWarning("Discarding malformed /ws/files frame ({Len} bytes) from {ClientId}.", frameLength, Remex.Agent.Services.Security.LogRedaction.RedactClientId(key));
                     continue;
                 }
 
@@ -549,7 +559,10 @@ public sealed class TransferSessionManager : IDisposable
                     case FileFrameKinds.Data:
                         if (diagDataFrames++ == 0)
                             _logger.LogInformation("DIAG first DATA frame on /ws/files: transfer={Id}, offset={Off}, len={Len}.", envelope.TransferId, envelope.Offset, payload.Length);
-                        await HandleInboundDataFrameAsync(channel, envelope, payload.ToArray(), ct);
+                        // No ToArray. The payload is a view into receiveBuffer, and this await is
+                        // what makes that safe: the loop cannot receive the next frame — and so
+                        // cannot overwrite the buffer — until the handler has finished with it.
+                        await HandleInboundDataFrameAsync(channel, envelope, payload, ct);
                         break;
 
                     case FileFrameKinds.Ack:
@@ -579,6 +592,11 @@ public sealed class TransferSessionManager : IDisposable
         }
         finally
         {
+            // Returned here, not inside the loop: the buffer is live for the whole channel, and the
+            // loop is the only thing that ever reads or writes it. Nothing has escaped by this point
+            // because every frame's consumer was awaited before the next iteration.
+            ArrayPool<byte>.Shared.Return(receiveBuffer);
+
             // Only tear down if we are still the registered channel for this client.
             if (_channels.TryGetValue(key, out var current) && ReferenceEquals(current, channel))
                 _channels.TryRemove(key, out _);
@@ -598,7 +616,17 @@ public sealed class TransferSessionManager : IDisposable
         }
     }
 
-    private async Task HandleInboundDataFrameAsync(FileChannel channel, FileFrameEnvelope envelope, byte[] payload, CancellationToken ct)
+    /// <summary>
+    /// Writes one inbound data frame's payload to the staging partial and acks when due.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="payload"/> is a VIEW into the channel's reusable receive buffer, not a private
+    /// copy. That is safe only because this method is awaited by the receive loop before it reads
+    /// again, and because nothing below retains the memory: <see cref="WriteChunkAsync"/> awaits the
+    /// stream write and appends to the hash synchronously. Do not stash it, and do not start
+    /// background work over it without copying first (RemEx-8su9).
+    /// </remarks>
+    private async Task HandleInboundDataFrameAsync(FileChannel channel, FileFrameEnvelope envelope, ReadOnlyMemory<byte> payload, CancellationToken ct)
     {
         try
         {
@@ -799,29 +827,43 @@ public sealed class TransferSessionManager : IDisposable
     // Helpers.
     // ─────────────────────────────────────────────────────────────────────────────
 
-    private static async Task<byte[]?> ReceiveBinaryAsync(WebSocket ws, CancellationToken ct)
+    /// <summary>
+    /// Reads one complete binary message into <paramref name="destination"/>, reassembling WebSocket
+    /// fragments. Returns the byte count, or -1 when the socket closed or the frame was oversize.
+    /// </summary>
+    /// <remarks>
+    /// Fills a buffer the CALLER owns rather than returning a fresh array. The previous shape
+    /// accumulated into a growable <see cref="MemoryStream"/> and finished with <c>ToArray()</c>,
+    /// which at the 256 KB frame cap meant the stream's doubling allocations plus one more Large
+    /// Object Heap array — every frame, for a buffer discarded moments later (RemEx-8su9).
+    ///
+    /// <paramref name="destination"/> must be at least <see cref="MaxFrameBytes"/>; anything longer
+    /// is refused here rather than silently truncated, because a truncated frame would parse as a
+    /// valid header with a short payload and be written to the file as if it were complete.
+    /// </remarks>
+    private static async Task<int> ReceiveBinaryAsync(WebSocket ws, Memory<byte> destination, CancellationToken ct)
     {
-        using var ms = new MemoryStream();
-        var buffer = ArrayPool<byte>.Shared.Rent(64 * 1024);
-        try
+        var received = 0;
+        // ValueWebSocketReceiveResult, because the Memory overload of ReceiveAsync returns the struct
+        // form — which is also the point of using it: no per-receive result allocation either.
+        ValueWebSocketReceiveResult result;
+        do
         {
-            WebSocketReceiveResult result;
-            do
-            {
-                result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
-                if (result.MessageType == WebSocketMessageType.Close)
-                    return null;
-                if (ms.Length + result.Count > MaxFrameBytes)
-                    return null; // Oversize frame: close the channel rather than buffer unbounded data.
-                ms.Write(buffer, 0, result.Count);
-            }
-            while (!result.EndOfMessage);
+            if (received >= destination.Length)
+                return -1; // No room even to attempt the next fragment: treat as oversize.
+
+            var segment = destination[received..];
+            result = await ws.ReceiveAsync(segment, ct);
+            if (result.MessageType == WebSocketMessageType.Close)
+                return -1;
+
+            received += result.Count;
+            if (received > MaxFrameBytes)
+                return -1; // Oversize frame: close the channel rather than buffer unbounded data.
         }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-        return ms.ToArray();
+        while (!result.EndOfMessage);
+
+        return received;
     }
 
     private static async Task ReHashPartialAsync(string partialPath, IncrementalHash hasher, CancellationToken ct)
