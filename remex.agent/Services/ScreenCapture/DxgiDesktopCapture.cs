@@ -217,6 +217,81 @@ internal sealed class DxgiDesktopCapture : IDisposable
         return Marshal.GetDelegateForFunctionPointer<T>(fn);
     }
 
+    // ── cached per-frame vtable delegates (RemEx-8c1l) ─────────────────────────
+    //
+    // GetSlot builds a fresh marshalling stub on EVERY call, and the capture path makes several per
+    // frame — roughly a thousand a second at 120 fps, for function pointers that never move. A COM
+    // object's vtable belongs to its TYPE, so a delegate read from one stays valid as long as the
+    // object does.
+    //
+    // KEYED ON THE COM POINTER, NOT INVALIDATED AT RELEASE SITES. Two reasons, the second being what
+    // actually makes it safe. First, invalidating by hand is only correct while every release site is
+    // known, and TryReinitializeDuplication releases and re-creates _duplOutput WITHOUT going through
+    // ReleaseAll — it can even return early on its throttle gate and leave the field Zero. Second and
+    // more fundamentally, a cached delegate is NEVER invoked against a captured pointer: every call
+    // site passes the live field, re-read at the call, so a released object is structurally
+    // unreachable through this cache. The owner check exists to stop a delegate read from one object
+    // being used against another, and since each field has a single assignment site any non-zero
+    // value in it is the same COM type.
+    //
+    // Exposed as properties rather than a "refresh first" step so validation happens at the point of
+    // USE and no later call site can forget it.
+
+    private IntPtr _contextDelegateOwner = IntPtr.Zero;
+    private CopyResourceFn? _copyResourceFn;
+    private MapFn? _mapFn;
+    private UnmapFn? _unmapFn;
+
+    private IntPtr _duplDelegateOwner = IntPtr.Zero;
+    private AcquireNextFrameFn? _acquireNextFrameFn;
+    private ReleaseFrameFn? _releaseFrameFn;
+
+    private CopyResourceFn CopyResource { get { EnsureContextDelegates(); return _copyResourceFn!; } }
+    private MapFn MapResource { get { EnsureContextDelegates(); return _mapFn!; } }
+    private UnmapFn UnmapResource { get { EnsureContextDelegates(); return _unmapFn!; } }
+    private AcquireNextFrameFn AcquireFrameSlot { get { EnsureDuplDelegates(); return _acquireNextFrameFn!; } }
+    private ReleaseFrameFn ReleaseFrameSlot { get { EnsureDuplDelegates(); return _releaseFrameFn!; } }
+
+    private void EnsureContextDelegates()
+    {
+        if (_contextDelegateOwner == _d3dContext && _copyResourceFn is not null)
+            return;
+
+        _copyResourceFn = GetSlot<CopyResourceFn>(_d3dContext, 47);
+        _mapFn = GetSlot<MapFn>(_d3dContext, 14);
+        _unmapFn = GetSlot<UnmapFn>(_d3dContext, 15);
+        _contextDelegateOwner = _d3dContext;
+    }
+
+    private void EnsureDuplDelegates()
+    {
+        if (_duplDelegateOwner == _duplOutput && _acquireNextFrameFn is not null)
+            return;
+
+        _acquireNextFrameFn = GetSlot<AcquireNextFrameFn>(_duplOutput, 8);
+        _releaseFrameFn = GetSlot<ReleaseFrameFn>(_duplOutput, 14);
+        _duplDelegateOwner = _duplOutput;
+    }
+
+    // ── reused native scratch (RemEx-8c1l) ────────────────────────────────────
+    //
+    // Two fixed-size structs were malloc'd and freed on every frame purely to give a COM call
+    // somewhere to write. They are per-instance and every use is under _lock, so one allocation each
+    // for the object's lifetime is enough. Freed in Dispose. Reuse is safe against a FAILED call
+    // because every caller checks the HRESULT and returns without reading the buffer.
+    private IntPtr _frameInfoScratch = IntPtr.Zero;
+    private IntPtr _mappedScratch = IntPtr.Zero;
+
+    private IntPtr FrameInfoScratch =>
+        _frameInfoScratch != IntPtr.Zero
+            ? _frameInfoScratch
+            : _frameInfoScratch = Marshal.AllocHGlobal(Marshal.SizeOf<DXGI_OUTDUPL_FRAME_INFO>());
+
+    private IntPtr MappedScratch =>
+        _mappedScratch != IntPtr.Zero
+            ? _mappedScratch
+            : _mappedScratch = Marshal.AllocHGlobal(Marshal.SizeOf<MappedSubresource>());
+
     private static int QueryInterface(IntPtr com, Guid iid, out IntPtr result)
     {
         var fn = GetSlot<QueryInterfaceFn>(com, 0); // IUnknown::QueryInterface = slot 0
@@ -496,7 +571,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
             try
             {
-                GetSlot<CopyResourceFn>(_d3dContext, 47)(_d3dContext, _stagingTexture, srcTex);
+                CopyResource(_d3dContext, _stagingTexture, srcTex);
                 _stagingHasFrame = true;
             }
             finally
@@ -507,7 +582,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         finally
         {
             Release(ref dxgiResource);
-            GetSlot<ReleaseFrameFn>(_duplOutput, 14)(_duplOutput);
+            ReleaseFrameSlot(_duplOutput);
         }
 
         return MapStagingAndEncode(scale, drawCursor, out isLive);
@@ -539,13 +614,12 @@ internal sealed class DxgiDesktopCapture : IDisposable
     // static-desktop rescale path.
     private byte[]? MapStagingAndEncode(double scale, bool drawCursor, out bool isLive)
     {
-        IntPtr mappedPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MappedSubresource>());
-        var hr = GetSlot<MapFn>(_d3dContext, 14)(
+        IntPtr mappedPtr = MappedScratch;
+        var hr = MapResource(
             _d3dContext, _stagingTexture, 0, D3D11_MAP_READ, 0, mappedPtr);
 
         if (hr != S_OK)
         {
-            Marshal.FreeHGlobal(mappedPtr);
             isLive = false;
             return _lastRawFrame; // stale: map failed
         }
@@ -560,8 +634,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         }
         finally
         {
-            GetSlot<UnmapFn>(_d3dContext, 15)(_d3dContext, _stagingTexture, 0);
-            Marshal.FreeHGlobal(mappedPtr);
+            UnmapResource(_d3dContext, _stagingTexture, 0);
         }
     }
 
@@ -695,7 +768,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
             {
                 // Copy GPU-resident texture → CPU-readable staging texture
                 // ID3D11DeviceContext::CopyResource = slot 47
-                GetSlot<CopyResourceFn>(_d3dContext, 47)(_d3dContext, _stagingTexture, srcTex);
+                CopyResource(_d3dContext, _stagingTexture, srcTex);
             }
             finally
             {
@@ -707,18 +780,17 @@ internal sealed class DxgiDesktopCapture : IDisposable
             Release(ref dxgiResource);
             // Release the DXGI frame ASAP so the OS can recycle its buffer.
             // Must be released before calling AcquireNextFrame again.
-            GetSlot<ReleaseFrameFn>(_duplOutput, 14)(_duplOutput);
+            ReleaseFrameSlot(_duplOutput);
         }
 
         // Map the staging texture for CPU read
         // ID3D11DeviceContext::Map = slot 14
-        IntPtr mappedPtr = Marshal.AllocHGlobal(Marshal.SizeOf<MappedSubresource>());
-        hr = GetSlot<MapFn>(_d3dContext, 14)(
+        IntPtr mappedPtr = MappedScratch;
+        hr = MapResource(
             _d3dContext, _stagingTexture, 0, D3D11_MAP_READ, 0, mappedPtr);
 
         if (hr != S_OK)
         {
-            Marshal.FreeHGlobal(mappedPtr);
             return _lastFrame; // stale: map failed
         }
 
@@ -732,8 +804,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         finally
         {
             // ID3D11DeviceContext::Unmap = slot 15
-            GetSlot<UnmapFn>(_d3dContext, 15)(_d3dContext, _stagingTexture, 0);
-            Marshal.FreeHGlobal(mappedPtr);
+            UnmapResource(_d3dContext, _stagingTexture, 0);
         }
     }
 
@@ -906,19 +977,16 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     private int AcquireNextFrame(uint timeoutMs, out DXGI_OUTDUPL_FRAME_INFO frameInfo, out IntPtr dxgiResource)
     {
-        IntPtr frameInfoPtr = Marshal.AllocHGlobal(Marshal.SizeOf<DXGI_OUTDUPL_FRAME_INFO>());
-        try
-        {
-            var hr = GetSlot<AcquireNextFrameFn>(_duplOutput, 8)(_duplOutput, timeoutMs, frameInfoPtr, out dxgiResource);
-            frameInfo = hr == S_OK
-                ? Marshal.PtrToStructure<DXGI_OUTDUPL_FRAME_INFO>(frameInfoPtr)
-                : default;
-            return hr;
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(frameInfoPtr);
-        }
+        IntPtr frameInfoPtr = FrameInfoScratch;
+        var hr = AcquireFrameSlot(_duplOutput, timeoutMs, frameInfoPtr, out dxgiResource);
+
+        // Read out only on success. The scratch is reused across frames, so on a failed call it still
+        // holds the PREVIOUS frame's bytes — 'default' is what the try/finally version produced too,
+        // and it is what the callers expect (RemEx-8c1l).
+        frameInfo = hr == S_OK
+            ? Marshal.PtrToStructure<DXGI_OUTDUPL_FRAME_INFO>(frameInfoPtr)
+            : default;
+        return hr;
     }
 
     private void TryRefreshPointerShapeSnapshot()
@@ -958,7 +1026,7 @@ internal sealed class DxgiDesktopCapture : IDisposable
         finally
         {
             Release(ref dxgiResource);
-            GetSlot<ReleaseFrameFn>(_duplOutput, 14)(_duplOutput);
+            ReleaseFrameSlot(_duplOutput);
         }
     }
 
@@ -1088,6 +1156,14 @@ internal sealed class DxgiDesktopCapture : IDisposable
 
     // ── Disposal ──────────────────────────────────────────────────────────────
 
+    /// <summary>Frees a reused native scratch buffer once, idempotently.</summary>
+    private static void FreeScratch(ref IntPtr scratch)
+    {
+        if (scratch == IntPtr.Zero) return;
+        Marshal.FreeHGlobal(scratch);
+        scratch = IntPtr.Zero;
+    }
+
     private void ReleaseAll()
     {
         // Release in reverse dependency order: staging texture → duplication → context → device
@@ -1103,7 +1179,12 @@ internal sealed class DxgiDesktopCapture : IDisposable
         if (_disposed) return;
         _disposed = true;
         _lock.Wait(); // Ensure no capture is in progress
-        try { ReleaseAll(); }
+        try
+        {
+            ReleaseAll();
+            FreeScratch(ref _frameInfoScratch);
+            FreeScratch(ref _mappedScratch);
+        }
         finally { _lock.Release(); _lock.Dispose(); }
     }
 }
