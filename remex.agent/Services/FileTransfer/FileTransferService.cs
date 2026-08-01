@@ -188,6 +188,21 @@ public sealed class FileTransferService : IFileTransferService
     }
 
     public Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct)
+        => Task.FromResult<Stream>(new FileStream(
+            ResolveForWrite(rootId, relativePath, expectedBytes),
+            FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true));
+
+    /// <summary>
+    /// Applies every write-side check and returns the absolute destination path, creating the parent
+    /// directory if needed.
+    /// </summary>
+    /// <remarks>
+    /// Extracted so that opening a stream and promoting a staged file cannot drift apart. These four
+    /// checks — size cap, root writability, root-escape safety via <c>ResolvePath</c>, and parent
+    /// creation — ARE the write authorization for this service, so a second caller that needed a path
+    /// rather than a stream had to reuse them rather than reimplement them (RemEx-fq6f).
+    /// </remarks>
+    private string ResolveForWrite(string rootId, string relativePath, long expectedBytes)
     {
         if (expectedBytes > MaxUploadBytes)
             throw new ArgumentOutOfRangeException(nameof(expectedBytes), $"File too large ({expectedBytes} bytes). Max is {MaxUploadBytes}.");
@@ -201,7 +216,41 @@ public sealed class FileTransferService : IFileTransferService
         if (dir is not null && !Directory.Exists(dir))
             Directory.CreateDirectory(dir);
 
-        return Task.FromResult<Stream>(new FileStream(resolved, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true));
+        return resolved;
+    }
+
+    public async Task PromoteStagedFileAsync(
+        string rootId, string relativePath, long expectedBytes, string stagingPath, CancellationToken ct)
+    {
+        var destination = ResolveForWrite(rootId, relativePath, expectedBytes);
+
+        // Same volume: a rename. This is the whole point of the bead — the previous code re-read the
+        // staged file and streamed it to the destination, so a 5 GB push cost 10 GB of writes plus a
+        // 5 GB read to move bytes that were already on the right disk.
+        //
+        // On this branch it is also SAFER, not just faster, for two separate reasons. First, the copy
+        // opened the destination with FileMode.Create, which truncates before the first byte arrives,
+        // so a failure midway left the user's pre-existing file destroyed and replaced by a fragment;
+        // a true rename replaces atomically. Second, ResolveWithinRoot is purely lexical and does not
+        // resolve reparse points, so FileMode.Create would happily write THROUGH a symlink or junction
+        // planted in the shared root to a target outside it — MoveFileEx and rename() replace the link
+        // itself. (Atomicity is claimed only here: see the fallback below.)
+        if (AreSameVolume(stagingPath, destination))
+        {
+            File.Move(stagingPath, destination, overwrite: true);
+            RestoreInheritedAcl(destination);
+            return;
+        }
+
+        // Different volume: bytes genuinely have to cross, so stream them. File.Move would fall back to
+        // an internal copy here anyway (MOVEFILE_COPY_ALLOWED on Windows, an EXDEV fallback on Unix),
+        // but that copy is synchronous, uncancellable and NOT atomic — this keeps the await points and
+        // honours ct on a transfer that can legitimately run for minutes. A file created here inherits
+        // the destination's ACL normally, so no fixup is needed on this path.
+        await using var src = new FileStream(stagingPath, FileMode.Open, FileAccess.Read, FileShare.None, 65536, useAsync: true);
+        await using var dst = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+        await src.CopyToAsync(dst, 65536, ct);
+        await dst.FlushAsync(ct);
     }
 
     public Task DeleteAsync(string rootId, string relativePath, CancellationToken ct)
@@ -641,13 +690,82 @@ public sealed class FileTransferService : IFileTransferService
         return string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), comparison);
     }
 
+    /// <summary>
+    /// Restores normal ACL inheritance on a file that arrived by rename (Windows only, no-op elsewhere).
+    /// </summary>
+    /// <remarks>
+    /// NTFS does not recompute inherited ACEs when a file is renamed across directories: the moved file
+    /// keeps the ACEs it inherited from where it came from, still flagged as inherited but from the old
+    /// parent. Staging lives machine-wide under ProgramData, so without this a file promoted into the
+    /// user's Documents would arrive carrying ProgramData's ACL — the owner would get read-only access
+    /// to their own received file, and every other local account would gain read access it never had
+    /// under the old copy. Clearing protection with preserveInheritance:false drops the stale ACEs and
+    /// lets the new parent's inheritable ACEs apply, which reproduces exactly what creating the file in
+    /// place used to produce. Unix rename() preserves owner and mode and the agent already runs as the
+    /// signed-in user, so there is nothing to repair there (RemEx-fq6f).
+    /// </remarks>
+    private void RestoreInheritedAcl(string path)
+    {
+        if (!OperatingSystem.IsWindows())
+            return;
+
+        try
+        {
+            var security = new System.Security.AccessControl.FileSecurity();
+            security.SetAccessRuleProtection(isProtected: false, preserveInheritance: false);
+            new FileInfo(path).SetAccessControl(security);
+        }
+        catch (Exception ex)
+        {
+            // Deliberately catch-all. By this point the file is already sitting complete and correct at
+            // its destination, so letting anything escape would report verified:false for a transfer
+            // that actually succeeded — strictly worse than delivering it with a stale ACL. A narrower
+            // filter missed the generic exceptions SetAccessControl raises for unrecognized Win32
+            // errors, which is exactly the case this is here to absorb.
+            _logger.LogWarning(ex, "Could not restore inherited permissions on {Path} after promotion.", path);
+        }
+    }
+
     private static bool AreSameVolume(string a, string b)
     {
-        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-        return string.Equals(
-            Path.GetPathRoot(Path.GetFullPath(a)),
-            Path.GetPathRoot(Path.GetFullPath(b)),
-            comparison);
+        var fullA = Path.GetFullPath(a);
+        var fullB = Path.GetFullPath(b);
+
+        if (OperatingSystem.IsWindows())
+        {
+            return string.Equals(Path.GetPathRoot(fullA), Path.GetPathRoot(fullB), StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Path.GetPathRoot returns "/" for EVERY absolute Unix path, so the comparison above would call
+        // any two paths same-volume and a genuinely cross-device promotion would silently take the
+        // rename branch — where .NET falls back to an internal copy that is synchronous, uncancellable
+        // and not atomic. Compare mount points instead (RemEx-fq6f).
+        return string.Equals(MountPointOf(fullA), MountPointOf(fullB), StringComparison.Ordinal);
+    }
+
+    /// <summary>Longest mounted filesystem root that contains <paramref name="fullPath"/>.</summary>
+    private static string MountPointOf(string fullPath)
+    {
+        var best = "/";
+        try
+        {
+            foreach (var drive in DriveInfo.GetDrives())
+            {
+                var mount = drive.RootDirectory.FullName;
+                if (mount.Length <= best.Length)
+                    continue;
+                var prefix = mount.EndsWith('/') ? mount : mount + '/';
+                if (fullPath.StartsWith(prefix, StringComparison.Ordinal) || fullPath == mount)
+                    best = mount;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Unreadable mount table: fall back to "/" for both sides, which reports same-volume and
+            // therefore behaves exactly as this did before. Degrading to the old behaviour is the right
+            // failure here — it still delivers the file.
+        }
+        return best;
     }
 
     private static bool IsDestinationInsideSource(string sourceDir, string destination)

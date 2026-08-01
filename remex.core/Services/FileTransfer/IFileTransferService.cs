@@ -50,6 +50,18 @@ public interface IFileTransferService
 
     Task<Stream> OpenForReadAsync(string rootId, string relativePath, CancellationToken ct);
     Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct);
+
+    /// <summary>
+    /// Moves an already-written staging file into <paramref name="relativePath"/> under
+    /// <paramref name="rootId"/>, applying the same write checks as
+    /// <see cref="OpenForWriteAsync"/> and replacing any existing file.
+    /// </summary>
+    /// <remarks>
+    /// Exists so a verified transfer does not have to be read back and rewritten to land in its
+    /// destination. On the same volume this is a rename, which is both instant and an atomic
+    /// replacement; only a genuine cross-volume promotion copies (RemEx-fq6f).
+    /// </remarks>
+    Task PromoteStagedFileAsync(string rootId, string relativePath, long expectedBytes, string stagingPath, CancellationToken ct);
     Task DeleteAsync(string rootId, string relativePath, CancellationToken ct);
     Task RenameAsync(string rootId, string relativePath, string newName, CancellationToken ct);
     Task<string> ComputeSha256Async(string rootId, string relativePath, CancellationToken ct);

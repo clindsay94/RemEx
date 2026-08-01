@@ -85,7 +85,9 @@ public sealed class TransferSessionManagerTests
             Assert.True(File.Exists(files.LastWrittenPath!));
             Assert.Equal(payload, await File.ReadAllBytesAsync(files.LastWrittenPath!));
 
-            // Staging is cleared on success.
+            // Staging is cleared on success. NOTE the partial assertion is now satisfied by the
+            // promotion itself — a rename consumes it — so the MANIFEST assertion below is the one that
+            // still proves DeleteStaging ran (RemEx-fq6f).
             Assert.False(File.Exists(Path.Combine(staging.FullName, tid + ".remexpart")));
             Assert.False(File.Exists(Path.Combine(staging.FullName, tid + ".manifest.json")));
         }
@@ -413,23 +415,42 @@ public sealed class TransferSessionManagerTests
     }
 
     /// <summary>
-    /// Minimal <see cref="IFileTransferService"/> test double: only <see cref="OpenForWriteAsync"/> is real
-    /// (writes the verified partial to a temp destination directory and records the path); every other member
-    /// throws, since the receiver state machine under test never touches them.
+    /// Minimal <see cref="IFileTransferService"/> test double: only <see cref="PromoteStagedFileAsync"/>
+    /// is real (lands the verified partial in a temp destination directory and records the path); every
+    /// other member throws, since the receiver state machine under test never touches them.
     /// </summary>
     private sealed class FakeFileTransferService(string destDir) : IFileTransferService
     {
         public string? LastWrittenPath { get; private set; }
 
+        /// <summary>
+        /// Mirrors the real service: same destination resolution, and it CONSUMES the staging file the
+        /// way a rename does. That second part matters — the manager deletes staging afterwards, so a
+        /// fake that left the partial in place would hide a double-delete or a use-after-move.
+        /// </summary>
+        public Task PromoteStagedFileAsync(string rootId, string relativePath, long expectedBytes, string stagingPath, CancellationToken ct)
+        {
+            var full = ResolveDestination(relativePath);
+            LastWrittenPath = full;
+            File.Move(stagingPath, full, overwrite: true);
+            return Task.CompletedTask;
+        }
+
         public Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct)
+        {
+            var full = ResolveDestination(relativePath);
+            LastWrittenPath = full;
+            Stream stream = new FileStream(full, FileMode.Create, FileAccess.Write, FileShare.None);
+            return Task.FromResult(stream);
+        }
+
+        private string ResolveDestination(string relativePath)
         {
             var full = Path.Combine(destDir, relativePath.Replace('/', Path.DirectorySeparatorChar));
             var parent = Path.GetDirectoryName(full);
             if (!string.IsNullOrEmpty(parent))
                 Directory.CreateDirectory(parent);
-            LastWrittenPath = full;
-            Stream stream = new FileStream(full, FileMode.Create, FileAccess.Write, FileShare.None);
-            return Task.FromResult(stream);
+            return full;
         }
 
         public Task<IReadOnlyList<FileSharedRoot>> ListRootsAsync(CancellationToken ct) => throw new NotSupportedException();

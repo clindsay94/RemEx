@@ -25,7 +25,8 @@ namespace Remex.Agent.Services.FileTransfer;
 /// request whose manifest identity matches, the partial is re-hashed and the sender is told to continue
 /// from <c>partialLength</c> (plan §1.3 — incremental hash state can't be serialized on the NativeAOT
 /// surface, so we re-hash locally). On completion the full-file SHA-256 is the final arbiter: a match is
-/// copied into the destination shared root via <see cref="IFileTransferService.OpenForWriteAsync"/> and the
+/// promoted into the destination shared root via <see cref="IFileTransferService.PromoteStagedFileAsync"/>
+/// — a rename when the two share a volume — and the
 /// staging files are removed; a mismatch (or an incomplete transfer) deletes the partial and reports
 /// <c>verified:false</c> — preserving the established "mismatch deletes the file" semantics.
 /// </para>
@@ -270,7 +271,9 @@ public sealed class TransferSessionManager : IDisposable
 
     /// <summary>
     /// Finalizes an inbound transfer: compares the full-file hash to <paramref name="expectedSha256Base64"/>,
-    /// and on a match copies the verified partial into the destination shared root before clearing staging.
+    /// and on a match promotes the verified partial into the destination shared root before clearing
+    /// staging. Promotion is a rename on the same volume, so the partial is normally already gone by the
+    /// time staging is cleared; only a cross-volume destination copies.
     /// A mismatch (or an incomplete transfer, or a destination write failure) deletes the partial and returns
     /// <c>verified:false</c>.
     /// </summary>
@@ -308,16 +311,15 @@ public sealed class TransferSessionManager : IDisposable
                 };
             }
 
-            // Verified: promote the partial into the destination shared root. OpenForWriteAsync enforces the
-            // root's writability, the size cap, root-escape safety, and creates parent directories.
+            // Verified: promote the partial into the destination shared root. PromoteStagedFileAsync
+            // enforces the root's writability, the size cap, root-escape safety, and creates parent
+            // directories — the same checks OpenForWriteAsync applies, because both go through the one
+            // ResolveForWrite. On the same volume this is a rename rather than a re-read and rewrite
+            // (RemEx-fq6f).
             try
             {
-                await using (var src = new FileStream(session.PartialPath, FileMode.Open, FileAccess.Read, FileShare.None, 65536, useAsync: true))
-                await using (var dst = await _fileTransferService.OpenForWriteAsync(session.DestRoot, session.HostRelativePath, session.ExpectedSize, ct))
-                {
-                    await src.CopyToAsync(dst, 65536, ct);
-                    await dst.FlushAsync(ct);
-                }
+                await _fileTransferService.PromoteStagedFileAsync(
+                    session.DestRoot, session.HostRelativePath, session.ExpectedSize, session.PartialPath, ct);
             }
             catch (Exception ex)
             {
