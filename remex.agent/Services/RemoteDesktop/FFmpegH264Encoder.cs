@@ -16,7 +16,9 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     // Bounded, drop-newest feed from the capture thread to the dedicated stdin writer. A tiny
     // capacity (a few frames) is intentional: if the encoder can't keep up, the freshest frames
     // matter, not a backlog, so EncodeFrame drops rather than blocking the capture thread. (RemEx-ii3)
-    private const int InputChannelCapacity = 3;
+    // internal, not private, only so FrameInputPipelineTests can bound its drop assertion by the REAL
+    // capacity instead of a copy of the number that could drift from it.
+    internal const int InputChannelCapacity = 3;
     // ReadOnlyMemory rather than byte[] so a caller can hand over a slice of a larger buffer without
     // trimming it first (RemEx-hgox). OWNERSHIP IS UNCHANGED by that: a ReadOnlyMemory over a GC array
     // behaves exactly as the array did, and nothing here pools or recycles. Do not read this as a step
@@ -541,14 +543,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             });
             _droppingUntilIdr = false;
 
-            _inputChannel = Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(InputChannelCapacity)
-            {
-                // We still TryWrite (non-blocking) in EncodeFrame, but DropWrite makes the contract
-                // explicit: a full channel discards the newest frame rather than ever blocking.
-                FullMode = BoundedChannelFullMode.DropWrite,
-                SingleReader = true,
-                SingleWriter = false,
-            });
+            _inputChannel = CreateInputChannel();
 
             var stdin = process.StandardInput.BaseStream;
             _writerTask = Task.Run(() => StdinWriterLoop(stdin, _inputChannel.Reader, ct));
@@ -592,6 +587,56 @@ public sealed class FFmpegH264Encoder : IH264Encoder
             _logger.LogDebug(ex, "Failed to start FFmpeg with codec {Codec}", codec);
             return false;
         }
+    }
+
+    /// <summary>
+    /// The raw-frame feed from the capture thread to <see cref="StdinWriterLoop"/>.
+    ///
+    /// Factored into one place so the test harness starts the pipeline with the REAL configuration
+    /// rather than a second copy of these options that could silently drift from it. Capacity and
+    /// drop policy are load-bearing for the tests in <c>FrameInputPipelineTests</c>: they pin that a
+    /// full channel discards frames with no hook the producer could use to reclaim them.
+    /// </summary>
+    private static Channel<ReadOnlyMemory<byte>> CreateInputChannel() =>
+        Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(InputChannelCapacity)
+        {
+            // We still TryWrite (non-blocking) in EncodeFrame, but DropWrite makes the contract
+            // explicit: a full channel discards the newest frame rather than ever blocking.
+            FullMode = BoundedChannelFullMode.DropWrite,
+            SingleReader = true,
+            SingleWriter = false,
+        });
+
+    /// <summary>
+    /// Test-only seam (visible to <c>Remex.Agent.Tests</c> via <c>InternalsVisibleTo</c>). Starts JUST
+    /// the raw-frame half of the encoder — the bounded drop-write input channel plus the real
+    /// <see cref="StdinWriterLoop"/> — writing into <paramref name="destination"/> instead of a real
+    /// ffmpeg child's stdin. No process is spawned, so this runs headless with no ffmpeg and no GPU.
+    ///
+    /// This exists because the buffer-lifetime hazard that has reverted RemEx-lcp8 three times lives
+    /// exactly here, between <see cref="EncodeFrame"/> handing memory to the channel and the writer
+    /// loop finishing its write — and its failure mode is CORRUPTED VIDEO, not a crash or a red test.
+    /// Driving the genuine channel and the genuine writer loop is the point: a harness that
+    /// reimplemented either would keep passing while the real path broke.
+    ///
+    /// Not used by DI or by any production path — <see cref="Initialize"/> is the only production
+    /// entry point and it always goes through a real process.
+    /// </summary>
+    internal void StartRawInputPipelineForTests(Stream destination, int inputWidth, int inputHeight)
+    {
+        Guard.NotNull(destination);
+
+        _inputWidth = inputWidth;
+        _inputHeight = inputHeight;
+        _processCts = new CancellationTokenSource();
+        _inputChannel = CreateInputChannel();
+
+        // EncodeFrame refuses to submit unless this is set; _ffmpegProcess stays null, which its
+        // `is { HasExited: true }` guard already tolerates.
+        _initialized = true;
+
+        var ct = _processCts.Token;
+        _writerTask = Task.Run(() => StdinWriterLoop(destination, _inputChannel.Reader, ct));
     }
 
     /// <summary>
