@@ -175,6 +175,7 @@
     <string name="dashboard_host_online">PC EN LIGNE</string>
     <string name="dashboard_connecting">CONNEXION…</string>
     <string name="dashboard_tap_to_connect">APPUYER POUR CONNECTER</string>
+    <string name="dashboard_connection_card_action">vous connecter à votre PC</string>
     <string name="dashboard_wake_pc_button">RÉVEILLER PC</string>
     <string name="dashboard_collecting_data">Collecte des données…</string>
     <string name="screen_connection_title">Connexion</string>

@@ -273,6 +273,7 @@
     <string name="dashboard_host_online">PC ONLINE</string>
     <string name="dashboard_connecting">CONNECTING…</string>
     <string name="dashboard_tap_to_connect">TAP TO CONNECT</string>
+    <string name="dashboard_connection_card_action">connect to your PC</string>
     <string name="dashboard_wake_pc_button">WAKE PC</string>
     <string name="dashboard_collecting_data">Collecting data…</string>
     <string name="cd_open_view_picker">Choose display view</string>

@@ -162,6 +162,7 @@
     <string name="dashboard_host_online">PC ONLINE</string>
     <string name="dashboard_connecting">ŁĄCZENIE…</string>
     <string name="dashboard_tap_to_connect">DOTKNIJ, ABY POŁĄCZYĆ</string>
+    <string name="dashboard_connection_card_action">połączyć się z komputerem</string>
     <string name="dashboard_wake_pc_button">OBUDŹ PC</string>
     <string name="dashboard_collecting_data">Zbieranie danych…</string>
     <string name="screen_connection_title">Połączenie</string>

@@ -108,6 +108,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
@@ -1640,34 +1642,89 @@ private fun ConnectionOrbCard(
         onNavigateToConnection: () -> Unit = {}
 ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                // Hoisted above the Column because the Column's own modifier now clips the ripple
+                // to this shape (RemEx-g9mq). Same values, same animation, read one scope out.
+                var currentMorphTarget by remember { mutableFloatStateOf(shapePreset) }
+
+                LaunchedEffect(isConnecting) {
+                        if (isConnecting) {
+                                while (true) {
+                                        currentMorphTarget =
+                                                (0 until materialShapesList.size)
+                                                        .random()
+                                                        .toFloat()
+                                        delay(1000)
+                                }
+                        } else {
+                                currentMorphTarget = shapePreset
+                        }
+                }
+
+                val animatedShapePreset by
+                        animateFloatAsState(
+                                targetValue = currentMorphTarget,
+                                animationSpec =
+                                        MaterialTheme.motionScheme.slowSpatialSpec(),
+                                label = "orb_morph"
+                        )
+
+                // THE HIT AREA IS THE ORB AND ITS CAPTION TOGETHER (RemEx-g9mq). It used to be the
+                // 72dp orb alone, so the caption reading "TAP TO CONNECT" — an imperative
+                // instruction aimed at a non-technical user — was the one part of the card that did
+                // nothing when tapped, and gave no feedback that it had been missed. Device capture
+                // had the orb clickable at [259,504][475,720] and the caption at [228,744][544,804]
+                // with clickable=false.
+                //
+                // DELIBERATELY THE COLUMN AND NOT fillMaxSize, which is what the bead asked for.
+                // Two gestures already own this surface, and a clickable child outranks both because
+                // Compose dispatches leaf-to-root:
+                //
+                //   1. SELECTION MODE is the decisive one. DraggableDashboardCard's selectionActive
+                //      branch toggles multi-select with detectTapGestures, which awaits an
+                //      UNCONSUMED down. A clickable descendant consumes it first, so that card can
+                //      no longer be added to or removed from a selection and tapping it navigates
+                //      away instead. Covering the whole card would have made this card the only one
+                //      that cannot be multi-selected at all.
+                //   2. detectPickUpGesture arms on a long press and selects on release-in-place
+                //      without consuming the release, while a plain clickable has no long-press
+                //      timeout and fires on release regardless of hold duration — so a long press
+                //      inside the hit area both selects the card and activates it.
+                //
+                // Both predate this change over the 72dp orb; this widens them to the caption, which
+                // is the smallest area that fixes the reported bug. Leaving the card's outer ring
+                // untouched is what keeps it selectable and draggable. RemEx-7o8r tracks both, and
+                // the fix belongs in the gesture layer rather than here — it affects every in-card
+                // control, including the Wake-on-LAN button. The Column is comfortably past the 48dp
+                // minimum touch target either way.
+                //
+                // mergeDescendants makes this ONE node for a screen reader rather than an unlabelled
+                // clickable box sitting next to a stranded caption, so what gets announced is the
+                // instruction itself. Disabled rather than no-op while connecting: the old code
+                // branched to {} there, which still rippled and still announced as actionable,
+                // promising a response it would never give.
                 Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                        var currentMorphTarget by remember { mutableFloatStateOf(shapePreset) }
-
-                        LaunchedEffect(isConnecting) {
-                                if (isConnecting) {
-                                        while (true) {
-                                                currentMorphTarget =
-                                                        (0 until materialShapesList.size)
-                                                                .random()
-                                                                .toFloat()
-                                                delay(1000)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier =
+                                Modifier.semantics(mergeDescendants = true) {}
+                                        // Clipped so the ripple follows the card's morphing shape
+                                        // rather than landing as a hard rectangle over a card whose
+                                        // whole visual language is rounded — worst under the
+                                        // monochrome palette at contrast 1.0, where ripple alpha is
+                                        // highest against a flattened scheme.
+                                        .clip(cardShape(animatedShapePreset, cornerRadius))
+                                        .clickable(
+                                                enabled = !isConnecting,
+                                                role = Role.Button,
+                                                onClickLabel =
+                                                        stringResource(
+                                                                R.string.dashboard_connection_card_action
+                                                        )
+                                        ) {
+                                                if (isConnected) onToggle()
+                                                else onNavigateToConnection()
                                         }
-                                } else {
-                                        currentMorphTarget = shapePreset
-                                }
-                        }
-
-                        val animatedShapePreset by
-                                animateFloatAsState(
-                                        targetValue = currentMorphTarget,
-                                        animationSpec =
-                                                MaterialTheme.motionScheme.slowSpatialSpec(),
-                                        label = "orb_morph"
-                                )
-
+                ) {
                         val orbColor by
                                 animateColorAsState(
                                         targetValue =
@@ -1721,14 +1778,7 @@ private fun ConnectionOrbCard(
                                 modifier =
                                         Modifier.size(72.dp)
                                                 .clip(cardShape(animatedShapePreset, cornerRadius))
-                                                .background(orbColor.copy(alpha = glowAlpha))
-                                                .clickable {
-                                                        when {
-                                                                isConnected -> onToggle()
-                                                                isConnecting -> {}
-                                                                else -> onNavigateToConnection()
-                                                        }
-                                                },
+                                                .background(orbColor.copy(alpha = glowAlpha)),
                                 contentAlignment = Alignment.Center
                         ) {}
 

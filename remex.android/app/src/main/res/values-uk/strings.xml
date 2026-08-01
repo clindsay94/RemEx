@@ -175,6 +175,7 @@
     <string name="dashboard_host_online">ПК В МЕРЕЖІ</string>
     <string name="dashboard_connecting">ПІДКЛЮЧЕННЯ…</string>
     <string name="dashboard_tap_to_connect">НАТИСНІТЬ, ЩОБ ПІДКЛЮЧИТИСЯ</string>
+    <string name="dashboard_connection_card_action">підключитися до ПК</string>
     <string name="dashboard_wake_pc_button">ПРОБУДИТИ ПК</string>
     <string name="dashboard_collecting_data">Збір даних…</string>
     <string name="screen_connection_title">Підключення</string>

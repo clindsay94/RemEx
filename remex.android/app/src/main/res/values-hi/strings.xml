@@ -175,6 +175,7 @@
     <string name="dashboard_host_online">पीसी ऑनलाइन</string>
     <string name="dashboard_connecting">कनेक्ट हो रहा है…</string>
     <string name="dashboard_tap_to_connect">कनेक्ट करने के लिए टैप करें</string>
+    <string name="dashboard_connection_card_action">अपने पीसी से कनेक्ट करें</string>
     <string name="dashboard_wake_pc_button">पीसी जगाएं</string>
     <string name="dashboard_collecting_data">डेटा एकत्र किया जा रहा है…</string>
     <string name="screen_connection_title">कनेक्शन</string>

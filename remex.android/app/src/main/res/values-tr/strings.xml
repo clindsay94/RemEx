@@ -175,6 +175,7 @@
     <string name="dashboard_host_online">BİLGİSAYAR ÇEVRİMİÇİ</string>
     <string name="dashboard_connecting">BAĞLANILIYOR…</string>
     <string name="dashboard_tap_to_connect">BAĞLANMAK İÇİN DOKUNUN</string>
+    <string name="dashboard_connection_card_action">bilgisayarınıza bağlanmak</string>
     <string name="dashboard_wake_pc_button">BİLGİSAYARI UYANDIR</string>
     <string name="dashboard_collecting_data">Veriler toplanıyor…</string>
     <string name="screen_connection_title">Bağlantı</string>

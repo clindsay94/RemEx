@@ -175,6 +175,7 @@
     <string name="dashboard_host_online">PC ONLINE</string>
     <string name="dashboard_connecting">MENGHUBUNGKAN…</string>
     <string name="dashboard_tap_to_connect">KETUK UNTUK MENGHUBUNGKAN</string>
+    <string name="dashboard_connection_card_action">menghubungkan ke PC Anda</string>
     <string name="dashboard_wake_pc_button">BANGUNKAN PC</string>
     <string name="dashboard_collecting_data">Mengumpulkan data…</string>
     <string name="screen_connection_title">Koneksi</string>
