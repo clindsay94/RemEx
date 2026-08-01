@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
@@ -195,7 +196,7 @@ public class LinuxInputSimulationService : IInputSimulationService
             return;
         }
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("click", $"0x{MapButtonYdotool(button):X5}D");
+            RunTool("click", MouseButtonCodes.YdotoolClickArgument(button, pressed: true));
         else
             RunTool("mousedown", MapButtonXdotool(button).ToString());
     }
@@ -211,7 +212,7 @@ public class LinuxInputSimulationService : IInputSimulationService
             return;
         }
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("click", $"0x{MapButtonYdotool(button):X5}U");
+            RunTool("click", MouseButtonCodes.YdotoolClickArgument(button, pressed: false));
         else
             RunTool("mouseup", MapButtonXdotool(button).ToString());
     }
@@ -256,21 +257,32 @@ public class LinuxInputSimulationService : IInputSimulationService
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {
-            // ydotool mousemove sends relative motion; wheel via separate abstraction not supported well
-            // Use xdotool fallback pattern: scroll buttons
-            if (deltaY != 0)
+            // THE SAME BUG AS THE CLICK PATH, AND IT WAS ALSO A NO-OP (RemEx-nb7c). This used to send
+            // X11's wheel buttons 4/5/6/7 to `ydotool click`. ydotool has no wheel button at all: it
+            // masks the argument to a low nibble and ORs it onto BTN_MOUSE — Client/tool_click.c does
+            // `keycode = (key & 0xf) | 0x110` — so 4/5/6/7 selected EXTR/FORWARD/BACK/TASK, and since
+            // the argument carried neither the 0x40 nor the 0x80 action bit, the tool's `if (key &
+            // 0x40)` / `if (key & 0x80)` guards both failed and it emitted NOTHING. Every scroll
+            // spawned up to ten processes to do nothing.
+            //
+            // `mousemove --wheel` is the real mechanism, and it takes detent COUNTS rather than
+            // repeated events (tool_mousemove.c emits REL_HWHEEL/REL_WHEEL with the values verbatim),
+            // so one invocation replaces the whole loop. It is documented in `ydotool mousemove
+            // --help` and present in the source; the man page's mouse section omits it, which is
+            // presumably how the click-based workaround came to be written.
+            int horizontal = WheelDetents(deltaX);
+            int vertical = WheelDetents(deltaY);
+
+            if (horizontal != 0 || vertical != 0)
             {
-                int clicks = Math.Clamp(Math.Abs(deltaY) / 120, 1, 10);
-                int btn = deltaY > 0 ? 4 : 5;
-                for (int i = 0; i < clicks; i++)
-                    RunTool("click", $"0x{btn:X5}");
-            }
-            if (deltaX != 0)
-            {
-                int clicks = Math.Clamp(Math.Abs(deltaX) / 120, 1, 10);
-                int btn = deltaX > 0 ? 7 : 6;
-                for (int i = 0; i < clicks; i++)
-                    RunTool("click", $"0x{btn:X5}");
+                // Signs match the buttons this replaces: REL_WHEEL is positive up (was button 4) and
+                // REL_HWHEEL positive right (was button 7). --wheel and --absolute are mutually
+                // exclusive in ydotool, so no position flag goes with this.
+                RunTool(
+                    "mousemove",
+                    "--wheel",
+                    "-x", horizontal.ToString(CultureInfo.InvariantCulture),
+                    "-y", vertical.ToString(CultureInfo.InvariantCulture));
             }
         }
         else
@@ -369,15 +381,20 @@ public class LinuxInputSimulationService : IInputSimulationService
     /// <summary>xdotool's 1-based button number. Single-sourced (RemEx-upxn).</summary>
     private static int MapButtonXdotool(int button) => MouseButtonCodes.ToXdotool(button);
 
-    /// <summary>
-    /// ydotool takes the raw evdev code, the same numbering the portal wants — these were two
-    /// separate tables spelling the same values in hex and decimal (RemEx-upxn).
-    /// </summary>
-    private static int MapButtonYdotool(int button) => (int)MouseButtonCodes.ToEvdev(button);
-
-    // Linux BTN_ codes used by the portal NotifyPointerButton API.
     /// <summary>evdev BTN_* code for the portal's NotifyPointerButton. Single-sourced (RemEx-upxn).</summary>
     private static int MapButtonLinux(int button) => (int)MouseButtonCodes.ToEvdev(button);
+
+    /// <summary>
+    /// Converts a wheel delta in the protocol's 120-per-notch units to whole wheel detents, keeping
+    /// the sign.
+    /// </summary>
+    /// <remarks>
+    /// The clamp is inherited from the loop this replaced: any non-zero delta is worth at least one
+    /// detent, so a sub-notch scroll does not silently vanish, and a runaway delta is capped so a
+    /// single message cannot fling the page.
+    /// </remarks>
+    internal static int WheelDetents(int delta) =>
+        delta == 0 ? 0 : Math.Sign(delta) * Math.Clamp(Math.Abs(delta) / 120, 1, 10);
 
     /// <summary>
     /// Synchronously ensures the portal input session is active. The first caller blocks

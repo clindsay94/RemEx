@@ -331,14 +331,12 @@ public static class LinuxInputEventTranslator
     /// so the contradiction looked verified rather than wrong. Wiring this up for a future evdev
     /// path would have silently swapped right-click and middle-click on Linux.
     /// <para>
-    /// THERE ARE SIX BUTTON TABLES IN THIS REPO and every other one already agreed on
-    /// 0/1/2 = left/middle/right: <c>MapButtonXdotool</c>, <c>MapButtonYdotool</c> and
-    /// <c>MapButtonLinux</c> in <c>LinuxInputSimulationService</c>; <c>ButtonToLinuxCode</c> and
-    /// <c>ButtonToXdotoolButton</c> in <c>LinuxInputBackendRouter</c> (the second of which is now
-    /// byte-identical to this one); and the <c>MOUSEEVENTF_*</c> switch in
-    /// <c>WindowsInputSimulationService</c>. Six copies with no shared definition is the actual
-    /// defect — <c>EveryHostButtonMapping_AgreesOnLeftMiddleRight</c> compares them until one
-    /// constant replaces them (RemEx-upxn).
+    /// THERE WERE SIX BUTTON TABLES IN THIS REPO and every other one already agreed on
+    /// 0/1/2 = left/middle/right: three in <c>LinuxInputSimulationService</c>, two in
+    /// <c>LinuxInputBackendRouter</c>, and the <c>MOUSEEVENTF_*</c> switch in
+    /// <c>WindowsInputSimulationService</c>. Six copies with no shared definition was the actual
+    /// defect; <see cref="MouseButtonCodes"/> is now the one constant they all resolve through
+    /// (RemEx-upxn).
     /// </para>
     /// </para>
     /// <para>
