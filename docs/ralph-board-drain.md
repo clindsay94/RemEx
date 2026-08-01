@@ -106,6 +106,34 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
 
 7. Verify via `ctx_execute`:
    - PC / core changes: `dotnet build Remex.sln` then `dotnet test Remex.sln`.
+   - **Counting warnings: grep `": warning "`, never `"warning CS"`.** `warning CS` matches compiler
+     diagnostics and nothing else, so analyzer warnings — xUnit, CA, IDE, NuGet — cannot appear in
+     the output no matter how many exist. Six consecutive changelog entries claimed "0 warnings"
+     on the strength of that grep while two xUnit warnings sat in the build (RemEx-t0f3). A check
+     that cannot observe a counterexample is worse than no check: it reads as evidence and stops
+     anyone asking.
+
+     **`-t:Rebuild` is load-bearing here and is not optional.** MSBuild does not re-emit diagnostics
+     for a project it considers up to date, so the same command run twice with the same warning still
+     in the tree reports it once and then reports zero — measured, 2 then 0. Without the flag this
+     command becomes the very thing it is meant to replace. CI already knows this; see the comment in
+     `.github/workflows/dotnet.yml`.
+
+     ```
+     dotnet build Remex.sln -c Release --nologo -t:Rebuild 2>&1 | grep -cE ": warning |: error "
+     ```
+
+     Test projects also fail the build on their own warnings now, but do NOT treat a green
+     `dotnet test` as proof of that: `--no-build` compiles nothing, and even a building run is
+     incremental. The command above is the proof, for the test projects and the shipping ones alike.
+   - **Do NOT use `--no-build` when measuring an injection.** On this share, patch-test-restore
+     cycles can leave MSBuild's up-to-date check satisfied, so two different injections get measured
+     against the same stale assembly and "agree" for the wrong reason. Let `dotnet test` build, and
+     print the failing test NAMES rather than only the count, so a nonsensical result is visible
+     rather than plausible.
+   - **Re-run every injection after the last edit to the tests.** Adding or renaming a test changes
+     the counts, and a figure carried across a review round is a false claim even when it was true
+     when first measured.
    - Android changes: `cd remex.android && ./gradlew assembleRelease` — RELEASE ONLY, never
      assembleDebug; only release runs the `lintVitalRelease` gate.
    - `Remex.Core` changes: the Android release build is also the NativeAOT link check — run it

@@ -11,4 +11,59 @@
          to mistake for source) — see scripts/installer paths which target artifacts/publish/... -->
     <UseArtifactsOutput>true</UseArtifactsOutput>
   </PropertyGroup>
+
+  <!--
+    Test projects fail the build on any warning they can emit, not just compiler ones, with one
+    deliberate carve-out listed below (RemEx-t0f3).
+
+    WHY THIS EXISTS RATHER THAN A BETTER HABIT. Six consecutive changelog entries claimed "0 warnings"
+    while two xUnit analyzer warnings sat in the build. The command behind the claim grepped for
+    "warning CS", which matches compiler diagnostics and nothing else — so no number of analyzer
+    warnings could ever have shown up. A check that cannot observe a counterexample is worse than no
+    check, because it reads as evidence and stops anyone asking. Documenting the right grep helps the
+    next reader; making the build refuse to produce the warning at all removes the question.
+
+    Scoped to *.tests deliberately. These projects do not ship, so the cost of a hard failure is a
+    developer's next two minutes, and analyzer warnings here (xUnit's argument-order and assertion
+    rules) are the ones that catch tests which quietly assert less than they appear to — exactly the
+    class this loop has been burned by. Extending it to the shipping projects is RemEx-3p35, which
+    needs the Android NativeAOT build verified first because the trim and AOT analyzers emit there.
+  -->
+  <!--
+    Lower-cased before the comparison rather than passing a StringComparison, because MSBuild's
+    property-function binder does not resolve the two-argument String.EndsWith overload on every SDK:
+    `EndsWith('.tests', 'OrdinalIgnoreCase')` evaluates on SDK 10.0.302 and dies on SDK 10.0.104 with
+    `error MSB4184: Method 'System.String.EndsWith' not found`.
+
+    STATE WHAT WAS MEASURED, NOT WHAT IT LOOKED LIKE. It was found by running the Linux build, so the
+    obvious reading is "works on Windows, not on Linux" — but the two machines also differ by SDK
+    version, and the binder's allow-list is platform-neutral code, so the version is the likelier
+    cause and the only variable actually isolated. The distinction matters in the direction that
+    bites: a Windows box on the older SDK would fail too, and CI resolves the newest 10.0 SDK, so the
+    two-argument form might well work on CI's Linux runner and make an OS-based explanation look
+    simply false to whoever tries it there. The cross-platform rule is still what caught it — on a
+    one-line change whose entire diff is build configuration.
+
+    Case-insensitive at all because this repo must build on a case-sensitive filesystem and the
+    PascalCase spelling is already live in these projects' assembly names (Remex.Core.Tests), so a
+    future `Remex.Foo.Tests.csproj` would otherwise be skipped in silence.
+  -->
+  <PropertyGroup Condition="$(MSBuildProjectName.ToLowerInvariant().EndsWith('.tests'))">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!--
+      Except NuGet's vulnerability audit, which is the one family of warnings that arrives on someone
+      else's clock. NU1901-NU1904 are published advisories against already-committed packages, so they
+      appear without anyone here changing anything. NU1900 and NU1905 are not even about this repo's
+      packages: NU1900 is "could not reach the vulnerability data source" and NU1905 is "the audit
+      source returned nothing" — an offline machine, a DNS blip or a proxy produces them.
+      NOT SUPPRESSED, ONLY DEMOTED: they still print and still need acting on. The reason they must
+      not be errors is concrete rather than theoretical — build-remex.ps1 runs `dotnet restore` on the
+      SOLUTION, which includes these projects, and hard-aborts on failure, so an error here takes down
+      the canonical build entry point over a network hiccup, with a message about vulnerability data
+      that says nothing about what actually went wrong. Review found NU1900/NU1905 missing from the
+      first draft of this list, having reproduced exactly that failure.
+    -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904;NU1905</WarningsNotAsErrors>
+  </PropertyGroup>
 </Project>
