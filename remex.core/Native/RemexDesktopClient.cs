@@ -110,6 +110,47 @@ public sealed class RemexDesktopClient : IDisposable
         }
     }
 
+    /// <summary>
+    /// How long the TCP + TLS + WebSocket handshake may take before the connect is abandoned.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Without a bound this is not a slow failure, it is a two-minute one: a sleeping or absent PC
+    /// never sends an RST, so the connect sits in SYN retransmit until the OS gives up. The UI has
+    /// nothing to report in the meantime and the user has no signal beyond a spinner.
+    /// </para>
+    /// <para>
+    /// THE VALUE IS CHOSEN AGAINST THE WORK QUEUE, not picked for feel. Desktop work runs on one
+    /// ordered consumer (RemEx-krvz) that abandons any item exceeding 30 seconds, so a connect must
+    /// fail well inside that or it gets abandoned mid-flight instead of failing cleanly — and an
+    /// abandoned wait leaves the connect itself still running.
+    /// </para>
+    /// <para>
+    /// The arithmetic, stated rather than waved at: this 15 s covers the socket connect, and the
+    /// proof-of-possession exchange that follows carries its own 10 s, so a worst case through
+    /// ConnectAsync is about 25 s against the queue's 30 s. That is margin, not comfortable margin —
+    /// and it only arises if a host completes the handshake at 14.9 s and then goes silent, since the
+    /// two legs are near-disjoint in practice. Raising either number without revisiting the queue
+    /// bound would remove it. Fifteen stays generous for a TLS handshake over slow Wi-Fi; the desktop
+    /// client uses ten for the same handshake.
+    /// </para>
+    /// </remarks>
+    private static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// Test seam: shortens <see cref="ConnectTimeout"/> so the bound can be exercised without a test
+    /// suite paying fifteen seconds on every run. Production never assigns this.
+    /// </summary>
+    /// <remarks>
+    /// A seam rather than a fifteen-second test, because the property worth pinning is "this is
+    /// bounded and reports a timeout", not the particular number. Same technique as
+    /// <c>WindowsTelemetryService</c>'s test constructor. Tests that set it must restore it — this is
+    /// a process singleton, so a leaked short timeout would make an unrelated test flaky.
+    /// </remarks>
+    internal static TimeSpan? ConnectTimeoutOverrideForTests { get; set; }
+
+    private static TimeSpan ConnectTimeout => ConnectTimeoutOverrideForTests ?? DefaultConnectTimeout;
+
     public async Task ConnectAsync(string host, int port, string? clientId = null, string? spkiHash = null, CancellationToken ct = default, string? reconnectSecretBase64 = null)
     {
         EnsurePinnedOrThrow(spkiHash);
@@ -140,7 +181,33 @@ public sealed class RemexDesktopClient : IDisposable
             return actualHash == spkiHash;
         };
 
-        await _webSocket.ConnectAsync(wsUri, ct);
+        // A PC that is asleep or off the network sends no RST, so this sits in TCP SYN retransmit —
+        // about two minutes on Android before ETIMEDOUT. Bound it. (RemEx-g7hr)
+        using (var connectCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
+        {
+            connectCts.CancelAfter(ConnectTimeout);
+            try
+            {
+                await _webSocket.ConnectAsync(wsUri, connectCts.Token);
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                // Distinguish OUR deadline from the caller's cancellation: the caller cancelling is not
+                // an error and must keep surfacing as OperationCanceledException, while a host that
+                // never answered is a real, reportable failure. Collapsing the two would make a
+                // deliberate stop look like a broken PC in the UI.
+                //
+                // Nothing is torn down here on purpose. ClientWebSocket.ConnectAsync disposes itself on
+                // failure, so IsConnected already reads false, and the next ConnectAsync clears the
+                // stale reference through DisconnectAsync. Nulling the field as well would only open a
+                // window for a concurrent send to hit a NullReferenceException instead of the
+                // ObjectDisposedException it gets today — cleanup that reads as tidy and is a small
+                // step backwards.
+                throw new TimeoutException(
+                    $"The PC at {host}:{port} did not answer within {ConnectTimeout.TotalSeconds:F0} seconds. "
+                    + "It is most likely asleep or off this network.");
+            }
+        }
 
         // VULN-2 (RemEx-s032.2): the host challenges the /ws/desktop channel for proof-of-possession as
         // the FIRST frame after accept (non-loopback only; the Android client is always remote). Answer it
