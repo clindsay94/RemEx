@@ -15,8 +15,10 @@ import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -376,6 +378,27 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      */
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private val sendDispatcher = Dispatchers.IO.limitedParallelism(1)
+
+    /**
+     * Queue feeding the single pointer-batch sender, replacing a coroutine launch per MotionEvent.
+     */
+    /*
+     * The stylus path is unthrottled by design - fidelity beats bandwidth for inking - so it called
+     * sendPointerBatch on every event, and every call did `viewModelScope.launch(sendDispatcher)`.
+     * That is a Job, a continuation and a dispatch per event, thousands per second during a stroke,
+     * producing GC pressure exactly when latency is what the user feels (RemEx-ugvo).
+     *
+     * ORDER IS PRESERVED, which is the property that matters: sendDispatcher is
+     * limitedParallelism(1), so the launches were already serialized through one thread, and a
+     * channel with one consumer on that same dispatcher serializes them identically.
+     *
+     * UNLIMITED rather than a bounded buffer, deliberately. A bounded channel would have to drop or
+     * suspend, and dropping loses stroke fidelity - the exact thing this path exists to protect.
+     * It is not a new risk: the per-event launches queued without bound on the same single thread,
+     * so the backlog behaviour under a stalled JNI call is what it always was.
+     */
+    private val pointerBatchQueue = Channel<String>(Channel.UNLIMITED)
+    private val pointerSenderStarted = AtomicBoolean(false)
 
     private val _capabilityState = MutableStateFlow(RemoteDesktopCapabilityState())
     val capabilityState: StateFlow<RemoteDesktopCapabilityState> = _capabilityState.asStateFlow()
@@ -1428,9 +1451,36 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * .
      */
     fun sendPointerBatch(batchJson: String) {
+        startPointerSenderIfNeeded()
+        // UNLIMITED, so this cannot fail or block the input thread.
+        pointerBatchQueue.trySend(batchJson)
+    }
+
+    /**
+     * Starts the single consumer that drains [pointerBatchQueue], once.
+     *
+     * Started on first send rather than from an initializer or `init` block ON PURPOSE. Kotlin runs
+     * initializers in declaration order, and this class already has an `init` that reaches the send
+     * path synchronously - a null dispatcher there was a real defect caught in review, which is why
+     * `SendDispatcherDeclarationOrderTest` exists. Starting lazily means this cannot participate in
+     * that hazard at all, whatever anyone later declares above it.
+     */
+    private fun startPointerSenderIfNeeded() {
+        if (!pointerSenderStarted.compareAndSet(false, true)) return
+
         viewModelScope.launch(sendDispatcher) {
-            if (!RemexCoreClient.isLibraryLoaded) return@launch
-            RemexCoreClient.SendDesktopPointerBatch(batchJson).getOrNull()
+            for (batchJson in pointerBatchQueue) {
+                if (!RemexCoreClient.isLibraryLoaded) continue
+                // runCatching buys back the failure isolation the old launch-per-event had for
+                // free: viewModelScope is a SupervisorJob, so one throwing send could not affect
+                // the next. One consumer instead of thousands means an escaping Throwable would
+                // end the loop PERMANENTLY - and pointerSenderStarted stays true, so it would
+                // never restart, killing pointer input for the rest of this ViewModel's life with
+                // nothing surfaced on either side. Nothing here is expected to throw
+                // (SendDesktopPointerBatch already returns a Result), which is exactly why the
+                // failure mode would be invisible if it ever did.
+                runCatching { RemexCoreClient.SendDesktopPointerBatch(batchJson) }
+            }
         }
     }
 
