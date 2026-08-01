@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
@@ -123,7 +124,7 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
                         return FailedAction(action, "Resize requires both width and height.");
                     }
 
-                    RunWindowCommand("windowsize", action.WindowId, action.Width.Value.ToString(), action.Height.Value.ToString());
+                    RunWindowCommand("windowsize", action.WindowId, Arg(action.Width.Value), Arg(action.Height.Value));
                     break;
 
                 case DesktopWindowActionTypes.MoveToDesktop:
@@ -132,7 +133,7 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
                         return FailedAction(action, "Move-to-desktop requires a desktop number.");
                     }
 
-                    RunWindowCommand("set_desktop_for_window", action.WindowId, action.DesktopNumber.Value.ToString());
+                    RunWindowCommand("set_desktop_for_window", action.WindowId, Arg(action.DesktopNumber.Value));
                     break;
 
                 default:
@@ -163,6 +164,27 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
         }
     }
 
+    /// <summary>
+    /// Formats a number for an xdotool/kdotool argument list, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// Same rule and same reason as <c>LinuxInputSimulationService.Arg</c> (RemEx-hbma):
+    /// <c>NumberFormatInfo.NegativeSign</c> is culture-dependent, and sv-SE, lt-LT and fi-FI all
+    /// define it as U+2212 MINUS SIGN, which xdotool cannot parse. Not hypothetical here —
+    /// <c>Width</c>, <c>Height</c> and <c>DesktopNumber</c> are unvalidated <c>int?</c> on
+    /// <c>DesktopWindowAction</c> and arrive straight off the <c>/ws</c> socket, with only HasValue
+    /// checks between them and this call, so a negative reaches the argument list without anything
+    /// having to go wrong first. The search limit is clamped to 1..100 and so cannot; it goes
+    /// through the same helper because one rule with no exceptions is what keeps the negative cases
+    /// safe by construction rather than by anyone remembering which values can go negative.
+    /// <para>
+    /// This file was outside the sweep the bead described — it names the input service and "the
+    /// Windows/router equivalents" — and was found by a reviewer asked whether the sweep was
+    /// complete rather than whether the named files were done.
+    /// </para>
+    /// </remarks>
+    internal static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
+
     private DesktopWindowResult FailedAction(DesktopWindowAction action, string errorText) => new()
     {
         RequestId = action.RequestId,
@@ -180,7 +202,7 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
 
         if (_backendStatus.WindowControlTool == LinuxDesktopTool.Kdotool)
         {
-            arguments.AddRange(["-l", limit.ToString()]);
+            arguments.AddRange(["-l", Arg(limit)]);
             if (!query.IncludeAllDesktops)
             {
                 var currentDesktop = GetSingleValue("get_desktop");
@@ -192,7 +214,7 @@ public sealed class LinuxDesktopWindowControlService : IDesktopWindowControlServ
         }
         else
         {
-            arguments.AddRange(["--limit", limit.ToString()]);
+            arguments.AddRange(["--limit", Arg(limit)]);
             if (!query.IncludeAllDesktops)
             {
                 var currentDesktop = GetSingleValue("get_desktop");

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text;
 
@@ -263,7 +264,7 @@ public static class LinuxInputEventTranslator
         >= 0x41 and <= 0x5A => ((char)(keyCode + 32)).ToString(),
         0x5B => "Super_L",
         0x5C => "Super_R",
-        >= 0x70 and <= 0x7B => $"F{keyCode - 0x6F}",
+        >= 0x70 and <= 0x7B => string.Create(CultureInfo.InvariantCulture, $"F{keyCode - 0x6F}"),
         0xA0 => "Shift_L",
         0xA1 => "Shift_R",
         0xA2 => "Control_L",

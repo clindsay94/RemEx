@@ -270,15 +270,15 @@ public class LinuxInputSimulationService : IInputSimulationService
             RunTool(
                 "mousemove",
                 "--absolute",
-                "-x", Coordinate(x - originLeft),
-                "-y", Coordinate(y - originTop));
+                "-x", Arg(x - originLeft),
+                "-y", Arg(y - originTop));
         }
         else
         {
             // NOT translated, and that is not an oversight. xdotool takes X11 screen coordinates, and
             // the coordinates arriving here ARE X11 screen coordinates on an X11 session, so the two
             // spaces are the same one. Subtracting an origin here would break the case it fixes above.
-            RunTool("mousemove", Coordinate(x), Coordinate(y));
+            RunTool("mousemove", Arg(x), Arg(y));
         }
     }
 
@@ -298,9 +298,9 @@ public class LinuxInputSimulationService : IInputSimulationService
         }
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("mousemove", "-x", Coordinate(dx), "-y", Coordinate(dy));
+            RunTool("mousemove", "-x", Arg(dx), "-y", Arg(dy));
         else
-            RunTool("mousemove_relative", "--", Coordinate(dx), Coordinate(dy));
+            RunTool("mousemove_relative", "--", Arg(dx), Arg(dy));
     }
 
     public void MouseDown(int button)
@@ -313,7 +313,7 @@ public class LinuxInputSimulationService : IInputSimulationService
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("click", MouseButtonCodes.YdotoolClickArgument(button, pressed: true));
         else
-            RunTool("mousedown", MapButtonXdotool(button).ToString());
+            RunTool("mousedown", Arg(MapButtonXdotool(button)));
     }
 
     public void MouseUp(int button)
@@ -329,7 +329,7 @@ public class LinuxInputSimulationService : IInputSimulationService
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
             RunTool("click", MouseButtonCodes.YdotoolClickArgument(button, pressed: false));
         else
-            RunTool("mouseup", MapButtonXdotool(button).ToString());
+            RunTool("mouseup", Arg(MapButtonXdotool(button)));
     }
 
     /// <summary>
@@ -396,8 +396,8 @@ public class LinuxInputSimulationService : IInputSimulationService
                 RunTool(
                     "mousemove",
                     "--wheel",
-                    "-x", Coordinate(horizontal),
-                    "-y", Coordinate(vertical));
+                    "-x", Arg(horizontal),
+                    "-y", Arg(vertical));
             }
         }
         else
@@ -436,11 +436,11 @@ public class LinuxInputSimulationService : IInputSimulationService
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {
-            RunTool("key", $"{(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:1");
+            RunTool("key", $"{Arg(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:1");
             return;
         }
 
-        RunTool("keydown", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? keyCode.ToString());
+        RunTool("keydown", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? Arg(keyCode));
     }
 
     public void KeyUp(int keyCode)
@@ -460,11 +460,11 @@ public class LinuxInputSimulationService : IInputSimulationService
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
         {
-            RunTool("key", $"{(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:0");
+            RunTool("key", $"{Arg(linuxKeyCode >= 0 ? linuxKeyCode : keyCode)}:0");
             return;
         }
 
-        RunTool("keyup", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? keyCode.ToString());
+        RunTool("keyup", LinuxInputEventTranslator.ProtocolKeyCodeToXkbName(keyCode) ?? Arg(keyCode));
     }
 
     public void TypeText(string text)
@@ -494,18 +494,29 @@ public class LinuxInputSimulationService : IInputSimulationService
     }
 
     /// <summary>
-    /// Formats a pointer coordinate for a shell tool's argument list.
+    /// Formats a number for a shell tool's argument list.
     /// </summary>
     /// <remarks>
     /// <para>
     /// INVARIANT CULTURE BECAUSE THESE VALUES CAN BE NEGATIVE. <c>NumberFormatInfo.NegativeSign</c> is
-    /// culture-dependent, and a culture using U+2212 MINUS SIGN would produce an argument neither tool
-    /// can parse. That is the same class of failure as the getopt one these call sites were just fixed
-    /// for, on the same values, so fixing one and leaving the other would be arbitrary. The remaining
-    /// non-coordinate sites are RemEx-hbma.
+    /// culture-dependent — several locales define it as U+2212 MINUS SIGN rather than the ASCII
+    /// hyphen — and neither xdotool nor ydotool can parse that. It is the same class of failure as
+    /// the getopt one the coordinate sites were fixed for (RemEx-r29r), reached by a different route.
+    /// </para>
+    /// <para>
+    /// USED FOR EVERY NUMBER THAT BECOMES AN ARGUMENT, not only the ones that can currently go
+    /// negative (RemEx-hbma). A button index cannot, and neither can a clamped detent count, so those
+    /// are invariant already by accident of their range — which is exactly why leaving them formatted
+    /// differently is worse than pointless: the next reader cannot tell the deliberate cases from the
+    /// overlooked ones, and the value that CAN go negative is the unvalidated <c>keyCode</c> straight
+    /// off the wire. One rule, no exceptions to remember.
+    /// </para>
+    /// <para>
+    /// Named to match <c>LinuxInputBackendRouter.Arg</c>, which exists for the same reason in the
+    /// sibling class. Two names for one rule is how the rule gets applied to one of them.
     /// </para>
     /// </remarks>
-    private static string Coordinate(int value) => value.ToString(CultureInfo.InvariantCulture);
+    private static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
     /// The virtual-desktop origin when nobody supplied one: <c>(0,0)</c>, which is what an X11
