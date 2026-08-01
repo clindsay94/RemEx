@@ -28,6 +28,23 @@ public sealed class RemoteDesktopHandler : IDisposable
     private readonly BlockingCollection<InputEvent> _inputQueue = new(1000);
 
     /// <summary>
+    /// Set if the input consuming loop exited on an exception rather than on shutdown (RemEx-q4wm).
+    /// </summary>
+    /// <remarks>
+    /// Written on the input thread and read on the disposing thread, hence <c>volatile</c>. It exists
+    /// because the loop's own handler makes that exit look SUCCESSFUL to everyone downstream — the
+    /// task completes normally, so <c>Task.Wait</c> returns true and nothing at teardown would
+    /// otherwise have anything to report about a session that stopped accepting input.
+    /// </remarks>
+    private volatile bool _inputThreadDiedUnexpectedly;
+
+    /// <summary>
+    /// Set as the first act of <see cref="Dispose"/>, so the input thread can tell a teardown race
+    /// from a genuine failure (RemEx-q4wm).
+    /// </summary>
+    private volatile bool _disposing;
+
+    /// <summary>
     /// Keys this client has pressed and not released, so teardown can release them (RemEx-e2p4).
     /// </summary>
     /// <remarks>
@@ -104,16 +121,76 @@ public sealed class RemoteDesktopHandler : IDisposable
         {
             foreach (var input in _inputQueue.GetConsumingEnumerable())
             {
-                DispatchInput(input);
+                try
+                {
+                    DispatchInput(input);
+                }
+                catch (Exception ex)
+                {
+                    // BELT AS WELL AS BRACES, AND THE TWO CATCH DIFFERENT THINGS (RemEx-q4wm).
+                    // DispatchInput has its own catch-all, so in the ordinary case nothing arrives
+                    // here. What this adds is the case that one cannot cover: a throw from INSIDE one
+                    // of its catch arms — GetWindowsInputFailureHint, or a logging provider — which
+                    // leaves DispatchInput entirely. Sibling catch clauses do not catch each other, so
+                    // without this the loop would still end, which is the one outcome that costs the
+                    // session rather than the event.
+                    _logger.LogError(
+                        ex,
+                        "Input dispatch failed outside its own handlers; event dropped, session " +
+                        "continues: {Type}",
+                        input.EventType);
+                }
             }
+        }
+        catch (ObjectDisposedException ex) when (_disposing)
+        {
+            // Teardown racing the consumer, not a failure. Dispose calls _inputQueue.Dispose() after a
+            // bounded wait that may expire while this thread is still mid-dispatch, and the next
+            // MoveNext then throws. Without the filter this became a Critical "input is dead" on
+            // every ordinary disconnect that happened to be slow.
+            //
+            // Note where an UNFILTERED one would go, because it is not the catch-all:
+            // ObjectDisposedException derives from InvalidOperationException, so it lands on the arm
+            // below (which must stay ordered after this one — more-derived first, or CS0160). That
+            // arm ends the loop too, which is why it sets the same flag this one deliberately does
+            // not: teardown is not a session failure and must not be reported as one.
+            _logger.LogDebug(ex, "Input queue disposed while the consumer was still draining it.");
         }
         catch (InvalidOperationException ex)
         {
+            // Sets the flag for the same reason the catch-all does: reaching here ends the consuming
+            // loop, and a session whose input has stopped must not go quiet at teardown just because
+            // the failure happened to be one of the named kinds. Every arm that ends this loop keeps
+            // Dispose honest, or the guarantee has a hole shaped exactly like the original bug
+            // (RemEx-q4wm).
+            _inputThreadDiedUnexpectedly = true;
             _logger.LogError(ex, "Input processing thread faulted (collection was modified).");
         }
         catch (OperationCanceledException)
         {
+            // NOT how this loop shuts down, despite how it reads. Shutdown is Dispose calling
+            // CompleteAdding, which ends the foreach NORMALLY; the queue is constructed without a
+            // cancellation token and GetConsumingEnumerable is called without one, so nothing in the
+            // enumeration can raise this. Kept for the token-based shutdown this would need if one is
+            // ever added — but it is deliberately NOT a route for a backend's cancellation to reach.
+            // Treating it as one is the mistake this arm's existence invited and RemEx-q4wm made:
+            // DispatchInput used to exclude OperationCanceledException from its catch-all "so
+            // shutdown still unwinds", which in reality handed a backend OCE a silent path to killing
+            // the session's input while logging that it had stopped gracefully.
             _logger.LogInformation("Input processing thread cancelled gracefully.");
+        }
+        catch (Exception ex)
+        {
+            // Last resort. Both guards above have to have failed to reach this, but this thread ending
+            // is not a failure that may stay quiet (RemEx-q4wm). Nothing restarts it — it is created
+            // once in the constructor — so from here on every event the client sends is queued and
+            // never drained while the stream keeps running. Whoever reads the log has to be able to
+            // tell "input is dead" from "the user stopped touching the screen", and before this the
+            // two looked identical.
+            _inputThreadDiedUnexpectedly = true;
+            _logger.LogCritical(
+                ex,
+                "Input processing thread died; ALL further input for this session will be ignored.");
         }
     }
 
@@ -1153,6 +1230,37 @@ public sealed class RemoteDesktopHandler : IDisposable
         {
             _logger.LogWarning(ex, "Failed to dispatch input (invalid argument): {Type}", input.EventType);
         }
+        catch (Exception ex)
+        {
+            // THE LIST ABOVE IS INCOMPLETE BY CONSTRUCTION, NOT BY OVERSIGHT (RemEx-q4wm). Behind this
+            // switch are three platform backends that shell out, P/Invoke, and talk to a portal over
+            // D-Bus; enumerating everything they can throw is not a thing anyone can finish. Before
+            // this arm, whatever was missing from the list did not cost the event — it ended the
+            // consuming loop in ProcessInputQueue and with it every remaining input for the session,
+            // while the video stream carried on. RemEx-hnin was that bug with OverflowException as
+            // the instance: one scroll message and the desktop stopped responding for good.
+            //
+            // Swallowing is the right trade for THIS payload specifically, not a general habit. Input
+            // events are independent and already explicitly best-effort — the queue drops them under
+            // flood and says so in InputEvent's own remarks — so a client cannot assume any single
+            // event landed. Losing one is within the contract; losing the session is not.
+            //
+            // Error rather than Warning because, unlike the three arms above, reaching here means an
+            // exception nobody predicted: the log line is the only record that the event class exists
+            // at all.
+            //
+            // NO OperationCanceledException CARVE-OUT, and that was a real bug in the first draft of
+            // this fix. Excluding it looked harmless because ProcessInputQueue has an arm that logs
+            // cancellation as a graceful stop — but that arm is unreachable from the queue, which is
+            // constructed and enumerated WITHOUT a token and shuts down via CompleteAdding instead. So
+            // the exclusion did not preserve a shutdown path; it built a fresh one for a backend OCE
+            // to end the session's input on, logged at Information as if it were normal. Exactly the
+            // silence this bead exists to remove.
+            _logger.LogError(
+                ex,
+                "Unexpected failure dispatching input; the event was dropped and the session continues: {Type}",
+                input.EventType);
+        }
     }
 
     /// <summary>
@@ -1823,7 +1931,14 @@ public sealed class RemoteDesktopHandler : IDisposable
     /// Non-stylus samples are mapped to mouse events. Stylus-specific data (pressure, tilt,
     /// hover) is silently dropped here — it will be preserved end-to-end once Stage 5 lands.
     /// </summary>
-    private void EnqueuePointerSampleAsInputEvent(DesktopPointerSample sample)
+    /// <remarks>
+    /// Internal rather than private for the same reason <see cref="DispatchInput"/> is: it is the only
+    /// way a test can put an event through the REAL queue and the real consuming loop, rather than
+    /// calling the loop's body directly. Containing an exception inside <c>DispatchInput</c> and
+    /// keeping <see cref="ProcessInputQueue"/> alive are two different claims, and the second is the
+    /// one that was worth a session (RemEx-q4wm).
+    /// </remarks>
+    internal void EnqueuePointerSampleAsInputEvent(DesktopPointerSample sample)
     {
         InputEvent? input = null;
 
@@ -1900,24 +2015,58 @@ public sealed class RemoteDesktopHandler : IDisposable
 
     public void Dispose()
     {
+        _disposing = true;
         _inputQueue.CompleteAdding();
         bool inputDrained = false;
+        AggregateException? inputThreadFault = null;
         try
         {
             inputDrained = _inputProcessingTask.Wait(TimeSpan.FromSeconds(2));
         }
-        catch (AggregateException)
+        catch (AggregateException ex)
         {
-            // Expected if the task faulted or was already completed.
+            // KEPT, BUT NO LONGER ANONYMOUS (RemEx-q4wm). Task.Wait reports a faulted task by
+            // THROWING and returns true for one that merely finished, so — contrary to the comment
+            // that used to sit here — "or was already completed" was never a way to reach this arm.
+            // ONLY a fault does. Discarding it therefore discarded the single signal that the thread
+            // had died, and execution fell into the timeout branch below, which blames a slow
+            // dispatch. That was the last place the failure could have been noticed, and it was
+            // labelled "expected".
+            //
+            // Still reachable after this bead, though it should be vanishingly rare: the loop now
+            // catches everything, so the only way to fault the task is for one of ITS OWN catch arms
+            // to throw — sibling clauses do not catch each other.
+            inputThreadFault = ex;
         }
 
-        if (!inputDrained)
+        // Checked BEFORE the drain result, because a thread that caught its way out reports a
+        // perfectly successful Wait. That is the shape this bead's containment creates and it would
+        // otherwise be the quietest failure of the three: the loop caught, logged, and returned, so
+        // Dispose sees a completed task and says nothing at all — about a session whose input had
+        // stopped working. The flag is what makes the teardown message agree with reality.
+        if (_inputThreadDiedUnexpectedly)
+        {
+            _logger.LogError(
+                "Input processing thread had already died during this session; input stopped being " +
+                "applied then, not at teardown. See the earlier Critical entry for the cause.");
+        }
+        else if (inputThreadFault is not null)
+        {
+            _logger.LogError(
+                inputThreadFault,
+                "Input processing thread faulted; input for this session stopped being applied when " +
+                "it did, not at teardown.");
+        }
+        else if (!inputDrained)
         {
             // The release below assumes nothing more will be dispatched. If the wait timed out the
             // input thread may still be mid-dispatch, so a queued KeyDown can land after the release
             // and re-hold a key that is no longer tracked — the same stuck key as before, which is
             // status quo rather than a regression, but it must not be silent. More plausible on
             // Linux, where each event can spawn a subprocess. (RemEx-e2p4)
+            //
+            // Now reached ONLY for a genuine timeout: a fault takes the branch above, so this message
+            // no longer claims "still mid-dispatch" about a thread that is gone.
             _logger.LogWarning(
                 "Input queue did not drain within 2s; keys held by the client may not be released.");
         }

@@ -110,18 +110,20 @@ public sealed class ScrollDeltaClampTests
     }
 
     [Fact]
-    public void TheDispatcherDoesNotCatchOverflowWhichIsWhyTheBoundMattersHere()
+    public void AnUnexpectedBackendFailureNowCostsTheEventRatherThanEscaping()
     {
-        // Pins the negative the whole severity argument rests on. If someone later widens the
-        // dispatcher's catch list — RemEx-q4wm tracks exactly that — this test SHOULD fail, and its
-        // author should replace it with one asserting the session survives instead of deleting it.
+        // REPLACES a test that asserted the opposite. Until RemEx-q4wm this pinned the negative the
+        // severity argument rested on — that OverflowException escaped DispatchInput — with a note
+        // saying its author should REPLACE it rather than delete it once containment landed. This is
+        // that replacement, kept here so the clamp and the containment stay visibly complementary:
+        // the clamp removes the known trigger, this removes the consequence of the next unknown one.
         var mock = new Mock<IInputSimulationService>();
         mock.Setup(x => x.MouseScroll(It.IsAny<int>(), It.IsAny<int>()))
             .Throws<OverflowException>();
 
         using var handler = NewHandler(mock.Object);
 
-        Assert.Throws<OverflowException>(() => handler.DispatchInput(Scroll(1, 1)));
+        handler.DispatchInput(Scroll(1, 1));
     }
 
     [Theory]

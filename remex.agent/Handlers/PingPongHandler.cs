@@ -933,6 +933,19 @@ public sealed class PingPongHandler(
         }
         catch (Exception ex)
         {
+            // Deliberately broader than the Remote Desktop dispatcher's list, and it always was —
+            // which is why this path never had that one's failure mode. Checked as part of RemEx-q4wm
+            // rather than changed: here the switch runs INLINE on the receive loop, so a swallowed
+            // event costs that event and the next message is read normally. There is no consumer
+            // thread to lose. RemoteDesktopHandler queues instead, and an escape there ended the
+            // consuming loop and every remaining input for the session.
+            //
+            // No cancellation carve-out here, and none in the other dispatcher either. One was
+            // written into the first draft of RemEx-q4wm on the theory that excluding
+            // OperationCanceledException preserved a graceful-shutdown path; it does not. Neither
+            // handler shuts down that way — this one ends when the receive loop ends, and the other
+            // when Dispose calls CompleteAdding on an untokened queue — so the only thing such a
+            // filter can do is give a backend exception an unguarded route out.
             logger.LogWarning(ex, "Failed to dispatch input: {Type}", input.EventType);
         }
     }
