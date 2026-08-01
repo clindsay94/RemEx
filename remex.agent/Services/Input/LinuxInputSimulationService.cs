@@ -9,12 +9,23 @@ using Remex.Agent.Services.RemoteDesktop.Linux;
 
 namespace Remex.Agent.Services.Input;
 
+/// <summary>
+/// Runs one input-tool invocation and returns its standard output.
+/// </summary>
+/// <remarks>
+/// The single point every shell-tool call in <see cref="LinuxInputSimulationService"/> passes
+/// through, so a test can assert the exact argv that would have reached <c>xdotool</c> or
+/// <c>ydotool</c> without a process, a display server, or Linux (RemEx-fu9n).
+/// </remarks>
+internal delegate string InputToolLauncher(LinuxDesktopTool backend, string toolPath, string[] arguments);
+
 [SupportedOSPlatform("linux")]
 public class LinuxInputSimulationService : IInputSimulationService
 {
     private readonly ILogger<LinuxInputSimulationService> _logger;
     private readonly LinuxDesktopBackendStatus _backendStatus;
     private readonly string? _display;
+    private readonly InputToolLauncher _launch;
 
     // Stage 5: router is set when a WaylandNative/PortalNoPen session is active.
     // When null, the legacy xdotool/ydotool path runs as before.
@@ -56,11 +67,48 @@ public class LinuxInputSimulationService : IInputSimulationService
     public LinuxInputSimulationService(
         ILogger<LinuxInputSimulationService> logger,
         Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime = null)
+        : this(logger, LinuxDesktopBackendProbe.Probe(), launcher: null, captureLifetime)
+    {
+    }
+
+    /// <summary>
+    /// Test seam: takes the probe result and the process launcher instead of discovering both
+    /// (RemEx-fu9n).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// WHAT THIS EXISTS TO CATCH IS A BUG THIS REPO HAS ALREADY SHIPPED. Every method here ends in an
+    /// argument list handed to another program, and RemEx-nb7c was two of those lists being wrong:
+    /// <c>0x00110D</c> to press and <c>0x00110U</c> to release, neither a form <c>ydotool click</c>
+    /// accepts, so clicking did nothing on that backend for as long as it existed. The fix moved the
+    /// string into a testable function — and the tests written for it still could not see the call
+    /// sites, so re-introducing the broken interpolation failed nothing. The defect class is not
+    /// "the mapping is wrong", it is "the argv is wrong", and only the argv is worth pinning.
+    /// </para>
+    /// <para>
+    /// Both parameters have to be injectable together, not just the launcher: which branch runs is
+    /// decided by <see cref="LinuxDesktopBackendStatus.InputTool"/>, and the two backends want
+    /// genuinely different words for the same action — <c>mousedown 1</c> against <c>click 0x40</c>.
+    /// A test that could only observe whichever tool happened to be installed on the build machine
+    /// would silently cover one branch on Linux and neither on Windows.
+    /// </para>
+    /// <para>
+    /// The launcher stays a delegate rather than becoming an interface because there is exactly one
+    /// operation and one real implementation; an interface would add a file and a name without
+    /// removing a decision.
+    /// </para>
+    /// </remarks>
+    internal LinuxInputSimulationService(
+        ILogger<LinuxInputSimulationService> logger,
+        LinuxDesktopBackendStatus backendStatus,
+        InputToolLauncher? launcher = null,
+        Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime = null)
     {
         _logger = logger;
         _captureLifetime = captureLifetime;
         _display = Environment.GetEnvironmentVariable("DISPLAY");
-        _backendStatus = LinuxDesktopBackendProbe.Probe();
+        _backendStatus = backendStatus;
+        _launch = launcher ?? RunToolWithOutput;
 
         // On Wayland, create a portal input injector so that pointer events work even
         // when xdotool / ydotool are not available or cannot inject into the compositor.
@@ -117,7 +165,7 @@ public class LinuxInputSimulationService : IInputSimulationService
         {
             try
             {
-                var result = RunToolWithOutput(_backendStatus.CursorQueryTool, _backendStatus.CursorQueryToolPath, "getmouselocation", "--shell");
+                var result = _launch(_backendStatus.CursorQueryTool, _backendStatus.CursorQueryToolPath, ["getmouselocation", "--shell"]);
                 // Output format: X=123\nY=456\nSCREEN=0\nWINDOW=12345
                 var lines = result.Split('\n');
                 var x = 0;
@@ -449,7 +497,7 @@ public class LinuxInputSimulationService : IInputSimulationService
 
         try
         {
-            _ = RunToolWithOutput(_backendStatus.InputTool, _backendStatus.InputToolPath, arguments);
+            _ = _launch(_backendStatus.InputTool, _backendStatus.InputToolPath, arguments);
         }
         catch (Exception ex)
         {
