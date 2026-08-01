@@ -79,6 +79,12 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     private readonly ILogger<WindowsTelemetryService> _logger;
     private bool _hwinfoAvailable = true;
 
+    /// <summary>
+    /// Completes when the fallback counters have been constructed, the CPU counter primed and the NIC
+    /// baseline taken. Awaited before any read and before disposal.
+    /// </summary>
+    private readonly Task _countersReady;
+
     // Performance Counters for fallback
     private PerformanceCounter? _cpuCounter;
     private PerformanceCounter? _diskReadCounter;
@@ -125,16 +131,34 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     {
         _logger = logger;
 
-        // EAGER ON PURPOSE, and it was tried the other way. Building these lazily on first use looks
-        // like free startup savings - the first PerformanceCounter loads the machine's counter
-        // catalog, measured at ~414 ms here - but this method does more than construct counters. It
-        // primes the CPU rate counter and takes the NIC byte baseline, and both are only meaningful
-        // AHEAD of the first read: prime microseconds before the first NextValue and the rate counter
-        // returns 0% from an empty sample window, and take the network baseline inside the same call
-        // that consumes it and the elapsed divisor becomes near-zero, turning one stray frame into a
-        // multi-megabyte-per-second reading. See RemEx-48kh; the deferral is only worth revisiting
-        // once RemEx-rxth lets a healthy HWiNFO skip this path entirely.
-        InitializeFallbackCounters();
+        // OFF THE STARTUP THREAD, BUT NOT DEFERRED — the distinction is the whole design here.
+        //
+        // The cost is real and worse than previously recorded. Measured on this machine: the FIRST
+        // construction in a process takes 510-888 ms warm, and 4.9 SECONDS on the first run after a
+        // cold OS cache, which is precisely the sign-in case. Subsequent constructions cost 9 ms, so
+        // it is the machine's performance-counter catalog being loaded, once. This constructor runs
+        // inside the serial IHost.StartAsync, so every bit of that blocked sign-in.
+        //
+        // MAKING IT LAZY WAS TRIED AND REVERTED (RemEx-48kh), and would be wrong again for the same
+        // reason: this method does more than construct counters. It primes the CPU rate counter and
+        // takes the NIC byte baseline, and both are only meaningful AHEAD of the first read. Prime
+        // microseconds before the first NextValue and the rate counter reports 0% from an empty
+        // sample window; take the network baseline inside the call that consumes it and the elapsed
+        // divisor is near zero, turning one stray frame into a multi-megabyte-per-second reading.
+        //
+        // Lazy per counter is no better AFTER RemEx-c2g4 either, because the first successful tick
+        // now reads every category to seed the fallback cache — so nothing would go unbuilt anyway.
+        //
+        // So the work is not skipped or delayed until it is needed; it simply stops happening on the
+        // thread that is holding up sign-in. GetTelemetryAsync waits on this task — bounded, and
+        // skipping the read entirely if it has not finished — which keeps the prime-before-read
+        // ordering the revert was about.
+        //
+        // NOTE this runs before the internal test constructor's body has assigned _sharedMemoryName
+        // and HwInfoStaleAfterMs, because Task.Run is reached through the `: this(logger)` chain.
+        // Safe only because InitializeFallbackCounters reads nothing but _logger; do not give it a
+        // dependency on a field that constructor sets.
+        _countersReady = Task.Run(InitializeFallbackCounters);
     }
 
     /// <summary>
@@ -230,6 +254,41 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         var skipCategories = _fallbackCacheSeeded && hwinfoSensors.Count > 0
             ? CoveredCategories(hwinfoSensors)
             : NoSkippedCategories;
+
+        // THE COUNTERS MUST BE BUILT AND PRIMED BEFORE ANYTHING READS THEM, which is the invariant
+        // RemEx-48kh was reverted for breaking, and it is enforced here rather than inside the read.
+        //
+        // Bounded, and a timeout SKIPS the read rather than falling through to it. Falling through
+        // would be the trap: InitializeFallbackCounters assigns _activeNic before it takes the byte
+        // baseline, so a half-finished warm-up leaves a non-null NIC with _lastNetworkPoll still at
+        // DateTime.MinValue — one stray frame divided by the process uptime — and a constructed but
+        // unprimed CPU counter reporting 0% from an empty sample window. Those are exactly the
+        // artefacts this whole design exists to avoid.
+        //
+        // Waited asynchronously so a slow warm-up does not tie up a thread, and never unbounded: if
+        // the warm-up ever wedged, an unbounded wait would block one pool thread per tick, forever.
+        var countersReady = true;
+        try
+        {
+            await _countersReady.WaitAsync(WmiFallbackTimeout, ct);
+        }
+        catch (TimeoutException)
+        {
+            countersReady = false;
+            _logger.LogWarning(
+                "Fallback counters are still warming up after {Timeout}s — serving cached telemetry for this tick.",
+                WmiFallbackTimeout.TotalSeconds);
+        }
+
+        if (!countersReady)
+        {
+            // Deliberately does NOT mark the cache seeded: nothing was read, so the next tick must
+            // still perform the full seeding read.
+            var waiting = ComposeCachedFallback(_cachedByCategory, GetUptime());
+            if (hwinfoSensors.Count > 0)
+                waiting = waiting with { Sensors = MergeHwInfoOverPerf(waiting.Sensors, hwinfoSensors) };
+            return EnsureRamTotal(waiting);
+        }
 
         // Run WMI/PerformanceCounter reads on a separate thread with a timeout
         // to prevent thread-pool starvation when WMI is slow/stalled.
@@ -1030,6 +1089,20 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+
+        // The warm-up may still be constructing these. Disposing underneath it would race a
+        // half-built counter; a bounded wait keeps shutdown prompt if it has wedged.
+        //
+        // The RESULT is checked, not discarded: Wait(TimeSpan) returns false on timeout rather than
+        // throwing, so an unchecked call would make a wedged warm-up completely undiagnosable — and
+        // on that path disposal proceeds with no synchronisation edge, so it may see stale nulls and
+        // leak the native counter handles the warm-up went on to create.
+        if (!_countersReady.Wait(TimeSpan.FromSeconds(5)))
+        {
+            _logger.LogWarning(
+                "Fallback counter warm-up did not finish within 5s of disposal; performance counter handles may leak.");
+        }
+
         _cpuCounter?.Dispose();
         _diskReadCounter?.Dispose();
         _diskWriteCounter?.Dispose();
