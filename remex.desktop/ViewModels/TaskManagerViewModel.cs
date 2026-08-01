@@ -201,10 +201,21 @@ public partial class TaskManagerViewModel : ObservableObject, IDisposable
         // There is no concurrent access here to defend against, so do NOT "harden" this with a lock
         // or Interlocked - that would only obscure why it is already safe. Connection_ProcessListReceived
         // writes _lastRawProcesses exclusively via Dispatcher.UIThread.Post, and this continuation also
-        // runs on the UI thread: Avalonia never captures a SynchronizationContext (docs/ASYNC_GUIDELINES.md,
-        // which is also why ConfigureAwait is banned repo-wide), so the code after the dialog's await
-        // resumes on the thread that completed it - the UI thread driving the dialog. Single-threaded
-        // access, not a race won by a lucky read. It also assigns a whole new list rather than mutating
+        // runs on the UI thread. TWO SEPARATE REASONS, and an earlier version of this comment gave a
+        // third that was simply wrong - that Avalonia never captures a SynchronizationContext, which
+        // is the opposite of the truth (RemEx-rbfq):
+        //
+        //   - The dialog await above resumes on the UI thread even without a captured context:
+        //     Avalonia's ShowDialog completes a plain TaskCompletionSource from the window's close
+        //     handler, which already runs there, so the continuation runs inline on that thread.
+        //   - The KillProcessWithResponseAsync await BELOW is the one that genuinely depends on the
+        //     capture. Its TaskCompletionSource is built with RunContinuationsAsynchronously and
+        //     completed by the receive loop, so the continuation cannot run on the completing thread;
+        //     the captured context is what returns it to the UI thread before KillError - a bound
+        //     property - is assigned. That is the concrete reason ConfigureAwait(false) is banned
+        //     rather than merely discouraged.
+        //
+        // Either way this read is single-threaded access, not a race won by a lucky read. It also assigns a whole new list rather than mutating
         // this one, so even a hypothetical cross-thread reader could not see a half-updated collection.
         if (!ConfirmedTargetStillPresent(process, _lastRawProcesses))
         {

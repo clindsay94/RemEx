@@ -151,7 +151,7 @@ The following areas are **security-critical or tightly coupled between `remex.ag
 ## Coding Conventions
 
 ### Async
-**Do NOT use `ConfigureAwait(false)` anywhere.** Neither Avalonia nor ASP.NET Core uses `SynchronizationContext`. CA2007 is suppressed in `.editorconfig`. See `docs/ASYNC_GUIDELINES.md`.
+**Do NOT use `ConfigureAwait(false)` anywhere.** On the desktop side the captured context is load-bearing — continuations assign bound properties after awaits that complete off the UI thread — so the flag is harmful there, not merely redundant; on the ASP.NET Core host side there is no context, so there is nothing to gain. CA2007 is suppressed in `.editorconfig` (the rule here is the opposite of its default advice); `ConfigureAwaitBanTests` enforces the ban instead. **Not** justified by "Avalonia has no `SynchronizationContext`" — that was the old reason given here and it is false (RemEx-rbfq). See `docs/ASYNC_GUIDELINES.md`.
 
 ### Null Safety
 Nullable reference types are enabled in all projects. Use `Guard.NotNull(arg)` (from `remex.core/Guards/Guard.cs`) in constructors for required dependencies. Use `GetRequiredService<T>()` (not `GetService<T>()`) for DI resolution. See `docs/NULL_SAFETY_GUIDELINES.md`.
