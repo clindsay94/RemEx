@@ -159,8 +159,9 @@ public sealed class LinuxInputArgvTests
 
         // ydotool's mousemove is RELATIVE by default, so omitting --absolute here would turn every
         // absolute pointer target into a displacement — the cursor would walk off the screen rather
-        // than land anywhere.
-        Assert.Equal(["mousemove", "--absolute", "300", "400"], ydotoolCalls.Single());
+        // than land anywhere. The -x/-y flags are the other half: they are what stops getopt eating
+        // a negative coordinate (RemEx-r29r), and they are harmless for a positive one.
+        Assert.Equal(["mousemove", "--absolute", "-x", "300", "-y", "400"], ydotoolCalls.Single());
         Assert.Equal(["mousemove", "300", "400"], xdotoolCalls.Single());
     }
 
@@ -175,56 +176,59 @@ public sealed class LinuxInputArgvTests
 
         // The mirror image of the test above, and the reason both are worth having: ydotool's plain
         // mousemove is the relative one, while xdotool needs a different SUBCOMMAND entirely.
-        // Non-negative deltas here on purpose — see the test below for why a negative one is a
-        // different question.
-        Assert.Equal(["mousemove", "5", "7"], ydotoolCalls.Single());
+        Assert.Equal(["mousemove", "-x", "5", "-y", "7"], ydotoolCalls.Single());
         Assert.Equal(["mousemove_relative", "--", "5", "7"], xdotoolCalls.Single());
     }
 
     [Fact]
-    public void ANegativeDeltaIsSafeOnXdotoolAndCurrentlyBrokenOnYdotool()
+    public void ANegativeDeltaSurvivesGetoptOnBothBackends()
     {
-        // PINS A BUG ON PURPOSE, WHICH IS NOT THE SAME AS BLESSING ONE. This test found a real
-        // defect the moment the argv became visible, which is the entire argument for this bead: on
-        // ydotool a bare "-5" is not a coordinate. Upstream's Client/tool_mousemove.c calls
-        // getopt_long with the optstring "hawx:y:" — no leading '-' or '+' — so "-5" is read as an
-        // option cluster, none of those characters are in the optstring, each is discarded by
-        // `case '?': break;`, and only "7" reaches the positional loop. That leaves i == 1, the
-        // `if (i == 2)` guard fails, and the tool prints its help and emits NOTHING. Every leftward
-        // or upward drag silently does nothing while rightward and downward ones work.
+        // WAS A DELIBERATE PIN ON A BUG UNTIL RemEx-r29r, and it is worth knowing why it changed
+        // rather than just that it did. The moment the argv became visible it showed that on ydotool
+        // a bare "-5" is not a coordinate: upstream's Client/tool_mousemove.c calls getopt_long with
+        // the optstring "hawx:y:" — no leading '-' or '+' — so "-5" is read as an option cluster,
+        // none of those characters are in the optstring, each is discarded by `case '?': break;`, and
+        // only "7" reaches the positional loop. That left i == 1, the `if (i == 2)` guard failed, and
+        // the tool printed its help and emitted NOTHING. Every leftward or upward drag silently did
+        // nothing while rightward and downward ones worked.
         //
-        // The fix is RemEx-r29r, not this bead: changing how production addresses a shell tool is a
-        // behaviour change in a high-risk path and wants its own review. What is pinned here is the
-        // CURRENT output, so that fixing it fails this test and forces the two to be updated
-        // together rather than drifting apart again — which is exactly how the argv bug this bead
-        // exists to prevent survived its own fix.
+        // -x/-y is the fix because getopt takes the NEXT argv as a required option's argument
+        // unconditionally, dash or no dash, so the value is never re-parsed as flags. It is also the
+        // shape the scroll path already uses.
         var (ydotool, ydotoolCalls) = New(LinuxDesktopTool.Ydotool);
         var (xdotool, xdotoolCalls) = New(LinuxDesktopTool.Xdotool);
 
         ydotool.MouseMoveRelative(-5, 7);
         xdotool.MouseMoveRelative(-5, 7);
 
-        Assert.Equal(["mousemove", "-5", "7"], ydotoolCalls.Single());
+        Assert.Equal(["mousemove", "-x", "-5", "-y", "7"], ydotoolCalls.Single());
 
-        // xdotool is correct here, and the "--" is why: without an end-of-options marker it would
-        // read the negative delta as a flag too. Same hazard, already handled on one backend only.
+        // xdotool was correct all along, by a different route: the end-of-options marker. Same
+        // hazard, two answers, which is why the sweep asserts both rather than assuming they agree.
         Assert.Equal(["mousemove_relative", "--", "-5", "7"], xdotoolCalls.Single());
     }
 
     [Fact]
-    public void AbsoluteMovesOntoAMonitorLeftOfPrimaryHitTheSameYdotoolDefect()
+    public void AnAbsoluteTargetOnAMonitorLeftOfPrimaryAlsoSurvives()
     {
-        // The half of RemEx-r29r that is worse and easier to miss. Virtual-desktop coordinates are
+        // The half of RemEx-r29r that was worse and easier to miss. Virtual-desktop coordinates are
         // legitimately negative for a display positioned left of or above the primary — this repo
-        // says so itself, in CoordinateValidation.ClampToRange, whose remarks record that flooring
-        // at zero "makes left/top monitors unreachable". The same getopt behaviour applies, so on
-        // ydotool the cursor cannot be placed anywhere on such a monitor. Pinned, not fixed, for the
-        // same reason as above.
+        // says so itself in CoordinateValidation.ClampToRange, whose summary records that flooring at
+        // zero "makes left/top monitors unreachable" — so the same getopt behaviour meant the cursor
+        // could not be placed anywhere on such a monitor.
+        //
+        // WHAT THIS DOES NOT PROVE, because the distinction cost real effort to find: surviving
+        // getopt is not the same as landing in the right place. ydotool has no absolute mode; it
+        // emulates one by slamming the pointer to the REL minimum and then moving by the operands,
+        // so those operands are an offset from the pointer space's top-left, NOT a virtual-desktop
+        // coordinate. On any desktop whose origin is not (0,0) the cursor therefore lands off by the
+        // origin — for a positive coordinate too. That is RemEx-dyvd, and it needs a translation
+        // this method does not currently have the inputs for.
         var (service, recorder) = New(LinuxDesktopTool.Ydotool);
 
         service.MoveMouse(-1920, 100);
 
-        Assert.Equal(["mousemove", "--absolute", "-1920", "100"], recorder.Single());
+        Assert.Equal(["mousemove", "--absolute", "-x", "-1920", "-y", "100"], recorder.Single());
     }
 
     [Fact]

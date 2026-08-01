@@ -210,9 +210,9 @@ public class LinuxInputSimulationService : IInputSimulationService
         }
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("mousemove", "--absolute", x.ToString(), y.ToString());
+            RunTool("mousemove", "--absolute", "-x", Coordinate(x), "-y", Coordinate(y));
         else
-            RunTool("mousemove", x.ToString(), y.ToString());
+            RunTool("mousemove", Coordinate(x), Coordinate(y));
     }
 
     public void MouseMoveRelative(int dx, int dy)
@@ -231,9 +231,9 @@ public class LinuxInputSimulationService : IInputSimulationService
         }
 
         if (_backendStatus.InputTool == LinuxDesktopTool.Ydotool)
-            RunTool("mousemove", dx.ToString(), dy.ToString());
+            RunTool("mousemove", "-x", Coordinate(dx), "-y", Coordinate(dy));
         else
-            RunTool("mousemove_relative", "--", dx.ToString(), dy.ToString());
+            RunTool("mousemove_relative", "--", Coordinate(dx), Coordinate(dy));
     }
 
     public void MouseDown(int button)
@@ -329,8 +329,8 @@ public class LinuxInputSimulationService : IInputSimulationService
                 RunTool(
                     "mousemove",
                     "--wheel",
-                    "-x", horizontal.ToString(CultureInfo.InvariantCulture),
-                    "-y", vertical.ToString(CultureInfo.InvariantCulture));
+                    "-x", Coordinate(horizontal),
+                    "-y", Coordinate(vertical));
             }
         }
         else
@@ -425,6 +425,20 @@ public class LinuxInputSimulationService : IInputSimulationService
             RunTool("type", "--", text);
         }
     }
+
+    /// <summary>
+    /// Formats a pointer coordinate for a shell tool's argument list.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// INVARIANT CULTURE BECAUSE THESE VALUES CAN BE NEGATIVE. <c>NumberFormatInfo.NegativeSign</c> is
+    /// culture-dependent, and a culture using U+2212 MINUS SIGN would produce an argument neither tool
+    /// can parse. That is the same class of failure as the getopt one these call sites were just fixed
+    /// for, on the same values, so fixing one and leaving the other would be arbitrary. The remaining
+    /// non-coordinate sites are RemEx-hbma.
+    /// </para>
+    /// </remarks>
+    private static string Coordinate(int value) => value.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>xdotool's 1-based button number. Single-sourced (RemEx-upxn).</summary>
     private static int MapButtonXdotool(int button) => MouseButtonCodes.ToXdotool(button);
