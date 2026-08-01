@@ -652,20 +652,19 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // Emit every complete access unit: the bytes between consecutive AUD start codes.
                 // Keep the trailing (possibly incomplete) access unit in the accumulator.
                 int lastCut = 0;
-                int limit = accLen - 5; // need 5 bytes to test 00 00 00 01 <nal>
-                for (int p = 1; p <= limit; p++)
+                var window = acc.AsSpan(0, accLen);
+
+                // From 1, not 0: the accumulator starts AT an AUD, and cutting there would emit an
+                // empty access unit.
+                // No p <= lastCut guard: the search starts at 1 with lastCut 0 and each subsequent p
+                // comes from a search starting at p + 1, so p strictly increases past lastCut. The old
+                // loop carried the same test and it was equally dead there.
+                for (int p = IndexOfAudStart(window, 1); p >= 0; p = IndexOfAudStart(window, p + 1))
                 {
-                    if (acc[p] == 0x00 && acc[p + 1] == 0x00 && acc[p + 2] == 0x00 && acc[p + 3] == 0x01 &&
-                        (acc[p + 4] & 0x1F) == 9)
-                    {
-                        if (p > lastCut)
-                        {
-                            var frame = new byte[p - lastCut];
-                            Buffer.BlockCopy(acc, lastCut, frame, 0, p - lastCut);
-                            QueueFrame(frame);
-                            lastCut = p;
-                        }
-                    }
+                    var frame = new byte[p - lastCut];
+                    Buffer.BlockCopy(acc, lastCut, frame, 0, p - lastCut);
+                    QueueFrame(frame);
+                    lastCut = p;
                 }
 
                 if (lastCut > 0)
@@ -686,26 +685,77 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     /// start codes. An access unit containing an IDR is independently decodable — it doesn't
     /// reference any frame that may have been dropped upstream.
     /// </summary>
-    internal static bool ContainsIdr(byte[] au)
+    internal static bool ContainsIdr(byte[] au) => IndexOfNalOfType(au, 0, IdrNalType) >= 0;
+
+    /// <summary>Annex-B three-byte start code. Also the tail of the four-byte form.</summary>
+    private static ReadOnlySpan<byte> StartCode3 => [0x00, 0x00, 0x01];
+
+    /// <summary>Annex-B four-byte start code.</summary>
+    private static ReadOnlySpan<byte> StartCode4 => [0x00, 0x00, 0x00, 0x01];
+
+    private const int IdrNalType = 5;
+    private const int AudNalType = 9;
+
+    /// <summary>
+    /// Index of the next NAL of <paramref name="nalType"/>, at or after <paramref name="from"/>,
+    /// behind EITHER start-code form; -1 if there is none.
+    /// </summary>
+    /// <remarks>
+    /// Scanning for the THREE-byte code finds both forms, because <c>00 00 00 01</c> contains
+    /// <c>00 00 01</c> starting one byte in — and in both cases the NAL header is the byte straight
+    /// after the match. That is why this needs one pass rather than the two interleaved cases the
+    /// hand-rolled loop carried.
+    ///
+    /// <c>IndexOf</c> over a span is vectorized, so the search runs on wide registers instead of a
+    /// byte at a time. This runs over every access unit the encoder emits — 120+ a second at the
+    /// frame rates this targets, over buffers up to a megabyte — so the scan is not free. (RemEx-rpu2)
+    /// </remarks>
+    internal static int IndexOfNalOfType(ReadOnlySpan<byte> buffer, int from, int nalType)
     {
-        for (int i = 0; i + 2 < au.Length; i++)
+        while (from >= 0 && from <= buffer.Length - StartCode3.Length)
         {
-            if (au[i] != 0x00 || au[i + 1] != 0x00) continue;
+            int hit = buffer[from..].IndexOf(StartCode3);
+            if (hit < 0) return -1;
 
-            // 4-byte start code: 00 00 00 01 <nal>
-            if (i + 3 < au.Length && au[i + 2] == 0x00 && au[i + 3] == 0x01 && i + 4 < au.Length)
-            {
-                if ((au[i + 4] & 0x1F) == 5) return true;
-                continue;
-            }
+            int at = from + hit;
+            int header = at + StartCode3.Length;
+            if (header < buffer.Length && (buffer[header] & 0x1F) == nalType) return at;
 
-            // 3-byte start code: 00 00 01 <nal>
-            if (au[i + 2] == 0x01 && i + 3 < au.Length)
-            {
-                if ((au[i + 3] & 0x1F) == 5) return true;
-            }
+            // Advance by one. Start codes provably cannot overlap — a match at i needs buffer[i+2]
+            // to be 1, which is exactly what a match at i+1 or i+2 would need to be 0 — so stepping
+            // past the whole match would be equivalent. One byte is simply the step that stays
+            // correct if the pattern is ever changed to one that CAN overlap.
+            from = at + 1;
         }
-        return false;
+
+        return -1;
+    }
+
+    /// <summary>
+    /// Index of the next access-unit delimiter introduced by a FOUR-byte start code, at or after
+    /// <paramref name="from"/>; -1 if there is none.
+    /// </summary>
+    /// <remarks>
+    /// Four-byte only, deliberately: the encoder is started with <c>-aud 1</c> / x264 <c>aud=1</c>,
+    /// which emits the long form, and the reader cuts access units on these boundaries. Accepting the
+    /// three-byte form here would cut in places the previous scanner did not, changing how the stream
+    /// is framed rather than just how fast it is found.
+    /// </remarks>
+    internal static int IndexOfAudStart(ReadOnlySpan<byte> buffer, int from)
+    {
+        while (from >= 0 && from <= buffer.Length - StartCode4.Length)
+        {
+            int hit = buffer[from..].IndexOf(StartCode4);
+            if (hit < 0) return -1;
+
+            int at = from + hit;
+            int header = at + StartCode4.Length;
+            if (header < buffer.Length && (buffer[header] & 0x1F) == AudNalType) return at;
+
+            from = at + 1;
+        }
+
+        return -1;
     }
 
     // Reader thread only — no locks needed (single writer to _encodedFrames, matching SingleWriter=true).
