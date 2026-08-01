@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Channels;
@@ -239,6 +240,34 @@ public sealed class FFmpegH264Encoder : IH264Encoder
     internal static int ComputeGop(int fps) => Math.Clamp(fps, 30, 120);
 
     /// <summary>
+    /// Writes a number into an ffmpeg argument, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// NOTHING IS BROKEN HERE TODAY, AND THAT IS THE POINT (RemEx-wssm). Interpolating an <c>int</c>
+    /// uses <c>CurrentCulture</c>, and 95 runtime cultures render a NEGATIVE one with a
+    /// <c>NegativeSign</c> that is not the ASCII hyphen — sv-SE, lt-LT and fi-FI use U+2212 MINUS
+    /// SIGN. A positive one has no culture-sensitive rendering at all: integers get no
+    /// <c>NativeDigits</c> or <c>DigitSubstitution</c>, so only the sign can vary. Every operand this
+    /// builder emits — geometry, fps, qp, the VBV rates and the GOP length — is structurally
+    /// non-negative, so the raw interpolations it used before were correct on all 890 cultures.
+    /// </para>
+    /// <para>
+    /// It goes through here anyway because that is the rule RemEx-hbma settled on and RemEx-j7el,
+    /// RemEx-tiih and RemEx-clum extended: one rule with no exceptions, so the safety of a signed
+    /// operand does not depend on whoever adds it next remembering that this file has a different
+    /// convention from the other four. An offset, a crop origin or a delta introduced here later is
+    /// then safe by construction rather than by review. <c>FFmpegArgumentFormattingTests</c> enforces
+    /// it, since a revert cannot be caught behaviourally: with no negative operand, the emitted string
+    /// is byte-identical either way.
+    /// </para>
+    /// </remarks>
+    private static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <inheritdoc cref="Arg(int)"/>
+    private static string Arg(long value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
     /// Builds the full ffmpeg argument string for <paramref name="codec"/>. Shared by the real
     /// streaming process and the one-shot capability probe so the probe exercises EXACTLY the
     /// arguments the real run will use — only the output side differs (single frame to a
@@ -272,12 +301,12 @@ public sealed class FFmpegH264Encoder : IH264Encoder
         var argsBuilder = new StringBuilder();
 
         // Input: Raw BGRA frames from stdin, at the size the CAPTURE produces.
-        argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {inputWidth}x{inputHeight} -r {fps} -i - -an ");
+        argsBuilder.Append($"-f rawvideo -pix_fmt bgra -s {Arg(inputWidth)}x{Arg(inputHeight)} -r {Arg(fps)} -i - -an ");
 
         // Downscale inside ffmpeg when capture and encode sizes differ. Prepended to each codec's own
         // filter chain below rather than emitted as a second -vf, which would silently override it.
         string scaleFilter = inputWidth != width || inputHeight != height
-            ? $"scale={width}:{height}:flags=bilinear"
+            ? $"scale={Arg(width)}:{Arg(height)}:flags=bilinear"
             : string.Empty;
 
         // VBV-capped rate control budget, shared across every codec below. Replaces the previous
@@ -317,7 +346,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // BGRA to convert in fixed-function hardware, so this path keeps its whole point. It
                 // is deliberately NOT scale_cuda for the reason above.
                 if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
-                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {qp} -b:v 0 -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1");
+                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {Arg(qp)} -b:v 0 -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -forced-idr 1 -aud 1");
                 break;
             case "h264_nvenc":
                 // NVIDIA NVENC. `-tune ll` = low latency (valid values are hq/ll/ull/lossless;
@@ -328,14 +357,14 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // IDR frames (with fresh SPS/PPS) instead of plain non-IDR I-frames, so an
                 // on-demand keyframe is independently decodable by a desynced client. (RemEx-bqc)
                 if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
-                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {qp} -b:v 0 -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -aud 1 -pix_fmt yuv420p");
+                argsBuilder.Append($"-c:v h264_nvenc -preset p1 -tune ll -rc vbr -cq {Arg(qp)} -b:v 0 -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -forced-idr 1 -aud 1 -pix_fmt yuv420p");
                 break;
             case "h264_vaapi":
                 // VA-API on Linux (Intel/AMD). Rate-control left as CQP — VBR/maxrate behavior varies
                 // per driver and needs separate Linux validation (tested on Windows only for Phase 3).
                 argsBuilder.Append($"-vaapi_device /dev/dri/renderD128 -vf ");
                 if (scaleFilter.Length > 0) argsBuilder.Append($"{scaleFilter},");
-                argsBuilder.Append($"format=nv12,hwupload -c:v h264_vaapi -qp {qp} -g {gop} -aud 1");
+                argsBuilder.Append($"format=nv12,hwupload -c:v h264_vaapi -qp {Arg(qp)} -g {Arg(gop)} -aud 1");
                 break;
             case "h264_qsv":
                 // Intel Quick Sync. QVBR: -global_quality anchors quality, -maxrate/-bufsize cap peaks.
@@ -343,7 +372,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // missed the stream-start access unit could never configure from natural GOP
                 // keyframes — black until a full restart. (RemEx-vj7b)
                 if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
-                argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -repeat_pps 1 -aud 1");
+                argsBuilder.Append($"-c:v h264_qsv -preset veryfast -look_ahead 0 -global_quality {Arg(qp)} -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -forced-idr 1 -repeat_pps 1 -aud 1");
                 break;
             case "h264_amf":
                 // AMD AMF. vbr_peak: -b:v is the target (75% of the ceiling), -maxrate the hard peak.
@@ -353,7 +382,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // insertion with the periodic IDRs (AMD's recommended streaming setup). NOTE: this is
                 // the H.264 AMF option — `header_insertion_mode` exists only on hevc_amf. (RemEx-vj7b)
                 if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
-                argsBuilder.Append($"-c:v h264_amf -quality speed -rc vbr_peak -b:v {maxRate * 3 / 4} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -forced-idr 1 -header_spacing {gop} -aud 1");
+                argsBuilder.Append($"-c:v h264_amf -quality speed -rc vbr_peak -b:v {Arg(maxRate * 3 / 4)} -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -forced-idr 1 -header_spacing {Arg(gop)} -aud 1");
                 break;
             default:
                 // libx264 software fallback with zero latency. libx264 has no generic
@@ -364,7 +393,7 @@ public sealed class FFmpegH264Encoder : IH264Encoder
                 // self-contained GOP keyframes are a tested contract, not an ffmpeg default that a
                 // future muxer/global-header change could silently revoke. (RemEx-vj7b)
                 if (scaleFilter.Length > 0) argsBuilder.Append($"-vf {scaleFilter} ");
-                argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {qp} -maxrate {maxRate} -bufsize {bufSize} -g {gop} -x264-params aud=1:repeat-headers=1");
+                argsBuilder.Append($"-c:v libx264 -preset ultrafast -tune zerolatency -pix_fmt yuv420p -crf {Arg(qp)} -maxrate {Arg(maxRate)} -bufsize {Arg(bufSize)} -g {Arg(gop)} -x264-params aud=1:repeat-headers=1");
                 break;
         }
 
