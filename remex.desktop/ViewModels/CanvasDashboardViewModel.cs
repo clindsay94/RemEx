@@ -40,8 +40,44 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     // ═══════════════ Sensor Alerts ═══════════════
 
+    /// <summary>Persisted alert thresholds, keyed by the sensor's DISPLAY NAME.</summary>
+    /// <remarks>
+    /// Case-insensitive on purpose and correct as it stands: this is keyed by the user-facing name, so
+    /// a host relabelling "CPU Total" to "Cpu Total" should keep the alert the user set rather than
+    /// silently drop it. Checked deliberately alongside RemEx-228x, which was about a DIFFERENT set
+    /// that is keyed by identity — the two look alike and are not.
+    /// </remarks>
     private readonly Dictionary<string, SensorAlert> _sensorAlerts = new(StringComparer.OrdinalIgnoreCase);
-    private readonly HashSet<string> _subscribedSensorNames = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Sensor IDENTITIES whose alert handler is already wired, so it is wired exactly once.</summary>
+    /// <remarks>
+    /// ORDINAL, because it is keyed by <see cref="SensorIdentity(SensorReading)"/> — the host-stamped
+    /// <c>Id</c> such as <c>wmi:cpu:load</c> — and every other consumer of that identity compares it
+    /// ordinally, including the card index this subscription parallels. It was case-INSENSITIVE while
+    /// the matching side was not, so two sensors whose ids differ only in case produced two cards and
+    /// two view models (correct) but only ONE subscription: the second sensor's threshold alerts then
+    /// never fired, with no error and nothing in the log (RemEx-228x).
+    ///
+    /// Named for identities rather than names, which is the mismatch that allowed it: the field said
+    /// "names" while holding identities, and names really are compared case-insensitively two lines up.
+    /// </remarks>
+    private readonly HashSet<string> _subscribedSensorIdentities = new(SensorIdentityComparer);
+
+    /// <summary>
+    /// How two <see cref="SensorIdentity(SensorReading)"/> values are compared, everywhere.
+    /// </summary>
+    /// <remarks>
+    /// ONE comparer shared by every consumer of an identity, so they cannot drift apart again — which
+    /// is exactly what RemEx-228x was. The card index compared ordinally while the subscription set
+    /// compared case-insensitively, both keyed by the same string, so two sensors whose ids differed
+    /// only in case got two cards and one subscription and the second sensor's alerts silently never
+    /// fired. Ordinal is the right side of that disagreement: an identity is normally the host-stamped
+    /// <c>Id</c>, a machine token like <c>wmi:cpu:load</c>, and case is meaningful in it.
+    ///
+    /// Note this is NOT the comparer for sensor NAMES, which are user-facing and deliberately
+    /// case-insensitive so a host relabel does not orphan a pin or an alert.
+    /// </remarks>
+    internal static StringComparer SensorIdentityComparer => StringComparer.Ordinal;
 
     /// <summary>Raised when a sensor crosses its configured threshold.</summary>
     public event Action<SensorAlert>? SensorAlertFired;
@@ -967,7 +1003,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         IEnumerable<CanvasCardViewModel> placed,
         IEnumerable<CanvasCardViewModel> staged)
     {
-        var index = new Dictionary<string, List<SensorViewModel>>(StringComparer.Ordinal);
+        var index = new Dictionary<string, List<SensorViewModel>>(SensorIdentityComparer);
 
         foreach (var card in placed.Concat(staged))
         {
@@ -1049,7 +1085,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
                     // Subscribe once per stable sensor identity to prevent duplicate firings on
                     // reconnect or a live host relabel (see SensorIdentity; RemEx-km0i.14).
-                    if (_subscribedSensorNames.Add(identity))
+                    if (_subscribedSensorIdentities.Add(identity))
                     {
                         sensor.AlertTriggered -= OnSensorAlertTriggered;
                         sensor.AlertTriggered += OnSensorAlertTriggered;
@@ -1462,7 +1498,7 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             sensor.PropertyChanged -= OnSensorCustomizationChanged;
         }
 
-        _subscribedSensorNames.Clear();
+        _subscribedSensorIdentities.Clear();
     }
 
     /// <summary>

@@ -57,6 +57,100 @@ public sealed class SensorIndexTests
     }
 
     [Fact]
+    public void TwoSensorsWhoseIdsDifferOnlyByCaseAreDistinct()
+    {
+        // THE MATCHING SIDE of RemEx-228x, and the side that was always right. Identities are normally
+        // host-stamped ids — machine tokens like wmi:cpu:load — so case is meaningful in them and two
+        // that differ by it are two different sensors.
+        var upper = SensorWith("CPU", "Package");
+        var lower = SensorWith("cpu", "Core");
+
+        var index = CanvasDashboardViewModel.BuildSensorIndex(
+            new[] { SensorCard(upper), SensorCard(lower) }, []);
+
+        index.Should().ContainKey("CPU");
+        index.Should().ContainKey("cpu");
+        index["CPU"].Should().ContainSingle().Which.Should().BeSameAs(upper);
+        index["cpu"].Should().ContainSingle().Which.Should().BeSameAs(lower);
+    }
+
+    [Fact]
+    public void BothSensorsFireAlertsWhenTheirIdsDifferOnlyByCase()
+    {
+        // THE BUG, END TO END, and the only test here that would catch it coming back. The two below
+        // pin the shared comparer and the index — but write
+        // `new HashSet<string>(StringComparer.OrdinalIgnoreCase)` on the subscription set directly,
+        // without touching the shared comparer, and both of them stay green while the defect returns.
+        // This one drives the real path: two cards, two view models, and the question is whether BOTH
+        // got their alert handler wired. Before the fix the second never did, so its threshold alerts
+        // silently never fired.
+        var vm = NewDashboard();
+
+        var fired = new List<SensorAlert>();
+        vm.SensorAlertFired += fired.Add;
+
+        // First tick creates the view models — and is where subscription happens, once per identity.
+        vm.ApplyTelemetry(new TelemetryPayload
+        {
+            Sensors = new List<SensorReading>
+            {
+                new() { Id = "CPU", Name = "Package", Value = 10 },
+                new() { Id = "cpu", Name = "Core", Value = 10 },
+            },
+        });
+
+        foreach (var card in vm.StagedCards.Where(c => c.Sensor is not null))
+        {
+            card.Sensor!.Alert = new SensorAlert
+            {
+                SensorName = card.Sensor.Name,
+                Threshold = 50,
+                Direction = AlertDirection.Above,
+                Severity = AlertSeverity.Warning,
+            };
+        }
+
+        // Second tick pushes both over the threshold.
+        vm.ApplyTelemetry(new TelemetryPayload
+        {
+            Sensors = new List<SensorReading>
+            {
+                new() { Id = "CPU", Name = "Package", Value = 99 },
+                new() { Id = "cpu", Name = "Core", Value = 99 },
+            },
+        });
+
+        fired.Should().HaveCount(2,
+            "each sensor must have its own alert subscription; case-folding the identity gave the "
+            + "second one none and its alerts were lost silently");
+        fired.Select(a => a.SensorName).Should().BeEquivalentTo(new[] { "Package", "Core" });
+    }
+
+    [Fact]
+    public void TheIndexAndTheAlertSubscriptionAgreeOnWhatAnIdentityIs()
+    {
+        // THE BUG. The card index compared identities ordinally while the alert-subscription set
+        // compared them case-insensitively, both keyed by the same string. Two sensors differing only
+        // in case therefore got two cards and two view models (correct) but ONE subscription — the
+        // second sensor's threshold alerts silently never fired, with no error and nothing logged.
+        //
+        // They now share one comparer, so they cannot disagree. Asserting the shared comparer's
+        // BEHAVIOUR rather than its identity keeps this meaningful if it is ever swapped for another
+        // case-sensitive one.
+        var comparer = CanvasDashboardViewModel.SensorIdentityComparer;
+
+        comparer.Equals("CPU", "cpu").Should().BeFalse(
+            "an identity is a host-stamped machine token, in which case is meaningful");
+        comparer.Equals("wmi:cpu:load", "wmi:cpu:load").Should().BeTrue();
+
+        // And the index really is built with it: a case-insensitive comparer would collapse these two.
+        var index = CanvasDashboardViewModel.BuildSensorIndex(
+            new[] { SensorCard(SensorWith("CPU", "Package")), SensorCard(SensorWith("cpu", "Core")) }, []);
+
+        index.Should().HaveCount(2, "the index must not collapse identities the subscription set keeps apart");
+    }
+
+    [Fact]
     public void CoversPlacedAndStagedCardsAlike()
     {
         // A sensor normally has BOTH: a staged template card and however many placed cards the user
