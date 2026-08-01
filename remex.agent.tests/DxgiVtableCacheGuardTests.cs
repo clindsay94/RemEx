@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -76,15 +77,11 @@ public class DxgiVtableCacheGuardTests
         return source;
     }
 
-    private static string RepoRoot()
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Remex.sln")))
-            dir = dir.Parent;
-
-        Assert.NotNull(dir);
-        return dir!.FullName;
-    }
+    // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path
+    // outside the repo does not break this with an unrelated-looking error (RemEx-6i1l). The walk this
+    // replaces was written in RemEx-8c1l against the wrong precedent.
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, ".."));
 
     [Fact]
     public void NoPerFrameCallResolvesItsVtableSlotInline()
