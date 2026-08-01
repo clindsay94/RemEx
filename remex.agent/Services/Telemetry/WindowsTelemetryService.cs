@@ -91,8 +91,34 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     private DateTime _lastNetworkPoll = DateTime.MinValue;
     private readonly object _networkLock = new();
 
-    // Cached fallback payload to return when WMI/PerformanceCounter stalls
-    private TelemetryPayload? _cachedFallback;
+    /// <summary>The categories <see cref="ReadWmiFallback"/> can produce, and the cache's key space.</summary>
+    private static readonly string[] PerfCategories = ["CPU", "Memory", "Disk", "Network"];
+
+    /// <summary>
+    /// Most recent WindowsPerf readings, PER CATEGORY, to serve when the read stalls.
+    /// </summary>
+    /// <remarks>
+    /// Keyed by category rather than held as one payload because the read is no longer all-or-nothing:
+    /// since RemEx-rxth a tick reads only the categories a healthy HWiNFO is not already covering. A
+    /// whole-payload cache therefore stored a PARTIAL read, and on the tick where HWiNFO stopped
+    /// producing AND the now-full read timed out, it served only the categories HWiNFO had NOT been
+    /// covering — dropping the rest for that tick (RemEx-c2g4).
+    ///
+    /// THE OBVIOUS ALTERNATIVE IS WORSE, which is why this shape rather than a guard: "only cache
+    /// complete reads" sounds safer, but a machine with good HWiNFO coverage never performs a complete
+    /// read, so its cache would freeze at whatever the first tick produced and go stale forever.
+    ///
+    /// Replaced wholesale on each update rather than mutated, so a reader on another thread sees
+    /// either the old map or the new one — the same atomicity the single-field cache had.
+    /// </remarks>
+    private IReadOnlyDictionary<string, List<SensorReading>> _cachedByCategory =
+        new Dictionary<string, List<SensorReading>>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Whether a WindowsPerf read has ever completed. Until it has, no category may be skipped, so
+    /// the cache is seeded with every category rather than only the ones HWiNFO never covered.
+    /// </summary>
+    private bool _fallbackCacheSeeded;
     private static readonly TimeSpan WmiFallbackTimeout = TimeSpan.FromSeconds(2);
 
     public WindowsTelemetryService(ILogger<WindowsTelemetryService> logger)
@@ -195,7 +221,13 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
 
         // Empty when HWiNFO produced nothing — a stalled or absent producer must fall all the way
         // back, not quietly lose whatever it last happened to cover.
-        var skipCategories = hwinfoSensors.Count > 0
+        //
+        // AND EMPTY ON THE FIRST SUCCESSFUL TICK REGARDLESS, to seed the fallback cache. Without this
+        // the skip is self-defeating for the case it was meant to protect: on a machine where HWiNFO
+        // has been healthy since startup and covers CPU and Memory, those categories are never read,
+        // so they never enter the cache — and a later stall serves a payload missing them, which is
+        // precisely the hole RemEx-c2g4 set out to close. One extra read, once per process.
+        var skipCategories = _fallbackCacheSeeded && hwinfoSensors.Count > 0
             ? CoveredCategories(hwinfoSensors)
             : NoSkippedCategories;
 
@@ -207,22 +239,70 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(WmiFallbackTimeout);
             payload = await Task.Run(() => ReadWmiFallback(skipCategories), timeoutCts.Token);
-            _cachedFallback = payload;
+            _cachedByCategory = CacheReadCategories(_cachedByCategory, payload, skipCategories);
+
+            // Only after a read that actually completed: a first tick that TIMED OUT has cached
+            // nothing, so the next one must still be the seeding full read.
+            _fallbackCacheSeeded = true;
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             _logger.LogWarning("WMI/PerformanceCounter telemetry timed out after {Timeout}s — returning cached data.",
                 WmiFallbackTimeout.TotalSeconds);
-            payload = _cachedFallback ?? new TelemetryPayload();
+
+            // Uptime is recomputed rather than cached: it is TickCount64 formatting, so it cannot
+            // stall and a stale one would be strictly worse than a fresh one.
+            payload = ComposeCachedFallback(_cachedByCategory, GetUptime());
         }
 
         // Still merged rather than concatenated, even though the skipped categories are exactly the
-        // ones the merge would drop: on the timeout path `payload` is _cachedFallback, captured on a
-        // tick whose HWiNFO coverage may have been different.
+        // ones the merge would drop: on the timeout path `payload` is rebuilt from the per-category
+        // cache, whose entries were captured on ticks whose HWiNFO coverage may have been different.
         if (hwinfoSensors.Count > 0)
             payload = payload with { Sensors = MergeHwInfoOverPerf(payload.Sensors, hwinfoSensors) };
 
         return EnsureRamTotal(payload);
+    }
+
+    /// <summary>
+    /// Returns a new cache with the categories that were ACTUALLY READ this tick refreshed, and the
+    /// skipped ones carried over untouched.
+    /// </summary>
+    /// <remarks>
+    /// A read category is replaced with whatever it produced, INCLUDING NOTHING — that is the case
+    /// worth being deliberate about. If the machine's only NIC disappears, the Network read runs and
+    /// yields no sensors, and the entry must become empty rather than keep serving the last rates
+    /// forever. Skipped categories are the opposite: they were not measured, so the previous reading
+    /// is the best available answer and is kept.
+    /// </remarks>
+    internal static IReadOnlyDictionary<string, List<SensorReading>> CacheReadCategories(
+        IReadOnlyDictionary<string, List<SensorReading>> previous,
+        TelemetryPayload read,
+        IReadOnlySet<string> skippedCategories)
+    {
+        var updated = new Dictionary<string, List<SensorReading>>(previous, StringComparer.Ordinal);
+
+        foreach (var category in PerfCategories)
+        {
+            if (skippedCategories.Contains(category)) continue;
+            updated[category] = read.Sensors.Where(s => s.Category == category).ToList();
+        }
+
+        return updated;
+    }
+
+    /// <summary>Rebuilds a fallback payload from the freshest reading held for every category.</summary>
+    internal static TelemetryPayload ComposeCachedFallback(
+        IReadOnlyDictionary<string, List<SensorReading>> cached, string uptimeText)
+    {
+        var sensors = new List<SensorReading>();
+
+        foreach (var category in PerfCategories)
+        {
+            if (cached.TryGetValue(category, out var readings)) sensors.AddRange(readings);
+        }
+
+        return new TelemetryPayload { Sensors = sensors, UptimeText = uptimeText };
     }
 
     /// <summary>An empty payload, used to read HWiNFO on its own before anything is merged into it.</summary>
@@ -249,7 +329,7 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     /// (RemEx-rxth). It is what makes the read-skipping safe to reason about — the skip set is
     /// exactly the categories this method would have discarded — and it is deliberately still
     /// applied even when those categories were skipped, because the fallback payload can come from
-    /// <c>_cachedFallback</c>, which was captured on a tick whose HWiNFO coverage may have differed.
+    /// the per-category cache, whose entries were captured on ticks whose HWiNFO coverage may have differed.
     ///
     /// CATEGORY-SCOPED, NOT WHOLESALE, and that is not an implementation detail: HWiNFO's categories
     /// come from the user's hardware, so on a machine where it reports no Disk or Network sensors the
