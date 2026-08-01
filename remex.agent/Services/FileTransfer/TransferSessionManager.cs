@@ -976,7 +976,10 @@ public sealed class TransferSessionManager : IDisposable
         }
     }
 
-    private sealed class FileChannel
+    // internal, not private, so FileChannelSendFramingTests can assert on the bytes handed to the
+    // socket. Without that the bounded ArraySegment in SendFrameAsync is unguarded: replacing it with
+    // `new ArraySegment<byte>(buffer)` compiles, runs, and ships the rented array's zero-padded tail.
+    internal sealed class FileChannel
     {
         private readonly WebSocket _ws;
         private readonly SemaphoreSlim _sendLock = new(1, 1);
@@ -986,20 +989,64 @@ public sealed class TransferSessionManager : IDisposable
 
         public void MarkSuperseded() => _superseded = true;
 
+        /// <summary>
+        /// Writes one framed message to the channel.
+        /// </summary>
+        /// <remarks>
+        /// The frame buffer is RENTED rather than allocated. At the 256 KB payload cap a fresh
+        /// <c>byte[]</c> per frame is a Large Object Heap allocation, and a transfer running at
+        /// 100 MB/s produces roughly 400 of them a second — pure Gen2 pressure for a buffer that is
+        /// dead the instant the send completes (RemEx-npdm).
+        ///
+        /// THE LIFETIME IS THE WHOLE SAFETY ARGUMENT, and here it is trivial rather than delicate:
+        /// <c>WebSocket.SendAsync</c> does not retain the buffer beyond the returned task, and that
+        /// task is awaited before the <c>finally</c> returns it. Nothing else can observe the array.
+        /// This is deliberately NOT the shape that keeps reverting in the capture path (RemEx-lcp8),
+        /// where the buffer outlives its producer and is cached by the caller.
+        ///
+        /// AND THE LENGTH TRAVELS SEPARATELY. <c>ArrayPool</c> returns an array AT LEAST the requested
+        /// size, usually a power-of-two bucket larger, so the segment must be bounded by what was
+        /// WRITTEN. This is not merely a correctness detail: <c>Return</c> is called without
+        /// <c>clearArray</c>, so the tail past the frame holds WHATEVER THE PREVIOUS RENTER LEFT —
+        /// realistically bytes of an earlier frame, possibly from a different file or a different
+        /// transfer. Sending <c>new ArraySegment(buffer)</c> would put that on the wire to the peer.
+        /// The bound is load-bearing for confidentiality, not just for a well-formed frame.
+        ///
+        /// Not clearing on return is the deliberate other half of that: clearing would memset the
+        /// full bucket on every frame — at 100 MB/s that is the throughput this change exists to
+        /// stop wasting — and the bound already prevents anything past the frame from being sent.
+        /// </remarks>
         public async Task SendFrameAsync(FileFrameEnvelope envelope, ReadOnlyMemory<byte> payload, CancellationToken ct)
         {
             if (_superseded)
                 return;
 
-            var frame = FileFrameCodec.Wrap(envelope, payload.Span);
-            await _sendLock.WaitAsync(ct);
+            var header = FileFrameCodec.SerializeHeader(envelope);
+            var frameLength = FileFrameCodec.GetFrameLength(header.Length, payload.Length);
+            var buffer = ArrayPool<byte>.Shared.Rent(frameLength);
             try
             {
-                await _ws.SendAsync(new ArraySegment<byte>(frame), WebSocketMessageType.Binary, endOfMessage: true, ct);
+                // Bound the send by what WriteFrame reports writing, not by the precomputed length,
+                // so the "the length travels separately" invariant is visible at the call site.
+                var written = FileFrameCodec.WriteFrame(header, payload.Span, buffer);
+
+                await _sendLock.WaitAsync(ct);
+                try
+                {
+                    await _ws.SendAsync(
+                        new ArraySegment<byte>(buffer, 0, written),
+                        WebSocketMessageType.Binary,
+                        endOfMessage: true,
+                        ct);
+                }
+                finally
+                {
+                    _sendLock.Release();
+                }
             }
             finally
             {
-                _sendLock.Release();
+                ArrayPool<byte>.Shared.Return(buffer);
             }
         }
     }
