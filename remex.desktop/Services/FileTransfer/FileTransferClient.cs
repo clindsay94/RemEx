@@ -526,7 +526,18 @@ public sealed class FileTransferClient : IDisposable
         _progressReporters[transferId] = progress;
         var lastActivity = _idleWatchdog.Begin(transferId);
 
-        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+        // Before RemEx-o5cz this registration only cancelled the local wait, so an upload the user
+        // stopped told the host NOTHING. The host holds an open write handle and a partial file at
+        // the destination path in _activeTransfers, and reaps them only when the WebSocket session
+        // ends - there is no idle timeout - so the fragment sat on the PC under the user's intended
+        // filename, locked, for as long as the app stayed connected.
+        var cancelGate = new TransferCancelGate(this, transferId);
+
+        using var reg = ct.Register(() =>
+        {
+            tcs.TrySetCanceled(ct);
+            cancelGate.SendCancelIfHostKnowsTheTransfer();
+        });
 
         // Registration through the final await is wrapped in try/finally so a throw from ANY of
         // the sends below (Start, a chunk, or End) — not just the request/response shape
@@ -536,6 +547,11 @@ public sealed class FileTransferClient : IDisposable
         // failure left the waiter and progress reporter stranded forever.
         try
         {
+            // Say nothing at all if the request was already cancelled: the host has not heard of
+            // this transfer, so announcing and retracting it is strictly worse than silence. Inside
+            // the try so the registrations above are still reaped. (RemEx-o5cz)
+            ct.ThrowIfCancellationRequested();
+
             // Send Start with empty hash — hash is computed incrementally and sent in End
             await _connection.SendAsync(new RemexMessage
             {
@@ -552,6 +568,9 @@ public sealed class FileTransferClient : IDisposable
                     Sha256Base64 = string.Empty
                 }
             });
+
+            cancelGate.MarkStartSent();
+            if (ct.IsCancellationRequested) cancelGate.SendCancelIfHostKnowsTheTransfer();
 
             const int chunkSize = 65536;
             var buffer = new byte[chunkSize];
@@ -605,36 +624,66 @@ public sealed class FileTransferClient : IDisposable
         }
     }
 
-    public async Task DownloadAsync(string remoteRootId, string remoteRelativePath, string localPath, IProgress<double>? progress, CancellationToken ct)
+    /// <summary>
+    /// Ensures a <c>FileTransferCancel</c> is sent once, and only after the host has been told the
+    /// transfer exists.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A cancel is only MEANINGFUL once the peer has heard of the transfer: one naming an unknown id
+    /// is discarded, and the <c>Start</c> that follows is then never cancelled again. On a download
+    /// that left the host streaming a whole file to a client that had already given up; on an upload
+    /// it left an open write handle and a partial file at the destination, reaped only when the
+    /// connection itself ends. (RemEx-mubp, RemEx-o5cz)
+    /// </para>
+    /// <para>
+    /// SHARED BY BOTH DIRECTIONS ON PURPOSE. The two used to differ by accident rather than by
+    /// design - download sent a cancel too early, upload sent none at all - and each was found
+    /// separately, months apart. One object means the next change cannot fix one direction and miss
+    /// the other.
+    /// </para>
+    /// </remarks>
+    private sealed class TransferCancelGate(FileTransferClient owner, string transferId)
     {
-        var transferId = Guid.NewGuid().ToString("N");
-        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private const int NotStarted = 0;
+        private const int StartSent = 1;
+        private const int CancelSent = 2;
 
-        // 0 = Start not sent yet, 1 = Start sent, 2 = cancel already emitted. The gate exists
-        // because a cancel is only MEANINGFUL to the host once it has heard of the transfer: a
-        // FileTransferCancel naming an id it has never seen is discarded as unknown, and the Start
-        // that follows is then never cancelled again, so the host streams an entire file to a client
-        // that has already given up. (RemEx-mubp)
-        var cancelGate = 0;
+        private int _state = NotStarted;
 
-        void SendCancelIfHostKnowsTheTransfer()
+        /// <summary>Opens the gate: the host now knows this transfer id.</summary>
+        public void MarkStartSent() => Interlocked.CompareExchange(ref _state, StartSent, NotStarted);
+
+        /// <summary>
+        /// Sends the cancel if - and only if - the start has gone out and no cancel has yet.
+        /// </summary>
+        /// <remarks>
+        /// Cannot be awaited, because a caller may be inside <c>ct.Register</c>, but a failure
+        /// matters: a cancel that never reaches the peer leaves it holding the transfer open.
+        /// </remarks>
+        public void SendCancelIfHostKnowsTheTransfer()
         {
-            // Exactly once, and only from state 1. Cannot be awaited - the caller may be inside
-            // ct.Register - but a failure matters: a cancel that never reaches the peer leaves it
-            // streaming a transfer the user stopped.
-            if (Interlocked.CompareExchange(ref cancelGate, 2, 1) != 1) return;
+            if (Interlocked.CompareExchange(ref _state, CancelSent, StartSent) != StartSent) return;
 
-            _connection.SendAsync(new RemexMessage
+            owner._connection.SendAsync(new RemexMessage
             {
                 Type = MessageTypes.FileTransferCancel,
                 FileTransferCancel = new FileTransferCancel { TransferId = transferId }
             }).FireAndForget($"send cancel for transfer {transferId}");
         }
+    }
+
+    public async Task DownloadAsync(string remoteRootId, string remoteRelativePath, string localPath, IProgress<double>? progress, CancellationToken ct)
+    {
+        var transferId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var cancelGate = new TransferCancelGate(this, transferId);
 
         using var reg = ct.Register(() =>
         {
             tcs.TrySetCanceled(ct);
-            SendCancelIfHostKnowsTheTransfer();
+            cancelGate.SendCancelIfHostKnowsTheTransfer();
         });
 
         await using var fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
@@ -746,14 +795,8 @@ public sealed class FileTransferClient : IDisposable
                 }
             });
 
-            // The host has now heard of this transfer, so a cancel naming it will be understood.
-            Interlocked.CompareExchange(ref cancelGate, 1, 0);
-
-            // Closes the window the gate opens: a cancel that fired WHILE the Start was in flight
-            // found the gate shut and sent nothing, which would otherwise leave the host streaming
-            // with no retraction at all - the same end state as the bug, reached the other way.
-            // Emitting here keeps it ordered after the Start, which is the whole point.
-            if (ct.IsCancellationRequested) SendCancelIfHostKnowsTheTransfer();
+            cancelGate.MarkStartSent();
+            if (ct.IsCancellationRequested) cancelGate.SendCancelIfHostKnowsTheTransfer();
 
             var result = await _idleWatchdog.AwaitCompletionAsync(tcs, lastActivity, ct);
 

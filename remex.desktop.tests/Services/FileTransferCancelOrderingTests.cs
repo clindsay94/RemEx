@@ -97,6 +97,90 @@ public class FileTransferCancelOrderingTests
     }
 
     [Fact]
+    public async Task AnUploadStartedWithACancelledTokenPutsNothingOnTheWire()
+    {
+        var sender = new RecordingSender();
+        var connection = new ConnectionViewModel { OutboundSender = sender };
+        var client = new FileTransferClient(connection);
+        var sourcePath = TempDownloadPath();
+        await File.WriteAllBytesAsync(sourcePath, new byte[4096]);
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        try
+        {
+            var attempt = () => client.UploadAsync(sourcePath, "root-1", "remote/file.bin", progress: null, cts.Token);
+            await attempt.Should().ThrowAsync<OperationCanceledException>();
+
+            sender.Sent.Should().BeEmpty("the host was never told this upload existed");
+            client.ActiveTransferCount.Should().Be(0, "the watchdog lease must not survive the throw");
+        }
+        finally
+        {
+            try { File.Delete(sourcePath); } catch { /* best effort */ }
+        }
+    }
+
+    [Fact]
+    public async Task AnUploadCancelledMidChunkLoopTellsTheHostToStop()
+    {
+        // THE BEAD (RemEx-o5cz), and the realistic shape: the user stops a large upload while it is
+        // still sending. Upload's registration only cancelled the local wait, so the host was told
+        // nothing — and the host opens the destination with FileMode.Create and FileShare.None, so
+        // the user's intended filename had already been TRUNCATED and locked. It reaps only when the
+        // WebSocket session ends (there is no idle timeout), so that stub replaced the real file for
+        // as long as the app stayed connected.
+        //
+        // CANCELLED FROM INSIDE THE SENDER, ON A SPECIFIC CHUNK, and that is the whole design of this
+        // test. The first version used an 8 MB file and a 100 ms delay, assuming the loop would still
+        // be running — measured, the entire file AND the FileTransferEnd were on the wire in ~22 ms,
+        // so it tested the final await while its comment claimed the opposite. Cancelling on chunk 3
+        // runs the registration callback inline on the sending thread with the loop provably still
+        // in progress, needs no sleep, and cannot drift with machine speed.
+        const int chunkSize = 65536;
+        var chunksSeen = 0;
+        using var cts = new CancellationTokenSource();
+
+        var sender = new RecordingSender(message =>
+        {
+            if (message.Type == MessageTypes.FileTransferChunk && ++chunksSeen == 3) cts.Cancel();
+        });
+
+        var connection = new ConnectionViewModel { OutboundSender = sender };
+        var client = new FileTransferClient(connection);
+        var sourcePath = TempDownloadPath();
+        await File.WriteAllBytesAsync(sourcePath, new byte[chunkSize * 8]);
+
+        try
+        {
+            var attempt = () => client.UploadAsync(sourcePath, "root-1", "remote/file.bin", progress: null, cts.Token);
+            await attempt.Should().ThrowAsync<OperationCanceledException>();
+
+            var types = sender.Sent.Select(m => m.Type).ToList();
+            types.Should().NotContain(MessageTypes.FileTransferEnd,
+                "the loop must have been abandoned mid-flight — if the End went out this is testing "
+                + "the final await instead, which is what the first version of this test did");
+            types.Count(t => t == MessageTypes.FileTransferChunk).Should().BeLessThan(8,
+                "cancelling on chunk 3 of 8 must stop the loop rather than let it drain");
+
+            var cancels = sender.Sent.Where(m => m.Type == MessageTypes.FileTransferCancel).ToList();
+            cancels.Should().ContainSingle(
+                "a stopped upload must tell the host, or it holds the handle and the truncated file "
+                + "until the connection itself drops");
+            cancels[0].FileTransferCancel!.TransferId.Should().Be(
+                sender.Sent.First(m => m.Type == MessageTypes.FileTransferStart).FileTransferStart!.TransferId);
+
+            client.ActiveTransferCount.Should().Be(0, "the watchdog lease must be reaped");
+            client.PendingDownloadRegistrationCount.Should().Be(0);
+        }
+        finally
+        {
+            try { File.Delete(sourcePath); } catch { /* best effort */ }
+        }
+    }
+
+    [Fact]
     public async Task ACancelRaisedOnceTheTransferIsRunningStillReachesTheHost()
     {
         // THE PATH THAT MATTERS AND MUST NOT REGRESS: the user taps Cancel while chunks are
