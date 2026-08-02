@@ -257,6 +257,24 @@ xUnit quirk that would complicate one.
 3. `AGENTS.md` / `CLAUDE.md` are updated if project structure, tooling, or conventions changed.
 4. `Directory.Build.props` and `remex.android/app/version.properties` are bumped if the change warrants a version increment.
 
+### Where a written artefact goes
+
+**Specs, spikes, investigations and measurements go in `docs/`, NOT in `docs/superpowers/specs/`.**
+
+`docs/superpowers/` is gitignored (`.gitignore`, under `# Misc`), so anything written there is never
+committed — the task closes, the author believes the artefact exists, and the repo has nothing. It
+looks like the right home because the directory exists locally and holds a pile of earlier specs, and
+nothing warns you at write time; you only find out when `git add` silently stages nothing. This has
+caught three separate spikes (RemEx-0l9x).
+
+It was left ignored deliberately rather than fixed by un-ignoring: it also holds a `plans/` tree and a
+large body of historical scratch, so un-ignoring would sweep in far more than specs. `docs/` is the
+convention by weight — `SPIKE-*.md` and `MEASURE-*.md` already live there.
+
+**After writing any artefact, confirm it is actually tracked** (`git status` should show it, or
+`git check-ignore -v <path>` should say nothing). A closed bead pointing at an untracked file is worse
+than one that admits it produced nothing.
+
 ## User Experience Standards
 
 The target user **may not be technical**. Every user-facing element must be:
@@ -314,7 +332,7 @@ Global instructions: `~/.claude/AGENTS.md` (symlink to `~/.agents/AGENTS.md`) �
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (15747 symbols, 32418 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (19950 symbols, 44146 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
