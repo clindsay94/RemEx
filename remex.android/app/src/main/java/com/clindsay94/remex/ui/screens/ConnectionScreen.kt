@@ -1280,7 +1280,7 @@ fun ConnectionScreenContent(
                                                                         )
                                                                         scope.launch {
                                                                                 PinnedHostStore
-                                                                                        .removePin(
+                                                                                        .forgetHost(
                                                                                                 context,
                                                                                                 hostInput
                                                                                         )

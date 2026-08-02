@@ -153,7 +153,10 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
 
     fun clearPinForHost(context: Context, hostId: String) {
         viewModelScope.launch {
-            PinnedHostStore.removePin(context, hostId)
+            // Both, not just the pin: a stale reconnect secret makes the very next connect fail the
+            // proof-of-possession challenge, so "repair" would leave the user exactly as stuck
+            // (RemEx-j9ei).
+            PinnedHostStore.forgetHost(context, hostId)
             _isCertMismatch.value = false
             _connectionError.value = null
         }

@@ -150,6 +150,24 @@ object PinnedHostStore {
         }
     }
 
+    /**
+     * Forgets [hostId] completely: the pinned SPKI hash AND the reconnect secret.
+     *
+     * USE THIS, NOT [removePin] ALONE (RemEx-j9ei). The two live in separate DataStores, so clearing
+     * the pin leaves the PAIR-1 secret behind and the next connect can still fail the
+     * proof-of-possession challenge - the phone shows "paired", the host issues a reconnect
+     * challenge it cannot answer, and the user is stuck with no way forward from the UI. Both
+     * callers that cleared a pin had that bug, and [removeReconnectSecret] had NO caller at all: it
+     * was written for this and never wired up.
+     *
+     * Being one function is the point. Two calls that must always happen together is an invariant
+     * nobody can see at a call site; one call is an invariant nobody can break.
+     */
+    suspend fun forgetHost(context: Context, hostId: String) {
+        removePin(context, hostId)
+        removeReconnectSecret(context, hostId)
+    }
+
     suspend fun removeReconnectSecret(context: Context, hostId: String) {
         context.applicationContext.reconnectSecretDataStore.edit { prefs ->
             prefs.remove(prefKey(hostId))
