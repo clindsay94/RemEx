@@ -70,29 +70,7 @@ public sealed class FirewallQuery
     /// </remarks>
     private bool? QueryWindows()
     {
-        var names = string.Join(",", FirewallReadiness.WindowsRuleNames.Select(n => $"'{n}'"));
-
-        // EVERY STRING LITERAL IS SINGLE-QUOTED AND THE RECORD IS BUILT BY CONCATENATION, because
-        // the script is passed to PowerShell as a command-line argument and double quotes do not
-        // survive that trip. Review caught the first version of this: powershell.exe argv-parses its
-        // own command line and strips the inner quotes, so `Write-Output "RULE|..."` arrived
-        // unquoted, failed to PARSE — before the try/catch could run — and exited 1. The branch then
-        // returned null for every machine, so the row read "could not check" on every Windows PC
-        // while thirteen unit tests covered code production never reached.
-        //
-        // -ceq, not -eq: CLAUDE.md forbids the case-insensitive form where a comparison must be
-        // exact. These compare enum names with fixed casing, so the strict operator is correct.
-        //
-        // The Action test is three-way. NotConfigured is a real member of the enum and turns up on
-        // Group Policy rules; folding it into Block would report a refusal that is not happening.
-        var script =
-            "$ErrorActionPreference='Stop'; foreach($n in @(" + names + ")){ " +
-            "try{ $r=Get-NetFirewallRule -Name $n -ErrorAction Stop; " +
-            "$p=($r|Get-NetFirewallApplicationFilter).Program; " +
-            "$e=$(if(\"$($r.Enabled)\" -ceq 'True'){'1'}else{'0'}); " +
-            "$a=$(if(\"$($r.Action)\" -ceq 'Allow'){'1'}elseif(\"$($r.Action)\" -ceq 'Block'){'0'}else{'?'}); " +
-            "Write-Output ('RULE|'+$n+'|'+$e+'|'+$a+'|'+$p) }catch{} } " +
-            "Write-Output '" + CompletionSentinel + "'";
+        var script = BuildWindowsQueryScript();
 
         var result = _run("powershell.exe", $"-NonInteractive -NoProfile -EncodedCommand {EncodeCommand(script)}");
 
@@ -117,11 +95,86 @@ public sealed class FirewallQuery
         // which the exit code answers only incidentally. It also happens to make the exit code 0 in
         // every case, by making the final statement one that cannot fail; that is a side effect and
         // is deliberately NOT relied upon.
-        if (!ScriptRanToCompletion(result.StandardOutput)) return null;
+        if (!OutputSupportsAVerdict(result.StandardOutput)) return null;
 
         var rules = ParseWindowsRules(result.StandardOutput);
         return FirewallReadiness.InterpretWindows(rules, _agentExecutablePath());
     }
+
+    /// <summary>The query script, exposed so its failure-classification premise is testable.</summary>
+    internal static string BuildWindowsQueryScript()
+    {
+        var names = string.Join(",", FirewallReadiness.WindowsRuleNames.Select(n => $"'{n}'"));
+
+        // EVERY STRING LITERAL IS SINGLE-QUOTED AND THE RECORD IS BUILT BY CONCATENATION, because
+        // the script is passed to PowerShell as a command-line argument and double quotes do not
+        // survive that trip. Review caught the first version of this: powershell.exe argv-parses its
+        // own command line and strips the inner quotes, so `Write-Output "RULE|..."` arrived
+        // unquoted, failed to PARSE — before the try/catch could run — and exited 1. The branch then
+        // returned null for every machine, so the row read "could not check" on every Windows PC
+        // while thirteen unit tests covered code production never reached.
+        //
+        // -ceq, not -eq: CLAUDE.md forbids the case-insensitive form where a comparison must be
+        // exact. These compare enum names with fixed casing, so the strict operator is correct.
+        //
+        // The Action test is three-way. NotConfigured is a real member of the enum and turns up on
+        // Group Policy rules; folding it into Block would report a refusal that is not happening.
+        var script =
+            "$ErrorActionPreference='Stop'; foreach($n in @(" + names + ")){ " +
+            "try{ $r=Get-NetFirewallRule -Name $n -ErrorAction Stop; " +
+            "$p=($r|Get-NetFirewallApplicationFilter).Program; " +
+            "$e=$(if(\"$($r.Enabled)\" -ceq 'True'){'1'}else{'0'}); " +
+            "$a=$(if(\"$($r.Action)\" -ceq 'Allow'){'1'}elseif(\"$($r.Action)\" -ceq 'Block'){'0'}else{'?'}); " +
+            "Write-Output ('RULE|'+$n+'|'+$e+'|'+$a+'|'+$p) }" +
+            // ABSENCE AND FAILURE ARE DIFFERENT FACTS, and the catch used to swallow both.
+            // Get-NetFirewallRule reports a missing rule as ObjectNotFound - verified on a real
+            // machine rather than assumed - so anything else is the LOOKUP failing: a broken
+            // NetSecurity module, a CIM failure, an EDR blocking the cmdlet. Without this the
+            // two failed lookups produced zero records, which the interpreter reads as a
+            // definite refusal - a query that established nothing reported to the user as
+            // \"the firewall is refusing inbound traffic\". The same failed-query-as-verdict
+            // class the completion sentinel fixed, one level down.
+            "catch{ if(\"$($_.CategoryInfo.Category)\" -cne 'ObjectNotFound'){ " +
+            "Write-Output ('RULEFAIL|'+$n) } } } " +
+            "Write-Output '" + CompletionSentinel + "'";
+
+        return script;
+    }
+
+    /// <summary>
+    /// Whether the script's output can support a verdict at all.
+    /// </summary>
+    /// <remarks>
+    /// TWO WAYS TO HAVE LEARNED NOTHING, AND BOTH MUST PRODUCE UNKNOWN. The script may not have
+    /// reached its end, or it may have run perfectly and still failed to read a rule — and even ONE
+    /// unreadable rule means the record set is incomplete, which cannot support the "no rule at all,
+    /// therefore refused" conclusion the interpreter draws from an empty one.
+    ///
+    /// Combined into one internal function rather than two guards inline, because mutation testing
+    /// showed the inline version unpinned: <c>QueryWindows</c> is private and Windows-gated, so
+    /// deleting a guard there changed nothing any test could see.
+    /// </remarks>
+    internal static bool OutputSupportsAVerdict(string output) =>
+        ScriptRanToCompletion(output) && !AnyRuleUnreadable(output);
+
+    /// <summary>Whether any rule lookup failed for a reason other than the rule being absent.</summary>
+    /// <remarks>
+    /// Kept beside <see cref="ScriptRanToCompletion"/> and separated from it deliberately: the script
+    /// can run to completion AND still have learned nothing about a rule. Both are "we did not
+    /// establish this", and both must produce Unknown rather than a verdict.
+    /// </remarks>
+    internal static bool AnyRuleUnreadable(string output)
+    {
+        foreach (var line in output.Split('\n'))
+        {
+            if (line.Trim().StartsWith(RuleFailurePrefix, StringComparison.Ordinal)) return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Marks a rule whose lookup failed for a reason other than absence.</summary>
+    internal const string RuleFailurePrefix = "RULEFAIL|";
 
     /// <summary>The last line the script emits, proving it reached the end rather than died midway.</summary>
     internal const string CompletionSentinel = "REMEX-FW-DONE";

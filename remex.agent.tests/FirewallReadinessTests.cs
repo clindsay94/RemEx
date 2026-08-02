@@ -410,4 +410,73 @@ public class FirewallReadinessTests
 
         Assert.Null(Assert.Single(rules).ProgramPath);
     }
+
+    [Fact]
+    public void AFailedRuleLookupIsMarked_AndAnAbsentRuleIsNot()
+    {
+        // ABSENCE AND FAILURE ARE DIFFERENT FACTS. Get-NetFirewallRule reports a missing rule as
+        // ObjectNotFound - verified against a real machine - so the script only marks anything else:
+        // a broken NetSecurity module, a CIM failure, an EDR blocking the cmdlet.
+        Assert.True(FirewallQuery.AnyRuleUnreadable("RULEFAIL|RemexHostInbound\nREMEX-FW-DONE\n"));
+
+        // A run that simply found nothing is NOT unreadable - that is the state the row exists to
+        // report as a refusal, and confusing the two would turn the most important verdict amber.
+        Assert.False(FirewallQuery.AnyRuleUnreadable("REMEX-FW-DONE\n"));
+        Assert.False(FirewallQuery.AnyRuleUnreadable("RULE|A|1|1|C:\\a.exe\nREMEX-FW-DONE\n"));
+    }
+
+    [Fact]
+    public void OneUnreadableRuleTaintsTheWholeAnswer()
+    {
+        // Even with a readable rule beside it, the record set is INCOMPLETE - and an incomplete set
+        // cannot support the "no rule at all, therefore refused" conclusion the interpreter draws.
+        var output = "RULE|RemexHostInbound|1|1|C:\\a.exe\nRULEFAIL|RemexClientInbound\nREMEX-FW-DONE\n";
+
+        Assert.True(FirewallQuery.AnyRuleUnreadable(output));
+
+        // The parser still reads what it could; it is the CALLER that must decline to conclude.
+        Assert.Single(FirewallQuery.ParseWindowsRules(output));
+    }
+
+    [Fact]
+    public void TheFailureMarkerIsMatchedAtTheStartOfALine()
+    {
+        // A rule whose NAME merely contained the marker must not fabricate a failure, and the
+        // carriage returns production actually emits must not prevent a real one being seen.
+        Assert.False(FirewallQuery.AnyRuleUnreadable("RULE|X-RULEFAIL|-name|1|1|C:\\a.exe\n"));
+        Assert.True(FirewallQuery.AnyRuleUnreadable("RULEFAIL|RemexHostInbound\r\nREMEX-FW-DONE\r\n"));
+    }
+
+    [Fact]
+    public void TheScriptOnlyMarksFailuresThatAreNotObjectNotFound()
+    {
+        // The premise this rests on, pinned where a later reader will find it: the emitted script
+        // compares CategoryInfo.Category with -cne 'ObjectNotFound'. Verified on a real machine -
+        // an absent rule and a malformed name both report ObjectNotFound, so neither is marked.
+        var script = FirewallQuery.BuildWindowsQueryScript();
+
+        Assert.Contains("-cne 'ObjectNotFound'", script);
+        Assert.Contains(FirewallQuery.RuleFailurePrefix.TrimEnd('|'), script);
+    }
+
+    [Fact]
+    public void OutputSupportsAVerdictOnlyWhenNothingWasLeftUnknown()
+    {
+        // THE COMBINED GUARD, PINNED AS ONE. Mutation testing showed the two checks unpinned while
+        // they lived inline in a private, Windows-gated method - deleting either changed nothing any
+        // test could see, which is the same "the code under test is unreachable" gap that has bitten
+        // this change twice already.
+        Assert.True(FirewallQuery.OutputSupportsAVerdict("RULE|A|1|1|C:\\a.exe\nREMEX-FW-DONE\n"));
+
+        // Found nothing, but ran to the end: a real, reportable "no rule exists".
+        Assert.True(FirewallQuery.OutputSupportsAVerdict("REMEX-FW-DONE\n"));
+
+        // Died midway - the records are whatever happened to be flushed.
+        Assert.False(FirewallQuery.OutputSupportsAVerdict("RULE|A|1|1|C:\\a.exe\n"));
+
+        // Ran to the end AND failed to read a rule. An incomplete set cannot support "no rule at
+        // all, therefore refused" - the verdict an empty set would otherwise produce.
+        Assert.False(FirewallQuery.OutputSupportsAVerdict("RULEFAIL|A\nREMEX-FW-DONE\n"));
+        Assert.False(FirewallQuery.OutputSupportsAVerdict("RULE|A|1|1|C:\\a.exe\nRULEFAIL|B\nREMEX-FW-DONE\n"));
+    }
 }
