@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -112,9 +114,12 @@ public partial class AboutViewModel : ObservableObject, IDisposable
             if (WhatsNewItems.Count > 0)
                 return;
         }
-        catch
+        catch (Exception ex)
         {
-            // Fall back to the localized static highlights below if the changelog can't be read.
+            // Benign - the static highlights below are a real fallback - but recorded anyway, because
+            // "the About page shows the wrong release notes" is otherwise unexplainable from a log.
+            InMemoryLogSink.Append(LogLevel.Debug, "About",
+                "Could not read the bundled changelog; falling back to static highlights", ex);
         }
 
         WhatsNewItems.Add(new WhatsNewItem(
@@ -274,9 +279,11 @@ public partial class AboutViewModel : ObservableObject, IDisposable
             };
             Process.Start(psi);
         }
-        catch
+        catch (Exception ex)
         {
-            // Silently fail if browser can't be opened
+            // The user clicked a link and nothing happened. Silence here means the log cannot even
+            // confirm the click was received, let alone why it did nothing.
+            InMemoryLogSink.Append(LogLevel.Warning, "About", "Could not open a browser for a link", ex);
         }
     }
 
@@ -309,9 +316,10 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         {
             Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
         }
-        catch
+        catch (Exception ex)
         {
-            // Silently fail if a browser can't be opened.
+            InMemoryLogSink.Append(LogLevel.Warning, "About",
+                "Could not open a browser for the update download", ex);
         }
     }
 

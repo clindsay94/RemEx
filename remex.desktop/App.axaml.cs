@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -117,9 +119,13 @@ public partial class App : Application
             // This ensures colors, corner radii, and base theme are set BEFORE the window is shown.
             themeService.ApplyCustomization(profile.Customization);
         }
-        catch
+        catch (Exception ex)
         {
-            // Silently fall back to the default dark theme already declared in App.axaml.
+            // Falls back to the default dark theme already declared in App.axaml, which is the right
+            // behaviour - but the user sees a theme they did not choose, with nothing to explain it.
+            // "my theme keeps resetting" is unanswerable without this line.
+            InMemoryLogSink.Append(LogLevel.Warning, "App",
+                "Could not apply the saved theme customization; falling back to the default dark theme", ex);
         }
     }
 
@@ -156,9 +162,14 @@ public partial class App : Application
                     System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
                     System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = culture;
                 }
-                catch (System.Globalization.CultureNotFoundException)
+                catch (System.Globalization.CultureNotFoundException ex)
                 {
-                    // Invalid language code in settings — ignore, use default culture
+                    // Ignoring it and using the default culture is correct, but the user picked a
+                    // language and the app came up in another one. That is a support case nobody can
+                    // answer from a log that never mentions it - and the bad code is in the message,
+                    // which is the one fact needed to fix it.
+                    InMemoryLogSink.Append(LogLevel.Warning, "App",
+                        $"Settings hold an unrecognised language code '{profile.Language}'; using the default culture", ex);
                 }
             }
 
@@ -276,6 +287,12 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
+            // ROUTED TO THE IN-APP LOG, NOT JUST Debug.WriteLine (RemEx-43ha). Debug output exists
+            // only in a debugger, so on a user's machine this failure left NO trace anywhere - and
+            // it is the whole of app initialization, so it is the single most valuable line a
+            // support case could have. The in-app sink is what the diagnostics export reads, which
+            // is how it reaches someone who can act on it.
+            InMemoryLogSink.Append(LogLevel.Error, "App", "Failed to initialize app", ex);
             System.Diagnostics.Debug.WriteLine($"Failed to initialize app: {ex.Message}");
         }
     }
@@ -314,6 +331,12 @@ public partial class App : Application
         catch (Exception ex)
         {
             // Never let a UI failure hang the host's pending consent — deny cleanly instead.
+            //
+            // AND SAY SO IN THE LOG. Denying is correct and fail-closed, but it is indistinguishable
+            // from the user having chosen to deny, so without this line a transfer is refused and
+            // nobody can tell why. That is the shape of report this export exists to answer.
+            InMemoryLogSink.Append(LogLevel.Error, "App",
+                "File consent dialog failed; denying the request fail-closed", ex);
             System.Diagnostics.Debug.WriteLine($"File consent dialog failed: {ex.Message}");
             service.ResolveConsent(prompt.Request.ConsentId, granted: false, remember: false);
         }
