@@ -19,6 +19,17 @@ import kotlinx.coroutines.flow.first
 private val Context.pinnedHostDataStore: DataStore<Preferences> by
         preferencesDataStore(name = "remex_pinned_hosts")
 
+// Records which keys belong to the same PC, so forgetting can find them all even after the pin
+// they would have been derived from is gone (RemEx-uxem).
+//
+// NOT ENCRYPTED, and be precise about why that is acceptable: these values are not secrets. The
+// hostId and address are already plaintext KEYS in the pin store, and the SPKI hash is a plaintext
+// key in the reconnect-secret store. What is new is the GROUPING - this file is the only place that
+// links hostId to address to fingerprint in one record - so it is excluded from cloud backup and
+// device transfer alongside the pin store, in backup_rules.xml and data_extraction_rules.xml.
+private val Context.hostAliasDataStore: DataStore<Preferences> by
+        preferencesDataStore(name = "remex_host_aliases")
+
 // Separate DataStore for PAIR-1 reconnect secrets, kept distinct from the SPKI store so listPaired()
 // over the pinned-host store is never polluted by secret entries. (RemEx-xuo)
 private val Context.reconnectSecretDataStore: DataStore<Preferences> by
@@ -152,6 +163,45 @@ object PinnedHostStore {
     }
 
     /**
+     * Records that [aliases] all identify the same PC, so [forgetHost] can clear every one of them
+     * given any single alias.
+     *
+     * WHY THIS IS RECORDED RATHER THAN DERIVED (RemEx-uxem). Forgetting used to work out the alias
+     * set by looking up the pin for the key it was handed and matching every other pin key with the
+     * same hash. That works only while the pin is intact - and the population that most needs a clean
+     * forget is exactly the one whose pin is already half-gone, from the earlier forget that removed
+     * one key and left the rest. Deriving after the fact fails precisely when it matters.
+     *
+     * Written under EVERY alias, so any one of them resolves the whole set.
+     */
+    suspend fun recordAliases(context: Context, aliases: List<String>) {
+        val fresh = aliases.filter { it.isNotBlank() }.distinct()
+        if (fresh.size < 2) return
+
+        // MERGE, do not overwrite. The same PC gets re-paired at new addresses over time - LAN then
+        // Tailscale, or after a DHCP change - and each pairing knows only the address it just used.
+        // Overwriting would drop the earlier ones from the record while their pins remain on disk.
+        val existing = context.applicationContext.hostAliasDataStore.data.first()
+        val merged = LinkedHashSet<String>()
+        for (alias in fresh) {
+            merged += alias
+            existing[prefKey(alias)]?.split(ALIAS_SEPARATOR)?.forEach { if (it.isNotBlank()) merged += it }
+        }
+
+        val joined = merged.joinToString(ALIAS_SEPARATOR)
+        context.applicationContext.hostAliasDataStore.edit { prefs ->
+            for (alias in merged) prefs[prefKey(alias)] = joined
+        }
+    }
+
+    private const val ALIAS_SEPARATOR = "\u001F"
+
+    private suspend fun recordedAliases(context: Context, key: String): List<String>? {
+        val prefs = context.applicationContext.hostAliasDataStore.data.first()
+        return prefs[prefKey(key)]?.split(ALIAS_SEPARATOR)?.filter { it.isNotBlank() }
+    }
+
+    /**
      * Forgets [hostId] completely: the pinned SPKI hash AND the reconnect secret.
      *
      * USE THIS, NOT [removePin] ALONE (RemEx-j9ei). The two live in separate DataStores, so clearing
@@ -174,11 +224,19 @@ object PinnedHostStore {
         //
         // The aliases are DISCOVERED rather than demanded from the caller, which holds only one of
         // them: every pin key mapping to the same hash is the same PC by definition.
+        // BOTH sources, unioned - never one instead of the other. The record survives a
+        // half-cleared pin, which derivation cannot; derivation finds addresses added after the
+        // record was written, which the record may not. Review caught the first version using the
+        // record INSTEAD of derivation: re-pairing the same PC at a second address (LAN then
+        // Tailscale, or a DHCP change) rewrote the record without the old address while its pin was
+        // still on disk, so forget left it behind - reintroducing the exact state RemEx-1phe fixed.
+        // Union is strictly more clearing, so it stays direction-safe.
         val paired = listPaired(context)
         val hash = paired[hostId]
-        val aliases =
+        val derived =
                 if (hash == null) setOf(hostId)
                 else paired.filterValues { it == hash }.keys + hostId
+        val aliases = recordedAliases(context, hostId).orEmpty().toSet() + derived
 
         for (alias in aliases) {
             removePin(context, alias)
@@ -188,8 +246,15 @@ object PinnedHostStore {
             RemexCoreClient.ClearPinnedHostHash(alias)
         }
 
-        // The secret is also keyed by the hash itself, which is not a pin key and so is not an alias.
+        // The secret is also keyed by the hash itself. It is in the recorded set, but not in a
+        // derived one - a hash is a pin VALUE, never a pin key.
         if (hash != null) removeReconnectSecret(context, hash)
+
+        // And the linkage itself, or the next forget resurrects a set of keys that no longer exist.
+        context.applicationContext.hostAliasDataStore.edit { prefs ->
+            for (alias in aliases) prefs.remove(prefKey(alias))
+            if (hash != null) prefs.remove(prefKey(hash))
+        }
     }
 
     suspend fun removeReconnectSecret(context: Context, hostId: String) {

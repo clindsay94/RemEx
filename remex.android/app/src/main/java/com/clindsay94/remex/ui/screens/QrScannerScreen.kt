@@ -229,6 +229,19 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
                                                                                                  host,
                                                                                                  spkiHash
                                                                                          )
+                                                                                 // Link the keys so
+                                                                                 // a later forget
+                                                                                 // clears them all
+                                                                                 // (RemEx-uxem).
+                                                                                 PinnedHostStore
+                                                                                         .recordAliases(
+                                                                                                 context,
+                                                                                                 listOfNotNull(
+                                                                                                         hostId,
+                                                                                                         host,
+                                                                                                         spkiHash
+                                                                                                 )
+                                                                                         )
                                                                                  errorMessage =
                                                                                          null
                                                                                  onScanned(

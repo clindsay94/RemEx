@@ -338,6 +338,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                             newHash
                                     )
                                     spkiHash = newHash
+                                    // Link the keys so a later forget can clear all of them
+                                    // (RemEx-uxem).
+                                    com.clindsay94.remex.security.PinnedHostStore.recordAliases(
+                                            context,
+                                            listOf(hostId, host, newHash)
+                                    )
                                     // PAIR-1: persist the reconnect secret from the pairing result
                                     // (OK:hostId|spki|reconnectSecret) so later reconnects can answer
                                     // the host's proof-of-possession challenge. Stored per-host (by id

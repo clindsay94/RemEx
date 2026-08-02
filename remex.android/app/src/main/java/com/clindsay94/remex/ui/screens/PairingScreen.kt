@@ -347,6 +347,13 @@ fun PairingScreen(
                                 RemexCoreClient.SetPinnedHostHash(host, spkiHash)
                                 PinnedHostStore.setPin(context, hostId, spkiHash)
                                 PinnedHostStore.setPin(context, host, spkiHash)
+                                // So forgetting this PC later can find every key it was stored
+                                // under, even if the pin has already been partly cleared
+                                // (RemEx-uxem).
+                                PinnedHostStore.recordAliases(
+                                        context,
+                                        listOf(hostId, host, spkiHash)
+                                )
                                 // Persist the PAIR-1 reconnect secret so the next reconnect —
                                 // always non-loopback over Tailscale — can answer the host's
                                 // ReconnectChallenge. Without this the PIN screen pairs OK but
