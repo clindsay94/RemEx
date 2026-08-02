@@ -1250,6 +1250,43 @@ public sealed class FileTransferService : IFileTransferService
         File.WriteAllText(_configPath, json);
     }
 
+    /// <summary>
+    /// Where a well-known folder ACTUALLY is, falling back to the conventional name (RemEx-ocl9).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THESE FOLDERS MOVE, AND ON A LOT OF MACHINES THEY HAVE.** Composing them as
+    /// <c>home/Pictures</c> is right only where nothing redirected them. OneDrive's Known Folder Move
+    /// - the ordinary consumer setup on Windows - relocates Desktop, Documents and Pictures into
+    /// <c>OneDrive\</c>, and every localised Linux desktop resolves XDG to <c>~/Bilder</c>,
+    /// <c>~/Images</c> or <c>~/Imagenes</c>. In both cases the composed path either does not exist,
+    /// so the candidate is silently dropped and the user gets NO Pictures root at all, or it is a
+    /// leftover empty directory and the root points somewhere with nothing in it.
+    /// </para>
+    /// <para>
+    /// The rest of this process already knew: the screenshot folder resolves
+    /// <c>SpecialFolder.MyPictures</c>, so the two halves disagreed about where Pictures is.
+    /// </para>
+    /// <para>
+    /// FALLS BACK RATHER THAN TRUSTING THE API BLINDLY. <c>GetFolderPath</c> returns an empty string
+    /// when it cannot resolve - a stripped profile, or HOME unset under an XDG autostart - and an
+    /// empty path here would produce a RELATIVE root, which is a far worse failure than a missing
+    /// one. Downloads is deliberately not in this list: it has no SpecialFolder at all.
+    /// </para>
+    /// </remarks>
+    internal static string SpecialFolderOrDefault(Environment.SpecialFolder folder, string home, string conventionalName) =>
+        OrConventional(Environment.GetFolderPath(folder), home, conventionalName);
+
+    /// <summary>The decision on its own, so the empty case can be tested without faking the platform.</summary>
+    /// <remarks>
+    /// Split out because the empty case cannot be provoked through <c>GetFolderPath</c>: a VALID
+    /// folder that cannot be resolved returns "", but an invalid one throws, so there is no enum value
+    /// a test can pass to reach the branch. Testing the rule directly is the only way to cover the
+    /// path that matters - an empty answer becoming a relative root.
+    /// </remarks>
+    internal static string OrConventional(string? resolved, string home, string conventionalName) =>
+        string.IsNullOrEmpty(resolved) ? Path.Combine(home, conventionalName) : resolved;
+
     private static List<ConfiguredRoot> CreateDefaultRoots()
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -1281,7 +1318,7 @@ public sealed class FileTransferService : IFileTransferService
             {
                 RootId = "desktop",
                 DisplayName = "Desktop",
-                AbsolutePath = Path.Combine(home, "Desktop"),
+                AbsolutePath = SpecialFolderOrDefault(Environment.SpecialFolder.DesktopDirectory, home, "Desktop"),
                 IsWritable = false,
                 CanRemoveRoot = true,
             },
@@ -1289,7 +1326,7 @@ public sealed class FileTransferService : IFileTransferService
             {
                 RootId = "documents",
                 DisplayName = "Documents",
-                AbsolutePath = Path.Combine(home, "Documents"),
+                AbsolutePath = SpecialFolderOrDefault(Environment.SpecialFolder.MyDocuments, home, "Documents"),
                 IsWritable = false,
                 CanRemoveRoot = true,
             },
@@ -1297,7 +1334,7 @@ public sealed class FileTransferService : IFileTransferService
             {
                 RootId = "pictures",
                 DisplayName = "Pictures",
-                AbsolutePath = Path.Combine(home, "Pictures"),
+                AbsolutePath = SpecialFolderOrDefault(Environment.SpecialFolder.MyPictures, home, "Pictures"),
                 IsWritable = false,
                 CanRemoveRoot = true,
             },

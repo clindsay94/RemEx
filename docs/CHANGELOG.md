@@ -49,6 +49,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **RemEx could miss your Pictures, Documents and Desktop folders entirely.** It looked for them by
+  name next to your user folder — which is only where they are if nothing has moved them. If you use
+  OneDrive's folder backup, the usual setup on a Windows PC, they live under OneDrive instead; and on
+  a Linux desktop in any language other than English they have local names like *Bilder* or *Images*.
+  In both cases RemEx found nothing there and simply left those folders out, so the phone could not
+  browse them at all. It now asks the system where they actually are.
+  **This only affects the folders RemEx picks for you the first time.** If you have used RemEx before,
+  your folder list was already saved and is left alone — you can add the right folder yourself from
+  the file screen.
+  (`FileTransferService.cs`; RemEx-ocl9, found while reviewing RemEx-y7my.)
+
 - **Red "danger" buttons were hard to read on three of the four themes, and the obvious fix would
   have broken the fourth.** White on the error colour measures 3.41:1 on Monolith against a readable
   minimum of 4.5:1, 3.67:1 on BaseDarkGlass, 3.88:1 on CyberNOC — and 4.83:1 on SolarFlare, the one
