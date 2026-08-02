@@ -168,8 +168,13 @@
                 </Transitions>
             </Setter>
         </Style>
+        <!-- BorderBrush is a TOKEN, not White, and this is the same bug that was already fixed for
+             Button.accent-picker in PersonalizationPanelView (RemEx-fy0a). A white hover border is
+             invisible on SolarFlare, whose surface is near-white, so on that theme the swatch had no
+             hover feedback at all - the control looked inert rather than styled. TextPrimaryBrush is
+             the one key guaranteed to contrast with its own theme's background. -->
         <Style Selector="Button.accent-swatch:pointerover">
-            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="RenderTransform" Value="scale(1.15)"/>
         </Style>
 
