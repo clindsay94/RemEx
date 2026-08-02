@@ -2809,4 +2809,94 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>Стан з’єднання: немає з’єднання</value>
   </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>Стан системи</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>Усе, що потрібно RemEx, працює.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Що це означає?</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Виправити</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Перевірити ще раз</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Права адміністратора</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx працює з правами адміністратора, які йому потрібні.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>RemEx може не мати повних прав адміністратора. Деякі дії можуть не спрацювати без попередження.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx працює не від імені адміністратора. Доки це не зміниться, підключення телефона та керування цим ПК не працюватимуть.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити, чи має він права адміністратора. Якщо підключення телефона або дистанційне керування не працює, перевірте це першим.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Сертифікат безпеки</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>Сертифікат безпеки цього ПК на місці, і його можна прочитати.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>Із сертифікатом безпеки цього ПК щось не так. Телефони можуть не під'єднатися.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>Не вдалося прочитати сертифікат безпеки цього ПК, тому жоден телефон не може під'єднатися. Не видаляйте й не замінюйте його — це від'єднає всі підключені телефони, і кожен доведеться підключати заново.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити сертифікат безпеки цього ПК. Якщо телефони не під'єднуються, перевірте це першим.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Приймання з'єднань</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx працює та приймає з'єднання на цьому ПК.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>Можливо, RemEx не приймає з'єднання. Ваш телефон може не під'єднатися.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx не приймає з'єднання, тому жоден телефон не може під'єднатися до цього ПК.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити, чи приймає він з'єднання. Якщо ваш телефон не під'єднується, перевірте це першим.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Брандмауер</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>Брандмауер налаштовано пропускати RemEx.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>Можливо, брандмауер блокує RemEx. Якщо ваш телефон не знаходить цей ПК, почніть звідси.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>Брандмауер блокує RemEx, тому ваш телефон не зможе дістатися до цього ПК.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити брандмауер. Якщо ваш телефон не знаходить цей ПК, перевірте його самостійно.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Запуск під час входу</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>RemEx запускається автоматично, коли ви входите на цей ПК.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx не налаштовано запускатися під час входу, тому вам доведеться відкривати його самостійно, перш ніж телефон зможе під'єднатися.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>Не вдалося налаштувати RemEx на запуск під час входу, тому вам доведеться відкривати його самостійно щоразу.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити, чи запускається він під час входу. Те, що ви бачите тут, може не збігатися з налаштуваннями вашого ПК.</value>
+  </data>
 </root>

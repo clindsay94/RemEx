@@ -2812,4 +2812,94 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>Bağlantı durumu: bağlı değil</value>
   </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>Sistem durumu</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>RemEx'in ihtiyaç duyduğu her şey çalışıyor.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Bu ne anlama geliyor?</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Bunu düzelt</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Yeniden denetle</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Yönetici hakları</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx, ihtiyaç duyduğu yönetici haklarıyla çalışıyor.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>RemEx'in tüm yönetici hakları olmayabilir. Bazı işlemler uyarı vermeden başarısız olabilir.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx yönetici olarak çalışmıyor. Bu düzelene kadar telefon eşleştirme ve bu bilgisayarı denetleme çalışmayacak.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx, yönetici haklarına sahip olup olmadığını denetleyemedi. Eşleştirme veya uzaktan denetim başarısız olursa önce buna bakın.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Güvenlik sertifikası</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>Bu bilgisayarın güvenlik sertifikası yerinde ve okunabilir.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>Bu bilgisayarın güvenlik sertifikasında bir sorun var. Telefonlar bağlanamayabilir.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>Bu bilgisayarın güvenlik sertifikası okunamadı, bu yüzden hiçbir telefon bağlanamaz. Sertifikayı silmeyin veya değiştirmeyin — bu, eşleştirdiğiniz tüm telefonların bağlantısını keser ve her birini yeniden eşleştirmeniz gerekir.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx, bu bilgisayarın güvenlik sertifikasını denetleyemedi. Telefonlar bağlanamıyorsa önce buna bakın.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Bağlantıları kabul etme</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx çalışıyor ve bu bilgisayarda bağlantıları kabul ediyor.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>RemEx bağlantıları kabul etmiyor olabilir. Telefonunuz bağlanamayabilir.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx bağlantıları kabul etmiyor, bu yüzden hiçbir telefon bu bilgisayara bağlanamaz.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx, bağlantıları kabul edip etmediğini denetleyemedi. Telefonunuz bağlanamıyorsa önce buna bakın.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Güvenlik duvarı</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>Güvenlik duvarı RemEx'e izin verecek şekilde ayarlanmış.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>Güvenlik duvarı RemEx'i engelliyor olabilir. Telefonunuz bu bilgisayarı bulamıyorsa buradan başlayın.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>Güvenlik duvarı RemEx'i engelliyor, bu yüzden telefonunuz bu bilgisayara ulaşamayacak.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx güvenlik duvarını denetleyemedi. Telefonunuz bu bilgisayarı bulamıyorsa kendiniz kontrol edin.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Oturum açınca başlat</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>Bu bilgisayarda oturum açtığınızda RemEx otomatik olarak başlar.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx oturum açtığınızda başlayacak şekilde ayarlanmamış, bu yüzden telefonunuz bağlanabilmeden önce onu kendiniz açmanız gerekecek.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>RemEx oturum açtığınızda başlayacak şekilde ayarlanamadı, bu yüzden her seferinde onu kendiniz açmanız gerekecek.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx, oturum açtığınızda başlayıp başlamadığını denetleyemedi. Burada görünen, bilgisayarınızdaki durumla uyuşmayabilir.</value>
+  </data>
 </root>

@@ -1,4 +1,4 @@
-namespace Remex.Agent.Services.Readiness;
+namespace Remex.Core.Services.Readiness;
 
 /// <summary>
 /// How a single readiness check came out.
@@ -131,7 +131,13 @@ public sealed record SystemReadinessReport(IReadOnlyList<ReadinessCheck> Checks)
     /// we could not check is more alarming than something that merely will not survive a reboot,
     /// and less alarming than something we know is broken right now.
     /// </summary>
-    internal static int Severity(ReadinessState state) => state switch
+    /// <remarks>
+    /// PUBLIC BECAUSE THE CARD ORDERS BY IT (RemEx-id37), not merely because a test wanted it. Rows
+    /// render worst-first, so the thing most likely to be stopping the user is the thing they read
+    /// first — and that ordering has to agree with the ranking <see cref="Overall"/> already uses,
+    /// or the card's headline and its top row could disagree about what is worst.
+    /// </remarks>
+    public static int Severity(ReadinessState state) => state switch
     {
         ReadinessState.NotApplicable => -1,
         ReadinessState.Ok => 0,
@@ -143,4 +149,32 @@ public sealed record SystemReadinessReport(IReadOnlyList<ReadinessCheck> Checks)
         // green is how a future state would silently start collapsing the card.
         _ => 2
     };
+}
+
+/// <summary>
+/// Reports whether the host is actually able to do its job (RemEx-id37).
+/// </summary>
+/// <remarks>
+/// <para>
+/// **IN <c>remex.core</c> SO THE UI CAN NAME IT.** The project reference runs agent → desktop, never
+/// the other way, so a view model cannot mention a type that lives in <c>remex.agent</c> at all. Every
+/// other host capability the UI consumes is shaped this way — <c>ISystemCommandService</c>,
+/// <c>IPairingService</c>, <c>IFileTrustService</c> — interface and data here, implementation there,
+/// resolved through <c>EmbeddedHostServiceLocator</c>.
+/// </para>
+/// <para>
+/// NativeAOT-safe by construction: enums and records with no reflection, no dynamic code, and no
+/// serialization. This never crosses the wire — it is read in-process by the UI — so it needs no
+/// source-generated JSON context.
+/// </para>
+/// </remarks>
+public interface ISystemReadinessService
+{
+    /// <summary>Runs every check and returns the report.</summary>
+    /// <remarks>
+    /// **LAUNCHES A PROCESS AND BLOCKS, so never call it on the UI thread.** The firewall check shells
+    /// out; the implementation's own documentation says so, and this restates it at the seam the UI
+    /// actually touches, where forgetting it freezes the window rather than a background worker.
+    /// </remarks>
+    SystemReadinessReport Run();
 }

@@ -1,3 +1,4 @@
+using Remex.Core.Services.Readiness;
 using Remex.Core.Guards;
 
 namespace Remex.Agent.Services.Readiness;
@@ -65,7 +66,7 @@ public interface IReadinessProbe
 /// machine is ready, so "my phone can't find my PC" support cases start from zero information.
 /// </para>
 /// </remarks>
-public sealed class SystemReadinessService
+public sealed class SystemReadinessService : ISystemReadinessService
 {
     private readonly IReadinessProbe _probe;
     private readonly int _port;

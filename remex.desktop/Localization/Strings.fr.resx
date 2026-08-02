@@ -2808,4 +2808,94 @@ Vous pouvez modifier :
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>État de la connexion : non connecté</value>
   </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>État du système</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>Tout ce dont RemEx a besoin fonctionne.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Qu'est-ce que cela signifie ?</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Corriger</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Vérifier à nouveau</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Droits administrateur</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx s'exécute avec les droits administrateur dont il a besoin.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>RemEx n'a peut-être pas tous les droits administrateur. Certaines actions peuvent échouer sans prévenir.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx ne s'exécute pas en tant qu'administrateur. L'association d'un téléphone et le contrôle de ce PC ne fonctionneront pas tant que ce ne sera pas le cas.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx n'a pas pu vérifier s'il dispose des droits administrateur. Si l'association ou le contrôle à distance échoue, commencez par vérifier cela.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Certificat de sécurité</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>Le certificat de sécurité de ce PC est en place et lisible.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>Le certificat de sécurité de ce PC présente un problème. Les téléphones risquent de ne pas pouvoir se connecter.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>Le certificat de sécurité de ce PC n'a pas pu être lu, donc aucun téléphone ne peut se connecter. Ne le supprimez pas et ne le remplacez pas : cela déconnecterait tous les téléphones associés et il faudrait les associer de nouveau un par un.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx n'a pas pu vérifier le certificat de sécurité de ce PC. Si les téléphones ne parviennent pas à se connecter, commencez par vérifier cela.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Connexions acceptées</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx s'exécute et accepte les connexions sur ce PC.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>RemEx n'accepte peut-être pas les connexions. Votre téléphone risque de ne pas pouvoir se connecter.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx n'accepte pas les connexions, donc aucun téléphone ne peut se connecter à ce PC.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx n'a pas pu vérifier s'il accepte les connexions. Si votre téléphone ne parvient pas à se connecter, commencez par vérifier cela.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Pare-feu</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>Le pare-feu est configuré pour laisser passer RemEx.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>Le pare-feu bloque peut-être RemEx. Si votre téléphone ne trouve pas ce PC, commencez par là.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>Le pare-feu bloque RemEx, donc votre téléphone ne pourra pas atteindre ce PC.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx n'a pas pu vérifier le pare-feu. Si votre téléphone ne trouve pas ce PC, vérifiez-le vous-même.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Démarrer à l'ouverture de session</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>RemEx démarre automatiquement lorsque vous ouvrez une session sur ce PC.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx n'est pas configuré pour démarrer à l'ouverture de session : vous devrez l'ouvrir vous-même avant que votre téléphone puisse se connecter.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>RemEx n'a pas pu être configuré pour démarrer à l'ouverture de session : vous devrez l'ouvrir vous-même à chaque fois.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx n'a pas pu vérifier s'il démarre à l'ouverture de session. Ce qui s'affiche ici peut ne pas correspondre à votre PC.</value>
+  </data>
 </root>

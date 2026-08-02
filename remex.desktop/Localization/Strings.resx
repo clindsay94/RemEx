@@ -2814,4 +2814,94 @@ You can change:
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>Connection status: not connected</value>
   </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>System status</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>Everything RemEx needs is working.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>What does this mean?</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Fix this</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Check again</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Administrator rights</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx is running with the administrator rights it needs.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>RemEx may not have full administrator rights. Some actions can fail without warning.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx is not running as an administrator. Pairing a phone and controlling this PC will not work until it is.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx could not check whether it has administrator rights. If pairing or remote control fails, this is worth checking first.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Security certificate</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>This PC's security certificate is in place and readable.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>There is something wrong with this PC's security certificate. Phones may not be able to connect.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>This PC's security certificate could not be read, so no phone can connect. Do not delete or replace it — that would disconnect every phone you have paired and each would have to be paired again.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx could not check this PC's security certificate. If phones cannot connect, this is worth checking first.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Accepting connections</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx is running and accepting connections on this PC.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>RemEx may not be accepting connections. Your phone may not be able to connect.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx is not accepting connections, so no phone can connect to this PC.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx could not check whether it is accepting connections. If your phone cannot connect, this is worth checking first.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Firewall</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>The firewall is set to let RemEx through.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>The firewall may be blocking RemEx. If your phone cannot find this PC, start here.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>The firewall is blocking RemEx, so your phone will not be able to reach this PC.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx could not check the firewall. If your phone cannot find this PC, this is worth checking yourself.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Start at sign-in</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>RemEx starts automatically when you sign in to this PC.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx is not set to start when you sign in, so you will need to open it yourself before your phone can connect.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>RemEx could not be set to start when you sign in, so you will need to open it yourself each time.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx could not check whether it starts when you sign in. What you see here may not match your PC.</value>
+  </data>
 </root>

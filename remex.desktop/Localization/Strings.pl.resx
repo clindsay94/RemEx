@@ -2809,4 +2809,94 @@ Możesz zmienić:
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>Stan połączenia: brak połączenia</value>
   </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>Stan systemu</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>Wszystko, czego potrzebuje RemEx, działa.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Co to oznacza?</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Napraw to</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Sprawdź ponownie</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Uprawnienia administratora</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx działa z uprawnieniami administratora, których potrzebuje.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>RemEx może nie mieć pełnych uprawnień administratora. Niektóre działania mogą się nie udać bez ostrzeżenia.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx nie działa jako administrator. Parowanie telefonu i sterowanie tym komputerem nie będą działać, dopóki się to nie zmieni.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić, czy ma uprawnienia administratora. Jeśli parowanie lub zdalne sterowanie zawiedzie, sprawdź to najpierw.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Certyfikat zabezpieczeń</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>Certyfikat zabezpieczeń tego komputera jest na miejscu i można go odczytać.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>Z certyfikatem zabezpieczeń tego komputera jest coś nie tak. Telefony mogą nie móc się połączyć.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>Nie udało się odczytać certyfikatu zabezpieczeń tego komputera, więc żaden telefon nie może się połączyć. Nie usuwaj go ani nie zastępuj — to odłączyłoby wszystkie sparowane telefony i każdy trzeba by sparować od nowa.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić certyfikatu zabezpieczeń tego komputera. Jeśli telefony nie mogą się połączyć, sprawdź to najpierw.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Przyjmowanie połączeń</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx działa i przyjmuje połączenia na tym komputerze.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>RemEx może nie przyjmować połączeń. Twój telefon może nie móc się połączyć.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx nie przyjmuje połączeń, więc żaden telefon nie może połączyć się z tym komputerem.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić, czy przyjmuje połączenia. Jeśli telefon nie może się połączyć, sprawdź to najpierw.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Zapora sieciowa</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>Zapora sieciowa jest ustawiona tak, aby przepuszczać RemEx.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>Zapora sieciowa może blokować RemEx. Jeśli telefon nie znajduje tego komputera, zacznij od tego.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>Zapora sieciowa blokuje RemEx, więc telefon nie zdoła dotrzeć do tego komputera.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić zapory sieciowej. Jeśli telefon nie znajduje tego komputera, sprawdź ją samodzielnie.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Uruchamianie przy logowaniu</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>RemEx uruchamia się automatycznie, gdy logujesz się na tym komputerze.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx nie jest ustawiony tak, aby uruchamiał się przy logowaniu, więc musisz otworzyć go samodzielnie, zanim telefon będzie mógł się połączyć.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>Nie udało się ustawić RemEx tak, aby uruchamiał się przy logowaniu, więc musisz otwierać go samodzielnie za każdym razem.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić, czy uruchamia się przy logowaniu. To, co tu widzisz, może nie odpowiadać ustawieniom komputera.</value>
+  </data>
 </root>

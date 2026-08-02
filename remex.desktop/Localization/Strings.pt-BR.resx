@@ -2808,4 +2808,94 @@ Você pode mudar:
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>Status da conexão: sem conexão</value>
   </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>Status do sistema</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>Tudo o que o RemEx precisa está funcionando.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>O que isso significa?</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Corrigir</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Verificar novamente</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Permissões de administrador</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>O RemEx está em execução com as permissões de administrador de que precisa.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>O RemEx pode não ter todas as permissões de administrador. Algumas ações podem falhar sem aviso.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>O RemEx não está sendo executado como administrador. Parear um celular e controlar este PC não vão funcionar enquanto isso não mudar.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>O RemEx não conseguiu verificar se tem permissões de administrador. Se o pareamento ou o controle remoto falhar, verifique isso primeiro.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Certificado de segurança</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>O certificado de segurança deste PC está no lugar e pode ser lido.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>Há algo errado com o certificado de segurança deste PC. Os celulares podem não conseguir se conectar.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>Não foi possível ler o certificado de segurança deste PC, então nenhum celular consegue se conectar. Não apague nem substitua o certificado — isso desconectaria todos os celulares pareados e cada um teria de ser pareado de novo.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>O RemEx não conseguiu verificar o certificado de segurança deste PC. Se os celulares não conseguirem se conectar, verifique isso primeiro.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Aceitando conexões</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>O RemEx está em execução e aceitando conexões neste PC.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>O RemEx pode não estar aceitando conexões. Seu celular pode não conseguir se conectar.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>O RemEx não está aceitando conexões, então nenhum celular consegue se conectar a este PC.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>O RemEx não conseguiu verificar se está aceitando conexões. Se o celular não conseguir se conectar, verifique isso primeiro.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Firewall</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>O firewall está configurado para deixar o RemEx passar.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>O firewall pode estar bloqueando o RemEx. Se o celular não encontrar este PC, comece por aqui.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>O firewall está bloqueando o RemEx, então o celular não vai conseguir alcançar este PC.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>O RemEx não conseguiu verificar o firewall. Se o celular não encontrar este PC, verifique você mesmo.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Iniciar ao entrar</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>O RemEx inicia automaticamente quando você entra neste PC.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>O RemEx não está configurado para iniciar quando você entra, então você precisará abri-lo antes que o celular possa se conectar.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>Não foi possível configurar o RemEx para iniciar quando você entra, então você precisará abri-lo toda vez.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>O RemEx não conseguiu verificar se ele inicia quando você entra. O que aparece aqui pode não corresponder ao seu PC.</value>
+  </data>
 </root>

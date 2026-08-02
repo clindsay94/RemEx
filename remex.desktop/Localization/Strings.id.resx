@@ -2811,4 +2811,94 @@ Anda dapat mengubah:
   <data name="A11y_ConnectionDisconnected" xml:space="preserve">
     <value>Status koneksi: tidak terhubung</value>
   </data>
+  <data name="SystemStatus_Title" xml:space="preserve">
+    <value>Status sistem</value>
+  </data>
+  <data name="SystemStatus_AllReady" xml:space="preserve">
+    <value>Semua yang dibutuhkan RemEx berfungsi.</value>
+  </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Apa artinya ini?</value>
+  </data>
+  <data name="SystemStatus_Fix" xml:space="preserve">
+    <value>Perbaiki</value>
+  </data>
+  <data name="SystemStatus_Recheck" xml:space="preserve">
+    <value>Periksa lagi</value>
+  </data>
+  <data name="SystemStatus_Elevation_Title" xml:space="preserve">
+    <value>Hak administrator</value>
+  </data>
+  <data name="SystemStatus_Elevation_Ok" xml:space="preserve">
+    <value>RemEx berjalan dengan hak administrator yang dibutuhkannya.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Warning" xml:space="preserve">
+    <value>RemEx mungkin tidak memiliki hak administrator penuh. Beberapa tindakan bisa gagal tanpa peringatan.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Problem" xml:space="preserve">
+    <value>RemEx tidak berjalan sebagai administrator. Memasangkan ponsel dan mengendalikan PC ini tidak akan berfungsi sampai hal itu dilakukan.</value>
+  </data>
+  <data name="SystemStatus_Elevation_Unknown" xml:space="preserve">
+    <value>RemEx tidak dapat memeriksa apakah ia memiliki hak administrator. Jika pemasangan atau kendali jarak jauh gagal, periksa ini lebih dulu.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Title" xml:space="preserve">
+    <value>Sertifikat keamanan</value>
+  </data>
+  <data name="SystemStatus_Certificate_Ok" xml:space="preserve">
+    <value>Sertifikat keamanan PC ini tersedia dan dapat dibaca.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Warning" xml:space="preserve">
+    <value>Ada masalah dengan sertifikat keamanan PC ini. Ponsel mungkin tidak dapat terhubung.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Problem" xml:space="preserve">
+    <value>Sertifikat keamanan PC ini tidak dapat dibaca, sehingga tidak ada ponsel yang bisa terhubung. Jangan menghapus atau menggantinya — hal itu akan memutus semua ponsel yang sudah dipasangkan dan masing-masing harus dipasangkan ulang.</value>
+  </data>
+  <data name="SystemStatus_Certificate_Unknown" xml:space="preserve">
+    <value>RemEx tidak dapat memeriksa sertifikat keamanan PC ini. Jika ponsel tidak dapat terhubung, periksa ini lebih dulu.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Title" xml:space="preserve">
+    <value>Menerima koneksi</value>
+  </data>
+  <data name="SystemStatus_PortListening_Ok" xml:space="preserve">
+    <value>RemEx berjalan dan menerima koneksi di PC ini.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Warning" xml:space="preserve">
+    <value>RemEx mungkin tidak menerima koneksi. Ponsel Anda mungkin tidak dapat terhubung.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Problem" xml:space="preserve">
+    <value>RemEx tidak menerima koneksi, sehingga tidak ada ponsel yang bisa terhubung ke PC ini.</value>
+  </data>
+  <data name="SystemStatus_PortListening_Unknown" xml:space="preserve">
+    <value>RemEx tidak dapat memeriksa apakah ia menerima koneksi. Jika ponsel Anda tidak dapat terhubung, periksa ini lebih dulu.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Title" xml:space="preserve">
+    <value>Firewall</value>
+  </data>
+  <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
+    <value>Firewall diatur untuk mengizinkan RemEx.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Warning" xml:space="preserve">
+    <value>Firewall mungkin memblokir RemEx. Jika ponsel Anda tidak menemukan PC ini, mulailah dari sini.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Problem" xml:space="preserve">
+    <value>Firewall memblokir RemEx, sehingga ponsel Anda tidak akan bisa menjangkau PC ini.</value>
+  </data>
+  <data name="SystemStatus_Firewall_Unknown" xml:space="preserve">
+    <value>RemEx tidak dapat memeriksa firewall. Jika ponsel Anda tidak menemukan PC ini, periksa sendiri.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Title" xml:space="preserve">
+    <value>Mulai saat masuk</value>
+  </data>
+  <data name="SystemStatus_Autostart_Ok" xml:space="preserve">
+    <value>RemEx mulai otomatis saat Anda masuk ke PC ini.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Warning" xml:space="preserve">
+    <value>RemEx tidak diatur untuk mulai saat Anda masuk, jadi Anda harus membukanya sendiri sebelum ponsel Anda dapat terhubung.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Problem" xml:space="preserve">
+    <value>RemEx tidak dapat diatur untuk mulai saat Anda masuk, jadi Anda harus membukanya sendiri setiap kali.</value>
+  </data>
+  <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
+    <value>RemEx tidak dapat memeriksa apakah ia mulai saat Anda masuk. Yang terlihat di sini mungkin tidak sesuai dengan PC Anda.</value>
+  </data>
 </root>
