@@ -82,7 +82,7 @@
                     Classes="glass-button" MinWidth="80" Margin="0,0,8,0"/>
             <Button Grid.Column="3" Content="{local:Localize SetAlert_SetAlertBtn}" Command="{Binding ConfirmCommand}"
                     MinWidth="100" CornerRadius="8" Padding="16,10"
-                    Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"
+                    Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"
                     FontWeight="SemiBold" FontSize="13"/>
         </Grid>
 

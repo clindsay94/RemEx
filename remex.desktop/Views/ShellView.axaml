@@ -89,7 +89,7 @@
             <Setter Property="CornerRadius" Value="26"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Transitions">
@@ -264,8 +264,8 @@
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <Path Grid.Column="0" Data="{StaticResource IconWarning}" Fill="{DynamicResource SystemWarningBrush}" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <TextBlock Grid.Column="1" Text="{Binding ConnectionBannerMessage}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" Background="{DynamicResource SystemSuccessBrush}" Foreground="White" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,6,0" Cursor="Hand"/>
-                                <Button Grid.Column="3" Content="{conv:Localize Shell_OpenSettings}" Command="{Binding NavigateToSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Btn_Connect}" Command="{Binding Connection.ConnectCommand}" Background="{DynamicResource SystemSuccessBrush}" Foreground="{DynamicResource SuccessForegroundBrush}" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="12,0,6,0" Cursor="Hand"/>
+                                <Button Grid.Column="3" Content="{conv:Localize Shell_OpenSettings}" Command="{Binding NavigateToSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" CornerRadius="6" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Cursor="Hand"/>
                                 <Button AutomationProperties.Name="{conv:Localize A11y_Dismiss}" Grid.Column="4" Command="{Binding DismissConnectionBannerCommand}" Background="Transparent" Padding="6,4" CornerRadius="6" Cursor="Hand" BorderThickness="0">
                                     <Path Data="{StaticResource IconClose}" Fill="{DynamicResource TextMutedBrush}" Width="10" Height="10" Stretch="Uniform"/>
                                 </Button>
@@ -395,7 +395,7 @@
 
             <!-- ═══ FLOATING GEAR FAB (Bottom-Right) ═══ -->
             <Button AutomationProperties.Name="{conv:Localize Personalize_FabTooltip}" Grid.Row="1" Classes="gear-fab" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,20,20" Command="{Binding ToggleSettingsPanelCommand}" ToolTip.Tip="{conv:Localize Personalize_FabTooltip}" IsVisible="{Binding !IsShellChromeHidden}">
-                <Path Data="{StaticResource IconPersonalize}" Fill="White" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Path Data="{StaticResource IconPersonalize}" Fill="{DynamicResource AccentForegroundBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Button>
 
 
@@ -586,8 +586,8 @@
                             <!-- Navigation buttons -->
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <Button Grid.Column="0" Content="{conv:Localize Tutorial_Back}" Command="{Binding TutorialPreviousCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=0}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="SemiBold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=16}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
-                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}" Background="{DynamicResource SystemSuccessBrush}" Foreground="White" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Next}" Command="{Binding TutorialNextCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntNotEqualConverter.Instance}, ConverterParameter=16}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Grid.Column="2" Content="{conv:Localize Tutorial_Finish}" Command="{Binding TutorialFinishCommand}" IsVisible="{Binding TutorialPageIndex, Converter={x:Static conv:IntEqualConverter.Instance}, ConverterParameter=16}" Background="{DynamicResource SystemSuccessBrush}" Foreground="{DynamicResource SuccessForegroundBrush}" Padding="16,8" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
                             </Grid>
                         </StackPanel>
                     </Border>

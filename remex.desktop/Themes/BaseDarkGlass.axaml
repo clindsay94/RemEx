@@ -42,7 +42,7 @@
     <SolidColorBrush x:Key="GlassBaseMediumBrush" Color="{DynamicResource GlassBaseMedium}"/>
     <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{DynamicResource AccentPrimary}"/>
     <!-- Text/icons ON an accent-filled surface. MEASURED, not chosen: white on this
-         theme's accent is 5.10:1 and white is 4.12:1, so this is the value WCAG AA picks,
+         theme's accent is 5.10:1 and black is 4.12:1, so this is the value WCAG AA picks,
          not a taste call. The literal Foreground="White" it replaces failed AA on three
          of the four themes - CyberNOC at 1.38:1 was barely legible. (RemEx-tq2e) -->
     <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFFFF"/>
@@ -55,6 +55,12 @@
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
     <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
+    <!-- MEASURED, NOT CHOSEN. White on this theme's success fill #22C55E is 2.28:1, below
+         WCAG AA - and AccentForegroundBrush cannot stand in, because on BaseDarkGlass that
+         token is white (correctly, for a purple accent). Green wants dark text in every
+         theme; the accent does not. This value gives 8.69:1. Retune SystemSuccess and
+         AccentForegroundContrastTests will fail until this is revisited. (RemEx-iegl) -->
+    <SolidColorBrush x:Key="SuccessForegroundBrush" Color="#FF0A0A0A"/>
     <SolidColorBrush x:Key="SystemSuccessBackgroundBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemSuccessBackgroundHoverBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.22"/>
     <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>

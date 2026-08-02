@@ -86,7 +86,7 @@
         <!-- ═══ Staging drawer buttons ═══ -->
         <Style Selector="Button.stage-btn">
             <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="10 6"/>
             <Setter Property="FontSize" Value="11"/>
@@ -128,7 +128,7 @@
         </Style>
         <Style Selector="Button.card-action-accent">
             <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
         </Style>
         <Style Selector="Button.card-action-accent:pointerover">
             <Setter Property="Opacity" Value="0.85"/>

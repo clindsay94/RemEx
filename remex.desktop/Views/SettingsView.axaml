@@ -62,7 +62,7 @@
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SavedStatus}" FontSize="13" Foreground="{DynamicResource SystemSuccessBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
-                    <Button Content="{local:Localize Settings_SaveChanges}" Command="{Binding SaveCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="20,10" CornerRadius="10" FontSize="14" FontWeight="Bold" Cursor="Hand"/>
+                    <Button Content="{local:Localize Settings_SaveChanges}" Command="{Binding SaveCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="20,10" CornerRadius="10" FontSize="14" FontWeight="Bold" Cursor="Hand"/>
                 </StackPanel>
             </Grid>
 
@@ -98,7 +98,7 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand" ToolTip.Tip="{local:Localize Tooltip_SaveReconnect}"/>
+                                <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand" ToolTip.Tip="{local:Localize Tooltip_SaveReconnect}"/>
                                 <Button Content="{local:Localize Btn_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DisconnectTooltip}"/>
                                 <Button Content="{local:Localize Home_QrCodeButton}"
                                         Command="{Binding Connection.GenerateQrCodeCommand}"
@@ -257,7 +257,7 @@
                             <TextBlock Text="{local:Localize Settings_BackupDescription}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Opacity="0.85"/>
 
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <Button Content="{local:Localize Settings_ExportButton}" Command="{Binding ExportSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Content="{local:Localize Settings_ExportButton}" Command="{Binding ExportSettingsCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="Bold" Cursor="Hand"/>
                                 <Button Content="{local:Localize Settings_ImportButton}" Command="{Binding ImportSettingsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
                             </StackPanel>
                         </StackPanel>
@@ -276,7 +276,7 @@
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{local:Localize Settings_FileTransferDesc}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                                <Button Content="{local:Localize Settings_FileTransferAddFolder}" Command="{Binding AddSharedFolderCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="Bold" Cursor="Hand"/>
+                                <Button Content="{local:Localize Settings_FileTransferAddFolder}" Command="{Binding AddSharedFolderCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="Bold" Cursor="Hand"/>
                                 <Button Content="{local:Localize Settings_FileTransferRestoreDefaults}" Command="{Binding RestoreDefaultSharedFoldersCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="16,10" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
                             </StackPanel>
                         </Grid>

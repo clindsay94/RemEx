@@ -11,6 +11,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Eighteen more buttons had white text on a background that made it nearly invisible.** An earlier
+  sweep fixed nine and read as though nine was all of them; review of *this* fix then found the same
+  undercount again, because the ten obvious ones were only the buttons whose colours are set
+  individually. Seven more take their colour from a shared style — File Transfer's four action
+  buttons, the About page's two, and the canvas "Add card" — and one is the settings gear icon in the main window,
+  whose glyph is drawn rather than written and so needed a different attribute again. On CyberNOC
+  white on the accent colour measures 1.38:1 against a readable minimum of 4.5:1; on SolarFlare
+  1.73:1. All now use the per-theme accent foreground, whose worst case across the four themes is
+  5.10:1 — above the minimum on every one.
+  **The two green "success" buttons turned out to be worse, and needed something of their own.** White
+  fails on green in *all four* themes (2.28, 1.34, 2.02, 3.30) — and reusing the accent foreground
+  would not have fixed it, because on BaseDarkGlass that token is white, correctly, for its purple
+  accent. Borrowing it would have left the green button unreadable while looking fixed. Green gets
+  dark text in every theme, worst case now 5.59:1.
+  **The guard that was supposed to prevent this could not see it.** It read the theme files only, so
+  it proved every theme *offers* a readable foreground while eighteen buttons went on ignoring it. It
+  now reads the views, in both the ways a colour gets set — on the button itself, and in a shared
+  style. It still cannot see a drawn icon whose colour is set separately from its button, which is
+  written down rather than glossed over, along with the follow-up that would close it.
+  Red buttons are deliberately left alone rather than swept in: the accent colour makes SolarFlare
+  *worse* on red (4.83:1 → 3.81:1). Red is not fine, though — white on red is below the readable
+  minimum on three of the four themes — it simply needs a measurement of its own, which is filed.
+  (`SettingsView.axaml`, `ShellView.axaml`, `ConnectionView.axaml`, `PersonalizationPanelView.axaml`,
+  `SecondMetricDialog.axaml`, `SetAlertDialog.axaml`, 4 theme files, `AccentForegroundContrastTests.cs`;
+  RemEx-iegl, from the RemEx-tq2e review.)
+
 - **A file appearing inside a folder mid-copy can no longer end up destroying the folder it landed
   in.** Copying a folder creates the destination and then copies the contents; if something dropped a
   file into that brand-new folder in the meantime, the phone was told the ordinary "already exists" —

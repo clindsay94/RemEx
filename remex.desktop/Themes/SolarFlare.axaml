@@ -47,6 +47,12 @@
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
     <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
     <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
+    <!-- MEASURED, NOT CHOSEN. White on this theme's success fill #16A34A is 3.30:1, below
+         WCAG AA - and AccentForegroundBrush cannot stand in, because on BaseDarkGlass that
+         token is white (correctly, for a purple accent). Green wants dark text in every
+         theme; the accent does not. This value gives 5.59:1. Retune SystemSuccess and
+         AccentForegroundContrastTests will fail until this is revisited. (RemEx-iegl) -->
+    <SolidColorBrush x:Key="SuccessForegroundBrush" Color="#FF141414"/>
     <SolidColorBrush x:Key="SystemSuccessBackgroundBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemSuccessBackgroundHoverBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.22"/>
     <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>

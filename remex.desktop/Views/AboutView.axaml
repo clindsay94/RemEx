@@ -29,7 +29,7 @@
         </Style>
         <Style Selector="Button.github-btn">
             <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="16 10"/>
             <Setter Property="FontSize" Value="14"/>

@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Services;
@@ -24,7 +25,22 @@ namespace Remex.Desktop.Tests.Services;
 /// </remarks>
 public class AccentForegroundContrastTests
 {
-    private static readonly string[] Themes = ["CyberNOC", "Monolith", "SolarFlare", "BaseDarkGlass"];
+    private static string ThemesDirectory() =>
+        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "remex.desktop", "Themes");
+
+    /// <summary>Every theme on disk, not a list someone has to remember to extend.</summary>
+    /// <remarks>
+    /// A HARDCODED LIST IS SILENTLY INCOMPLETE. Adding a fifth theme without the tokens would give
+    /// exactly the unresolved-DynamicResource failure this class exists to catch, with every test
+    /// green, because the new file would never be looked at.
+    /// </remarks>
+    private static string[] Themes =>
+        Directory.EnumerateFiles(ThemesDirectory(), "*.axaml")
+            .Select(Path.GetFileNameWithoutExtension)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Select(name => name!)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
 
     private static string ThemePath(string theme) =>
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "remex.desktop", "Themes", theme + ".axaml");
@@ -93,7 +109,10 @@ public class AccentForegroundContrastTests
             if (Contrast(accent, "#FFFFFF") < 4.5) failures++;
         }
 
-        Assert.Equal(3, failures);
+        // EXPRESSED AGAINST THE LIST, NOT AS 3. Themes now comes from disk, so a literal 3 would
+        // fail on a fifth theme for the wrong reason - it would look like a contrast regression when
+        // it is only a bigger list. White passes on exactly one theme, BaseDarkGlass.
+        Assert.Equal(Themes.Length - 1, failures);
     }
 
     private static string Extract(string text, string marker)
@@ -106,9 +125,186 @@ public class AccentForegroundContrastTests
 
     private static string ExtractBrush(string text, string key)
     {
-        var i = text.IndexOf(key, StringComparison.Ordinal);
+        // MATCHED ON THE DECLARATION, NOT THE BARE NAME. IndexOf(key) finds the first MENTION, and
+        // the rationale comment above SuccessForegroundBrush names AccentForegroundBrush - so this
+        // resolved correctly only because the accent declaration happens to come first in all four
+        // files. A reorder would have silently made the accent test measure the green value and pass.
+        var i = text.IndexOf($"x:Key=\"{key}\"", StringComparison.Ordinal);
         Assert.True(i >= 0, $"missing {key}");
         var start = text.IndexOf('#', i);
         return text.Substring(start, 9);
+    }
+
+    // ── The success surface, and the views themselves (RemEx-iegl) ─────────────────────────────
+
+    [Fact]
+    public void EveryThemeDeclaresASuccessForeground()
+    {
+        foreach (var theme in Themes)
+        {
+            Assert.Contains("SuccessForegroundBrush", File.ReadAllText(ThemePath(theme)));
+        }
+    }
+
+    [Fact]
+    public void TheSuccessForegroundMeetsWcagAAAgainstItsOwnSuccess()
+    {
+        // A SEPARATE TOKEN, NOT A REUSE OF THE ACCENT ONE, and measurement is why. White fails on
+        // the success fill in ALL FOUR themes (2.28, 1.34, 2.02, 3.30), and AccentForegroundBrush
+        // does not rescue it either: on BaseDarkGlass that token IS white, correctly, because its
+        // purple accent wants white - so borrowing it would leave the green button at 2.28 while
+        // looking fixed. Green needs dark text in every theme; the accent does not.
+        foreach (var theme in Themes)
+        {
+            var text = File.ReadAllText(ThemePath(theme));
+            var success = Extract(text, "<Color x:Key=\"SystemSuccess\">");
+            var foreground = ExtractBrush(text, "SuccessForegroundBrush");
+
+            var ratio = Contrast(success, foreground);
+            Assert.True(ratio >= 4.5, $"{theme}: {foreground} on {success} is {ratio:F2}:1, below AA.");
+        }
+    }
+
+    /// <summary>Every white-on-filled offence in one .axaml, in both spellings that occur here.</summary>
+    /// <remarks>
+    /// <para>
+    /// **SHARED WITH THE ANTI-VACUITY TEST ON PURPOSE.** The first version of that test built a
+    /// synthetic offender and re-implemented the matching beside it, so it proved <c>String.Split</c>
+    /// worked and nothing about the scan — it would have stayed green through a wrong path, an empty
+    /// brush list, or drift between the two copies. Probing the real function is the only version
+    /// that means anything.
+    /// </para>
+    /// <para>
+    /// **TWO SPELLINGS, BECAUSE THE FIRST VERSION ONLY SAW ONE.** Splitting on '&lt;' finds the
+    /// inline form, where one element carries both attributes. It is structurally blind to the style
+    /// form, where <c>&lt;Setter Property="Background"&gt;</c> and <c>&lt;Setter
+    /// Property="Foreground"&gt;</c> land in different fragments — and review found SEVEN live
+    /// buttons hiding in exactly that gap while the scan reported zero.
+    /// </para>
+    /// <para>
+    /// <c>Fill</c> counts as well as <c>Foreground</c>, because a glyph inside an accent button is a
+    /// <c>Path</c> that <c>Foreground</c> never reaches, and WCAG 1.4.11 still wants 3:1 for it. The
+    /// resource key is matched with an optional <c>Brush</c> suffix because this repo writes both —
+    /// <c>CanvasView</c> binds <c>{DynamicResource SystemError}</c>, the Color key, directly.
+    /// </para>
+    /// <para>
+    /// **WHAT THIS STILL CANNOT SEE, STATED RATHER THAN IMPLIED (RemEx-o9gd).** A glyph whose
+    /// <c>Fill</c> is inline on a child element while its container is filled by a CLASS is invisible
+    /// here: the two live on different elements, and neither the split nor the style pass brings them
+    /// together. <c>ShellView</c>'s gear button was exactly that shape and is fixed in this change,
+    /// but by hand — reverting it leaves this scan green, which was measured, not assumed. Closing it
+    /// needs the class-to-ancestor resolution a real XAML parse would give.
+    /// </para>
+    /// <para>
+    /// ERROR RED IS DELIBERATELY NOT LISTED. Measurement during RemEx-tq2e showed this very token
+    /// making SolarFlare WORSE on red — 4.83:1 down to 3.81:1 — so those surfaces keep white until
+    /// red gets its own measured token (RemEx-xb3c). White on red is below AA on three themes today; that is
+    /// a separate bead, not something this rule can fix.
+    /// </para>
+    /// </remarks>
+    private static List<string> ScanForWhiteOnFilled(string axaml, string label)
+    {
+        // LEFT-ANCHORED so an attribute merely ENDING in Foreground - SelectionForeground, say -
+        // is not reported. None exist today; the guard should not create a false positive for the
+        // first one that does.
+        const string white = "\"(?:White|#FFFFFFFF|#FFFFFF)\"";
+        var filled = new[] { "AccentPrimary", "SystemSuccess" };
+        var offences = new List<string>();
+
+        foreach (var brush in filled)
+        {
+            var resource = $"\"{{(?:Dynamic|Static)Resource {brush}(?:Brush)?}}\"";
+
+            // The inline form: one element carrying both attributes.
+            foreach (var element in axaml.Split('<'))
+            {
+                if (Regex.IsMatch(element, $"(?<![\\w.])(?:Foreground|Fill)={white}")
+                    && Regex.IsMatch(element, $"Background={resource}"))
+                {
+                    offences.Add($"{label}: inline on {brush}");
+                }
+            }
+
+            // The style form: two setters in one block, which the split above cannot see together.
+            foreach (Match block in Regex.Matches(axaml, "<Style\\b.*?</Style>", RegexOptions.Singleline))
+            {
+                if (Regex.IsMatch(block.Value, $"Property=\"(?<![\\w.])(?:Foreground|Fill)\" Value={white}")
+                    && Regex.IsMatch(block.Value, $"Property=\"Background\" Value={resource}"))
+                {
+                    var selector = Regex.Match(block.Value, "Selector=\"([^\"]+)\"");
+                    offences.Add($"{label}: style {(selector.Success ? selector.Groups[1].Value : "?")} on {brush}");
+                }
+            }
+        }
+
+        return offences;
+    }
+
+    [Fact]
+    public void NoViewPutsAWhiteLITERALOnAFilledSurface()
+    {
+        // THE GUARD THAT WOULD HAVE CAUGHT THIS, and its absence is why the first sweep looked
+        // complete. The theme tests above read Themes/ only, so they proved every theme OFFERS a
+        // readable foreground while seventeen SITES went on ignoring it - ten inline accent, two
+        // inline success, five style blocks - the fix and its guard
+        // were measuring different things.
+        var viewsDirectory = Path.Combine(
+            AppContext.BaseDirectory, "..", "..", "..", "..", "remex.desktop", "Views");
+        Assert.True(Directory.Exists(viewsDirectory), $"Views moved: {viewsDirectory}");
+
+        var files = Directory.EnumerateFiles(viewsDirectory, "*.axaml", SearchOption.AllDirectories).ToList();
+        Assert.NotEmpty(files);
+
+        var offenders = files
+            .SelectMany(file => ScanForWhiteOnFilled(File.ReadAllText(file), Path.GetFileName(file)))
+            .ToList();
+
+        Assert.True(
+            offenders.Count == 0,
+            "A white literal sits on a filled surface, unreadable in at least one theme: "
+                + string.Join(", ", offenders)
+                + ". Use AccentForegroundBrush or SuccessForegroundBrush, which are per-theme.");
+    }
+
+    [Fact]
+    public void TheViewScanFindsBOTHSpellings_AndLeavesErrorRedAlone()
+    {
+        // Feeds the REAL function the shapes it hunts. The style case is the one that matters: the
+        // scan reported zero against seven live style-driven offenders before this existed.
+        Assert.Single(ScanForWhiteOnFilled(
+            "<Button Background=\"{DynamicResource AccentPrimaryBrush}\" Foreground=\"White\"/>", "inline"));
+
+        Assert.Single(ScanForWhiteOnFilled(
+            "<Style Selector=\"Button.x\">"
+            + "<Setter Property=\"Background\" Value=\"{DynamicResource AccentPrimaryBrush}\"/>"
+            + "<Setter Property=\"Foreground\" Value=\"White\"/></Style>", "style"));
+
+        // A glyph, where Foreground does not reach and Fill does.
+        Assert.Single(ScanForWhiteOnFilled(
+            "<Style Selector=\"Button.x\">"
+            + "<Setter Property=\"Background\" Value=\"{DynamicResource SystemSuccessBrush}\"/>"
+            + "<Setter Property=\"Fill\" Value=\"White\"/></Style>", "glyph"));
+
+        // The Color-key spelling, which this repo actually uses.
+        Assert.Single(ScanForWhiteOnFilled(
+            "<Button Background=\"{DynamicResource AccentPrimary}\" Foreground=\"White\"/>", "colorkey"));
+
+        // And the deliberate exclusion really is excluded.
+        Assert.Empty(ScanForWhiteOnFilled(
+            "<Button Background=\"{DynamicResource SystemErrorBrush}\" Foreground=\"White\"/>", "red"));
+        Assert.Empty(ScanForWhiteOnFilled(
+            "<Button Background=\"{DynamicResource SystemError}\" Foreground=\"White\"/>", "redcolor"));
+    }
+
+    [Fact]
+    public void PlainWhiteWouldFailOnEVERYThemesSuccessFill()
+    {
+        // The control for the success token, and a stronger claim than the accent one: white fails on
+        // green in all FOUR themes, not three. Without this the comment's numbers are asserted
+        // nowhere and could drift from the themes they describe.
+        var failures = Themes.Count(theme =>
+            Contrast(Extract(File.ReadAllText(ThemePath(theme)), "<Color x:Key=\"SystemSuccess\">"), "#FFFFFFFF") < 4.5);
+
+        Assert.Equal(Themes.Length, failures);
     }
 }
