@@ -48,6 +48,31 @@ internal class FloatingShape(
         var color: Color
 )
 
+/**
+ * Subscribes the enclosing draw block to [frame], so it re-runs whenever the frame counter ticks.
+ *
+ * A Compose `Canvas` re-runs its draw lambda only when a snapshot state it READ is invalidated.
+ * The splash particle loops mutate plain remembered lists, which are not observable, so nothing
+ * would ever invalidate the draw - the animation is driven by reading a counter that the loop
+ * increments. Reading it is the entire point; the value is deliberately discarded.
+ *
+ * This exists because that bare expression is unobvious enough that each of its four call sites
+ * needed a `@Suppress("UNUSED_EXPRESSION")`, and a reader who does not recognise the idiom may
+ * tidy away the apparently dead line - which freezes the animation and breaks nothing the build
+ * or lint can see (RemEx-si3q). Naming it puts the explanation in one place and makes the call
+ * sites say what they mean.
+ *
+ * The suppression is GONE rather than relocated, which was better than the bead expected: Kotlin
+ * does not warn about an unused parameter on a non-private function, so nothing here needs
+ * silencing. Four `@Suppress` annotations removed, none added - checked by compiling without one.
+ *
+ * Call it INSIDE the draw block. The read is what subscribes, so moving it outside - or hoisting
+ * the argument into a local computed before the block - silently undoes it.
+ */
+internal fun DrawScope.redrawOnFrame(frame: Int) {
+        // Intentionally empty: evaluating the argument at the call site is the subscription.
+}
+
 /** Cosmic Starfield: streaking white points radiating from screen center. */
 internal fun DrawScope.drawCosmicZoomStarfield(particles: List<Particle>) {
         val width = size.width

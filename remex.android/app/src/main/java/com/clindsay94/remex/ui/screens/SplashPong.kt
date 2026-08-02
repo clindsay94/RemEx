@@ -200,7 +200,7 @@ fun SplashPong(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsumed: (
                 translationY = (size.height / 2f - markCy) * (s - 1f) * zoomProgress.value
             }
         ) {
-            @Suppress("UNUSED_EXPRESSION") particleFrame
+            redrawOnFrame(particleFrame)
             val w = size.width
             val h = size.height
             drawRect(brush = SplashBrand.backdropBrush(size))
