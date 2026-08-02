@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Moving a file with "keep both" now explains itself the same way copying does.** Copy learned to
+  check the name it invents before using it; move never did, so the identical request produced a
+  clear, answerable message one way and the operating system's raw *"the filename, directory name, or
+  volume label syntax is incorrect"* the other. The phone cannot make sense of that, so no question
+  was ever put to the user for a moved file — only a failure.
+  **Move is the one where getting this wrong costs the file rather than a retry**, so the check runs
+  *before* anything is touched: a name that turns out to be unusable, or claimed by something else in
+  the meantime, now leaves the original exactly where it was. That ordering is what the new tests
+  assert, and it applies to folders as well as files, on the same drive or across two — though only
+  the same-drive paths can be covered by tests, since a second volume is not something a test can
+  conjure. Moving across two drives also stopped forcing an overwrite, so a name claimed at the last
+  moment is refused there exactly as it already was everywhere else.
+  (`FileTransferService.cs`, `FileConflictCodeTests.cs`; RemEx-2pyw, from the RemEx-mu17 review.)
+
 - **A "keep both" name that somebody else claims first can now be answered with "keep both" again.**
   When the host picks `report (2).pdf` and another paired device — or the person sitting at the PC —
   takes that name in the moment before the copy runs, the phone used to reach a dead end: the only

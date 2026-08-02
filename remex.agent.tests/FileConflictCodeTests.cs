@@ -368,4 +368,92 @@ public sealed class FileConflictCodeTests : IDisposable
         Assert.Equal("keep_both", FileConflictResolutions.KeepBoth);
         Assert.Equal("replace", FileConflictResolutions.Replace);
     }
+
+    [Fact]
+    public async Task MoveKeepBothOntoAnUncreatableNameSaysSo_AndKEEPSTheSource()
+    {
+        // MOVE HAD THE SAME HOLE COPY CLOSED IN RemEx-cirk, and kept it after copy was fixed - so
+        // the identical request produced a coded, answerable refusal one way and the OS's opaque
+        // "the filename, directory name, or volume label syntax is incorrect" the other. The client
+        // cannot branch on that, so no sheet ever opened for a moved file.
+        //
+        // AND THE SOURCE ASSERTION IS THE POINT OF DOING THIS FOR MOVE. Copy failing costs a retry;
+        // move failing after it has removed the source costs the file. The probe runs before the
+        // operation, so a refusal here must leave everything exactly where it was.
+        //
+        // THE OTHER REFUSAL - resolved_name_taken - CANNOT BE STAGED FROM HERE, and trying taught
+        // something worth keeping: seeding "b (2).txt" before the call does not race anything,
+        // because ConflictResolver re-lists the directory and simply picks "b (3).txt". The occupied
+        // branch needs the name claimed after the File.Exists pre-check and before the create -
+        // claimed any earlier and that pre-check reports destination_exists instead - which is a
+        // window a few instructions wide that no public call can arrange. Hence the seam tests
+        // above. Move reaches the same seam, so it inherits that
+        // behaviour; what these two tests prove is the ROUTING, since resolved_name_unusable is a
+        // code only RunRenamedCreate can emit.
+        var stem = new string('n', 251);
+        Write("src.txt", "the only copy");
+        Write(stem + ".txt", "victim");
+
+        var ex = await Assert.ThrowsAsync<FileConflictException>(
+            () => _service.MoveAsync("r1", "src.txt", stem + ".txt", overwrite: false,
+                CancellationToken.None, FileConflictResolutions.KeepBoth));
+
+        Assert.Equal(FileTransferErrorCodes.ResolvedNameUnusable, ex.ErrorCode);
+        Assert.Equal(stem + " (2).txt", ex.ConflictingName);
+
+        Assert.Equal("the only copy", File.ReadAllText(Path.Combine(_root, "src.txt")));
+        Assert.Equal("victim", File.ReadAllText(Path.Combine(_root, stem + ".txt")));
+    }
+
+    [Fact]
+    public async Task MovingAFolderIsProbedToo_NotJustAFile()
+    {
+        // The directory branch composes a name the same way and had the same gap. Asserted through
+        // MoveAsync rather than the seam, because the seam cannot show that the DIRECTORY path
+        // reaches it - which is the whole claim.
+        // 253, NOT 251, AND THE ARITHMETIC IS THE TEST. A directory has no extension to spend, so
+        // 251 + " (2)" is exactly 255 - at the limit, and it creates fine. The first version of this
+        // test used 251 and passed against UNPROBED code by simply succeeding. 253 + " (2)" is 257,
+        // which is the case that actually breaches the component limit.
+        var stem = new string('d', 253);
+        Directory.CreateDirectory(Path.Combine(_root, "srcdir"));
+        Write(Path.Combine("srcdir", "inner.txt"), "the only copy");
+        Directory.CreateDirectory(Path.Combine(_root, stem));
+
+        var ex = await Assert.ThrowsAsync<FileConflictException>(
+            () => _service.MoveAsync("r1", "srcdir", stem, overwrite: false,
+                CancellationToken.None, FileConflictResolutions.KeepBoth));
+
+        Assert.Equal(FileTransferErrorCodes.ResolvedNameUnusable, ex.ErrorCode);
+        Assert.Equal(stem + " (2)", ex.ConflictingName);
+        Assert.Equal("the only copy", File.ReadAllText(Path.Combine(_root, "srcdir", "inner.txt")));
+        Assert.True(Directory.Exists(Path.Combine(_root, stem)));
+    }
+
+    [Fact]
+    public async Task AFolderMoveThatSUCCEEDSIsUnaffectedByTheProbe()
+    {
+        // THE CONTROL FOR THE DIRECTORY BRANCH, which review found had none. Its sibling test throws
+        // at the probe and never reaches Directory.Move, so a probe that failed to release the name
+        // in time would break every keep-both folder move while the suite stayed green. The file
+        // branch has had this control since RemEx-cirk; the directory branch did not.
+        Directory.CreateDirectory(Path.Combine(_root, "srcdir"));
+        Write(Path.Combine("srcdir", "inner.txt"), "moved");
+        Directory.CreateDirectory(Path.Combine(_root, "dst"));
+        Write(Path.Combine("dst", "keep.txt"), "keep me");
+
+        var resolved = await _service.MoveAsync("r1", "srcdir", "dst", overwrite: false,
+            CancellationToken.None, FileConflictResolutions.KeepBoth);
+
+        Assert.Equal("dst (2)", resolved);
+        Assert.Equal("moved", File.ReadAllText(Path.Combine(_root, "dst (2)", "inner.txt")));
+        Assert.Equal("keep me", File.ReadAllText(Path.Combine(_root, "dst", "keep.txt")));
+        Assert.False(Directory.Exists(Path.Combine(_root, "srcdir")), "the source must be gone");
+
+        // And nothing the probe made survives anywhere the operation could see.
+        Assert.Equal(
+            new[] { "dst", "dst (2)", "roots.json" },
+            Directory.GetFileSystemEntries(_root).Select(Path.GetFileName)
+                .OrderBy(name => name, StringComparer.Ordinal).ToArray());
+    }
 }

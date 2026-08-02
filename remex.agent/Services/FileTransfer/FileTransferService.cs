@@ -493,14 +493,40 @@ public sealed class FileTransferService : IFileTransferService
                 File.Delete(destination);
             }
 
-            if (AreSameVolume(source, destination))
-                File.Move(source, destination);
-            else
+            // PROBED LIKE COPY, and move is the branch that needed it more. Copy gained this in
+            // RemEx-cirk while move kept composing a name it never checked, so the identical request
+            // produced a coded, answerable refusal one way and a raw OS error the other - "the
+            // filename, directory name, or volume label syntax is incorrect" - which the client
+            // cannot branch on, so no sheet opened at all.
+            //
+            // ORDER IS THE SAFETY PROPERTY HERE. RunRenamedCreate throws BEFORE it runs the
+            // operation, so a name that turns out to be unusable or already taken leaves the source
+            // exactly where it was. A move that failed after deleting its source would be the one
+            // unrecoverable outcome in this file THAT NOBODY ASKED FOR - DeleteAsync and an
+            // overwriting move are equally irreversible, but the user requested those.
+            RunRenamedCreate(plan, () =>
             {
-                // Cross-volume move: File.Move can throw across devices, so realize it as copy+delete.
-                File.Copy(source, destination, overwrite: true);
-                File.Delete(source);
-            }
+                if (AreSameVolume(source, destination))
+                {
+                    File.Move(source, destination);
+                }
+                else
+                {
+                    // Cross-volume move: File.Move can throw across devices, so realize it as
+                    // copy+delete. The source delete stays INSIDE the probed operation, so it is
+                    // reached only once the copy has actually succeeded.
+                    //
+                    // PASSING overwrite RATHER THAN A LITERAL true, which review caught as the last
+                    // path where keep-both could still destroy something. Under keep-both overwrite
+                    // is always false, so if the invented name gets claimed between the probe
+                    // releasing it and this line, the copy REFUSES - which is what the same-drive
+                    // path and CopyAsync already do. A hardcoded true overwrote it instead. On the
+                    // plain-overwrite path the value is true anyway and the destination was already
+                    // removed above, so nothing else changes.
+                    File.Copy(source, destination, overwrite);
+                    File.Delete(source);
+                }
+            });
         }
         else if (Directory.Exists(source))
         {
@@ -527,14 +553,21 @@ public sealed class FileTransferService : IFileTransferService
                 throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
             }
 
-            if (AreSameVolume(source, destination))
-                Directory.Move(source, destination);
-            else
+            RunRenamedCreate(plan, () =>
             {
-                // Cross-volume directory move: Directory.Move fails across devices, so copy then delete.
-                CopyDirectoryRecursive(source, destination, overwrite: true, ct);
-                Directory.Delete(source, recursive: true);
-            }
+                if (AreSameVolume(source, destination))
+                {
+                    Directory.Move(source, destination);
+                }
+                else
+                {
+                    // Cross-volume directory move: Directory.Move fails across devices, so copy then
+                    // delete. As above, the source is removed only after the copy has succeeded,
+                    // and overwrite is passed through rather than forced for the reason given above.
+                    CopyDirectoryRecursive(source, destination, overwrite, ct);
+                    Directory.Delete(source, recursive: true);
+                }
+            });
         }
         else
         {
