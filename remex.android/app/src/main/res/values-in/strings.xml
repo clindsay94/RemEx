@@ -338,6 +338,24 @@
     <string name="file_transfer_notification_download_title">Mengunduh %1$s</string>
     <string name="file_transfer_notification_preparing">Menyiapkan transfer…</string>
     <string name="file_transfer_notification_progress">%1$d dari %2$d byte ditransfer</string>
+    <string name="file_transfer_rate_bytes">%1$s B/dtk</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/dtk</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/dtk</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/dtk</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Menyelesaikan…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="other">%1$d detik lagi</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="other">%1$d menit lagi</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="other">%1$d jam lagi</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Transfer selesai</string>
     <string name="file_transfer_notification_upload_complete">Berhasil mengunggah %1$s</string>
     <string name="file_transfer_notification_upload_failed">Gagal mengirim %1$s</string>

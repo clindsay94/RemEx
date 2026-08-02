@@ -338,6 +338,27 @@
     <string name="file_transfer_notification_download_title">%1$s डाउनलोड किया जा रहा है</string>
     <string name="file_transfer_notification_preparing">ट्रांसफर की तैयारी की जा रही है…</string>
     <string name="file_transfer_notification_progress">%1$d में से %2$d बाइट्स ट्रांसफर हुए</string>
+    <string name="file_transfer_rate_bytes">%1$s B/s</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/s</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/s</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">पूरा हो रहा है…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">%1$d सेकंड बाकी</item>
+        <item quantity="other">%1$d सेकंड बाकी</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">%1$d मिनट बाकी</item>
+        <item quantity="other">%1$d मिनट बाकी</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">%1$d घंटा बाकी</item>
+        <item quantity="other">%1$d घंटे बाकी</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">ट्रांसफर पूरा हुआ</string>
     <string name="file_transfer_notification_upload_complete">%1$s अपलोड हो गया</string>
     <string name="file_transfer_notification_upload_failed">%1$s भेजने में विफल</string>

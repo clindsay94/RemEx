@@ -338,6 +338,33 @@
     <string name="file_transfer_notification_download_title">Завантаження %1$s</string>
     <string name="file_transfer_notification_preparing">Підготовка передавання…</string>
     <string name="file_transfer_notification_progress">Передано %1$d з %2$d байтів</string>
+    <string name="file_transfer_rate_bytes">%1$s Б/с</string>
+    <string name="file_transfer_rate_kilobytes">%1$s КБ/с</string>
+    <string name="file_transfer_rate_megabytes">%1$s МБ/с</string>
+    <string name="file_transfer_rate_gigabytes">%1$s ГБ/с</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Завершення…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">залишилася %1$d секунда</item>
+        <item quantity="few">залишилося %1$d секунди</item>
+        <item quantity="many">залишилося %1$d секунд</item>
+        <item quantity="other">залишилося %1$d секунди</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">залишилася %1$d хвилина</item>
+        <item quantity="few">залишилося %1$d хвилини</item>
+        <item quantity="many">залишилося %1$d хвилин</item>
+        <item quantity="other">залишилося %1$d хвилини</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">залишилася %1$d година</item>
+        <item quantity="few">залишилося %1$d години</item>
+        <item quantity="many">залишилося %1$d годин</item>
+        <item quantity="other">залишилося %1$d години</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Передавання завершено</string>
     <string name="file_transfer_notification_upload_complete">%1$s вивантажено</string>
     <string name="file_transfer_notification_upload_failed">Не вдалося надіслати %1$s</string>

@@ -338,6 +338,27 @@
     <string name="file_transfer_notification_download_title">Descargando %1$s</string>
     <string name="file_transfer_notification_preparing">Preparando transferencia…</string>
     <string name="file_transfer_notification_progress">%1$d de %2$d bytes transferidos</string>
+    <string name="file_transfer_rate_bytes">%1$s B/s</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/s</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/s</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Finalizando…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">queda %1$d segundo</item>
+        <item quantity="other">quedan %1$d segundos</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">queda %1$d minuto</item>
+        <item quantity="other">quedan %1$d minutos</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">queda %1$d hora</item>
+        <item quantity="other">quedan %1$d horas</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Transferencia completada</string>
     <string name="file_transfer_notification_upload_complete">%1$s subido</string>
     <string name="file_transfer_notification_upload_failed">No se pudo enviar %1$s</string>

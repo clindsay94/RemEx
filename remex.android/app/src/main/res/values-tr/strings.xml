@@ -338,6 +338,27 @@
     <string name="file_transfer_notification_download_title">%1$s indiriliyor</string>
     <string name="file_transfer_notification_preparing">Aktarım hazırlanıyor…</string>
     <string name="file_transfer_notification_progress">%2$d baytın %1$d baytı aktarıldı</string>
+    <string name="file_transfer_rate_bytes">%1$s B/sn</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/sn</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/sn</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/sn</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Tamamlanıyor…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">%1$d saniye kaldı</item>
+        <item quantity="other">%1$d saniye kaldı</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">%1$d dakika kaldı</item>
+        <item quantity="other">%1$d dakika kaldı</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">%1$d saat kaldı</item>
+        <item quantity="other">%1$d saat kaldı</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Aktarım tamamlandı</string>
     <string name="file_transfer_notification_upload_complete">%1$s yüklendi</string>
     <string name="file_transfer_notification_upload_failed">%1$s gönderilemedi</string>

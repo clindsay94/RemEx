@@ -3,6 +3,7 @@ package com.clindsay94.remex.ui.screens
 import android.app.Application
 import android.content.res.AssetFileDescriptor
 import android.net.Uri
+import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.util.Base64
@@ -17,6 +18,9 @@ import com.clindsay94.remex.service.FileTransferEngine
 import com.clindsay94.remex.service.FileTransferJobService
 import com.clindsay94.remex.service.FileTransferLimits
 import com.clindsay94.remex.service.FileTransferNotificationManager
+import com.clindsay94.remex.service.TransferProgressFormat
+import com.clindsay94.remex.service.TransferProgressText
+import com.clindsay94.remex.service.TransferRateEstimator
 import java.io.OutputStream
 import java.security.MessageDigest
 import java.util.UUID
@@ -202,6 +206,14 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private var activeTransferFileName: String? = null
     private var activeDownload: ActiveDownload? = null
     private var activeUploadJob: Job? = null
+
+    /**
+     * Throughput and time-remaining for the transfer currently in flight (RemEx-qmiv).
+     *
+     * One estimator, reset between transfers rather than recreated, because it is fed from
+     * [handleProgress] which is the single place progress arrives for either direction.
+     */
+    private val transferRate = TransferRateEstimator()
 
     init {
         // Start the (idempotent) engine so its queue is readable and its control-message collector is
@@ -1220,18 +1232,54 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         if (progress.optString("transferId") != activeTransferId) return
         val total = progress.optLong("totalBytes", 0)
         val transferred = progress.optLong("bytesTransferred", 0)
+
+        // SystemClock.elapsedRealtime(), never System.currentTimeMillis(). A wall clock steps
+        // backwards on an NTP correction, and the estimator correctly refuses a negative interval -
+        // so a wall clock would not produce a wrong speed, it would silently stop producing one.
+        transferRate.update(transferred, SystemClock.elapsedRealtime())
+
         val action = if (activeDownload != null) app().getString(R.string.file_transfer_action_downloading)
             else app().getString(R.string.file_transfer_action_uploading)
         if (total > 0) {
             _transferProgress.value = (transferred.toFloat() / total).coerceIn(0f, 1f)
-            _statusText.value = app().getString(R.string.file_transfer_progress_status, action, "${(transferred * 100 / total)}%")
+            _statusText.value = app().getString(
+                R.string.file_transfer_progress_status,
+                action,
+                withRateAndEta("${(transferred * 100 / total)}%", transferred, total),
+            )
         } else if (transferred > 0) {
             _transferProgress.value = 0f
-            _statusText.value = app().getString(R.string.file_transfer_progress_status, action, FileManagerLogic.formatBytes(transferred))
+            // Total unknown, so there is no ETA to offer - but the speed is still known, and it is
+            // the only evidence the user has that a sizeless transfer is moving at all.
+            _statusText.value = app().getString(
+                R.string.file_transfer_progress_status,
+                action,
+                withRateAndEta(FileManagerLogic.formatBytes(transferred), transferred, null),
+            )
         } else return
         FileTransferNotificationManager.showTransferProgress(
             app(), activeTransferFileName ?: "File transfer", activeDownload != null, transferred, total,
+            bytesPerSecond = transferRate.bytesPerSecond,
+            secondsRemaining = transferRate.secondsRemaining(transferred, total.takeIf { it > 0L }),
         )
+    }
+
+    /**
+     * Appends "12.4 MB/s · 38 seconds left" to a progress figure, or returns it untouched.
+     *
+     * Untouched is the common early case and is deliberate: the estimator needs two observations
+     * before it can say anything, and padding the gap with a placeholder number is what the parent
+     * bead ruled out - a user plans around "14 hours remaining" even when it is about to become
+     * "30 seconds".
+     */
+    private fun withRateAndEta(base: String, transferred: Long, total: Long?): String {
+        val suffix = TransferProgressText.progressSuffix(
+            app(),
+            TransferProgressFormat.rate(transferRate.bytesPerSecond),
+            TransferProgressFormat.eta(transferRate.secondsRemaining(transferred, total)),
+        ) ?: return base
+
+        return app().getString(R.string.file_transfer_detail_separator, base, suffix)
     }
 
     private fun handleChunk(obj: JSONObject) {
@@ -1333,6 +1381,11 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         activeUploadJob = null
         _isTransferring.value = false
         _transferProgress.value = 0f
+
+        // The estimate belongs to ONE transfer. Carrying it into the next would describe the last
+        // one, and the gap between them would read as a long stall - so the first seconds of every
+        // subsequent transfer would show a speed nobody is achieving.
+        transferRate.resetRate()
     }
 
     private fun queryMetadata(uri: Uri): Pair<String?, Long?> {

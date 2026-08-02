@@ -520,6 +520,27 @@
     <string name="file_transfer_notification_download_title">Downloading %1$s</string>
     <string name="file_transfer_notification_preparing">Preparing transfer…</string>
     <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
+    <string name="file_transfer_rate_bytes">%1$s B/s</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/s</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/s</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Finishing…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">%1$d second left</item>
+        <item quantity="other">%1$d seconds left</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">%1$d minute left</item>
+        <item quantity="other">%1$d minutes left</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">%1$d hour left</item>
+        <item quantity="other">%1$d hours left</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Transfer complete</string>
     <string name="file_transfer_notification_upload_complete">Uploaded %1$s</string>
     <string name="file_transfer_notification_upload_failed">Could not send %1$s</string>

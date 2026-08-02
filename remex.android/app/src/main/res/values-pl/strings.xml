@@ -322,6 +322,33 @@
     <string name="file_transfer_notification_download_title">Pobieranie %1$s</string>
     <string name="file_transfer_notification_preparing">Przygotowywanie transferu…</string>
     <string name="file_transfer_notification_progress">Przesłano %1$d z %2$d bajtów</string>
+    <string name="file_transfer_rate_bytes">%1$s B/s</string>
+    <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
+    <string name="file_transfer_rate_megabytes">%1$s MB/s</string>
+    <string name="file_transfer_rate_gigabytes">%1$s GB/s</string>
+    <!-- Joins any two transfer details. Separate from file_transfer_rate_and_eta so a
+         translator can change one without silently changing the other. -->
+    <string name="file_transfer_detail_separator">%1$s · %2$s</string>
+    <string name="file_transfer_rate_and_eta">%1$s · %2$s</string>
+    <string name="file_transfer_eta_finishing">Kończenie…</string>
+    <plurals name="file_transfer_eta_seconds">
+        <item quantity="one">pozostała %1$d sekunda</item>
+        <item quantity="few">pozostały %1$d sekundy</item>
+        <item quantity="many">pozostało %1$d sekund</item>
+        <item quantity="other">pozostało %1$d sekundy</item>
+    </plurals>
+    <plurals name="file_transfer_eta_minutes">
+        <item quantity="one">pozostała %1$d minuta</item>
+        <item quantity="few">pozostały %1$d minuty</item>
+        <item quantity="many">pozostało %1$d minut</item>
+        <item quantity="other">pozostało %1$d minuty</item>
+    </plurals>
+    <plurals name="file_transfer_eta_hours">
+        <item quantity="one">pozostała %1$d godzina</item>
+        <item quantity="few">pozostały %1$d godziny</item>
+        <item quantity="many">pozostało %1$d godzin</item>
+        <item quantity="other">pozostało %1$d godziny</item>
+    </plurals>
     <string name="file_transfer_notification_complete_title">Transfer zakończony</string>
     <string name="file_transfer_notification_upload_complete">Wysłano %1$s</string>
     <string name="file_transfer_notification_upload_failed">Nie udało się wysłać %1$s</string>

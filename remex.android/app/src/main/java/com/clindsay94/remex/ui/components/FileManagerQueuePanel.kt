@@ -37,12 +37,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.clindsay94.remex.R
+import com.clindsay94.remex.service.FileTransferEngine
 import com.clindsay94.remex.service.FileTransferModes
 import com.clindsay94.remex.service.QueuedTransfer
+import com.clindsay94.remex.service.TransferProgressFormat
+import com.clindsay94.remex.service.TransferProgressText
 import com.clindsay94.remex.service.TransferState
 import com.clindsay94.remex.ui.screens.FileManagerLogic
 import com.clindsay94.remex.ui.screens.RemexLinearWavyProgress
@@ -225,11 +229,33 @@ private fun transferStatusLabel(transfer: QueuedTransfer): String {
     return when (transfer.state) {
         TransferState.Queued -> stringResource(R.string.file_manager_transfer_queued)
         TransferState.Negotiating -> stringResource(R.string.file_manager_transfer_negotiating)
-        TransferState.Active -> stringResource(R.string.file_manager_transfer_active, progress)
+        // ONLY THE ACTIVE ROW GETS A SPEED. A paused or queued row has no live throughput, and the
+        // last rate before a pause describes a transfer that is not running (RemEx-qmiv).
+        TransferState.Active ->
+            withRateAndEta(stringResource(R.string.file_manager_transfer_active, progress), transfer)
         TransferState.Paused -> stringResource(R.string.file_manager_transfer_paused, progress)
         TransferState.Verifying -> stringResource(R.string.file_manager_transfer_verifying)
         TransferState.Done -> stringResource(R.string.file_manager_transfer_done)
         TransferState.Failed -> transfer.error ?: stringResource(R.string.file_manager_transfer_failed)
         TransferState.Cancelled -> stringResource(R.string.file_manager_transfer_cancelled)
     }
+}
+
+/**
+ * Appends "12.4 MB/s · 38 seconds left" to a queue row's status, or leaves it alone (RemEx-qmiv).
+ *
+ * Reads through [LocalContext] rather than taking a Context parameter so the recomposition tracks
+ * the same configuration the surrounding `stringResource` calls do — a locale change has to move
+ * the decimal separator and the unit symbol together, not one recomposition apart.
+ */
+@Composable
+private fun withRateAndEta(base: String, transfer: QueuedTransfer): String {
+    val context = LocalContext.current
+    val suffix = TransferProgressText.progressSuffix(
+        context,
+        TransferProgressFormat.rate(FileTransferEngine.bytesPerSecond(transfer.id)),
+        TransferProgressFormat.eta(FileTransferEngine.secondsRemaining(transfer.id)),
+    ) ?: return base
+
+    return stringResource(R.string.file_transfer_detail_separator, base, suffix)
 }

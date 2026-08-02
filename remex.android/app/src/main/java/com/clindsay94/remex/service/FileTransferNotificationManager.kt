@@ -46,12 +46,24 @@ object FileTransferNotificationManager {
         )
     }
 
+    /**
+     * NOT THE LIVE TRANSFER NOTIFICATION. Against any current host the ongoing notification is
+     * built by [FileTransferJobService], which reads the rate from [FileTransferEngine] directly.
+     * This method serves the v2 base64 fallback path only, which is why the rate arrives as
+     * parameters rather than being looked up here.
+     *
+     * @param bytesPerSecond current throughput, or null when it is not yet known.
+     * @param secondsRemaining time left, or null when it cannot honestly be said.
+     * @see TransferProgressFormat
+     */
     fun showTransferProgress(
             context: Context,
             fileName: String,
             isDownload: Boolean,
             transferredBytes: Long,
             totalBytes: Long,
+            bytesPerSecond: Double? = null,
+            secondsRemaining: Double? = null,
     ) {
         val titleRes =
                 if (isDownload) R.string.file_transfer_notification_download_title
@@ -75,10 +87,23 @@ object FileTransferNotificationManager {
                     else -> context.getString(R.string.file_transfer_notification_preparing)
                 }
 
+        // THE SPEED AND ETA GO IN contentText, NOT subText. subText already carries the percentage
+        // and is truncated hard by the system on a collapsed notification, which is where a user
+        // glances at a long transfer. A percentage tells them how far along it is; the ETA is the
+        // thing they actually want, so it goes in the line that survives.
+        val suffix =
+                TransferProgressText.progressSuffix(
+                        context,
+                        TransferProgressFormat.rate(bytesPerSecond),
+                        TransferProgressFormat.eta(secondsRemaining),
+                )
+
         notify(
                 context = context,
                 title = context.getString(titleRes, fileName),
-                text = body,
+                text =
+                        if (suffix == null) body
+                        else context.getString(R.string.file_transfer_detail_separator, body, suffix),
                 progress = progress?.toInt(),
                 indeterminate = progress == null,
                 ongoing = true,

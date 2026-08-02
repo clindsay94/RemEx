@@ -27,9 +27,16 @@ class TransferRateEstimator(
      */
     private val timeConstantSeconds: Double = 5.0
 ) {
-    private var lastTimestampMillis: Long? = null
-    private var lastBytes: Long = 0
-    private var smoothedBytesPerSecond: Double? = null
+    // @Volatile ON ALL THREE, because the writer and the readers are different threads: the
+    // transfer engine feeds update() on its IO dispatcher while the notification and the queue
+    // row read bytesPerSecond from Main. Holding the estimator in a ConcurrentHashMap safely
+    // publishes the REFERENCE and says nothing about later field writes, so without these the
+    // reader could see a stale rate indefinitely - and it would work anyway today only by
+    // accident, because the caller happens to write a StateFlow afterwards. That accident is one
+    // reordered line away from vanishing.
+    @Volatile private var lastTimestampMillis: Long? = null
+    @Volatile private var lastBytes: Long = 0
+    @Volatile private var smoothedBytesPerSecond: Double? = null
 
     /** The current smoothed throughput, or null before enough is known to say. */
     val bytesPerSecond: Double? get() = smoothedBytesPerSecond
