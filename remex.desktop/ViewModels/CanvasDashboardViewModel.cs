@@ -1037,7 +1037,22 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
         return index;
     }
 
-    private void ProcessTelemetry(TelemetryPayload payload)
+    /// <summary>
+    /// Hands a telemetry tick to the UI thread.
+    /// </summary>
+    /// <remarks>
+    /// Internal for the same reason <see cref="ApplyTelemetry"/> is, but covering the other half:
+    /// that one exists so the BODY can be tested without a dispatcher, and this one so the POST
+    /// itself can be (RemEx-r8c6). Testing only the body leaves the line that schedules it
+    /// uncovered, which is where the failure actually lives - a post that never runs looks like an
+    /// unchanged collection and no error at all.
+    ///
+    /// It needed no new infrastructure, which was the surprise: the bead expected an
+    /// Avalonia.Headless harness, and one was built and then removed once it was measured to change
+    /// nothing. Post plus Dispatcher.UIThread.RunJobs() runs the callback with no Avalonia
+    /// application booted. Nobody had called RunJobs.
+    /// </remarks>
+    internal void ProcessTelemetry(TelemetryPayload payload)
         => Dispatcher.UIThread.Post(() => ApplyTelemetry(payload));
 
     /// <summary>
