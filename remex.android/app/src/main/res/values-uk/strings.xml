@@ -365,6 +365,8 @@
     <string name="file_conflict_title">%1$s вже існує</string>
     <string name="file_conflict_body_exists">У папці призначення вже є файл або папка з такою назвою.</string>
     <string name="file_conflict_body_different_kind">У папці призначення вже є елемент іншого типу з такою назвою.</string>
+    <string name="file_conflict_body_name_unusable">Ця назва задовга для папки призначення.</string>
+    <string name="file_conflict_body_unknown">Цю дію не вдається завершити.</string>
     <string name="file_conflict_replace">Замінити</string>
     <string name="file_conflict_keep_both">Зберегти обидва</string>
     <string name="file_conflict_skip">Пропустити</string>

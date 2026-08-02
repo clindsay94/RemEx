@@ -357,6 +357,8 @@
     <string name="file_conflict_title">%1$s पहले से मौजूद है</string>
     <string name="file_conflict_body_exists">गंतव्य फ़ोल्डर में इस नाम की फ़ाइल या फ़ोल्डर पहले से है।</string>
     <string name="file_conflict_body_different_kind">गंतव्य फ़ोल्डर में इस नाम की किसी दूसरे प्रकार की चीज़ पहले से है।</string>
+    <string name="file_conflict_body_name_unusable">यह नाम गंतव्य फ़ोल्डर के लिए बहुत लंबा है।</string>
+    <string name="file_conflict_body_unknown">यह पूरा नहीं किया जा सकता।</string>
     <string name="file_conflict_replace">बदलें</string>
     <string name="file_conflict_keep_both">दोनों रखें</string>
     <string name="file_conflict_skip">छोड़ें</string>

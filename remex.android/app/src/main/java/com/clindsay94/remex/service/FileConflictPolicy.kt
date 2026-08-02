@@ -10,6 +10,16 @@ package com.clindsay94.remex.service
 object FileConflictCodes {
     const val DESTINATION_EXISTS = "destination_exists"
     const val DESTINATION_IS_DIFFERENT_KIND = "destination_is_different_kind"
+
+    /**
+     * The host renamed for "keep both" and the destination refused the new name (RemEx-cirk).
+     *
+     * **KNOWN EXPLICITLY RATHER THAN FALLING THROUGH TO THE UNKNOWN-CODE BRANCH.** Skip is the only
+     * sensible answer either way, so the ACTIONS would have been the same - but the unknown branch
+     * also leaves the sheet asserting the wrong cause, and this arrives at the worst moment for
+     * that: after the user has already chosen Keep both.
+     */
+    const val RESOLVED_NAME_UNUSABLE = "resolved_name_unusable"
 }
 
 object FileConflictResolutions {
@@ -71,6 +81,16 @@ object FileConflictPolicy {
             FileConflictCodes.DESTINATION_IS_DIFFERENT_KIND ->
                 listOf(ConflictAction.KeepBoth, ConflictAction.Skip)
 
+
+            // SKIP ALONE FOR EVERYTHING ELSE, INCLUDING RESOLVED_NAME_UNUSABLE. An explicit branch
+            // for that code was written here and removed: the else already yields Skip, so no mutant
+            // could kill it, and an unkillable branch reads to a later maintainer as though it
+            // decides something. The code IS known to this client - the sheet gives it its own
+            // explanation - but the ACTIONS genuinely are the same, and for a good reason: the host
+            // already tried the rename and the destination refused the name it chose, so retrying
+            // keep-both asks it to choose again from the same too-long stem, and replace was
+            // declined a moment ago. Nothing is left that could work.
+            //
             // A CODE THIS CLIENT DOES NOT KNOW. A newer host may send one, and guessing which
             // actions it permits is how a client offers a destructive button for a situation it does
             // not understand. Skip is the only answer that is safe against every possible meaning.

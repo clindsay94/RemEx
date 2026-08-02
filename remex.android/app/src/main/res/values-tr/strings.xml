@@ -357,6 +357,8 @@
     <string name="file_conflict_title">%1$s zaten var</string>
     <string name="file_conflict_body_exists">Hedef klasörde bu ada sahip bir dosya veya klasör zaten var.</string>
     <string name="file_conflict_body_different_kind">Hedef klasörde bu ada sahip farklı türde bir öğe zaten var.</string>
+    <string name="file_conflict_body_name_unusable">Bu ad hedef klasör için çok uzun.</string>
+    <string name="file_conflict_body_unknown">Bu tamamlanamıyor.</string>
     <string name="file_conflict_replace">Değiştir</string>
     <string name="file_conflict_keep_both">İkisini de tut</string>
     <string name="file_conflict_skip">Atla</string>

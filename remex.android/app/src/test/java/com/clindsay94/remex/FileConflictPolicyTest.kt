@@ -191,4 +191,42 @@ class FileConflictPolicyTest {
             }
         }
     }
+
+    @Test
+    fun `an unusable resolved name offers only Skip`() {
+        // Correct, but note WHY this assertion alone is not the guard: the else branch yields Skip
+        // too, so it cannot tell a known code from an unknown one. Mutation proved that - renaming
+        // the explicit branch changed nothing. What distinguishes them is the sheet's EXPLANATION,
+        // pinned in FileConflictWiringTest, and that mutant does die.
+        //
+        // Skip is right here for a specific reason: the host already tried the rename and the
+        // destination refused the name it chose, so retrying keep-both asks it to choose again from
+        // the same too-long stem, and replace was declined a moment ago.
+        assertEquals(listOf(ConflictAction.Skip), actions(FileConflictCodes.RESOLVED_NAME_UNUSABLE))
+    }
+
+    @Test
+    fun `the unusable-name token matches the host verbatim`() {
+        // A protocol value. A typo makes the client fall back to the unknown branch, which is exactly
+        // the defect this fixes - and it would look fixed, because the actions would still be Skip.
+        assertEquals("resolved_name_unusable", FileConflictCodes.RESOLVED_NAME_UNUSABLE)
+    }
+
+    @Test
+    fun `every code the client knows has its own reason, none borrowing another's`() {
+        // The sheet picks its body by code. Review found it testing only for the different-kind code,
+        // so ANY other code rendered "there is already a file or folder with this name" - a claim the
+        // client has no basis for. Distinct codes must stay distinct here, or the next code added
+        // host-side inherits a false explanation the same way.
+        val known = listOf(
+            FileConflictCodes.DESTINATION_EXISTS,
+            FileConflictCodes.DESTINATION_IS_DIFFERENT_KIND,
+            FileConflictCodes.RESOLVED_NAME_UNUSABLE,
+        )
+
+        assertEquals(known.size, known.toSet().size)
+        for (code in known) {
+            assertTrue("$code must offer at least Skip", ConflictAction.Skip in actions(code))
+        }
+    }
 }

@@ -77,10 +77,20 @@ fun FileConflictSheet(
             )
 
             Text(
+                // THE BODY MUST NOT ASSERT A CAUSE THE CLIENT DOES NOT KNOW. Review found this
+                // testing only for the different-kind code, so resolved_name_unusable rendered "there
+                // is already a file with this name" - factually false, the name is too long - to a
+                // user who had just chosen Keep both. An unrecognised code now says nothing about
+                // why, because saying nothing is the only honest option.
                 text = stringResource(
-                    if (prompt.errorCode == FileConflictCodes.DESTINATION_IS_DIFFERENT_KIND)
-                        R.string.file_conflict_body_different_kind
-                    else R.string.file_conflict_body_exists,
+                    when (prompt.errorCode) {
+                        FileConflictCodes.DESTINATION_EXISTS -> R.string.file_conflict_body_exists
+                        FileConflictCodes.DESTINATION_IS_DIFFERENT_KIND ->
+                            R.string.file_conflict_body_different_kind
+                        FileConflictCodes.RESOLVED_NAME_UNUSABLE ->
+                            R.string.file_conflict_body_name_unusable
+                        else -> R.string.file_conflict_body_unknown
+                    },
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

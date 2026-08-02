@@ -357,6 +357,8 @@
     <string name="file_conflict_title">%1$s ya existe</string>
     <string name="file_conflict_body_exists">Ya hay un archivo o una carpeta con este nombre en la carpeta de destino.</string>
     <string name="file_conflict_body_different_kind">Ya hay algo de otro tipo con este nombre en la carpeta de destino.</string>
+    <string name="file_conflict_body_name_unusable">Este nombre es demasiado largo para la carpeta de destino.</string>
+    <string name="file_conflict_body_unknown">Esto no se puede completar.</string>
     <string name="file_conflict_replace">Reemplazar</string>
     <string name="file_conflict_keep_both">Conservar ambos</string>
     <string name="file_conflict_skip">Omitir</string>

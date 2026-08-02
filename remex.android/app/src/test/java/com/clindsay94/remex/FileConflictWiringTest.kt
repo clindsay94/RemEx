@@ -128,4 +128,18 @@ class FileConflictWiringTest {
                 .contains("multiResultText"),
         )
     }
+
+    @Test
+    fun `the sheet body never asserts a cause the client does not know`() {
+        // THE SECOND HALF OF THE P1. The body used to be chosen by testing for ONE code and
+        // defaulting to "there is already a file or folder with this name" - so every other code,
+        // present or future, arrived carrying a false explanation. An unrecognised code must now say
+        // nothing about why, because saying nothing is the only honest option.
+        assertTrue(
+            "the body must branch on the code, not default to the exists string",
+            sheet.contains(Regex("""when\s*\(\s*prompt\.errorCode\s*\)""")),
+        )
+        assertTrue("unknown codes need their own body", sheet.contains("file_conflict_body_unknown"))
+        assertTrue("the unusable-name code needs its own body", sheet.contains("file_conflict_body_name_unusable"))
+    }
 }

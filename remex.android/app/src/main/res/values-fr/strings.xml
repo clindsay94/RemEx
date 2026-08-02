@@ -357,6 +357,8 @@
     <string name="file_conflict_title">%1$s existe déjà</string>
     <string name="file_conflict_body_exists">Un fichier ou un dossier portant ce nom existe déjà dans le dossier de destination.</string>
     <string name="file_conflict_body_different_kind">Un élément d’un autre type porte déjà ce nom dans le dossier de destination.</string>
+    <string name="file_conflict_body_name_unusable">Ce nom est trop long pour le dossier de destination.</string>
+    <string name="file_conflict_body_unknown">Cette opération ne peut pas aboutir.</string>
     <string name="file_conflict_replace">Remplacer</string>
     <string name="file_conflict_keep_both">Conserver les deux</string>
     <string name="file_conflict_skip">Ignorer</string>

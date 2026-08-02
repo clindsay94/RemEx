@@ -349,6 +349,8 @@
     <string name="file_conflict_title">%1$s już istnieje</string>
     <string name="file_conflict_body_exists">W folderze docelowym istnieje już plik lub folder o tej nazwie.</string>
     <string name="file_conflict_body_different_kind">W folderze docelowym istnieje już element innego rodzaju o tej nazwie.</string>
+    <string name="file_conflict_body_name_unusable">Ta nazwa jest za długa dla folderu docelowego.</string>
+    <string name="file_conflict_body_unknown">Tej operacji nie można ukończyć.</string>
     <string name="file_conflict_replace">Zastąp</string>
     <string name="file_conflict_keep_both">Zachowaj oba</string>
     <string name="file_conflict_skip">Pomiń</string>
