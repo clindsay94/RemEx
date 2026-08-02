@@ -60,6 +60,22 @@ class DiagnosticsScrubberTest {
     }
 
     @Test
+    fun `a FOUR-part version is eaten, which is why callers normalize before reporting one`() {
+        // NOT A BUG, AND NOT FIXABLE HERE - pinned so nobody tries. "2.4.0.0" is a syntactically
+        // valid dotted quad: four components, every octet in range. No pattern can tell it from an
+        // address by shape, and widening the rule to exclude it would blind the scrubber to real
+        // addresses like 2.4.0.0.
+        //
+        // The consequence is real, though: .NET widens GetName().Version to four components, so the
+        // host reports "2.4.0.0" and a bundle echoing it verbatim would redact its own most useful
+        // line - and only when the network toggle was off, making the host version blink in and out
+        // with an unrelated switch. DiagnosticsBundle therefore normalizes to the three-part display
+        // form first (RemEx-3rjf), which the test above proves survives. The fix belongs at the
+        // caller, and this test is the reason why.
+        assertFalse(DiagnosticsScrubber.scrub("host version 2.4.0.0").contains("2.4.0.0"))
+    }
+
+    @Test
     fun `an ip address is removed by default and kept when the user opts in`() {
         val line = "Connecting to 192.168.1.50:5005"
 
