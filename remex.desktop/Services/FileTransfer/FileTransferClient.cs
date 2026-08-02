@@ -48,7 +48,7 @@ public sealed class FileTransferClient : IDisposable
     private TaskCompletionSource<RemexMessage>? _rootsWaiter;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _browseWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _transferEndWaiters = new();
-    private readonly ConcurrentDictionary<string, IProgress<double>?> _progressReporters = new();
+    private readonly ConcurrentDictionary<string, IProgress<TransferProgress>?> _progressReporters = new();
     private readonly ConcurrentDictionary<string, Channel<byte[]>> _downloadChannels = new();
 
     /// <summary>
@@ -561,7 +561,7 @@ public sealed class FileTransferClient : IDisposable
         return response.FileRootManageResponse?.Roots ?? [];
     }
 
-    public async Task UploadAsync(string localPath, string remoteRootId, string remoteRelativePath, IProgress<double>? progress, CancellationToken ct)
+    public async Task UploadAsync(string localPath, string remoteRootId, string remoteRelativePath, IProgress<TransferProgress>? progress, CancellationToken ct)
     {
         var transferId = Guid.NewGuid().ToString("N");
 
@@ -720,7 +720,7 @@ public sealed class FileTransferClient : IDisposable
         }
     }
 
-    public async Task DownloadAsync(string remoteRootId, string remoteRelativePath, string localPath, IProgress<double>? progress, CancellationToken ct)
+    public async Task DownloadAsync(string remoteRootId, string remoteRelativePath, string localPath, IProgress<TransferProgress>? progress, CancellationToken ct)
     {
         var transferId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -1039,7 +1039,10 @@ public sealed class FileTransferClient : IDisposable
                 // emits one of these every ProgressChunkInterval chunks while receiving.
                 _idleWatchdog.Mark(prog.TransferId);
                 if (_progressReporters.TryGetValue(prog.TransferId, out var reporter) && prog.TotalBytes > 0)
-                    reporter?.Report((double)prog.BytesTransferred / prog.TotalBytes);
+                    // The counts travel now instead of being divided away here. This one line was
+                    // the whole loss: speed and time-remaining are both derivable from bytes and a
+                    // clock, and from a ratio neither is.
+                    reporter?.Report(new TransferProgress(prog.BytesTransferred, prog.TotalBytes));
                 break;
 
             case MessageTypes.FileTransferEnd when message.FileTransferEnd is { } end:

@@ -25,6 +25,40 @@ public enum FileTransferQueueKind
 /// live state and progress. The PC UI drives the actual bytes over the existing (v2-compatible)
 /// upload/download path; this item is the local, per-transfer view of that work.
 /// </summary>
+/// <summary>
+/// How far a transfer has got, in BYTES rather than as a ratio (RemEx-oiah).
+/// </summary>
+/// <param name="BytesTransferred">Bytes moved so far.</param>
+/// <param name="TotalBytes">Total size, or null when the source has no length.</param>
+/// <remarks>
+/// <para>
+/// **THE RATIO USED TO BE COMPUTED BY EACH PRODUCER AND THE BYTES THROWN AWAY AT THE BOUNDARY.**
+/// <c>FileTransferClient</c> holds <c>BytesTransferred</c> and <c>TotalBytes</c> and reported
+/// <c>bytes / total</c>, so a percentage was the only thing that ever crossed. That is lossy in a way
+/// no arithmetic downstream can undo: speed is bytes over time and time-remaining is remaining-bytes
+/// over speed, and neither can be recovered from a fraction.
+/// </para>
+/// <para>
+/// It is also a correctness problem on its own, independent of any display: with every producer
+/// computing its own ratio, a producer that computed it differently — off-by-one, clamped, or
+/// against the wrong total — would be invisible. Carrying the raw counts makes <see cref="Fraction"/>
+/// the single place the conversion happens.
+/// </para>
+/// </remarks>
+public readonly record struct TransferProgress(long BytesTransferred, long? TotalBytes)
+{
+    /// <summary>
+    /// Progress as 0..1, or 0 when the total is unknown.
+    /// </summary>
+    /// <remarks>
+    /// ZERO RATHER THAN A GUESS when the size is unknown — a streamed source has no length, and
+    /// inventing a fraction would drive a progress bar that means nothing. The caller shows an
+    /// indeterminate state instead, which is what "we do not know how far along this is" looks like.
+    /// </remarks>
+    public double Fraction =>
+        TotalBytes is > 0 ? Math.Clamp((double)BytesTransferred / TotalBytes.Value, 0.0, 1.0) : 0.0;
+}
+
 public sealed partial class FileTransferQueueItem : ObservableObject
 {
     public string Id { get; } = Guid.NewGuid().ToString("N");
@@ -33,7 +67,7 @@ public sealed partial class FileTransferQueueItem : ObservableObject
 
     public string FileName { get; }
 
-    internal Func<IProgress<double>, CancellationToken, Task> Work { get; }
+    internal Func<IProgress<TransferProgress>, CancellationToken, Task> Work { get; }
 
     internal CancellationTokenSource Cts { get; } = new();
 
@@ -55,7 +89,7 @@ public sealed partial class FileTransferQueueItem : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
-    public FileTransferQueueItem(FileTransferQueueKind kind, string fileName, Func<IProgress<double>, CancellationToken, Task> work)
+    public FileTransferQueueItem(FileTransferQueueKind kind, string fileName, Func<IProgress<TransferProgress>, CancellationToken, Task> work)
     {
         Kind = kind;
         FileName = fileName;
@@ -174,7 +208,7 @@ public sealed class FileTransferQueue : IDisposable
     public void Dispose() => LocalizationService.Instance.PropertyChanged -= OnLocaleChanged;
 
     /// <summary>Adds a transfer to the tail of the queue and starts the pump if idle. Returns the new item.</summary>
-    public FileTransferQueueItem Enqueue(FileTransferQueueKind kind, string fileName, Func<IProgress<double>, CancellationToken, Task> work)
+    public FileTransferQueueItem Enqueue(FileTransferQueueKind kind, string fileName, Func<IProgress<TransferProgress>, CancellationToken, Task> work)
     {
         var item = new FileTransferQueueItem(kind, fileName, work);
         item.PropertyChanged += (_, e) =>
@@ -252,7 +286,8 @@ public sealed class FileTransferQueue : IDisposable
         }
 
         SetState(item, TransferState.Active);
-        var progress = new Progress<double>(p => _post(() => item.Progress = Math.Clamp(p * 100.0, 0.0, 100.0)));
+        var progress = new Progress<TransferProgress>(
+            p => _post(() => item.Progress = Math.Clamp(p.Fraction * 100.0, 0.0, 100.0)));
 
         try
         {
