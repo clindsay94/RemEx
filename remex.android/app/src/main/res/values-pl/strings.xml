@@ -350,6 +350,7 @@
     <string name="file_conflict_body_exists">W folderze docelowym istnieje już plik lub folder o tej nazwie.</string>
     <string name="file_conflict_body_different_kind">W folderze docelowym istnieje już element innego rodzaju o tej nazwie.</string>
     <string name="file_conflict_body_name_unusable">Ta nazwa jest za długa dla folderu docelowego.</string>
+    <string name="file_conflict_body_name_taken">Coś innego zajęło nową nazwę, zanim udało się zapisać. Ponowna próba wybierze inną nazwę.</string>
     <string name="file_conflict_body_unknown">Tej operacji nie można ukończyć.</string>
     <string name="file_conflict_replace">Zastąp</string>
     <string name="file_conflict_keep_both">Zachowaj oba</string>

@@ -63,6 +63,30 @@ public static class FileTransferErrorCodes
     /// </para>
     /// </remarks>
     public const string ResolvedNameUnusable = "resolved_name_unusable";
+
+    /// <summary>
+    /// "Keep both" chose a name, and something else claimed it first (RemEx-od7s).
+    /// </summary>
+    /// <remarks>
+    /// **SEPARATE FROM <see cref="ResolvedNameUnusable"/> BECAUSE ASKING AGAIN WORKS.** That name is
+    /// creatable; the host simply lost a race for it — another paired device, a second message on
+    /// the same socket, or the person at the PC saving a file. Retrying "keep both" re-lists the
+    /// directory and picks the next free name, so this is a question the user can still answer.
+    /// <para>
+    /// **AND SEPARATE FROM <see cref="DestinationExists"/>, WHICH WOULD BE A DATA-LOSS BUTTON.** The
+    /// client offers Replace for that code, and Replace re-answers the ORIGINAL request — overwrite
+    /// the destination the user first named — while the sheet is showing the invented sibling. A
+    /// user who chose "keep both" precisely to preserve the original would destroy it by answering
+    /// a question about a different file. This code exists so "taken" can be said without offering
+    /// that button.
+    /// </para>
+    /// <para>
+    /// ADDITIVE, SO NO <c>protocolVersion</c> BUMP, and safe against every phone already installed:
+    /// <c>FileConflictPolicy.actionsFor</c> sends any code it does not recognise to Skip-only, so an
+    /// older client degrades to the previous behaviour instead of misreading this one.
+    /// </para>
+    /// </remarks>
+    public const string ResolvedNameTaken = "resolved_name_taken";
 }
 
 /// <summary>

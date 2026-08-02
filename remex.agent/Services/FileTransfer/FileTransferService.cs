@@ -616,7 +616,22 @@ public sealed class FileTransferService : IFileTransferService
             // makes). No type test can span that. Asking what is actually there can.
             var occupied = File.Exists(plan.DestinationPath) || Directory.Exists(plan.DestinationPath);
 
-            if (occupied || ex is not (UnauthorizedAccessException or DirectoryNotFoundException))
+            if (occupied)
+            {
+                // TAKEN, NOT UNUSABLE, and the difference is whether asking again can work. This name
+                // is perfectly creatable; something simply got there first. Retrying keep-both
+                // re-lists and picks the next free name, so the client can offer that - which
+                // resolved_name_unusable, a Skip-only dead end, could not (RemEx-od7s).
+                //
+                // NOT destination_exists either, however true that sentence is. That code unlocks
+                // Replace, and Replace re-answers the ORIGINAL request - overwrite the destination
+                // the user first named - while the sheet is showing this invented sibling. A user
+                // who chose keep-both precisely to protect the original would destroy it by
+                // answering a question about a different file.
+                throw FileConflictException.ResolvedNameTaken(plan.ResolvedName);
+            }
+
+            if (ex is not (UnauthorizedAccessException or DirectoryNotFoundException))
             {
                 // REPORTED AS AN UNUSABLE NAME EVEN WHEN IT IS MERELY TAKEN, and that is a deliberate
                 // under-claim (RemEx-od7s). "That name is taken" is the truer sentence, but the only

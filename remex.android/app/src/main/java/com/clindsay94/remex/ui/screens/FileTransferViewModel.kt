@@ -552,6 +552,22 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     fun moveSelectedTo(destFolder: String) = manageSelectedTo(destFolder, FileManageOperations.MOVE)
 
+    private companion object {
+        /**
+         * How many times one item may be re-sent after the user answers a collision.
+         *
+         * **A BOUND EXISTS BECAUSE THE USER IS NOT ALWAYS IN THE LOOP.** A remembered "apply to all"
+         * answer satisfies the sheet without asking, so a squatter that keeps claiming each name the
+         * host picks would otherwise spin server round-trips behind a spinner with no way to stop it.
+         * The host's own 10,000-suffix cap does not help: that fires when 10,000 siblings genuinely
+         * exist, not when a racing writer re-takes each freshly chosen name.
+         *
+         * Three is slack rather than a limit anyone should reach - the honest race resolves on round
+         * two. Running out is counted as an ordinary failure, which is what it is.
+         */
+        const val MAX_CONFLICT_ROUNDS = 3
+    }
+
     private fun manageSelectedTo(destFolder: String, operation: String) {
         val rootId = _selectedRootId.value ?: return
         val targets = _displayedEntries.value.filter {
@@ -580,43 +596,65 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 val relative = FileManagerLogic.combinePath(_remotePath.value, entry.name)
                 val destination = FileManagerLogic.combinePath(destFolder, entry.name)
 
+                // A LOOP, NOT TWO ATTEMPTS, and review is the reason. This used to run the operation,
+                // ask once, retry once, and collapse the retry's outcome to errors++ without ever
+                // reading its error code. That made resolved_name_taken UNREACHABLE: the host can
+                // only send it on a retry, because the name it describes is one the host picks only
+                // when a conflictResolution arrives. So the code, its action set, its body text and
+                // all nine translations were dead on arrival - the exact "declared but never
+                // delivered" shape this repo has been bitten by before.
+                //
+                // BOUNDED, because a standing "keep both, apply to all" satisfies the sheet without
+                // asking. Unbounded, a squatter re-taking each name the host picks would spin
+                // round-trips behind a spinner with nobody able to stop it. The honest case resolves
+                // on round two; three is slack, and running out is an ordinary failure.
                 lastResolvedName = null
-                val first = runManage(rootId, relative, operation, destinationPath = destination)
-                if (!first.failed) {
-                    lastResolvedName?.let { renamed += it }
-                    continue
+                var outcome = runManage(rootId, relative, operation, destinationPath = destination)
+                var rounds = 0
+                // NAMED FOR WHAT IT GUARDS, not for what happened. The first name said the user had
+                // resolved it, which reads backwards - Skip IS the user resolving it, arguably the
+                // most decisive answer available - and would mislead whoever adds the next exit path
+                // into setting the wrong side. What this actually means is that the item is already
+                // in a tally and the code below must not add it to another.
+                var alreadyCounted = false
+
+                while (outcome.failed && rounds < MAX_CONFLICT_ROUNDS) {
+                    val conflict = outcome as? ManageOutcome.HostRefused
+                    val actions = FileConflictPolicy.actionsFor(conflict?.errorCode, operation)
+                    if (actions.isEmpty()) {
+                        // Not a collision - an ordinary failure the user cannot answer. Raising a
+                        // sheet would offer "Replace" as a response to "the disk is full".
+                        break
+                    }
+
+                    val answer = resolveConflict(
+                        fileName = conflict?.conflictingName ?: entry.name,
+                        errorCode = conflict?.errorCode.orEmpty(),
+                        operation = operation,
+                        actions = actions,
+                        hasRemaining = index < targets.lastIndex,
+                        batchChoice = batchChoice,
+                    )
+
+                    val resolution = FileConflictPolicy.resolutionFor(answer)
+                    if (resolution == null) {
+                        // Skip sends nothing at all, so it cannot fail - and it is NOT an error,
+                        // which is why it is counted apart. Reporting a deliberate skip as a failure
+                        // would tell the user something went wrong when they chose it.
+                        alreadyCounted = true
+                        skipped++
+                        break
+                    }
+
+                    lastResolvedName = null
+                    outcome = runManage(rootId, relative, operation, destinationPath = destination,
+                        conflictResolution = resolution)
+                    rounds++
                 }
 
-                val conflict = first as? ManageOutcome.HostRefused
-                val actions = FileConflictPolicy.actionsFor(conflict?.errorCode, operation)
-                if (actions.isEmpty()) {
-                    // Not a collision - an ordinary failure the user cannot answer. Raising a sheet
-                    // would offer "Replace" as a response to "the disk is full".
-                    errors++
-                    continue
-                }
+                if (alreadyCounted) continue
 
-                val answer = resolveConflict(
-                    fileName = conflict?.conflictingName ?: entry.name,
-                    errorCode = conflict?.errorCode.orEmpty(),
-                    operation = operation,
-                    actions = actions,
-                    hasRemaining = index < targets.lastIndex,
-                    batchChoice = batchChoice,
-                )
-
-                val resolution = FileConflictPolicy.resolutionFor(answer)
-                if (resolution == null) {
-                    // Skip sends nothing at all, so it cannot fail - and it is NOT an error, which
-                    // is why it is counted apart. Reporting a deliberate skip as a failure would
-                    // tell the user something went wrong when they chose it.
-                    skipped++
-                    continue
-                }
-
-                lastResolvedName = null
-                if (runManage(rootId, relative, operation, destinationPath = destination,
-                        conflictResolution = resolution).failed) {
+                if (outcome.failed) {
                     errors++
                 } else {
                     lastResolvedName?.let { renamed += it }

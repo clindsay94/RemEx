@@ -1,10 +1,12 @@
 package com.clindsay94.remex
 
+import com.clindsay94.remex.service.FileConflictCodes
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.lang.reflect.Modifier
 
 /**
  * Source-reading guards for the conflict wiring no unit test can reach (RemEx-agpn).
@@ -35,6 +37,7 @@ class FileConflictWiringTest {
 
     private val sheet get() = sourceOf("ui/components/FileConflictSheet.kt")
     private val viewModel get() = sourceOf("ui/screens/FileTransferViewModel.kt")
+    private val policySource get() = sourceOf("service/FileConflictPolicy.kt")
 
     @Test
     fun `dismissing the sheet answers Skip, and never for the whole batch`() {
@@ -141,5 +144,90 @@ class FileConflictWiringTest {
         )
         assertTrue("unknown codes need their own body", sheet.contains("file_conflict_body_unknown"))
         assertTrue("the unusable-name code needs its own body", sheet.contains("file_conflict_body_name_unusable"))
+    }
+
+    @Test
+    fun `EVERY code the host can send has its own body, checked against the constants themselves`() {
+        // THE GUARD THE TEST ABOVE ONLY GESTURED AT. It asserted the body branches on the code and
+        // that two specific strings appear - so a NEW code added host-side, which is precisely the
+        // case its comment worries about, would sail through and render the unknown body while
+        // looking covered. This reads the constants and demands a branch for each.
+        val codes = FileConflictCodes::class.java.declaredFields
+            .filter { Modifier.isStatic(it.modifiers) && it.type == String::class.java }
+            .map { it.name }
+
+        // SELF-RATCHETING, NOT A FLOOR AT TODAY'S COUNT. A bare ">= 4" is satisfied forever, so a
+        // future `val NEW_CODE: String = "..."` written WITHOUT `const` - which compiles to an
+        // instance field with a static getter, invisible to reflection - would slip past untested,
+        // reintroducing one level down the staleness the reflection was meant to end.
+        //
+        // COUNTING `val`, NOT `const val`, AND THAT IS THE WHOLE POINT. Review ran the mutation and
+        // showed the stricter pattern was close to tautological: it missed a non-const declaration
+        // exactly where reflection missed it too, so both sides read 4 and agreed on being wrong.
+        // Matching every string-valued val makes the non-const case read 5 against reflection's 4
+        // and fail, which is the case this exists for. The optional type annotation is tolerated
+        // because writing `const val X: String = "y"` is an ordinary style choice, and the earlier
+        // pattern failed on it while blaming a missing code.
+        // SCOPED TO THE CODES OBJECT. Counting const vals across the whole file also swept up
+        // FileConflictResolutions' two wire tokens, which live beside them - so the count said 6
+        // against 4 and the guard failed on a correct design rather than on a missing code.
+        val codesBlock = policySource.substringAfter("object FileConflictCodes").substringBefore("\n}")
+        val declared = Regex("""\bval\s+\w+\s*(?::\s*String\s*)?=\s*"\w+"""").findAll(codesBlock).count()
+        assertEquals("a code was declared in a shape reflection cannot see", declared, codes.size)
+
+        val bodies = codes.associateWith { name ->
+            Regex("""FileConflictCodes\.$name\s*->\s*R\.string\.(\w+)""")
+                .find(sheet)?.groupValues?.get(1)
+        }
+
+        for ((name, body) in bodies) {
+            assertTrue("$name has no body of its own in the sheet", body != null)
+            assertTrue(
+                "$name renders the unknown body, which explains nothing to the user",
+                body != "file_conflict_body_unknown",
+            )
+        }
+        val named = bodies.values.filterNotNull()
+        assertEquals("two codes share one explanation", named.size, named.toSet().size)
+    }
+
+    @Test
+    fun `a refused RETRY is examined too, not collapsed into an error count`() {
+        // THE DEFECT REVIEW FOUND, and it made a whole feature unreachable. The batch used to run the
+        // operation, ask once, retry once, and throw away the retry's outcome with a bare errors++.
+        // Any code the host can ONLY send on a retry - resolved_name_taken is exactly that, since the
+        // name it names is one the host picks only when a conflictResolution arrives - could never
+        // reach actionsFor, so its action set, its body text and all nine translations were dead on
+        // arrival while every test stayed green.
+        //
+        // Asserted on the loop's SHAPE because the alternative is instantiating a ViewModel with a
+        // live socket. The shape is the property: the outcome that feeds actionsFor must be the one
+        // the loop keeps reassigning, not a value captured before the first retry.
+        assertTrue(
+            "the conflict cycle must be a loop, so a refused retry is asked about again",
+            viewModel.contains(Regex("""while\s*\(\s*outcome\.failed\s*&&\s*rounds\s*<\s*MAX_CONFLICT_ROUNDS\s*\)""")),
+        )
+        assertTrue(
+            "the loop must re-read the code from the LATEST outcome",
+            viewModel.contains(Regex("""val\s+conflict\s*=\s*outcome\s+as\?\s+ManageOutcome\.HostRefused""")),
+        )
+        assertTrue(
+            "the retry's result must be assigned back into the loop's outcome",
+            viewModel.contains(Regex("""outcome\s*=\s*runManage\([^)]*conflictResolution\s*=\s*resolution""")),
+        )
+    }
+
+    @Test
+    fun `the conflict loop is BOUNDED, because a standing answer needs no user`() {
+        // An "apply to all" answer satisfies the sheet without asking, so an unbounded loop against a
+        // squatter that keeps re-taking each chosen name would spin round-trips behind a spinner with
+        // nobody able to stop it. The host's 10,000-suffix cap does not save this: it fires when
+        // 10,000 siblings genuinely exist, not when a racing writer re-takes each new name.
+        val bound = Regex("""(?:const\s+)?val\s+MAX_CONFLICT_ROUNDS\s*=\s*(\d+)""").find(viewModel)
+        assertTrue("the loop must carry an explicit bound", bound != null)
+
+        val rounds = bound!!.groupValues[1].toInt()
+        assertTrue("a bound of $rounds allows no retry at all", rounds >= 2)
+        assertTrue("a bound of $rounds is high enough to feel like a hang", rounds <= 5)
     }
 }

@@ -540,6 +540,7 @@
     <string name="file_conflict_body_exists">There is already a file or folder with this name in the destination folder.</string>
     <string name="file_conflict_body_different_kind">Something of a different kind already has this name in the destination folder.</string>
     <string name="file_conflict_body_name_unusable">This name is too long for the destination folder.</string>
+    <string name="file_conflict_body_name_taken">Something else took the new name before this could be saved. Trying again will pick a different name.</string>
     <string name="file_conflict_body_unknown">This cannot be completed.</string>
     <string name="file_conflict_replace">Replace</string>
     <string name="file_conflict_keep_both">Keep both</string>

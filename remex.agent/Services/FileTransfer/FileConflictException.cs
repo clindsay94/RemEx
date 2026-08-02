@@ -51,13 +51,6 @@ public sealed class FileConflictException : IOException
     public static FileConflictException DirectoryExists(string name) =>
         new(FileTransferErrorCodes.DestinationExists, name, $"A folder named '{name}' already exists.");
 
-    /// <summary>
-    /// The destination is taken by something of the other kind — a folder where a file was going.
-    /// </summary>
-    /// <remarks>
-    /// Distinguished so a client does not offer "replace", which here would mean deleting a whole
-    /// directory tree to make room for one file. Nobody intends that from a copy, and nothing undoes it.
-    /// </remarks>
     /// <summary>The renamed sibling "keep both" chose cannot be created at the destination.</summary>
     /// <remarks>
     /// Carries the name that FAILED rather than the one originally asked for: it is longer than what
@@ -67,6 +60,25 @@ public sealed class FileConflictException : IOException
         new(FileTransferErrorCodes.ResolvedNameUnusable, name,
             $"The name '{name}' cannot be created at the destination: {cause.Message}");
 
+    /// <summary>The renamed sibling "keep both" chose was claimed by something else first.</summary>
+    /// <remarks>
+    /// SEPARATE FROM <see cref="ResolvedNameUnusable"/> BECAUSE THE ANSWER DIFFERS. That name is
+    /// perfectly creatable — somebody simply got there first — so asking again works: the host
+    /// re-lists the directory and picks the next free name. Reporting it as unusable would send the
+    /// client to a Skip-only dead end for a problem one retry solves. No cause is carried, because
+    /// the reason the open failed is not the point; what is there now is.
+    /// </remarks>
+    public static FileConflictException ResolvedNameTaken(string name) =>
+        new(FileTransferErrorCodes.ResolvedNameTaken, name,
+            $"The name '{name}' was taken by something else before it could be created.");
+
+    /// <summary>
+    /// The destination is taken by something of the other kind — a folder where a file was going.
+    /// </summary>
+    /// <remarks>
+    /// Distinguished so a client does not offer "replace", which here would mean deleting a whole
+    /// directory tree to make room for one file. Nobody intends that from a copy, and nothing undoes it.
+    /// </remarks>
     public static FileConflictException DifferentKindExists(string name) =>
         new(FileTransferErrorCodes.DestinationIsDifferentKind, name,
             $"Something of a different kind already exists at the destination '{name}'.");

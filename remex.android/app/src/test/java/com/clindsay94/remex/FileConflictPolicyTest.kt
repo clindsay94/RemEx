@@ -11,6 +11,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.lang.reflect.Modifier
 
 /**
  * Tests for which answers a filename collision may be offered (RemEx-agpn).
@@ -213,20 +214,67 @@ class FileConflictPolicyTest {
     }
 
     @Test
+    fun `a name taken in a race offers keep both, because asking again actually works`() {
+        // THE ONE RACE WITH A REAL ANSWER. The host chose "report (2).pdf" and something claimed it
+        // first - another paired device, or the person at the PC saving a file. That name is
+        // creatable, so retrying keep-both makes the host re-list and pick "report (3).pdf". Folding
+        // this into the unusable-name code would send the user to a Skip-only dead end for a problem
+        // one tap solves.
+        assertEquals(
+            listOf(ConflictAction.KeepBoth, ConflictAction.Skip),
+            actions(FileConflictCodes.RESOLVED_NAME_TAKEN),
+        )
+    }
+
+    @Test
+    fun `a taken resolved name NEVER offers Replace, which would answer a different question`() {
+        // THE REASON THIS CODE EXISTS AT ALL. "That name is taken" is literally true, so
+        // destination_exists looks like the honest choice - and it carries Replace. But Replace
+        // re-answers the ORIGINAL request: overwrite the destination the user first named, while
+        // this sheet is showing the sibling the host invented. Someone who chose keep-both precisely
+        // to preserve the original would destroy it by answering a question about a different file.
+        //
+        // Asserted separately from the list above because THIS is the safety property. If someone
+        // later "simplifies" the two codes into one, that test changes and this one screams.
+        assertTrue(
+            "Replace must never be offered for a name the user never chose",
+            ConflictAction.Replace !in actions(FileConflictCodes.RESOLVED_NAME_TAKEN),
+        )
+    }
+
+    @Test
+    fun `the taken-name token matches the host verbatim`() {
+        // A private agreement between two codebases that cannot see each other. A typo here does not
+        // fail loudly - actionsFor falls to the unknown branch and the sheet quietly loses keep-both,
+        // which reads as a bug in the feature rather than a mismatched string.
+        assertEquals("resolved_name_taken", FileConflictCodes.RESOLVED_NAME_TAKEN)
+    }
+
+    @Test
     fun `every code the client knows has its own reason, none borrowing another's`() {
         // The sheet picks its body by code. Review found it testing only for the different-kind code,
         // so ANY other code rendered "there is already a file or folder with this name" - a claim the
         // client has no basis for. Distinct codes must stay distinct here, or the next code added
         // host-side inherits a false explanation the same way.
-        val known = listOf(
-            FileConflictCodes.DESTINATION_EXISTS,
-            FileConflictCodes.DESTINATION_IS_DIFFERENT_KIND,
-            FileConflictCodes.RESOLVED_NAME_UNUSABLE,
-        )
+        //
+        // ENUMERATED BY REFLECTION, NOT BY HAND. The list used to be hardcoded, so it grew stale the
+        // moment a code was added - which is exactly the failure it claims to prevent. Reading the
+        // constants means adding one to FileConflictCodes without an action set fails this test.
+        val known = FileConflictCodes::class.java.declaredFields
+            .filter { Modifier.isStatic(it.modifiers) && it.type == String::class.java }
+            .map { it.isAccessible = true; it.get(null) as String }
 
-        assertEquals(known.size, known.toSet().size)
+        assertEquals("codes must be distinct", known.size, known.toSet().size)
+        assertTrue("reflection found no codes, so this test proves nothing", known.size >= 4)
         for (code in known) {
             assertTrue("$code must offer at least Skip", ConflictAction.Skip in actions(code))
         }
+
+        // AND DELIBERATELY NOT "every code has its own ACTION SET". That assertion was written here
+        // and was wrong about the design: resolved_name_unusable has no branch in actionsFor on
+        // purpose, because Skip-only IS the right answer for it and the else branch already says so.
+        // Sharing an action set is fine - Skip-only is the safe default and several codes deserve
+        // it. Sharing an EXPLANATION is not, and that is a property of the sheet rather than of this
+        // table, so FileConflictWiringTest enforces it against the constants directly.
     }
 }

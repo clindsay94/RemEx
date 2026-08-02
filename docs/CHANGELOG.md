@@ -11,6 +11,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A "keep both" name that somebody else claims first can now be answered with "keep both" again.**
+  When the host picks `report (2).pdf` and another paired device — or the person sitting at the PC —
+  takes that name in the moment before the copy runs, the phone used to reach a dead end: the only
+  offer was Skip, and the body text blamed the name's *length*, which was not the problem. Asking
+  again is what actually works here, because the host simply re-lists the folder and picks
+  `report (3).pdf`.
+  The obvious code for "that name is taken" could not be used, and the reason is worth recording: it
+  is the code that unlocks **Replace**, and Replace answers the *original* request — overwrite the
+  file the user first named — while the sheet is showing the sibling the host invented. Somebody who
+  chose "keep both" precisely to preserve that file would destroy it by answering a question about a
+  different one. So this is a code of its own, carrying "keep both" and "skip" and never "replace".
+  Additive, with no `protocolVersion` bump and no coordinated release needed: the client already
+  routes any code it does not recognise to Skip-only, so a phone that has not been updated keeps the
+  previous safe behaviour instead of misreading the new one.
+  **The batch loop had to change for any of this to be reachable at all.** It ran the operation,
+  asked once, retried once, and threw the retry's answer away — so a refusal that can *only* happen
+  on a retry was counted as a plain failure and never asked about. The conflict cycle is now a
+  bounded loop that re-reads the host's answer each time, capped at three rounds because a remembered
+  "apply to all" satisfies the sheet without asking, and an unbounded version could spin against
+  something that keeps claiming each name the host picks.
+  (`FileTransferErrorCodes.cs`, `FileConflictException.cs`, `FileTransferService.cs`,
+  `FileConflictPolicy.kt`, `FileConflictSheet.kt`, `FileTransferViewModel.kt`, 9 locales;
+  RemEx-od7s, from the RemEx-mu17 review.)
+
 - **Stopped "keep both" blaming the name it chose for failures that had nothing to do with it.** The
   guard added for RemEx-cirk wrapped the *entire* operation — including a recursive copy over a whole
   tree — and translated five exception types into `resolved_name_unusable`. So a disk filling up

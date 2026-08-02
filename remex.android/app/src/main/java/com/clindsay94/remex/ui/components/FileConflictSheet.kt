@@ -89,6 +89,8 @@ fun FileConflictSheet(
                             R.string.file_conflict_body_different_kind
                         FileConflictCodes.RESOLVED_NAME_UNUSABLE ->
                             R.string.file_conflict_body_name_unusable
+                        FileConflictCodes.RESOLVED_NAME_TAKEN ->
+                            R.string.file_conflict_body_name_taken
                         else -> R.string.file_conflict_body_unknown
                     },
                 ),

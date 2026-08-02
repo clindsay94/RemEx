@@ -354,6 +354,7 @@
     <string name="file_conflict_body_exists">Sudah ada file atau folder dengan nama ini di folder tujuan.</string>
     <string name="file_conflict_body_different_kind">Sudah ada sesuatu dengan jenis berbeda bernama ini di folder tujuan.</string>
     <string name="file_conflict_body_name_unusable">Nama ini terlalu panjang untuk folder tujuan.</string>
+    <string name="file_conflict_body_name_taken">Sesuatu yang lain memakai nama baru itu sebelum sempat disimpan. Mencoba lagi akan memilih nama lain.</string>
     <string name="file_conflict_body_unknown">Ini tidak dapat diselesaikan.</string>
     <string name="file_conflict_replace">Ganti</string>
     <string name="file_conflict_keep_both">Simpan keduanya</string>

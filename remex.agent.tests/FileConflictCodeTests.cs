@@ -338,13 +338,34 @@ public sealed class FileConflictCodeTests : IDisposable
         var survivor = squatterIsDirectory ? Path.Combine(squatter, "inside.txt") : squatter;
         Assert.Equal("somebody else's work", File.ReadAllText(survivor));
 
-        // AND CRUCIALLY NOT destination_exists, which review showed is a data-loss button here. That
-        // code unlocks Replace, and Replace re-answers the ORIGINAL request - overwrite b.txt - while
-        // the sheet is naming b (2).txt. A user who chose "keep both" precisely to protect b.txt
-        // would destroy it by answering a question about a different file. resolved_name_unusable is
-        // Skip-only; RemEx-od7s adds a code that can say "taken" and still offer keep-both safely.
-        Assert.Equal(FileTransferErrorCodes.ResolvedNameUnusable, ex.ErrorCode);
+        // TAKEN, NOT UNUSABLE - the distinction is whether asking again can work, and here it can:
+        // the name is creatable, something simply got there first, so a retry re-lists and picks the
+        // next free one. The client can therefore offer keep-both again.
+        //
+        // AND CRUCIALLY NOT destination_exists, however true that sentence is. That code unlocks
+        // Replace, and Replace re-answers the ORIGINAL request - overwrite b.txt - while the sheet
+        // is naming b (2).txt. A user who chose "keep both" precisely to protect b.txt would destroy
+        // it by answering a question about a different file.
+        Assert.Equal(FileTransferErrorCodes.ResolvedNameTaken, ex.ErrorCode);
         Assert.Equal("b (2).txt", ex.ConflictingName);
     }
 
+
+    [Fact]
+    public void TheWireTOKENSArePinnedVerbatim_BecauseTheOtherSideCannotSeeThem()
+    {
+        // A PRIVATE AGREEMENT BETWEEN TWO CODEBASES THAT CANNOT SEE EACH OTHER, and review found the
+        // host's half unpinned. Every other test here compares a constant to a constant, which
+        // survives any edit to the literal - so renaming "resolved_name_taken" to a typo would leave
+        // this whole suite AND the Kotlin suite green while the phone silently falls back to
+        // Skip-only, losing a button that works. Kotlin pins its side; this pins ours.
+        Assert.Equal("destination_exists", FileTransferErrorCodes.DestinationExists);
+        Assert.Equal("destination_is_different_kind", FileTransferErrorCodes.DestinationIsDifferentKind);
+        Assert.Equal("resolved_name_unusable", FileTransferErrorCodes.ResolvedNameUnusable);
+        Assert.Equal("resolved_name_taken", FileTransferErrorCodes.ResolvedNameTaken);
+
+        // And the resolutions, which travel the same way and fail just as quietly.
+        Assert.Equal("keep_both", FileConflictResolutions.KeepBoth);
+        Assert.Equal("replace", FileConflictResolutions.Replace);
+    }
 }

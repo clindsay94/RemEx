@@ -20,6 +20,21 @@ object FileConflictCodes {
      * that: after the user has already chosen Keep both.
      */
     const val RESOLVED_NAME_UNUSABLE = "resolved_name_unusable"
+
+    /**
+     * The host renamed for "keep both" and something else claimed the new name first (RemEx-od7s).
+     *
+     * **THE ONE RACE WHERE ASKING AGAIN ACTUALLY WORKS**, which is why it is not folded into
+     * [RESOLVED_NAME_UNUSABLE]. That name is creatable - the host simply lost it to another paired
+     * device, a second message on the same socket, or the person at the PC saving a file - so
+     * retrying keep-both re-lists the directory and picks the next free name.
+     *
+     * The host deliberately does NOT send [DESTINATION_EXISTS] here even though the name is
+     * literally taken: that code offers Replace, and Replace re-answers the ORIGINAL request while
+     * this sheet is naming the sibling the host invented. The user would destroy the file they
+     * chose keep-both to protect, by answering a question about a different one.
+     */
+    const val RESOLVED_NAME_TAKEN = "resolved_name_taken"
 }
 
 object FileConflictResolutions {
@@ -72,6 +87,14 @@ object FileConflictPolicy {
             // taps. The order here is the order the sheet renders.
             FileConflictCodes.DESTINATION_EXISTS ->
                 listOf(ConflictAction.KeepBoth, ConflictAction.Replace, ConflictAction.Skip)
+
+            // KEEP BOTH AND SKIP, NEVER REPLACE. The name is taken, so asking again genuinely works
+            // - the host re-lists and picks the next free name. But Replace would answer the
+            // ORIGINAL request rather than this one, overwriting the destination the user first
+            // named while this sheet is showing the sibling the host chose. That is why the host
+            // sends a code of its own instead of destination_exists, which carries that button.
+            FileConflictCodes.RESOLVED_NAME_TAKEN ->
+                listOf(ConflictAction.KeepBoth, ConflictAction.Skip)
 
             // NO REPLACE. Here the destination is the OTHER KIND of thing, so replacing means
             // deleting a whole directory tree to make room for one file, or deleting a file to make
