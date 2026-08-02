@@ -1199,22 +1199,15 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     /**
      * Asks the PC to capture its screen (RemEx-byij).
      *
-     * **THIS CAN ONLY REPORT THAT THE REQUEST WENT OUT, AND REVIEW CAUGHT THE FIRST VERSION CLAIMING
-     * MORE.** `SendCommandNative` hands the command to a background sender and returns
-     * `{"success": true, "message": "Command dispatched."}` immediately; the host's real
-     * `command_response` is awaited inside that discarded task and never routed back across JNI
-     * (`AndroidNativeExports.HandleDispatchCommand`). So `success` here means the native stub accepted
-     * the string — nothing more. A disconnected control socket, a host too old to know the verb, and a
-     * capture that failed on the PC all still read as `true`.
+     * **REPORTS THE CAPTURE, NOT THE DELIVERY.** Since RemEx-66rf the host's real `command_response`
+     * reaches this side, so `success` genuinely means the PC captured the screen and wrote the PNG —
+     * a dead socket, an unknown verb and a failed capture now all come back false. (Before that they
+     * read as success, and the first version of this method believed them.)
      *
-     * The wording therefore says "asked", not "taken". Saying "taken" would have shown a confirmation
-     * for a screenshot that was never captured, which is worse than saying nothing: the user would go
-     * looking for a notification that is never coming. Even on the happy path the file is only OFFERED
-     * to this phone afterwards, and only arrives if the user accepts (RemEx-y7my).
-     *
-     * The one thing worth reporting properly — the host's own verdict — needs a `command_response`
-     * route to Kotlin that does not exist. Filed as RemEx-66rf rather than bodged here; once it lands,
-     * this can honestly say "taken".
+     * What it still cannot promise is that the file ARRIVED. The host answers as soon as the PNG is
+     * written and then OFFERS it to this phone separately, which the user accepts or declines
+     * (RemEx-y7my). So the wording stops at "taken on the PC" and points at the notifications rather
+     * than claiming a file the user may yet refuse is already here.
      *
      * No `DisplayLabel` parameter, though the host accepts one: it only shapes the FILE NAME and does
      * not choose which monitor is captured, and the label this screen holds for the selected display
@@ -1225,24 +1218,22 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
         // Cancel rather than queue: a second tap replaces the first message instead of waiting five
         // seconds behind it, and the timer restarts so the newest outcome gets its full time.
         screenshotStatusJob?.cancel()
-        // On the serialised send dispatcher like every other send this view model makes, not a bare
-        // Dispatchers.IO: a send dispatched on its own races the input stream, and a modifier keyUp
-        // overtaking its keyDown leaves a key physically held down on the PC (RemEx-7rq3). The send
-        // itself returns immediately, so it occupies the single slot only briefly, and the five-second
-        // timer below does not hold it at all — delay suspends rather than owning the thread.
+        // No dispatcher: SendCommand switches to a background thread itself (RemEx-66rf), so naming
+        // one here would decide nothing. It waits for the PC's answer, which is why it must not be
+        // called from a thread that cannot afford to wait — and why it no longer lets anyone do that.
         screenshotStatusJob =
-                viewModelScope.launch(sendDispatcher) {
+                viewModelScope.launch {
                     val request =
                             JSONObject().apply {
                                 put("action", "SCREENSHOT")
                                 put("parameters", JSONObject())
                             }
 
-                    // Reachable only when the native library is missing or its stub throws — see the
-                    // KDoc: everything that goes wrong LATER, on the socket or on the PC, is invisible
-                    // from here. Kept because that one case is real (an unlinked library means no
-                    // command will ever work) and silently doing nothing would be worse.
-                    val dispatched =
+                    // Two distinct failures collapse into one message on purpose. runCatching covers
+                    // the native library being missing; `success: false` covers everything the PC
+                    // reports - not connected, timed out, capture refused. The host's own text is
+                    // deliberately not shown: it is developer English it never translates.
+                    val captured =
                             runCatching {
                                         JSONObject(
                                                         RemexCoreClient.SendCommand(
@@ -1258,8 +1249,8 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
                     _screenshotStatus.value =
                             getApplication<Application>()
                                     .getString(
-                                            if (dispatched) R.string.screenshot_requested
-                                            else R.string.screenshot_request_failed
+                                            if (captured) R.string.screenshot_taken
+                                            else R.string.screenshot_failed
                                     )
                     delay(screenshotStatusVisibleMs)
                     _screenshotStatus.value = null

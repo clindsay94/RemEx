@@ -817,6 +817,6 @@
     <string name="personalization_shape_cat_other">Diğer kartlar</string>
 
     <string name="action_take_screenshot">Bilgisayarın ekran görüntüsünü al</string>
-    <string name="screenshot_requested">Bilgisayardan ekran görüntüsü istendi. Size sunulacak bildirimi bekleyin.</string>
-    <string name="screenshot_request_failed">Ekran görüntüsü isteği gönderilemedi.</string>
+    <string name="screenshot_taken">Ekran görüntüsü bilgisayarda alındı. Almak için bildirimlerinizi kontrol edin.</string>
+    <string name="screenshot_failed">Bilgisayar ekran görüntüsü alamadı.</string>
 </resources>

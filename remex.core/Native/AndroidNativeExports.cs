@@ -992,8 +992,14 @@ public static class AndroidNativeExports
 
         // Fire-and-forget: WOL is a UDP broadcast with no acknowledgement.
         // Blocking the JNI thread for I/O is not safe — dispatch to the thread pool.
-        // Persistent failures are surfaced to the user via the Android toast/status mechanism
-        // that observes RemexNativeClient.Current.ConnectionStateChanged.
+        // **THE OUTCOME IS DISCARDED AND NOTHING REPORTS IT (RemEx-52n0).** The claim that used to
+        // stand here — that failures reach the user "via the Android toast/status mechanism that
+        // observes ConnectionStateChanged" — was invented: a WakeAsync failure (malformed MAC, socket
+        // bind refused, no usable interface) has nothing to do with the connection state, and nothing
+        // observes it. Left in place rather than fixed blind, because unlike a command this cannot
+        // simply be awaited into an answer: Wake-on-LAN is a UDP broadcast to a machine that is
+        // switched off, so there is no acknowledgement to wait for. What IS knowable — whether the
+        // packet left this phone — is what RemEx-52n0 is for.
         _ = Task.Run(async () =>
         {
             try
@@ -1190,20 +1196,42 @@ public static class AndroidNativeExports
             return SerializeCommandResponse(new CommandResponse(false, "Failed to deserialize command.", null));
         }
 
-        // Dispatch to the thread pool to avoid blocking the JNI calling thread
-        // with a synchronous WebSocket round-trip.
-        // Command responses and errors are delivered back to Kotlin via the
-        // RegisterCallbackNative callbacks (onConnectionStateChanged, onDesktopError, etc.).
-        _ = Task.Run(async () =>
+        // **WAITS FOR THE HOST'S ANSWER, AND THE VERSION THAT DID NOT MADE EVERY COMMAND A LIE
+        // (RemEx-66rf).** This used to fire the send into a discarded Task.Run and immediately return
+        // `success: true, "Command dispatched."` — so a dropped socket, a host too old to know the
+        // verb, and a command that FAILED on the PC were all indistinguishable from success on the
+        // phone. The old comment claimed the outcome reached Kotlin "via the RegisterCallbackNative
+        // callbacks"; no such callback exists for command responses, and nothing consumed the
+        // CommandResponse this awaits.
+        //
+        // Safe to block here because SendCommandAsync is BOUNDED AND TOTAL: it returns immediately
+        // when disconnected, budgets the send AND the reply together at 10 seconds, and converts
+        // every failure — timeout included — into a CommandResponse rather than throwing. (Bounded
+        // only became true as part of this bead: the budget used to start after the send had already
+        // been awaited on the caller's token, which here is None.) The same GetAwaiter().GetResult()
+        // shape as FetchPairingPinNative, for the same reason: the value is the return value of a
+        // synchronous JNI export, so there is nowhere else for it to go.
+        //
+        // Kotlin holds up its end by switching to a background dispatcher inside
+        // RemexCoreClient.SendCommand, so this can never block the Android main thread.
+        try
         {
-            try
-            {
-                await RemexNativeClient.Current.SendCommandAsync(command, CancellationToken.None);
-            }
-            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"SendCommand failed: {ex.Message}"); }
-        });
+            var response = RemexNativeClient.Current
+                .SendCommandAsync(command, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
 
-        return SerializeCommandResponse(new CommandResponse(true, "Command dispatched.", null));
+            return SerializeCommandResponse(response);
+        }
+        catch (Exception ex)
+        {
+            // SendCommandAsync catches its own failures, so reaching here means something outside it
+            // broke. Reported as a failure rather than swallowed: an honest "it did not work" is the
+            // whole point of this method.
+            JniHelper.AndroidLogE("RemexNative", $"SendCommand failed: {ex.Message}");
+            return SerializeCommandResponse(
+                new CommandResponse(false, "The command could not be sent.", ex.ToString()));
+        }
     }
 
     private static void OnNativeProcessListReceived(List<ProcessInfo> processes)

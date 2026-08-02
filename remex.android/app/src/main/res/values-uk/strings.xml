@@ -831,6 +831,6 @@
     <string name="personalization_shape_cat_other">Інші картки</string>
 
     <string name="action_take_screenshot">Зробити знімок екрана ПК</string>
-    <string name="screenshot_requested">Запит на знімок екрана надіслано на ПК. Очікуйте сповіщення, щоб отримати його.</string>
-    <string name="screenshot_request_failed">Не вдалося надіслати запит на знімок екрана.</string>
+    <string name="screenshot_taken">Знімок екрана зроблено на ПК. Перевірте сповіщення, щоб отримати його.</string>
+    <string name="screenshot_failed">ПК не зміг зробити знімок екрана.</string>
 </resources>

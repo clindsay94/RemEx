@@ -815,6 +815,6 @@
     <string name="personalization_shape_cat_other">Outros cartões</string>
 
     <string name="action_take_screenshot">Fazer uma captura de tela do PC</string>
-    <string name="screenshot_requested">Captura de tela solicitada ao PC. Aguarde uma notificação para recebê-la.</string>
-    <string name="screenshot_request_failed">Não foi possível enviar a solicitação de captura de tela.</string>
+    <string name="screenshot_taken">Captura de tela feita no PC. Verifique suas notificações para recebê-la.</string>
+    <string name="screenshot_failed">O PC não conseguiu fazer a captura de tela.</string>
 </resources>

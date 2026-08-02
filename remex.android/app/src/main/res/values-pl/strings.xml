@@ -831,6 +831,6 @@
     <string name="personalization_shape_cat_other">Pozostałe karty</string>
 
     <string name="action_take_screenshot">Zrób zrzut ekranu komputera</string>
-    <string name="screenshot_requested">Poproszono komputer o zrzut ekranu. Poczekaj na powiadomienie z propozycją odbioru.</string>
-    <string name="screenshot_request_failed">Nie udało się wysłać prośby o zrzut ekranu.</string>
+    <string name="screenshot_taken">Zrzut ekranu wykonany na komputerze. Sprawdź powiadomienia, aby go odebrać.</string>
+    <string name="screenshot_failed">Komputer nie mógł wykonać zrzutu ekranu.</string>
 </resources>

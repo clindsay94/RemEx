@@ -811,6 +811,6 @@
     <string name="personalization_shape_cat_other">Kartu lainnya</string>
 
     <string name="action_take_screenshot">Ambil tangkapan layar PC</string>
-    <string name="screenshot_requested">Tangkapan layar diminta dari PC. Tunggu notifikasi yang menawarkannya kepada Anda.</string>
-    <string name="screenshot_request_failed">Tidak dapat mengirim permintaan tangkapan layar.</string>
+    <string name="screenshot_taken">Tangkapan layar diambil di PC. Periksa notifikasi Anda untuk menerimanya.</string>
+    <string name="screenshot_failed">PC tidak dapat mengambil tangkapan layar.</string>
 </resources>

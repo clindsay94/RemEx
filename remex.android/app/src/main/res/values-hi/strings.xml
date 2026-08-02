@@ -815,6 +815,6 @@
     <string name="personalization_shape_cat_other">अन्य कार्ड</string>
 
     <string name="action_take_screenshot">पीसी का स्क्रीनशॉट लें</string>
-    <string name="screenshot_requested">पीसी से स्क्रीनशॉट का अनुरोध किया गया। इसे पाने के लिए सूचना का इंतज़ार करें।</string>
-    <string name="screenshot_request_failed">स्क्रीनशॉट का अनुरोध नहीं भेजा जा सका।</string>
+    <string name="screenshot_taken">पीसी पर स्क्रीनशॉट लिया गया। इसे पाने के लिए अपनी सूचनाएं देखें।</string>
+    <string name="screenshot_failed">पीसी स्क्रीनशॉट नहीं ले सका।</string>
 </resources>

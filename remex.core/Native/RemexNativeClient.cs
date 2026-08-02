@@ -260,9 +260,22 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
 
         try
         {
-            await SendMessageAsync(message, ct);
+            // THE BUDGET COVERS THE SEND, NOT JUST THE REPLY (RemEx-66rf). It used to be created
+            // AFTER SendMessageAsync had already been awaited on the caller's token — and the caller
+            // is HandleDispatchCommand, which passes CancellationToken.None. That left two unbounded
+            // waits inside the send: `_sendGate.WaitAsync`, which a file-transfer chunk flood can
+            // hold (see the gate's own note above), and `_webSocket.SendAsync` on a half-open socket,
+            // which blocks for the OS retransmit timeout — minutes on Android.
+            //
+            // Harmless while nothing waited on this method. Now that the JNI export blocks on it, an
+            // unbounded send parks a Dispatchers.IO thread that coroutine cancellation cannot
+            // reclaim: there is no suspension point inside a native frame, so the thread is gone
+            // until the socket gives up. Sixty-four of those is every IO-dispatched coroutine in the
+            // app. The timeout has to start before the first await, not after it.
             using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+
+            await SendMessageAsync(message, linkedCts.Token);
 
             return await tcs.Task.WaitAsync(linkedCts.Token);
         }

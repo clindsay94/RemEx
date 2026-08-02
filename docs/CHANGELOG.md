@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Commands sent from your phone told you they worked whether or not they did.** Every command — lock,
+  sleep, shut down, end a task, launch an app, take a screenshot — reported success the moment your
+  phone handed it off, without waiting to hear back from the PC. A PC that had dropped off the network,
+  a PC too old to understand the command, and a command the PC tried and failed to carry out all looked
+  exactly like success. Ending a task was the clearest case: if the PC refused, the error was
+  unreachable and you were told it had worked.
+  Your phone now waits for the PC's actual answer and tells you what really happened. If the PC does
+  not reply within ten seconds, that is reported as a failure rather than a success.
+  The screenshot confirmation, which had to hedge and say the PC was only *asked*, now says plainly
+  that the screenshot was taken — because that can finally be known.
+  (`AndroidNativeExports.cs`, `RemexCoreClient.kt`, `TaskManagerViewModel.kt`; RemEx-66rf.)
+
+- **The Quick Settings tiles could have frozen your phone once commands started waiting for a reply.**
+  Seven of the eight tiles fired their command straight from the tap, on the thread that draws the
+  screen — harmless while nothing waited for an answer, an "app isn't responding" freeze the moment
+  something did. They now run off that thread.
+  The eighth, Wake-on-LAN, was already off that thread but had a different problem: its wake was
+  cancelled when the tile went away. That was a narrow window before and a wide one now that a command
+  waits for the PC — tapping Wake and immediately closing the Quick Settings panel could have thrown
+  the wake away. All eight now run somewhere that outlives the tile, which is what Wake-on-LAN's own
+  notes had always said should happen.
+  The two home-screen widgets are on the same footing: they hand the command over and tell you it was
+  sent, rather than holding up the tap for a reply they have nowhere to show. When a command does fail
+  from a widget or a tile, that now at least reaches the device log, which it never could before.
+  (`TileCommand.kt`, `WidgetCommand.kt`, the eight tile services and both widgets; RemEx-66rf.)
+
 ### Added
 
 - **There is now a Screenshot button on your phone, so you can actually ask for one.** The PC has been
@@ -16,11 +44,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button is on the Remote Control screen's quick-actions bar and on the Remote Desktop toolbar — in
   both the windowed toolbar and the one that floats over the picture in fullscreen, which is where you
   are when you are actually watching the PC's screen.
-  A short message on either screen confirms the request went out, and points you at your
-  notifications. It says the PC was **asked** for a picture rather than claiming one was taken,
-  because the phone genuinely cannot tell yet: it hands the request off and hears nothing back about
-  how it went. Announcing a screenshot that a disconnected PC never took would send you hunting for a
-  notification that was never coming.
+  A short message on either screen confirms the PC took the picture, and points you at your
+  notifications. It says **taken**, not received: the PC saves it straight away, and it reaches your
+  phone only once you accept the offer, so it does not claim a file you may yet decline is already
+  there. (This message first shipped hedged as "asked the PC", because at the time nothing could tell
+  whether the PC had really managed it — see RemEx-66rf above, which fixed that.)
   (`RemoteControlScreen.kt`, `RemoteControlViewModel.kt`, `RemoteDesktopScreen.kt`,
   `RemoteDesktopViewModel.kt`; RemEx-byij, part 3 of RemEx-86nu.)
 

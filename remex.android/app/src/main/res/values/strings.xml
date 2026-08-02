@@ -907,12 +907,10 @@
     <string name="personalization_shape_cat_action">Action cards</string>
     <string name="personalization_shape_cat_other">Other cards</string>
 
-    <!-- Screenshot (RemEx-byij). "Asked" is the strongest thing that can honestly be said here.
-         SendCommandNative hands the command to a background sender and answers "dispatched"
-         straight away; the host's real command_response is never routed back to Kotlin, so this
-         side cannot know whether the PC captured anything. Wording it as "taken" would show a
-         confirmation for a disconnected socket or a capture that failed on the PC. -->
+    <!-- Screenshot (RemEx-byij, wording corrected by RemEx-66rf). "Taken" is now accurate: the PC's
+         real answer reaches the phone, so this only shows after the PNG has been written. It still
+         stops short of "received" - the file is offered separately and the user may decline it. -->
     <string name="action_take_screenshot">Take a screenshot of the PC</string>
-    <string name="screenshot_requested">Asked the PC for a screenshot. Watch for a notification offering it to you.</string>
-    <string name="screenshot_request_failed">Could not send the screenshot request.</string>
+    <string name="screenshot_taken">Screenshot taken on the PC. Check your notifications to receive it.</string>
+    <string name="screenshot_failed">The PC could not take a screenshot.</string>
 </resources>

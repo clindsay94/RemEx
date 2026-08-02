@@ -245,30 +245,29 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
      * `message` field the response carries, and for a command dispatch that field is
      * `"Command dispatched."` — a developer-English sentence minted by the native layer, not by the
      * host and never translated. Routed through it, a Spanish user would read "Éxito: Command
-     * dispatched." for a brand-new feature. (The same is true of every other command on this screen;
-     * that is a pre-existing problem this does not fix, only decline to extend — RemEx-66rf.)
+     * dispatched." for a brand-new feature. RemEx-66rf replaced that placeholder with the host's real
+     * message, but the host does not translate its text either, so routing through [sendSystemCommand]
+     * would still put English in front of eight of the nine languages. The other commands on this
+     * screen still do that; this declines to join them.
      *
-     * It also says "asked", not "taken", for the reason spelled out on
-     * `RemoteDesktopViewModel.takeScreenshot`: nothing on this side can see whether the PC actually
-     * captured anything, so the success wording must stop at the request.
+     * Says "taken", not "arrived": the PC answers once the PNG is written, and the file only reaches
+     * this phone if the user then accepts the offer (RemEx-y7my).
      */
     fun takeScreenshot() {
         // No isLibraryLoaded early return, unlike [sendSystemCommand]. That branch reports
         // status_native_lib_not_loaded, which names an internal component; SendCommand already fails
-        // closed in exactly that case, so the plainer "could not send the request" below covers it and
-        // says something the person holding the phone can act on. Deliberate, not an omission.
+        // closed in exactly that case, so the plainer failure message below covers it and says
+        // something the person holding the phone can act on. Deliberate, not an omission.
         //
-        // On [sendDispatcher] rather than the main thread this screen's other commands use: it is
-        // already here for the input path, it keeps submission order, and a JNI crossing is not
-        // main-thread work.
-        viewModelScope.launch(sendDispatcher) {
+        // No dispatcher: SendCommand does its own thread switch (RemEx-66rf).
+        viewModelScope.launch {
             val request =
                     JSONObject().apply {
                         put("action", "SCREENSHOT")
                         put("parameters", JSONObject())
                     }
 
-            val dispatched =
+            val captured =
                     runCatching {
                                 JSONObject(
                                                 RemexCoreClient.SendCommand(request.toString())
@@ -282,8 +281,8 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
             _commandStatus.value =
                     getApplication<Application>()
                             .getString(
-                                    if (dispatched) R.string.screenshot_requested
-                                    else R.string.screenshot_request_failed
+                                    if (captured) R.string.screenshot_taken
+                                    else R.string.screenshot_failed
                             )
         }
     }

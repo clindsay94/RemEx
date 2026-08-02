@@ -2,7 +2,6 @@ package com.clindsay94.remex.tile
 
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
-import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,27 +23,32 @@ class RemexWakeOnLanTileService : TileService() {
     private var listenJob: Job? = null
 
     private fun executeCommand() {
-        // WoL doesn't require an active connection — it wakes the PC up. The settings read and the
-        // native send run on IO; the job intentionally survives panel-close (onStopListening) so a
-        // tapped wake still goes out, and is only cancelled with the service itself.
-        serviceScope.launch {
-            withContext(Dispatchers.IO) {
-                val settingsManager = SettingsManager(applicationContext)
-                val macAddress = settingsManager.macAddressFlow.first()
-
-                if (macAddress.isNotEmpty()) {
-                    val commandJson = JSONObject().apply {
-                        put("action", "WAKEONLAN")
-                        put("parameters", JSONObject().apply {
-                            put("MacAddress", macAddress)
-                            // Using default broadcast IP and port as per PingPongHandler
-                            put("BroadcastIp", "255.255.255.255")
-                            put("Port", "9")
-                        })
-                    }.toString()
-
-                    RemexCoreClient.SendCommand(commandJson).getOrNull()
-                }
+        // WoL doesn't require an active connection — it wakes the PC up.
+        //
+        // NOT ON serviceScope, WHICH onDestroy CANCELS (RemEx-66rf). The intent recorded when this
+        // was written is that "a tapped wake still goes out" after the panel closes, and serviceScope
+        // never fully delivered that: the settings read below is a suspension point, so a cancelled
+        // scope could always drop the wake before it was sent. The window was small while SendCommand
+        // returned the instant it had handed the message off; now that it waits for the PC's answer
+        // the coroutine lives for the whole round trip, and a tile is destroyed shortly after the
+        // panel closes — which is exactly when somebody taps Wake and swipes away. The shared tile
+        // scope outlives the service, which is what the original comment was reaching for.
+        //
+        // Reading the MAC inside the same block matters for the same reason: a read that completed
+        // into a dead scope would never reach the send.
+        val settingsManager = SettingsManager(applicationContext)
+        launchTileWork {
+            val macAddress = settingsManager.macAddressFlow.first()
+            if (macAddress.isNotEmpty()) {
+                sendTileCommand(
+                    "WAKEONLAN",
+                    JSONObject().apply {
+                        put("MacAddress", macAddress)
+                        // Using default broadcast IP and port as per PingPongHandler
+                        put("BroadcastIp", "255.255.255.255")
+                        put("Port", "9")
+                    },
+                )
             }
         }
     }

@@ -3,15 +3,10 @@ package com.clindsay94.remex.tile
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.clindsay94.remex.RemexClientManager
-import com.clindsay94.remex.RemexCoreClient
-import org.json.JSONObject
 
 class RemexMonitorOffTileService : TileService() {
 
-    private fun executeCommand() {
-        val commandJson = JSONObject().apply { put("action", "MonitorOff") }.toString()
-        RemexCoreClient.SendCommand(commandJson).getOrNull()
-    }
+    private fun executeCommand() = sendTileCommand("MonitorOff")
 
     override fun onClick() {
         super.onClick()

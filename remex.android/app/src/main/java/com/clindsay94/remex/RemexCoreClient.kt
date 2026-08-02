@@ -1,6 +1,8 @@
 package com.clindsay94.remex
 
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val TAG = "RemexCoreClient"
 
@@ -147,9 +149,31 @@ object RemexCoreClient {
     @JvmName("SendMessageNative")
     private external fun SendMessageNative(messageJson: String): String
 
+    /**
+     * Sends a command to the PC and returns what the PC said about it.
+     *
+     * **THIS BLOCKS FOR A NETWORK ROUND TRIP, WHICH IS WHY IT OWNS ITS OWN THREAD (RemEx-66rf).**
+     * The native export waits for the host's real `command_response` — up to 10 seconds if the host
+     * has gone quiet — so calling it on the main thread would be an ANR. Rather than leave that as a
+     * rule all eight call sites have to remember, and that a new one would break silently until a PC
+     * happened to be unreachable, the switch to [Dispatchers.IO] lives here. Callers may invoke it
+     * from anywhere they can suspend.
+     *
+     * Suspending is not by itself enough for a caller on a deadline: the two Glance widgets sit in a
+     * `goAsync()` broadcast window of about the same length as this call's own budget, so they hand
+     * the work to a detached scope instead of awaiting it (see `sendWidgetCommand`).
+     *
+     * One consequence worth knowing: because the hop happens inside, the dispatcher a caller launched
+     * on no longer decides where the send lands. Commands are therefore not ordered against the input
+     * stream, which uses [SendMessage] and keeps the caller's dispatcher. That is fine — no command
+     * is order-sensitive with a key or pointer event — but it is not a guarantee to rely on.
+     *
+     * @return the host's answer as `CommandResponse` JSON (`success`, `message`, `errorDetails`), or
+     * a failure when the native library is missing or its stub throws.
+     */
     @JvmStatic
-    fun SendCommand(commandJson: String): Result<String> {
-        return if (isLibraryLoaded) {
+    suspend fun SendCommand(commandJson: String): Result<String> = withContext(Dispatchers.IO) {
+        if (isLibraryLoaded) {
             try {
                 Result.success(SendCommandNative(commandJson))
             } catch (e: UnsatisfiedLinkError) {

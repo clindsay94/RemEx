@@ -238,13 +238,9 @@ class LaunchAppCallback : ActionCallback {
             widgetToast(context, context.getString(R.string.widget_toast_not_connected))
             return
         }
-        val request = JSONObject().apply {
-            put("action", "LaunchApp")
-            put("parameters", JSONObject().apply {
-                put("TargetPath", path)
-            })
-        }
-        RemexCoreClient.SendCommand(request.toString()).getOrNull()
+        // Handed over rather than awaited: this runs inside a goAsync() broadcast window, and
+        // SendCommand now waits for the PC's answer on a ten-second budget (RemEx-66rf).
+        sendWidgetCommand("LaunchApp", JSONObject().apply { put("TargetPath", path) })
         widgetToast(context, context.getString(R.string.widget_toast_launching, name))
     }
 }
