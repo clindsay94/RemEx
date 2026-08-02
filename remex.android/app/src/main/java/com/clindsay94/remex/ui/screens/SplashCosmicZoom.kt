@@ -133,7 +133,6 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                 }
         }
 
-        var particleFrame by remember { mutableStateOf(0) }
         var isSkipping by remember { mutableStateOf(false) }
         val skipAlpha = remember { Animatable(1f) }
 
@@ -196,7 +195,6 @@ fun SplashCosmicZoom(onFinished: () -> Unit, skipRequested: Boolean, onSkipConsu
                                                         p.alpha = 0f
                                                 }
                                         }
-                                        particleFrame++
                                         elapsed += dt
                                 }
                         }
