@@ -142,6 +142,40 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
     internal IReadOnlyDictionary<string, List<SensorReading>> CachedByCategory => _cachedByCategory;
 
     /// <summary>
+    /// The interval, in seconds, that the FIRST network rate was divided by (RemEx-k34y).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A SEAM, because the invariant it exposes cannot be observed any other way, and the obvious
+    /// alternatives are all weaker than they look.
+    /// </para>
+    /// <para>
+    /// Asserting the RATE is useless: the unprimed artefact divides one stray frame by a
+    /// <see cref="DateTime.MinValue"/> baseline, and the resulting near-zero MB/s is
+    /// indistinguishable from a genuinely idle adapter. Asserting that
+    /// <c>_lastNetworkPoll != DateTime.MinValue</c> AFTER a read is worse than useless — it is
+    /// always true, because the read path stamps that field on its way out, so the check passes
+    /// even when the baseline was never taken during warm-up. That was the first shape tried here
+    /// and a mutation proved it green against the very defect it was written for.
+    /// </para>
+    /// <para>
+    /// The INTERVAL is unambiguous. Primed, it is the seconds since the warm-up baseline — a
+    /// handful at most. Unprimed, it is the time since <see cref="DateTime.MinValue"/>: about
+    /// 6.4e10 seconds. There is no machine on which those two are hard to tell apart, so this
+    /// records the first one and stops, pinning the ordering that RemEx-48kh was reverted for
+    /// breaking rather than any magnitude of traffic.
+    /// </para>
+    /// <para>
+    /// Null until the network block has RUN - which is not the same as a rate having been
+    /// computed: the capture precedes the rate, and fires even when the elapsed time is
+    /// non-positive so that no sensor is emitted at all. Checking <c>_activeNic != null</c>
+    /// instead would pass on the broken state, because
+    /// <see cref="InitializeFallbackCounters"/> assigns the NIC BEFORE it takes the byte baseline.
+    /// </para>
+    /// </remarks>
+    internal double? FirstNetworkIntervalSeconds { get; private set; }
+
+    /// <summary>
     /// Whether a WindowsPerf read has ever completed. Until it has, no category may be skipped, so
     /// the cache is seeded with every category rather than only the ones HWiNFO never covered.
     /// </summary>
@@ -1029,6 +1063,11 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
                     var stats = _activeNic.GetIPv4Statistics();
                     var now = DateTime.UtcNow;
                     var elapsedSeconds = (now - _lastNetworkPoll).TotalSeconds;
+
+                    // Recorded once, for RemEx-k34y. This is the only moment the pre/post-warm-up
+                    // distinction is observable at all: after this block _lastNetworkPoll has been
+                    // stamped and looks primed whether or not it ever was.
+                    FirstNetworkIntervalSeconds ??= elapsedSeconds;
 
                     if (elapsedSeconds > 0)
                     {

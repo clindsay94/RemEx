@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Agent.Services.Telemetry;
@@ -132,5 +133,94 @@ public sealed class TelemetryWarmUpGateTests
         // deliberately: MergeHwInfoOverPerf drops every WindowsPerf sensor in a covered category, so
         // the payloads of a skipped tick and a read tick are IDENTICAL and cannot tell them apart.
         Assert.Contains("CPU", service.CachedByCategory.Keys);
+    }
+
+    [WindowsOnlyFact("drives the REAL warm-up, which builds Windows PerformanceCounters and enumerates NICs")]
+    public async Task TheFirstReadingAfterARealWarmUpIsNotTheUnprimedArtefact()
+    {
+        // THE REAL WARM-UP, not an injected one, and that is forced rather than chosen. The
+        // constructor does `_countersReady = countersReady ?? Task.Run(InitializeFallbackCounters)`,
+        // so passing a task - the only way to hold the warm-up open - means InitializeFallbackCounters
+        // NEVER RUNS. The CPU counter then stays null and its read falls to `?? 0`, which is the very
+        // artefact this guarantee excludes, and _activeNic stays null so no Network sensor is emitted
+        // at all and there is nothing to assert on. The sibling tests above can inject precisely
+        // because they assert on ABSENCE; this one asserts on what a served reading is made of.
+        // THE TIMEOUT IS WIDENED, NOT DEFAULTED, AND THAT IS THE OPPOSITE OF THE SIBLINGS ABOVE.
+        // They shrink it to 250ms because they WANT it to expire. This one must not: a timeout
+        // serves the cached fallback instead of a real read, which on a first tick is empty, and
+        // the test would fail for having no sensors rather than for the ordering it exists to pin.
+        //
+        // The production default of 2 seconds is not enough of a budget. This is the ONLY test in
+        // the assembly that runs InitializeFallbackCounters for real - the others inject, so the
+        // counter catalog is never loaded - and the service's own comment records the measured
+        // cost of that first construction as 510-888ms warm and 4.9 SECONDS on the first run after
+        // a cold OS cache, with three test assemblies running concurrently on top. A 2-second
+        // budget against a documented 4.9-second worst case is a flake generator, which is exactly
+        // what this file's header warns about. Still bounded, so a genuine wedge cannot hang the
+        // suite.
+        using var service = new WindowsTelemetryService(
+            NullLogger<WindowsTelemetryService>.Instance, NoSuchHwInfoRegion, staleAfterMs: 30_000,
+            countersReady: null, fallbackTimeout: TimeSpan.FromSeconds(30));
+
+        var payload = await service.GetTelemetryAsync();
+
+        // NOT ASSERTED BY VALUE, deliberately. Both obvious assertions are intrinsically weak: an
+        // idle machine's first primed CPU sample can legitimately round to ~0%, so "not 0" is not a
+        // true statement about correct behaviour; and the unprimed-NIC artefact divides one stray
+        // frame by a DateTime.MinValue baseline - roughly 6.4e10 seconds - producing a near-zero
+        // rate no sane-bounds check can tell from a genuinely idle adapter. The magnitude simply
+        // does not carry the information, so the ORDER is asserted instead.
+        var network = payload.Sensors.FirstOrDefault(
+            sensor => sensor.Source == "WindowsPerf" && sensor.Category == "Network");
+
+        // FIRST, THAT THE REAL WARM-UP RAN AND THE GATE OPENED.
+        Assert.Contains(payload.Sensors, sensor => sensor.Source == "WindowsPerf");
+
+        // SECOND, AND THIS IS THE GUARD THAT ACTUALLY STOPS THE TEST GOING VACUOUS. The assertion
+        // above rules out only one of the two silent-pass modes - the gate never opening. It says
+        // nothing about the NIC, because the WindowsPerf sensors come from CPU, Disk and Memory,
+        // none of which depend on _activeNic. If `new PerformanceCounter(...)` throws - the
+        // ordinary corrupt-catalog condition that wants `lodctr /R` - the warm-up's catch swallows
+        // it, _activeNic stays null, WindowsPerf sensors still appear full of zeros, and every
+        // assertion below would pass while proving nothing.
+        //
+        // So the test evaluates the service's own adapter predicate itself: if this machine HAS a
+        // qualifying adapter, the warm-up had no excuse for not recording an interval.
+        var hasQualifyingAdapter = NetworkInterface.GetAllNetworkInterfaces().Any(nic =>
+            nic.OperationalStatus == OperationalStatus.Up &&
+            nic.NetworkInterfaceType != NetworkInterfaceType.Loopback);
+
+        if (hasQualifyingAdapter)
+        {
+            Assert.True(service.FirstNetworkIntervalSeconds is not null,
+                "this machine has a qualifying adapter, so the warm-up should have reached the " +
+                "network block - a null interval means it died before the baseline was taken");
+        }
+
+        // THE INVARIANT. If a caller has been served a Network reading, the byte baseline and its
+        // timestamp must already have been taken - otherwise the rate they were just handed was
+        // computed against DateTime.MinValue.
+        //
+        // Checking `_activeNic != null` instead would pass on exactly the broken state, because
+        // InitializeFallbackCounters assigns the NIC BEFORE it takes the baseline. The timestamp is
+        // what moves last, so the timestamp is what gets asked about. This is the ordering that
+        // RemEx-48kh was reverted for breaking.
+        //
+        // THE FIRST SHAPE OF THIS ASSERTION WAS GREEN AGAINST THE DEFECT, and mutation is what
+        // caught it: asking whether _lastNetworkPoll is still DateTime.MinValue AFTER the read is
+        // always false, because the read path stamps that field on its way out. Deleting the
+        // warm-up baseline entirely left that version passing. The interval actually used for the
+        // division is the only thing that carries the answer, because it is captured before the
+        // stamp overwrites the evidence.
+        //
+        // Written as an implication so a machine with no qualifying adapter - nothing Up and
+        // non-loopback - is honestly out of scope rather than failing for a reason unrelated to
+        // ordering. The WindowsPerf assertion above is what stops that leniency going vacuous.
+        Assert.True(
+            network is null || service.FirstNetworkIntervalSeconds < 3600,
+            "the first network rate was divided by " +
+            $"{service.FirstNetworkIntervalSeconds} seconds. A primed baseline yields a handful of " +
+            "seconds; the process uptime measured from DateTime.MinValue is about 6.4e10, which " +
+            "means the byte baseline was never taken before the reading was served");
     }
 }
