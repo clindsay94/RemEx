@@ -10,6 +10,33 @@ using Remex.Desktop.ViewModels;
 namespace Remex.Desktop.Services.FileTransfer;
 
 /// <summary>
+/// Opens the local destination file a download writes into.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A SEAM FOR ONE FAILURE THAT LIVES ON THE FILESYSTEM SIDE (RemEx-04p8).
+/// <see cref="IFileTransferConnection"/> fakes the PEER, so it can reach every way the host or the
+/// socket can go wrong — and none of the ways the DESTINATION can. The flush before a download is
+/// declared successful exists because a disk that filled up or a stick that was unplugged would
+/// otherwise lose the tail while the transfer reported success (RemEx-owc3), and nothing on the
+/// connection side can produce that.
+/// </para>
+/// <para>
+/// Chosen over the two alternatives the bead listed. A Linux-only ENOSPC test on a loopback or
+/// tmpfs mount would break the cross-platform parity rule and skip on Windows, which is the platform
+/// this is actually developed on — so the case would be untested exactly where it is most often run.
+/// A filesystem shim is strictly more machinery for the same result.
+/// </para>
+/// <para>
+/// The point that makes this seam honest rather than a mock of itself: a fake here is expected to
+/// WRAP A REAL FILE. The behaviour being pinned is "Failed, with the partial deleted", and the delete
+/// is a genuine <c>File.Delete</c> on a genuine path — so a test overrides only the one operation it
+/// needs to fail and lets everything else touch the disk.
+/// </para>
+/// </remarks>
+internal delegate Stream DownloadFileOpener(string localPath);
+
+/// <summary>
 /// Client-side file transfer service. Sends and receives file transfer messages over an existing
 /// connection, supplied as <see cref="IFileTransferConnection"/> — in production that is
 /// <see cref="ConnectionViewModel"/>, which already satisfies the interface.
@@ -17,6 +44,7 @@ namespace Remex.Desktop.Services.FileTransfer;
 public sealed class FileTransferClient : IDisposable
 {
     private readonly IFileTransferConnection _connection;
+    private readonly DownloadFileOpener _openDownloadFile;
     private TaskCompletionSource<RemexMessage>? _rootsWaiter;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _browseWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _transferEndWaiters = new();
@@ -94,10 +122,28 @@ public sealed class FileTransferClient : IDisposable
         _downloadChannels.Count + _downloadBacklogBytes.Count + _downloadHashers.Count;
 
     public FileTransferClient(IFileTransferConnection connection)
+        : this(connection, downloadFileOpener: null)
+    {
+    }
+
+    /// <summary>
+    /// Test seam: substitutes how the destination file is opened, so a failure on the filesystem
+    /// side of a download can be produced deterministically (RemEx-04p8).
+    /// </summary>
+    /// <remarks>
+    /// Null in production, which is the whole surface of the change — the default is the same
+    /// <c>FileStream</c> the inline construction built, with the same mode, share and buffer.
+    /// </remarks>
+    internal FileTransferClient(IFileTransferConnection connection, DownloadFileOpener? downloadFileOpener)
     {
         _connection = connection;
+        _openDownloadFile = downloadFileOpener ?? OpenDownloadFile;
         _connection.FileTransferMessageReceived += OnFileTransferMessage;
     }
+
+    /// <summary>The production destination: buffered, async, and exclusive for the transfer.</summary>
+    private static Stream OpenDownloadFile(string localPath) =>
+        new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
 
     /// <summary>
     /// Sends <paramref name="request"/> and awaits the reply on <paramref name="tcs"/>, bounded by
@@ -687,7 +733,7 @@ public sealed class FileTransferClient : IDisposable
             cancelGate.SendCancelIfHostKnowsTheTransfer();
         });
 
-        await using var fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+        await using var fileStream = _openDownloadFile(localPath);
 
         // Unbounded channel ensures chunk ordering: the consumer writes sequentially,
         // eliminating the race condition that would exist with fire-and-forget WriteAsync.

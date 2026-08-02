@@ -147,4 +147,104 @@ public sealed class DownloadUnwindTests : IDisposable
 
         AssertFullyUnwound(client, localPath);
     }
+
+    /// <summary>
+    /// A real file on disk that refuses to flush.
+    /// </summary>
+    /// <remarks>
+    /// WRAPS RATHER THAN REPLACES, which is what keeps the assertion about the DELETE honest. The
+    /// bytes go to a genuine FileStream at the caller's path, so the partial file really exists for
+    /// the cleanup to remove and <c>File.Exists</c> is answering about the real filesystem. Only the
+    /// one operation under test is overridden.
+    /// </remarks>
+    private sealed class FlushRefusingStream(string path) : Stream
+    {
+        private readonly FileStream _inner =
+            new(path, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+
+        public override bool CanRead => _inner.CanRead;
+        public override bool CanSeek => _inner.CanSeek;
+        public override bool CanWrite => _inner.CanWrite;
+        public override long Length => _inner.Length;
+
+        public override long Position
+        {
+            get => _inner.Position;
+            set => _inner.Position = value;
+        }
+
+        // THE FAILURE UNDER TEST. A destination that filled up or was unplugged surfaces here and
+        // nowhere else: disposal does NOT report write failures, which is the measured fact the
+        // production flush exists because of (RemEx-owc3).
+        public override Task FlushAsync(CancellationToken cancellationToken) =>
+            Task.FromException(new IOException("There is not enough space on the disk."));
+
+        public override void Flush() => throw new IOException("There is not enough space on the disk.");
+
+        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
+        public override void SetLength(long value) => _inner.SetLength(value);
+        public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) =>
+            _inner.WriteAsync(buffer, cancellationToken);
+
+        // Deliberately NOT throwing: disposal returning cleanly while the flush throws is exactly the
+        // asymmetry the production code documents, so the fake reproduces it rather than smoothing
+        // it over. It also has to succeed for the delete to be possible at all under FileShare.None.
+        public override async ValueTask DisposeAsync() => await _inner.DisposeAsync();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) _inner.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+
+    [Fact]
+    public async Task AFlushFailureAtTheEndOfADownloadFailsAndDeletesThePartial()
+    {
+        // THE CASE RemEx-qmnl PROMISED AND DID NOT DELIVER, because its seam fakes the PEER and this
+        // failure is on the filesystem side of the method entirely (RemEx-04p8).
+        //
+        // Why it matters: the digest is computed from bytes as RECEIVED and nothing re-reads the
+        // file, so without the flush a destination that filled up in the final window lost the tail
+        // while the transfer reported success. The flush is what turns that into a failure — this
+        // pins that it does, AND that the truncated file does not survive under the final name where
+        // it is indistinguishable from a complete download.
+        //
+        // No chunks and no expected hash: the flush sits after the host's end message and before the
+        // integrity check, so a bare successful end reaches it. Adding either would test the parts
+        // that already have their own tests.
+        var connection = new FakeConnection((message, self) =>
+        {
+            if (message.Type == MessageTypes.FileTransferStart)
+            {
+                self.Deliver(new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferEnd,
+                    FileTransferEnd = new FileTransferEnd
+                    {
+                        TransferId = message.FileTransferStart!.TransferId,
+                        Success = true,
+                    },
+                });
+            }
+            return Task.CompletedTask;
+        });
+
+        var localPath = PathFor("flush-failed.bin");
+        using var client = new FileTransferClient(connection, _ => new FlushRefusingStream(localPath));
+
+        var failure = await Assert.ThrowsAsync<IOException>(() =>
+            client.DownloadAsync("root", "remote/file.bin", localPath, null, CancellationToken.None));
+
+        // THE MESSAGE IS ASSERTED FOR A REASON, not for completeness. The opener runs BEFORE the five
+        // registrations, so an IOException escaping the fake's own constructor would leave counts at
+        // zero and no file on disk — and every assertion below would pass without the flush ever
+        // being reached. Naming the exception ties the pass to the operation under test.
+        failure.Message.Should().Contain(
+            "not enough space", "the failure asserted here must be the flush, not an earlier throw");
+        AssertFullyUnwound(client, localPath);
+    }
 }
