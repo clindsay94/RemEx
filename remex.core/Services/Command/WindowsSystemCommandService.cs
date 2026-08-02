@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace Remex.Core.Services.Command;
@@ -18,6 +19,19 @@ namespace Remex.Core.Services.Command;
 /// </remarks>
 public class WindowsSystemCommandService : ISystemCommandService
 {
+    private readonly SystemProcessLauncher _launch;
+
+    public WindowsSystemCommandService()
+        : this(launcher: null)
+    {
+    }
+
+    /// <summary>Test seam: records the command instead of running it. Null in production.</summary>
+    internal WindowsSystemCommandService(SystemProcessLauncher? launcher)
+    {
+        _launch = launcher ?? StartProcess;
+    }
+
     private const int HwndBroadcast = 0xffff;
     private const int WmSyscommand = 0x0112;
     private const int ScMonitorpower = 0xF170;
@@ -30,31 +44,31 @@ public class WindowsSystemCommandService : ISystemCommandService
 
     public Task Shutdown(int delaySeconds = 0)
     {
-        ExecuteProcess("shutdown.exe", $"/s /t {NormalizeDelay(delaySeconds)}");
+        ExecuteProcess("shutdown.exe", BuildShutdownArguments("/s", delaySeconds));
         return Task.CompletedTask;
     }
 
     public Task ForceShutdown(int delaySeconds = 0)
     {
-        ExecuteProcess("shutdown.exe", $"/s /f /t {NormalizeDelay(delaySeconds)}");
+        ExecuteProcess("shutdown.exe", BuildShutdownArguments("/s /f", delaySeconds));
         return Task.CompletedTask;
     }
 
     public Task Restart(int delaySeconds = 0)
     {
-        ExecuteProcess("shutdown.exe", $"/r /t {NormalizeDelay(delaySeconds)}");
+        ExecuteProcess("shutdown.exe", BuildShutdownArguments("/r", delaySeconds));
         return Task.CompletedTask;
     }
 
     public Task ForceRestart(int delaySeconds = 0)
     {
-        ExecuteProcess("shutdown.exe", $"/r /f /t {NormalizeDelay(delaySeconds)}");
+        ExecuteProcess("shutdown.exe", BuildShutdownArguments("/r /f", delaySeconds));
         return Task.CompletedTask;
     }
 
     public Task RestartToUefi(int delaySeconds = 0)
     {
-        ExecuteProcess("shutdown.exe", $"/r /fw /t {NormalizeDelay(delaySeconds)}");
+        ExecuteProcess("shutdown.exe", BuildShutdownArguments("/r /fw", delaySeconds));
         return Task.CompletedTask;
     }
 
@@ -92,12 +106,49 @@ public class WindowsSystemCommandService : ISystemCommandService
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Writes a number into a process argument, invariantly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// NOTHING IS BROKEN HERE TODAY (RemEx-msyn). Interpolating an <c>int</c> uses
+    /// <c>CurrentCulture</c>, and 95 runtime cultures render a NEGATIVE one with a
+    /// <c>NegativeSign</c> that is not the ASCII hyphen — sv-SE, lt-LT and fi-FI use U+2212 MINUS
+    /// SIGN. A positive one has no culture-sensitive rendering at all: integers get no
+    /// <c>NativeDigits</c> and no <c>DigitSubstitution</c>, so only the sign can vary. The one value here, the shutdown delay, is clamped by <see cref="NormalizeDelay"/> to
+    /// <c>[0, 315360000]</c>, so it cannot be negative and the raw interpolations this replaces
+    /// were correct on all 890 cultures.
+    /// </para>
+    /// <para>
+    /// It goes through here anyway because that is the rule RemEx-hbma settled on and RemEx-j7el,
+    /// RemEx-tiih, RemEx-clum and RemEx-wssm extended: one rule with no exceptions, so the safety of
+    /// a signed operand does not depend on whoever adds it next remembering that this file has a
+    /// different convention from the other five. This is the last of them.
+    /// </para>
+    /// </remarks>
+    private static string Arg(int value) => value.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Builds the <c>shutdown.exe</c> argument list for a mode, so the flags and the delay can be
+    /// asserted without starting a process.
+    /// </summary>
+    /// <remarks>
+    /// THE FLAGS ARE A PROMISE MADE TO THE USER IN NINE LANGUAGES, which is why this is worth a seam
+    /// rather than five interpolations. The type remark above records that switching <c>/r</c> to
+    /// <c>/r /g</c> would arm Automatic Restart Sign-On and silently falsify five localized
+    /// confirmation strings, "and no test would fail" (RemEx-mkq1). Now one does.
+    /// </remarks>
+    internal static string BuildShutdownArguments(string modeFlags, int delaySeconds) =>
+        $"{modeFlags} /t {Arg(NormalizeDelay(delaySeconds))}";
+
     private static int NormalizeDelay(int delaySeconds)
     {
         return Math.Clamp(delaySeconds, 0, 315360000);
     }
 
-    private void ExecuteProcess(string fileName, string arguments)
+    private void ExecuteProcess(string fileName, string arguments) => _launch(fileName, arguments);
+
+    private static void StartProcess(string fileName, string arguments)
     {
         try
         {
