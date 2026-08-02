@@ -191,7 +191,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
                             ) {
                                 Column {
                                     Text(
-                                        sensor.name,
+                                        WidgetText.ellipsize(sensor.name, WidgetText.SensorNameBudget),
                                         style = TextStyle(
                                             color = GlanceTheme.colors.onSecondaryContainer,
                                             fontSize = 10.sp,
@@ -201,7 +201,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
                                     )
                                     if (showCategory && sensor.category.isNotBlank()) {
                                         Text(
-                                            sensor.category,
+                                            WidgetText.ellipsize(sensor.category, WidgetText.SensorCategoryBudget),
                                             style = TextStyle(
                                                 color = GlanceTheme.colors.onSecondaryContainer,
                                                 fontSize = 8.sp
@@ -211,7 +211,7 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
                                     }
                                     Spacer(modifier = GlanceModifier.height(2.dp))
                                     Text(
-                                        formatSensorValue(sensor),
+                                        WidgetText.ellipsize(formatSensorValue(sensor), WidgetText.SensorValueBudget),
                                         style = TextStyle(
                                             color = GlanceTheme.colors.onSecondaryContainer,
                                             fontSize = 14.sp,
@@ -236,8 +236,8 @@ private fun HardwareInfoContent(allSensors: List<WidgetSensorData>) {
             ) {
                 visibleSensors.forEachIndexed { index, sensor ->
                     Column(modifier = GlanceModifier.padding(horizontal = 6.dp)) {
-                        Text(sensor.name, style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 9.sp), maxLines = 1)
-                        Text(formatSensorValue(sensor), style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+                        Text(WidgetText.ellipsize(sensor.name, WidgetText.CompactSensorNameBudget), style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 9.sp), maxLines = 1)
+                        Text(WidgetText.ellipsize(formatSensorValue(sensor), WidgetText.SensorValueBudget), style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold), maxLines = 1)
                     }
                     if (index < visibleSensors.lastIndex) {
                         Box(modifier = GlanceModifier.width(1.dp).height(16.dp).background(GlanceTheme.colors.outline)) {}

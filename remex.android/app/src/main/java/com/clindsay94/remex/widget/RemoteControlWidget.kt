@@ -165,7 +165,7 @@ private fun RemoteControlContent() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            context.getString(cmd.titleRes),
+                            WidgetText.ellipsize(context.getString(cmd.titleRes), WidgetText.ControlLabelBudget),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onPrimaryContainer,
                                 fontSize = if (itemWidth >= 100.dp) 12.sp else 10.sp,
