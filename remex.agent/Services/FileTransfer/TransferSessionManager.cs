@@ -497,11 +497,141 @@ public sealed class TransferSessionManager : IDisposable
             _logger.LogWarning("Peer reported host-sent transfer {TransferId} failed: {Error}", result.TransferId, result.Error);
     }
 
-    /// <summary>Handles an unexpected inbound <c>file_transfer_ready</c> (the host never initiates offers).</summary>
+    /// <summary>
+    /// Pending <c>file_transfer_ready</c> replies, keyed by the transfer id the host offered.
+    /// </summary>
+    /// <remarks>
+    /// The host DOES initiate offers now (RemEx-y7my) - it pushes screenshots - so a ready is no
+    /// longer unexpected. It remains unexpected for any id nobody is waiting on, which is what an
+    /// out-of-band or late reply looks like.
+    /// </remarks>
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<FileTransferReady>> _pendingReady = new(StringComparer.Ordinal);
+
+    /// <summary>Handles an inbound <c>file_transfer_ready</c> answering an offer the host made.</summary>
     public void HandleReady(FileTransferReady ready)
     {
-        if (ready is not null)
-            _logger.LogWarning("Received unexpected file_transfer_ready for {TransferId}; the host does not initiate offers.", ready.TransferId);
+        if (ready is null)
+            return;
+
+        if (_pendingReady.TryGetValue(ready.TransferId, out var waiting))
+            waiting.TrySetResult(ready);
+        else
+            _logger.LogWarning("Received unexpected file_transfer_ready for {TransferId}; nothing is waiting on it.", ready.TransferId);
+    }
+
+    /// <summary>
+    /// Sends a file this host chose to push, to a peer that has already consented (RemEx-y7my).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE CONSENT IS NOT ASKED FOR HERE, AND MUST ALREADY EXIST.** The caller negotiates
+    /// <c>file_push_offer</c> first and only reaches this with an id the RECEIVER minted and granted.
+    /// The phone deliberately raises no second prompt for the transfer offer, so anything that reached
+    /// this point unconsented would move bytes silently.
+    /// </para>
+    /// <para>
+    /// Reuses the same streaming loop as a download - backpressure, hashing, acks - because the only
+    /// thing that differs about a push is who spoke first.
+    /// </para>
+    /// </remarks>
+    public async Task<bool> PushFileAsync(
+        string clientId, string transferId, string absolutePath, string fileName, WebSocket controlWs, CancellationToken ct)
+    {
+        var ready = new TaskCompletionSource<FileTransferReady>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // REGISTERED BEFORE THE OFFER GOES OUT. The peer may answer the instant it lands, and a reply
+        // that arrives before anything is waiting is dropped as unmatched - which would strand a
+        // transfer the user already agreed to.
+        _pendingReady[transferId] = ready;
+
+        FileStream? source = null;
+        try
+        {
+            long size;
+            try
+            {
+                source = File.OpenRead(absolutePath);
+                size = source.Length;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _logger.LogWarning(ex, "Cannot push {TransferId}: the file could not be opened.", transferId);
+                return false;
+            }
+
+            await MessageSerializer.SendAsync(
+                controlWs,
+                new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferOffer,
+                    FileTransferOffer = new FileTransferOffer
+                    {
+                        TransferId = transferId,
+                        Mode = "push",
+                        FileName = fileName,
+                        Size = size,
+                    },
+                },
+                ct);
+
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            deadline.CancelAfter(TimeSpan.FromSeconds(30));
+
+            FileTransferReady reply;
+            try
+            {
+                reply = await ready.Task.WaitAsync(deadline.Token);
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                _logger.LogWarning("The peer never acknowledged the push of {TransferId}.", transferId);
+                return false;
+            }
+
+            if (!reply.Accepted)
+            {
+                _logger.LogInformation(
+                    "The peer declined the push of {TransferId}: {Reason}.", transferId, reply.DeclineReason);
+                return false;
+            }
+
+            // THE CHANNEL IS LOOKED UP HERE, NOT BEFORE THE OFFER, and the ordering is the fix. The
+            // phone opens /ws/files lazily IN RESPONSE to this offer - its handler calls
+            // ensureBinaryChannel() before delegating - and handlePushOffer never opens it. Checking
+            // first meant that on any session where the user had not already used the Files tab, the
+            // push bailed AFTER they had answered the consent prompt: they accepted, and nothing came.
+            // By the time a ready arrives the channel is guaranteed up, because the phone awaited it.
+            if (!_channels.TryGetValue(clientId ?? string.Empty, out var channel))
+            {
+                _logger.LogWarning(
+                    "Cannot push {TransferId}: the peer acknowledged but its binary channel is not connected.",
+                    transferId);
+                return false;
+            }
+
+            var session = new SendSession(transferId, clientId ?? string.Empty);
+            _sendSessions[transferId] = session;
+
+            // Handed off: the streaming task owns the stream from here and disposes it in its finally.
+            var streaming = source;
+            source = null;
+            _ = Task.Run(() => StreamSenderAsync(channel, session, streaming, size, controlWs, ct), CancellationToken.None);
+            return true;
+        }
+        catch (Exception ex) when (ex is WebSocketException or InvalidOperationException)
+        {
+            _logger.LogWarning(ex, "The connection dropped while offering the push of {TransferId}.", transferId);
+            return false;
+        }
+        finally
+        {
+            _pendingReady.TryRemove(transferId, out _);
+
+            // DISPOSED ON EVERY PATH THAT DID NOT HAND IT OFF, including the ones that throw past the
+            // typed catches - a cancelled token being the ordinary one. Nulling it on hand-off is what
+            // keeps this from closing a stream the streaming task is still reading.
+            source?.Dispose();
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────────

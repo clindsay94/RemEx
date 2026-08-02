@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A screenshot the PC takes is now offered to your phone, and sent if you accept.** A screenshot is
+  whatever happened to be on the screen, so it is offered rather than pushed at you: your phone asks
+  before anything is sent — unless you have previously told it to always accept files from this PC,
+  in which case your earlier answer stands.
+  If you decline, the picture stays saved on the PC regardless. Taking the screenshot and sending it
+  are separate things, and the PC tells you the moment it has been saved rather than making you wait
+  on your own answer.
+  (`FilePushNegotiation.cs`, `FilePushOriginator.cs`, `TransferSessionManager.cs`, `PingPongHandler.cs`;
+  RemEx-y7my, part 2 of RemEx-86nu.)
+
 - **The phone can now ask this PC to take a screenshot.** It is saved as a PNG in a "RemEx
   Screenshots" folder inside your Pictures — where you would look for it, and where a gallery already
   indexes — named so that shots sort in the order they were taken.

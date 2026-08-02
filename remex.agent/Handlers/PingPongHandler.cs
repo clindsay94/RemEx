@@ -31,7 +31,8 @@ public sealed class PingPongHandler(
     PairingHandler pairingHandler,
     FileTransferHandler fileTransferHandler,
     TransferSessionManager transferSessionManager,
-    PairedClientRegistry pairedClientRegistry) : IDisposable
+    PairedClientRegistry pairedClientRegistry,
+    Remex.Agent.Services.FileTransfer.FilePushOriginator pushOriginator) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -289,7 +290,7 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.Command when message.CommandAction is not null:
-                        var cmdResponse = await ExecuteCommandAsync(message, ct);
+                        var cmdResponse = await ExecuteCommandAsync(message, webSocket, connectionClientId, ct);
                         // Echo the correlation ID so the client can match the response to the request
                         if (message.CorrelationId is not null)
                             cmdResponse = cmdResponse with { CorrelationId = message.CorrelationId };
@@ -524,6 +525,11 @@ public sealed class PingPongHandler(
                         await transferSessionManager.HandleOfferAsync(connectionClientId, message.FileTransferOffer, webSocket, ct);
                         break;
 
+                    case MessageTypes.FilePushResponse when message.FilePushResponse is not null:
+                        // The answer to an offer THIS host made (RemEx-y7my). Every other file_* case
+                        // here serves a request the phone started; this one completes one we started.
+                        pushOriginator.Complete(message.FilePushResponse);
+                        break;
                     case MessageTypes.FileTransferReady when message.FileTransferReady is not null:
                         transferSessionManager.HandleReady(message.FileTransferReady);
                         break;
@@ -601,7 +607,8 @@ public sealed class PingPongHandler(
     /// reading. The power verbs ignore it, which is correct: a shutdown that has been asked for
     /// should not be abandoned because the phone dropped off mid-request.
     /// </remarks>
-    private async Task<RemexMessage> ExecuteCommandAsync(RemexMessage message, CancellationToken ct)
+    private async Task<RemexMessage> ExecuteCommandAsync(
+        RemexMessage message, WebSocket webSocket, string? clientId, CancellationToken ct)
     {
         try
         {
@@ -646,8 +653,30 @@ public sealed class PingPongHandler(
                     // client nothing and discloses the user's login. The host log keeps the full path
                     // for anyone actually diagnosing this machine.
                     logger.LogInformation("Screenshot saved to {Path}", saved);
+
+                    // OFFERED TO THE PHONE, NOT PUSHED AT IT (RemEx-y7my). A screenshot carries
+                    // whatever was on the screen, so the phone gates it before a byte moves.
+                    //
+                    // **DETACHED, AND THE FIRST VERSION DEADLOCKED FOR WANT OF THIS.** This runs
+                    // inline in the single control-socket reader loop, and the phone's answer arrives
+                    // ON THAT SOCKET - so awaiting it here meant waiting for a message only this loop
+                    // could read. It timed out after 70 seconds every time, and stalled every other
+                    // inbound message meanwhile. The mirror-image case eleven lines above already
+                    // runs detached for exactly this reason.
+                    //
+                    // The response therefore reports the CAPTURE, which has already happened. How the
+                    // transfer went reaches the phone through the file_transfer_* messages it already
+                    // renders - it cannot be a value this method waits for.
+                    var name = Path.GetFileName(saved);
+                    if (!string.IsNullOrWhiteSpace(clientId))
+                    {
+                        _ = RunDetachedAsync(
+                            () => TryPushScreenshotAsync(saved, name, webSocket, clientId, ct),
+                            "screenshot_push");
+                    }
+
                     return MakeCommandResponse(
-                        true, $"Screenshot saved to your Pictures folder as {Path.GetFileName(saved)}");
+                        true, $"Screenshot saved to your Pictures folder as {name}.");
                 }
                 case "MONITOROFF":
                     await commandService.MonitorOff();
@@ -737,6 +766,76 @@ public sealed class PingPongHandler(
         {
             logger.LogWarning(ex, "Deferred {Label} handler failed.", label);
         }
+    }
+
+    /// <summary>
+    /// Offers the screenshot to the phone and, if it agrees, sends it (RemEx-y7my).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE PHONE DECIDES.** A screenshot is whatever happened to be on the screen - a document, an
+    /// inbox, a password manager - so it is offered rather than pushed. Usually that means a prompt;
+    /// where the user has already ticked "remember" for incoming files from this PC, their standing
+    /// grant answers instead. Either way the decision is the phone's and was made by its owner - it is
+    /// NOT asked afresh every time, which an earlier version of this comment claimed.
+    /// </para>
+    /// <para>
+    /// FAILING TO SEND IS NOT FAILING TO CAPTURE. The file is already safely on the PC by the time
+    /// this runs, so every outcome here returns false and lets the caller say so, rather than turning
+    /// a successful screenshot into a failed command.
+    /// </para>
+    /// </remarks>
+    private async Task<bool> TryPushScreenshotAsync(
+        string absolutePath, string fileName, WebSocket webSocket, string? clientId, CancellationToken ct)
+    {
+        try
+        {
+            return await PushScreenshotCoreAsync(absolutePath, fileName, webSocket, clientId, ct);
+        }
+        catch (Exception ex)
+        {
+            // CATCHES EVERYTHING SO THE STATED INVARIANT IS TRUE. The remarks promise that failing to
+            // send never turns a successful capture into a failure, and the typed catches inside let
+            // an OperationCanceledException - the ordinary shape of a dropping connection - escape
+            // and do exactly that.
+            logger.LogWarning(ex, "Could not offer the screenshot to the phone.");
+            return false;
+        }
+    }
+
+    private async Task<bool> PushScreenshotCoreAsync(
+        string absolutePath, string fileName, WebSocket webSocket, string? clientId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(clientId))
+        {
+            // An unidentified peer has nothing to grant consent AS, and the receiver mints its ids
+            // against a device identity. Nothing to push to.
+            return false;
+        }
+
+        long size;
+        try
+        {
+            size = new FileInfo(absolutePath).Length;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not measure the screenshot before offering it.");
+            return false;
+        }
+
+        var outcome = await pushOriginator.OfferFileAsync(webSocket, fileName, size, ct);
+        if (!outcome.Accepted)
+        {
+            return false;
+        }
+
+        // One file offered, so one id back - the negotiation refuses any other count precisely so
+        // this index is safe.
+        // THE SAME NAME THE OFFER CARRIED, not one re-derived from the path. Deriving it twice let
+        // the consent prompt show one name while the transfer carried another.
+        return await transferSessionManager.PushFileAsync(
+            clientId, outcome.TransferIds[0], absolutePath, fileName, webSocket, ct);
     }
 
     private static RemexMessage MakeCommandResponse(bool success, string msg) => new()

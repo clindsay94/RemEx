@@ -124,7 +124,8 @@ public class LoopbackTelemetryStreamTests
             null!,
             NewFileTransferHandler(),
             null!,
-            null!);
+            null!,
+            null!);  // FilePushOriginator: this test never pushes
 
         var socket = new OneShotWebSocket();
         try

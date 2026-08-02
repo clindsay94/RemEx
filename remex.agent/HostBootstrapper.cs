@@ -254,6 +254,7 @@ public static class HostBootstrapper
         // look for it where every other screenshot on the machine lives, and a gallery indexes that
         // location already. On Linux this follows the user's XDG PICTURES directory, falling back to
         // ~/Pictures - so on a localised desktop it is ~/Bilder or ~/Images, not literally ~/Pictures.
+        builder.Services.AddSingleton<Remex.Agent.Services.FileTransfer.FilePushOriginator>();
         builder.Services.AddSingleton<Remex.Agent.Services.Screenshot.IScreenshotService>(sp =>
             new Remex.Agent.Services.Screenshot.ScreenshotService(
                 sp.GetRequiredService<IScreenCaptureService>(),
@@ -422,7 +423,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<PairingHandler>(),
                 context.RequestServices.GetRequiredService<FileTransferHandler>(),
                 context.RequestServices.GetRequiredService<TransferSessionManager>(),
-                context.RequestServices.GetRequiredService<PairedClientRegistry>());
+                context.RequestServices.GetRequiredService<PairedClientRegistry>(),
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.FileTransfer.FilePushOriginator>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for
