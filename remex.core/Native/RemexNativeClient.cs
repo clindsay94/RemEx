@@ -425,29 +425,55 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
                 break;
 
             case MessageTypes.CommandResponse:
-                if (msg.CorrelationId is not null
-                    && _pendingCommands.TryRemove(msg.CorrelationId, out var matchedTcs))
+            {
+                var target = ResolveCommandTarget(msg.CorrelationId, _pendingCommands.Keys);
+
+                if (target is not null && _pendingCommands.TryRemove(target, out var matchedTcs))
                 {
-                    // Happy path: host echoed our CorrelationId — resolve the correct awaiter.
                     matchedTcs.TrySetResult(
                         new CommandResponse(msg.CommandSuccess ?? false, msg.CommandMessage ?? "", msg.ErrorText));
                 }
-                else if (msg.CorrelationId is null && !_pendingCommands.IsEmpty)
-                {
-                    // Fallback for hosts that do not echo CorrelationId (pre-2.0 or buggy).
-                    // Complete the first pending entry — this is best-effort and incorrect
-                    // under concurrency; upgrade the host to fix it properly.
-                    foreach (var tcs in _pendingCommands.Values)
-                    {
-                        if (tcs.TrySetResult(
-                            new CommandResponse(msg.CommandSuccess ?? false, msg.CommandMessage ?? "", msg.ErrorText)))
-                            break;
-                    }
-                }
+
                 break;
+            }
         }
 
         MessageReceived?.Invoke(msg);
+    }
+
+    /// <summary>
+    /// Which pending command a <c>command_response</c> belongs to, or null when it cannot be said.
+    /// </summary>
+    /// <param name="correlationId">The id the host echoed, or null if it echoed none.</param>
+    /// <param name="pendingIds">The ids currently awaiting a response.</param>
+    /// <remarks>
+    /// <para>
+    /// **THE FALLBACK THIS REPLACES RESOLVED THE FIRST PENDING COMMAND, AND ITS OWN COMMENT SAID IT
+    /// WAS WRONG** — "best-effort and incorrect under concurrency". Two commands in flight at once,
+    /// which is ordinary (a widget action landing while a task-manager kill is running), could have
+    /// their answers swapped: the kill would report the widget's result and vice versa. A wrong
+    /// answer delivered confidently is worse than no answer, because the caller acts on it.
+    /// </para>
+    /// <para>
+    /// **UNCORRELATED WITH EXACTLY ONE PENDING IS STILL SAFE**, and that is deliberately kept. There
+    /// is nothing to confuse it with, and it is what an older host that never echoed the id produces
+    /// in the ordinary sequential case — dropping it would break those hosts for no gain. The rule
+    /// removes the AMBIGUOUS case only.
+    /// </para>
+    /// <para>
+    /// **AN UNATTRIBUTABLE RESPONSE IS DROPPED, NOT BROADCAST.** Failing every pending command would
+    /// be a guess in the other direction: some of them may still receive a correctly correlated
+    /// answer, and cancelling those would invent a failure. Dropping leaves the existing per-command
+    /// timeout to report honestly that nothing came back.
+    /// </para>
+    /// </remarks>
+    internal static string? ResolveCommandTarget(string? correlationId, ICollection<string> pendingIds)
+    {
+        if (correlationId is not null) return correlationId;
+        if (pendingIds is null || pendingIds.Count != 1) return null;
+
+        foreach (var id in pendingIds) return id;
+        return null;
     }
 
     /// <summary>

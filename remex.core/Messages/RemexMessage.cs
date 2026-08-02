@@ -351,7 +351,6 @@ public static class MessageTypes
     public const string HostInfo = "host_info";
     public const string DesktopStart = "desktop_start";
     public const string DesktopStop = "desktop_stop";
-    public const string DesktopFrame = "desktop_frame";
     public const string DesktopInput = "desktop_input";
     public const string DesktopConfig = "desktop_config";
     public const string DesktopMeta = "desktop_meta";
