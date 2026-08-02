@@ -538,7 +538,31 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     }
 
     override fun onHostInfoUpdate(hostInfoData: String?) {
-        hostInfoData?.let { _hostCapabilities.tryEmit(it) }
+        hostInfoData?.let {
+            _hostCapabilities.tryEmit(it)
+            captureHostReportedMac(it)
+        }
+    }
+
+    /**
+     * Remembers the MAC the host just reported, so Wake-on-LAN needs no setup step (RemEx-izuj).
+     *
+     * Stored under its own key: [SettingsManager.saveHostReportedMacAddress] never touches a MAC the
+     * user typed, and [SettingsManager.macAddressFlow] prefers the manual one when there is one. A
+     * blank is ignored rather than stored - that is how a host with no suitable adapter says "ask
+     * the user", and overwriting a good value with it would be worse than not listening at all.
+     *
+     * Deliberately quiet on malformed input: this runs on a JNI callback for every host_info, and a
+     * capability payload that cannot be parsed must not take the connection down over an optional
+     * convenience field.
+     */
+    private fun captureHostReportedMac(hostInfoJson: String) {
+        val manager = settingsManager ?: return
+        val mac = runCatching { org.json.JSONObject(hostInfoJson).optString("macAddress") }
+                .getOrNull()
+                .orEmpty()
+        if (mac.isBlank()) return
+        managerScope.launch { runCatching { manager.saveHostReportedMacAddress(mac) } }
     }
 
     override fun onDesktopError(errorText: String?) {

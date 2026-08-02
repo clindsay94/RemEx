@@ -24,6 +24,9 @@ class SettingsManager(val context: Context) {
                 val HOST_KEY = stringPreferencesKey("host")
                 val PORT_KEY = intPreferencesKey("port")
                 val MAC_KEY = stringPreferencesKey("mac_address")
+                // The MAC the HOST reported in host_info, kept apart from the one the user typed
+                // so auto-discovery can never overwrite a manual entry (RemEx-izuj).
+                val HOST_MAC_KEY = stringPreferencesKey("host_mac_address")
                 val BROADCAST_IP_KEY = stringPreferencesKey("broadcast_ip")
                 val SUBNET_MASK_KEY = stringPreferencesKey("subnet_mask")
 
@@ -225,8 +228,22 @@ class SettingsManager(val context: Context) {
         val portFlow: Flow<Int> =
                 context.dataStore.data.map { preferences -> preferences[PORT_KEY] ?: 5005 }
 
+        /**
+         * The MAC to wake: what the user typed if they typed one, otherwise what the host told us.
+         *
+         * MANUAL WINS BY DESIGN (RemEx-izuj). Wake-on-LAN was already built end to end and still
+         * needed the one setup step a non-technical user cannot do - reading their PC's MAC off a
+         * screen and typing it in. The host now reports it, so the common case needs no entry at
+         * all; but a user who has deliberately set one (a different NIC, a router quirk) keeps it.
+         *
+         * Existing consumers - the Wake-on-LAN card and the quick-settings tile - read this flow, so
+         * they inherit the prefill without a UI change.
+         */
         val macAddressFlow: Flow<String> =
-                context.dataStore.data.map { preferences -> preferences[MAC_KEY] ?: "" }
+                context.dataStore.data.map { preferences ->
+                        val manual = preferences[MAC_KEY] ?: ""
+                        if (manual.isNotBlank()) manual else preferences[HOST_MAC_KEY] ?: ""
+                }
 
         val broadcastIpFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
@@ -415,6 +432,15 @@ class SettingsManager(val context: Context) {
                 context.dataStore.edit { preferences ->
                         preferences[DESKTOP_DISPLAY_TARGET_KEY] = target
                 }
+        }
+
+        /**
+         * Records the MAC the host reported. Ignores a blank, which is how a host with no suitable
+         * adapter says "ask the user" (RemEx-izuj).
+         */
+        suspend fun saveHostReportedMacAddress(mac: String) {
+                if (mac.isBlank()) return
+                context.dataStore.edit { preferences -> preferences[HOST_MAC_KEY] = mac }
         }
 
         suspend fun markOnboardingCompleted() {

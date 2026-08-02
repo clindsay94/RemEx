@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Net.NetworkInformation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Desktop.Services;
@@ -60,33 +59,13 @@ public partial class RemoteViewModel : ObservableValidator, IDisposable
         _wolService = Guard.NotNull(wolService);
         _layoutService = Guard.NotNull(layoutService);
 
-        (HostMacAddress, HostAdapterName) = GetPrimaryMacAddress();
+        // One implementation, in Remex.Core, so the card and the capability sent to the phone
+        // cannot disagree about which adapter is primary (RemEx-izuj).
+        (HostMacAddress, HostAdapterName) = PrimaryNetworkAdapter.Find();
 
         _ = LoadWolConfigAsync();
     }
 
-    /// <summary>Finds this PC's primary MAC address, preferring an active wired (Ethernet) adapter.</summary>
-    private static (string Mac, string Adapter) GetPrimaryMacAddress()
-    {
-        try
-        {
-            var nic = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(n => n.OperationalStatus == OperationalStatus.Up
-                            && n.NetworkInterfaceType != NetworkInterfaceType.Loopback
-                            && n.NetworkInterfaceType != NetworkInterfaceType.Tunnel
-                            && n.GetPhysicalAddress().GetAddressBytes().Length == 6)
-                .OrderByDescending(n => n.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
-                .FirstOrDefault();
-            if (nic is null)
-                return (string.Empty, string.Empty);
-            var bytes = nic.GetPhysicalAddress().GetAddressBytes();
-            return (string.Join(":", bytes.Select(b => b.ToString("X2"))), nic.Name);
-        }
-        catch
-        {
-            return (string.Empty, string.Empty);
-        }
-    }
 
     private async Task LoadWolConfigAsync()
     {

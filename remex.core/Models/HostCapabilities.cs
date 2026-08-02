@@ -55,4 +55,17 @@ public sealed record HostCapabilities
 
     /// <summary>Human-readable reason explaining why remote desktop is unavailable.</summary>
     public string? RemoteDesktopUnavailableReason { get; init; }
+
+    /// <summary>
+    /// This PC's primary MAC address, so a paired phone can wake it without the user typing one in.
+    /// </summary>
+    /// <remarks>
+    /// ADDITIVE AND OPTIONAL (RemEx-izuj), so it needs no protocolVersion bump: an older client
+    /// ignores the field, and a newer client treats its absence exactly as it treated every host
+    /// before this existed - fall back to whatever the user entered manually.
+    ///
+    /// Empty when no suitable adapter was found. Empty means ASK THE USER; it must never be filled
+    /// with a placeholder, because a wrong MAC fails to wake and says nothing about why.
+    /// </remarks>
+    public string? MacAddress { get; init; }
 }

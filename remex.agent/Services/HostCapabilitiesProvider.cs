@@ -1,3 +1,4 @@
+using Remex.Core.Services.Network;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using Remex.Core.Guards;
@@ -81,6 +82,10 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             SupportsTelemetry = true,
             SupportsSystemCommands = true,
             SupportsWakeOnLan = true,
+            // Discovered here rather than in the UI so it is present headless and on Linux too
+            // (RemEx-izuj). Empty when no adapter qualifies at all; wired is PREFERRED by the
+            // ordering, not required by the filter.
+            MacAddress = PrimaryNetworkAdapter.Find().Mac,
             SupportsProcessList = true,
             SupportsLauncherSync = true,
             SupportsRemoteDesktop = supportsRemoteDesktop,
