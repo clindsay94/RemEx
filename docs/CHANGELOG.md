@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **There is now a Screenshot button on your phone, so you can actually ask for one.** The PC has been
+  able to take a screenshot on request for two releases, but nothing on the phone asked it to. The
+  button is on the Remote Control screen's quick-actions bar and on the Remote Desktop toolbar — in
+  both the windowed toolbar and the one that floats over the picture in fullscreen, which is where you
+  are when you are actually watching the PC's screen.
+  A short message on either screen confirms the request went out, and points you at your
+  notifications. It says the PC was **asked** for a picture rather than claiming one was taken,
+  because the phone genuinely cannot tell yet: it hands the request off and hears nothing back about
+  how it went. Announcing a screenshot that a disconnected PC never took would send you hunting for a
+  notification that was never coming.
+  (`RemoteControlScreen.kt`, `RemoteControlViewModel.kt`, `RemoteDesktopScreen.kt`,
+  `RemoteDesktopViewModel.kt`; RemEx-byij, part 3 of RemEx-86nu.)
+
 - **A screenshot the PC takes is now offered to your phone, and sent if you accept.** A screenshot is
   whatever happened to be on the screen, so it is offered rather than pushed at you: your phone asks
   before anything is sent — unless you have previously told it to always accept files from this PC,

@@ -829,4 +829,8 @@
     <string name="personalization_shape_cat_network">Картки мережі</string>
     <string name="personalization_shape_cat_action">Картки дій</string>
     <string name="personalization_shape_cat_other">Інші картки</string>
+
+    <string name="action_take_screenshot">Зробити знімок екрана ПК</string>
+    <string name="screenshot_requested">Запит на знімок екрана надіслано на ПК. Очікуйте сповіщення, щоб отримати його.</string>
+    <string name="screenshot_request_failed">Не вдалося надіслати запит на знімок екрана.</string>
 </resources>

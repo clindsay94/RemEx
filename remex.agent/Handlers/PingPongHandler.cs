@@ -637,9 +637,10 @@ public sealed class PingPongHandler(
                     return MakeCommandResponse(true, "Hibernate executed.");
                 case "SCREENSHOT":
                 {
-                    // SAVES ON THIS PC AND REPORTS WHERE. Getting it to the phone is separate work
-                    // (RemEx-y7my) with its own consent question, because a screenshot carries
-                    // whatever happened to be on the screen.
+                    // SAVES ON THIS PC FIRST, THEN OFFERS IT TO THE PHONE (below, RemEx-y7my). The
+                    // file exists on this machine either way; whether it also reaches the phone is
+                    // the phone's decision, because a screenshot carries whatever happened to be on
+                    // the screen.
                     //
                     // The label is optional and comes from the client; ScreenshotFileName sanitises
                     // it to ASCII letters, digits and dashes and truncates it to 16 characters, so a
@@ -648,10 +649,11 @@ public sealed class PingPongHandler(
                     message.CommandParameters?.TryGetValue("DisplayLabel", out displayLabel);
                     var saved = await screenshotService.CaptureAsync(displayLabel, ct);
 
-                    // THE NAME, NOT THE PATH. The full path carries the account name, and part 1 does
-                    // not deliver the file, so the phone cannot act on a path anyway - it buys the
-                    // client nothing and discloses the user's login. The host log keeps the full path
-                    // for anyone actually diagnosing this machine.
+                    // THE NAME, NOT THE PATH. The full path carries the account name, and a path on
+                    // THIS machine is not something the phone can open - when the push below runs it
+                    // identifies the file by name alone, so a path buys the client nothing and
+                    // discloses the user's login. The host log keeps the full path for anyone actually
+                    // diagnosing this machine.
                     logger.LogInformation("Screenshot saved to {Path}", saved);
 
                     // OFFERED TO THE PHONE, NOT PUSHED AT IT (RemEx-y7my). A screenshot carries

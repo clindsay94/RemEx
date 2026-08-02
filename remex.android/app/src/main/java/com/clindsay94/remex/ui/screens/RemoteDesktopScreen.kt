@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
 
 import androidx.compose.ui.semantics.contentDescription
@@ -96,6 +97,11 @@ private const val TAG = "RemoteDesktopScreen"
 // provably consistent rather than relying on repeated inline literals.
 private val FullscreenOverlayEdgePadding = 16.dp
 private val FullscreenOverlayIconSpacing = 8.dp
+
+// How far the screenshot confirmation lifts itself when the PC-keys lane is showing (RemEx-byij).
+// Both are anchored to the bottom of the video box, and the lane carries the modifier latch states —
+// covering those with a transient message would read as Ctrl/Alt/Shift having come unstuck.
+private val PcKeysLaneClearance = 72.dp
 
 // Gesture timing thresholds (ms)
 private const val TAP_MAX_DURATION_MS = 250L
@@ -283,6 +289,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val selectedDisplayToken by viewModel.selectedDisplayToken.collectAsStateWithLifecycle()
         val modifierStates by viewModel.modifierStates.collectAsStateWithLifecycle()
         val hasShownUnlimitedWarning by viewModel.hasShownUnlimitedWarning.collectAsStateWithLifecycle()
+        val screenshotStatus by viewModel.screenshotStatus.collectAsStateWithLifecycle()
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
@@ -370,6 +377,8 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 fps = fps,
                 showFpsOverlay = showFpsOverlay,
                 onToggleFpsOverlay = { showFpsOverlay = !showFpsOverlay },
+                screenshotStatus = screenshotStatus,
+                onTakeScreenshot = { viewModel.takeScreenshot() },
                 activeCodec = activeCodec,
                 streamPixelWidth = streamPixelWidth,
                 streamPixelHeight = streamPixelHeight,
@@ -437,6 +446,8 @@ fun RemoteDesktopScreenContent(
         fps: Float = 0f,
         showFpsOverlay: Boolean = false,
         onToggleFpsOverlay: () -> Unit = {},
+        screenshotStatus: String? = null,
+        onTakeScreenshot: () -> Unit = {},
         activeCodec: String = "Mjpeg",
         streamPixelWidth: Int = 1920,
         streamPixelHeight: Int = 1080,
@@ -450,6 +461,14 @@ fun RemoteDesktopScreenContent(
         val scope = rememberCoroutineScope()
         val density = LocalDensity.current
         val view = LocalView.current
+
+        // Last non-null screenshot outcome, kept so the status pill still has words to show while it
+        // fades out. Binding the Text to [screenshotStatus] directly would empty it the moment the
+        // ViewModel cleared the flow, and the fade would play on a blank pill (RemEx-byij).
+        var lastScreenshotStatus by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(screenshotStatus) {
+                if (screenshotStatus != null) lastScreenshotStatus = screenshotStatus
+        }
 
         var showSettings by remember { mutableStateOf(false) }
         // Skip the half-expanded state: in landscape the partial sheet is too short to reveal the
@@ -856,6 +875,21 @@ fun RemoteDesktopScreenContent(
                                                                                 stringResource(
                                                                                         R.string
                                                                                                 .cd_reset_input
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                                // Mirrored into the fullscreen control row in the same
+                                                // slot, keeping the shared action order both bars are
+                                                // required to agree on (RemEx-klq).
+                                                RemexTooltip(stringResource(R.string.action_take_screenshot)) {
+                                                        IconButton(onClick = { onTakeScreenshot() }) {
+                                                                Icon(
+                                                                        Icons.Default.ScreenshotMonitor,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .action_take_screenshot
                                                                                 )
                                                                 )
                                                         }
@@ -2468,9 +2502,9 @@ fun RemoteDesktopScreenContent(
 
                                 if (uiState.isFullscreen) {
                                         // Action order mirrors the windowed TopAppBar (Keyboard, PC-keys,
-                                        // Settings, fullscreen-toggle, Stop/Play) for the actions both
-                                        // surfaces share; FPS is fullscreen-only and slotted in without
-                                        // disturbing that shared relative order (RemEx-klq).
+                                        // Screenshot, Settings, fullscreen-toggle, Stop/Play) for the
+                                        // actions both surfaces share; FPS is fullscreen-only and slotted
+                                        // in without disturbing that shared relative order (RemEx-klq).
                                         Row(
                                                 modifier =
                                                         Modifier.align(Alignment.TopEnd)
@@ -2529,6 +2563,32 @@ fun RemoteDesktopScreenContent(
                                                                         contentDescription =
                                                                                 stringResource(
                                                                                         R.string.remote_desktop_fps_overlay_btn
+                                                                                )
+                                                                )
+                                                        }
+                                                }
+                                                // Same slot as in the windowed TopAppBar, preserving the
+                                                // shared action order (RemEx-klq). Worth having here in
+                                                // particular: fullscreen is where the PC's screen is
+                                                // actually being watched.
+                                                RemexTooltip(stringResource(R.string.action_take_screenshot)) {
+                                                        FilledTonalIconButton(
+                                                                onClick = { onTakeScreenshot() },
+                                                                colors =
+                                                                        IconButtonDefaults
+                                                                                .filledTonalIconButtonColors(
+                                                                                        containerColor =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .surfaceContainerHighest
+                                                                                )
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.ScreenshotMonitor,
+                                                                        contentDescription =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .action_take_screenshot
                                                                                 )
                                                                 )
                                                         }
@@ -2708,6 +2768,88 @@ fun RemoteDesktopScreenContent(
                                                         onPillSizeChanged = {
                                                                 pcKeysPillSize = it
                                                         }
+                                                )
+                                        }
+                                }
+
+                                // Screenshot outcome (RemEx-byij). LAST CHILD OF THIS BOX ON PURPOSE.
+                                // A Box paints its children in source order, and the PC-keys lane just
+                                // above also anchors BottomCenter — emitted any earlier, this
+                                // confirmation is painted over by it. That is not a rare collision: the
+                                // lane shows whenever the PC-keys bar is on OR the remote keyboard is
+                                // open, and the PC-keys toggle sits in the very control row the
+                                // screenshot button was added to.
+                                //
+                                // Bottom rather than top because in fullscreen the top edge already
+                                // carries the FPS chip at TopStart and the control row at TopEnd, and
+                                // because it is where a snackbar would have appeared — which is where
+                                // people look. This screen has no snackbar to use: its only SnackbarHost
+                                // is declared inside the settings sheet (RemEx-vj31) and renders only
+                                // while that sheet is open.
+                                //
+                                // NOT a Surface, and REVIEW CAUGHT THE VERSION THAT WAS ONE. A
+                                // non-clickable Surface installs `pointerInput(Unit) {}` and eats every
+                                // touch inside its bounds — blocking touch propagation is one of the
+                                // things Surface documents itself as doing. Sitting on top of the
+                                // PC-keys bar for five seconds, it would have swallowed taps on Ctrl,
+                                // Alt and Shift, which would look exactly like the modifier keys being
+                                // broken. A clipped Box draws identically and intercepts nothing.
+                                //
+                                // Not the AssistChip the FPS overlay uses either: a chip is a fixed
+                                // height and would clip this sentence in the longer translations. The
+                                // colours are the two theme roles that chip already pairs, so both stay
+                                // legible under every M3 scheme — seeded, dynamic or static — at either
+                                // contrast extreme.
+                                //
+                                // imePadding to match the lane below: this Box deliberately does not
+                                // consume the IME or nav-bar insets (doing so would resize the video and
+                                // tear down the decoder, RemEx-2y31), so a child anchored to its bottom
+                                // edge renders UNDER an open keyboard unless it insets itself.
+                                PlainAnimatedVisibility(
+                                        visible = screenshotStatus != null,
+                                        modifier =
+                                                Modifier.align(Alignment.BottomCenter)
+                                                        .navigationBarsPadding()
+                                                        .imePadding()
+                                                        .padding(16.dp)
+                                                        // Clears the PC-keys lane when it is showing, so
+                                                        // the confirmation never hides the modifier latch
+                                                        // states it would otherwise cover.
+                                                        .padding(
+                                                                bottom =
+                                                                        if (pcKeysBarVisible ||
+                                                                                        isRemoteKeyboardOpen
+                                                                        )
+                                                                                PcKeysLaneClearance
+                                                                        else 0.dp
+                                                        )
+                                ) {
+                                        Box(
+                                                modifier =
+                                                        Modifier.clip(MaterialTheme.shapes.small)
+                                                                .background(
+                                                                        MaterialTheme.colorScheme
+                                                                                .inverseSurface.copy(
+                                                                                alpha = 0.88f
+                                                                        )
+                                                                )
+                                        ) {
+                                                Text(
+                                                        // Held across the exit fade: reading
+                                                        // screenshotStatus directly would blank the text
+                                                        // the instant it went null, so the pill would
+                                                        // fade out empty.
+                                                        text = lastScreenshotStatus.orEmpty(),
+                                                        style = MaterialTheme.typography.labelLarge,
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .inverseOnSurface,
+                                                        modifier =
+                                                                Modifier.widthIn(max = 320.dp)
+                                                                        .padding(
+                                                                                horizontal = 14.dp,
+                                                                                vertical = 10.dp
+                                                                        )
                                                 )
                                         }
                                 }

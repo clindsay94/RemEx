@@ -813,4 +813,8 @@
     <string name="personalization_shape_cat_network">नेटवर्क कार्ड</string>
     <string name="personalization_shape_cat_action">एक्शन कार्ड</string>
     <string name="personalization_shape_cat_other">अन्य कार्ड</string>
+
+    <string name="action_take_screenshot">पीसी का स्क्रीनशॉट लें</string>
+    <string name="screenshot_requested">पीसी से स्क्रीनशॉट का अनुरोध किया गया। इसे पाने के लिए सूचना का इंतज़ार करें।</string>
+    <string name="screenshot_request_failed">स्क्रीनशॉट का अनुरोध नहीं भेजा जा सका।</string>
 </resources>

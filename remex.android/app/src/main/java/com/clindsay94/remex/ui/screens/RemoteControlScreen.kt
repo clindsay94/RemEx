@@ -266,6 +266,7 @@ fun RemoteControlScreen(
             onNavigateToConnection = onNavigateToConnection,
             onWakePc = { viewModel.wakePc() },
             onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
+            onTakeScreenshot = { viewModel.takeScreenshot() },
             onSendKey = { virtualKey -> viewModel.sendKeyPress(virtualKey) },
             onClearCommandStatus = { viewModel.clearCommandStatus() }
     )
@@ -278,6 +279,7 @@ fun RemoteControlScreenContent(
         onNavigateToConnection: () -> Unit,
         onWakePc: () -> Unit,
         onSendSystemCommand: (String, Int) -> Unit,
+        onTakeScreenshot: () -> Unit = {},
         onSendKey: (Int) -> Unit,
         onClearCommandStatus: () -> Unit
 ) {
@@ -445,6 +447,23 @@ fun RemoteControlScreenContent(
                 onSendSystemCommand("Sleep", 0)
             }) {
                 Icon(Icons.Default.Bedtime, contentDescription = stringResource(R.string.rc_sleep))
+            }
+            // Safe like its neighbours - nothing is lost or interrupted on the PC - so it belongs on
+            // the quick-actions bar rather than behind a confirmation. ScreenshotMonitor, not
+            // Screenshot: the plain glyph is a phone, and this captures the PC's screen.
+            //
+            // Its own callback rather than onSendSystemCommand("SCREENSHOT", 0), which would also
+            // have worked: that path reports the response's message field verbatim, and for a command
+            // dispatch that field is the native layer's untranslated "Command dispatched.". See
+            // RemoteControlViewModel.takeScreenshot.
+            IconButton(onClick = {
+                view.hapticCommandSent()
+                onTakeScreenshot()
+            }) {
+                Icon(
+                        Icons.Default.ScreenshotMonitor,
+                        contentDescription = stringResource(R.string.action_take_screenshot)
+                )
             }
         }
       }

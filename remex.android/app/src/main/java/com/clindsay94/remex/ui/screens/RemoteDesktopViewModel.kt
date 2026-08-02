@@ -454,6 +454,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _windowActionError = MutableStateFlow<String?>(null)
     val windowActionError: StateFlow<String?> = _windowActionError.asStateFlow()
 
+    /**
+     * Outcome of the most recent screenshot request, or null when there is nothing to say (RemEx-byij).
+     *
+     * Shown as a transient pill overlaid on the video rather than a snackbar. This screen's only
+     * `SnackbarHost` is declared INSIDE the settings ModalBottomSheet (RemEx-vj31), so a snackbar
+     * posted from the toolbar would be invisible unless that sheet happened to be open — and the
+     * button is reachable in fullscreen, where an overlay is what actually renders. The screen owns
+     * where it goes and why; see the block that draws it.
+     */
+    private val _screenshotStatus = MutableStateFlow<String?>(null)
+    val screenshotStatus: StateFlow<String?> = _screenshotStatus.asStateFlow()
+
     private val _modifierStates = MutableStateFlow<Map<Int, ModifierState>>(emptyMap())
     /** Latch state of each PC-key modifier, keyed by virtual-key code. Absent from the map == OFF. */
     val modifierStates: StateFlow<Map<Int, ModifierState>> = _modifierStates.asStateFlow()
@@ -1177,6 +1189,81 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
     fun markUnlimitedWarningShown() {
         viewModelScope.launch { settingsManager.markUnlimitedWarningShown() }
+    }
+
+    /** How long the screenshot outcome stays on screen before clearing itself. */
+    private val screenshotStatusVisibleMs = 5_000L
+
+    private var screenshotStatusJob: Job? = null
+
+    /**
+     * Asks the PC to capture its screen (RemEx-byij).
+     *
+     * **THIS CAN ONLY REPORT THAT THE REQUEST WENT OUT, AND REVIEW CAUGHT THE FIRST VERSION CLAIMING
+     * MORE.** `SendCommandNative` hands the command to a background sender and returns
+     * `{"success": true, "message": "Command dispatched."}` immediately; the host's real
+     * `command_response` is awaited inside that discarded task and never routed back across JNI
+     * (`AndroidNativeExports.HandleDispatchCommand`). So `success` here means the native stub accepted
+     * the string — nothing more. A disconnected control socket, a host too old to know the verb, and a
+     * capture that failed on the PC all still read as `true`.
+     *
+     * The wording therefore says "asked", not "taken". Saying "taken" would have shown a confirmation
+     * for a screenshot that was never captured, which is worse than saying nothing: the user would go
+     * looking for a notification that is never coming. Even on the happy path the file is only OFFERED
+     * to this phone afterwards, and only arrives if the user accepts (RemEx-y7my).
+     *
+     * The one thing worth reporting properly — the host's own verdict — needs a `command_response`
+     * route to Kotlin that does not exist. Filed as RemEx-66rf rather than bodged here; once it lands,
+     * this can honestly say "taken".
+     *
+     * No `DisplayLabel` parameter, though the host accepts one: it only shapes the FILE NAME and does
+     * not choose which monitor is captured, and the label this screen holds for the selected display
+     * is an already-localized string ("Primary display") that the host would sanitise to ASCII —
+     * leaving nothing at all for a locale that does not use Latin script.
+     */
+    fun takeScreenshot() {
+        // Cancel rather than queue: a second tap replaces the first message instead of waiting five
+        // seconds behind it, and the timer restarts so the newest outcome gets its full time.
+        screenshotStatusJob?.cancel()
+        // On the serialised send dispatcher like every other send this view model makes, not a bare
+        // Dispatchers.IO: a send dispatched on its own races the input stream, and a modifier keyUp
+        // overtaking its keyDown leaves a key physically held down on the PC (RemEx-7rq3). The send
+        // itself returns immediately, so it occupies the single slot only briefly, and the five-second
+        // timer below does not hold it at all — delay suspends rather than owning the thread.
+        screenshotStatusJob =
+                viewModelScope.launch(sendDispatcher) {
+                    val request =
+                            JSONObject().apply {
+                                put("action", "SCREENSHOT")
+                                put("parameters", JSONObject())
+                            }
+
+                    // Reachable only when the native library is missing or its stub throws — see the
+                    // KDoc: everything that goes wrong LATER, on the socket or on the PC, is invisible
+                    // from here. Kept because that one case is real (an unlinked library means no
+                    // command will ever work) and silently doing nothing would be worse.
+                    val dispatched =
+                            runCatching {
+                                        JSONObject(
+                                                        RemexCoreClient.SendCommand(
+                                                                        request.toString()
+                                                                )
+                                                                .getOrThrow()
+                                                )
+                                                .optBoolean("success", false)
+                                    }
+                                    .onFailure { Log.w(TAG, "Screenshot command failed", it) }
+                                    .getOrDefault(false)
+
+                    _screenshotStatus.value =
+                            getApplication<Application>()
+                                    .getString(
+                                            if (dispatched) R.string.screenshot_requested
+                                            else R.string.screenshot_request_failed
+                                    )
+                    delay(screenshotStatusVisibleMs)
+                    _screenshotStatus.value = null
+                }
     }
 
     fun updateDirectTouch(enabled: Boolean) {

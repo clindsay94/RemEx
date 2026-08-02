@@ -829,4 +829,8 @@
     <string name="personalization_shape_cat_network">Karty sieci</string>
     <string name="personalization_shape_cat_action">Karty akcji</string>
     <string name="personalization_shape_cat_other">Pozostałe karty</string>
+
+    <string name="action_take_screenshot">Zrób zrzut ekranu komputera</string>
+    <string name="screenshot_requested">Poproszono komputer o zrzut ekranu. Poczekaj na powiadomienie z propozycją odbioru.</string>
+    <string name="screenshot_request_failed">Nie udało się wysłać prośby o zrzut ekranu.</string>
 </resources>

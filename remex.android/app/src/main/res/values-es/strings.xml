@@ -813,4 +813,8 @@
     <string name="personalization_shape_cat_network">Tarjetas de red</string>
     <string name="personalization_shape_cat_action">Tarjetas de acción</string>
     <string name="personalization_shape_cat_other">Otras tarjetas</string>
+
+    <string name="action_take_screenshot">Hacer una captura de pantalla del PC</string>
+    <string name="screenshot_requested">Captura de pantalla solicitada al PC. Espera una notificación para recibirla.</string>
+    <string name="screenshot_request_failed">No se pudo enviar la solicitud de captura de pantalla.</string>
 </resources>

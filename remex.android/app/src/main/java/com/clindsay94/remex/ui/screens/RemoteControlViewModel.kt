@@ -239,6 +239,56 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
+     * Asks the PC to capture its screen (RemEx-byij).
+     *
+     * **DELIBERATELY NOT [sendSystemCommand], THOUGH IT WOULD HAVE COMPILED.** That path reports the
+     * `message` field the response carries, and for a command dispatch that field is
+     * `"Command dispatched."` — a developer-English sentence minted by the native layer, not by the
+     * host and never translated. Routed through it, a Spanish user would read "Éxito: Command
+     * dispatched." for a brand-new feature. (The same is true of every other command on this screen;
+     * that is a pre-existing problem this does not fix, only decline to extend — RemEx-66rf.)
+     *
+     * It also says "asked", not "taken", for the reason spelled out on
+     * `RemoteDesktopViewModel.takeScreenshot`: nothing on this side can see whether the PC actually
+     * captured anything, so the success wording must stop at the request.
+     */
+    fun takeScreenshot() {
+        // No isLibraryLoaded early return, unlike [sendSystemCommand]. That branch reports
+        // status_native_lib_not_loaded, which names an internal component; SendCommand already fails
+        // closed in exactly that case, so the plainer "could not send the request" below covers it and
+        // says something the person holding the phone can act on. Deliberate, not an omission.
+        //
+        // On [sendDispatcher] rather than the main thread this screen's other commands use: it is
+        // already here for the input path, it keeps submission order, and a JNI crossing is not
+        // main-thread work.
+        viewModelScope.launch(sendDispatcher) {
+            val request =
+                    JSONObject().apply {
+                        put("action", "SCREENSHOT")
+                        put("parameters", JSONObject())
+                    }
+
+            val dispatched =
+                    runCatching {
+                                JSONObject(
+                                                RemexCoreClient.SendCommand(request.toString())
+                                                        .getOrThrow()
+                                        )
+                                        .optBoolean("success", false)
+                            }
+                            .onFailure { Log.w(TAG, "Sending the screenshot command failed", it) }
+                            .getOrDefault(false)
+
+            _commandStatus.value =
+                    getApplication<Application>()
+                            .getString(
+                                    if (dispatched) R.string.screenshot_requested
+                                    else R.string.screenshot_request_failed
+                            )
+        }
+    }
+
+    /**
      * Off the main thread, but STRICTLY ONE AT A TIME.
      *
      * Building two JSONObjects, serialising them and crossing the JNI boundary is not main-thread
