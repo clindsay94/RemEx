@@ -18,7 +18,7 @@ public sealed record AdaptiveScaleDecision(double Scale, string Reason);
 /// <para>
 /// <see cref="Report"/> is called once per evaluation window (~2s, driven by the caller) with the
 /// window's achieved-FPS ratio and whether the encoded-output channel overflowed (Phase 3B). It is
-/// pure and clock-injected (<paramref name="nowUtc"/>, mirroring <c>DuplicationReinitThrottle</c>) so
+/// pure and clock-injected (<c>nowUtc</c>, mirroring <c>DuplicationReinitThrottle</c>) so
 /// the escalation/hysteresis schedule is unit-testable without a real encoder or GPU. Not internally
 /// synchronized: the capture loop is the sole caller, exactly like the rest of its per-iteration state.
 /// </para>

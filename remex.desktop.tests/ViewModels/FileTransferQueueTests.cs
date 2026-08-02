@@ -54,7 +54,6 @@ public class FileTransferQueueTests
         queue.Items.Select(i => i.FileName).Should().ContainInOrder("first", "second");
     }
 
-    [Fact]
     /// <summary>
     /// An unrecognised failure is reported in the user's language, not as the exception's text.
     /// </summary>
@@ -64,6 +63,7 @@ public class FileTransferQueueTests
     /// panel renders this string, so every exception thrown anywhere under a transfer was
     /// user-facing developer English in all nine languages.
     /// </remarks>
+    [Fact]
     public async Task Work_ThatThrows_ReportsALocalizedMessageRatherThanTheExceptionText()
     {
         var queue = NewQueue();
@@ -78,7 +78,6 @@ public class FileTransferQueueTests
             "a key resolving to its own name means the .resx entry is missing");
     }
 
-    [Fact]
     /// <summary>
     /// A disk failure names the disk, instead of telling the user to check their pairing.
     /// </summary>
@@ -88,6 +87,7 @@ public class FileTransferQueueTests
     /// is still paired" — which is advice about the phone for a problem with the USB stick. The person
     /// most likely to hit this is the one least able to work out what actually happened.
     /// </remarks>
+    [Fact]
     public async Task Work_ThatFailsOnDisk_NamesTheDiskRatherThanThePairing()
     {
         var queue = NewQueue();
@@ -107,7 +107,6 @@ public class FileTransferQueueTests
             "the exception's own wording must not reach the panel — it is English in all nine languages");
     }
 
-    [Fact]
     /// <summary>
     /// An upload that fails on disk describes the SOURCE, not a destination folder.
     /// </summary>
@@ -118,6 +117,7 @@ public class FileTransferQueueTests
     /// vague, it is confidently wrong, which is a worse failure than the generic sentence this bead
     /// set out to replace. (RemEx-6tvh)
     /// </remarks>
+    [Fact]
     public async Task Upload_ThatFailsOnDisk_DescribesTheSourceFileNotTheDestination()
     {
         var queue = NewQueue();
@@ -134,7 +134,6 @@ public class FileTransferQueueTests
             "a key resolving to its own name means the .resx entry is missing");
     }
 
-    [Fact]
     /// <summary>
     /// A permissions failure names the permission, and does so per direction.
     /// </summary>
@@ -144,6 +143,7 @@ public class FileTransferQueueTests
     /// read-only folder kept being reported as a pairing problem. Sitting outside that hierarchy is
     /// precisely why it was overlooked, which is why it is asserted rather than assumed. (RemEx-60li)
     /// </remarks>
+    [Fact]
     public async Task APermissionsFailure_NamesThePermissionAndTheDirection()
     {
         var download = NewQueue();
@@ -181,7 +181,6 @@ public class FileTransferQueueTests
             "the two directions must not collapse to one message");
     }
 
-    [Fact]
     /// <summary>
     /// The more specific failures keep their own messages even though they can derive from IOException.
     /// </summary>
@@ -194,6 +193,7 @@ public class FileTransferQueueTests
     /// destination which cannot keep up still gets its own sentence rather than the disk one, which no
     /// compiler can check. (RemEx-6tvh)
     /// </remarks>
+    [Fact]
     public async Task ADestinationTooSlowFailureIsNotReportedAsADiskProblem()
     {
         var queue = NewQueue();

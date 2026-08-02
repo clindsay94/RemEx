@@ -395,7 +395,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable, IPortalInputS
     /// Wraps the RemoteDesktop <c>CreateSession</c> portal call with one-shot
     /// stale-frontend recovery. On the first <c>UnknownMethod</c>/<c>ServiceUnknown</c>/<c>UnknownInterface</c>
     /// error per process, restarts the portal frontend via
-    /// <see cref="Portal.PortalRecoveryHelper"/> and retries once. On any other
+    /// <see cref="Remex.Agent.Services.RemoteDesktop.Linux.Portal.PortalRecoveryHelper"/> and retries once. On any other
     /// outcome, returns the original result (or null).
     /// </summary>
     private async Task<Dictionary<string, VariantValue>?> CreateSessionWithRecoveryAsync(

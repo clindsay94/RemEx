@@ -6,7 +6,11 @@ namespace Remex.Core.Tests;
 
 /// <summary>
 /// Round-trips the <c>/ws/files</c> binary frame layout <c>[header-length][JSON envelope][payload]</c>
-/// and asserts malformed frames are rejected cleanly (never throw out of <see cref="FileFrameCodec.TryRead"/>).
+/// and asserts malformed frames are rejected cleanly (never throw out of <c>FileFrameEnvelope.TryRead</c>, the <c>ReadOnlySpan&lt;byte&gt;</c> overload).
+/// Named in prose rather than by cref because a signature-qualified one does not bind here:
+/// both the short and fully-qualified forms were tried and Roslyn reports CS1574, and an
+/// unqualified <c>TryRead</c> is CS0419-ambiguous, silently binding to the ReadOnlyMemory
+/// overload that this class never exercises (every call site here passes a byte[]).
 /// </summary>
 public class FileFrameEnvelopeCodecTests
 {

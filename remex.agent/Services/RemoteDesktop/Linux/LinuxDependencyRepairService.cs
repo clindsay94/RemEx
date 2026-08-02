@@ -12,7 +12,7 @@ namespace Remex.Agent.Services.RemoteDesktop.Linux;
 /// Safety constraints (non-negotiable):
 ///   - Never runs pacman or any package manager without explicit user approval.
 ///   - Never runs any command that requires elevated privileges without the
-///     <paramref name="allowElevated"/> flag being explicitly set by the caller.
+///     <c>allowElevated</c> flag being explicitly set by the caller.
 ///   - Service restarts (systemctl --user restart) run without elevation and are
 ///     always attempted automatically (safe, user-service scope only).
 ///   - udev rule creation writes to /etc/udev/rules.d which requires sudo;

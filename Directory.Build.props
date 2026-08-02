@@ -3,7 +3,61 @@
     <Version>2.4.0</Version>
     <Authors>Connor Lindsay</Authors>
     <Company>CLindsay94</Company>
-    <NoWarn>$(NoWarn);CA1416;CS0067</NoWarn>
+    <NoWarn>$(NoWarn);CA1416;CS0067;CS1591;CS1573</NoWarn>
+
+    <!--
+      Turned on so the XML-doc diagnostics exist at all (RemEx-3282). Without it Roslyn emits NONE of
+      them, which is why two changes on this branch shipped a doc comment attached to the wrong member
+      and the build said nothing: RemEx-wssm inserted a helper between a method's </remarks> and its
+      signature, moving a fifty-line comment and five paramref tags onto a one-line ToString wrapper;
+      RemEx-cxel inserted a property between a field's summary and the field, giving the property two
+      summaries and leaving the field undocumented. Both were caught by a human reading the file.
+
+      COVERAGE IS DEMOTED, CORRECTNESS IS NOT, and that is the whole point of the two codes above.
+      CS1591 ("missing XML comment for publicly visible type or member") and CS1573 ("parameter has no
+      matching param tag") are about whether a doc was WRITTEN — a style choice, and 3002 and 41
+      distinct sites today, so making them errors would be a documentation project rather than a
+      guard. Count them with, since raw log lines over-report by a factor of two through per-project
+      duplication and a first draft of this comment did exactly that:
+        dotnet build Remex.sln -c Release -t:Rebuild -p:NoWarn=CA1416%3BCS0067 \n          -p:TreatWarningsAsErrors=false 2>&1 | grep -oE '[^ ]+\.cs\([0-9]+,[0-9]+\): warning CS1591' | sort -u | wc -l
+      Everything else stays an error under TreatWarningsAsErrors, and those are about whether the doc
+      you DID write is attached to the thing it describes:
+
+        CS1734  <paramref> naming a parameter that does not exist  — the RemEx-wssm shape
+        CS1587  comment not on a valid language element
+        CS1574  <see cref="..."/> that does not resolve
+        CS0419  ambiguous <see cref="..."/> — binds to an arbitrary overload
+
+      HOW MUCH THIS ACTUALLY CATCHES, measured by re-injecting both original defects rather than
+      assumed. The RemEx-wssm shape IS caught: reinstating a <paramref> for a parameter the member
+      does not have fails the build with CS1734. The RemEx-cxel shape is NOT — two <summary> tags on
+      one member compile clean, with no diagnostic at all. A first draft of this comment listed
+      CS1571 as covering it; that was wrong, and the injection is the only reason it did not ship.
+      So duplicate-summary remains a review-only catch, and a custom analyzer would be the way to
+      close it if it ever recurs.
+
+      Enabling it found sixteen real defects, all fixed in the same commit: five test doc blocks in
+      FileTransferQueueTests placed BETWEEN [Fact] and the method, where C# silently discards them;
+      two class-level <paramref> tags for parameters belonging to methods; eight broken crefs, one of
+      which named a member that exists nowhere in the repo and one of which named a generated
+      RelayCommand under the wrong name; and one ambiguous cref that was silently binding to the
+      overload the class does not exercise.
+
+      Do NOT add CS0419, CS1574, CS1587 or CS1734 to the NoWarn above. Demoting one of them is how
+      this stops being a guard.
+    -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!--
+      AND NOT SHIPPED. Generating the docs is for the compiler; publishing them is not. Without these
+      two lines `dotnet publish` emits Remex.Agent.xml, Remex.Core.xml, Remex.Desktop.xml and the rest
+      (about 1.3 MB), installer/RemEx.iss globs {#SourceDir}\* with recursesubdirs and
+      installer/build-linux.sh copies "$AGENT_PUBLISH/." — so every end user would receive the verbatim
+      engineering commentary in this repo, bead IDs and all, including the elevation, cert-ACL and
+      pairing notes. Caught in review of RemEx-3282 rather than by anything that would have failed.
+    -->
+    <PublishDocumentationFile>false</PublishDocumentationFile>
+    <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
 
     <!-- Consolidate ALL build output under a single repo-root artifacts/ folder instead of a
          bin/ + obj/ pair inside every project. Layout: artifacts/{bin,obj,publish}/<Project>/<pivot>

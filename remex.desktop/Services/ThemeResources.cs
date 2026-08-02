@@ -68,7 +68,7 @@ public static class ThemeResources
     /// <remarks>
     /// Necessary because several theme colours are already translucent: <c>GlassBaseDark</c> is
     /// <c>#A00A0A10</c> on BaseDarkGlass and <c>#D90A0A10</c> on CyberNOC, but opaque on Monolith and
-    /// SolarFlare. <see cref="SolidColorBrush.Opacity"/> MULTIPLIES with the colour's alpha channel,
+    /// SolarFlare. <see cref="Brush.Opacity"/> MULTIPLIES with the colour's alpha channel,
     /// so handing one of those to a site that then applies 0.92 yields 0.58 — quietly more
     /// transparent than the hardcoded colour it replaced, on two themes out of four and not the
     /// other two. Sites that mean "this plate is 92% opaque" have to start from an opaque colour.

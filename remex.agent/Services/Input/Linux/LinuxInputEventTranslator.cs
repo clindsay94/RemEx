@@ -322,7 +322,7 @@ public static class LinuxInputEventTranslator
     }
 
     /// <summary>
-    /// Converts a protocol button index (<see cref="InputEvent.Button"/>) to a Linux BTN_ code.
+    /// Converts a protocol button index (<see cref="Remex.Core.Models.InputEvent.Button"/>) to a Linux BTN_ code.
     /// Index 0 = BTN_LEFT, 1 = BTN_MIDDLE, 2 = BTN_RIGHT.
     /// </summary>
     /// <remarks>
@@ -341,7 +341,7 @@ public static class LinuxInputEventTranslator
     /// </para>
     /// </para>
     /// <para>
-    /// The old summary also mis-stated its input: <see cref="DesktopPointerSample"/> carries a
+    /// The old summary also mis-stated its input: <see cref="Remex.Core.Models.DesktopPointerSample"/> carries a
     /// button MASK, not an index (the router reads <c>ButtonMask &amp; 0x02</c> / <c>&amp; 0x04</c>),
     /// so this never applied to the pointer path at all.
     /// </para>

@@ -627,7 +627,7 @@ public static class HostBootstrapper
     /// </summary>
     /// <remarks>
     /// Extracted so the auth decision can be exercised by unit tests without standing up Kestrel.
-    /// The default <see cref="WebApplicationFactory"/> TestServer reports a null RemoteIpAddress,
+    /// The default <c>WebApplicationFactory</c> TestServer reports a null RemoteIpAddress,
     /// which we treat as loopback — that bypasses the registry check, so the rejection paths
     /// have to be validated through this helper directly.
     /// </remarks>

@@ -127,7 +127,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     /// <summary>
     /// Whether the pairing-PIN panel should be visible. Auto-set to true when a PIN
     /// arrives so the user sees it without having to click; the user can dismiss it
-    /// and re-open via <see cref="ShowPairingPinCommand"/>.
+    /// and re-open via <see cref="ShowPairingPinPanelCommand"/>.
     /// </summary>
     [ObservableProperty]
     private bool _showPairingPin;
@@ -847,7 +847,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
 
     /// <summary>
     /// Stamps a correlation ID onto <paramref name="msg"/>, registers a TCS, sends the
-    /// message, and awaits the matching response with a <see cref="CommandTimeoutSeconds"/>
+    /// message, and awaits the matching response with a <see cref="CommandTimeout"/>
     /// timeout.  Cleans up the dictionary entry regardless of outcome.
     /// </summary>
     internal async Task<RemexMessage> SendCommandAndWaitAsync(RemexMessage msg, CancellationToken ct = default)

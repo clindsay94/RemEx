@@ -183,7 +183,7 @@ public class LinuxRemoteDesktopPrerequisitesTests
     // ── Helper ────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Applies the same tier determination logic as <see cref="LinuxRemoteDesktopPrerequisites.DetermineTier"/>
+    /// Applies the same tier determination logic as <c>LinuxRemoteDesktopPrerequisites.DetermineTier</c>
     /// but without spawning subprocesses — used purely to validate the rules.
     /// </summary>
     private static LinuxRemoteDesktopTier DetermineTier(LinuxPrerequisiteReport r)
