@@ -369,6 +369,9 @@ public sealed class FileTransferHandler(
                 }
             }
 
+            // Set only by the copy/move arms, and only when "keep both" actually renamed.
+            string? resolvedName = null;
+
             switch (req.Operation)
             {
                 case FileManageOperations.Delete:
@@ -383,12 +386,14 @@ public sealed class FileTransferHandler(
                 case FileManageOperations.Copy:
                     if (string.IsNullOrWhiteSpace(destinationPath))
                         throw new ArgumentException("DestinationPath is required for copy.");
-                    await fileTransferService.CopyAsync(rootId, relativePath, destinationPath, req.Overwrite, ct);
+                    resolvedName = await fileTransferService.CopyAsync(
+                        rootId, relativePath, destinationPath, req.Overwrite, ct, req.ConflictResolution);
                     break;
                 case FileManageOperations.Move:
                     if (string.IsNullOrWhiteSpace(destinationPath))
                         throw new ArgumentException("DestinationPath is required for move.");
-                    await fileTransferService.MoveAsync(rootId, relativePath, destinationPath, req.Overwrite, ct);
+                    resolvedName = await fileTransferService.MoveAsync(
+                        rootId, relativePath, destinationPath, req.Overwrite, ct, req.ConflictResolution);
                     break;
                 case FileManageOperations.Mkdir:
                     // Wire contract: RelativePath is the parent directory (empty = root) and NewName is the
@@ -406,7 +411,16 @@ public sealed class FileTransferHandler(
             response = new RemexMessage
             {
                 Type = MessageTypes.FileManageResponse,
-                FileManageResponse = new FileManageResponse { RequestId = req.RequestId, Success = true }
+                FileManageResponse = new FileManageResponse
+                {
+                    RequestId = req.RequestId,
+                    Success = true,
+
+                    // Reported even on success, because a "keep both" that succeeded SILENTLY would
+                    // leave the user believing they have report.pdf when the file on disk is
+                    // report (2).pdf. Null whenever the requested name was the one used.
+                    ResolvedName = resolvedName,
+                }
             };
         }
         catch (Exception ex)
@@ -415,7 +429,18 @@ public sealed class FileTransferHandler(
             response = new RemexMessage
             {
                 Type = MessageTypes.FileManageResponse,
-                FileManageResponse = new FileManageResponse { RequestId = req.RequestId, Success = false, ErrorMessage = ex.Message }
+                FileManageResponse = new FileManageResponse
+                {
+                    RequestId = req.RequestId,
+                    Success = false,
+                    ErrorMessage = ex.Message,
+
+                    // THE SENDER THE CODE WAS WAITING FOR. The bead is explicit that the field must
+                    // not exist before something populates it - a declared-but-never-set wire field
+                    // is how RemEx-mneb left a handler that could not fire.
+                    ErrorCode = (ex as FileConflictException)?.ErrorCode,
+                    ConflictingName = (ex as FileConflictException)?.ConflictingName,
+                }
             };
         }
 

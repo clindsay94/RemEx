@@ -381,7 +381,11 @@ public sealed class FileTransferService : IFileTransferService
     // browse/transfer. Permission flags: copy/mkdir require IsWritable; move additionally requires the
     // (previously unwired) CanMove flag.
 
-    public Task CopyAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
+    /// <summary>
+    /// Copies within a root, honouring a client's answer to a filename collision (RemEx-6vd8).
+    /// </summary>
+    /// <returns>The name actually used, when "keep both" renamed it; otherwise null.</returns>
+    public Task<string?> CopyAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct, string? conflictResolution = null)
     {
         var root = GetConfiguredRoot(rootId);
         if (!root.IsWritable)
@@ -395,12 +399,29 @@ public sealed class FileTransferService : IFileTransferService
 
         EnsureParentDirectory(destination);
 
+        // RESOLVED AFTER the destination has been confined to the root, never before - doing it on
+        // the raw request would hand path composition back to the untrusted side.
+        //
+        // The resolver RE-CHECKS containment rather than inheriting it, and review proved that is not
+        // redundant: ResolveWithinRoot maps "/" and "." to the root ITSELF, whose parent is outside
+        // the share, so a sibling rename there escaped entirely.
+        var plan = ConflictResolver.Resolve(
+            conflictResolution,
+            destination,
+            root.AbsolutePath,
+            overwrite,
+            ListDirectoryNames,
+            ConflictResolver.HostFileSystemIsCaseSensitive);
+
+        destination = plan.DestinationPath;
+        overwrite = plan.Overwrite;
+
         if (File.Exists(source))
         {
             if (Directory.Exists(destination))
-                throw new IOException($"A folder already exists at the destination '{Path.GetFileName(destination)}'.");
+                throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
             if (File.Exists(destination) && !overwrite)
-                throw new IOException($"A file named '{Path.GetFileName(destination)}' already exists.");
+                throw FileConflictException.FileExists(Path.GetFileName(destination));
             File.Copy(source, destination, overwrite);
         }
         else if (Directory.Exists(source))
@@ -408,7 +429,14 @@ public sealed class FileTransferService : IFileTransferService
             if (IsDestinationInsideSource(source, destination))
                 throw new IOException("Cannot copy a folder into itself.");
             if (Directory.Exists(destination) && !overwrite)
-                throw new IOException($"A folder named '{Path.GetFileName(destination)}' already exists.");
+                throw FileConflictException.DirectoryExists(Path.GetFileName(destination));
+
+            // A FILE STANDING WHERE A FOLDER IS GOING — the last collision path that carried no
+            // code. Review found it falling through to CopyDirectoryRecursive, which surfaces a raw
+            // OS IOException the client cannot branch on, so the sheet never opened for it.
+            if (File.Exists(destination))
+                throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
+
             CopyDirectoryRecursive(source, destination, overwrite, ct);
         }
         else
@@ -416,10 +444,14 @@ public sealed class FileTransferService : IFileTransferService
             throw new FileNotFoundException($"'{relativePath}' not found in root '{root.DisplayName}'.");
         }
 
-        return Task.CompletedTask;
+        return Task.FromResult(plan.ResolvedName);
     }
 
-    public Task MoveAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct)
+    /// <summary>
+    /// Moves within a root, honouring a client's answer to a filename collision (RemEx-6vd8).
+    /// </summary>
+    /// <returns>The name actually used, when "keep both" renamed it; otherwise null.</returns>
+    public Task<string?> MoveAsync(string rootId, string relativePath, string destinationRelativePath, bool overwrite, CancellationToken ct, string? conflictResolution = null)
     {
         var root = GetConfiguredRoot(rootId);
         if (!root.CanMove)
@@ -433,14 +465,31 @@ public sealed class FileTransferService : IFileTransferService
 
         EnsureParentDirectory(destination);
 
+        // RESOLVED AFTER the destination has been confined to the root, never before - doing it on
+        // the raw request would hand path composition back to the untrusted side.
+        //
+        // The resolver RE-CHECKS containment rather than inheriting it, and review proved that is not
+        // redundant: ResolveWithinRoot maps "/" and "." to the root ITSELF, whose parent is outside
+        // the share, so a sibling rename there escaped entirely.
+        var plan = ConflictResolver.Resolve(
+            conflictResolution,
+            destination,
+            root.AbsolutePath,
+            overwrite,
+            ListDirectoryNames,
+            ConflictResolver.HostFileSystemIsCaseSensitive);
+
+        destination = plan.DestinationPath;
+        overwrite = plan.Overwrite;
+
         if (File.Exists(source))
         {
             if (Directory.Exists(destination))
-                throw new IOException($"A folder already exists at the destination '{Path.GetFileName(destination)}'.");
+                throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
             if (File.Exists(destination))
             {
                 if (!overwrite)
-                    throw new IOException($"A file named '{Path.GetFileName(destination)}' already exists.");
+                    throw FileConflictException.FileExists(Path.GetFileName(destination));
                 File.Delete(destination);
             }
 
@@ -460,14 +509,22 @@ public sealed class FileTransferService : IFileTransferService
             if (Directory.Exists(destination))
             {
                 if (!overwrite)
-                    throw new IOException($"A folder named '{Path.GetFileName(destination)}' already exists.");
+                    throw FileConflictException.DirectoryExists(Path.GetFileName(destination));
                 Directory.Delete(destination, recursive: true);
             }
             else if (File.Exists(destination))
             {
-                if (!overwrite)
-                    throw new IOException($"A file named '{Path.GetFileName(destination)}' already exists.");
-                File.Delete(destination);
+                // A FILE STANDING WHERE A FOLDER IS GOING, REFUSED UNCONDITIONALLY — the overwrite
+                // flag does not reach this. Review caught two things here: it reported the plain
+                // collision code, and it honoured overwrite by DELETING the user's file to make room
+                // for a directory.
+                //
+                // Copy already refused this outright; move did not, so the same request destroyed a
+                // file on one path and was rejected on the other. The bead's own principle is that
+                // the HOST decides rather than trusting the client to withhold a button, and this is
+                // an unrecoverable delete of a different kind of thing than the user was moving.
+                // Making move agree with copy is the reading that cannot lose data.
+                throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
             }
 
             if (AreSameVolume(source, destination))
@@ -484,7 +541,35 @@ public sealed class FileTransferService : IFileTransferService
             throw new FileNotFoundException($"'{relativePath}' not found in root '{root.DisplayName}'.");
         }
 
-        return Task.CompletedTask;
+        return Task.FromResult(plan.ResolvedName);
+    }
+
+    /// <summary>
+    /// The bare names already present in <paramref name="directory"/>, for conflict renaming.
+    /// </summary>
+    /// <remarks>
+    /// FILES AND FOLDERS TOGETHER, because a name is taken either way — offering "report (2)" as a
+    /// free name when a FOLDER called "report (2)" is sitting there produces the collision the
+    /// rename existed to avoid, one step later and with the user believing it was handled.
+    ///
+    /// A directory that cannot be listed yields nothing, which makes every candidate look free. That
+    /// is the safe direction: the operation then proceeds and fails on the real filesystem with the
+    /// ordinary collision error, rather than this method deciding an outcome it could not see.
+    /// </remarks>
+    private static IReadOnlyList<string> ListDirectoryNames(string directory)
+    {
+        try
+        {
+            return Directory.EnumerateFileSystemEntries(directory)
+                .Select(Path.GetFileName)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Select(n => n!)
+                .ToList();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return [];
+        }
     }
 
     public Task CreateDirectoryAsync(string rootId, string relativePath, CancellationToken ct)
@@ -495,10 +580,20 @@ public sealed class FileTransferService : IFileTransferService
 
         var resolved = FilePathValidation.ResolveWithinRoot(root.AbsolutePath, relativePath, root.DisplayName);
 
+        // MKDIR IS REFUSAL-ONLY, AND THAT IS A LIMIT WORTH STATING. Both throws below carry a
+        // conflict code, but this method takes no conflictResolution and the handler passes
+        // none - so a client that offers Replace or Keep both here gets the same refusal back.
+        // The codes are still right (they say WHY, and "skip" is a valid answer to both), but a
+        // client must not present the retry actions on this operation. RemEx-agpn carries that.
         if (Directory.Exists(resolved))
-            throw new IOException($"A folder named '{Path.GetFileName(resolved)}' already exists.");
+            throw FileConflictException.DirectoryExists(Path.GetFileName(resolved));
+
+        // A FILE STANDING WHERE A FOLDER IS GOING is the different-kind case here too, and review
+        // caught it reporting the plain collision code — which would have had the sheet offer
+        // "Replace" for a mkdir blocked by a file, i.e. deleting the user's file to make a folder.
+        // The physical situation is identical to the copy/move branches, so the code must be.
         if (File.Exists(resolved))
-            throw new IOException($"A file named '{Path.GetFileName(resolved)}' already exists.");
+            throw FileConflictException.DifferentKindExists(Path.GetFileName(resolved));
 
         Directory.CreateDirectory(resolved);
         return Task.CompletedTask;
@@ -786,7 +881,11 @@ public sealed class FileTransferService : IFileTransferService
             ct.ThrowIfCancellationRequested();
             var target = Path.Combine(destDir, Path.GetFileName(file));
             if (File.Exists(target) && !overwrite)
-                throw new IOException($"A file named '{Path.GetFileName(target)}' already exists.");
+                // Reported the same way as a top-level collision even though it is one file INSIDE a
+                // recursive copy. The name it carries is that inner file's, which is what the user
+                // needs to see — a code naming the folder they dragged would send them looking at the
+                // wrong thing.
+                throw FileConflictException.FileExists(Path.GetFileName(target));
             File.Copy(file, target, overwrite);
         }
 

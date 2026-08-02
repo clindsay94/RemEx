@@ -141,6 +141,21 @@ public sealed record FileManageRequest
     [JsonPropertyName("destinationPath")] public string? DestinationPath { get; init; }
     /// <summary>When true, "copy"/"move" overwrite an existing destination file (v3). Older peers omit this and it defaults to false.</summary>
     [JsonPropertyName("overwrite")] public bool Overwrite { get; init; }
+
+    /// <summary>
+    /// What to do if the destination name is taken — one of <see cref="FileConflictResolutions"/>,
+    /// or null to fail with <see cref="FileTransferErrorCodes.DestinationExists"/> (RemEx-6vd8).
+    /// </summary>
+    /// <remarks>
+    /// Additive and optional, so no <c>protocolVersion</c> bump: a host that predates this ignores
+    /// the field and behaves exactly as before, which is the same thing a null means.
+    /// <para>
+    /// Carried ON THE RETRY rather than answered in a separate round trip, so the resolution and the
+    /// operation are one message — a two-step exchange could race another client writing the same
+    /// name between the question and the answer.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("conflictResolution")] public string? ConflictResolution { get; init; }
 }
 
 /// <summary>Host → client: whether the manage operation succeeded.</summary>
@@ -149,6 +164,36 @@ public sealed record FileManageResponse
     [JsonPropertyName("requestId")] public required string RequestId { get; init; }
     [JsonPropertyName("success")] public required bool Success { get; init; }
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
+
+    /// <summary>
+    /// A machine-readable reason, one of <see cref="FileTransferErrorCodes"/>, or null (RemEx-6vd8).
+    /// </summary>
+    /// <remarks>
+    /// ALONGSIDE <see cref="ErrorMessage"/>, NEVER INSTEAD OF IT. The prose stays the thing a person
+    /// reads; the code is the thing a client branches on, because string-matching English breaks the
+    /// moment the wording improves and cannot work at all once the host is localized.
+    /// </remarks>
+    [JsonPropertyName("errorCode")] public string? ErrorCode { get; init; }
+
+    /// <summary>
+    /// The name that actually collided, so the UI can name the file it is asking about.
+    /// </summary>
+    /// <remarks>
+    /// The bare name rather than the path: a phone sheet asking "report.pdf already exists" has no
+    /// use for the host's directory layout.
+    /// </remarks>
+    [JsonPropertyName("conflictingName")] public string? ConflictingName { get; init; }
+
+    /// <summary>
+    /// The name the host actually used, set only when it differs from the one that was asked for.
+    /// </summary>
+    /// <remarks>
+    /// **THE HOST CHOOSES THE NAME AND THEN SAYS SO.** A "keep both" that succeeded silently would
+    /// leave the user believing they have "report.pdf" when the file on disk is "report (2).pdf" —
+    /// and the client cannot compute the answer itself, because only the host knows what else is in
+    /// that directory and whether its own filesystem is case-sensitive.
+    /// </remarks>
+    [JsonPropertyName("resolvedName")] public string? ResolvedName { get; init; }
 }
 
 /// <summary>Client → host: hash a file, so a transfer can be verified or skipped when unchanged.</summary>

@@ -309,7 +309,8 @@ public sealed class FileTransferHandlerTests : IDisposable
     }
 
     private static RemexMessage Manage(
-        string op, string rel, string? dest = null, string? newName = null, bool overwrite = false, string rootId = "root-1")
+        string op, string rel, string? dest = null, string? newName = null, bool overwrite = false,
+        string rootId = "root-1", string? conflictResolution = null)
         => new()
         {
             Type = MessageTypes.FileManageRequest,
@@ -322,6 +323,7 @@ public sealed class FileTransferHandlerTests : IDisposable
                 NewName = newName,
                 DestinationPath = dest,
                 Overwrite = overwrite,
+                ConflictResolution = conflictResolution,
             }
         };
 
@@ -333,6 +335,215 @@ public sealed class FileTransferHandlerTests : IDisposable
 
     private static FileMetadataResponse LastMetadata(FakeWebSocket ws)
         => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileMetadataResponse).FileMetadataResponse!;
+
+    // ── Conflict codes on the wire (RemEx-6vd8) ───────────────────────────────
+    //
+    // THESE EXIST BECAUSE THE SERVICE-LEVEL TESTS COULD NOT FAIL FOR THE RIGHT REASON. Review
+    // measured it: deleting the three assignments in the handler's response left the whole suite
+    // green, because everything else asserts against FileTransferService directly. The bead's
+    // central warning is about a field that ships unset, and only a test reading the RESPONSE can
+    // detect that.
+
+    [Fact]
+    public async Task Copy_Collision_ResponseCarriesTheMachineReadableCode()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "source");
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "b.txt"), "victim");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Copy, "a.txt", dest: "b.txt"), ws, CancellationToken.None);
+
+        var resp = LastManage(ws);
+        Assert.False(resp.Success);
+        Assert.Equal(FileTransferErrorCodes.DestinationExists, resp.ErrorCode);
+        Assert.Equal("b.txt", resp.ConflictingName);
+
+        // The prose is kept alongside, never replaced - it is what an older client still shows.
+        Assert.False(string.IsNullOrWhiteSpace(resp.ErrorMessage));
+    }
+
+    [Fact]
+    public async Task Copy_KeepBoth_ResponseReportsTheNameTheHostActuallyUsed()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "source");
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "b.txt"), "keep me");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Copy, "a.txt", dest: "b.txt",
+                conflictResolution: FileConflictResolutions.KeepBoth),
+            ws, CancellationToken.None);
+
+        var resp = LastManage(ws);
+        Assert.True(resp.Success, resp.ErrorMessage);
+
+        // A keep-both that succeeded SILENTLY would leave the user believing they have b.txt when
+        // the file on disk is b (2).txt.
+        Assert.Equal("b (2).txt", resp.ResolvedName);
+        Assert.Equal("keep me", await File.ReadAllTextAsync(Path.Combine(rootDir, "b.txt")));
+        Assert.Equal("source", await File.ReadAllTextAsync(Path.Combine(rootDir, "b (2).txt")));
+    }
+
+    [Fact]
+    public async Task Copy_NoCollision_ReportsNeitherCodeNorResolvedName()
+    {
+        // The negative control. Without it, a handler that stamped a code onto every response would
+        // satisfy the two tests above.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "source");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Copy, "a.txt", dest: "c.txt",
+                conflictResolution: FileConflictResolutions.KeepBoth),
+            ws, CancellationToken.None);
+
+        var resp = LastManage(ws);
+        Assert.True(resp.Success, resp.ErrorMessage);
+        Assert.Null(resp.ErrorCode);
+        Assert.Null(resp.ConflictingName);
+        Assert.Null(resp.ResolvedName);
+    }
+
+    [Fact]
+    public async Task Copy_FolderStandingWhereAFileGoes_IsADifferentCode()
+    {
+        // "Replace" here would delete a directory tree to make room for one file, so a client must
+        // be able to tell this apart and withhold the button.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "source");
+        Directory.CreateDirectory(Path.Combine(rootDir, "b.txt"));
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Copy, "a.txt", dest: "b.txt"), ws, CancellationToken.None);
+
+        Assert.Equal(FileTransferErrorCodes.DestinationIsDifferentKind, LastManage(ws).ErrorCode);
+    }
+
+    [Fact]
+    public async Task Move_FileStandingWhereAFolderGoes_IsTheSameDifferentKindCode()
+    {
+        // The mirror direction, which review found reporting the plain collision code. Both ways
+        // round, "replace" means destroying the other kind of thing.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        Directory.CreateDirectory(Path.Combine(rootDir, "src"));
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "src", "inner.txt"), "x");
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "dst"), "a file");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Move, "src", dest: "dst"), ws, CancellationToken.None);
+
+        Assert.Equal(FileTransferErrorCodes.DestinationIsDifferentKind, LastManage(ws).ErrorCode);
+    }
+
+    [Fact]
+    public async Task Copy_KeepBothOntoTheRootItself_IsRefusedAndWritesNothingOutsideTheShare()
+    {
+        // THE ESCAPE REVIEW FOUND, ASSERTED WHERE IT ACTUALLY MATTERS. "/" resolves to the root
+        // itself, whose parent is outside the share, so renaming a sibling of the root produced a
+        // real file NEXT TO the share. A move would have relocated the whole tree out of it.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "source");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Copy, "a.txt", dest: "/",
+                conflictResolution: FileConflictResolutions.KeepBoth),
+            ws, CancellationToken.None);
+
+        Assert.False(LastManage(ws).Success);
+
+        var parent = Directory.GetParent(rootDir)!.FullName;
+        var strays = Directory.EnumerateFileSystemEntries(parent, Path.GetFileName(rootDir) + " (*").ToList();
+        Assert.Empty(strays);
+    }
+
+    [Fact]
+    public async Task Mkdir_BlockedByAFile_IsTheDifferentKindCode()
+    {
+        // The same physical situation as the copy/move branches, so it must carry the same code.
+        // Review caught it reporting the plain collision code, which would have had the sheet offer
+        // "Replace" for a mkdir blocked by a file - i.e. deleting the file to make a folder.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "docs"), "a file");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Mkdir, "", newName: "docs"), ws, CancellationToken.None);
+
+        Assert.Equal(FileTransferErrorCodes.DestinationIsDifferentKind, LastManage(ws).ErrorCode);
+    }
+
+    [Fact]
+    public async Task Move_FolderOntoAFile_IsRefusedEvenWithReplace()
+    {
+        // COPY AND MOVE MUST AGREE. Copy already refused this outright; move honoured overwrite by
+        // DELETING the user's file to make room for a directory, so the same request destroyed data
+        // on one path and was rejected on the other. Refusing host-side is the reading that cannot
+        // lose data, and it does not depend on the client withholding a button.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        Directory.CreateDirectory(Path.Combine(rootDir, "src"));
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "src", "inner.txt"), "x");
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "dst"), "do not delete me");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Move, "src", dest: "dst", overwrite: true,
+                conflictResolution: FileConflictResolutions.Replace),
+            ws, CancellationToken.None);
+
+        var resp = LastManage(ws);
+        Assert.False(resp.Success);
+        Assert.Equal(FileTransferErrorCodes.DestinationIsDifferentKind, resp.ErrorCode);
+        Assert.Equal("do not delete me", await File.ReadAllTextAsync(Path.Combine(rootDir, "dst")));
+        Assert.True(Directory.Exists(Path.Combine(rootDir, "src")));
+    }
+
+    [Fact]
+    public async Task Move_FileOntoAFileWithOverwrite_StillReplacesIt()
+    {
+        // NEWLY LOAD-BEARING. Refusing the folder-onto-file case left these two as the ONLY move
+        // paths that delete anything, and review found neither was covered - so a future edit that
+        // over-broadened the refusal the way this one deliberately did not would break move-with-
+        // overwrite silently.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "a.txt"), "source");
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "b.txt"), "victim");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Move, "a.txt", dest: "b.txt", overwrite: true), ws, CancellationToken.None);
+
+        Assert.True(LastManage(ws).Success);
+        Assert.False(File.Exists(Path.Combine(rootDir, "a.txt")));
+        Assert.Equal("source", await File.ReadAllTextAsync(Path.Combine(rootDir, "b.txt")));
+    }
+
+    [Fact]
+    public async Task Move_FolderOntoAFolderWithOverwrite_StillReplacesIt()
+    {
+        // The same-kind case, which must keep working: replacing a folder with a folder is what the
+        // user asked for, and it is the branch beside the one now refused.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        Directory.CreateDirectory(Path.Combine(rootDir, "src"));
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "src", "inner.txt"), "new");
+        Directory.CreateDirectory(Path.Combine(rootDir, "dst"));
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "dst", "old.txt"), "old");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManageRequestAsync(
+            Manage(FileManageOperations.Move, "src", dest: "dst", overwrite: true), ws, CancellationToken.None);
+
+        Assert.True(LastManage(ws).Success);
+        Assert.False(Directory.Exists(Path.Combine(rootDir, "src")));
+        Assert.Equal("new", await File.ReadAllTextAsync(Path.Combine(rootDir, "dst", "inner.txt")));
+        Assert.False(File.Exists(Path.Combine(rootDir, "dst", "old.txt")));
+    }
 
     // ── Copy ──────────────────────────────────────────────────────────────────
 
