@@ -302,6 +302,32 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                             RemoteDesktopCapabilityState()
                     )
 
+    /**
+     * Whether the host will act on key presses, for the UI to reflect (RemEx-hulc).
+     *
+     * Exposed because [sendInput] DROPS every event when this is false. A media button that looks
+     * live but is silently discarded is worse than one that is visibly unavailable: the phone still
+     * buzzes on tap, so the user gets positive feedback for a command the PC never receives, and
+     * nothing anywhere reports an error.
+     *
+     * THE INITIAL VALUE IS READ FROM THE SAME DEFAULT THE GATE USES, never written as a literal.
+     * `RemoteDesktopCapabilityState.supportsInputSimulation` defaults to TRUE on purpose — an absent
+     * key means an older host that should keep working — and `hostCapabilities` does not emit until
+     * the first `host_info` arrives. A hardcoded `false` here therefore did not merely flash: until
+     * that first message the gate was open while the UI told the user their PC could not accept key
+     * presses, which is exactly the drift this flow exists to prevent. Reachable on any cold launch
+     * with the PC asleep — and that is precisely when this screen gets opened, because Wake PC lives
+     * on it.
+     */
+    val supportsInputSimulation: StateFlow<Boolean> =
+            capabilityState
+                    .map { it.supportsInputSimulation }
+                    .stateIn(
+                            viewModelScope,
+                            SharingStarted.Eagerly,
+                            RemoteDesktopCapabilityState().supportsInputSimulation
+                    )
+
     private fun sendInput(input: JSONObject) {
         // THE ONLY WAY INPUT LEAVES THIS CLASS, so gating here covers mouseMove, mouseClick,
         // mouseScroll, typeText, keyDown and keyUp at once. This screen needs no video stream, so it

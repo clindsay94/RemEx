@@ -117,6 +117,16 @@
     <string name="rc_category_session">Oturum</string>
     <string name="rc_category_power">Güç</string>
     <string name="rc_category_energy">Enerji</string>
+    <string name="rc_category_media">Medya</string>
+    <string name="rc_media_volume_down">Sesi azalt</string>
+    <string name="rc_media_volume_up">Sesi artır</string>
+    <string name="rc_media_mute">Sessize al</string>
+    <string name="rc_media_previous">Önceki parça</string>
+    <string name="rc_media_play_pause">Oynat veya duraklat</string>
+    <string name="rc_media_next">Sonraki parça</string>
+    <string name="rc_media_hint">Sesi değiştirmeye devam etmek için ses düğmelerini basılı tutun.</string>
+    <string name="rc_media_unavailable">Bu bilgisayar tuş basışlarını kabul edecek şekilde ayarlanmadığından bu düğmeler hiçbir şey yapmaz.</string>
+    <string name="rc_media_disconnected">Bu denetimleri kullanmak için bilgisayarınıza bağlanın.</string>
     <string name="screen_remote_desktop_title">Uzak Masaüstü</string>
     <string name="cd_show_keyboard">Klavyeyi Göster</string>
     <string name="cd_key_escape">Esc</string>

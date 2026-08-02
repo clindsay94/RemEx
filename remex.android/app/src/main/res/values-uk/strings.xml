@@ -117,6 +117,16 @@
     <string name="rc_category_session">Сеанс</string>
     <string name="rc_category_power">Живлення</string>
     <string name="rc_category_energy">Енергія</string>
+    <string name="rc_category_media">Медіа</string>
+    <string name="rc_media_volume_down">Тихіше</string>
+    <string name="rc_media_volume_up">Гучніше</string>
+    <string name="rc_media_mute">Вимкнути звук</string>
+    <string name="rc_media_previous">Попередній трек</string>
+    <string name="rc_media_play_pause">Відтворити або призупинити</string>
+    <string name="rc_media_next">Наступний трек</string>
+    <string name="rc_media_hint">Утримуйте кнопки гучності, щоб продовжувати змінювати її.</string>
+    <string name="rc_media_unavailable">Цей ПК не налаштовано приймати натискання клавіш, тому ці кнопки нічого не зроблять.</string>
+    <string name="rc_media_disconnected">Підключіться до ПК, щоб користуватися цими елементами керування.</string>
     <string name="screen_remote_desktop_title">Віддалений робочий стіл</string>
     <string name="cd_show_keyboard">Показати клавіатуру</string>
     <string name="cd_key_escape">Esc</string>

@@ -117,6 +117,16 @@
     <string name="rc_category_session">Session</string>
     <string name="rc_category_power">Alimentation</string>
     <string name="rc_category_energy">Énergie</string>
+    <string name="rc_category_media">Multimédia</string>
+    <string name="rc_media_volume_down">Baisser le volume</string>
+    <string name="rc_media_volume_up">Augmenter le volume</string>
+    <string name="rc_media_mute">Couper le son</string>
+    <string name="rc_media_previous">Piste précédente</string>
+    <string name="rc_media_play_pause">Lire ou mettre en pause</string>
+    <string name="rc_media_next">Piste suivante</string>
+    <string name="rc_media_hint">Maintenez les boutons de volume pour continuer à le modifier.</string>
+    <string name="rc_media_unavailable">Ce PC n’est pas configuré pour accepter les frappes de touches, ces boutons n’auront donc aucun effet.</string>
+    <string name="rc_media_disconnected">Connectez-vous à votre PC pour utiliser ces commandes.</string>
     <string name="screen_remote_desktop_title">Bureau à Distance</string>
     <string name="cd_show_keyboard">Afficher le Clavier</string>
     <string name="cd_key_escape">Esc (Échap)</string>

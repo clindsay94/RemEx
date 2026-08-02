@@ -106,6 +106,16 @@
     <string name="rc_category_session">Sesja</string>
     <string name="rc_category_power">Zasilanie</string>
     <string name="rc_category_energy">Energia</string>
+    <string name="rc_category_media">Multimedia</string>
+    <string name="rc_media_volume_down">Ciszej</string>
+    <string name="rc_media_volume_up">Głośniej</string>
+    <string name="rc_media_mute">Wycisz</string>
+    <string name="rc_media_previous">Poprzedni utwór</string>
+    <string name="rc_media_play_pause">Odtwórz lub wstrzymaj</string>
+    <string name="rc_media_next">Następny utwór</string>
+    <string name="rc_media_hint">Przytrzymaj przyciski głośności, aby dalej ją zmieniać.</string>
+    <string name="rc_media_unavailable">Ten komputer nie jest skonfigurowany do przyjmowania naciśnięć klawiszy, więc te przyciski nic nie zrobią.</string>
+    <string name="rc_media_disconnected">Połącz się z komputerem, aby użyć tych przycisków.</string>
     <string name="screen_remote_desktop_title">Pulpit zdalny</string>
     <string name="cd_show_keyboard">Pokaż klawiaturę</string>
     <string name="cd_key_escape">Esc</string>

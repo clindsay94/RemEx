@@ -38,6 +38,7 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.ui.components.MediaControlSection
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
 import com.clindsay94.remex.ui.components.rememberRemexTopBarScrollBehavior
 
@@ -228,7 +229,14 @@ data class RemoteControlUiState(
         val commandStatus: String? = null,
         val shapePreset: Float = 0f,
         val cornerRadius: Int = 8,
-        val isConnected: Boolean = false
+        val isConnected: Boolean = false,
+        /**
+         * Whether the host will act on key presses. ONE OF TWO gates on the media row - being
+         * connected is the other, because the capability flow replays its last value and so
+         * outlives the connection it described. Input travelling this path is silently dropped when
+         * the capability is absent, with no error anywhere (RemEx-hulc).
+         */
+        val supportsInputSimulation: Boolean = false
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -241,13 +249,16 @@ fun RemoteControlScreen(
     val shapePreset by viewModel.remoteControlCardShapePreset.collectAsStateWithLifecycle()
     val cornerRadius by viewModel.cardCornerRadius.collectAsStateWithLifecycle()
     val isConnected by RemexClientManager.isConnected.collectAsStateWithLifecycle()
+    val supportsInputSimulation by
+            viewModel.supportsInputSimulation.collectAsStateWithLifecycle()
 
     val uiState =
             RemoteControlUiState(
                     commandStatus = commandStatus,
                     shapePreset = shapePreset,
                     cornerRadius = cornerRadius,
-                    isConnected = isConnected
+                    isConnected = isConnected,
+                    supportsInputSimulation = supportsInputSimulation
             )
 
     RemoteControlScreenContent(
@@ -255,6 +266,7 @@ fun RemoteControlScreen(
             onNavigateToConnection = onNavigateToConnection,
             onWakePc = { viewModel.wakePc() },
             onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
+            onSendKey = { virtualKey -> viewModel.sendKeyPress(virtualKey) },
             onClearCommandStatus = { viewModel.clearCommandStatus() }
     )
 }
@@ -266,6 +278,7 @@ fun RemoteControlScreenContent(
         onNavigateToConnection: () -> Unit,
         onWakePc: () -> Unit,
         onSendSystemCommand: (String, Int) -> Unit,
+        onSendKey: (Int) -> Unit,
         onClearCommandStatus: () -> Unit
 ) {
     var activeConfirmationId by remember { mutableStateOf<String?>(null) }
@@ -329,6 +342,32 @@ fun RemoteControlScreenContent(
 
                     Spacer(modifier = Modifier.height(8.dp))
                 }
+            }
+
+            // Media sits FIRST, above Session/Power/Energy. It is the only group here that is
+            // reversible, repeatable and used casually - everything below it either interrupts the
+            // session or shuts the machine down, and half of it shows a confirm face. Putting the
+            // harmless controls where the thumb lands keeps the destructive ones further away.
+            item(span = { GridItemSpan(2) }) {
+                SectionHeader(
+                        label = stringResource(R.string.rc_category_media),
+                        icon = Icons.Default.MusicNote,
+                        backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        topPadding = 0.dp
+                )
+            }
+            item(span = { GridItemSpan(2) }) {
+                MediaControlSection(
+                        connected = uiState.isConnected,
+                        inputSupported = uiState.supportsInputSimulation,
+                        shape =
+                                com.clindsay94.remex.ui.theme.cardShape(
+                                        uiState.shapePreset,
+                                        uiState.cornerRadius
+                                ),
+                        onSendKey = onSendKey
+                )
             }
 
             CommandCategory.entries.forEach { category ->
@@ -421,11 +460,15 @@ private fun RemoteControlScreenPreview() {
                 commandStatus = null,
                 shapePreset = 1f,
                 cornerRadius = 12,
-                isConnected = true
+                isConnected = true,
+                // Otherwise the preview renders the greyed-out "not set up to accept key presses"
+                // face, which is a real state but the least useful one to design against.
+                supportsInputSimulation = true
             ),
             onNavigateToConnection = {},
             onWakePc = {},
             onSendSystemCommand = { _, _ -> },
+            onSendKey = {},
             onClearCommandStatus = {}
         )
     }
@@ -473,12 +516,35 @@ private fun CommandCategoryHeader(label: String, category: CommandCategory) {
                 CommandCategory.ENERGY -> MaterialTheme.colorScheme.onTertiaryContainer
             }
 
+    SectionHeader(
+            label = label,
+            icon = icon,
+            backgroundColor = backgroundColor,
+            contentColor = contentColor,
+            // Uniform now that the media section precedes Session; the zero-padding special case
+            // existed only because Session used to be the first band under the intro text.
+            topPadding = 16.dp
+    )
+}
+
+/**
+ * The banded header used by every section of the command grid.
+ *
+ * Split out of [CommandCategoryHeader] so the media section (RemEx-hulc) can sit under the same
+ * band without being forced into [CommandCategory] — media keys are not [RemoteCommandCard]s, they
+ * never confirm and they take no delay, so joining that enum to borrow a header would have meant a
+ * category the grid then has to special-case out of its own `forEach`.
+ */
+@Composable
+private fun SectionHeader(
+        label: String,
+        icon: ImageVector,
+        backgroundColor: androidx.compose.ui.graphics.Color,
+        contentColor: androidx.compose.ui.graphics.Color,
+        topPadding: androidx.compose.ui.unit.Dp
+) {
     Surface(
-            modifier =
-                    Modifier.fillMaxWidth()
-                            .padding(
-                                    top = if (category == CommandCategory.SESSION) 0.dp else 16.dp
-                            ),
+            modifier = Modifier.fillMaxWidth().padding(top = topPadding),
             color = backgroundColor,
             shape = MaterialTheme.shapes.small,
             tonalElevation = 2.dp
