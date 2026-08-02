@@ -22,6 +22,11 @@
     <SolidColorBrush x:Key="GlassBaseDarkBrush" Color="{DynamicResource GlassBaseDark}"/>
     <SolidColorBrush x:Key="GlassBaseMediumBrush" Color="{DynamicResource GlassBaseMedium}"/>
     <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{DynamicResource AccentPrimary}"/>
+    <!-- Text/icons ON an accent-filled surface. MEASURED, not chosen: white on this
+         theme's accent is 1.38:1 and black is 15.26:1, so this is the value WCAG AA picks,
+         not a taste call. The literal Foreground="White" it replaces failed AA on three
+         of the four themes - CyberNOC at 1.38:1 was barely legible. (RemEx-tq2e) -->
+    <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FF0A0A0A"/>
     <SolidColorBrush x:Key="AccentHoverBrush" Color="{DynamicResource AccentHover}"/>
     <SolidColorBrush x:Key="AccentPressedBrush" Color="{DynamicResource AccentPressed}"/>
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackground}"/>

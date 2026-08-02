@@ -307,12 +307,12 @@
                                         <!-- ═══ ACTIONS ═══ -->
                                         <StackPanel IsVisible="{Binding CardType, Converter={x:Static conv:StringMatchConverter.IsActions}}" Spacing="8">
                                             <TextBlock Text="{local:Localize Canvas_Actions}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4"/>
-                                            <Button Classes="card-action card-action-accent" Content="{local:Localize Dashboard_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"/>
-                                            <Button Classes="card-action" Content="{local:Localize Canvas_CancelConnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemError}" Foreground="White"/>
+                                            <Button Classes="card-action card-action-accent" Content="{local:Localize Dashboard_Connect}" Command="{Binding Connection.ConnectCommand}" IsVisible="{Binding !Connection.IsConnecting}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
+                                            <Button Classes="card-action" Content="{local:Localize Canvas_CancelConnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnecting}" Background="{DynamicResource SystemError}" Foreground="{DynamicResource AccentForegroundBrush}"/>
                                             <Button Classes="card-action" Content="{local:Localize Canvas_Ping}" Command="{Binding Connection.SendPingCommand}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             <Button Classes="card-action" Content="{local:Localize Canvas_LockPC}" Command="{Binding Connection.LockCommand}"/>
                                             <Button Classes="card-action" Content="{local:Localize Canvas_RebootUefi}" Command="{Binding $parent[UserControl].((vm:CanvasDashboardViewModel)DataContext).RestartToUefiCommand}"/>
-                                            <Button Classes="card-action" Content="{local:Localize Canvas_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource SystemError}" Opacity="0.8" Foreground="White"/>
+                                            <Button Classes="card-action" Content="{local:Localize Canvas_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="{DynamicResource SystemError}" Opacity="0.8" Foreground="{DynamicResource AccentForegroundBrush}"/>
                                         </StackPanel>
 
                                         <!-- ═══ LATENCY ═══ -->
@@ -435,8 +435,8 @@
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <TextBlock VerticalAlignment="Center" Margin="6,0,4,0" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Text="{Binding SelectionSummary}"/>
                         <Button Classes="card-action" Command="{Binding PinSelectedCommand}" Content="{local:Localize Canvas_ActionPin}" Background="{DynamicResource CardBackgroundHoverBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                        <Button Classes="card-action card-action-danger" Command="{Binding RemoveSelectedCommand}" Content="{local:Localize Canvas_ActionRemove}" Foreground="White"/>
-                        <Button Classes="card-action card-action-accent" Command="{Binding ClearSelectionCommand}" Content="{local:Localize Canvas_ActionDone}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"/>
+                        <Button Classes="card-action card-action-danger" Command="{Binding RemoveSelectedCommand}" Content="{local:Localize Canvas_ActionRemove}" Foreground="{DynamicResource AccentForegroundBrush}"/>
+                        <Button Classes="card-action card-action-accent" Command="{Binding ClearSelectionCommand}" Content="{local:Localize Canvas_ActionDone}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
                     </StackPanel>
                 </Border>
 
@@ -462,7 +462,7 @@
                             <StackPanel Spacing="10">
                                 <TextBlock Text="{local:Localize Canvas_CoachTitle}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 <TextBlock Text="{local:Localize Canvas_CoachBody}" FontSize="12.5" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                <Button HorizontalAlignment="Right" Classes="card-action card-action-accent" Command="{Binding DismissCoachMarkCommand}" Content="{local:Localize Canvas_CoachGotIt}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="White"/>
+                                <Button HorizontalAlignment="Right" Classes="card-action card-action-accent" Command="{Binding DismissCoachMarkCommand}" Content="{local:Localize Canvas_CoachGotIt}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}"/>
                             </StackPanel>
                         </Border>
                     </Canvas>

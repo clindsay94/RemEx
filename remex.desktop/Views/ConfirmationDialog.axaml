@@ -48,7 +48,7 @@
                     FontWeight="SemiBold"
                     FontSize="13"
                     Background="{DynamicResource SystemErrorBrush}"
-                    Foreground="White"
+                    Foreground="{DynamicResource AccentForegroundBrush}"
                     BorderThickness="0"
                     Click="OnConfirmClicked">
                 <Button.Styles>
