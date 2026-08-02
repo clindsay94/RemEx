@@ -2820,9 +2820,6 @@ You can change:
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Everything RemEx needs is working.</value>
   </data>
-  <data name="SystemStatus_Explain" xml:space="preserve">
-    <value>What does this mean?</value>
-  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Fix this</value>
   </data>
@@ -2903,5 +2900,8 @@ You can change:
   </data>
   <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
     <value>RemEx could not check whether it starts when you sign in. What you see here may not match your PC.</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx could not check this PC, because the part of RemEx that does the checking is not running. Your phone will not be able to connect until it is.</value>
   </data>
 </root>

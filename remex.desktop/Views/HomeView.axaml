@@ -7,6 +7,21 @@
     xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.HomeView" x:DataType="vm:HomeViewModel">
 
     <UserControl.Styles>
+        <!-- System status row dot. CLASS BINDINGS rather than a bound brush name, because a
+             DynamicResource cannot be resolved from a string a binding produced - it would silently
+             render nothing. All three brushes exist in every one of the four themes. -->
+        <Style Selector="Ellipse.state-dot">
+            <Setter Property="Width" Value="9"/>
+            <Setter Property="Height" Value="9"/>
+            <Setter Property="Fill" Value="{DynamicResource SystemSuccessBrush}"/>
+        </Style>
+        <Style Selector="Ellipse.state-dot.attention">
+            <Setter Property="Fill" Value="{DynamicResource SystemWarningBrush}"/>
+        </Style>
+        <Style Selector="Ellipse.state-dot.problem">
+            <Setter Property="Fill" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+
         <!-- Quick-action pill buttons -->
         <Style Selector="Button.action-pill">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
@@ -104,6 +119,80 @@
                     </WrapPanel>
                 </StackPanel>
             </Grid>
+
+            <!-- ═══ SYSTEM STATUS (RemEx-id37) ═══ -->
+            <Border Classes="glass-card" Padding="24" CornerRadius="4,20,4,20" BorderThickness="1,0,0,0"
+                    IsVisible="{Binding SystemStatus.IsRendered}">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Classes="card-title"
+                                   Text="{local:Localize SystemStatus_Title}" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="action-pill" Padding="12,6" FontSize="12"
+                                Command="{Binding SystemStatus.RefreshCommand}"
+                                IsEnabled="{Binding !SystemStatus.IsChecking}"
+                                AutomationProperties.Name="{local:Localize SystemStatus_Recheck}"
+                                ToolTip.Tip="{local:Localize SystemStatus_Recheck}"
+                                Content="{local:Localize SystemStatus_Recheck}"/>
+                    </Grid>
+
+                    <!-- COLLAPSED WHEN READY: one line, no rows. A card that is always open teaches
+                         people to stop reading it. -->
+                    <TextBlock Text="{local:Localize SystemStatus_AllReady}" FontSize="13"
+                               Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
+                               IsVisible="{Binding SystemStatus.IsFullyReady}"/>
+
+                    <!-- THE HOST IS NOT THERE. Review found IsUnavailable computed and rendered
+                         nowhere, so the card simply vanished - on the one surface a user opens to
+                         find out that the host is down. -->
+                    <TextBlock Text="{local:Localize SystemStatus_Unavailable}" FontSize="13"
+                               Foreground="{DynamicResource SystemWarningBrush}" TextWrapping="Wrap"
+                               IsVisible="{Binding SystemStatus.IsUnavailable}"/>
+
+                    <!-- DataContext set HERE so each row can reach the card's FixCommand. Review
+                         found the first version casting $parent[ItemsControl].DataContext to
+                         SystemStatusViewModel - but the ItemsControl inherited HomeViewModel, so the
+                         cast failed, Command bound to null, and the Fix button did NOTHING with no
+                         error anywhere. Avalonia binding failures are silent. -->
+                    <ItemsControl DataContext="{Binding SystemStatus}"
+                                  ItemsSource="{Binding Rows}"
+                                  IsVisible="{Binding !IsFullyReady}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SystemStatusRowViewModel">
+                                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+                                    <Ellipse Grid.Column="0" Classes="state-dot"
+                                             Classes.attention="{Binding IsAttention}"
+                                             Classes.problem="{Binding IsProblem}"
+                                             VerticalAlignment="Top" Margin="0,5,12,0"/>
+
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   TextWrapping="Wrap"/>
+                                        <!-- The SENTENCE, never ReadinessCheck.Detail: Detail is
+                                             developer-facing English built for logs, sometimes from an
+                                             exception message, and the view model has no path to it. -->
+                                        <TextBlock Text="{Binding Sentence}" FontSize="12"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   TextWrapping="Wrap" MaxWidth="620"
+                                                   HorizontalAlignment="Left"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                                VerticalAlignment="Top">
+                                        <Button Classes="action-pill" Padding="12,6" FontSize="12"
+                                                IsVisible="{Binding ShowsFix}"
+                                                IsEnabled="{Binding !$parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).IsChecking}"
+                                                Command="{Binding $parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).FixCommand}"
+                                                CommandParameter="{Binding}"
+                                                AutomationProperties.Name="{local:Localize SystemStatus_Fix}"
+                                                Content="{local:Localize SystemStatus_Fix}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
 
             <!-- ═══ ALWAYS-ON STATS STRIP (live CPU · memory · uptime) ═══ -->
             <Border Classes="glass-card" Padding="6,4" HorizontalAlignment="Center" CornerRadius="18">

@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A "System status" card on Home that tells you whether RemEx can actually do its job.** It checks
+  five things — administrator rights, the security certificate, whether RemEx is accepting
+  connections, the firewall, and whether it starts when you sign in — and **stays collapsed to a
+  single line when all of them are fine**, so it does not become something you learn to scroll past.
+  When something is wrong it lists only what is wrong, worst first.
+  **"Could not check" is treated as something worth your attention, not as good news.** A check that
+  fails to run shows amber and says what that means for you, because a card that quietly rendered it
+  as green would hide the first thing you would otherwise have looked at.
+  The certificate row **reports and never offers to fix anything**: the only repair for a broken
+  certificate would disconnect every phone you have paired, all at once. Starting at sign-in is the
+  one row with a button, because that repair is local and reversible — and after you press it the
+  card re-checks rather than assuming it worked.
+  If the part of RemEx that does the checking is not running, the card says exactly that instead of
+  disappearing — that is the situation you would have opened it to discover.
+  (`SystemStatusViewModel.cs`, `SystemStatusPresentation.cs`, `HomeView.axaml`, `HomeViewModel.cs`,
+  `HostBootstrapper.cs`, `CertificateService.cs`, 9 locale files; RemEx-id37.)
+
 ### Fixed
 
 - **Red "danger" buttons were hard to read on three of the four themes, and the obvious fix would

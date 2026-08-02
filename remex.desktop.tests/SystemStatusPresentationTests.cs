@@ -94,8 +94,11 @@ public class SystemStatusPresentationTests
     {
         string[] chrome =
         [
-            "SystemStatus_Title", "SystemStatus_AllReady", "SystemStatus_Explain",
-            "SystemStatus_Fix", "SystemStatus_Recheck",
+            // No SystemStatus_Explain: the Explain affordance was dropped because there is nowhere
+            // for it to go, and an unused resource in nine files is the kind of thing that outlives
+            // the reason for it. A help destination is a separate bead.
+            "SystemStatus_Title", "SystemStatus_AllReady", "SystemStatus_Fix", "SystemStatus_Recheck",
+            "SystemStatus_Unavailable",
         ];
 
         var missing = (from language in Languages
@@ -140,17 +143,33 @@ public class SystemStatusPresentationTests
     }
 
     [Fact]
-    public void WarningAndUnknownBOTHGetAnAffordance_NotJustProblem()
+    public void WarningAndUnknownBOTHGetTheFix_NotJustProblem()
     {
         // Deliberately not "only Problem is actionable". Unknown means the check could not run, which
         // is the state most worth a user's attention precisely because nothing else will report it -
-        // the same reasoning that stops IsFullyReady treating Unknown as passing.
+        // the same reasoning that stops IsFullyReady treating Unknown as passing. Asserted on
+        // Autostart because it is the only row that offers anything at all.
         foreach (var state in new[] { ReadinessState.Warning, ReadinessState.Problem, ReadinessState.Unknown })
         {
             Assert.True(
                 SystemStatusPresentation.ShowsAffordance(
-                    new ReadinessCheck(ReadinessCheckId.Firewall, state, "d")),
-                $"the firewall row offered nothing in state {state}");
+                    new ReadinessCheck(ReadinessCheckId.Autostart, state, "d")),
+                $"the autostart row offered nothing in state {state}");
+        }
+    }
+
+    [Fact]
+    public void ONLYAutostartOffersAnything()
+    {
+        // The deviation from the bead, pinned so it is a decision rather than a drift: every other
+        // row reports and offers no button, because an Explain button with nowhere to go would be
+        // inert UI. If a help destination ever lands, this test is where the change gets noticed.
+        foreach (var id in Enum.GetValues<ReadinessCheckId>())
+        {
+            var offers = SystemStatusPresentation.ShowsAffordance(
+                new ReadinessCheck(id, ReadinessState.Problem, "d"));
+
+            Assert.Equal(id == ReadinessCheckId.Autostart, offers);
         }
     }
 

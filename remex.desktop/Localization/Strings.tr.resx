@@ -2818,9 +2818,6 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>RemEx'in ihtiyaç duyduğu her şey çalışıyor.</value>
   </data>
-  <data name="SystemStatus_Explain" xml:space="preserve">
-    <value>Bu ne anlama geliyor?</value>
-  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Bunu düzelt</value>
   </data>
@@ -2901,5 +2898,8 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   </data>
   <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
     <value>RemEx, oturum açtığınızda başlayıp başlamadığını denetleyemedi. Burada görünen, bilgisayarınızdaki durumla uyuşmayabilir.</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx bu bilgisayarı denetleyemedi, çünkü RemEx'in denetimi yapan bölümü çalışmıyor. O çalışmaya başlayana kadar telefonunuz bağlanamayacak.</value>
   </data>
 </root>

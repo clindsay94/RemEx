@@ -35,6 +35,16 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     /// <summary>Pinned sensor summaries displayed in the UniformGrid.</summary>
     public ObservableCollection<SensorViewModel> PinnedSensors { get; } = new();
 
+    /// <summary>
+    /// The System status card (RemEx-id37).
+    /// </summary>
+    /// <remarks>
+    /// Refreshed once when Home is built and then only when the user asks. It is NOT polled: the
+    /// probe shells out for the firewall check, and running that on a timer would spend a process
+    /// launch every few seconds to re-answer a question whose answer almost never changes.
+    /// </remarks>
+    public SystemStatusViewModel SystemStatus { get; } = new();
+
     // ─── Always-on stats strip (sourced live from the host telemetry stream) ───
 
     /// <summary>CPU load as a display string (e.g. "37%"), or "—" when no telemetry is flowing.</summary>
@@ -69,6 +79,12 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     {
         Connection = connection;
         _shell = shell;
+
+        // FIRE AND FORGET, DELIBERATELY. RefreshAsync hands the blocking probe to the thread pool
+        // and the card renders nothing until a report arrives, so awaiting here would only delay
+        // Home appearing. Any failure inside is already contained - the card's own Unavailable state
+        // is what a missing host looks like.
+        _ = SystemStatus.RefreshAsync();
 
         // Re-compute ShowConnectionPulse whenever either dependency changes; blank the stats
         // strip the instant the link drops so it never shows stale numbers.
@@ -230,6 +246,7 @@ public partial class HomeViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        SystemStatus.Dispose();
         Connection.PropertyChanged -= _onConnectionChanged;
         _shell.PropertyChanged -= _onShellChanged;
         Connection.TelemetryReceived -= _onTelemetry;

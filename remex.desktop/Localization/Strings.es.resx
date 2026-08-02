@@ -2828,9 +2828,6 @@ Puedes cambiar:
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Todo lo que RemEx necesita está funcionando.</value>
   </data>
-  <data name="SystemStatus_Explain" xml:space="preserve">
-    <value>¿Qué significa esto?</value>
-  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Solucionar</value>
   </data>
@@ -2911,5 +2908,8 @@ Puedes cambiar:
   </data>
   <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
     <value>RemEx no pudo comprobar si se inicia cuando inicias sesión. Lo que ves aquí puede no coincidir con tu PC.</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx no pudo comprobar este PC porque la parte de RemEx que hace las comprobaciones no se está ejecutando. Tu teléfono no podrá conectarse hasta que lo haga.</value>
   </data>
 </root>

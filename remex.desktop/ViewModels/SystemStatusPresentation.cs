@@ -8,9 +8,6 @@ public enum SystemStatusAffordance
     /// <summary>Report the state and offer nothing. The row is still shown.</summary>
     ReportOnly,
 
-    /// <summary>Open an explanation. Changes nothing on the machine.</summary>
-    Explain,
-
     /// <summary>Perform a specific, named repair, only when the user asks for it.</summary>
     Fix,
 }
@@ -55,17 +52,24 @@ public static class SystemStatusPresentation
     /// Reporting the problem is genuinely useful; offering to "fix" it is not.
     /// </para>
     /// <para>
-    /// AUTOSTART IS THE ONE REAL FIX, because a repair already exists that is reversible and local:
-    /// registering the logon task. Elevation, the listening port and the firewall get explanations
-    /// instead — not because a fix would be hard, but because each would mean changing something
-    /// outside RemEx's own configuration, and this card is not the place to do that silently.
+    /// AUTOSTART IS THE ONE ROW WITH A BUTTON, because it is the one place a repair already exists
+    /// that is local, reversible and entirely within RemEx's own configuration: registering the logon
+    /// task. Elevation, the listening port and the firewall would each mean changing something
+    /// outside RemEx, and this card is not the place to do that.
+    /// </para>
+    /// <para>
+    /// **AND THE REST GET NO "EXPLAIN" BUTTON, WHICH IS A DEVIATION FROM THE BEAD WORTH STATING.**
+    /// The bead asked for a Fix or Explain button on every amber row. There is nowhere for Explain to
+    /// go — no help page, no dialog — so the button would have been inert, and this repo's standards
+    /// forbid placeholder implementations for good reason: a button that does nothing teaches the
+    /// user that the card does nothing. The sentence beside each row already IS the explanation, and
+    /// it says what the state means for them. A real help destination is filed separately.
     /// </para>
     /// </remarks>
     public static SystemStatusAffordance AffordanceFor(ReadinessCheckId id) => id switch
     {
-        ReadinessCheckId.Certificate => SystemStatusAffordance.ReportOnly,
         ReadinessCheckId.Autostart => SystemStatusAffordance.Fix,
-        _ => SystemStatusAffordance.Explain,
+        _ => SystemStatusAffordance.ReportOnly,
     };
 
     /// <summary>

@@ -2815,9 +2815,6 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Усе, що потрібно RemEx, працює.</value>
   </data>
-  <data name="SystemStatus_Explain" xml:space="preserve">
-    <value>Що це означає?</value>
-  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Виправити</value>
   </data>
@@ -2898,5 +2895,8 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
     <value>RemEx не зміг перевірити, чи запускається він під час входу. Те, що ви бачите тут, може не збігатися з налаштуваннями вашого ПК.</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx не зміг перевірити цей ПК, бо частина RemEx, яка виконує перевірки, не працює. Доки це не зміниться, ваш телефон не зможе під'єднатися.</value>
   </data>
 </root>

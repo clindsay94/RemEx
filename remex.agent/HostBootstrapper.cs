@@ -247,6 +247,25 @@ public static class HostBootstrapper
 
         builder.Services.AddSingleton<ICertificateService>(certService);
 
+        // THE READINESS REPORT, REGISTERED WHERE ITS INPUTS ALREADY LIVE (RemEx-id37). It needs the
+        // certificate path and the port, and both are here - certService a line above, port the
+        // parameter of this method - so building it anywhere else would mean recomputing one of them.
+        //
+        // AUTOSTART IS RESOLVED LAZILY, THROUGH THE OTHER CONTAINER. IStartupRegistrationService is
+        // registered into App.Services (the Avalonia container) by Program.RegisterPlatformServices,
+        // not into this one, and in the headless/--doctor path there is no Avalonia container at all.
+        // A Func closed over App.Services is read at probe time rather than now, and TryIsEnabled's
+        // own contract already returns null for "could not determine" - which the service maps to
+        // Unknown, the honest answer when the UI is not there to ask.
+        builder.Services.AddSingleton<Remex.Core.Services.Readiness.ISystemReadinessService>(_ =>
+            new Remex.Agent.Services.Readiness.SystemReadinessService(
+                new Remex.Agent.Services.Readiness.SystemReadinessProbe(
+                    isAutostartRegistered: () =>
+                        (Remex.Desktop.App.Services?.GetService(typeof(Remex.Desktop.Services.IStartupRegistrationService))
+                            as Remex.Desktop.Services.IStartupRegistrationService)?.TryIsEnabled(),
+                    certificatePath: certService.CertificatePath),
+                port));
+
         if (configureWebHost is null)
         {
             builder.WebHost.ConfigureKestrel(kestrel =>

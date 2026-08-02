@@ -2817,9 +2817,6 @@ Anda dapat mengubah:
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Semua yang dibutuhkan RemEx berfungsi.</value>
   </data>
-  <data name="SystemStatus_Explain" xml:space="preserve">
-    <value>Apa artinya ini?</value>
-  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Perbaiki</value>
   </data>
@@ -2900,5 +2897,8 @@ Anda dapat mengubah:
   </data>
   <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
     <value>RemEx tidak dapat memeriksa apakah ia mulai saat Anda masuk. Yang terlihat di sini mungkin tidak sesuai dengan PC Anda.</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx tidak dapat memeriksa PC ini karena bagian RemEx yang melakukan pemeriksaan tidak berjalan. Ponsel Anda tidak akan bisa terhubung sampai bagian itu berjalan.</value>
   </data>
 </root>

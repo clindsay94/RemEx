@@ -2815,9 +2815,6 @@ Możesz zmienić:
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Wszystko, czego potrzebuje RemEx, działa.</value>
   </data>
-  <data name="SystemStatus_Explain" xml:space="preserve">
-    <value>Co to oznacza?</value>
-  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Napraw to</value>
   </data>
@@ -2898,5 +2895,8 @@ Możesz zmienić:
   </data>
   <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
     <value>RemEx nie mógł sprawdzić, czy uruchamia się przy logowaniu. To, co tu widzisz, może nie odpowiadać ustawieniom komputera.</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić tego komputera, ponieważ część RemEx odpowiedzialna za sprawdzanie nie działa. Twój telefon nie zdoła się połączyć, dopóki to się nie zmieni.</value>
   </data>
 </root>

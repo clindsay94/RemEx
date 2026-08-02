@@ -2814,9 +2814,6 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>RemEx को जिन चीज़ों की ज़रूरत है, वे सब काम कर रही हैं।</value>
   </data>
-  <data name="SystemStatus_Explain" xml:space="preserve">
-    <value>इसका क्या मतलब है?</value>
-  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>इसे ठीक करें</value>
   </data>
@@ -2897,5 +2894,8 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="SystemStatus_Autostart_Unknown" xml:space="preserve">
     <value>RemEx यह जाँच नहीं सका कि वह साइन इन पर शुरू होता है या नहीं। यहाँ जो दिख रहा है, वह आपके PC से मेल न खाता हो।</value>
+  </data>
+  <data name="SystemStatus_Unavailable" xml:space="preserve">
+    <value>RemEx इस PC की जाँच नहीं कर सका, क्योंकि RemEx का जाँच करने वाला हिस्सा नहीं चल रहा है। जब तक वह नहीं चलेगा, आपका फ़ोन कनेक्ट नहीं हो पाएगा।</value>
   </data>
 </root>
