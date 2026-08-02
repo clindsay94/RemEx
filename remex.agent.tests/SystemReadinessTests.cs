@@ -21,11 +21,15 @@ public class SystemReadinessTests
         public bool? CertificateReadable { get; set; } = true;
         public bool? PortListening { get; set; } = true;
         public bool? AutostartRegistered { get; set; } = true;
+        public bool? FirewallAllows { get; set; } = true;
 
         public Func<bool?>? ElevatedThrows { get; set; }
 
         /// <summary>The port the service actually asked about, so a hardcoded probe cannot hide.</summary>
         public int? PortAsked { get; private set; }
+
+        /// <summary>The port the FIREWALL check was asked about, which must be the same one.</summary>
+        public int? FirewallPortAsked { get; private set; }
 
         public bool? IsElevated() => ElevatedThrows is not null ? ElevatedThrows() : Elevated;
         public bool? IsCertificateReadable() => CertificateReadable;
@@ -37,6 +41,12 @@ public class SystemReadinessTests
         }
 
         public bool? IsAutostartRegistered() => AutostartRegistered;
+
+        public bool? IsInboundAllowedByFirewall(int port)
+        {
+            FirewallPortAsked = port;
+            return FirewallAllows;
+        }
     }
 
     private static SystemReadinessReport Run(FakeProbe probe) =>
@@ -166,7 +176,10 @@ public class SystemReadinessTests
             PortListening = false
         });
 
-        Assert.Equal(4, report.Checks.Count);
+        // Counted against the enum rather than a literal. The point of this test is "no row was
+        // abandoned", and a hardcoded number expresses that only until someone adds a row - at which
+        // point it fails for the wrong reason and gets bumped without thought.
+        Assert.Equal(Enum.GetValues<ReadinessCheckId>().Length, report.Checks.Count);
         Assert.Equal(ReadinessState.Problem, StateOf(report, ReadinessCheckId.PortListening));
     }
 
@@ -290,5 +303,71 @@ public class SystemReadinessTests
 
         Assert.False(report.IsFullyReady);
         Assert.Equal(ReadinessState.Unknown, report.Overall);
+    }
+
+    [Fact]
+    public void AListeningPortBehindABlockedFirewallIsNotReady()
+    {
+        // THE GAP THIS ROW CLOSES (RemEx-ksbm). Before it existed, every other check could pass on a
+        // machine the phone provably cannot reach: the server IS up, the certificate IS readable,
+        // the task IS registered - and the firewall is refusing the connection. The card would have
+        // said "ready" and removed the first thing the user would otherwise have looked at.
+        var report = Run(new FakeProbe { PortListening = true, FirewallAllows = false });
+
+        Assert.Equal(ReadinessState.Problem, StateOf(report, ReadinessCheckId.Firewall));
+        Assert.Equal(ReadinessState.Problem, report.Overall);
+        Assert.False(report.IsFullyReady);
+    }
+
+    [Fact]
+    public void AFirewallThatCouldNotBeCheckedStopsTheCardCollapsingToGreen()
+    {
+        // The COMMON case on Linux, not an edge case: an unprivileged agent cannot read ufw's rules,
+        // and a machine filtering with bare nftables has nothing to ask. Unknown must keep the card
+        // open, or the row would be worse than absent - it would look like a check that passed.
+        var report = Run(new FakeProbe { FirewallAllows = null });
+
+        Assert.Equal(ReadinessState.Unknown, StateOf(report, ReadinessCheckId.Firewall));
+        Assert.Equal(ReadinessState.Unknown, report.Overall);
+        Assert.False(report.IsFullyReady);
+    }
+
+    [Fact]
+    public void TheFirewallIsAskedAboutTheSamePortThatWasProbedForAListener()
+    {
+        // The two rows are read together as "the server is up AND it is reachable", which is only
+        // true if they are about the same port. The agent genuinely drifts ports when the canonical
+        // one is held by a foreign process, so this is a live mismatch rather than a hypothetical.
+        var probe = new FakeProbe();
+
+        new SystemReadinessService(probe, 8338).Run();
+
+        Assert.Equal(8338, probe.FirewallPortAsked);
+        Assert.Equal(probe.PortAsked, probe.FirewallPortAsked);
+    }
+
+    [Fact]
+    public void AFirewallProbeThatThrowsIsUnknownAndDoesNotAbandonTheOtherRows()
+    {
+        // Launching a process is the one probe that reaches something genuinely unpredictable - an
+        // EDR, a policy block, a missing PATH entry. A throw there must not cost the user the checks
+        // that would have told them what is actually wrong.
+        var probe = new ThrowingFirewallProbe();
+        var report = new SystemReadinessService(probe, 5005).Run();
+
+        Assert.Equal(ReadinessState.Unknown, StateOf(report, ReadinessCheckId.Firewall));
+        Assert.Equal(ReadinessState.Ok, StateOf(report, ReadinessCheckId.Certificate));
+        Assert.Equal(ReadinessState.Ok, StateOf(report, ReadinessCheckId.Autostart));
+    }
+
+    private sealed class ThrowingFirewallProbe : IReadinessProbe
+    {
+        public bool? IsElevated() => true;
+        public bool? IsCertificateReadable() => true;
+        public bool? IsPortListening(int port) => true;
+        public bool? IsAutostartRegistered() => true;
+
+        public bool? IsInboundAllowedByFirewall(int port) =>
+            throw new System.ComponentModel.Win32Exception("the query was refused");
     }
 }

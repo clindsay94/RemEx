@@ -26,6 +26,7 @@ public sealed class SystemReadinessProbe : IReadinessProbe
 {
     private readonly Func<bool?> _isAutostartRegistered;
     private readonly string _certificatePath;
+    private readonly FirewallQuery _firewall;
 
     /// <param name="isAutostartRegistered">
     /// Injected rather than constructed so the readiness layer does not acquire a dependency on the
@@ -43,10 +44,18 @@ public sealed class SystemReadinessProbe : IReadinessProbe
     /// </para>
     /// </param>
     /// <param name="certificatePath">Absolute path to the machine-wide <c>cert.pfx</c>.</param>
-    public SystemReadinessProbe(Func<bool?> isAutostartRegistered, string certificatePath)
+    /// <param name="firewall">
+    /// The firewall fact-gatherer, or null to use the real one. Injected so the only probe that
+    /// launches a process can be exercised without one.
+    /// </param>
+    public SystemReadinessProbe(
+        Func<bool?> isAutostartRegistered,
+        string certificatePath,
+        FirewallQuery? firewall = null)
     {
         _isAutostartRegistered = Guard.NotNull(isAutostartRegistered);
         _certificatePath = Guard.NotNullOrWhiteSpace(certificatePath);
+        _firewall = firewall ?? FirewallQuery.CreateDefault();
     }
 
     /// <summary>
@@ -154,4 +163,18 @@ public sealed class SystemReadinessProbe : IReadinessProbe
     /// the check that would have caught it.
     /// </remarks>
     public bool? IsAutostartRegistered() => _isAutostartRegistered();
+
+    /// <summary>
+    /// Whether a firewall we can see permits inbound traffic on <paramref name="port"/>.
+    /// </summary>
+    /// <remarks>
+    /// THE ROW THAT COMPLETES THE PORT ROW. <see cref="IsPortListening"/> reads the socket table and
+    /// can only establish that the server is up; the firewall sits between that listener and the
+    /// phone, so without this check the card can report all-green on a machine the phone provably
+    /// cannot reach. That is the support case the whole card exists to eliminate.
+    ///
+    /// The only probe that launches a process, which is why the work lives in
+    /// <see cref="FirewallQuery"/> behind an injectable seam rather than inline here.
+    /// </remarks>
+    public bool? IsInboundAllowedByFirewall(int port) => _firewall.IsInboundAllowed(port);
 }

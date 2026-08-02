@@ -34,6 +34,18 @@ public interface IReadinessProbe
     /// <summary>Whether anything is listening on <paramref name="port"/>, or null if unknowable.</summary>
     bool? IsPortListening(int port);
 
+    /// <summary>
+    /// Whether a firewall we can see permits inbound traffic on <paramref name="port"/>, or null if
+    /// it could not be established.
+    /// </summary>
+    /// <remarks>
+    /// NULL IS THE COMMON ANSWER HERE, unlike the other members, and the row is designed around
+    /// that: an unprivileged Linux agent cannot read ufw's rules, and a machine filtering with bare
+    /// nftables has nothing to ask. See <see cref="FirewallReadiness"/> for why each of those is
+    /// Unknown rather than a guess in either direction.
+    /// </remarks>
+    bool? IsInboundAllowedByFirewall(int port);
+
     /// <summary>Whether the logon task / autostart entry is registered, or null if unknowable.</summary>
     bool? IsAutostartRegistered();
 }
@@ -68,11 +80,18 @@ public sealed class SystemReadinessService
     /// Runs every check and returns the report.
     /// </summary>
     /// <remarks>
+    /// SYNCHRONOUS AND NOT CHEAP — DO NOT CALL THIS ON THE UI THREAD. Since RemEx-ksbm the firewall
+    /// row launches a process (<c>powershell.exe</c> on Windows, up to two <c>firewall-cmd</c> calls
+    /// on Linux), so a run costs hundreds of milliseconds and is bounded only by that probe's own
+    /// five-second timeout. Nothing constructs this in production yet; whoever wires the card up
+    /// (RemEx-h5lr) must move it off the UI thread rather than discovering this from a frozen window.
+    /// <para>
     /// A probe that THROWS is treated as <see cref="ReadinessState.Unknown"/>, not as a failure.
     /// The difference matters: a readiness card that reports "your certificate is broken" because
     /// its own check crashed would send a non-technical user to repair something that was never
     /// wrong — and the one repair available for a certificate is the one that bricks every paired
     /// phone. "Could not check" is the honest answer and the safe one.
+    /// </para>
     /// </remarks>
     public SystemReadinessReport Run()
     {
@@ -119,6 +138,21 @@ public sealed class SystemReadinessService
                 whenFalse: ReadinessState.Problem,
                 trueDetail: $"listening on {_port}",
                 falseDetail: $"nothing is listening on {_port} - the phone has nothing to connect to"),
+
+            // IMMEDIATELY AFTER THE PORT ROW, because the two are read together and neither is
+            // sufficient alone. "Something is listening" plus "the firewall permits it" is as close
+            // to "the phone can reach you" as this machine can establish about itself; either one
+            // alone reads as an assurance it cannot support.
+            //
+            // BLOCKED IS A PROBLEM, NOT A WARNING. It is not a degradation the user will notice
+            // later - the connection does not happen at all, and it fails the same way an offline PC
+            // does, which is why it produces the support case it does.
+            Evaluate(ReadinessCheckId.Firewall, () => _probe.IsInboundAllowedByFirewall(_port),
+                whenTrue: ReadinessState.Ok,
+                whenFalse: ReadinessState.Problem,
+                trueDetail: $"no firewall rule we can see refuses inbound traffic on {_port}",
+                falseDetail: $"the firewall is refusing inbound traffic on {_port} - the phone cannot reach this PC",
+                nullDetail: "the firewall could not be checked - on Linux 'sudo ufw status' answers it; on Windows check the RemexHostInbound rule"),
 
             // AUTOSTART IS A WARNING, NOT A PROBLEM, and the distinction is the honest one: the
             // machine works right now. It just will not after the next reboot, and the user will

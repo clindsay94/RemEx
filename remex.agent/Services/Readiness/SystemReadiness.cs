@@ -60,6 +60,17 @@ public enum ReadinessCheckId
     /// <summary>Something is listening on the port the phone connects to.</summary>
     PortListening,
 
+    /// <summary>
+    /// The firewall permits inbound traffic to the agent.
+    /// </summary>
+    /// <remarks>
+    /// PAIRED WITH <see cref="PortListening"/> AND NOT REDUNDANT WITH IT. A green port row means the
+    /// server is up; it says nothing about whether anything can reach it, because the firewall sits
+    /// between the listener and the phone. Without this row the card can show all-green on a machine
+    /// the phone provably cannot reach — the exact support case the card exists to prevent.
+    /// </remarks>
+    Firewall,
+
     /// <summary>The logon task / XDG autostart entry is actually registered.</summary>
     Autostart
 }
