@@ -21,7 +21,7 @@ namespace Remex.Agent.Services.Input.Linux;
 ///     therefore a no-op on input-only injectors and is kept only for API compatibility.
 /// </summary>
 [SupportedOSPlatform("linux")]
-internal sealed class LinuxPortalInputInjector : IAsyncDisposable
+internal sealed class LinuxPortalInputInjector : IAsyncDisposable, IPortalInputSink
 {
     private const string PortalDestination = PortalDbusNames.PortalService;
     private const string PortalPath = PortalDbusNames.PortalPath;

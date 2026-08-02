@@ -51,7 +51,7 @@ public class LinuxInputSimulationService : IInputSimulationService
     // available; null on X11 or when portal is absent.  Started lazily on first use
     // so that the permission dialog is shown only when a remote desktop session
     // actually begins sending input events.
-    private readonly LinuxPortalInputInjector? _portalInjector;
+    private readonly IPortalInputSink? _portalInjector;
     private int _portalStartAttempted; // 0 = not yet attempted, 1 = attempted (Interlocked)
     private readonly object _portalStartLock = new();
 
@@ -136,7 +136,8 @@ public class LinuxInputSimulationService : IInputSimulationService
         LinuxDesktopBackendStatus backendStatus,
         InputToolLauncher? launcher = null,
         Remex.Agent.Services.RemoteDesktop.Linux.Capture.LinuxCaptureSessionLifetime? captureLifetime = null,
-        VirtualDesktopOrigin? virtualDesktopOrigin = null)
+        VirtualDesktopOrigin? virtualDesktopOrigin = null,
+        IPortalInputSink? portalInjector = null)
     {
         _logger = logger;
         _captureLifetime = captureLifetime;
@@ -154,7 +155,16 @@ public class LinuxInputSimulationService : IInputSimulationService
         // than a naive WAYLAND_DISPLAY-only check: KDE/GNOME Wayland sessions always
         // also set DISPLAY=:0 for XWayland, so requiring DISPLAY to be empty hides
         // the Wayland path on every real Wayland desktop.
-        if (_backendStatus.IsWaylandSession)
+        //
+        // The injected sink is a test seam (RemEx-y45x) and is null in production, so the condition
+        // below decides the real path exactly as it did before. It is the ONLY way to observe what
+        // this service sends the portal: nine branches route through it, and the one that scrolled
+        // 120x too far did so unseen because nothing could assert its arguments.
+        if (portalInjector is not null)
+        {
+            _portalInjector = portalInjector;
+        }
+        else if (_backendStatus.IsWaylandSession)
         {
             _portalInjector = new LinuxPortalInputInjector(logger);
             _logger.LogInformation(
@@ -374,7 +384,24 @@ public class LinuxInputSimulationService : IInputSimulationService
     {
         if (_portalInjector is not null && EnsurePortalStarted() && _portalInjector.IsActive)
         {
-            _portalInjector.NotifyPointerScrollDiscrete(deltaX, deltaY);
+            // THIS BRANCH USED TO SCROLL 120x TOO FAR (RemEx-y45x). It passed the raw delta straight
+            // through, and the raw delta is not a step count. The wire unit is Windows' WHEEL_DELTA of
+            // 120 per notch — WindowsInputSimulationService hands deltaY to MOUSEEVENTF_WHEEL
+            // unchanged, which is what defines it, and CoordinateValidation caps it at 120 * 10 — while
+            // the portal's parameter is documented as "the number of steps scrolled":
+            //
+            //   NotifyPointerAxisDiscrete(IN session_handle o, IN options a{sv}, IN axis u, IN steps i)
+            //
+            // So one notch from the client asked the compositor for 120 notches. Both shell branches
+            // below already divide by 120; this one now shares the ydotool branch's helper outright, so
+            // the three cannot drift apart again. (The xdotool branch computes the same magnitude
+            // inline, as a loop count rather than a value it passes on.)
+            //
+            // The portal also offers NotifyPointerAxis, whose dx/dy are a smooth-scroll motion vector
+            // in the stream's logical pixels. That is the wrong one here: this delta arrives quantised
+            // to notches from a wheel, not as a touchpad gesture, and the discrete call is what the
+            // other two backends emit.
+            _portalInjector.NotifyPointerScrollDiscrete(WheelDetents(deltaX), WheelDetents(deltaY));
             return;
         }
 
