@@ -26,7 +26,7 @@ class TransferRateEstimatorTest {
 
         estimator.update(transferredBytes = 5 * MB, timestampMillis = 1_000)
 
-        assertNull(estimator.bytesPerSecond)
+        assertNull(estimator.smoothedRate)
         assertNull(estimator.secondsRemaining(5 * MB, 100 * MB))
     }
 
@@ -42,7 +42,7 @@ class TransferRateEstimatorTest {
             bytes += 10 * MB
         }
 
-        val rate = estimator.bytesPerSecond
+        val rate = estimator.smoothedRate
         assertNotNull(rate)
         assertEquals(10.0 * MB, rate!!, 0.5 * MB)
     }
@@ -73,14 +73,14 @@ class TransferRateEstimatorTest {
             estimator.update(bytes, clock)
         }
 
-        val afterBurst = estimator.bytesPerSecond!!
+        val afterBurst = estimator.smoothedRate!!
         assertTrue("the burst should read fast, got $afterBurst", afterBurst > 50.0 * MB)
 
         clock += 10_000
         bytes += MB
         estimator.update(bytes, clock)
 
-        val afterSlowInterval = estimator.bytesPerSecond!!
+        val afterSlowInterval = estimator.smoothedRate!!
 
         // WHERE THIS BOUND COMES FROM, since a threshold picked by feel is how a test ends up
         // unable to fail. A 10s interval against a 5s time constant gives alpha = 1 - e^-2 = 0.86,
@@ -124,11 +124,11 @@ class TransferRateEstimatorTest {
 
         estimator.update(0, 0)
         estimator.update(50 * MB, 1_000)
-        assertNotNull(estimator.bytesPerSecond)
+        assertNotNull(estimator.smoothedRate)
 
         estimator.update(0, 2_000)
 
-        assertNull("a restart must clear the estimate", estimator.bytesPerSecond)
+        assertNull("a restart must clear the estimate", estimator.smoothedRate)
     }
 
     @Test
@@ -138,7 +138,7 @@ class TransferRateEstimatorTest {
         estimator.update(0, 1_000)
         estimator.update(5 * MB, 1_000)
 
-        assertNull(estimator.bytesPerSecond)
+        assertNull(estimator.smoothedRate)
     }
 
     @Test
@@ -149,12 +149,12 @@ class TransferRateEstimatorTest {
 
         estimator.update(0, 10_000)
         estimator.update(10 * MB, 11_000)
-        val healthy = estimator.bytesPerSecond
+        val healthy = estimator.smoothedRate
 
         estimator.update(20 * MB, 9_000)
 
         assertEquals("a backwards clock should leave the estimate untouched",
-            healthy!!, estimator.bytesPerSecond!!, 0.001)
+            healthy!!, estimator.smoothedRate!!, 0.001)
     }
 
     @Test
@@ -205,13 +205,101 @@ class TransferRateEstimatorTest {
         estimator.update(10 * MB, 1_000)
 
         estimator.resetRate()
-        assertNull(estimator.bytesPerSecond)
+        assertNull(estimator.smoothedRate)
 
         // Resume an hour later; the gap must not be treated as an interval.
         estimator.update(10 * MB, 3_600_000)
-        assertNull(estimator.bytesPerSecond)
+        assertNull(estimator.smoothedRate)
 
         estimator.update(20 * MB, 3_601_000)
-        assertEquals(10.0 * MB, estimator.bytesPerSecond!!, 0.5 * MB)
+        assertEquals(10.0 * MB, estimator.smoothedRate!!, 0.5 * MB)
+    }
+
+    // ── Staleness: a stall is silence, and silence cannot call update() (RemEx-8c3v) ──────────
+
+    /** Ten megabytes a second, established over two samples ending at t = 1000. */
+    private fun movingEstimator(): TransferRateEstimator {
+        val estimator = TransferRateEstimator()
+        estimator.update(0, 0)
+        estimator.update(10 * MB, 1_000)
+        return estimator
+    }
+
+    @Test
+    fun `an estimate stops being offered once nothing has arrived for four time constants`() {
+        // THE DEFECT THIS CLOSES. The estimator only advances when a frame arrives, so on a real
+        // stall the last figure sat on screen indefinitely while the ETA silently became fiction.
+        // The 1 KB/s floor cannot catch it: that fires as the average DECAYS, and decay needs
+        // samples - which is exactly what a stall stops delivering.
+        val estimator = movingEstimator()
+        val staleAfterMillis = (TransferRateEstimator.StaleTimeConstants * 5.0 * 1000).toLong()
+
+        assertNotNull(estimator.bytesPerSecondAt(1_000 + staleAfterMillis))
+        assertNull(
+            "a transfer silent for four time constants must stop claiming a speed",
+            estimator.bytesPerSecondAt(1_000 + staleAfterMillis + 1),
+        )
+    }
+
+    @Test
+    fun `an ordinary gap between chunks does not blank the display`() {
+        // The other direction of error. Chunks land irregularly and the app gets backgrounded, so a
+        // threshold tight enough to flicker would train the user to ignore the figure entirely.
+        val estimator = movingEstimator()
+
+        assertNotNull(estimator.bytesPerSecondAt(1_000 + 5_000))
+        assertNotNull(estimator.bytesPerSecondAt(1_000 + 15_000))
+    }
+
+    @Test
+    fun `speed and time-remaining go blank at the same moment`() {
+        // Two figures that disagreed about whether the transfer was still alive would be worse than
+        // either alone - a speed with no ETA reads as "still going, cannot say how long".
+        val estimator = movingEstimator()
+        val stale = 1_000L + (TransferRateEstimator.StaleTimeConstants * 5.0 * 1000).toLong() + 1
+
+        assertNotNull(estimator.bytesPerSecondAt(1_500))
+        assertNotNull(estimator.secondsRemainingAt(10 * MB, 100 * MB, 1_500))
+
+        assertNull(estimator.bytesPerSecondAt(stale))
+        assertNull(estimator.secondsRemainingAt(10 * MB, 100 * MB, stale))
+    }
+
+    @Test
+    fun `staleness is measured from the last sample, not from when the transfer began`() {
+        // A long transfer that is still moving must never age out. Measuring from the start would
+        // blank the display on every transfer that ran longer than the threshold.
+        val estimator = TransferRateEstimator()
+        var bytes = 0L
+        for (second in 0..120) {
+            estimator.update(bytes, second * 1000L)
+            bytes += 10 * MB
+        }
+
+        assertNotNull(estimator.bytesPerSecondAt(120_000))
+    }
+
+    @Test
+    fun `the arithmetic still holds the figure the display refuses to show`() {
+        // The split is deliberate: the average is CORRECT, it is simply about a moment that has
+        // passed. Clearing it would also destroy the baseline a resumed transfer smooths from.
+        val estimator = movingEstimator()
+        val stale = 1_000L + (TransferRateEstimator.StaleTimeConstants * 5.0 * 1000).toLong() + 1
+
+        assertNull(estimator.bytesPerSecondAt(stale))
+        assertNotNull(estimator.smoothedRate)
+    }
+
+    @Test
+    fun `a fresh sample makes the estimate offerable again`() {
+        // Recovery has to work without a reset: the radio comes back, one frame lands, and the
+        // display must resume rather than stay blank until the transfer restarts.
+        val estimator = movingEstimator()
+        val stale = 1_000L + (TransferRateEstimator.StaleTimeConstants * 5.0 * 1000).toLong() + 1
+        assertNull(estimator.bytesPerSecondAt(stale))
+
+        estimator.update(20 * MB, stale)
+
+        assertNotNull(estimator.bytesPerSecondAt(stale))
     }
 }

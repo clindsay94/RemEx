@@ -1477,8 +1477,9 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         } else return
         FileTransferNotificationManager.showTransferProgress(
             app(), activeTransferFileName ?: "File transfer", activeDownload != null, transferred, total,
-            bytesPerSecond = transferRate.bytesPerSecond,
-            secondsRemaining = transferRate.secondsRemaining(transferred, total.takeIf { it > 0L }),
+            bytesPerSecond = transferRate.bytesPerSecondAt(SystemClock.elapsedRealtime()),
+            secondsRemaining = transferRate.secondsRemainingAt(
+                transferred, total.takeIf { it > 0L }, SystemClock.elapsedRealtime()),
         )
     }
 
@@ -1491,10 +1492,11 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
      * "30 seconds".
      */
     private fun withRateAndEta(base: String, transferred: Long, total: Long?): String {
+        val now = SystemClock.elapsedRealtime()
         val suffix = TransferProgressText.progressSuffix(
             app(),
-            TransferProgressFormat.rate(transferRate.bytesPerSecond),
-            TransferProgressFormat.eta(transferRate.secondsRemaining(transferred, total)),
+            TransferProgressFormat.rate(transferRate.bytesPerSecondAt(now)),
+            TransferProgressFormat.eta(transferRate.secondsRemainingAt(transferred, total, now)),
         ) ?: return base
 
         return app().getString(R.string.file_transfer_detail_separator, base, suffix)

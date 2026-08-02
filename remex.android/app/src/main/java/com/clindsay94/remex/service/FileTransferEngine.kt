@@ -683,14 +683,15 @@ object FileTransferEngine {
 
     /** Current throughput for [transferId] in bytes per second, or null when it is not known. */
     fun bytesPerSecond(transferId: String): Double? =
-        rateEstimators[transferId]?.bytesPerSecond
+        rateEstimators[transferId]?.bytesPerSecondAt(SystemClock.elapsedRealtime())
 
     /** Seconds until [transferId] finishes, or null when that cannot honestly be said. */
     fun secondsRemaining(transferId: String): Double? {
         val estimator = rateEstimators[transferId] ?: return null
         val item = _queue.value.firstOrNull { it.id == transferId } ?: return null
 
-        return estimator.secondsRemaining(item.bytesTransferred, item.size.takeIf { it > 0L })
+        return estimator.secondsRemainingAt(
+            item.bytesTransferred, item.size.takeIf { it > 0L }, SystemClock.elapsedRealtime())
     }
 
     /**

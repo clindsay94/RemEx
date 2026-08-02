@@ -38,8 +38,61 @@ class TransferRateEstimator(
     @Volatile private var lastBytes: Long = 0
     @Volatile private var smoothedBytesPerSecond: Double? = null
 
-    /** The current smoothed throughput, or null before enough is known to say. */
-    val bytesPerSecond: Double? get() = smoothedBytesPerSecond
+    /**
+     * The raw smoothed throughput. **The arithmetic, not the display (RemEx-8c3v).**
+     *
+     * Internal on purpose: this is what the exponential average currently holds, and it is correct
+     * about a moment that may have passed. Rendering it is what let a stalled transfer keep claiming
+     * a speed. Anything user-facing goes through [bytesPerSecondAt], which knows what time it is.
+     */
+    internal val smoothedRate: Double? get() = smoothedBytesPerSecond
+
+    /**
+     * The throughput as of [nowMillis], or null when nothing recent enough is known.
+     *
+     * **TAKES A CLOCK BECAUSE A STALL IS SILENCE, AND SILENCE CANNOT CALL [update].** The estimator
+     * only advances when a progress frame arrives, so when bytes stop — the radio drops, the PC
+     * sleeps, the host wedges — the last figure would otherwise sit on screen indefinitely while the
+     * ETA silently became fiction. A user watching "12.4 MB/s, 38 seconds left" on a transfer that
+     * died five minutes ago is being actively misinformed, which is worse than the percentage-only
+     * display this replaced.
+     *
+     * **THE [MinimumMeaningfulBytesPerSecond] FLOOR CANNOT COVER THIS.** That floor fires as the
+     * average DECAYS, and decay needs samples; on a true stall none arrive, so the estimate is
+     * frozen rather than falling. Ageing at READ time is the only shape that stays honest without a
+     * timer to remember to cancel — and it makes the display going blank the signal that nothing is
+     * arriving, rather than a number that quietly stopped being true.
+     *
+     * @param nowMillis a reading from the same monotonic clock [update] is fed.
+     */
+    fun bytesPerSecondAt(nowMillis: Long): Double? {
+        val last = lastTimestampMillis ?: return null
+        val rate = smoothedBytesPerSecond ?: return null
+
+        return if (nowMillis - last > staleAfterMillis) null else rate
+    }
+
+    /**
+     * Seconds until the transfer finishes as of [nowMillis], or null when it cannot be said.
+     *
+     * Reads through [bytesPerSecondAt], so speed and time-remaining go blank together. Two figures
+     * that disagreed about whether the transfer was still alive would be worse than either alone.
+     */
+    fun secondsRemainingAt(transferredBytes: Long, totalBytes: Long?, nowMillis: Long): Double? {
+        if (bytesPerSecondAt(nowMillis) == null) return null
+
+        return secondsRemaining(transferredBytes, totalBytes)
+    }
+
+    /**
+     * How long silence may last before the estimate stops describing anything.
+     *
+     * Derived from the time constant rather than picked: after four of them the exponential
+     * weighting has forgotten ~98% of what the figure was built from. At the default tau that is
+     * twenty seconds — long enough that an ordinary gap between chunks does not blank the display,
+     * short enough that a dead transfer stops claiming a speed while the user is still watching.
+     */
+    private val staleAfterMillis: Double get() = StaleTimeConstants * timeConstantSeconds * 1000.0
 
     /**
      * Feeds a progress observation.
@@ -99,7 +152,7 @@ class TransferRateEstimator(
      * @param totalBytes Total size, or null/0 when the size is unknown - a streamed source has no
      *   length, and no rate can produce an ETA without one.
      */
-    fun secondsRemaining(transferredBytes: Long, totalBytes: Long?): Double? {
+    internal fun secondsRemaining(transferredBytes: Long, totalBytes: Long?): Double? {
         val rate = smoothedBytesPerSecond ?: return null
         if (totalBytes == null || totalBytes <= 0L) return null
 
@@ -127,5 +180,8 @@ class TransferRateEstimator(
          * dead one does not produce a number measured in days.
          */
         const val MinimumMeaningfulBytesPerSecond: Double = 1024.0
+
+        /** Time constants of silence after which the estimate is stale. See [bytesPerSecondAt]. */
+        const val StaleTimeConstants: Double = 4.0
     }
 }
