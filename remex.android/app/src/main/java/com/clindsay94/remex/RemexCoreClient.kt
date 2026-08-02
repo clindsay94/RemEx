@@ -328,6 +328,28 @@ object RemexCoreClient {
     }
 
     @JvmStatic
+    @JvmName("ClearPinnedHostHashNative")
+    private external fun ClearPinnedHostHashNative(hostId: String): String
+
+    /** Drops the native in-memory pin for [hostId]. See ClearPinnedHostHashNative (RemEx-1phe). */
+    @JvmStatic
+    fun ClearPinnedHostHash(hostId: String): Result<String> {
+        return if (isLibraryLoaded) {
+            try {
+                Result.success(ClearPinnedHostHashNative(hostId))
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "ClearPinnedHostHashNative not loaded", e)
+                Result.failure(e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "ClearPinnedHostHashNative crashed", e)
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
+        }
+    }
+
+    @JvmStatic
     @JvmName("SetPinnedHostHashNative")
     private external fun SetPinnedHostHashNative(hostId: String, spkiHashBase64: String): String
 

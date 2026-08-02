@@ -897,6 +897,30 @@ public static class AndroidNativeExports
         return Export(env, () => "OK");
     }
 
+    /// <summary>
+    /// Drops the in-memory pin for one host key, mirroring
+    /// <see cref="SetPinnedHostHashNative"/>.
+    /// </summary>
+    /// <remarks>
+    /// WITHOUT THIS, FORGETTING A PC DID NOT TAKE EFFECT UNTIL THE PROCESS RESTARTED (RemEx-1phe).
+    /// The connect path falls back to this cache when the DataStore pin is gone, so clearing the
+    /// stored pin alone left the old hash live for the rest of the process - the user taps "forget"
+    /// or "repair", reconnects, and is still pinned to the certificate they just rejected.
+    ///
+    /// The setter cannot serve as its own clear: it ignores an empty hash, so passing one is a no-op
+    /// rather than a removal.
+    /// </remarks>
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_ClearPinnedHostHashNative")]
+    public static IntPtr ClearPinnedHostHashNative(IntPtr env, IntPtr thiz, IntPtr hostIdPtr)
+    {
+        var hostId = JniHelper.ReadJString(env, hostIdPtr);
+        if (!string.IsNullOrEmpty(hostId))
+        {
+            _pinnedHashes.TryRemove(hostId, out _);
+        }
+        return Export(env, () => "OK");
+    }
+
     private static string HandleInitialize(string? initJson)
     {
         var initRequest = string.IsNullOrWhiteSpace(initJson)

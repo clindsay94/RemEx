@@ -1,5 +1,6 @@
 package com.clindsay94.remex.security
 
+import com.clindsay94.remex.RemexCoreClient
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -164,8 +165,31 @@ object PinnedHostStore {
      * nobody can see at a call site; one call is an invariant nobody can break.
      */
     suspend fun forgetHost(context: Context, hostId: String) {
-        removePin(context, hostId)
-        removeReconnectSecret(context, hostId)
+        // EVERY KEY PAIRING WROTE UNDER, not just the one the caller happens to hold (RemEx-1phe).
+        // Pairing stores the pin under both the mDNS hostId and the typed host, and the secret under
+        // those PLUS the SPKI hash - so clearing one key left the others behind, and the two paths
+        // that read them are exactly the ones that reproduce "paired but will not connect":
+        // self-healing discovery trusts a host if EITHER pin key is set, and the reconnect-secret
+        // read PREFERS the spkiHash key.
+        //
+        // The aliases are DISCOVERED rather than demanded from the caller, which holds only one of
+        // them: every pin key mapping to the same hash is the same PC by definition.
+        val paired = listPaired(context)
+        val hash = paired[hostId]
+        val aliases =
+                if (hash == null) setOf(hostId)
+                else paired.filterValues { it == hash }.keys + hostId
+
+        for (alias in aliases) {
+            removePin(context, alias)
+            removeReconnectSecret(context, alias)
+            // The native in-memory pin outlives the DataStore one and the connect path falls back to
+            // it, so without this the forget does not take effect until the process restarts.
+            RemexCoreClient.ClearPinnedHostHash(alias)
+        }
+
+        // The secret is also keyed by the hash itself, which is not a pin key and so is not an alias.
+        if (hash != null) removeReconnectSecret(context, hash)
     }
 
     suspend fun removeReconnectSecret(context: Context, hostId: String) {
