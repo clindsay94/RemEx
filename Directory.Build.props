@@ -13,8 +13,8 @@
   </PropertyGroup>
 
   <!--
-    Test projects fail the build on any warning they can emit, not just compiler ones, with one
-    deliberate carve-out listed below (RemEx-t0f3).
+    Every project fails the build on any warning the compiler or an analyzer emits, not just the
+    compiler ones, with one deliberate carve-out listed below (RemEx-t0f3, RemEx-3p35).
 
     WHY THIS EXISTS RATHER THAN A BETTER HABIT. Six consecutive changelog entries claimed "0 warnings"
     while two xUnit analyzer warnings sat in the build. The command behind the claim grepped for
@@ -23,14 +23,23 @@
     check, because it reads as evidence and stops anyone asking. Documenting the right grep helps the
     next reader; making the build refuse to produce the warning at all removes the question.
 
-    Scoped to *.tests deliberately. These projects do not ship, so the cost of a hard failure is a
-    developer's next two minutes, and analyzer warnings here (xUnit's argument-order and assertion
-    rules) are the ones that catch tests which quietly assert less than they appear to — exactly the
-    class this loop has been burned by. Extending it to the shipping projects is RemEx-3p35, which
-    needs the Android NativeAOT build verified first because the trim and AOT analyzers emit there.
+    EVERY PROJECT, NOT JUST *.tests (RemEx-3p35). This started scoped to the test projects because the
+    shipping ones had not been checked on the build paths a Windows solution build cannot see. They
+    have been now, and all three were already clean: zero warnings on `dotnet build Remex.sln -t:Rebuild`,
+    zero on a `linux-x64` self-contained build of each project under WSL, and zero from `dotnet restore`.
+    remex.agent.windows is covered too — it is absent from Remex.sln but reached transitively through
+    remex.agent's conditional ProjectReference on Windows.
+
+    The Android NativeAOT build was NOT clean — it emits two warnings, and one of them needs the
+    carve-out documented further down. Neither is this repo's code.
   -->
   <!--
-    Lower-cased before the comparison rather than passing a StringComparison, because MSBuild's
+    KEPT FOR THE RECORD RATHER THAN DELETED, because the condition it explains is gone but the trap it
+    documents is not: any future `Condition` here that compares project names must not reach for the
+    two-argument String.EndsWith overload.
+
+    The condition below USED TO READ `$(MSBuildProjectName.ToLowerInvariant().EndsWith('.tests'))`. It
+    was lower-cased before the comparison rather than passing a StringComparison, because MSBuild's
     property-function binder does not resolve the two-argument String.EndsWith overload on every SDK:
     `EndsWith('.tests', 'OrdinalIgnoreCase')` evaluates on SDK 10.0.302 and dies on SDK 10.0.104 with
     `error MSB4184: Method 'System.String.EndsWith' not found`.
@@ -48,7 +57,7 @@
     PascalCase spelling is already live in these projects' assembly names (Remex.Core.Tests), so a
     future `Remex.Foo.Tests.csproj` would otherwise be skipped in silence.
   -->
-  <PropertyGroup Condition="$(MSBuildProjectName.ToLowerInvariant().EndsWith('.tests'))">
+  <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!--
@@ -65,5 +74,54 @@
       first draft of this list, having reproduced exactly that failure.
     -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904;NU1905</WarningsNotAsErrors>
+
+    <!--
+      IF YOU READ ONE LINE OF THIS COMMENT: never add IL2026, IL2075, IL3050 or another specific trim
+      or AOT diagnostic to this list. Demoting IL3053 below is safe ONLY because those stay errors.
+      The reasoning is at the bottom; the rule is here because it is the part that can be got wrong.
+
+      And ONE from the Android NativeAOT build, which is the path RemEx-3p35 existed to check and the
+      only one of the three that was not already clean.
+
+      IL3053 — "Assembly '<name>' produced AOT analysis warnings." A ROLLUP the ILC step emits per
+      assembly; today the only one is Mono.Android, the Android SDK's own, which this repo cannot fix.
+      Without this line `cd remex.android && ./gradlew clean assembleRelease` fails with `error IL3053`
+      and an MSB3077 from ilc.
+
+      WHY DEMOTING IT DOES NOT DISARM THE NATIVEAOT GUARD, stated carefully because the obvious reason
+      is the wrong one. It is NOT that the rollup only ever names a foreign assembly: review produced an
+      AOT-unsafe call in Remex.Core and got a second rollup, `IL3053: Assembly 'libRemexCore'`, demoted
+      by this very line. The guard holds because the rsp passes ilc's `warnaserror` switch alongside its
+      `singlewarn` switch, and single-warn only folds up diagnostics that remain WARNINGS. The specific
+      one is promoted to an error first, so it survives: that same probe failed the build on
+      `IL2026: ... Using member 'JsonSerializer.Serialize<...>' which has RequiresUnreferencedCode`,
+      attributed to remex.core.csproj::TargetFramework=net10.0-android.
+
+      The load-bearing consequence: this stays safe only while IL2026/IL2075/IL3050 and friends are NOT
+      themselves in WarningsNotAsErrors. Add one of them here and the demoted rollup becomes the only
+      remaining signal that Remex.Core has an AOT problem at all.
+
+      XA0033 is deliberately NOT here, and the difference is measured rather than assumed. It is the
+      Android workload failing to parse `java -version` on Temurin 26, logged by an MSBuild task rather
+      than by a compiler, and this flag does not elevate it: in the very build that failed on
+      `error IL3053` with both carve-outs absent, XA0033 printed as `warning`. Not every warning in that
+      build is reachable from here; the gap is filed as RemEx-go3k.
+
+      HOW THE FIRST ANSWER TO THIS WAS WRONG, recorded without a mechanism because the mechanism was
+      never isolated. Three consecutive runs measured "the Android build succeeds with the carve-out
+      removed", and a comment saying the carve-out was decoration was written and nearly shipped. The
+      fourth run failed on `error IL3053`, and it now fails reliably. A first correction blamed a stale
+      `artifacts/obj`, and review showed that does not reproduce either: editing WarningsNotAsErrors
+      rewrites the ILC rsp, and the gradle Exec task declares no inputs or outputs, so the step is
+      re-run every time and CANNOT be measured stale. So the cause of those three green runs is
+      genuinely unknown, and guessing at it a second time would repeat the mistake being recorded.
+      What is defensible is the discipline: a single Android build is not a measurement, and a
+      surprising result should be re-run before anything is written down on the strength of it.
+
+      This flag DOES reach the compiler on the android target framework, verified by injecting an unused
+      local into remex.core: `assembleRelease` fails with `error CS0219` attributed to
+      `remex.core.csproj::TargetFramework=net10.0-android`.
+    -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);IL3053</WarningsNotAsErrors>
   </PropertyGroup>
 </Project>

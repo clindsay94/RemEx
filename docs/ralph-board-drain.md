@@ -123,9 +123,10 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
      dotnet build Remex.sln -c Release --nologo -t:Rebuild 2>&1 | grep -cE ": warning |: error "
      ```
 
-     Test projects also fail the build on their own warnings now, but do NOT treat a green
-     `dotnet test` as proof of that: `--no-build` compiles nothing, and even a building run is
-     incremental. The command above is the proof, for the test projects and the shipping ones alike.
+     **Every project** fails the build on its own compiler and analyzer warnings now, not just the
+     test ones (RemEx-3p35) — so in practice that count is either 0 or the build already failed. Do
+     NOT treat a green `dotnet test` as proof of it: `--no-build` compiles nothing, and even a
+     building run is incremental. The command above is the proof, for every project alike.
    - **Measuring an injection: `dotnet build -t:Rebuild` FIRST, then `dotnet test --no-build`.**
      Letting `dotnet test` build is not enough — it builds incrementally, and on this share a
      patch-test-restore cycle can leave MSBuild's up-to-date check satisfied, so two different
@@ -144,6 +145,25 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
      when first measured.
    - Android changes: `cd remex.android && ./gradlew assembleRelease` — RELEASE ONLY, never
      assembleDebug; only release runs the `lintVitalRelease` gate.
+   - **One Android build is not a measurement. Re-run a surprising result before writing it down.**
+     (RemEx-3p35.) The same A/B — does removing a `WarningsNotAsErrors` entry break
+     `assembleRelease`? — answered "no" three consecutive times and then "yes", reliably, on the
+     fourth. A comment saying the entry was decoration had already been written on the strength of the
+     first three. **The cause of those three green runs was never isolated, and the honest record says
+     so.** A first correction blamed a stale `artifacts/obj`; review disproved that too — editing
+     `WarningsNotAsErrors` rewrites the ILC rsp, and the gradle `Exec` task declares no inputs or
+     outputs, so the step re-runs every time and cannot go stale. Guessing a second mechanism would
+     have repeated the mistake.
+
+     What to actually do: run the A/B more than once, and confirm from the log that the step you are
+     measuring really executed rather than assuming a green build exercised it. Deleting the AOT
+     outputs first is cheap insurance and rules the question out entirely:
+
+     ```
+     rm -rf artifacts/obj/remex.core/release_net10.0-android_android-arm64 \
+            artifacts/bin/remex.core/release_net10.0-android_android-arm64
+     cd remex.android && ./gradlew clean assembleRelease
+     ```
    - `Remex.Core` changes: the Android release build is also the NativeAOT link check — run it
      even for "PC-side" core edits.
    A red build or failing test is never an acceptable stopping point.
