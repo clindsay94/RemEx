@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Agent.Services.FileTransfer;
 using Remex.Core.Models;
@@ -456,4 +458,127 @@ public sealed class FileConflictCodeTests : IDisposable
             Directory.GetFileSystemEntries(_root).Select(Path.GetFileName)
                 .OrderBy(name => name, StringComparer.Ordinal).ToArray());
     }
+
+    // ── Which code an occupied destination gets, and who chose the name (RemEx-nhw2) ───────────
+
+    [Fact]
+    public void ANameTHEUSERChoseKeepsTheCodeThatOffersReplace()
+    {
+        // Unchanged behaviour, and it must stay unchanged: the user named this destination, so
+        // "that already exists" is a question they can answer, and Replace answers exactly the
+        // request they made. Removing that would break the ordinary collision the whole feature
+        // exists for.
+        var plan = new ConflictResolutionPlan(
+            Overwrite: false, DestinationPath: Path.Combine(_root, "b.txt"), ResolvedName: null);
+
+        var ex = FileTransferService.Occupied(plan, FileConflictException.FileExists);
+
+        Assert.Equal(FileTransferErrorCodes.DestinationExists, ex.ErrorCode);
+        Assert.Equal("b.txt", ex.ConflictingName);
+    }
+
+    [Theory]
+    [InlineData("file")]
+    [InlineData("directory")]
+    [InlineData("different kind")]
+    public void ANameTHEHOSTInventedNEVERGetsTheCodeThatOffersReplace(string whatIsInTheWay)
+    {
+        // THE DATA-LOSS WINDOW. Under keep-both the resolver picks a sibling and the pre-checks run
+        // a few instructions later; anything claiming the name in between reached those pre-checks,
+        // which reported destination_exists - naming "b (2).txt", a file the user has never seen,
+        // while offering Replace. Replace re-answers the ORIGINAL request, so tapping it overwrites
+        // b.txt: the file they chose keep-both to preserve, destroyed by answering a question about
+        // a different one.
+        //
+        // Swept across all three pre-check flavours because the danger is the CODE, not the kind of
+        // thing in the way, and one un-migrated site is enough to reopen the window.
+        Func<string, FileConflictException> factory = whatIsInTheWay switch
+        {
+            "file" => FileConflictException.FileExists,
+            "directory" => FileConflictException.DirectoryExists,
+            _ => FileConflictException.DifferentKindExists,
+        };
+        var plan = new ConflictResolutionPlan(
+            Overwrite: false, DestinationPath: Path.Combine(_root, "b (2).txt"), ResolvedName: "b (2).txt");
+
+        var ex = FileTransferService.Occupied(plan, factory);
+
+        Assert.Equal(FileTransferErrorCodes.ResolvedNameTaken, ex.ErrorCode);
+        Assert.NotEqual(FileTransferErrorCodes.DestinationExists, ex.ErrorCode);
+
+        // And it names the invented sibling, which is what is actually taken.
+        Assert.Equal("b (2).txt", ex.ConflictingName);
+    }
+
+    [Fact]
+    public void NoCollisionPreCheckInCopyOrMoveStillThrowsTheRawCodeItself()
+    {
+        // A GUARD ON THE CALL SITES, because the helper is worthless if a new pre-check bypasses it
+        // and nothing this suite can set up reaches that code path. This repo uses source reading as
+        // a last resort for exactly that (ConfigureAwaitBanTests, SystemCommandArgumentTests).
+        //
+        // "NOT A RACE" WAS TOO STRONG, and review measured the counterexample: on a case-INSENSITIVE
+        // mount under a Linux host, NextAvailableName compares Ordinal and can pick "b (2).txt" while
+        // "B (2).txt" is present, so the pre-check fires deterministically (RemEx-2knx). CI cannot
+        // provide such a mount, so the conclusion holds even though the reason changed.
+        //
+        // Scoped to the two methods that carry a ConflictResolutionPlan. CreateDirectoryAsync takes
+        // no conflictResolution, so no invented name can exist there. CopyDirectoryRecursive keeps
+        // the direct factories because its destination is a CHILD path and naming the dragged folder
+        // would misdirect the user - that settles the NAME, not the CODE, and the code is still
+        // wrong there for the same reason it was wrong here (RemEx-f448). Out of scope: the fix
+        // needs a child-aware code, and routing it through Occupied would report the parent's
+        // invented name instead of the child's, which is worse.
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.agent", "Services", "FileTransfer",
+            "FileTransferService.cs")).Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        foreach (var (start, end) in new[]
+                 {
+                     ("Task<string?> CopyAsync", "Task<string?> MoveAsync"),
+                     ("Task<string?> MoveAsync", "internal static FileConflictException Occupied"),
+                 })
+        {
+            var from = source.IndexOf(start, StringComparison.Ordinal);
+            Assert.True(from >= 0, $"'{start}' was renamed; re-point this guard.");
+            var to = source.IndexOf(end, from + start.Length, StringComparison.Ordinal);
+
+            // END MARKERS ARE MEMBER SIGNATURES, not punctuation - the lesson recorded in
+            // SystemCommandArgumentTests, where a ";" marker would truncate the scan at the first
+            // statement, capturing nothing the test was looking for. A non-empty prefix, not an
+            // empty region, which is exactly why the count assertion below matters.
+            Assert.True(to > from, $"'{end}' moved above '{start}'; re-point this guard.");
+
+            var body = source[from..to];
+            // THE CONSTRUCTOR IS PUBLIC, so banning only the factories leaves the window open to
+            // `new FileConflictException(FileTransferErrorCodes.DestinationExists, ...)`, which
+            // reads as ordinary code and reopens this green. Banned by both spellings.
+            foreach (var raw in new[]
+                     {
+                         "FileConflictException.FileExists(",
+                         "FileConflictException.DirectoryExists(",
+                         "FileConflictException.DifferentKindExists(",
+                         "new FileConflictException(",
+                         "FileTransferErrorCodes.DestinationExists",
+                         "FileTransferErrorCodes.DestinationIsDifferentKind",
+                     })
+            {
+                Assert.False(
+                    body.Contains(raw, StringComparison.Ordinal),
+                    $"{start} throws {raw} directly. Under keep-both that names a sibling the HOST "
+                        + "invented and unlocks Replace, which answers the original request and "
+                        + "deletes the file the user chose keep-both to keep. Use Occupied(plan, ...).");
+            }
+
+            // A MEASURED COUNT, NOT MERE PRESENCE. One occurrence satisfies "contains" while three
+            // of the four sites have been reverted, and it is also the backstop against the region
+            // silently collapsing to a fragment. Four each: copy checks a directory-in-the-way, a
+            // file-in-the-way, a folder destination and a file-where-a-folder-goes; move checks the
+            // same four. Change this number only alongside a real change in the pre-checks.
+            Assert.Equal(4, Regex.Matches(body, @"Occupied\(plan,").Count);
+        }
+    }
+
+    /// <summary>The repo root, resolved from this file rather than the test working directory.</summary>
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, ".."));
 }

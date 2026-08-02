@@ -419,9 +419,9 @@ public sealed class FileTransferService : IFileTransferService
         if (File.Exists(source))
         {
             if (Directory.Exists(destination))
-                throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
+                throw Occupied(plan, FileConflictException.DifferentKindExists);
             if (File.Exists(destination) && !overwrite)
-                throw FileConflictException.FileExists(Path.GetFileName(destination));
+                throw Occupied(plan, FileConflictException.FileExists);
             RunRenamedCreate(plan, () => File.Copy(source, destination, overwrite));
         }
         else if (Directory.Exists(source))
@@ -429,13 +429,13 @@ public sealed class FileTransferService : IFileTransferService
             if (IsDestinationInsideSource(source, destination))
                 throw new IOException("Cannot copy a folder into itself.");
             if (Directory.Exists(destination) && !overwrite)
-                throw FileConflictException.DirectoryExists(Path.GetFileName(destination));
+                throw Occupied(plan, FileConflictException.DirectoryExists);
 
             // A FILE STANDING WHERE A FOLDER IS GOING — the last collision path that carried no
             // code. Review found it falling through to CopyDirectoryRecursive, which surfaces a raw
             // OS IOException the client cannot branch on, so the sheet never opened for it.
             if (File.Exists(destination))
-                throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
+                throw Occupied(plan, FileConflictException.DifferentKindExists);
 
             RunRenamedCreate(plan, () => CopyDirectoryRecursive(source, destination, overwrite, ct));
         }
@@ -485,11 +485,11 @@ public sealed class FileTransferService : IFileTransferService
         if (File.Exists(source))
         {
             if (Directory.Exists(destination))
-                throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
+                throw Occupied(plan, FileConflictException.DifferentKindExists);
             if (File.Exists(destination))
             {
                 if (!overwrite)
-                    throw FileConflictException.FileExists(Path.GetFileName(destination));
+                    throw Occupied(plan, FileConflictException.FileExists);
                 File.Delete(destination);
             }
 
@@ -535,7 +535,7 @@ public sealed class FileTransferService : IFileTransferService
             if (Directory.Exists(destination))
             {
                 if (!overwrite)
-                    throw FileConflictException.DirectoryExists(Path.GetFileName(destination));
+                    throw Occupied(plan, FileConflictException.DirectoryExists);
                 Directory.Delete(destination, recursive: true);
             }
             else if (File.Exists(destination))
@@ -550,7 +550,7 @@ public sealed class FileTransferService : IFileTransferService
                 // the HOST decides rather than trusting the client to withhold a button, and this is
                 // an unrecoverable delete of a different kind of thing than the user was moving.
                 // Making move agree with copy is the reading that cannot lose data.
-                throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
+                throw Occupied(plan, FileConflictException.DifferentKindExists);
             }
 
             RunRenamedCreate(plan, () =>
@@ -576,6 +576,41 @@ public sealed class FileTransferService : IFileTransferService
 
         return Task.FromResult(plan.ResolvedName);
     }
+
+    /// <summary>
+    /// Reports an occupied destination with the code that fits WHO CHOSE THE NAME.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE CODE IS A BUTTON, NOT A SENTENCE (RemEx-nhw2).** When the user named the destination,
+    /// "that already exists" is a question they can answer, and the client offers Replace for it.
+    /// When "keep both" made the host INVENT the name, the same code is a trap: Replace re-answers
+    /// the ORIGINAL request — overwrite the file the user first named — while the sheet is showing
+    /// the invented sibling. Somebody who chose keep-both precisely to preserve that file would
+    /// destroy it by answering a question about a different one.
+    /// </para>
+    /// <para>
+    /// So a name WE picked reports <c>resolved_name_taken</c>, which carries keep-both and skip and
+    /// never replace. Asking again re-lists the directory and takes the next free name.
+    /// </para>
+    /// <para>
+    /// ONE MOUNT WHERE THAT RETRY DOES NOT CONVERGE, recorded rather than claimed away: on a
+    /// case-INSENSITIVE volume under a Linux host — SMB, exFAT, ntfs-3g — <c>NextAvailableName</c>
+    /// compares Ordinal, so it can pick "b (2).txt" while "B (2).txt" is sitting there, and the
+    /// pre-check below then rejects it every time. Skip still ends it, so this is a livelock the
+    /// user can leave rather than data loss, and it predates this change (RemEx-2knx).
+    /// </para>
+    /// <para>
+    /// The kind distinction is dropped for an invented name on purpose. "A folder is where your file
+    /// was going" is useful about a destination the user chose; about a sibling they never saw it is
+    /// noise, and the answer — pick another name — is the same either way.
+    /// </para>
+    /// </remarks>
+    internal static FileConflictException Occupied(
+        ConflictResolutionPlan plan, Func<string, FileConflictException> ifTheUserChoseTheName) =>
+        plan.ResolvedName is null
+            ? ifTheUserChoseTheName(Path.GetFileName(plan.DestinationPath))
+            : FileConflictException.ResolvedNameTaken(plan.ResolvedName);
 
     /// <summary>
     /// Runs a create whose destination "keep both" renamed, probing the chosen name first and

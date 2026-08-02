@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Closed the last way "keep both" could delete the file it was asked to keep.** The host checks the
+  destination just before writing, and that check reported the *ordinary* "already exists" — the one
+  the phone answers with a **Replace** button. Harmless when the user named the destination; not
+  harmless when "keep both" made the host invent the name, because Replace answers the *original*
+  request. So the sheet would say `report (2).pdf` is taken, offer Replace, and overwrite
+  `report.pdf` — the file the user chose "keep both" specifically to preserve.
+  A name the host invented now always reports that the *name* was taken, which offers "keep both"
+  and "skip" and never "replace", and trying again re-reads the folder and takes the next free name.
+  All eight checks across copying and moving go through one place, and a test reads the source to
+  make sure a future check cannot quietly go around it — nothing this suite can set up reaches that
+  code path, so no ordinary test could catch a new one.
+  (`FileTransferService.cs`, `FileConflictCodeTests.cs`; RemEx-nhw2, from the RemEx-2pyw review.)
+
 - **Moving a file with "keep both" now explains itself the same way copying does.** Copy learned to
   check the name it invents before using it; move never did, so the identical request produced a
   clear, answerable message one way and the operating system's raw *"the filename, directory name, or
