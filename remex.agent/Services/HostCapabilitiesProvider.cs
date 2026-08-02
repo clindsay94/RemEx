@@ -34,18 +34,84 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
     private readonly IScreenCaptureService _screenCapture;
     private readonly IInputSimulationService _inputSimulation;
     private readonly Lazy<HostCapabilities> _cached;
+    private readonly Func<string> _macProbe;
     private LinuxPrerequisiteReport? _linuxReport;
 
+    /// <summary>
+    /// A MAC discovered AFTER the cached record was built, memoized so the re-probe stops.
+    /// </summary>
+    /// <remarks>
+    /// Only ever written with a non-empty value, so it is a one-way latch: once an adapter has been
+    /// found there is nothing left to retry, and every later call is the same cheap read it was
+    /// before this fix.
+    /// </remarks>
+    private string? _lateResolvedMac;
+
+    /// <param name="macProbe">
+    /// How to discover the primary adapter's MAC. Injectable ONLY so the re-probe behaviour below
+    /// can be tested without a network interface that obligingly appears mid-test; production
+    /// always uses <see cref="PrimaryNetworkAdapter"/>.
+    /// </param>
     public HostCapabilitiesProvider(
         IScreenCaptureService screenCapture,
-        IInputSimulationService inputSimulation)
+        IInputSimulationService inputSimulation,
+        Func<string>? macProbe = null)
     {
         _screenCapture = Guard.NotNull(screenCapture);
         _inputSimulation = Guard.NotNull(inputSimulation);
+        _macProbe = macProbe ?? (() => PrimaryNetworkAdapter.Find().Mac);
         _cached = new Lazy<HostCapabilities>(Build, isThreadSafe: true);
     }
 
-    public HostCapabilities GetCurrent() => _cached.Value;
+    /// <summary>
+    /// The capability record, with the MAC re-probed if the cached one came back empty (RemEx-bgq8).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// EVERY OTHER FIELD IS SAFE TO CACHE FOREVER; THIS ONE IS NOT. The OS, the env vars, the
+    /// installed tools and the session ID are all stable for the process lifetime. A network
+    /// interface is not: on Linux the agent is started by XDG autostart at login, and
+    /// <c>HostBootstrapper</c> forces this record during startup, so an interface still coming up
+    /// means <see cref="PrimaryNetworkAdapter.Find"/> returns nothing and the empty answer is then
+    /// cached for the WHOLE SESSION. Every phone that connects is told this PC has no MAC, and
+    /// Wake-on-LAN silently reverts to "the user must type it in" — the exact setup step RemEx-izuj
+    /// removed — with nothing on either end explaining why, and with a reconnect unable to fix it
+    /// because the value is cached rather than re-read.
+    /// </para>
+    /// <para>
+    /// Windows does not have the problem: there the record is first forced by the first client
+    /// connect, by which point the network is provably up, because a client just reached the host
+    /// over it.
+    /// </para>
+    /// <para>
+    /// The re-probe is deliberately NOT a rebuild of the whole record. Re-running the Linux
+    /// prerequisite evaluation on every handshake would spawn <c>which</c> subprocesses for facts
+    /// that genuinely cannot change, which is what the cache exists to avoid. Only the one
+    /// time-dependent field is retried, and only while it is still empty — a good answer is never
+    /// re-probed and so can never be made worse.
+    /// </para>
+    /// </remarks>
+    public HostCapabilities GetCurrent()
+    {
+        var snapshot = _cached.Value;
+        if (!string.IsNullOrEmpty(snapshot.MacAddress)) return snapshot;
+
+        var resolved = Volatile.Read(ref _lateResolvedMac);
+        if (string.IsNullOrEmpty(resolved))
+        {
+            // Two threads racing here both probe, which is cheaper than holding a lock on a path
+            // every handshake takes. But they must not hand DIFFERENT answers to different phones:
+            // during interface bring-up - exactly the situation this retry exists for - wlan0 and
+            // eth0 can come up microseconds apart, so two concurrent probes can genuinely return
+            // two different adapters. CompareExchange makes the first winner authoritative and has
+            // every later racer adopt it, so a machine reports one MAC rather than two.
+            resolved = _macProbe();
+            if (string.IsNullOrEmpty(resolved)) return snapshot;
+            resolved = Interlocked.CompareExchange(ref _lateResolvedMac, resolved, null) ?? resolved;
+        }
+
+        return snapshot with { MacAddress = resolved };
+    }
 
     public LinuxPrerequisiteReport? GetLinuxPrerequisiteReport()
         => OperatingSystem.IsLinux() ? _linuxReport : null;
@@ -85,7 +151,7 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
             // Discovered here rather than in the UI so it is present headless and on Linux too
             // (RemEx-izuj). Empty when no adapter qualifies at all; wired is PREFERRED by the
             // ordering, not required by the filter.
-            MacAddress = PrimaryNetworkAdapter.Find().Mac,
+            MacAddress = _macProbe(),
             SupportsProcessList = true,
             SupportsLauncherSync = true,
             SupportsRemoteDesktop = supportsRemoteDesktop,
