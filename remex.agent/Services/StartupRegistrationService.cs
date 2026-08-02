@@ -103,41 +103,114 @@ public class StartupRegistrationService : IStartupRegistrationService
         }
     }
 
-    public bool IsEnabled()
+    /// <inheritdoc />
+    public bool? TryIsEnabled()
     {
         if (OperatingSystem.IsWindows())
         {
-            return WindowsTaskExists();
+            return InterpretSchtasksExit(TryRunSchtasksQuery());
         }
-        else if (OperatingSystem.IsLinux())
+
+        if (OperatingSystem.IsLinux())
         {
             try
             {
-                var autostartDir = GetLinuxAutostartDir();
-                var desktopFile = Path.Combine(autostartDir, LinuxAutostartFileName);
-                if (!File.Exists(desktopFile))
-                {
-                    // Pre-rename installs used the legacy basename; honor it until migrated.
-                    desktopFile = Path.Combine(autostartDir, LinuxLegacyAutostartFileName);
-                }
-                if (!File.Exists(desktopFile)) return false;
-                var lines = File.ReadAllLines(desktopFile);
-                foreach (var line in lines)
-                {
-                    if (line.Trim().StartsWith("X-GNOME-Autostart-enabled=", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var value = line.Split('=')[1].Trim();
-                        return value.Equals("true", StringComparison.OrdinalIgnoreCase);
-                    }
-                }
-                return true; // default enabled if file exists
+                return ReadLinuxAutostartEnabled();
             }
-            catch
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                return false;
+                // An unreadable ~/.config/autostart is not the same as an absent entry.
+                return null;
             }
         }
-        return false;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Collapses the tri-state to the two-valued view, resolving unknown to <c>false</c>.
+    /// </summary>
+    /// <remarks>
+    /// **UNKNOWN MUST NARROW TO FALSE, NOT TRUE**, and mutation testing is what pinned it: reporting
+    /// an unanswerable query as "registered" would have the readiness card and the settings switch
+    /// both claim autostart is set up on a machine where nothing established that — and the user
+    /// finds out at the next reboot, which is the one failure this whole read-back exists to catch.
+    /// Losing the distinction is acceptable here; inverting it is not.
+    /// </remarks>
+    internal static bool NarrowToTwoValues(bool? state) => state == true;
+
+    /// <summary>
+    /// Turns a <c>schtasks /Query</c> exit code into registered / not-registered / unknown.
+    /// </summary>
+    /// <remarks>
+    /// EXTRACTED SO IT IS TESTABLE AGAINST THE REAL MAPPING. Mutation testing caught the first
+    /// version of this pinned only by a fake service, so inverting the mapping here changed nothing
+    /// that any test could see - the same "the test exercises a stand-in, not the code" gap that
+    /// makes a green suite meaningless.
+    ///
+    /// schtasks documents 0 for "the task exists" and 1 for "it does not". ANY OTHER CODE IS THE
+    /// QUERY FAILING rather than an answer about the task, and null (the launcher did not run at
+    /// all) is the clearest case of that.
+    /// </remarks>
+    internal static bool? InterpretSchtasksExit(int? exitCode) => exitCode switch
+    {
+        0 => true,
+        1 => false,
+        _ => null,
+    };
+
+    private static int? TryRunSchtasksQuery()
+    {
+        if (!OperatingSystem.IsWindows()) return null;
+
+        try
+        {
+            return RunSchtasks($"/Query /TN \"{WindowsTaskName}\"");
+        }
+        catch
+        {
+            // The launcher itself did not run - blocked, missing, or refused.
+            return null;
+        }
+    }
+
+    public bool IsEnabled()
+    {
+        // The two-valued view, kept for callers that cannot act on "do not know". An unanswerable
+        // query collapses to false here - which is exactly the ambiguity TryIsEnabled exists to
+        // preserve, so anything user-visible should call that instead.
+        return NarrowToTwoValues(TryIsEnabled());
+    }
+
+    /// <summary>
+    /// Reads the XDG autostart entry: true/false if it says, null only from the caller's catch.
+    /// </summary>
+    /// <remarks>
+    /// A MISSING FILE IS A REAL "NO", not a failure - the entry simply is not registered. Only an
+    /// unreadable one is unknowable, and that is distinguished by letting the IOException escape to
+    /// the caller rather than swallowing it here.
+    /// </remarks>
+    private static bool ReadLinuxAutostartEnabled()
+    {
+        var autostartDir = GetLinuxAutostartDir();
+        var desktopFile = Path.Combine(autostartDir, LinuxAutostartFileName);
+        if (!File.Exists(desktopFile))
+        {
+            // Pre-rename installs used the legacy basename; honor it until migrated.
+            desktopFile = Path.Combine(autostartDir, LinuxLegacyAutostartFileName);
+        }
+        if (!File.Exists(desktopFile)) return false;
+
+        foreach (var line in File.ReadAllLines(desktopFile))
+        {
+            if (line.Trim().StartsWith("X-GNOME-Autostart-enabled=", StringComparison.OrdinalIgnoreCase))
+            {
+                var value = line.Split('=')[1].Trim();
+                return value.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        return true; // default enabled if file exists
     }
 
     public void SetEnabled(bool enabled)
@@ -255,19 +328,6 @@ X-GNOME-Autostart-enabled=true
 
     // ---- Windows scheduled-task helpers ----------------------------------------------------
 
-    private static bool WindowsTaskExists()
-    {
-        if (!OperatingSystem.IsWindows()) return false;
-        try
-        {
-            // schtasks /Query exits 0 when the task exists, 1 when it does not.
-            return RunSchtasks($"/Query /TN \"{WindowsTaskName}\"") == 0;
-        }
-        catch
-        {
-            return false;
-        }
-    }
 
     private static void RegisterWindowsLogonTask()
     {

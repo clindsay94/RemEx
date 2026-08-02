@@ -158,14 +158,26 @@
                                 <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_CheckForUpdates}" Grid.Column="1" IsChecked="{Binding IsCheckForUpdatesEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
 
-                            <!-- Launch at Login behavior: run minimized on sign-in -->
-                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_LaunchAtLoginTooltip}" IsVisible="{Binding IsLaunchAtLoginSupported}">
-                                <StackPanel Spacing="2">
-                                    <TextBlock Text="{local:Localize Settings_LaunchAtLogin}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{local:Localize Settings_LaunchAtLoginDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_LaunchAtLogin}" Grid.Column="1" IsChecked="{Binding IsLaunchAtLoginEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
+                            <!-- Launch at Login behavior: run minimized on sign-in.
+                                 The "could not check" warning sits ABOVE the switch and inside the same gated
+                                 StackPanel, matching the keep-session-unlocked block below. Review caught it
+                                 placed after the switch while all nine translations say "the switch below",
+                                 and gated only by coincidence - the flag happened never to be set when the
+                                 feature is unsupported, which is a fact in a different file. (RemEx-h5lr) -->
+                            <StackPanel Spacing="4" IsVisible="{Binding IsLaunchAtLoginSupported}">
+                                <TextBlock Text="{local:Localize Settings_LaunchAtLoginStateUnknown}"
+                                           IsVisible="{Binding IsLaunchAtLoginStateUnknown}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource SystemWarningBrush}"/>
+                                <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{local:Localize Settings_LaunchAtLoginTooltip}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{local:Localize Settings_LaunchAtLogin}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="{local:Localize Settings_LaunchAtLoginDesc}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <ToggleSwitch AutomationProperties.Name="{local:Localize Settings_LaunchAtLogin}" Grid.Column="1" IsChecked="{Binding IsLaunchAtLoginEnabled}" OnContent="" OffContent="" VerticalAlignment="Center"/>
                             </Grid>
+                            </StackPanel>
 
                             <!-- Keep session unlocked while a paired client is connected (opt-in unattended access) (RemEx-l6o) -->
                             <StackPanel Spacing="4" IsVisible="{Binding IsKeepSessionUnlockedSupported}">

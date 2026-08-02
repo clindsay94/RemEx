@@ -801,6 +801,9 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Lance RemEx réduit dans la zone de notification au démarrage de la session pour que votre PC soit toujours accessible.</value>
   </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx n’a pas pu vérifier s’il est configuré pour démarrer à l’ouverture de session. Le bouton ci-dessous affiche votre dernier choix, qui peut ne pas correspondre à votre PC.</value>
+  </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Choisissez si RemEx se lance automatiquement au démarrage de la session.</value>
   </data>

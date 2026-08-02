@@ -801,6 +801,9 @@ Linux: ip addr  ou  hostname -I</value>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Inicia o RemEx minimizado na bandeja ao fazer login para que seu PC esteja sempre acessível.</value>
   </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>O RemEx não conseguiu verificar se está configurado para iniciar ao entrar. O botão abaixo mostra sua última escolha, que pode não corresponder ao seu PC.</value>
+  </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Escolha se o RemEx deve iniciar automaticamente ao fazer login.</value>
   </data>

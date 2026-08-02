@@ -801,6 +801,9 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Menjalankan RemEx dalam keadaan diminimalkan ke tray saat Anda masuk agar PC Anda selalu dapat diakses.</value>
   </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx tidak dapat memeriksa apakah ia disetel untuk berjalan saat masuk. Sakelar di bawah menampilkan pilihan terakhir Anda, yang mungkin tidak cocok dengan PC Anda.</value>
+  </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Pilih apakah RemEx dijalankan secara otomatis saat Anda masuk.</value>
   </data>

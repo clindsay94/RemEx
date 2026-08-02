@@ -801,6 +801,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>लॉगिन करने पर RemEx को सिस्टम ट्रे में छोटा करके शुरू करता है ताकि आपका पीसी हमेशा पहुंच योग्य रहे।</value>
   </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx यह जाँच नहीं सका कि वह साइन-इन पर शुरू होने के लिए सेट है या नहीं। नीचे का स्विच आपकी पिछली पसंद दिखाता है, जो आपके पीसी से मेल न भी खाए।</value>
+  </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>चुनें कि लॉगिन करने पर RemEx स्वचालित रूप से शुरू हो या नहीं।</value>
   </data>

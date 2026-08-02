@@ -846,6 +846,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Starts minimized to the tray so your PC is immediately reachable from your phone.</value>
   </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx could not check whether it is set to start at sign-in. The switch below shows your last choice, which may not match your PC.</value>
+  </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Choose whether RemEx starts automatically when you sign in to your PC.</value>
   </data>

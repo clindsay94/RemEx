@@ -807,6 +807,9 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Inicia RemEx minimizado en la bandeja al iniciar sesión para que su PC esté siempre accesible.</value>
   </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx no pudo comprobar si está configurado para iniciarse al iniciar sesión. El interruptor de abajo muestra tu última elección, que puede no coincidir con tu PC.</value>
+  </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Elige si RemEx se ejecuta automáticamente al iniciar sesión.</value>
   </data>

@@ -801,6 +801,9 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Giriş yapıldığında RemEx'i sistem tepsisinde küçültülmüş olarak başlatır, böylece bilgisayarınız her zaman erişilebilir kalır.</value>
   </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx, oturum açıldığında başlayacak şekilde ayarlanıp ayarlanmadığını denetleyemedi. Aşağıdaki anahtar son seçiminizi gösterir; bilgisayarınızla eşleşmeyebilir.</value>
+  </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Giriş yapıldığında RemEx'in otomatik olarak başlatılıp başlatılmayacağını seçin.</value>
   </data>

@@ -61,17 +61,65 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     partial void OnIsCheckForUpdatesEnabledChanged(bool value) => Save();
 
+    // Guards the load-time assignment so SEEDING the toggle from the real registration state does not
+    // turn straight back into a write. Its neighbour (keep-session-unlocked) has had this guard since
+    // RemEx-l6o; launch-at-login did not, so every trip through Settings re-registered the logon task
+    // - rewriting it with whatever Environment.ProcessPath happened to be at that moment.
+    private bool _suppressLaunchAtLoginWrite;
+
     [ObservableProperty]
     private bool _isLaunchAtLoginEnabled;
 
     partial void OnIsLaunchAtLoginEnabledChanged(bool value)
     {
+        if (_suppressLaunchAtLoginWrite) return;
+
         var startupService = App.Services?.GetService(typeof(IStartupRegistrationService)) as IStartupRegistrationService;
         if (startupService != null && startupService.IsSupported)
         {
             startupService.SetEnabled(value);
         }
     }
+
+    /// <summary>
+    /// What seeding the launch-at-login toggle from a tri-state read should produce.
+    /// </summary>
+    /// <param name="Enabled">The value the switch should take.</param>
+    /// <param name="StateUnknown">Whether the query failed, and the user must be told so.</param>
+    internal readonly record struct LaunchAtLoginSeed(bool Enabled, bool StateUnknown);
+
+    /// <summary>
+    /// Decides what the toggle shows given the real registration state (RemEx-h5lr).
+    /// </summary>
+    /// <param name="registered">From <c>TryIsEnabled()</c>; null means the query failed.</param>
+    /// <param name="currentToggleState">What the switch shows now.</param>
+    /// <remarks>
+    /// **INTERNAL AND PURE SO A TEST CAN CALL THE REAL RULE.** Review caught the first version of
+    /// this covered only by a private reimplementation inside the test file — the same "the test
+    /// exercises a stand-in" gap that mutation testing had already found once in this change, on the
+    /// schtasks mapping. A copy of the logic in the test verifies the copy.
+    /// <para>
+    /// UNKNOWN HOLDS THE CURRENT VALUE rather than asserting either state. Forcing "off" is the
+    /// drift this bead exists to fix; forcing "on" is the same lie in the other direction. And since
+    /// the switch is also the write control, the caller must apply this WITHOUT triggering a write.
+    /// </para>
+    /// </remarks>
+    internal static LaunchAtLoginSeed SeedLaunchAtLogin(bool? registered, bool currentToggleState) =>
+        new(registered ?? currentToggleState, registered is null);
+
+    /// <summary>
+    /// True when the real registration state could not be read (RemEx-h5lr).
+    /// </summary>
+    /// <remarks>
+    /// **THE SWITCH IS ALSO THE CONTROL THAT WRITES, WHICH IS WHY THIS IS NOT COSMETIC.** The query
+    /// can fail for reasons that say nothing about the task — an EDR blocking <c>schtasks</c>, an
+    /// unavailable Task Scheduler endpoint, an unreadable autostart directory — and the old read
+    /// reported every one of those as "off". A user who then flips the switch to correct it issues a
+    /// real registration against a state nobody established, and the UI has meanwhile told them
+    /// their PC will not start RemEx at sign-in, which may be untrue.
+    /// </remarks>
+    [ObservableProperty]
+    private bool _isLaunchAtLoginStateUnknown;
 
     [ObservableProperty]
     private bool _isLaunchAtLoginSupported;
@@ -288,7 +336,22 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 IsLaunchAtLoginSupported = startupService.IsSupported;
                 if (IsLaunchAtLoginSupported)
                 {
-                    IsLaunchAtLoginEnabled = startupService.IsEnabled();
+                    // TRI-STATE READ, SEEDED WITHOUT WRITING BACK. A null means the query failed, and
+                    // the switch must not present that as "off" - that is the drift RemEx-q0j7 was a
+                    // real instance of, and it is worse than a stale display because the switch is
+                    // also the write path.
+                    var seed = SeedLaunchAtLogin(startupService.TryIsEnabled(), IsLaunchAtLoginEnabled);
+                    IsLaunchAtLoginStateUnknown = seed.StateUnknown;
+
+                    _suppressLaunchAtLoginWrite = true;
+                    try
+                    {
+                        IsLaunchAtLoginEnabled = seed.Enabled;
+                    }
+                    finally
+                    {
+                        _suppressLaunchAtLoginWrite = false;
+                    }
                 }
             }
 

@@ -761,6 +761,9 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Uruchamia RemEx zminimalizowany do zasobnika przy logowaniu, aby Twój komputer był zawsze dostępny.</value>
   </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx nie mógł sprawdzić, czy jest ustawiony do uruchamiania przy logowaniu. Przełącznik poniżej pokazuje Twój ostatni wybór, który może nie odpowiadać stanowi komputera.</value>
+  </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Wybierz, czy RemEx ma uruchamiać się automatycznie przy logowaniu.</value>
   </data>

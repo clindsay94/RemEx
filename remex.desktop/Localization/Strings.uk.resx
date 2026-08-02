@@ -801,6 +801,9 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Settings_LaunchAtLoginDesc" xml:space="preserve">
     <value>Запускає RemEx згорнутим у трей при вході в систему, щоб ваш ПК завжди був доступний.</value>
   </data>
+  <data name="Settings_LaunchAtLoginStateUnknown" xml:space="preserve">
+    <value>RemEx не зміг перевірити, чи налаштовано запуск під час входу. Перемикач нижче показує ваш останній вибір, який може не збігатися зі станом ПК.</value>
+  </data>
   <data name="Settings_LaunchAtLoginTooltip" xml:space="preserve">
     <value>Виберіть, чи запускати RemEx автоматично при вході в систему.</value>
   </data>
