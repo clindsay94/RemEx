@@ -44,6 +44,25 @@ public static class FileTransferErrorCodes
     /// treated the two codes alike would offer that button.
     /// </remarks>
     public const string DestinationIsDifferentKind = "destination_is_different_kind";
+
+    /// <summary>
+    /// "Keep both" produced a name the destination will not accept (RemEx-cirk).
+    /// </summary>
+    /// <remarks>
+    /// **DISTINCT BECAUSE IT ARRIVES AFTER THE USER ALREADY ANSWERED.** The suffix lengthens the
+    /// name, so one at the 255-character component limit comes back at 259 and cannot be created —
+    /// measured, and note that Windows long-path support does not help, because the limit breached
+    /// is the COMPONENT limit rather than the path limit. Reporting it as a collision would re-open
+    /// the sheet on a question the user has answered, and the only answer that could work is the one
+    /// they declined.
+    /// <para>
+    /// <c>NextAvailableName</c> guarantees the name is ABSENT from the destination, never that it is
+    /// CREATABLE. A clamp inside it would have to guess rules it deliberately refuses to guess —
+    /// ext4 counts 255 BYTES rather than characters, exFAT and CIFS differ again — so the create
+    /// path handles the failure instead of pretending it cannot happen.
+    /// </para>
+    /// </remarks>
+    public const string ResolvedNameUnusable = "resolved_name_unusable";
 }
 
 /// <summary>

@@ -164,4 +164,48 @@ public sealed class FileConflictCodeTests : IDisposable
 
         Assert.Equal("victim", File.ReadAllText(Path.Combine(_root, "b.txt")));
     }
+
+    [Fact]
+    public async Task KeepBothThatProducesAnUncreatableNameSaysSo()
+    {
+        // REPRODUCED BEFORE IT WAS FIXED, and this test was RED against unmodified main with a raw
+        // IOException where a coded one belongs. NextAvailableName guarantees the chosen name is
+        // ABSENT from the destination; it never guarantees it is CREATABLE. Measured on Windows: a
+        // 255-character name creates fine, the same name with " (2)" appended is 259 and throws -
+        // and long-path support does not save it, because the limit breached is the COMPONENT limit.
+        //
+        // Reporting that as a collision would re-open the sheet on a question the user has answered,
+        // and the only answer that could work is the one they declined.
+        var stem = new string('n', 251);
+        Write("src.txt", "source");
+        Write(stem + ".txt", "victim");
+
+        var ex = await Assert.ThrowsAsync<FileConflictException>(
+            () => _service.CopyAsync("r1", "src.txt", stem + ".txt", overwrite: false,
+                CancellationToken.None, FileConflictResolutions.KeepBoth));
+
+        Assert.Equal(FileTransferErrorCodes.ResolvedNameUnusable, ex.ErrorCode);
+
+        // Names the name that FAILED, not the one asked for - it is longer than what the user was
+        // shown, and its length is the whole problem.
+        Assert.Equal(stem + " (2).txt", ex.ConflictingName);
+
+        // And the file the user asked to keep is untouched.
+        Assert.Equal("victim", File.ReadAllText(Path.Combine(_root, stem + ".txt")));
+    }
+
+    [Fact]
+    public async Task AKeepBothThatSucceedsIsUnaffectedByTheWrapper()
+    {
+        // The control. A wrapper that reported every renamed create as unusable would satisfy the
+        // test above while breaking the feature it protects.
+        Write("a.txt", "source");
+        Write("b.txt", "keep me");
+
+        var resolved = await _service.CopyAsync("r1", "a.txt", "b.txt", overwrite: false,
+            CancellationToken.None, FileConflictResolutions.KeepBoth);
+
+        Assert.Equal("b (2).txt", resolved);
+        Assert.Equal("source", File.ReadAllText(Path.Combine(_root, "b (2).txt")));
+    }
 }

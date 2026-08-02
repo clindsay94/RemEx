@@ -58,6 +58,15 @@ public sealed class FileConflictException : IOException
     /// Distinguished so a client does not offer "replace", which here would mean deleting a whole
     /// directory tree to make room for one file. Nobody intends that from a copy, and nothing undoes it.
     /// </remarks>
+    /// <summary>The renamed sibling "keep both" chose cannot be created at the destination.</summary>
+    /// <remarks>
+    /// Carries the name that FAILED rather than the one originally asked for: it is longer than what
+    /// the user was shown, and its length is the whole problem.
+    /// </remarks>
+    public static FileConflictException ResolvedNameUnusable(string name, Exception cause) =>
+        new(FileTransferErrorCodes.ResolvedNameUnusable, name,
+            $"The name '{name}' cannot be created at the destination: {cause.Message}");
+
     public static FileConflictException DifferentKindExists(string name) =>
         new(FileTransferErrorCodes.DestinationIsDifferentKind, name,
             $"Something of a different kind already exists at the destination '{name}'.");

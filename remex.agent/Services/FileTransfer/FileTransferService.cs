@@ -422,7 +422,7 @@ public sealed class FileTransferService : IFileTransferService
                 throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
             if (File.Exists(destination) && !overwrite)
                 throw FileConflictException.FileExists(Path.GetFileName(destination));
-            File.Copy(source, destination, overwrite);
+            RunRenamedCreate(plan, () => File.Copy(source, destination, overwrite));
         }
         else if (Directory.Exists(source))
         {
@@ -437,7 +437,7 @@ public sealed class FileTransferService : IFileTransferService
             if (File.Exists(destination))
                 throw FileConflictException.DifferentKindExists(Path.GetFileName(destination));
 
-            CopyDirectoryRecursive(source, destination, overwrite, ct);
+            RunRenamedCreate(plan, () => CopyDirectoryRecursive(source, destination, overwrite, ct));
         }
         else
         {
@@ -542,6 +542,41 @@ public sealed class FileTransferService : IFileTransferService
         }
 
         return Task.FromResult(plan.ResolvedName);
+    }
+
+    /// <summary>
+    /// Runs a create whose destination "keep both" renamed, translating a refusal into its own code.
+    /// </summary>
+    /// <remarks>
+    /// **THE GAP THIS CLOSES (RemEx-cirk), REPRODUCED BEFORE IT WAS FIXED.** NextAvailableName
+    /// guarantees the chosen name is ABSENT from the destination; it never guarantees it is
+    /// CREATABLE. Measured: a 255-character name creates fine, the same name with " (2)" appended is
+    /// 259 and throws — and Windows long-path support does not save it, because the limit breached
+    /// is the COMPONENT limit, not the path limit. The user then gets the OS's opaque "filename,
+    /// directory name, or volume label syntax is incorrect" AFTER choosing Keep both, which is worse
+    /// than getting it before.
+    ///
+    /// ONLY WRAPS THE RENAMED CASE. When the destination is the one the caller asked for, an
+    /// IOException means whatever it has always meant — this code asserts "the name WE chose is
+    /// unusable", which can only be true when we chose one.
+    /// </remarks>
+    private static void RunRenamedCreate(ConflictResolutionPlan plan, Action create)
+    {
+        if (plan.ResolvedName is null)
+        {
+            create();
+            return;
+        }
+
+        try
+        {
+            create();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
+                                       or NotSupportedException or PathTooLongException)
+        {
+            throw FileConflictException.ResolvedNameUnusable(plan.ResolvedName, ex);
+        }
     }
 
     /// <summary>
