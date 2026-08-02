@@ -88,7 +88,12 @@ public sealed class RemexDesktopClient : IDisposable
     public bool IsConnected => _webSocket?.State == WebSocketState.Open;
     public bool IsStreaming => _isStreaming;
 
-    private RemexDesktopClient() { }
+    /// <summary>
+    /// Private in spirit: production goes through <see cref="Current"/>. Internal only so tests can
+    /// hold an ISOLATED instance (RemEx-u5q0) rather than sharing the process-wide singleton, whose
+    /// connection state would otherwise leak between them.
+    /// </summary>
+    internal RemexDesktopClient() { }
 
     /// <summary>
     /// Fail-closed guard (RemEx-s032.5 / VULN-5). The JNI trust-manager overrides exported by
@@ -264,13 +269,18 @@ public sealed class RemexDesktopClient : IDisposable
     /// The English fallback for <see cref="DesktopErrorCodes.HandshakeTimeout"/>.
     /// </summary>
     /// <remarks>
-    /// Split out ONLY so the wording and the code that carries it can be asserted without a live TLS
-    /// server. Be clear about what that does and does not buy: reaching the handshake requires a real
-    /// <c>wss://</c> endpoint whose certificate matches the pin, so the CATCH ITSELF — that the proof
-    /// exchange's own deadline is classified as a host timeout rather than as the user cancelling —
-    /// has no automated coverage. That gap is real and is tracked, not papered over; see the remarks
-    /// on <see cref="DesktopErrorCodes.HandshakeTimeout"/>, and RemEx-u5q0 for the harness that
-    /// would close it.
+    /// Split out so the wording and the code that carries it can be asserted without a live TLS
+    /// server. It was originally split out because that was ALL that could be asserted: reaching the
+    /// handshake needs a real <c>wss://</c> endpoint whose certificate matches the pin, so the CATCH
+    /// ITSELF — that the proof exchange's own deadline is classified as a host timeout rather than as
+    /// the user cancelling — had no automated coverage at all.
+    ///
+    /// THAT GAP IS CLOSED (RemEx-u5q0). <c>DesktopWssHandshakeTests</c> stands up a Kestrel endpoint
+    /// with a pinnable certificate and drives a host that upgrades and then goes quiet;
+    /// <c>AHostThatUpgradesThenGoesQuietIsAHandshakeTimeoutNotACancellation</c> asserts this exact
+    /// message, and reverting the catch's filter reddens it and nothing else. The message is asserted
+    /// rather than just the exception type because the connect catch one call earlier throws
+    /// <see cref="TimeoutException"/> too, for a host that never answered at all.
     /// </remarks>
     internal static string DescribeHandshakeTimeout(string host, int port) =>
         $"The PC at {host}:{port} accepted the connection but stopped responding while "

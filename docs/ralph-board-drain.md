@@ -140,6 +140,21 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
      dotnet build <proj> -c Release --nologo -t:Rebuild
      dotnet test  <proj> -c Release --nologo --no-build --filter "FullyQualifiedName~<Suite>"
      ```
+   - **CHECK THE BUILD EXIT CODE BEFORE BELIEVING AN INJECTION RESULT** (RemEx-u5q0). Now that
+     TreatWarningsAsErrors covers every project, a naive mutation often does not COMPILE: deleting a
+     catch leaves `CS1524 Expected catch or finally`, `when (false)` trips CS8360, and a leading
+     `return true;` trips CS0162 unreachable-code. `dotnet test --no-build` then runs the previous
+     assembly and reports GREEN — which reads exactly like "the test does not cover it" and is the
+     most misleading possible answer. Three injections in a row were misread this way before the exit
+     code was checked.
+
+     Mutate so the code still compiles cleanly: invert a guard rather than delete it, replace a
+     method body wholesale rather than prefixing an early return, and assert `returncode == 0` before
+     interpreting anything:
+
+     ```
+     dotnet build Remex.sln -c Release --nologo -t:Rebuild || echo "INJECTION INVALID - result means nothing"
+     ```
    - **Re-run every injection after the last edit to the tests.** Adding or renaming a test changes
      the counts, and a figure carried across a review round is a false claim even when it was true
      when first measured.

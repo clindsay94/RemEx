@@ -9,6 +9,16 @@
     <AssemblyName>Remex.Core.Tests</AssemblyName>
   </PropertyGroup>
 
+  <!--
+    Kestrel, so a test can stand up a real wss:// endpoint with a pinnable certificate (RemEx-u5q0).
+    RemexDesktopClient hardcodes wss:// and hashes the presented key, so its post-connect paths are
+    unreachable without one. This is a TEST-only reference: remex.core itself is NativeAOT-compiled
+    for Android and gains nothing from it.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
