@@ -1072,7 +1072,17 @@ public sealed class FileTransferService : IFileTransferService
             || normalizedDest.StartsWith(normalizedSource + Path.AltDirectorySeparatorChar, comparison);
     }
 
-    private static void CopyDirectoryRecursive(string sourceDir, string destDir, bool overwrite, CancellationToken ct)
+    /// <summary>Copies a tree, refusing a child collision with the code that cannot destroy anything.</summary>
+    /// <remarks>
+    /// INTERNAL FOR THE TESTS. When <paramref name="overwrite"/> is FALSE — the only case the
+    /// collision below can fire in — the destination directory is always one this method just
+    /// created, because both callers refuse an existing one first; so no fixture can stage the
+    /// collision and calling it directly is the only way to pin which code it emits. With
+    /// <paramref name="overwrite"/> true it CAN run onto a populated destination — that is
+    /// <c>CopyAsync</c>; <c>MoveAsync</c> deletes the destination first — which is exactly what an
+    /// overwriting folder copy is asked to do.
+    /// </remarks>
+    internal static void CopyDirectoryRecursive(string sourceDir, string destDir, bool overwrite, CancellationToken ct)
     {
         Directory.CreateDirectory(destDir);
 
@@ -1081,11 +1091,42 @@ public sealed class FileTransferService : IFileTransferService
             ct.ThrowIfCancellationRequested();
             var target = Path.Combine(destDir, Path.GetFileName(file));
             if (File.Exists(target) && !overwrite)
-                // Reported the same way as a top-level collision even though it is one file INSIDE a
-                // recursive copy. The name it carries is that inner file's, which is what the user
-                // needs to see — a code naming the folder they dragged would send them looking at the
-                // wrong thing.
-                throw FileConflictException.FileExists(Path.GetFileName(target));
+            {
+                // THE NAME IS THE CHILD'S, THE CODE IS "TAKEN" (RemEx-f448). The name was already
+                // right - a code naming the folder they dragged would send the user looking at the
+                // wrong thing - but the CODE said destination_exists, which the client answers with
+                // a Replace button, and Replace re-answers the ORIGINAL request. Tapping it would
+                // retry the whole copy with overwrite onto the folder the user was copying, so a
+                // stray file appearing inside a fresh tree could destroy the tree it collided with.
+                //
+                // WHY "TAKEN" IS ALWAYS THE TRUTH HERE, not merely the safe answer: this throw is
+                // guarded by !overwrite, and reaching this recursion with overwrite false requires
+                // the destination directory NOT to have existed at the pre-check - both callers
+                // refuse an existing directory in that case. So destDir was created by the
+                // CreateDirectory above, and anything already sitting at a child path got there
+                // after we made the folder.
+                //
+                // "SO IT IS ALWAYS A RACE" WAS TOO STRONG, and review built the counterexample. It
+                // is a race only where both filesystems agree on what makes two names the same, and
+                // they do not always. The cross-volume caller straddles two filesystems by
+                // definition, and copy reaches the same thing wherever a shared root spans a mount
+                // point - it makes no volume check at all. So a source holding "README.md" and
+                // "readme.md" - legal on ext4 - lands on a
+                // case-INSENSITIVE destination where the second collides with the first, every time,
+                // with nobody racing. The same class of mount recorded on Occupied above
+                // (RemEx-2knx). "Taken" is still the honest code there, because the name genuinely
+                // is taken and Replace would still be a data-loss button - keep-both simply cannot
+                // converge, so the client's round cap ends it as an ordinary failure.
+                //
+                // IN THE RACING CASE, asking again genuinely resolves it: keep-both re-lists, picks
+                // a new name for the FOLDER, and the child lands inside it. In the folding case above
+                // it cannot, and the client's round cap ends it instead. The body text says "trying again will
+                // pick a different name", which is true of the folder rather than of this file - a
+                // child-aware string is the improvement if that ever reads wrong, not a different
+                // action set.
+                throw FileConflictException.ResolvedNameTaken(Path.GetFileName(target));
+            }
+
             File.Copy(file, target, overwrite);
         }
 

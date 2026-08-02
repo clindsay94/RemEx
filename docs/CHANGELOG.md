@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A file appearing inside a folder mid-copy can no longer end up destroying the folder it landed
+  in.** Copying a folder creates the destination and then copies the contents; if something dropped a
+  file into that brand-new folder in the meantime, the phone was told the ordinary "already exists" —
+  the one with a **Replace** button. Replace retries the *whole* copy with overwriting turned on, so
+  answering a question about one stray file could overwrite a whole folder. At its worst that is the
+  user's own folder: choose "keep both" onto an existing folder, let a stray file land in the new
+  one, tap Replace, and the *original* folder is overwritten — the one "keep both" was chosen to
+  protect.
+  It now reports that the *name was taken*, which offers "keep both" and "skip" and never "replace".
+  The message still names the file inside the folder, not the folder itself, so the user is looking
+  at the thing that actually clashed. Trying again works: the folder gets a fresh name and the
+  contents land inside it, while the half-finished folder from the failed attempt stays behind under
+  the original name. One case will not resolve by trying again — copying between two drives that
+  disagree about whether `README.md` and `readme.md` are the same name — and there the retries stop
+  after three rounds and report an ordinary failure rather than looping.
+  (`FileTransferService.cs`, `FileConflictCodeTests.cs`; RemEx-f448, from the RemEx-nhw2 review.)
+
 - **Closed the last way "keep both" could delete the file it was asked to keep.** The host checks the
   destination just before writing, and that check reported the *ordinary* "already exists" — the one
   the phone answers with a **Replace** button. Harmless when the user named the destination; not

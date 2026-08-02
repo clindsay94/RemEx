@@ -65,13 +65,19 @@ public static class FileTransferErrorCodes
     public const string ResolvedNameUnusable = "resolved_name_unusable";
 
     /// <summary>
-    /// "Keep both" chose a name, and something else claimed it first (RemEx-od7s).
+    /// The name the host was about to create was claimed by something else first (RemEx-od7s).
     /// </summary>
     /// <remarks>
     /// **SEPARATE FROM <see cref="ResolvedNameUnusable"/> BECAUSE ASKING AGAIN WORKS.** That name is
     /// creatable; the host simply lost a race for it — another paired device, a second message on
     /// the same socket, or the person at the PC saving a file. Retrying "keep both" re-lists the
     /// directory and picks the next free name, so this is a question the user can still answer.
+    /// <para>
+    /// ALSO EMITTED WHERE KEEP-BOTH NEVER RAN (RemEx-f448): a child inside a folder copy that
+    /// collided with something arriving after the folder was created. The name reported is the
+    /// child's, and the answer is the same — ask again and the folder takes a fresh name. Where
+    /// asking again cannot help, the client's round cap ends it as an ordinary failure.
+    /// </para>
     /// <para>
     /// **AND SEPARATE FROM <see cref="DestinationExists"/>, WHICH WOULD BE A DATA-LOSS BUTTON.** The
     /// client offers Replace for that code, and Replace re-answers the ORIGINAL request — overwrite

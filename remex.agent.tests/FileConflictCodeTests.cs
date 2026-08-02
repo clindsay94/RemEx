@@ -578,6 +578,133 @@ public sealed class FileConflictCodeTests : IDisposable
         }
     }
 
+    [Fact]
+    public void AChildCollidingInsideACopiedTreeNEVEROffersReplace()
+    {
+        // THE SECOND HALF OF THE REPLACE PROBLEM. RemEx-nhw2 fixed the eight top-level pre-checks;
+        // this one is a file INSIDE a recursive copy, and it still reported destination_exists. The
+        // client answers that with Replace, and Replace re-answers the ORIGINAL request - retry the
+        // whole copy with overwrite onto the folder the user was copying - so one stray file
+        // appearing inside a fresh tree could destroy the tree it collided with.
+        //
+        // Driven at the seam because production cannot reach it otherwise: this throw is guarded by
+        // !overwrite, and both callers refuse an existing destination directory in that case, so the
+        // folder is always one CopyDirectoryRecursive just made. Staging the collision means handing
+        // it a directory that already has one.
+        var source = Path.Combine(_root, "tree");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "child.txt"), "incoming");
+
+        var dest = Path.Combine(_root, "tree (2)");
+        Directory.CreateDirectory(dest);
+        File.WriteAllText(Path.Combine(dest, "child.txt"), "somebody else's work");
+
+        var ex = Assert.Throws<FileConflictException>(
+            () => FileTransferService.CopyDirectoryRecursive(source, dest, overwrite: false, CancellationToken.None));
+
+        Assert.Equal(FileTransferErrorCodes.ResolvedNameTaken, ex.ErrorCode);
+
+        // THE NAME STAYS THE CHILD'S. Naming the folder the user dragged would send them looking at
+        // the wrong thing, and that part was already right before this change.
+        Assert.Equal("child.txt", ex.ConflictingName);
+
+        // And nothing was overwritten on the way to refusing.
+        Assert.Equal("somebody else's work", File.ReadAllText(Path.Combine(dest, "child.txt")));
+    }
+
+    [Fact]
+    public void ACollisionONELEVELDownStillNamesTheCHILD_NotTheSubfolder()
+    {
+        // THE ONLY TEST THAT EXECUTES THE RECURSIVE CALL. Its sibling above collides at depth 0, so
+        // it never enters the subdirectory loop at all - anything that goes wrong only on the way
+        // down is invisible to it.
+        //
+        // AND THE FIRST REASON WRITTEN HERE WAS WRONG, which is worth keeping because the wrong
+        // reason was the plausible one. It claimed to kill a parent-naming mutant that depth 0
+        // misses; measured, Path.GetFileName(Path.GetDirectoryName(target)) yields "tree (2)" at
+        // depth 0, which is no more "child.txt" than "sub" is, so BOTH tests kill it. This is not
+        // the test that pins the name.
+        //
+        // What it does kill, measured, is a mutant depth 0 cannot reach and which loses data:
+        // hardcoding overwrite: true on the recursive call leaves the depth-0 test green while this
+        // one stops throwing AND overwrites the very file it was refusing to touch.
+        var source = Path.Combine(_root, "tree", "sub");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "child.txt"), "incoming");
+
+        var dest = Path.Combine(_root, "tree (2)");
+        Directory.CreateDirectory(Path.Combine(dest, "sub"));
+        File.WriteAllText(Path.Combine(dest, "sub", "child.txt"), "somebody else's work");
+
+        var ex = Assert.Throws<FileConflictException>(
+            () => FileTransferService.CopyDirectoryRecursive(
+                Path.Combine(_root, "tree"), dest, overwrite: false, CancellationToken.None));
+
+        Assert.Equal(FileTransferErrorCodes.ResolvedNameTaken, ex.ErrorCode);
+        Assert.Equal("child.txt", ex.ConflictingName);
+        Assert.Equal("somebody else's work", File.ReadAllText(Path.Combine(dest, "sub", "child.txt")));
+    }
+
+    [Fact]
+    public void AnOverwritingTreeCopyStillOverwrites_WhichIsWhatWasAskedFor()
+    {
+        // The control. A refusal that fired regardless of the flag would break every overwriting
+        // folder copy, and the test above would still pass.
+        var source = Path.Combine(_root, "tree");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "child.txt"), "incoming");
+
+        var dest = Path.Combine(_root, "dest");
+        Directory.CreateDirectory(dest);
+        File.WriteAllText(Path.Combine(dest, "child.txt"), "replace me");
+
+        FileTransferService.CopyDirectoryRecursive(source, dest, overwrite: true, CancellationToken.None);
+
+        Assert.Equal("incoming", File.ReadAllText(Path.Combine(dest, "child.txt")));
+    }
+
+    [Fact]
+    public void TheTreeCopyDoesNotThrowTheReplaceUnlockingCodeEither()
+    {
+        // The call-site guard extended to the recursion, for the same reason it exists for the two
+        // top-level methods: the window is unreachable from a fixture, so only the source can say
+        // whether a future edit reintroduced the dangerous code.
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.agent", "Services", "FileTransfer",
+            "FileTransferService.cs")).Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        var from = source.IndexOf("internal static void CopyDirectoryRecursive", StringComparison.Ordinal);
+        Assert.True(from >= 0, "CopyDirectoryRecursive was renamed; re-point this guard.");
+        var to = source.IndexOf("private static string? InferMimeType", from, StringComparison.Ordinal);
+        Assert.True(to > from, "the end marker moved above the start; re-point this guard.");
+
+        var body = source[from..to];
+        foreach (var raw in new[]
+                 {
+                     "FileConflictException.FileExists(",
+                     "FileConflictException.DirectoryExists(",
+                     "FileConflictException.DifferentKindExists(",
+                     "new FileConflictException(",
+                     "FileTransferErrorCodes.DestinationExists",
+
+                     // THE WRONG FIX, BANNED BY NAME. Routing this through Occupied(plan, ...) is
+                     // what a maintainer will reach for, and it reports the PARENT's invented name
+                     // instead of the child's - review flagged it as worse than the bug. It cannot
+                     // compile today because no plan is in scope, but adding one as a parameter
+                     // would re-open it silently, and "cannot compile" is not what a guard is for.
+                     "Occupied(",
+                 })
+        {
+            Assert.False(
+                body.Contains(raw, StringComparison.Ordinal),
+                $"CopyDirectoryRecursive throws {raw}. That code offers Replace, which retries the "
+                    + "whole copy with overwrite onto the tree the user was copying - so answering a "
+                    + "question about one child file can destroy the folder it collided with.");
+        }
+
+        // Present, not merely not-absent - the same backstop against the region collapsing.
+        Assert.Single(Regex.Matches(body, @"FileConflictException\.ResolvedNameTaken\("));
+    }
+
     /// <summary>The repo root, resolved from this file rather than the test working directory.</summary>
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, ".."));

@@ -22,12 +22,17 @@ object FileConflictCodes {
     const val RESOLVED_NAME_UNUSABLE = "resolved_name_unusable"
 
     /**
-     * The host renamed for "keep both" and something else claimed the new name first (RemEx-od7s).
+     * The name the host was about to create was claimed by something else first (RemEx-od7s).
      *
-     * **THE ONE RACE WHERE ASKING AGAIN ACTUALLY WORKS**, which is why it is not folded into
+     * **THE ONE REFUSAL WHERE ASKING AGAIN USUALLY WORKS**, which is why it is not folded into
      * [RESOLVED_NAME_UNUSABLE]. That name is creatable - the host simply lost it to another paired
      * device, a second message on the same socket, or the person at the PC saving a file - so
      * retrying keep-both re-lists the directory and picks the next free name.
+     *
+     * Also sent where keep-both never ran (RemEx-f448): a child inside a folder copy that collided
+     * with something arriving after the folder was made. The name is the child's; the answer is the
+     * same, because asking again gives the FOLDER a fresh name and the child lands inside it -
+     * and where asking again cannot help, the round cap ends it as an ordinary failure.
      *
      * The host deliberately does NOT send [DESTINATION_EXISTS] here even though the name is
      * literally taken: that code offers Replace, and Replace re-answers the ORIGINAL request while
