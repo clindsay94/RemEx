@@ -545,7 +545,8 @@ public sealed class FileTransferService : IFileTransferService
     }
 
     /// <summary>
-    /// Runs a create whose destination "keep both" renamed, translating a refusal into its own code.
+    /// Runs a create whose destination "keep both" renamed, probing the chosen name first and
+    /// translating only the PROBE's refusal into its own code.
     /// </summary>
     /// <remarks>
     /// **THE GAP THIS CLOSES (RemEx-cirk), REPRODUCED BEFORE IT WAS FIXED.** NextAvailableName
@@ -556,11 +557,13 @@ public sealed class FileTransferService : IFileTransferService
     /// directory name, or volume label syntax is incorrect" AFTER choosing Keep both, which is worse
     /// than getting it before.
     ///
-    /// ONLY WRAPS THE RENAMED CASE. When the destination is the one the caller asked for, an
-    /// IOException means whatever it has always meant — this code asserts "the name WE chose is
-    /// unusable", which can only be true when we chose one.
+    /// ONLY PROBES THE RENAMED CASE, and probes rather than wraps. When the destination is the one
+    /// the caller asked for, an IOException means whatever it has always meant — this code asserts
+    /// "the name WE chose is unusable", which can only be true when we chose one. And the operation
+    /// itself runs UNWRAPPED, because choosing a name never established that a later failure is
+    /// ABOUT that name; only touching the name alone does.
     /// </remarks>
-    private static void RunRenamedCreate(ConflictResolutionPlan plan, Action create)
+    internal static void RunRenamedCreate(ConflictResolutionPlan plan, Action create)
     {
         if (plan.ResolvedName is null)
         {
@@ -568,15 +571,94 @@ public sealed class FileTransferService : IFileTransferService
             return;
         }
 
+        // PROBE THE NAME, THEN RUN THE OPERATION UNWRAPPED. The guard this replaces wrapped the
+        // WHOLE operation - including a recursive copy over an entire tree - so a disk-full partway
+        // through, an ACL denial on a nested child, or a deep CHILD path breaching MAX_PATH all
+        // emerged as "the name we chose is unusable". A confident wrong diagnosis, and one the client
+        // renders as an offer to rename, which fixes none of those.
+        //
+        // The precondition (we chose a name) never established the ATTRIBUTION (this failure is
+        // about that name). Only a probe does: creating and removing the exact path tests exactly
+        // the thing that might be wrong, and asks the OS rather than guessing a length limit - which
+        // is the same reason FileConflictNaming refuses to clamp, since ext4 counts 255 BYTES and
+        // exFAT and CIFS differ again.
+        //
+        // DELETE-ON-CLOSE RATHER THAN A finally, and review is the reason. A finally runs on the
+        // THROW path too, where CreateNew failed BECAUSE THE PATH ALREADY EXISTS - so the cleanup
+        // deleted a file the probe never created, on its way to reporting a name it had just
+        // destroyed. Letting the kernel own the lifetime makes "remove only what we made" structural
+        // rather than a condition someone can drop later. ON WINDOWS it also closes the window where
+        // the process dying between create and delete strands a zero-byte file where the copy is
+        // about to land, because the kernel owns the deletion. ON LINUX IT DOES NOT: .NET performs
+        // the unlink itself at handle disposal, so a hard kill still strands the file - measured
+        // under WSL, not assumed. The consequence is bounded (see below), and no cleanup that could
+        // run after a kill exists to fix it anyway.
+        //
+        // A filesystem that silently ignores delete-on-close - an SMB or FUSE-backed shared root is
+        // not hypothetical here - leaves that stray file behind, and the cost is a FAILED COPY rather
+        // than mere litter: the create() below runs File.Copy with overwrite false, or
+        // CreateDirectory over a file, and hits the leftover. Accepted rather than papered over: a
+        // follow-up "delete it if it is still there" check would reopen the exact window this design
+        // closed, since another writer can claim the name in between and we delete theirs.
+        FileStream? probe = null;
         try
         {
-            create();
+            probe = new FileStream(plan.DestinationPath, FileMode.CreateNew, FileAccess.Write,
+                                   FileShare.None, bufferSize: 1, FileOptions.DeleteOnClose);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
-                                       or NotSupportedException or PathTooLongException)
+        catch (Exception ex) when (ex is not (OutOfMemoryException or OperationCanceledException))
         {
-            throw FileConflictException.ResolvedNameUnusable(plan.ResolvedName, ex);
+            // ASK THE FILESYSTEM, NOT THE EXCEPTION TYPE, and the platforms are why. Something
+            // OCCUPYING the path is refused as UnauthorizedAccessException on Windows when it is a
+            // directory, and as EEXIST - which .NET surfaces as IOException - on Linux, because
+            // O_EXCL fails before the kind is ever considered (measured; an earlier version of this
+            // comment claimed EISDIR, which is what you get WITHOUT O_EXCL, a call this never
+            // makes). No type test can span that. Asking what is actually there can.
+            var occupied = File.Exists(plan.DestinationPath) || Directory.Exists(plan.DestinationPath);
+
+            if (occupied || ex is not (UnauthorizedAccessException or DirectoryNotFoundException))
+            {
+                // REPORTED AS AN UNUSABLE NAME EVEN WHEN IT IS MERELY TAKEN, and that is a deliberate
+                // under-claim (RemEx-od7s). "That name is taken" is the truer sentence, but the only
+                // existing code carrying it is destination_exists, and the client unlocks REPLACE for
+                // that. Replace re-answers the ORIGINAL request - overwrite b.txt - while the sheet
+                // is naming the sibling b (2).txt, so a user who chose "keep both" to protect b.txt
+                // would destroy it by answering a question about a different file. resolved_name_
+                // unusable is Skip-only, so it costs a retry - and, until RemEx-od7s, a body string
+                // that names the WRONG CAUSE, since the client renders this code as "this name is
+                // too long for the destination folder". A wrong cause the user can recover from
+                // still beats a right one wired to a button that deletes their file. RemEx-od7s adds
+                // a code that can say "taken" AND offer keep-both safely.
+                throw FileConflictException.ResolvedNameUnusable(plan.ResolvedName, ex);
+            }
+
+            // FALLING THROUGH TO THE OPERATION IS THE POINT of what is left: nothing is in the way,
+            // so a denial or a missing parent is a property of the FOLDER rather than of the name we
+            // picked - the same denial, and the same missing parent, would meet any name at all. The
+            // operation below hits them too and reports them honestly.
+            //
+            // THE PROBE IS ALWAYS A FILE, even when the operation will create a DIRECTORY, so that
+            // nobody re-derives this: a folder granting FILE_ADD_SUBDIRECTORY while denying
+            // FILE_ADD_FILE lands exactly here - UnauthorizedAccessException, nothing occupying the
+            // path - and falls through, so the directory copy proceeds and reports for itself. No
+            // configuration is known where file creation is refused by some OTHER type while
+            // directory creation would have succeeded, which is the only case this would misjudge.
+            //
+            // THE ONE CASE THE THROW ABOVE STILL OVER-CLAIMS, stated rather than hidden: a
+            // volume-level refusal - a full disk, an exhausted quota, a read-only mount - arrives as
+            // a bare IOException with nothing at the path, and lands there as a name verdict.
+            // Separating it means sniffing HResults per platform, which is the guessing this code
+            // refuses to do; the exposure is one zero-byte create rather than a whole recursive copy.
         }
+
+        // DISPOSED OUTSIDE THE CLASSIFYING CATCH, so "everything in that catch means the OPEN failed"
+        // holds without exception. Inside a using, a disposal failure - delete-on-close refused at
+        // handle close - would run the classifier with the probe's OWN file still on disk, and it
+        // would dutifully report a squatter that is us. Out here a disposal failure propagates raw,
+        // which is honest: nothing about it is a verdict on the name.
+        probe?.Dispose();
+
+        create();
     }
 
     /// <summary>

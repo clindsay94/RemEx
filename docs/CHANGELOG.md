@@ -11,6 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Stopped "keep both" blaming the name it chose for failures that had nothing to do with it.** The
+  guard added for RemEx-cirk wrapped the *entire* operation — including a recursive copy over a whole
+  tree — and translated five exception types into `resolved_name_unusable`. So a disk filling up
+  partway through, a permission denial on a nested child, or a *child* path breaching the length
+  limit all arrived at the phone as "the name we picked will not work", which the conflict sheet
+  renders as an offer to rename. Renaming fixes none of those, so the user is handed a confident
+  wrong diagnosis and a button that cannot help.
+  The precondition (we chose a name) never established the attribution (this failure is *about* that
+  name). Only a probe does, so the host now creates and removes the exact resolved path first and
+  runs the operation unwrapped: the probe touches nothing but the name, which is what makes blaming
+  the name honest — with one over-claim now stated in the code rather than hidden, since a
+  volume-level refusal (a full disk, a read-only mount) also reaches the probe and is still reported
+  as a name problem. Separating it would mean sniffing platform error codes, and the exposure is one
+  zero-byte create rather than a whole recursive copy. There is a matching under-claim: a name that
+  something else has merely *claimed* in the meantime is reported as unusable rather than taken,
+  because the only existing code meaning "taken" unlocks a Replace button that would answer a
+  different question and delete the file the user chose Keep both to protect. Skip-only until
+  RemEx-od7s adds a code that can say "taken" and still offer Keep both.
+  (`FileTransferService.cs`, `FileConflictCodeTests.cs`; RemEx-mu17, from the RemEx-cirk review.
+  Follow-up: RemEx-od7s.)
+
 - **Pinned the launch-at-login write-back guard, which a catch-up review found was protecting nothing that any test could see.** Deleting `if (_suppressLaunchAtLoginWrite) return;` restored the original defect — the first Settings open of each run re-registering the logon task with whatever `Environment.ProcessPath` happened to be — while the whole suite stayed green. The test file even declared a `Writes` list whose own comment claimed *"a redundant write cannot hide"*, **and no test ever read it**: a comment asserting coverage that did not exist, which is worse than no comment. That list is gone, and so are two tests the same review flagged as tautological — they asserted against the fake's own reimplementation of the narrowing, so no production implementation could fail them. The handler resolves its service from the static `App.Services`, so no unit test can drive it; the guards read the source instead, which this module documents as its last resort when the alternative is no test at all. **Two of the three mutants turned out to be uncompilable, which is itself the strongest result available:** removing the guard leaves the field assigned but never read, and `TreatWarningsAsErrors` refuses it — so that mutation cannot ship at all. The third, neutering the guard while still reading the field, compiles and is killed by the new test. 484 desktop tests green, zero warnings. (`StartupRegistrationReadBackTests.cs`; RemEx-p2ex, from the RemEx-h5lr review.)
 
 - **The conflict sheet no longer tells users a file "already exists" when the real problem is that the name is too long.** A catch-up review of nine commits that had shipped without a review pass found this, and it is the defect one of those commits explicitly claims to prevent. The host began sending `resolved_name_unusable` when a "keep both" rename produces a name the destination refuses, but Android never learned the token, so it fell through to the unknown-code branch — and the sheet chose its body by testing for a single code and defaulting everything else to *"There is already a file or folder with this name."* **That is factually false**, and it was shown to someone who had just chosen Keep both, with Skip as the only button. The client now knows the code and gives it its own explanation, and an unrecognised code gets a body that says nothing about *why* — saying nothing is the only honest option when the client has no basis for a cause. **Mutation testing then corrected the fix.** An explicit policy branch for the new code was written and removed: the fallback already yields Skip, so no mutant could kill it, and an unkillable branch reads as though it decides something. The actions genuinely are identical, for a real reason — the host already tried the rename and the destination refused the name it chose, so retrying keep-both asks it to choose again from the same too-long stem, and replace was declined a moment ago. What distinguishes the codes is the *explanation*, and that mutant does die. 446 Android tests green (443 → 446); 9 locales, release build, `lintVitalRelease` and `check-localization.ps1` all clean. (`FileConflictPolicy.kt`, `FileConflictSheet.kt`, 9 × `strings.xml`; RemEx-iz6b, from the RemEx-cirk review.)
