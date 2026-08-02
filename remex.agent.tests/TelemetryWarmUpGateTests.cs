@@ -93,4 +93,44 @@ public sealed class TelemetryWarmUpGateTests
         Assert.Contains("Memory", categories);
         Assert.Contains("Disk", categories);
     }
+
+    [WindowsOnlyFact("fabricates a NAMED HWiNFO map, which .NET only supports on Windows, and drives " +
+        "the WindowsPerf fallback")]
+    public async Task ASkippedTickDoesNotConsumeTheSeedingRead()
+    {
+        // WHAT THE SIBLING TESTS ABOVE CANNOT REACH, and the reason this one needs a different fixture
+        // (RemEx-cxel). The skip set is `_fallbackCacheSeeded && hwinfoSensors.Count > 0`; those tests
+        // point HWiNFO at a region that does not exist, so the right conjunct is permanently false and
+        // the flag has no effect there at all. This one supplies a real region instead.
+        //
+        // The invariant: a tick that did not READ must not mark the cache seeded, or the next tick
+        // skips every HWiNFO-covered category and those categories never enter the per-category cache
+        // — leaving a later stall to serve a payload missing them, which is the hole RemEx-c2g4 closed.
+        using var region = new SyntheticHwInfoRegion();
+        region.Write(("Core 0", "°C", 42.0));
+
+        var warmUp = new TaskCompletionSource();
+        using var service = new WindowsTelemetryService(
+            NullLogger<WindowsTelemetryService>.Instance, region.Name, staleAfterMs: 30_000,
+            warmUp.Task, fallbackTimeout: TimeSpan.FromMilliseconds(250));
+
+        var duringWarmUp = await service.GetTelemetryAsync();
+
+        // THE CONTROL, without which this test degrades into the vacuous one it replaces: if HWiNFO
+        // were not actually being read, the skip set would be empty no matter what the flag says, and
+        // every assertion below would pass on a fixture that proves nothing.
+        Assert.Contains(duringWarmUp.Sensors, s => s.Source == "HWInfo");
+
+        // Nothing was read, so nothing may be cached.
+        Assert.Empty(service.CachedByCategory);
+
+        warmUp.SetResult();
+        await service.GetTelemetryAsync();
+
+        // THE ASSERTION. CPU is the category the synthetic region covers, so it is exactly the one a
+        // wrongly-seeded flag would have skipped. Observed on the cache rather than on the payload
+        // deliberately: MergeHwInfoOverPerf drops every WindowsPerf sensor in a covered category, so
+        // the payloads of a skipped tick and a read tick are IDENTICAL and cannot tell them apart.
+        Assert.Contains("CPU", service.CachedByCategory.Keys);
+    }
 }

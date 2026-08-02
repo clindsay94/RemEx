@@ -121,6 +121,27 @@ public class WindowsTelemetryService : ITelemetryService, IDisposable
         new Dictionary<string, List<SensorReading>>(StringComparer.Ordinal);
 
     /// <summary>
+    /// The per-category fallback cache, for tests that need to see whether a category was actually
+    /// READ rather than merely present in the payload (RemEx-cxel).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The distinction is invisible from outside otherwise, and that is what left the skip logic
+    /// unpinned. When HWiNFO covers a category, <see cref="MergeHwInfoOverPerf"/> drops every
+    /// WindowsPerf sensor in it, so a tick that skipped the read and a tick that performed it emit
+    /// the SAME payload. The difference only surfaces later, on a tick served from this cache — so
+    /// either a test can force that path, or it observes the cache directly. This is the cheaper of
+    /// the two and does not require making the WMI read controllably slow.
+    /// </para>
+    /// <para>
+    /// READ IT, DO NOT MUTATE IT. The dictionary is replaced wholesale on each update, but the
+    /// <see cref="List{T}"/> values are the live ones — clearing or adding to a list through this
+    /// property would corrupt every later <c>ComposeCachedFallback</c>.
+    /// </para>
+    /// </remarks>
+    internal IReadOnlyDictionary<string, List<SensorReading>> CachedByCategory => _cachedByCategory;
+
+    /// <summary>
     /// Whether a WindowsPerf read has ever completed. Until it has, no category may be skipped, so
     /// the cache is seeded with every category rather than only the ones HWiNFO never covered.
     /// </summary>

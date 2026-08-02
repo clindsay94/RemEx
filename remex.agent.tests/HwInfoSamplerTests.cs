@@ -45,111 +45,23 @@ public sealed class HwInfoSamplerTests : IDisposable
     private const uint Signature = 0x53695748;   // "HWiS"
     private const long StaleAfterMs = 150;
 
-    private readonly string _name = "Local\\RemExHwInfoTest-" + Guid.NewGuid().ToString("N");
-    private readonly MemoryMappedFile _mmf;
-    private readonly MemoryMappedViewAccessor _writer;
-    private readonly int _headerSize = Marshal.SizeOf<WindowsTelemetryService.HWiNFO_SHARED_MEM2>();
-    private readonly int _sensorSize = Marshal.SizeOf<WindowsTelemetryService.HWiNFO_SENSOR_ELEMENT>();
-    private readonly int _readingSize = Marshal.SizeOf<WindowsTelemetryService.HWiNFO_READING_ELEMENT>();
+    // The region moved to SyntheticHwInfoRegion when RemEx-cxel needed the same fixture for the
+    // read-skipping question. Behaviour is unchanged — it is the same writer, the same layout and
+    // the same "CPU [#0]: Test CPU" device.
+    private readonly SyntheticHwInfoRegion _region = new();
 
-    private long _pollTime = 1;
-
-    public HwInfoSamplerTests()
-    {
-        _mmf = MemoryMappedFile.CreateNew(_name, 1 << 20);
-        _writer = _mmf.CreateViewAccessor();
-    }
-
-    public void Dispose()
-    {
-        _writer.Dispose();
-        _mmf.Dispose();
-    }
+    public void Dispose() => _region.Dispose();
 
     private WindowsTelemetryService NewSampler() =>
-        new(NullLogger<WindowsTelemetryService>.Instance, _name, StaleAfterMs);
+        new(NullLogger<WindowsTelemetryService>.Instance, _region.Name, StaleAfterMs);
 
-    /// <summary>Writes a whole region: one sensor "device", and one reading per (label, unit, value).</summary>
-    private void WriteRegion(params (string Label, string Unit, double Value)[] readings)
-    {
-        long sensorOffset = _headerSize;
-        long readingOffset = sensorOffset + _sensorSize;
-
-        WriteStruct(0, new WindowsTelemetryService.HWiNFO_SHARED_MEM2
-        {
-            dwSignature = Signature,
-            dwVersion = 1,
-            dwRevision = 0,
-            poll_time = _pollTime,
-            dwOffsetOfSensorSection = (uint)sensorOffset,
-            dwSizeOfSensorElement = (uint)_sensorSize,
-            dwNumSensorElements = 1,
-            dwOffsetOfReadingSection = (uint)readingOffset,
-            dwSizeOfReadingElement = (uint)_readingSize,
-            dwNumReadingElements = (uint)readings.Length,
-        });
-
-        WriteStruct(sensorOffset, new WindowsTelemetryService.HWiNFO_SENSOR_ELEMENT
-        {
-            szSensorNameOrig = "CPU [#0]: Test CPU",
-            szSensorNameUser = "CPU [#0]: Test CPU",
-        });
-
-        for (int i = 0; i < readings.Length; i++)
-        {
-            WriteReading(readingOffset + (i * (long)_readingSize), readings[i], (uint)i);
-        }
-    }
-
-    private void WriteReading(long offset, (string Label, string Unit, double Value) r, uint id) =>
-        WriteStruct(offset, new WindowsTelemetryService.HWiNFO_READING_ELEMENT
-        {
-            tReading = WindowsTelemetryService.SENSOR_READING_TYPE.SENSOR_TYPE_TEMP,
-            dwSensorIndex = 0,
-            dwReadingID = id,
-            szLabelUser = r.Label,
-            szLabelOrig = r.Label,
-            szUnit = r.Unit,
-            Value = r.Value,
-            ValueMin = -999,
-            ValueMax = 999,
-            ValueAvg = 0,
-        });
-
-    private void WriteStruct<T>(long offset, T value) where T : struct
-    {
-        int size = Marshal.SizeOf<T>();
-        var buffer = Marshal.AllocHGlobal(size);
-        try
-        {
-            Marshal.StructureToPtr(value, buffer, fDeleteOld: false);
-            var bytes = new byte[size];
-            Marshal.Copy(buffer, bytes, 0, size);
-            _writer.WriteArray(offset, bytes, 0, size);
-        }
-        finally
-        {
-            Marshal.DestroyStructure<T>(buffer);
-            Marshal.FreeHGlobal(buffer);
-        }
-    }
-
-    /// <summary>Advances HWiNFO's poll clock, as a live producer does every cycle.</summary>
-    private void Poll()
-    {
-        _pollTime++;
-        _writer.Write(
-            Marshal.OffsetOf<WindowsTelemetryService.HWiNFO_SHARED_MEM2>(
-                nameof(WindowsTelemetryService.HWiNFO_SHARED_MEM2.poll_time)).ToInt64(),
-            _pollTime);
-    }
 
     private static TelemetryPayload EmptyPayload() => new() { Sensors = new List<SensorReading>() };
 
     [WindowsOnlyFact(WindowsOnlyBecause)]
     public void ReadsSensorsFromTheSharedRegion()
     {
-        WriteRegion(("Core 0", "°C", 42.0), ("Core 1", "°C", 43.5));
+        _region.Write(("Core 0", "°C", 42.0), ("Core 1", "°C", 43.5));
         var sampler = NewSampler();
 
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out var result));
@@ -166,12 +78,12 @@ public sealed class HwInfoSamplerTests : IDisposable
         // The core claim of the refactor: a tick re-reads ONLY the value doubles, and the cached
         // template still supplies the right label. If the value address were wrong by one element
         // this is where it shows.
-        WriteRegion(("Core 0", "°C", 42.0), ("Core 1", "°C", 43.5));
+        _region.Write(("Core 0", "°C", 42.0), ("Core 1", "°C", 43.5));
         var sampler = NewSampler();
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out _));
 
-        WriteReading(_headerSize + _sensorSize, ("Core 0", "°C", 61.0), 0);
-        Poll();
+        _region.RewriteFirstReading(("Core 0", "°C", 61.0));
+        _region.Poll();
 
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out var second));
         Assert.Equal(61.0, second.Sensors.First(s => s.Name.Contains("Core 0")).Value);
@@ -188,14 +100,14 @@ public sealed class HwInfoSamplerTests : IDisposable
     {
         // The temperature sanity filter is deliberately NOT baked into the template, so a sensor
         // reading a placeholder 127°C now can come back later. Previously asserted only in a comment.
-        WriteRegion(("Core 0", "°C", 127.0));
+        _region.Write(("Core 0", "°C", 127.0));
         var sampler = NewSampler();
 
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out var hot));
         Assert.Empty(hot.Sensors);
 
-        WriteReading(_headerSize + _sensorSize, ("Core 0", "°C", 55.0), 0);
-        Poll();
+        _region.RewriteFirstReading(("Core 0", "°C", 55.0));
+        _region.Poll();
 
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out var recovered));
         Assert.Single(recovered.Sensors);
@@ -216,7 +128,7 @@ public sealed class HwInfoSamplerTests : IDisposable
     [WindowsOnlyFact(WindowsOnlyBecause)]
     public void StalePollTimeReportsUnavailable_RatherThanReplayingTheLastValues()
     {
-        WriteRegion(("Core 0", "°C", 42.0));
+        _region.Write(("Core 0", "°C", 42.0));
         var sampler = NewSampler();
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out _));
 
@@ -230,7 +142,7 @@ public sealed class HwInfoSamplerTests : IDisposable
     [WindowsOnlyFact(WindowsOnlyBecause)]
     public void ResumedPollingIsPickedUpAgain()
     {
-        WriteRegion(("Core 0", "°C", 42.0));
+        _region.Write(("Core 0", "°C", 42.0));
         var sampler = NewSampler();
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out _));
 
@@ -238,8 +150,8 @@ public sealed class HwInfoSamplerTests : IDisposable
         Assert.False(sampler.TryReadHwInfo(EmptyPayload(), out _));
 
         // HWiNFO comes back. The mapping was dropped, so this exercises the reopen path too.
-        WriteReading(_headerSize + _sensorSize, ("Core 0", "°C", 50.0), 0);
-        Poll();
+        _region.RewriteFirstReading(("Core 0", "°C", 50.0));
+        _region.Poll();
 
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out var resumed));
         Assert.Equal(50.0, resumed.Sensors.Single().Value);
@@ -249,13 +161,13 @@ public sealed class HwInfoSamplerTests : IDisposable
     public void LayoutChangeRebuildsTheTemplates()
     {
         // A cached template set keyed on stale geometry would read values from the wrong offsets.
-        WriteRegion(("Core 0", "°C", 42.0));
+        _region.Write(("Core 0", "°C", 42.0));
         var sampler = NewSampler();
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out var before));
         Assert.Single(before.Sensors);
 
-        WriteRegion(("Core 0", "°C", 42.0), ("Core 1", "°C", 44.0));
-        Poll();
+        _region.Write(("Core 0", "°C", 42.0), ("Core 1", "°C", 44.0));
+        _region.Poll();
 
         Assert.True(sampler.TryReadHwInfo(EmptyPayload(), out var after));
         Assert.Equal(2, after.Sensors.Count);
@@ -264,8 +176,8 @@ public sealed class HwInfoSamplerTests : IDisposable
     [WindowsOnlyFact(WindowsOnlyBecause)]
     public void BadSignatureIsRejected()
     {
-        WriteRegion(("Core 0", "°C", 42.0));
-        _writer.Write(0, 0xDEADBEEFu);
+        _region.Write(("Core 0", "°C", 42.0));
+        _region.CorruptSignature();
 
         Assert.False(NewSampler().TryReadHwInfo(EmptyPayload(), out _));
     }
