@@ -67,6 +67,7 @@ public class PingPongHeldKeyReleaseTests
             Mock.Of<IProcessMonitorService>(),
             Mock.Of<Remex.Agent.Services.IHostCapabilitiesProvider>(),
             recorder.Build(),
+            null!,  // ScreenshotService: this test never takes one
             null!,
             null!,
             null!,

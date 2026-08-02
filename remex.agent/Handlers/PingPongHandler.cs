@@ -27,6 +27,7 @@ public sealed class PingPongHandler(
     Remex.Core.Services.IProcessMonitorService processMonitorService,
     IHostCapabilitiesProvider hostCapabilitiesProvider,
     IInputSimulationService inputSimulation,
+    Remex.Agent.Services.Screenshot.IScreenshotService screenshotService,
     PairingHandler pairingHandler,
     FileTransferHandler fileTransferHandler,
     TransferSessionManager transferSessionManager,
@@ -288,7 +289,7 @@ public sealed class PingPongHandler(
                         break;
 
                     case MessageTypes.Command when message.CommandAction is not null:
-                        var cmdResponse = await ExecuteCommandAsync(message);
+                        var cmdResponse = await ExecuteCommandAsync(message, ct);
                         // Echo the correlation ID so the client can match the response to the request
                         if (message.CorrelationId is not null)
                             cmdResponse = cmdResponse with { CorrelationId = message.CorrelationId };
@@ -594,7 +595,13 @@ public sealed class PingPongHandler(
     }
 
 
-    private async Task<RemexMessage> ExecuteCommandAsync(RemexMessage message)
+    /// <remarks>
+    /// Takes the connection's token so a command that does real work - the screenshot capture writes
+    /// a file - stops when the client goes away, rather than finishing into a socket nobody is
+    /// reading. The power verbs ignore it, which is correct: a shutdown that has been asked for
+    /// should not be abandoned because the phone dropped off mid-request.
+    /// </remarks>
+    private async Task<RemexMessage> ExecuteCommandAsync(RemexMessage message, CancellationToken ct)
     {
         try
         {
@@ -621,6 +628,27 @@ public sealed class PingPongHandler(
                 case "HIBERNATE":
                     await commandService.Hibernate();
                     return MakeCommandResponse(true, "Hibernate executed.");
+                case "SCREENSHOT":
+                {
+                    // SAVES ON THIS PC AND REPORTS WHERE. Getting it to the phone is separate work
+                    // (RemEx-y7my) with its own consent question, because a screenshot carries
+                    // whatever happened to be on the screen.
+                    //
+                    // The label is optional and comes from the client; ScreenshotFileName sanitises
+                    // it to ASCII letters, digits and dashes and truncates it to 16 characters, so a
+                    // monitor name like ".\DISPLAY1" cannot put a separator inside the file name.
+                    string? displayLabel = null;
+                    message.CommandParameters?.TryGetValue("DisplayLabel", out displayLabel);
+                    var saved = await screenshotService.CaptureAsync(displayLabel, ct);
+
+                    // THE NAME, NOT THE PATH. The full path carries the account name, and part 1 does
+                    // not deliver the file, so the phone cannot act on a path anyway - it buys the
+                    // client nothing and discloses the user's login. The host log keeps the full path
+                    // for anyone actually diagnosing this machine.
+                    logger.LogInformation("Screenshot saved to {Path}", saved);
+                    return MakeCommandResponse(
+                        true, $"Screenshot saved to your Pictures folder as {Path.GetFileName(saved)}");
+                }
                 case "MONITOROFF":
                     await commandService.MonitorOff();
                     return MakeCommandResponse(true, "Monitor off executed.");

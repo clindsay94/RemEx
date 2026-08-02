@@ -247,6 +247,36 @@ public static class HostBootstrapper
 
         builder.Services.AddSingleton<ICertificateService>(certService);
 
+        // SCREENSHOTS (RemEx-tjve), registered after the capture backends above so it picks up
+        // whichever one this platform negotiated rather than opening a second one.
+        //
+        // PICTURES, NOT A REMEX-PRIVATE FOLDER. A screenshot is the user's, not the app's: they will
+        // look for it where every other screenshot on the machine lives, and a gallery indexes that
+        // location already. On Linux this follows the user's XDG PICTURES directory, falling back to
+        // ~/Pictures - so on a localised desktop it is ~/Bilder or ~/Images, not literally ~/Pictures.
+        builder.Services.AddSingleton<Remex.Agent.Services.Screenshot.IScreenshotService>(sp =>
+            new Remex.Agent.Services.Screenshot.ScreenshotService(
+                sp.GetRequiredService<IScreenCaptureService>(),
+                () =>
+                {
+                    // EMPTY IS A REAL ANSWER, not a theoretical one: GetFolderPath returns "" when
+                    // the folder cannot be resolved - Pictures redirected to an unavailable share, or
+                    // HOME unset under an XDG autostart. Path.Combine would then yield a RELATIVE
+                    // path, which an elevated process resolves against a working directory it did not
+                    // choose. The write would succeed in somewhere like System32 BECAUSE of the
+                    // elevation, and the user would never find the file.
+                    var pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+                    if (string.IsNullOrEmpty(pictures))
+                    {
+                        throw new InvalidOperationException(
+                            "This PC has no Pictures folder available, so there is nowhere sensible to "
+                                + "save a screenshot.");
+                    }
+
+                    return Path.Combine(pictures, "RemEx Screenshots");
+                },
+                () => DateTimeOffset.Now));
+
         // THE READINESS REPORT, REGISTERED WHERE ITS INPUTS ALREADY LIVE (RemEx-id37). It needs the
         // certificate path and the port, and both are here - certService a line above, port the
         // parameter of this method - so building it anywhere else would mean recomputing one of them.
@@ -388,6 +418,7 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Core.Services.IProcessMonitorService>(),
                 context.RequestServices.GetRequiredService<IHostCapabilitiesProvider>(),
                 context.RequestServices.GetRequiredService<IInputSimulationService>(),
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.Screenshot.IScreenshotService>(),
                 context.RequestServices.GetRequiredService<PairingHandler>(),
                 context.RequestServices.GetRequiredService<FileTransferHandler>(),
                 context.RequestServices.GetRequiredService<TransferSessionManager>(),

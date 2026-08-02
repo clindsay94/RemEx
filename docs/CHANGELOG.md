@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The phone can now ask this PC to take a screenshot.** It is saved as a PNG in a "RemEx
+  Screenshots" folder inside your Pictures — where you would look for it, and where a gallery already
+  indexes — named so that shots sort in the order they were taken.
+  **PNG rather than JPEG**, because a screenshot is usually taken so somebody can read text off it,
+  and JPEG's artefacts land hardest on exactly that. The mouse pointer is left out: it records what
+  was on screen, not where the pointer happened to be.
+  **It would rather give you nothing than give you something wrong.** If the display is rotated or
+  resized while the picture is being taken, the result would be a skewed image that looks perfectly
+  real — so it checks and refuses. If the PC hands back an older frame because the screen connection
+  dropped, it refuses that too: a file saved under the time you asked for it should not be a picture
+  of five minutes ago. And two screenshots taken in the same second both survive, rather than the
+  second quietly replacing the first.
+  It also works on displays with an odd width or height, which the first version did not — those
+  machines would have failed every single screenshot.
+  Getting the picture onto the phone is separate work with its own consent question, since a
+  screenshot carries whatever was on the screen at the time.
+  (`ScreenshotService.cs`, `PingPongHandler.cs`, `HostBootstrapper.cs`; RemEx-tjve, part 1 of
+  RemEx-86nu. Next: RemEx-y7my.)
+
 - **A "System status" card on Home that tells you whether RemEx can actually do its job.** It checks
   five things — administrator rights, the security certificate, whether RemEx is accepting
   connections, the firewall, and whether it starts when you sign in — and **stays collapsed to a

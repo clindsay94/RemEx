@@ -120,6 +120,7 @@ public class LoopbackTelemetryStreamTests
             Mock.Of<IProcessMonitorService>(),
             Mock.Of<IHostCapabilitiesProvider>(),
             Mock.Of<IInputSimulationService>(),
+            null!,  // ScreenshotService: this test never takes one
             null!,
             NewFileTransferHandler(),
             null!,
