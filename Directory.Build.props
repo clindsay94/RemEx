@@ -155,11 +155,24 @@
       themselves in WarningsNotAsErrors. Add one of them here and the demoted rollup becomes the only
       remaining signal that Remex.Core has an AOT problem at all.
 
-      XA0033 is deliberately NOT here, and the difference is measured rather than assumed. It is the
-      Android workload failing to parse `java -version` on Temurin 26, logged by an MSBuild task rather
-      than by a compiler, and this flag does not elevate it: in the very build that failed on
-      `error IL3053` with both carve-outs absent, XA0033 printed as `warning`. Not every warning in that
-      build is reachable from here; the gap is filed as RemEx-go3k.
+      XA0033 is deliberately NOT here, and it does not need to be. It is the Android workload failing
+      to parse `java -version` on Temurin 26, logged by an MSBuild TASK rather than by a compiler, so
+      `TreatWarningsAsErrors` — which governs compiler and analyzer diagnostics — does not reach it. In
+      the very build that failed on `error IL3053` with both carve-outs absent, XA0033 printed as
+      `warning`.
+
+      THE KNOB THAT DOES REACH IT IS A DIFFERENT ONE, and RemEx-go3k measured which. Both
+      `MSBuildTreatWarningsAsErrors=true` and the explicit `MSBuildWarningsAsErrors=XA0033` turn it into
+      `error XA0033`, each verified against a build with `artifacts/obj/remex.core/...` deleted first so
+      the workload genuinely re-ran. So task-logged warnings are NOT unreachable from here, which is
+      what that bead set out to establish and what an earlier measurement got backwards.
+
+      NEITHER IS ENABLED, ON PURPOSE. XA0033 reports a property of the MACHINE — the developer's JDK
+      banner — not a defect in this repo, so elevating it would fail the build on a correct tree because
+      someone installed a newer Temurin. The blanket form would do exactly that today. If a task-logged
+      warning ever turns up that DOES indicate a real defect — the Android packaging or linker tasks are
+      the plausible source — the shape to reach for is `MSBuildWarningsAsErrors` with that specific code,
+      not the blanket property.
 
       HOW THE FIRST ANSWER TO THIS WAS WRONG, recorded without a mechanism because the mechanism was
       never isolated. Three consecutive runs measured "the Android build succeeds with the carve-out
