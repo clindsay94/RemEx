@@ -219,8 +219,67 @@
         </Style>
 
 
-        <!-- Keyboard-focus visible ring -->
+        <!-- ═══ KEYBOARD-FOCUS VISIBLE RING ═══
+
+             EVERY INTERACTIVE CONTROL TYPE, NOT JUST BUTTON. This used to style Button alone, so a
+             keyboard user tabbing through a form got a clear accent ring on the buttons and then
+             Fluent's default on everything else - which on CyberNOC and Monolith is near-invisible
+             against their dark surfaces. The effect was worse than no ring at all: focus appeared to
+             VANISH when it left a button and reappear when it returned, so the tab order looked
+             broken rather than under-styled. (RemEx-2p19, continuing RemEx-dygk.)
+
+             AccentPrimaryBrush is per-theme by construction, so each theme rings in its own accent
+             rather than in a literal that one of the four cannot show - the failure just fixed for
+             the accent swatches in RemEx-wcvr.
+
+             `:focus-visible` rather than `:focus` throughout, deliberately: it fires for keyboard
+             traversal and not for a mouse click, so clicking a control does not leave a ring behind
+             it. That is the distinction the pseudo-class exists for, and losing it would make the
+             UI look permanently focused after any click.
+
+             Split by whether the control templates a ContentPresenter or draws its own border:
+             ContentPresenter for the content controls, the control itself where there is no inner
+             presenter to reach. -->
         <Style Selector="Button:focus-visible /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="ToggleButton:focus-visible /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="RepeatButton:focus-visible /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="ListBoxItem:focus-visible /template/ ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+
+        <!-- These draw their own border, so the ring goes on the control rather than on an inner
+             presenter. TextBox is the one a user is most likely to be typing into blind without it. -->
+        <Style Selector="TextBox:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="ComboBox:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="CheckBox:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="RadioButton:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="ToggleSwitch:focus-visible">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="Slider:focus-visible">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
