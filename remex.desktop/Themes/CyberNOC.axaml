@@ -47,6 +47,13 @@
     <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
     <SolidColorBrush x:Key="SystemWarningBackgroundBrush" Color="{DynamicResource SystemWarning}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
+    <!-- MEASURED, NOT CHOSEN. This theme's accent token happens to be the SAME value, and that is a
+         coincidence rather than a licence: red is not allowed to borrow it. See SolarFlare, where the
+         accent token is dark (#FF141414) and takes red from 4.83:1 down to 3.81:1 - which is exactly
+         why RemEx-tq2e's blanket sweep had to be reverted.
+         White on this theme's error fill #FF005C is 3.88:1; this value gives 5.10:1. Retune SystemError
+         and AccentForegroundContrastTests fails. (RemEx-xb3c) -->
+    <SolidColorBrush x:Key="ErrorForegroundBrush" Color="#FF0A0A0A"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
     <!-- Semi-transparent dark overlay for toolbars and floating panels -->

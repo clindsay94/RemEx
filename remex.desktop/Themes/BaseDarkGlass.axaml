@@ -66,6 +66,13 @@
     <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
     <SolidColorBrush x:Key="SystemWarningBackgroundBrush" Color="{DynamicResource SystemWarning}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
+    <!-- MEASURED, NOT CHOSEN, AND IT INVERTS THE ACCENT ANSWER. White on this theme's error
+         fill #F43F5E is 3.67:1; this value gives 5.39:1 - dark, unlike white's 3.67:1.
+         IT REALLY DOES INVERT HERE: this theme's accent token is WHITE and red wants dark. Which is why
+         RemEx-tq2e reverted its blanket sweep: AccentForegroundBrush is dark on SolarFlare
+         and took red from 4.83:1 down to 3.81:1. Red needed its own token, not a borrowed
+         one. Retune SystemError and AccentForegroundContrastTests fails. (RemEx-xb3c) -->
+    <SolidColorBrush x:Key="ErrorForegroundBrush" Color="#FF0A0A0A"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
     <!-- Semi-transparent dark overlay for toolbars and floating panels -->

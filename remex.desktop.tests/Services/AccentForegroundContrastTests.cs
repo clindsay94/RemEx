@@ -4,7 +4,8 @@ using Xunit;
 namespace Remex.Desktop.Tests.Services;
 
 /// <summary>
-/// Pins that every theme supplies a readable foreground for accent-filled surfaces (RemEx-tq2e).
+/// Pins that every theme supplies a readable foreground for accent-, success- and error-filled
+/// surfaces (RemEx-tq2e, RemEx-iegl, RemEx-xb3c).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -196,10 +197,22 @@ public class AccentForegroundContrastTests
     /// needs the class-to-ancestor resolution a real XAML parse would give.
     /// </para>
     /// <para>
-    /// ERROR RED IS DELIBERATELY NOT LISTED. Measurement during RemEx-tq2e showed this very token
-    /// making SolarFlare WORSE on red — 4.83:1 down to 3.81:1 — so those surfaces keep white until
-    /// red gets its own measured token (RemEx-xb3c). White on red is below AA on three themes today; that is
-    /// a separate bead, not something this rule can fix.
+    /// ERROR RED IS NOW LISTED TOO, and the history is worth keeping. RemEx-tq2e tried to sweep red
+    /// in with the accent token and had to revert: <c>AccentForegroundBrush</c> is dark on SolarFlare
+    /// and took red from 4.83:1 down to 3.81:1. The answer on red genuinely inverts the accent one —
+    /// three themes want DARK text and SolarFlare wants WHITE — so it needed a token of its own
+    /// (<c>ErrorForegroundBrush</c>, RemEx-xb3c) rather than a borrowed one. Precisely: on
+    /// BaseDarkGlass the accent wants white and red wants dark; on SolarFlare the accent wants dark
+    /// and red wants white; and borrowing the accent token fails AA on both — 3.67:1 and 3.81:1. It
+    /// is identical in the other two themes, which is a coincidence and not a licence. Only once a
+    /// measured token existed could this rule cover red without lying.
+    /// </para>
+    /// <para>
+    /// <c>SystemErrorBackgroundBrush</c> is NOT swept in by the <c>SystemError</c> entry, and that is
+    /// deliberate rather than luck: the pattern requires the key to end there or at <c>Brush</c>, so
+    /// the translucent variant does not match. It is a genuinely different surface — 15% red over
+    /// glass, where white measures 15.96:1 on BaseDarkGlass and 1.38:1 on SolarFlare — and the error
+    /// token would be catastrophic on it at 1.18–1.67:1. That surface is RemEx-1elh.
     /// </para>
     /// </remarks>
     private static List<string> ScanForWhiteOnFilled(string axaml, string label)
@@ -208,7 +221,7 @@ public class AccentForegroundContrastTests
         // is not reported. None exist today; the guard should not create a false positive for the
         // first one that does.
         const string white = "\"(?:White|#FFFFFFFF|#FFFFFF)\"";
-        var filled = new[] { "AccentPrimary", "SystemSuccess" };
+        var filled = new[] { "AccentPrimary", "SystemSuccess", "SystemError" };
         var offences = new List<string>();
 
         foreach (var brush in filled)
@@ -267,7 +280,7 @@ public class AccentForegroundContrastTests
     }
 
     [Fact]
-    public void TheViewScanFindsBOTHSpellings_AndLeavesErrorRedAlone()
+    public void TheViewScanFindsBOTHSpellings_AndLeavesTheTRANSLUCENTSurfaceAlone()
     {
         // Feeds the REAL function the shapes it hunts. The style case is the one that matters: the
         // scan reported zero against seven live style-driven offenders before this existed.
@@ -289,11 +302,21 @@ public class AccentForegroundContrastTests
         Assert.Single(ScanForWhiteOnFilled(
             "<Button Background=\"{DynamicResource AccentPrimary}\" Foreground=\"White\"/>", "colorkey"));
 
-        // And the deliberate exclusion really is excluded.
-        Assert.Empty(ScanForWhiteOnFilled(
+        // ERROR RED IS COVERED NOW, in both spellings, because RemEx-xb3c gave it a measured token of
+        // its own. It was excluded until then for a real reason - no correct foreground existed to
+        // point people at - and this assertion flipped with the fix rather than being left behind.
+        Assert.Single(ScanForWhiteOnFilled(
             "<Button Background=\"{DynamicResource SystemErrorBrush}\" Foreground=\"White\"/>", "red"));
-        Assert.Empty(ScanForWhiteOnFilled(
+        Assert.Single(ScanForWhiteOnFilled(
             "<Button Background=\"{DynamicResource SystemError}\" Foreground=\"White\"/>", "redcolor"));
+
+        // BUT NOT THE TRANSLUCENT VARIANT, and this is the assertion that keeps the distinction real
+        // rather than accidental. SystemErrorBackgroundBrush is 15% red over glass - a surface where
+        // white is CORRECT on three themes (15.96, 16.74, 11.85) and the error token would measure
+        // 1.18-1.67. Sweeping it in with a prefix match would have demanded exactly the wrong fix.
+        Assert.Empty(ScanForWhiteOnFilled(
+            "<Button Background=\"{DynamicResource SystemErrorBackgroundBrush}\" Foreground=\"White\"/>",
+            "translucent"));
     }
 
     [Fact]
@@ -307,4 +330,73 @@ public class AccentForegroundContrastTests
 
         Assert.Equal(Themes.Length, failures);
     }
+
+    [Fact]
+    public void TheErrorForegroundMeetsWcagAAAgainstItsOwnError()
+    {
+        // THE THIRD SURFACE, AND THE ONE THAT PROVES THE TOKENS MUST BE PER-SURFACE, not just
+        // per-theme. Red does not follow the accent answer: on BaseDarkGlass the accent wants white
+        // and red wants dark, on SolarFlare the accent wants dark and red wants white, and the two
+        // tokens are identical in the other two themes - a coincidence, not a licence. Borrowing the
+        // accent token fails AA on both of the themes where they differ, which is why RemEx-tq2e's
+        // sweep had to be reverted.
+        foreach (var theme in Themes)
+        {
+            var text = File.ReadAllText(ThemePath(theme));
+            var error = Extract(text, "<Color x:Key=\"SystemError\">");
+            var foreground = ExtractBrush(text, "ErrorForegroundBrush");
+
+            var ratio = Contrast(error, foreground);
+            Assert.True(ratio >= 4.5, $"{theme}: {foreground} on {error} is {ratio:F2}:1, below AA.");
+        }
+    }
+
+    [Fact]
+    public void EveryThemeDeclaresAnErrorForeground()
+    {
+        foreach (var theme in Themes)
+        {
+            Assert.Contains("ErrorForegroundBrush", File.ReadAllText(ThemePath(theme)));
+        }
+    }
+
+    [Fact]
+    public void BorrowingTheAccentTokenForREDWouldStillFailToday()
+    {
+        // THE CONTROL THAT WOULD HAVE CAUGHT THE ORIGINAL MISTAKE, rewritten after review showed the
+        // first version was decorative. It asserted only that the two tokens DIFFER somewhere, which
+        // is true today by coincidence and which no mutation could trip without tripping the AA test
+        // first - and its comment claimed to check SolarFlare specifically while checking no theme in
+        // particular.
+        //
+        // This asserts the thing that actually justifies a separate token: borrowing the accent one
+        // is not merely a different value on red, it is an UNREADABLE one - 3.67:1 on BaseDarkGlass,
+        // 3.81:1 on SolarFlare. If that ever stops being true, the split needs re-arguing rather than
+        // silently keeping.
+        var borrowWouldFail = Themes.Count(theme =>
+        {
+            var text = File.ReadAllText(ThemePath(theme));
+            return Contrast(Extract(text, "<Color x:Key=\"SystemError\">"),
+                            ExtractBrush(text, "AccentForegroundBrush")) < 4.5;
+        });
+
+        Assert.True(borrowWouldFail > 0,
+            "AccentForegroundBrush now clears AA on every error fill, so a separate ErrorForegroundBrush "
+                + "is no longer justified by measurement - re-measure before deleting or keeping it.");
+    }
+
+    [Fact]
+    public void PlainWhiteWouldFailOnEveryErrorFillButOne()
+    {
+        // The control this surface was missing, and the file's own pattern: without it, the 3.41 /
+        // 3.67 / 3.88 / 4.83 quoted in four theme comments and the changelog are asserted NOWHERE and
+        // can drift from the themes they describe.
+        var failures = Themes.Count(theme =>
+            Contrast(Extract(File.ReadAllText(ThemePath(theme)), "<Color x:Key=\"SystemError\">"), "#FFFFFFFF") < 4.5);
+
+        // Against the list, not 3. White passes on exactly one theme, SolarFlare, at 4.83:1 - which
+        // is why that theme alone keeps white.
+        Assert.Equal(Themes.Length - 1, failures);
+    }
+
 }

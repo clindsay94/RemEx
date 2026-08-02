@@ -11,6 +11,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Red "danger" buttons were hard to read on three of the four themes, and the obvious fix would
+  have broken the fourth.** White on the error colour measures 3.41:1 on Monolith against a readable
+  minimum of 4.5:1, 3.67:1 on BaseDarkGlass, 3.88:1 on CyberNOC — and 4.83:1 on SolarFlare, the one
+  theme where it was already fine.
+  **Red does not follow the accent colour's answer**, which is why an earlier attempt to reuse it
+  here had to be undone: on BaseDarkGlass the accent wants white and red wants dark, on SolarFlare
+  the accent wants dark and red wants white, and borrowing it fails on both (3.67:1 and 3.81:1) —
+  including on SolarFlare, the only theme where red was already fine. Red now has a colour of its
+  own, and every theme clears the minimum, worst case 4.83:1. On SolarFlare that is the ceiling:
+  nothing beats white on that particular red without changing the palette itself.
+  Three bindings in these files also named a plain colour where the brush was meant. That resolved
+  correctly either way — Avalonia converts one to the other when the target wants a brush — so the
+  pixels are unchanged; they now match every sibling binding.
+  The rule that checks for this can finally include red, because there is now something correct to
+  point at. One red surface is deliberately still outside it: the canvas "Remove" button is only 15%
+  red over glass, a different surface where white is *correct* on three themes and the new colour
+  would be far worse — that one is filed separately with its measurements.
+  (`ConfirmationDialog.axaml`, `CanvasView.axaml`, 4 theme files, `AccentForegroundContrastTests.cs`;
+  RemEx-xb3c, from the RemEx-iegl review. Follow-up: RemEx-1elh.)
+
 - **Eighteen more buttons had white text on a background that made it nearly invisible.** An earlier
   sweep fixed nine and read as though nine was all of them; review of *this* fix then found the same
   undercount again, because the ten obvious ones were only the buttons whose colours are set
