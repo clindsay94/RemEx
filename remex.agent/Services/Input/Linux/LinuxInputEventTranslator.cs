@@ -237,6 +237,17 @@ public static class LinuxInputEventTranslator
         0xDC => 43,   // backslash
         0xDD => 27,   // ]
         0xDE => 40,   // apostrophe
+        // MEDIA AND VOLUME (RemEx-3cnq). Values read from /usr/include/linux/input-event-codes.h
+        // rather than recalled - the media block is the part of this table most often written from
+        // memory and it is easy to be one off.
+        0xAD => 113,  // VK_VOLUME_MUTE       -> KEY_MUTE
+        0xAE => 114,  // VK_VOLUME_DOWN       -> KEY_VOLUMEDOWN
+        0xAF => 115,  // VK_VOLUME_UP         -> KEY_VOLUMEUP
+        0xB0 => 163,  // VK_MEDIA_NEXT_TRACK  -> KEY_NEXTSONG
+        0xB1 => 165,  // VK_MEDIA_PREV_TRACK  -> KEY_PREVIOUSSONG
+        0xB2 => 166,  // VK_MEDIA_STOP        -> KEY_STOPCD
+        0xB3 => 164,  // VK_MEDIA_PLAY_PAUSE  -> KEY_PLAYPAUSE
+
         _ => -1,
     };
 
@@ -281,6 +292,21 @@ public static class LinuxInputEventTranslator
         0xDC => "backslash",
         0xDD => "bracketright",
         0xDE => "apostrophe",
+        // MEDIA AND VOLUME (RemEx-3cnq), taken from /usr/include/X11/XF86keysym.h.
+        //
+        // PLAY/PAUSE IS NOT XF86AudioPlay, which is the trap here. That keysym is documented in the
+        // header as KEY_PLAYCD / KEY_PLAY - start playing - while the Windows key this maps from,
+        // VK_MEDIA_PLAY_PAUSE, is a TOGGLE. X11 has a separate XF86XK_MediaPlayPause, annotated
+        // _EVDEVK(0x0a4) = 164 = KEY_PLAYPAUSE, which is the exact counterpart and matches what the
+        // evdev table above emits for the same key.
+        0xAD => "XF86AudioMute",
+        0xAE => "XF86AudioLowerVolume",
+        0xAF => "XF86AudioRaiseVolume",
+        0xB0 => "XF86AudioNext",
+        0xB1 => "XF86AudioPrev",
+        0xB2 => "XF86AudioStop",
+        0xB3 => "XF86MediaPlayPause",
+
         _ => null,
     };
 
