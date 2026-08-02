@@ -29,35 +29,11 @@ public class StartupRegistrationReadBackTests
         public bool? Registered { get; set; } = true;
         public bool IsSupported { get; set; } = true;
 
-        /// <summary>Every value SetEnabled was called with, so a redundant write cannot hide.</summary>
-        public List<bool> Writes { get; } = [];
-
         public bool IsEnabled() => TryIsEnabled() == true;
 
         public bool? TryIsEnabled() => Registered;
 
-        public void SetEnabled(bool enabled) => Writes.Add(enabled);
-    }
-
-    [Fact]
-    public void AnUnanswerableQueryIsNotTheSameAsNotRegistered()
-    {
-        // THE DISTINCTION THE WHOLE CHANGE IS ABOUT. Null and false are different facts, and the
-        // two-valued view must be the one that loses information, not the other way round.
-        var probe = new FakeStartup { Registered = null };
-
-        Assert.Null(probe.TryIsEnabled());
-        Assert.False(probe.IsEnabled());
-    }
-
-    [Fact]
-    public void TheTwoValuedViewAgreesWithTheThreeValuedOneWhereverItCan()
-    {
-        // IsEnabled is kept for callers that genuinely cannot act on "do not know", so it must stay
-        // a faithful narrowing rather than a second implementation that can drift.
-        Assert.True(new FakeStartup { Registered = true }.IsEnabled());
-        Assert.False(new FakeStartup { Registered = false }.IsEnabled());
-        Assert.False(new FakeStartup { Registered = null }.IsEnabled());
+        public void SetEnabled(bool enabled) { }
     }
 
     [Fact]
@@ -99,5 +75,59 @@ public class StartupRegistrationReadBackTests
         Assert.True(SettingsViewModel.SeedLaunchAtLogin(null, false).StateUnknown);
         Assert.False(SettingsViewModel.SeedLaunchAtLogin(true, false).StateUnknown);
         Assert.False(SettingsViewModel.SeedLaunchAtLogin(false, true).StateUnknown);
+    }
+
+    // ── Source guards for the write-back suppression (RemEx-p2ex) ──────────────
+    //
+    // A CATCH-UP REVIEW FOUND THIS UNPINNED: deleting the guard restored the original defect - every
+    // first Settings open re-registering the logon task with the current Environment.ProcessPath -
+    // with all tests still green. The file even declared a `Writes` list whose comment claimed "a
+    // redundant write cannot hide", and no test ever read it. That list is gone.
+    //
+    // The handler resolves IStartupRegistrationService from the STATIC App.Services, so no unit test
+    // can drive it. This module documents source reading as its last resort when the alternative is
+    // no test at all (see RemexConnectionServiceContractTests, FileConflictWiringTest). Comments are
+    // stripped first, so a guard cannot be satisfied by prose describing the rule.
+
+    private static string ViewModelSource()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..",
+            "remex.desktop", "ViewModels", "SettingsViewModel.cs");
+        Assert.True(File.Exists(path), $"missing source: {Path.GetFullPath(path)}");
+
+        return System.Text.RegularExpressions.Regex.Replace(
+            System.Text.RegularExpressions.Regex.Replace(
+                File.ReadAllText(path), @"/\*.*?\*/", "", System.Text.RegularExpressions.RegexOptions.Singleline),
+            @"(?m)//.*$", "");
+    }
+
+    [Fact]
+    public void TheChangeHandlerHonoursTheSuppressionFlag()
+    {
+        // Without this early return, ASSIGNING the seeded value writes it straight back - the switch
+        // is both the display and the write control, which is what makes seeding dangerous at all.
+        Assert.Matches(
+            @"partial void OnIsLaunchAtLoginEnabledChanged\(bool value\)\s*\{\s*if \(_suppressLaunchAtLoginWrite\) return;",
+            ViewModelSource());
+    }
+
+    [Fact]
+    public void SeedingSetsAndAlwaysClearsTheFlag()
+    {
+        // try/finally, not a bare pair: an exception between them would leave the flag stuck true and
+        // silently disable the switch's write for the rest of the process - a failure that looks
+        // like "the toggle does nothing" and points nowhere near this code.
+        var source = ViewModelSource();
+
+        Assert.Contains("_suppressLaunchAtLoginWrite = true;", source);
+        Assert.Matches(@"finally\s*\{\s*_suppressLaunchAtLoginWrite = false;\s*\}", source);
+    }
+
+    [Fact]
+    public void SeedingGoesThroughTheSharedRuleRatherThanReimplementingIt()
+    {
+        // The rule is internal production code precisely so the tests above it exercise the real
+        // thing. A load path that inlined `registered ?? current` again would drift from it silently.
+        Assert.Contains("SeedLaunchAtLogin(startupService.TryIsEnabled()", ViewModelSource());
     }
 }
