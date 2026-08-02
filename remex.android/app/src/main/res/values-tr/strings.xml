@@ -338,6 +338,30 @@
     <string name="file_transfer_notification_download_title">%1$s indiriliyor</string>
     <string name="file_transfer_notification_preparing">Aktarım hazırlanıyor…</string>
     <string name="file_transfer_notification_progress">%2$d baytın %1$d baytı aktarıldı</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d kopyalandı</item>
+        <item quantity="other">%1$d kopyalandı</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d taşındı</item>
+        <item quantity="other">%1$d taşındı</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d başarısız</item>
+        <item quantity="other">%1$d başarısız</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d atlandı</item>
+        <item quantity="other">%1$d atlandı</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s zaten var</string>
+    <string name="file_conflict_body_exists">Hedef klasörde bu ada sahip bir dosya veya klasör zaten var.</string>
+    <string name="file_conflict_body_different_kind">Hedef klasörde bu ada sahip farklı türde bir öğe zaten var.</string>
+    <string name="file_conflict_replace">Değiştir</string>
+    <string name="file_conflict_keep_both">İkisini de tut</string>
+    <string name="file_conflict_skip">Atla</string>
+    <string name="file_conflict_apply_to_all">Kalan tümüne uygula</string>
+    <string name="file_conflict_saved_as">%1$s olarak kaydedildi</string>
     <string name="file_transfer_rate_bytes">%1$s B/sn</string>
     <string name="file_transfer_rate_kilobytes">%1$s KB/sn</string>
     <string name="file_transfer_rate_megabytes">%1$s MB/sn</string>

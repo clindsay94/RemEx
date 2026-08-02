@@ -322,6 +322,38 @@
     <string name="file_transfer_notification_download_title">Pobieranie %1$s</string>
     <string name="file_transfer_notification_preparing">Przygotowywanie transferu…</string>
     <string name="file_transfer_notification_progress">Przesłano %1$d z %2$d bajtów</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d skopiowany</item>
+        <item quantity="few">%1$d skopiowane</item>
+        <item quantity="many">%1$d skopiowanych</item>
+        <item quantity="other">%1$d skopiowanych</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d przeniesiony</item>
+        <item quantity="few">%1$d przeniesione</item>
+        <item quantity="many">%1$d przeniesionych</item>
+        <item quantity="other">%1$d przeniesionych</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d nieudany</item>
+        <item quantity="few">%1$d nieudane</item>
+        <item quantity="many">%1$d nieudanych</item>
+        <item quantity="other">%1$d nieudanych</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d pominięty</item>
+        <item quantity="few">%1$d pominięte</item>
+        <item quantity="many">%1$d pominiętych</item>
+        <item quantity="other">%1$d pominiętych</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s już istnieje</string>
+    <string name="file_conflict_body_exists">W folderze docelowym istnieje już plik lub folder o tej nazwie.</string>
+    <string name="file_conflict_body_different_kind">W folderze docelowym istnieje już element innego rodzaju o tej nazwie.</string>
+    <string name="file_conflict_replace">Zastąp</string>
+    <string name="file_conflict_keep_both">Zachowaj oba</string>
+    <string name="file_conflict_skip">Pomiń</string>
+    <string name="file_conflict_apply_to_all">Zastosuj do wszystkich pozostałych</string>
+    <string name="file_conflict_saved_as">Zapisano jako %1$s</string>
     <string name="file_transfer_rate_bytes">%1$s B/s</string>
     <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
     <string name="file_transfer_rate_megabytes">%1$s MB/s</string>

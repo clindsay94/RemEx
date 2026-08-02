@@ -520,6 +520,30 @@
     <string name="file_transfer_notification_download_title">Downloading %1$s</string>
     <string name="file_transfer_notification_preparing">Preparing transfer…</string>
     <string name="file_transfer_notification_progress">%1$d of %2$d bytes transferred</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d copied</item>
+        <item quantity="other">%1$d copied</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d moved</item>
+        <item quantity="other">%1$d moved</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d failed</item>
+        <item quantity="other">%1$d failed</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d skipped</item>
+        <item quantity="other">%1$d skipped</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s already exists</string>
+    <string name="file_conflict_body_exists">There is already a file or folder with this name in the destination folder.</string>
+    <string name="file_conflict_body_different_kind">Something of a different kind already has this name in the destination folder.</string>
+    <string name="file_conflict_replace">Replace</string>
+    <string name="file_conflict_keep_both">Keep both</string>
+    <string name="file_conflict_skip">Skip</string>
+    <string name="file_conflict_apply_to_all">Apply to all remaining</string>
+    <string name="file_conflict_saved_as">Saved as %1$s</string>
     <string name="file_transfer_rate_bytes">%1$s B/s</string>
     <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
     <string name="file_transfer_rate_megabytes">%1$s MB/s</string>

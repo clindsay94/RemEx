@@ -65,6 +65,7 @@ import com.clindsay94.remex.ui.components.FileManagerDestinationSheet
 import com.clindsay94.remex.ui.components.FileManagerGridItem
 import com.clindsay94.remex.ui.components.FileManagerListItem
 import com.clindsay94.remex.ui.components.FileManagerPropertiesSheet
+import com.clindsay94.remex.ui.components.FileConflictSheet
 import com.clindsay94.remex.ui.components.FileManagerQueuePanel
 import com.clindsay94.remex.ui.components.FileManagerQuickAccess
 import com.clindsay94.remex.ui.components.FileManagerSelectionBar
@@ -99,6 +100,7 @@ fun FileTransferScreen(
     val searchTruncated by vm.searchTruncated.collectAsStateWithLifecycle()
     val thumbnails by vm.thumbnails.collectAsStateWithLifecycle()
     val transferQueue by vm.transferQueue.collectAsStateWithLifecycle()
+    val conflictPrompt by vm.conflictPrompt.collectAsStateWithLifecycle()
     val properties by vm.properties.collectAsStateWithLifecycle()
     val propertiesLoading by vm.propertiesLoading.collectAsStateWithLifecycle()
     val destinationPath by vm.destinationPath.collectAsStateWithLifecycle()
@@ -441,6 +443,13 @@ fun FileTransferScreen(
                         onCancel = vm::cancelTransfer,
                         onClearFinished = vm::clearFinishedTransfers,
                     )
+
+                    // Raised by the copy/move loop when the host reports a filename collision
+                    // (RemEx-agpn). Hosted here rather than inside the queue panel because it
+                    // belongs to the manage operation, which the panel knows nothing about.
+                    conflictPrompt?.let { prompt ->
+                        FileConflictSheet(prompt = prompt, onResolved = vm::onConflictResolved)
+                    }
                 }
             }
         }

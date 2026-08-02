@@ -338,6 +338,30 @@
     <string name="file_transfer_notification_download_title">%1$s डाउनलोड किया जा रहा है</string>
     <string name="file_transfer_notification_preparing">ट्रांसफर की तैयारी की जा रही है…</string>
     <string name="file_transfer_notification_progress">%1$d में से %2$d बाइट्स ट्रांसफर हुए</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d कॉपी किया</item>
+        <item quantity="other">%1$d कॉपी किए</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d ले जाया गया</item>
+        <item quantity="other">%1$d ले जाए गए</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d विफल</item>
+        <item quantity="other">%1$d विफल</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d छोड़ा गया</item>
+        <item quantity="other">%1$d छोड़े गए</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s पहले से मौजूद है</string>
+    <string name="file_conflict_body_exists">गंतव्य फ़ोल्डर में इस नाम की फ़ाइल या फ़ोल्डर पहले से है।</string>
+    <string name="file_conflict_body_different_kind">गंतव्य फ़ोल्डर में इस नाम की किसी दूसरे प्रकार की चीज़ पहले से है।</string>
+    <string name="file_conflict_replace">बदलें</string>
+    <string name="file_conflict_keep_both">दोनों रखें</string>
+    <string name="file_conflict_skip">छोड़ें</string>
+    <string name="file_conflict_apply_to_all">शेष सभी पर लागू करें</string>
+    <string name="file_conflict_saved_as">%1$s के रूप में सहेजा गया</string>
     <string name="file_transfer_rate_bytes">%1$s B/s</string>
     <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
     <string name="file_transfer_rate_megabytes">%1$s MB/s</string>

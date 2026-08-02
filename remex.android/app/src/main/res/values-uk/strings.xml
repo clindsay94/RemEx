@@ -338,6 +338,38 @@
     <string name="file_transfer_notification_download_title">Завантаження %1$s</string>
     <string name="file_transfer_notification_preparing">Підготовка передавання…</string>
     <string name="file_transfer_notification_progress">Передано %1$d з %2$d байтів</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d скопійовано</item>
+        <item quantity="few">%1$d скопійовано</item>
+        <item quantity="many">%1$d скопійовано</item>
+        <item quantity="other">%1$d скопійовано</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d переміщено</item>
+        <item quantity="few">%1$d переміщено</item>
+        <item quantity="many">%1$d переміщено</item>
+        <item quantity="other">%1$d переміщено</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d не вдалося</item>
+        <item quantity="few">%1$d не вдалося</item>
+        <item quantity="many">%1$d не вдалося</item>
+        <item quantity="other">%1$d не вдалося</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d пропущено</item>
+        <item quantity="few">%1$d пропущено</item>
+        <item quantity="many">%1$d пропущено</item>
+        <item quantity="other">%1$d пропущено</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s вже існує</string>
+    <string name="file_conflict_body_exists">У папці призначення вже є файл або папка з такою назвою.</string>
+    <string name="file_conflict_body_different_kind">У папці призначення вже є елемент іншого типу з такою назвою.</string>
+    <string name="file_conflict_replace">Замінити</string>
+    <string name="file_conflict_keep_both">Зберегти обидва</string>
+    <string name="file_conflict_skip">Пропустити</string>
+    <string name="file_conflict_apply_to_all">Застосувати до всіх решти</string>
+    <string name="file_conflict_saved_as">Збережено як %1$s</string>
     <string name="file_transfer_rate_bytes">%1$s Б/с</string>
     <string name="file_transfer_rate_kilobytes">%1$s КБ/с</string>
     <string name="file_transfer_rate_megabytes">%1$s МБ/с</string>

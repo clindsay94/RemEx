@@ -338,6 +338,26 @@
     <string name="file_transfer_notification_download_title">Mengunduh %1$s</string>
     <string name="file_transfer_notification_preparing">Menyiapkan transfer…</string>
     <string name="file_transfer_notification_progress">%1$d dari %2$d byte ditransfer</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="other">%1$d disalin</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="other">%1$d dipindahkan</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="other">%1$d gagal</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="other">%1$d dilewati</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s sudah ada</string>
+    <string name="file_conflict_body_exists">Sudah ada file atau folder dengan nama ini di folder tujuan.</string>
+    <string name="file_conflict_body_different_kind">Sudah ada sesuatu dengan jenis berbeda bernama ini di folder tujuan.</string>
+    <string name="file_conflict_replace">Ganti</string>
+    <string name="file_conflict_keep_both">Simpan keduanya</string>
+    <string name="file_conflict_skip">Lewati</string>
+    <string name="file_conflict_apply_to_all">Terapkan ke semua sisanya</string>
+    <string name="file_conflict_saved_as">Disimpan sebagai %1$s</string>
     <string name="file_transfer_rate_bytes">%1$s B/dtk</string>
     <string name="file_transfer_rate_kilobytes">%1$s KB/dtk</string>
     <string name="file_transfer_rate_megabytes">%1$s MB/dtk</string>

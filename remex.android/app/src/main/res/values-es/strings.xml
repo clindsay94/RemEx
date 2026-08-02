@@ -338,6 +338,30 @@
     <string name="file_transfer_notification_download_title">Descargando %1$s</string>
     <string name="file_transfer_notification_preparing">Preparando transferencia…</string>
     <string name="file_transfer_notification_progress">%1$d de %2$d bytes transferidos</string>
+    <plurals name="file_conflict_copied_count">
+        <item quantity="one">%1$d copiado</item>
+        <item quantity="other">%1$d copiados</item>
+    </plurals>
+    <plurals name="file_conflict_moved_count">
+        <item quantity="one">%1$d movido</item>
+        <item quantity="other">%1$d movidos</item>
+    </plurals>
+    <plurals name="file_conflict_failed_count">
+        <item quantity="one">%1$d con error</item>
+        <item quantity="other">%1$d con errores</item>
+    </plurals>
+    <plurals name="file_conflict_skipped_count">
+        <item quantity="one">%1$d omitido</item>
+        <item quantity="other">%1$d omitidos</item>
+    </plurals>
+    <string name="file_conflict_title">%1$s ya existe</string>
+    <string name="file_conflict_body_exists">Ya hay un archivo o una carpeta con este nombre en la carpeta de destino.</string>
+    <string name="file_conflict_body_different_kind">Ya hay algo de otro tipo con este nombre en la carpeta de destino.</string>
+    <string name="file_conflict_replace">Reemplazar</string>
+    <string name="file_conflict_keep_both">Conservar ambos</string>
+    <string name="file_conflict_skip">Omitir</string>
+    <string name="file_conflict_apply_to_all">Aplicar a todos los restantes</string>
+    <string name="file_conflict_saved_as">Guardado como %1$s</string>
     <string name="file_transfer_rate_bytes">%1$s B/s</string>
     <string name="file_transfer_rate_kilobytes">%1$s KB/s</string>
     <string name="file_transfer_rate_megabytes">%1$s MB/s</string>

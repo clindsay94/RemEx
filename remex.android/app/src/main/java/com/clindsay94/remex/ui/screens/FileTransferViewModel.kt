@@ -13,11 +13,15 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.R
+import com.clindsay94.remex.service.BatchConflictChoice
+import com.clindsay94.remex.service.ConflictAction
+import com.clindsay94.remex.service.FileConflictPolicy
 import com.clindsay94.remex.service.FileManageOperations
 import com.clindsay94.remex.service.FileTransferEngine
 import com.clindsay94.remex.service.FileTransferJobService
 import com.clindsay94.remex.service.FileTransferLimits
 import com.clindsay94.remex.service.FileTransferNotificationManager
+import com.clindsay94.remex.ui.components.FileConflictPrompt
 import com.clindsay94.remex.service.TransferProgressFormat
 import com.clindsay94.remex.service.TransferProgressText
 import com.clindsay94.remex.service.TransferRateEstimator
@@ -201,6 +205,21 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
     private var pendingBrowseRequestId: String? = null
     private var pendingRootsDeferred: CompletableDeferred<Unit>? = null
     private var pendingBrowseDeferred: CompletableDeferred<Unit>? = null
+
+    /** The collision the sheet is currently asking about, or null when it is closed (RemEx-agpn). */
+    private val _conflictPrompt = MutableStateFlow<FileConflictPrompt?>(null)
+    val conflictPrompt = _conflictPrompt.asStateFlow()
+
+    private var pendingConflictAnswer: CompletableDeferred<Pair<ConflictAction, Boolean>>? = null
+
+    /**
+     * Identifies the prompt currently on screen, so a late answer cannot resolve a different one.
+     *
+     * A torn-down sheet can still emit one last dismissal. Without this, that stray Skip would
+     * answer the NEXT file's prompt - silently skipping an item the user never saw.
+     */
+    private var pendingConflictToken: Long = 0L
+    private var nextConflictToken: Long = 0L
 
     private var activeTransferId: String? = null
     private var activeTransferFileName: String? = null
@@ -542,19 +561,188 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         clearSelection()
         viewModelScope.launch {
             _isLoading.value = true
+            try {
             val movingLabel =
                 if (operation == FileManageOperations.MOVE) app().getString(R.string.file_manager_moving, targets.size)
                 else app().getString(R.string.file_manager_copying, targets.size)
             _statusText.value = movingLabel
             var errors = 0
-            for (entry in targets) {
+            var skipped = 0
+            val renamed = mutableListOf<String>()
+
+            // SCOPED TO THIS BATCH BY CONSTRUCTION. A remembered "Replace, apply to all" that
+            // outlived the operation it was given for would overwrite a file in some later,
+            // unrelated copy the user was never asked about - so it is created here and dies here,
+            // rather than living on the ViewModel where forgetting to clear it is silent data loss.
+            val batchChoice = BatchConflictChoice()
+
+            for ((index, entry) in targets.withIndex()) {
                 val relative = FileManagerLogic.combinePath(_remotePath.value, entry.name)
                 val destination = FileManagerLogic.combinePath(destFolder, entry.name)
-                if (runManage(rootId, relative, operation, destinationPath = destination).failed) errors++
+
+                lastResolvedName = null
+                val first = runManage(rootId, relative, operation, destinationPath = destination)
+                if (!first.failed) {
+                    lastResolvedName?.let { renamed += it }
+                    continue
+                }
+
+                val conflict = first as? ManageOutcome.HostRefused
+                val actions = FileConflictPolicy.actionsFor(conflict?.errorCode, operation)
+                if (actions.isEmpty()) {
+                    // Not a collision - an ordinary failure the user cannot answer. Raising a sheet
+                    // would offer "Replace" as a response to "the disk is full".
+                    errors++
+                    continue
+                }
+
+                val answer = resolveConflict(
+                    fileName = conflict?.conflictingName ?: entry.name,
+                    errorCode = conflict?.errorCode.orEmpty(),
+                    operation = operation,
+                    actions = actions,
+                    hasRemaining = index < targets.lastIndex,
+                    batchChoice = batchChoice,
+                )
+
+                val resolution = FileConflictPolicy.resolutionFor(answer)
+                if (resolution == null) {
+                    // Skip sends nothing at all, so it cannot fail - and it is NOT an error, which
+                    // is why it is counted apart. Reporting a deliberate skip as a failure would
+                    // tell the user something went wrong when they chose it.
+                    skipped++
+                    continue
+                }
+
+                lastResolvedName = null
+                if (runManage(rootId, relative, operation, destinationPath = destination,
+                        conflictResolution = resolution).failed) {
+                    errors++
+                } else {
+                    lastResolvedName?.let { renamed += it }
+                }
             }
-            _statusText.value = multiResultText(targets.size, errors)
-            _isLoading.value = false
+
+            // ASSEMBLED ONCE, AT THE END. Review caught the per-item versions being written to a
+            // conflated StateFlow and overwritten by this line with no suspension in between, so
+            // "Saved as report (2).pdf" was never observable - and never at all for a single-file
+            // copy, which is the common case and the exact guarantee the bead asked for.
+            //
+            // SKIPS ARE REPORTED, NOT SUBTRACTED INTO SILENCE. Counting them out of both numerator
+            // and denominator made an all-skipped batch read "Deleted 0 items", with nothing saying
+            // the user's own choice was why.
+            // BROWSE FIRST, THEN THE SUMMARY - the order is the whole fix. browseRemote() clears
+            // _statusText synchronously, and _statusText is a conflated StateFlow, so a summary
+            // written before it is discarded without ever being collected. Review caught the first
+            // attempt at this defect merely relocating it: the mid-loop writes were folded into one
+            // terminal write that was STILL overwritten one line later.
             browseRemote()
+            _statusText.value = batchSummary(operation, targets.size - skipped, errors, skipped, renamed)
+            } finally {
+                // The spinner comes down even if this coroutine is cancelled mid-sheet, which is
+                // what a disconnect while the prompt is open looks like. Leaving it up strands the
+                // screen in a loading state nothing will ever clear.
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Asks the user what to do about one collision, reusing a standing answer where it is valid.
+     *
+     * **A STANDING ANSWER IS STILL CHECKED AGAINST THIS COLLISION.** Someone who chose "Replace,
+     * apply to all" for a batch of ordinary collisions has not agreed to destroy a directory tree
+     * when the next item turns out to be a different kind of thing - so a remembered answer that is
+     * not on this collision's offer list is discarded and the question asked again.
+     */
+    private suspend fun resolveConflict(
+        fileName: String,
+        errorCode: String,
+        operation: String,
+        actions: List<ConflictAction>,
+        hasRemaining: Boolean,
+        batchChoice: BatchConflictChoice,
+    ): ConflictAction {
+        batchChoice.standingAnswer?.let { standing ->
+            // The REAL operation. A hardcoded COPY was harmless only because copy and move share
+            // a rule today - which is exactly why it would have survived until the policy gained a
+            // move-specific one, and then been wrong silently.
+            if (batchChoice.canApply(standing, errorCode, operation)) {
+                return standing
+            }
+        }
+
+        val answer = CompletableDeferred<Pair<ConflictAction, Boolean>>()
+        val token = ++nextConflictToken
+        pendingConflictAnswer = answer
+        pendingConflictToken = token
+        _conflictPrompt.value = FileConflictPrompt(token, fileName, errorCode, actions, hasRemaining)
+
+        val (action, applyToAll) = try {
+            answer.await()
+        } finally {
+            // CLEARED ON EVERY EXIT, INCLUDING CANCELLATION. If the batch coroutine is cancelled
+            // while the sheet is open - a disconnect, the screen going away - leaving _conflictPrompt
+            // set would strand a sheet with nothing behind it to answer.
+            if (pendingConflictToken == token) {
+                _conflictPrompt.value = null
+                pendingConflictAnswer = null
+            }
+        }
+
+        batchChoice.remember(action, applyToAll)
+        return action
+    }
+
+    /** The sheet's answer. Skip on dismissal - see FileConflictSheet for why that is the default. */
+    fun onConflictResolved(token: Long, action: ConflictAction, applyToAll: Boolean) {
+        // DROPPED IF IT IS NOT ANSWERING THE PROMPT ON SCREEN. A torn-down sheet can emit one last
+        // dismissal, and without this check that stray Skip would answer the NEXT file's question -
+        // skipping an item the user was never shown.
+        if (token != pendingConflictToken) return
+
+        pendingConflictAnswer?.complete(action to applyToAll)
+    }
+
+    /**
+     * The one line a finished copy/move batch leaves behind.
+     *
+     * Built in one place because [_statusText] is a conflated StateFlow rendered into a single
+     * label: anything written mid-loop is overwritten by the next write with no suspension between,
+     * so it is never observed. Every fact the user needs has to arrive together.
+     */
+    private fun batchSummary(
+        operation: String,
+        succeeded: Int,
+        errors: Int,
+        skipped: Int,
+        renamed: List<String>,
+    ): String {
+        val res = app().resources
+
+        // COPY AND MOVE GET THEIR OWN WORDS. This used to borrow multiResultText, whose strings are
+        // delete-specific, so an all-skipped copy of three files read "Deleted 0 items." - a file
+        // manager that also deletes telling the user it deleted something it did not touch.
+        val done = succeeded - errors
+        val parts = mutableListOf(
+            res.getQuantityString(
+                if (operation == FileManageOperations.MOVE) R.plurals.file_conflict_moved_count
+                else R.plurals.file_conflict_copied_count,
+                done,
+                done,
+            )
+        )
+
+        if (errors > 0) parts += res.getQuantityString(R.plurals.file_conflict_failed_count, errors, errors)
+        if (skipped > 0) parts += res.getQuantityString(R.plurals.file_conflict_skipped_count, skipped, skipped)
+
+        // Named only when there is ONE, because a list of renamed files does not fit a status line -
+        // and the case that matters is the single-file copy, where the user is looking at exactly
+        // one name and would otherwise believe it was the one they asked for.
+        if (renamed.size == 1) parts += app().getString(R.string.file_conflict_saved_as, renamed.single())
+
+        return parts.reduce { acc, part ->
+            app().getString(R.string.file_transfer_detail_separator, acc, part)
         }
     }
 
@@ -575,18 +763,33 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         /** The host never answered. Nothing is known about whether it acted. */
         data object TimedOut : ManageOutcome
 
-        /** The host answered and said no. [message] is its own user-facing wording. */
-        data class HostRefused(val message: String) : ManageOutcome
+        /**
+         * The host answered and said no. [message] is its own user-facing wording.
+         *
+         * [errorCode] and [conflictingName] are the machine-readable half (RemEx-6vd8): non-null
+         * only for a filename collision, and the ONLY thing a client may branch on. The message is
+         * English prose that the host will one day translate, so matching it would work today and
+         * silently stop working later.
+         */
+        data class HostRefused(
+            val message: String,
+            val errorCode: String? = null,
+            val conflictingName: String? = null,
+        ) : ManageOutcome
     }
 
     private val ManageOutcome.failed: Boolean
         get() = this !is ManageOutcome.Ok
 
     /** Sends one file_manage_request and awaits its response. */
+    /** Set by [runManage] when the host renamed the destination. Read and cleared by the caller. */
+    private var lastResolvedName: String? = null
+
     private suspend fun runManage(
         rootId: String,
         relativePath: String,
         operation: String,
+        conflictResolution: String? = null,
         newName: String? = null,
         destinationPath: String? = null,
     ): ManageOutcome {
@@ -605,13 +808,28 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
             if (newName != null) put("newName", newName)
             if (destinationPath != null) put("destinationPath", destinationPath)
             if (v3Op) put("overwrite", false)
+            // Only ever sent on a RETRY, after the user answered a collision sheet. A first attempt
+            // carries none, which is what makes the host fail loudly instead of guessing.
+            if (v3Op && conflictResolution != null) put("conflictResolution", conflictResolution)
         }
         if (v3Op) sendV3("file_manage_request", "fileManageRequest", payload)
         else sendMessage(JSONObject().apply { put("type", "file_manage_request"); put("fileManageRequest", payload) })
         return try {
             val response = withTimeout(30_000) { deferred.await() }
-            val hostError = response.optJSONObject("fileManageResponse")?.optMeaningfulString("errorMessage")
-            if (hostError == null) ManageOutcome.Ok else ManageOutcome.HostRefused(hostError)
+            val body = response.optJSONObject("fileManageResponse")
+            val hostError = body?.optMeaningfulString("errorMessage")
+            if (hostError == null) {
+                // A rename the HOST chose, reported so the user is not left believing they have
+                // report.pdf when the file on disk is report (2).pdf.
+                body?.optMeaningfulString("resolvedName")?.let { lastResolvedName = it }
+                ManageOutcome.Ok
+            } else {
+                ManageOutcome.HostRefused(
+                    hostError,
+                    errorCode = body.optMeaningfulString("errorCode"),
+                    conflictingName = body.optMeaningfulString("conflictingName"),
+                )
+            }
         } catch (_: TimeoutCancellationException) {
             // Deliberately carries no message. Naming the operation is the CALLER's job - this
             // function serves five of them and cannot know which one it is being used for, which is
