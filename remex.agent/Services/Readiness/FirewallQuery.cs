@@ -70,7 +70,12 @@ public sealed class FirewallQuery
     /// </remarks>
     private bool? QueryWindows()
     {
-        var script = BuildWindowsQueryScript();
+        // Needed BEFORE the query now, because the script filters by it. Without our own path there
+        // is nothing to ask about, and answering "refused" would blame the firewall for that.
+        var exePath = _agentExecutablePath();
+        if (string.IsNullOrWhiteSpace(exePath)) return null;
+
+        var script = BuildWindowsQueryScript(exePath);
 
         var result = _run("powershell.exe", $"-NonInteractive -NoProfile -EncodedCommand {EncodeCommand(script)}");
 
@@ -98,47 +103,55 @@ public sealed class FirewallQuery
         if (!OutputSupportsAVerdict(result.StandardOutput)) return null;
 
         var rules = ParseWindowsRules(result.StandardOutput);
-        return FirewallReadiness.InterpretWindows(rules, _agentExecutablePath());
+        return FirewallReadiness.InterpretWindows(rules, exePath);
     }
 
     /// <summary>The query script, exposed so its failure-classification premise is testable.</summary>
-    internal static string BuildWindowsQueryScript()
+    /// <summary>
+    /// The query script, exposed so its failure-classification premise is testable.
+    /// </summary>
+    /// <remarks>
+    /// **ENUMERATES BY PROGRAM, NOT BY RULE NAME (RemEx-4ycq), AND THE EARLIER SHAPE WAS A REAL
+    /// FALSE ALARM.** Asking about <c>RemexHostInbound</c> / <c>RemexClientInbound</c> answers "is
+    /// our installer's rule present", when the row's actual question is "does anything permit this
+    /// executable". A user who clicks through the Windows "allow access" prompt gets a GUID-named
+    /// rule instead — measured on a real machine, which carried two such rules covering the agent
+    /// alongside the two named ones. With the named rules deleted the app is still fully permitted,
+    /// and the old check would have reported "the firewall is refusing inbound traffic".
+    ///
+    /// **THE OBVIOUS WIDENING DOES NOT WORK, AND THAT WAS MEASURED BEFORE THIS WAS WRITTEN.**
+    /// <c>Get-NetFirewallApplicationFilter -Program &lt;path&gt;</c> matches the STORED STRING
+    /// literally: on the test machine 299 of 810 filters store an unexpanded path, and querying the
+    /// expanded form of one returned zero matches while the stored form returned 188. Since
+    /// <c>Environment.ProcessPath</c> is expanded, that filter would silently miss every such rule.
+    /// So the expansion happens HERE, per rule, using the OS's own resolver.
+    ///
+    /// Still reads no localized text: rule Name and the Enabled/Action/Direction enum names are
+    /// invariant identifiers, and none of them is matched against — only emitted.
+    /// </remarks>
+    internal static string BuildWindowsQueryScript(string agentExecutablePath)
     {
-        var names = string.Join(",", FirewallReadiness.WindowsRuleNames.Select(n => $"'{n}'"));
+        // Single-quoted and doubled for escaping, so a path containing an apostrophe cannot end the
+        // literal. Everything else in this script is a fixed token.
+        var target = agentExecutablePath.Replace("'", "''");
 
-        // EVERY STRING LITERAL IS SINGLE-QUOTED AND THE RECORD IS BUILT BY CONCATENATION, because
-        // the script is passed to PowerShell as a command-line argument and double quotes do not
-        // survive that trip. Review caught the first version of this: powershell.exe argv-parses its
-        // own command line and strips the inner quotes, so `Write-Output "RULE|..."` arrived
-        // unquoted, failed to PARSE — before the try/catch could run — and exited 1. The branch then
-        // returned null for every machine, so the row read "could not check" on every Windows PC
-        // while thirteen unit tests covered code production never reached.
-        //
-        // -ceq, not -eq: CLAUDE.md forbids the case-insensitive form where a comparison must be
-        // exact. These compare enum names with fixed casing, so the strict operator is correct.
-        //
-        // The Action test is three-way. NotConfigured is a real member of the enum and turns up on
-        // Group Policy rules; folding it into Block would report a refusal that is not happening.
-        var script =
-            "$ErrorActionPreference='Stop'; foreach($n in @(" + names + ")){ " +
-            "try{ $r=Get-NetFirewallRule -Name $n -ErrorAction Stop; " +
-            "$p=($r|Get-NetFirewallApplicationFilter).Program; " +
+        return
+            "$ErrorActionPreference='Stop'; $t='" + target + "'; " +
+            "try{ foreach($f in Get-NetFirewallApplicationFilter){ " +
+            "$p=\"$($f.Program)\"; if($p -ceq 'Any'){ continue } " +
+            // -ine, not -cne: NTFS is case-insensitive and the prompt-created rules store a
+            // lowercased path, so an ordinal comparison would miss the very rules this widening
+            // exists to find. Measured: they arrive as 'C:\program files\remex\...'.
+            "if([Environment]::ExpandEnvironmentVariables($p) -ine $t){ continue } " +
+            "$r=$f|Get-NetFirewallRule; " +
+            // Outbound rules cannot permit or refuse an inbound connection, so counting one would
+            // report a machine as reachable on the strength of a rule about traffic leaving it.
+            "if(\"$($r.Direction)\" -cne 'Inbound'){ continue } " +
             "$e=$(if(\"$($r.Enabled)\" -ceq 'True'){'1'}else{'0'}); " +
             "$a=$(if(\"$($r.Action)\" -ceq 'Allow'){'1'}elseif(\"$($r.Action)\" -ceq 'Block'){'0'}else{'?'}); " +
-            "Write-Output ('RULE|'+$n+'|'+$e+'|'+$a+'|'+$p) }" +
-            // ABSENCE AND FAILURE ARE DIFFERENT FACTS, and the catch used to swallow both.
-            // Get-NetFirewallRule reports a missing rule as ObjectNotFound - verified on a real
-            // machine rather than assumed - so anything else is the LOOKUP failing: a broken
-            // NetSecurity module, a CIM failure, an EDR blocking the cmdlet. Without this the
-            // two failed lookups produced zero records, which the interpreter reads as a
-            // definite refusal - a query that established nothing reported to the user as
-            // \"the firewall is refusing inbound traffic\". The same failed-query-as-verdict
-            // class the completion sentinel fixed, one level down.
-            "catch{ if(\"$($_.CategoryInfo.Category)\" -cne 'ObjectNotFound'){ " +
-            "Write-Output ('RULEFAIL|'+$n) } } } " +
+            "Write-Output ('RULE|'+$r.Name+'|'+$e+'|'+$a+'|'+$p) } }" +
+            "catch{ Write-Output ('" + RuleFailurePrefix + "enumerate') } " +
             "Write-Output '" + CompletionSentinel + "'";
-
-        return script;
     }
 
     /// <summary>

@@ -140,14 +140,57 @@ public class FirewallReadinessTests
     }
 
     [Fact]
-    public void TheRuleNamesQueriedAreTheInvariantOnesTheInstallerCreates()
+    public void TheQueryAsksAboutThePROGRAM_NotAboutOurRuleNames()
     {
-        // THE LOCALIZATION TRAP THIS FEATURE HAD TO AVOID. autostart-remex.ps1 creates its rules
-        // with -Name RemexHostInbound / RemexClientInbound and -DisplayName "RemEx". The Name is
-        // ours and is never translated; the DisplayName is what the Windows UI and localized netsh
-        // output show. Matching display text would silently stop working in eight of the nine
-        // languages this app ships in.
-        Assert.Equal(["RemexHostInbound", "RemexClientInbound"], FirewallReadiness.WindowsRuleNames);
+        // THE FALSE ALARM THIS WIDENING REMOVES (RemEx-4ycq). Asking about RemexHostInbound /
+        // RemexClientInbound answers "is our installer's rule present", when the row's question is
+        // "does anything permit this executable". A user who clicks through the Windows "allow
+        // access" prompt gets a GUID-named rule instead - measured on a real machine, which carried
+        // TWO such rules covering the agent alongside our two. With the named rules deleted the app
+        // is still fully permitted, and the old check reported a refusal.
+        var script = FirewallQuery.BuildWindowsQueryScript(ExePath);
+
+        Assert.Contains("Get-NetFirewallApplicationFilter", script);
+        Assert.Contains(ExePath, script);
+        Assert.DoesNotContain("RemexHostInbound", script);
+    }
+
+    [Fact]
+    public void TheQueryExpandsEachStoredPathRatherThanFilteringOnTheExpandedOne()
+    {
+        // MEASURED BEFORE THIS WAS WRITTEN, and it kills the obvious implementation.
+        // Get-NetFirewallApplicationFilter -Program <path> matches the STORED string literally: on
+        // the test machine 299 of 810 filters store an unexpanded path, and querying the expanded
+        // form of one returned zero matches where the stored form returned 188. Environment
+        // .ProcessPath is expanded, so that filter would silently miss every such rule.
+        var script = FirewallQuery.BuildWindowsQueryScript(ExePath);
+
+        Assert.Contains("ExpandEnvironmentVariables", script);
+        Assert.DoesNotContain("-Program", script);
+    }
+
+    [Fact]
+    public void TheQueryComparesPathsCaseInsensitivelyAndSkipsOutboundRules()
+    {
+        // -ine, not -cne: the prompt-created rules store a lowercased path, so an ordinal comparison
+        // would miss the very rules this widening exists to find.
+        //
+        // And an OUTBOUND rule cannot permit or refuse an inbound connection - counting one would
+        // report a machine reachable on the strength of a rule about traffic leaving it.
+        var script = FirewallQuery.BuildWindowsQueryScript(ExePath);
+
+        Assert.Contains("-ine $t", script);
+        Assert.Contains("'Inbound'", script);
+    }
+
+    [Fact]
+    public void AnApostropheInTheExecutablePathCannotEndTheScriptLiteral()
+    {
+        // The path is the one piece of this script that is not a fixed token, and it comes from the
+        // filesystem. A single quote would otherwise close the literal and change what runs.
+        var script = FirewallQuery.BuildWindowsQueryScript(@"C:\Program Files\Bob's App\a.exe");
+
+        Assert.Contains(@"Bob''s App", script);
     }
 
     [Fact]
@@ -448,15 +491,26 @@ public class FirewallReadinessTests
     }
 
     [Fact]
-    public void TheScriptOnlyMarksFailuresThatAreNotObjectNotFound()
+    public void AbsenceAndFailureAreStructurallyDistinct_NotDistinguishedByExceptionCategory()
     {
-        // The premise this rests on, pinned where a later reader will find it: the emitted script
-        // compares CategoryInfo.Category with -cne 'ObjectNotFound'. Verified on a real machine -
-        // an absent rule and a malformed name both report ObjectNotFound, so neither is marked.
-        var script = FirewallQuery.BuildWindowsQueryScript();
+        // BETTER THAN THE MECHANISM IT REPLACES (RemEx-zmco). The name-lookup shape had to inspect
+        // CategoryInfo.Category to tell "this rule does not exist" from "reading it failed", because
+        // both arrived as exceptions from the same call.
+        //
+        // Enumeration removes the ambiguity by construction: a rule that does not cover us is simply
+        // not enumerated - it produces no record and raises nothing - while a failure to enumerate at
+        // all produces RULEFAIL. Nothing has to classify an exception to keep the two apart, so the
+        // check can no longer mistake one for the other by misreading a category.
+        var script = FirewallQuery.BuildWindowsQueryScript(ExePath);
 
-        Assert.Contains("-cne 'ObjectNotFound'", script);
         Assert.Contains(FirewallQuery.RuleFailurePrefix.TrimEnd('|'), script);
+        Assert.DoesNotContain("ObjectNotFound", script);
+
+        // Zero records with the sentinel present is still a definite "nothing permits us" - the
+        // conclusion the row reports as a refusal, now genuinely earned rather than inferred from
+        // two rule names being absent.
+        Assert.True(FirewallQuery.OutputSupportsAVerdict(FirewallQuery.CompletionSentinel + "\n"));
+        Assert.False(FirewallReadiness.InterpretWindows([], ExePath));
     }
 
     [Fact]
