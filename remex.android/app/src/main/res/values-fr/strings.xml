@@ -825,4 +825,7 @@
     <string name="file_received_title">Fichier reçu</string>
     <string name="file_received_text">%1$s est arrivé depuis votre PC.</string>
     <string name="file_received_share">Partager</string>
+    <string name="pairing_phase_probe">Vérification que votre PC répond…</string>
+    <string name="pairing_phase_securing">Établissement d’une connexion sécurisée…</string>
+    <string name="pairing_phase_awaiting_host">En attente du code PIN sur votre PC…</string>
 </resources>

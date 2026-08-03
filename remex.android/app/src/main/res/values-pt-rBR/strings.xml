@@ -825,4 +825,7 @@
     <string name="file_received_title">Arquivo recebido</string>
     <string name="file_received_text">%1$s chegou do seu PC.</string>
     <string name="file_received_share">Compartilhar</string>
+    <string name="pairing_phase_probe">Verificando se o seu PC está acessível…</string>
+    <string name="pairing_phase_securing">Estabelecendo uma conexão segura…</string>
+    <string name="pairing_phase_awaiting_host">Aguardando o seu PC mostrar um PIN…</string>
 </resources>

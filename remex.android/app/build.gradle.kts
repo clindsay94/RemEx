@@ -163,6 +163,17 @@ android {
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                         .optional(true)
 
+                // And for the pairing PHASE tokens, which live in a third C# file. PairingPhaseTest
+                // reads AndroidNativeExports.cs to prove every token the native side emits is mapped
+                // to a localized sentence here, and that every token it declares is actually emitted.
+                // Without this line, renaming a token or deleting an emission changes only C# — so
+                // testDebugUnitTest reports UP-TO-DATE and the guard never runs. (RemEx-g87x.)
+                it.inputs
+                        .file(File(repoRoot, "remex.core/Native/AndroidNativeExports.cs"))
+                        .withPropertyName("pairingPhasesSource")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+
                 // Same arrangement for the "end process" failure codes, and for the same reason:
                 // ProcessKillErrorCodesCoverageTest reads this file to prove every code the host
                 // can send is mapped to a localized string here. (RemEx-r37a.)

@@ -841,4 +841,7 @@
     <string name="file_received_title">Odebrano plik</string>
     <string name="file_received_text">%1$s dotarł z komputera.</string>
     <string name="file_received_share">Udostępnij</string>
+    <string name="pairing_phase_probe">Sprawdzanie, czy komputer jest osiągalny…</string>
+    <string name="pairing_phase_securing">Nawiązywanie bezpiecznego połączenia…</string>
+    <string name="pairing_phase_awaiting_host">Oczekiwanie, aż komputer wyświetli PIN…</string>
 </resources>

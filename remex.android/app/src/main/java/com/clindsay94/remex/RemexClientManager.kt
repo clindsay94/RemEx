@@ -36,6 +36,35 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _launcherEntries = MutableSharedFlow<String>(replay = 1)
     val launcherEntries = _launcherEntries.asSharedFlow()
 
+    /**
+     * The pairing phase currently running, or null between attempts (RemEx-g87x).
+     *
+     * replay = 1 so a screen that starts collecting mid-attempt still learns where things are,
+     * rather than showing nothing until the next transition — which on the last phase could be
+     * sixty seconds away.
+     */
+    private val _pairingProgress =
+            MutableSharedFlow<String?>(
+                    replay = 1,
+                    extraBufferCapacity = 1,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST,
+            )
+    val pairingProgress = _pairingProgress.asSharedFlow()
+
+    /**
+     * Forgets the phase of a finished attempt, so the next one does not start by describing it.
+     *
+     * **THE REPLAY IS WHY THIS HAS TO EXIST.** replay = 1 is what lets a screen that starts
+     * collecting mid-attempt learn where things are instead of waiting up to sixty seconds for the
+     * next transition — but it also means a new collector is handed the PREVIOUS attempt's last
+     * token, immediately, before any native work has happened. Clearing the screen's own state
+     * cannot help: the replayed value arrives afterwards and overwrites it. The cache itself has to
+     * be cleared, and only the owner of the flow can do that.
+     */
+    fun clearPairingProgress() {
+        _pairingProgress.tryEmit(null)
+    }
+
     private val _processList = MutableSharedFlow<String>(replay = 1)
     val processList = _processList.asSharedFlow()
 
@@ -622,5 +651,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         _isConnected.value = false
         _isConnecting.value = false
         reason?.let { _connectionError.tryEmit(it) }
+    }
+
+    override fun onPairingProgress(phase: String?) {
+        // Relayed rather than interpreted. Only ONE callback is registered natively, and this object
+        // holds it — so the pairing screen cannot receive these directly and reads them off this
+        // flow instead. Mapping a token to a sentence is the screen's job, not this one's.
+        _pairingProgress.tryEmit(phase)
     }
 }

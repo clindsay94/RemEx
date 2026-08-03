@@ -821,4 +821,7 @@
     <string name="file_received_title">File diterima</string>
     <string name="file_received_text">%1$s telah tiba dari PC Anda.</string>
     <string name="file_received_share">Bagikan</string>
+    <string name="pairing_phase_probe">Memeriksa apakah PC Anda dapat dijangkau…</string>
+    <string name="pairing_phase_securing">Menyiapkan koneksi yang aman…</string>
+    <string name="pairing_phase_awaiting_host">Menunggu PC Anda menampilkan PIN…</string>
 </resources>

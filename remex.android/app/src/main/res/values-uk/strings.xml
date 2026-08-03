@@ -841,4 +841,7 @@
     <string name="file_received_title">Файл отримано</string>
     <string name="file_received_text">%1$s надійшов з вашого ПК.</string>
     <string name="file_received_share">Поділитися</string>
+    <string name="pairing_phase_probe">Перевірка доступності вашого ПК…</string>
+    <string name="pairing_phase_securing">Встановлення безпечного з’єднання…</string>
+    <string name="pairing_phase_awaiting_host">Очікування, поки ПК покаже PIN…</string>
 </resources>

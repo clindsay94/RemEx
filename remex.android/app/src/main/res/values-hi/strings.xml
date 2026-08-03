@@ -825,4 +825,7 @@
     <string name="file_received_title">फ़ाइल मिली</string>
     <string name="file_received_text">%1$s आपके पीसी से आ गई।</string>
     <string name="file_received_share">साझा करें</string>
+    <string name="pairing_phase_probe">आपका पीसी उपलब्ध है या नहीं, जाँचा जा रहा है…</string>
+    <string name="pairing_phase_securing">सुरक्षित कनेक्शन बनाया जा रहा है…</string>
+    <string name="pairing_phase_awaiting_host">आपके पीसी पर पिन दिखने का इंतज़ार किया जा रहा है…</string>
 </resources>

@@ -43,6 +43,15 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import com.clindsay94.remex.DeviceName
 import com.clindsay94.remex.BuildConfig
+import com.clindsay94.remex.RemexClientManager
+import kotlinx.coroutines.flow.update
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.LiveRegionMode
 
 data class PairingUiState(
     val isLoading: Boolean = false,
@@ -63,6 +72,12 @@ data class PairingUiState(
     // only Cancel (which disposes this screen/ViewModel and lets the user start a fresh pairing
     // attempt) still works. See RemEx-aor9.
     val sessionDead: Boolean = false,
+
+    // Which phase of the native handshake is running, as the token the native side emits — mapped to
+    // a sentence at the render site, never here (RemEx-g87x). Null between attempts and once the
+    // wait is over. Worth showing because the wait can be ninety seconds against a PC that accepts
+    // TCP and TLS and then goes quiet, and a spinner alone cannot say which of those is stuck.
+    val phase: String? = null,
 )
 
 class PairingViewModel : ViewModel() {
@@ -191,8 +206,34 @@ class PairingViewModel : ViewModel() {
         if (startPairingInFlight || startPairingSucceeded) return
         startPairingInFlight = true
 
+        // CLEARS THE FLOW'S REPLAY CACHE, NOT THE SCREEN'S STATE. Clearing state here would be dead
+        // code twice over: the launch below replaces the whole state object anyway, and the replayed
+        // token from the previous attempt then arrives and overwrites whatever it set. So a retry
+        // would open by announcing the phase the LAST attempt died on — usually "waiting for your PC
+        // to show a PIN", which is the most misleading of the three (RemEx-g87x).
+        RemexClientManager.clearPairingProgress()
+
         viewModelScope.launch {
             _uiState.value = PairingUiState(isLoading = true)
+
+            // COLLECTED HERE RATHER THAN IN init, and the difference is not style. A launch in the
+            // constructor needs Dispatchers.Main to exist, which it does not under plain JUnit — so
+            // it made this ViewModel unconstructable and broke every existing test that builds one.
+            // The full suite caught it; the targeted run did not.
+            //
+            // Scoping it to the attempt is also simply more correct: phases only arrive while one is
+            // running, and the collector stops when it ends rather than living as long as the screen.
+            val phases =
+                    launch {
+                        // update {} rather than a read-modify-write on .value. Every writer of this
+                        // state is on the same dispatcher today, so the plain form is safe by
+                        // coincidence rather than by construction — and this is the only write that
+                        // arrives from a flow rather than from the linear body below.
+                        RemexClientManager.pairingProgress.collect { phase ->
+                            _uiState.update { it.copy(phase = phase) }
+                        }
+                    }
+
             val result =
                     try {
                         // StartPairing hops to Dispatchers.IO itself (RemEx-uach).
@@ -221,6 +262,11 @@ class PairingViewModel : ViewModel() {
                         }
                     } catch (_: TimeoutCancellationException) {
                         startPairingInFlight = false
+                        // Cancelled on BOTH exits, not just the happy one. The collector never
+                        // completes on its own, and a coroutine does not finish while a child is
+                        // still running — so missing this leaks the whole attempt's coroutine and
+                        // leaves a stale phase overwriting state after the attempt is over.
+                        phases.cancel()
                         _uiState.value =
                                 PairingUiState(
                                         isLoading = false,
@@ -229,6 +275,8 @@ class PairingViewModel : ViewModel() {
                                 )
                         return@launch
                     }
+
+            phases.cancel()
             startPairingInFlight = false
             if (result == "OK") {
                 startPairingSucceeded = true
@@ -503,6 +551,55 @@ fun PairingScreenContent(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
             )
+
+            // WHAT IS ACTUALLY HAPPENING, while it happens. The wait can be ninety seconds against
+            // a PC that accepts TCP and TLS and then goes quiet, and a bare spinner cannot say which
+            // of those is stuck — so the user cannot tell a slow network from a wedged host, or know
+            // whether cancelling costs them anything (RemEx-g87x).
+            //
+            // Gated on isLoading as well as the phase so a token that arrives late, or one this
+            // build does not recognise (phaseRes returns null), leaves nothing on screen.
+            // REMEMBERED ACROSS THE EXIT ANIMATION. Every exit path builds a fresh state, which
+            // nulls the phase in the SAME update that clears isLoading — and AnimatedVisibility keeps
+            // its content composed while shrinking. Reading the live value would blank the text and
+            // then collapse an empty box, which is a worse ending than the one this replaces.
+            val phaseRes = PairingErrors.phaseRes(state.phase)
+            var lastPhaseRes by remember { mutableStateOf<Int?>(null) }
+            if (phaseRes != null) lastPhaseRes = phaseRes
+            AnimatedVisibility(
+                    visible = state.isLoading && phaseRes != null,
+                    enter =
+                            expandVertically(
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                            ) +
+                                    fadeIn(
+                                            animationSpec =
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                    ),
+                    exit =
+                            shrinkVertically(
+                                    animationSpec = MaterialTheme.motionScheme.fastSpatialSpec()
+                            ) +
+                                    fadeOut(
+                                            animationSpec =
+                                                    MaterialTheme.motionScheme.fastEffectsSpec()
+                                    ),
+                    label = "pairingPhase"
+            ) {
+                Text(
+                        text = lastPhaseRes?.let { stringResource(it) }.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier =
+                                Modifier.fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                        // Announced to a screen reader as it changes. Text that
+                                        // updates silently through a ninety-second wait leaves a
+                                        // blind user with exactly the bare-spinner experience this
+                                        // change exists to end.
+                                        .semantics { liveRegion = LiveRegionMode.Polite }
+                )
+            }
 
             // Shown only when a trusted-transport auto-fetch came back empty: guide the
             // non-technical user to read the PIN off their PC and type it in.

@@ -827,4 +827,7 @@
     <string name="file_received_title">Dosya alındı</string>
     <string name="file_received_text">%1$s bilgisayarınızdan geldi.</string>
     <string name="file_received_share">Paylaş</string>
+    <string name="pairing_phase_probe">Bilgisayarınıza ulaşılabiliyor mu diye bakılıyor…</string>
+    <string name="pairing_phase_securing">Güvenli bağlantı kuruluyor…</string>
+    <string name="pairing_phase_awaiting_host">Bilgisayarınızın PIN göstermesi bekleniyor…</string>
 </resources>

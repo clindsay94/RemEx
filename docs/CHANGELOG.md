@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Pairing now tells you what it is doing instead of just spinning.** Connecting to a PC for the
+  first time can take a while — and if the PC is switched on but not answering properly, it can take
+  a minute and a half before the app can say so. Until now that was a spinner and nothing else, so
+  there was no way to tell a slow network from a PC that was stuck, or to judge whether cancelling
+  would lose anything.
+  The screen now says which step it is on: checking your PC can be reached, setting up a secure
+  connection, or waiting for your PC to show you a PIN. Screen readers announce each step as it
+  changes. The wait itself is unchanged — this only makes it possible to understand.
+
 ### Fixed
 
 - **Your PC's log now shows which version of the app your phone is actually running.** Every phone

@@ -67,6 +67,24 @@ internal object PairingErrors {
     }
 
     /**
+     * The localized sentence for a pairing phase token, or null when there is nothing to say.
+     *
+     * **NULL FOR AN UNKNOWN TOKEN, DELIBERATELY.** The tokens come from the native side, which does
+     * not know the phone's language — so mapping happens here. A phase added natively and not yet
+     * mapped here should show nothing rather than crash or render a raw token at the user, which is
+     * what lets a phase be added without a coordinated release. Same contract as [messageRes]'s
+     * fallback, for the same reason (RemEx-g87x).
+     */
+    @StringRes
+    fun phaseRes(phase: String?): Int? =
+            when (phase) {
+                "PROBE" -> R.string.pairing_phase_probe
+                "SECURING" -> R.string.pairing_phase_securing
+                "AWAITING_HOST" -> R.string.pairing_phase_awaiting_host
+                else -> null
+            }
+
+    /**
      * The causes that leave the native pairing session unusable.
      *
      * **ONE LIST, READ BY BOTH THINGS THAT NEED IT.** [killsSession] and [messageRes] are two

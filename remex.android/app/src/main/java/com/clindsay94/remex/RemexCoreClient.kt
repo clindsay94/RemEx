@@ -38,6 +38,15 @@ object RemexCoreClient {
         fun onDesktopCursorShape(shapeJson: String?)
         fun onFileTransferMessage(json: String?)
         fun onConnectionError(reason: String?)
+
+        /**
+         * Which phase of pairing has just started, as a stable token (RemEx-g87x).
+         *
+         * Tokens rather than sentences: the native side does not know the phone's language. Map
+         * these to localized strings on this side, and treat an unrecognised one as "say nothing"
+         * so a phase added later needs no coordinated release.
+         */
+        fun onPairingProgress(phase: String?)
     }
 
     init {

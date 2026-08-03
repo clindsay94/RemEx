@@ -179,6 +179,9 @@ public static class AndroidNativeExports
     private static IntPtr _onDesktopDisplayCatalogMethodId;
     private static IntPtr _onDesktopCursorStateMethodId;
     private static IntPtr _onDesktopCursorShapeMethodId;
+
+    /// <summary>Reports which phase of pairing is running, so a long wait can say what it is doing.</summary>
+    private static IntPtr _onPairingProgressMethodId;
     // RD-E: byte[] callback carrying the raw 32-byte "RDXC" cursor-position packet (parsed in Kotlin).
     private static IntPtr _onDesktopCursorBinaryMethodId;
 
@@ -301,6 +304,7 @@ public static class AndroidNativeExports
         _onDesktopCursorStateMethodId = IntPtr.Zero;
         _onDesktopCursorBinaryMethodId = IntPtr.Zero;
         _onDesktopCursorShapeMethodId = IntPtr.Zero;
+        _onPairingProgressMethodId = IntPtr.Zero;
     }
 
     private static IntPtr GetRequiredCallbackMethodId(IntPtr env, IntPtr clazz, string name, string signature)
@@ -409,6 +413,7 @@ public static class AndroidNativeExports
                 var onDesktopCursorStateMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorState", "(Ljava/lang/String;)V");
                 var onDesktopCursorBinaryMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorBinary", "([B)V");
                 var onDesktopCursorShapeMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopCursorShape", "(Ljava/lang/String;)V");
+                var onPairingProgressMethodId = GetRequiredCallbackMethodId(env, clazz, "onPairingProgress", "(Ljava/lang/String;)V");
 
                 if (onTelemetryUpdateMethodId == IntPtr.Zero
                     || onConnectionStateChangedMethodId == IntPtr.Zero
@@ -425,7 +430,8 @@ public static class AndroidNativeExports
                     || onDesktopDisplayCatalogMethodId == IntPtr.Zero
                     || onDesktopCursorStateMethodId == IntPtr.Zero
                     || onDesktopCursorBinaryMethodId == IntPtr.Zero
-                    || onDesktopCursorShapeMethodId == IntPtr.Zero)
+                    || onDesktopCursorShapeMethodId == IntPtr.Zero
+                    || onPairingProgressMethodId == IntPtr.Zero)
                 {
                     return;
                 }
@@ -448,6 +454,7 @@ public static class AndroidNativeExports
                 _onDesktopCursorStateMethodId = onDesktopCursorStateMethodId;
                 _onDesktopCursorBinaryMethodId = onDesktopCursorBinaryMethodId;
                 _onDesktopCursorShapeMethodId = onDesktopCursorShapeMethodId;
+                _onPairingProgressMethodId = onPairingProgressMethodId;
                 registrationSucceeded = true;
 
                 if (oldCallbackGlobalRef != IntPtr.Zero)
@@ -596,6 +603,41 @@ public static class AndroidNativeExports
         });
     }
 
+    /// <summary>
+    /// The phases of <see cref="StartPairingNative"/>, as stable tokens.
+    /// </summary>
+    /// <remarks>
+    /// **TOKENS, NOT SENTENCES.** The native side has no idea what language the phone is in, and a
+    /// phrase chosen here would arrive already-translated into the wrong one. The client maps these
+    /// to its own localized strings, exactly as it does for <c>PairingErrorCodes</c> — and, as
+    /// there, an unrecognised token must degrade to showing nothing rather than crashing, so adding
+    /// a phase later needs no coordinated release.
+    /// </remarks>
+    internal static class PairingPhases
+    {
+        /// <summary>Checking the host answers on the port at all.</summary>
+        internal const string Probe = "PROBE";
+
+        /// <summary>TLS handshake and WebSocket upgrade.</summary>
+        internal const string Securing = "SECURING";
+
+        /// <summary>Waiting for the host to return its PairingResponse and show a PIN.</summary>
+        internal const string AwaitingHost = "AWAITING_HOST";
+    }
+
+    /// <summary>
+    /// Tells the client which pairing phase has just started (RemEx-g87x).
+    /// </summary>
+    /// <remarks>
+    /// Fire-and-forget by construction: <see cref="NotifyJavaData"/> posts to the Java dispatcher
+    /// thread, so this never blocks the pairing thread it is called from and never needs that thread
+    /// to be JVM-attached. A client that has not registered a callback simply gets nothing.
+    /// </remarks>
+    private static void OnNativePairingProgress(string phase)
+    {
+        NotifyJavaData(_onPairingProgressMethodId, phase);
+    }
+
     private static void ClearActivePairingState()
     {
         if (_pairingWebSocket != null)
@@ -672,6 +714,7 @@ public static class AndroidNativeExports
                     }
 
                     Console.Error.WriteLine($"[Pairing] Phase 0 — TCP probe {uri.Host}:{uri.Port} (10s budget)");
+                    OnNativePairingProgress(PairingPhases.Probe);
                     using (var tcp = new System.Net.Sockets.TcpClient { NoDelay = true })
                     {
                         var probeTask = tcp.ConnectAsync(uri.Host, uri.Port);
@@ -696,6 +739,7 @@ public static class AndroidNativeExports
                     ws.Options.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true;
 
                     Console.Error.WriteLine($"[Pairing] Phase 1 — TLS handshake + WebSocket upgrade to {hostUrl} (20s budget)");
+                    OnNativePairingProgress(PairingPhases.Securing);
 
                     // Phase 1: connect (TLS handshake + HTTP/1.1 upgrade). Bounded so a wedged TLS
                     // doesn't hang the JNI thread.
@@ -720,6 +764,7 @@ public static class AndroidNativeExports
                     }
 
                     Console.Error.WriteLine("[Pairing] Phase 2 — WebSocket connected. Sending PairingRequest, awaiting PairingResponse (60s budget)");
+                    OnNativePairingProgress(PairingPhases.AwaitingHost);
 
                     // Phase 2: pairing handshake (send PairingRequest, await PairingResponse).
                     // Generous budget — host generates PIN, derives ECDH session key, computes HMAC, and sends back.

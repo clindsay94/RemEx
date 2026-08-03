@@ -925,4 +925,7 @@
     <string name="file_received_title">File received</string>
     <string name="file_received_text">%1$s arrived from your PC.</string>
     <string name="file_received_share">Share</string>
+    <string name="pairing_phase_probe">Checking your PC is reachable…</string>
+    <string name="pairing_phase_securing">Setting up a secure connection…</string>
+    <string name="pairing_phase_awaiting_host">Waiting for your PC to show a PIN…</string>
 </resources>
