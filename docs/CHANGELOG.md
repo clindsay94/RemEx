@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Wake-on-LAN said the wake signal was sent even when your phone could not send it.** The signal is
+  a broadcast aimed at a machine that is switched off, so nothing can ever confirm the PC woke up —
+  but whether the signal left your phone at all is knowable, and that was being thrown away. A saved
+  MAC address in the wrong format, or a phone with no usable network connection, reported success just
+  the same. The Dashboard and Remote Control screens had both been written to show a failure when one
+  was reported; neither could ever show one, because a failure was never reported.
+  They now do. The wording says the signal was **sent**, not that the PC woke — that part still cannot
+  be known, and is not claimed.
+  One thing to expect: a phone whose only network connection refuses the send has never actually been
+  waking anything, and will now say so instead of claiming success. That will look like Wake-on-LAN
+  breaking; it is Wake-on-LAN admitting.
+  (`AndroidNativeExports.cs`, `RemexCoreClient.kt`, `WidgetCommand.kt`, `RemoteControlWidget.kt`,
+  `DashboardViewModel.kt`; RemEx-52n0.)
+
 - **Commands sent from your phone told you they worked whether or not they did.** Every command — lock,
   sleep, shut down, end a task, launch an app, take a screenshot — reported success the moment your
   phone handed it off, without waiting to hear back from the PC. A PC that had dropped off the network,

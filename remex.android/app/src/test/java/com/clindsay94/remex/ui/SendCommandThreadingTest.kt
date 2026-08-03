@@ -46,6 +46,28 @@ class SendCommandThreadingTest {
             .replace(Regex("""//.*"""), "")
 
     @Test
+    fun `WakePc is suspend and switches off the caller's thread`() {
+        // Same contract as SendCommand and for the same reason (RemEx-52n0): the native wake now
+        // waits for the send instead of discarding it. The wait is much shorter — a UDP broadcast has
+        // no reply to wait for — but it is still a socket operation, and this one is reachable from a
+        // dashboard button, a Quick Settings tile and a home-screen widget.
+        val code = code()
+
+        val declaration = Regex("""suspend fun WakePc\(""").find(code)
+        assertTrue("RemexCoreClient.WakePc must stay a suspend function.", declaration != null)
+
+        val afterDeclaration = code.substring(declaration!!.range.first)
+        val nativeCall = afterDeclaration.indexOf("WakePcNative(")
+        assertTrue("expected WakePc to still reach WakePcNative", nativeCall > 0)
+
+        assertTrue(
+            "WakePc must move itself to a background dispatcher before crossing into the native call.",
+            Regex("""withContext\(\s*Dispatchers\.(IO|Default)\s*\)""")
+                .containsMatchIn(afterDeclaration.substring(0, nativeCall)),
+        )
+    }
+
+    @Test
     fun `SendCommand is suspend and switches off the caller's thread`() {
         val code = code()
 

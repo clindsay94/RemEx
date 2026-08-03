@@ -38,6 +38,35 @@ private val WidgetCommandScope = CoroutineScope(SupervisorJob() + Dispatchers.IO
  * The failure IS logged, which is new: before this the outcome did not exist to log, and "the widget
  * did nothing" with an empty logcat is an unpleasant thing to be handed.
  */
+/**
+ * Broadcasts a Wake-on-LAN packet from a widget tap without holding the broadcast open (RemEx-52n0).
+ *
+ * Separate from [sendWidgetCommand] because a wake is not a command: it goes out over UDP from this
+ * phone rather than over the control socket to a PC, and it is the one action here that works when
+ * nothing is connected. Detached for the same reason all the same — the native side now waits for
+ * the send instead of discarding it.
+ */
+internal fun sendWidgetWake(macAddress: String, broadcastIp: String, port: Int) {
+    WidgetCommandScope.launch {
+        val response = RemexCoreClient.WakePc(macAddress, broadcastIp, port).getOrNull()
+        if (!reportedSuccess(response)) {
+            Log.w(TAG, "Widget wake did not succeed: $response")
+        }
+    }
+}
+
+/**
+ * Whether a native response says the work succeeded, treating anything unreadable as failure.
+ *
+ * **THE runCatching IS NOT DECORATION.** [WidgetCommandScope] has a `SupervisorJob` but no
+ * `CoroutineExceptionHandler`, and a supervisor stops a failure propagating to SIBLINGS — it does not
+ * swallow it. An unparsed `JSONObject(...)` throwing `JSONException` in here would reach the thread's
+ * default handler and take the process down, from a code path whose entire job is to log quietly.
+ */
+private fun reportedSuccess(response: String?): Boolean =
+    response != null &&
+        runCatching { JSONObject(response).optBoolean("success", false) }.getOrDefault(false)
+
 internal fun sendWidgetCommand(action: String, parameters: JSONObject = JSONObject()) {
     val commandJson =
         JSONObject()
@@ -49,7 +78,7 @@ internal fun sendWidgetCommand(action: String, parameters: JSONObject = JSONObje
 
     WidgetCommandScope.launch {
         val response = RemexCoreClient.SendCommand(commandJson).getOrNull()
-        if (response == null || !JSONObject(response).optBoolean("success", false)) {
+        if (!reportedSuccess(response)) {
             Log.w(TAG, "Widget command $action did not succeed: $response")
         }
     }

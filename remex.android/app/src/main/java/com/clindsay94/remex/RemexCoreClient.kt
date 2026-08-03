@@ -88,9 +88,19 @@ object RemexCoreClient {
     @JvmName("InitRemexNative")
     private external fun InitRemexNative(initJson: String): String
 
+    /**
+     * Broadcasts a Wake-on-LAN magic packet and reports whether it left this phone (RemEx-52n0).
+     *
+     * Suspending and dispatcher-owning for the same reason as [SendCommand]: the native side now
+     * waits for the send instead of discarding it, so this must not sit on the main thread. The wait
+     * is far shorter — a UDP broadcast completes as soon as the OS has the datagram, with no reply to
+     * wait for — but "short" is not a thing to leave a UI thread depending on.
+     *
+     * Success means SENT, not woken. There is no acknowledgement from a machine that is switched off.
+     */
     @JvmStatic
-    fun WakePc(macAddress: String, broadcastIp: String, port: Int): Result<String> {
-        return if (isLibraryLoaded) {
+    suspend fun WakePc(macAddress: String, broadcastIp: String, port: Int): Result<String> = withContext(Dispatchers.IO) {
+        if (isLibraryLoaded) {
             try {
                 Result.success(WakePcNative(macAddress, broadcastIp, port))
             } catch (e: UnsatisfiedLinkError) {

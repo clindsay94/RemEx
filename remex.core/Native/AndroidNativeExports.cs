@@ -990,27 +990,75 @@ public static class AndroidNativeExports
         var effectiveBroadcastIp = string.IsNullOrWhiteSpace(broadcastIp) ? "255.255.255.255" : broadcastIp;
         var effectivePort = port > 0 ? port : 9;
 
-        // Fire-and-forget: WOL is a UDP broadcast with no acknowledgement.
-        // Blocking the JNI thread for I/O is not safe — dispatch to the thread pool.
-        // **THE OUTCOME IS DISCARDED AND NOTHING REPORTS IT (RemEx-52n0).** The claim that used to
-        // stand here — that failures reach the user "via the Android toast/status mechanism that
-        // observes ConnectionStateChanged" — was invented: a WakeAsync failure (malformed MAC, socket
-        // bind refused, no usable interface) has nothing to do with the connection state, and nothing
-        // observes it. Left in place rather than fixed blind, because unlike a command this cannot
-        // simply be awaited into an answer: Wake-on-LAN is a UDP broadcast to a machine that is
-        // switched off, so there is no acknowledgement to wait for. What IS knowable — whether the
-        // packet left this phone — is what RemEx-52n0 is for.
-        _ = Task.Run(async () =>
+        // **REPORTS WHETHER THE PACKET LEFT THIS PHONE (RemEx-52n0).** It used to fire the send into a
+        // discarded Task.Run and return success unconditionally, under a comment claiming failures
+        // reached the user "via the Android toast/status mechanism that observes
+        // ConnectionStateChanged". That was invented: a WakeAsync failure has nothing to do with the
+        // connection state and nothing observed it. The two SCREEN callers had already been written to
+        // branch on the success flag — DashboardViewModel's comment says outright that "a failed send
+        // now surfaces as a failure" (RemEx-nbfb) — so their failure branch was unreachable FOR ANY
+        // SEND FAILURE, and the only thing missing was a producer that told the truth. (It was always
+        // reachable by the library failing to load or the JNI boundary itself throwing; neither has
+        // anything to say about the packet.) The third caller, the home-screen widget, discarded the
+        // result entirely and still only logs it — RemEx-mug0.
+        //
+        // BE CLEAR ABOUT WHAT THIS CAN AND CANNOT MEAN. Wake-on-LAN is a UDP broadcast aimed at a
+        // machine that is switched off; there is no acknowledgement and there never will be, so
+        // success here says the magic packet was transmitted, NOT that the PC woke up. The wording
+        // says "sent" for exactly that reason. What was being thrown away is the other half —
+        // a malformed MAC, an unparseable broadcast address, or every interface refusing the send,
+        // all of which WakeAsync raises and all of which are worth telling somebody about.
+        //
+        // Safe to block the JNI thread on this in a way SendCommandAsync was not: there is no round
+        // trip to wait for. Every await inside WakeAsync is a UDP send that completes once the OS has
+        // the datagram — no connection to establish, no send window to fill, no lock to queue behind,
+        // and no name resolution (the broadcast address is parsed, never looked up).
+        //
+        // **Task.Run IS LOAD-BEARING HERE, AND REVIEW CAUGHT THE VERSION WITHOUT IT.** An `async Task`
+        // method runs SYNCHRONOUSLY on the calling thread until its first incomplete await, so calling
+        // WakeAsync directly would perform the interface enumeration and every socket bind inline —
+        // before the Task that .WaitAsync wraps even exists. The timeout would then be measured on
+        // work that had already finished, and in the common case (UDP sends completing synchronously)
+        // it would be a no-op on an already-completed Task. Handing the whole call to the pool is what
+        // puts the prologue inside the budget.
+        //
+        // The timeout is belt-and-braces rather than a limit the normal path approaches, and it leaves
+        // the send running if it ever fires — the packet may still go out, we simply stop waiting to
+        // find out.
+        try
         {
-            try
-            {
-                await service.WakeAsync(macAddress, effectiveBroadcastIp, effectivePort);
-            }
-            catch (Exception ex) { JniHelper.AndroidLogE("RemexNative", $"WakeAsync failed: {ex.Message}"); }
-        });
+            Task.Run(() => service.WakeAsync(macAddress, effectiveBroadcastIp, effectivePort))
+                .WaitAsync(WakeOnLanSendTimeout)
+                .GetAwaiter()
+                .GetResult();
 
-        return SerializeOperationSuccess($"Wake-on-LAN dispatched to {macAddress}.");
+            return SerializeOperationSuccess($"Wake-on-LAN packet sent to {macAddress}.");
+        }
+        catch (TimeoutException ex)
+        {
+            // Distinct from a refusal on purpose: the send was abandoned, not proven to have failed,
+            // and the packet may well have gone out. Claiming it did not would be its own small lie.
+            JniHelper.AndroidLogE("RemexNative", $"WakeAsync timed out: {ex.Message}");
+            return SerializeOperationFailure(
+                "Could not confirm the wake signal was sent.", ex.ToString());
+        }
+        catch (Exception ex)
+        {
+            JniHelper.AndroidLogE("RemexNative", $"WakeAsync failed: {ex.Message}");
+            return SerializeOperationFailure(
+                "The wake signal could not be sent from this phone.", ex.ToString());
+        }
     }
+
+    /// <summary>
+    /// Ceiling on a Wake-on-LAN send, which is a handful of local UDP writes.
+    /// </summary>
+    /// <remarks>
+    /// Generous by design — the normal path is sub-millisecond, so anything approaching this is a
+    /// socket that is never going to complete. It exists only so that a JNI thread cannot be parked
+    /// indefinitely by one, which is the failure RemEx-66rf had to fix on the command path.
+    /// </remarks>
+    private static readonly TimeSpan WakeOnLanSendTimeout = TimeSpan.FromSeconds(5);
 
     private static string HandleRequestTelemetry()
     {

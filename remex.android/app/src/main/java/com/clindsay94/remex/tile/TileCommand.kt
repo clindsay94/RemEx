@@ -58,7 +58,16 @@ internal fun sendTileCommand(action: String, parameters: JSONObject = JSONObject
             .toString()
     launchTileWork {
         val response = RemexCoreClient.SendCommand(commandJson).getOrNull()
-        if (response == null || !JSONObject(response).optBoolean("success", false)) {
+        // runCatching, not a bare JSONObject(...): TileCommandScope has a SupervisorJob but no
+        // CoroutineExceptionHandler, and a supervisor stops a failure reaching SIBLINGS rather than
+        // swallowing it. A JSONException on an unreadable response would reach the thread's default
+        // handler and kill the process, from the one code path here whose job is to log quietly.
+        val succeeded =
+            response != null &&
+                runCatching { JSONObject(response).optBoolean("success", false) }
+                    .getOrDefault(false)
+
+        if (!succeeded) {
             Log.w(TAG, "Tile command $action did not succeed: $response")
         }
     }

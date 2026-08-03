@@ -403,7 +403,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     if (mac.isNotEmpty()) {
                         // Report the *actual* native result rather than optimistically saying "sent"
                         // (mirrors RemoteControlViewModel.wakePc): the WakePc JNI call returns a JSON
-                        // envelope with a success flag, so a failed send now surfaces as a failure. (RemEx-nbfb)
+                        // envelope with a success flag, so a failed send surfaces as a failure.
+                        // (RemEx-nbfb.)
+                        //
+                        // TRUE OF THE SEND ONLY SINCE RemEx-52n0, THOUGH IT WAS WRITTEN AS IF ALREADY
+                        // TRUE. The native export used to fire the send into a discarded task and
+                        // hard-code success, so no failure of the SEND could ever reach this branch —
+                        // it was correct code reading a flag the packet never influenced. It could
+                        // still be entered by the native library failing to load or the JNI call
+                        // throwing, which is why the path was never dead, only uninformed.
                         val responseJson = RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull() ?: ""
                         val success = try {
                             JSONObject(responseJson).optBoolean("success", false)

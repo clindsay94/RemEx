@@ -206,7 +206,9 @@ class RemoteCommandCallback : ActionCallback {
                 widgetToast(context, context.getString(R.string.widget_toast_set_mac))
                 return
             }
-            RemexCoreClient.WakePc(mac, broadcast, 9).getOrNull()
+            // Handed over rather than awaited, like the commands below: this is inside a goAsync()
+            // broadcast window and the native wake now waits for the send (RemEx-52n0).
+            sendWidgetWake(mac, broadcast, 9)
             widgetToast(context, context.getString(R.string.widget_toast_wol_sent))
         } else {
             if (!RemexClientManager.isConnected.value) {
