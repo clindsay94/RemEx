@@ -525,7 +525,15 @@ class FileHostHandler(
                 // Checked HERE rather than in beginHostReceive because UPLOAD shares that function
                 // and must not be gated - an upload targets a folder the user already shared for
                 // writing, so the share is the consent.
-                if (!pushConsent.isGranted(transferId)) {
+                // Checked against the FILE NAME too, not the id alone (RemEx-tutz). An id proves some
+                // prompt was answered; only the name proves it was answered about this file. Without
+                // it, an id minted for one file could be negotiated carrying another and accepted with
+                // no second prompt.
+                //
+                // No release on this path, unlike the declines inside beginHostReceive: the id may be
+                // perfectly valid and merely mis-addressed, and throwing away a grant on the strength
+                // of a message that failed its own check would let a bad offer cancel a good one.
+                if (!pushConsent.isGrantedFor(transferId, fileName)) {
                     sendReady(transferId, false, 0, "This push was not accepted on the device.")
                     return
                 }
@@ -584,12 +592,16 @@ class FileHostHandler(
         /** True for UPLOAD (replace on name collision), false for PUSH (let SAF uniquify). */
         replaceExisting: Boolean = true,
     ) {
-        // Every decline below hands a PUSH grant back. The id is granted before the offer arrives, and
-        // isGranted checks the id ALONE — it is not bound to the file name the user saw. A grant left
-        // behind after a refusal therefore stays usable, and a paired-but-hostile PC could re-offer
-        // the same id later under a different file name and be accepted with no second prompt. That is
-        // the actor RemEx-z6lh exists to constrain, so a refused push ends its grant. (RemEx-h1p5;
-        // binding the id to the offered name as well is RemEx-tutz.)
+        // Every decline below hands a PUSH grant back, and the reason is narrower than it was when
+        // this was written. A grant is now bound to the file name it was minted for (RemEx-tutz), so
+        // a leftover one can only ever re-deliver the very file the user approved — it is no longer a
+        // blank cheque a hostile PC could spend on something else. What is left is simply that these
+        // declines end the transfer: the destination is unusable or the name is unfilable, and a grant
+        // for a transfer that can never happen is the wrong thing to keep sitting in the registry.
+        //
+        // Contrast the name-mismatch check in the PUSH branch, which deliberately does NOT release:
+        // a decline here is evidence about the TRANSFER, while a mismatch is evidence about one
+        // MESSAGE, and the grant behind it may be perfectly good. (RemEx-h1p5, RemEx-tutz.)
         fun decline(reason: String) {
             if (!replaceExisting) pushConsent.release(transferId)
             sendReady(transferId, false, 0, reason)

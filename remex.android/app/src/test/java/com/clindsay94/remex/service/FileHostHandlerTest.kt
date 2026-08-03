@@ -395,7 +395,7 @@ class FileHostHandlerTest {
     @Test
     fun pushOffer_asThePcActuallySendsIt_isAccepted() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(listOf("minted-id"))
+        consent.grant(mapOf("minted-id" to "pushed.txt"))
         val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
 
         h.handleControlMessage(
@@ -426,7 +426,7 @@ class FileHostHandlerTest {
     @Test
     fun pushOffer_ignoresADestRootThePcTriesToChoose() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(listOf("minted-id"))
+        consent.grant(mapOf("minted-id" to "pushed.txt"))
         val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
 
         // "not-shared" is NOT among the shared roots — which is the case that matters, since a
@@ -458,7 +458,7 @@ class FileHostHandlerTest {
     @Test
     fun pushOffer_withNoWritableSharedFolder_isRefusedAndTheGrantIsReleased() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(listOf("minted-id"))
+        consent.grant(mapOf("minted-id" to "pushed.txt"))
         val readOnlyOnly = listOf(RootDescriptor("root1", "Shared", false, false, false, false, false))
         val (h, sender, _) =
             build(sampleTree(), granted = true, pushConsent = consent, roots = readOnlyOnly)
@@ -480,7 +480,7 @@ class FileHostHandlerTest {
         assertFalse(
             "a refused push must give its consent id back, or the registry keeps authorising a " +
                 "transfer that will never happen",
-            consent.isGranted("minted-id"),
+            consent.isGrantedFor("minted-id", "pushed.txt"),
         )
     }
 
@@ -488,7 +488,7 @@ class FileHostHandlerTest {
     @Test
     fun pushOffer_withAConsentedId_isAccepted() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(listOf("minted-id"))
+        consent.grant(mapOf("minted-id" to "pushed.txt"))
         val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
 
         h.handleControlMessage(offer("minted-id", FileTransferModes.PUSH))
@@ -516,13 +516,49 @@ class FileHostHandlerTest {
     @Test
     fun completingAPush_releasesItsGrant() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(listOf("once-only"))
+        consent.grant(mapOf("once-only" to "pushed.txt"))
         val (h, _, _) = build(sampleTree(), granted = true, pushConsent = consent)
 
         h.handleControlMessage(
             """{"type":"file_transfer_complete","fileTransferComplete":{"transferId":"once-only"}}"""
         )
 
-        assertFalse(consent.isGranted("once-only"))
+        assertFalse(consent.isGrantedFor("once-only", "pushed.txt"))
+    }
+
+    /**
+     * A granted id carrying a DIFFERENT file name than the one the user saw is refused (RemEx-tutz).
+     *
+     * The consent prompt names the files (`describePushFiles`), so a grant is an answer about those
+     * files. Matching on the transfer id alone made it an answer about a slot: an id minted for one
+     * file could be negotiated carrying another, and the phone would accept it without prompting
+     * again — the user having agreed to receive something they were never shown.
+     *
+     * It needs a paired PC to exercise, which is exactly the actor the id check itself exists to
+     * constrain (RemEx-z6lh), and it pairs with the overwrite protection from RemEx-h1p5: without
+     * both, a swapped name could also land on top of a file already there.
+     */
+    @Test
+    fun pushOffer_underAGrantForADifferentFile_isRefused() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(mapOf("minted-id" to "cat.jpg"))
+        val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"minted-id","mode":"push","fileName":"resume.pdf","size":5}}
+            """.trimIndent()
+        )
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertFalse(
+            "an id granted for cat.jpg must not carry resume.pdf",
+            payload.getBoolean("accepted"),
+        )
+
+        // The grant survives: this offer failed its own check, and discarding the grant on the
+        // strength of a message that did not match would let a bad offer cancel a good one.
+        assertTrue(consent.isGrantedFor("minted-id", "cat.jpg"))
     }
 }

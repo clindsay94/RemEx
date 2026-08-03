@@ -226,17 +226,11 @@ object AndroidFileTransferHost {
                 put("pushId", pushId)
                 put("accepted", decision.granted)
                 if (decision.granted) {
-                    val ids = JSONArray()
-                    val minted = ArrayList<String>(fileCount)
-                    repeat(fileCount) {
-                        val id = UUID.randomUUID().toString().replace("-", "")
-                        minted.add(id)
-                        ids.put(id)
-                    }
+                    val minted = mintPushGrants(filesArr)
                     // Record BEFORE replying: the PC may negotiate the first file the instant this
                     // response lands, and an offer arriving before the grant would be refused.
                     pushConsent.grant(minted)
-                    put("transferIds", ids)
+                    put("transferIds", JSONArray().apply { minted.keys.forEach { put(it) } })
                 }
             }
         RemexCoreClient.SendMessage(

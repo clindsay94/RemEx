@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Agreeing to receive one file no longer lets the PC send a different one.** When the PC offers your
+  phone a file, your phone asks you by name and — if you accept — hands back a one-time ticket per
+  file. Your phone only ever checked that the ticket was real, not that it was being used for the file
+  you were shown. A PC could take the ticket you approved for a photo and use it to send something
+  else entirely, and your phone would accept it without asking again.
+  Each ticket is now tied to the exact file name it was issued for, and a mismatch is refused. This
+  needs a PC you have already paired with to exploit, which is the same attacker the ticket check
+  itself was added to stop.
+  Two related gaps are deliberately **not** closed by this and are tracked separately: the prompt
+  still lists only the first five names when more files are offered, and the file size it shows is not
+  tied to the ticket the way the name now is.
+  (`PushConsentRegistry.kt`, `AndroidFileTransferHost.kt`, `FileHostHandler.kt`; RemEx-tutz.)
+
 ### Fixed
 
 - **A file the PC offered your phone was always refused, so nothing the PC sent ever arrived.** You
