@@ -97,7 +97,8 @@ public class LoopbackTelemetryStreamTests
             new Remex.Agent.Services.FileTransfer.SharedRootReadResolver(svc, trust, volumes));
     }
 
-    private static async Task<List<RemexMessage>> RunConnectionAsync(bool isLoopback)
+    private static async Task<List<RemexMessage>> RunConnectionAsync(
+        bool isLoopback, ClientSessionRegistry? sessionRegistry = null)
     {
         var sampler = new TelemetryBackgroundService(
             new StubTelemetryService(), NullLogger<TelemetryBackgroundService>.Instance);
@@ -125,13 +126,16 @@ public class LoopbackTelemetryStreamTests
             NewFileTransferHandler(),
             null!,
             null!,
-            null!);  // FilePushOriginator: this test never pushes
+            null!,  // FilePushOriginator: this test never pushes
+            sessionRegistry ?? new ClientSessionRegistry());
 
         var socket = new OneShotWebSocket();
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            await handler.HandleAsync(socket, isLoopback, isTrustedForPinAutoFetch: false, cts.Token);
+            await handler.HandleAsync(
+                socket, isLoopback, isTrustedForPinAutoFetch: false,
+                remoteAddress: isLoopback ? "127.0.0.1" : "192.168.1.50", cts.Token);
         }
         finally
         {
@@ -140,6 +144,26 @@ public class LoopbackTelemetryStreamTests
         }
 
         lock (socket.Received) return [.. socket.Received];
+    }
+
+    [Fact]
+    public async Task AFinishedConnectionLeavesNothingBehindInTheSessionRegistry()
+    {
+        // END-TO-END LEAK CHECK, through the real handler rather than the registry in isolation.
+        // HandleAsync registers on its first line and relies on `using` to unregister, so a future
+        // early return, throw or rewrite that drops the `using` would leave a phantom session that
+        // PhonePresence reports as an attached phone with nothing attached. Driving a whole
+        // connection and finding the registry empty afterwards is what catches that.
+        //
+        // LOOPBACK ON PURPOSE. Snapshot only reports AUTHENTICATED sessions, and a connection that
+        // never pairs never becomes one — so running this over a non-loopback socket would find an
+        // empty registry whether the session leaked or not, and prove nothing. Loopback is
+        // authenticated the moment it connects, so a leak is visible.
+        var registry = new ClientSessionRegistry();
+
+        await RunConnectionAsync(isLoopback: true, registry);
+
+        Assert.Empty(registry.Snapshot());
     }
 
     [Fact]

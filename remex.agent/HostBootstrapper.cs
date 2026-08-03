@@ -194,6 +194,8 @@ public static class HostBootstrapper
         // Singletons on purpose: TransferSessionManager holds live per-transfer state that MUST be shared
         // between the /ws control plane (offer/ready/complete/result/control) and the /ws/files binary data
         // plane, and TransferQueueService owns the process-death-surviving transfer_queue.json.
+        // Singleton: it IS the live-session list, so a per-request instance would be empty.
+        builder.Services.AddSingleton<ClientSessionRegistry>();
         builder.Services.AddSingleton<TransferSessionManager>();
         builder.Services.AddSingleton<TransferQueueService>();
         builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.DesktopSessionRegistry>();
@@ -424,7 +426,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<FileTransferHandler>(),
                 context.RequestServices.GetRequiredService<TransferSessionManager>(),
                 context.RequestServices.GetRequiredService<PairedClientRegistry>(),
-                context.RequestServices.GetRequiredService<Remex.Agent.Services.FileTransfer.FilePushOriginator>());
+                context.RequestServices.GetRequiredService<Remex.Agent.Services.FileTransfer.FilePushOriginator>(),
+                context.RequestServices.GetRequiredService<ClientSessionRegistry>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for
@@ -442,7 +445,9 @@ public static class HostBootstrapper
             var isTrustedForPinAutoFetch = Remex.Agent.Services.Security.TransportTrust
                 .IsTrustedForPinAutoFetch(remoteIp, context.Connection.LocalIpAddress);
 
-            await handler.HandleAsync(ws, isLoopback, isTrustedForPinAutoFetch, context.RequestAborted);
+            await handler.HandleAsync(
+                ws, isLoopback, isTrustedForPinAutoFetch,
+                remoteAddress: remoteIp?.ToString(), context.RequestAborted);
         });
 
         // Remote Desktop WebSocket endpoint (dedicated binary stream)

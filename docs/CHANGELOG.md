@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The PC now keeps track of which phones are actually connected to it.** Nothing on the PC could
+  answer that before: a connection was known only to the piece of code handling it, and forgotten the
+  moment that code moved on. So the PC could not say how many phones were attached, could not check
+  whether a particular one was still there, and could not send a phone anything it had not asked for
+  first. Three separate pieces of work were waiting on this, including asking permission on your phone
+  instead of on the PC.
+  Nothing you can see changes yet — this is the part underneath. It is deliberately strict about who
+  counts: a device is only tracked once it has proved it is paired, so a stranger on the same
+  network cannot show up as one of your phones, name itself whatever it likes on your PC screen, or
+  answer a permission prompt meant for you.
+
 - **A file the PC sends you now says it arrived, and offers to open or share it.** Until now, the only
   *outcome* your phone ever reported for an incoming file was a failure — one that succeeded just
   appeared in a folder you were never told about, with nothing to open it from. The notification names

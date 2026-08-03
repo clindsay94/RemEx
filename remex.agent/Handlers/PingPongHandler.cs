@@ -32,7 +32,8 @@ public sealed class PingPongHandler(
     FileTransferHandler fileTransferHandler,
     TransferSessionManager transferSessionManager,
     PairedClientRegistry pairedClientRegistry,
-    Remex.Agent.Services.FileTransfer.FilePushOriginator pushOriginator) : IDisposable
+    Remex.Agent.Services.FileTransfer.FilePushOriginator pushOriginator,
+    ClientSessionRegistry sessionRegistry) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -51,8 +52,21 @@ public sealed class PingPongHandler(
     /// next sends input here — but it is defensive symmetry, not a live user-facing bug.
     /// </remarks>
     private readonly HeldKeyTracker _heldKeys = new();
-    public async Task HandleAsync(WebSocket webSocket, bool isLoopback, bool isTrustedForPinAutoFetch, CancellationToken ct)
+    public async Task HandleAsync(
+        WebSocket webSocket, bool isLoopback, bool isTrustedForPinAutoFetch,
+        string? remoteAddress, CancellationToken ct)
     {
+        // Recorded for as long as this connection lives (RemEx-xuyu). A handle rather than a
+        // matching unregister call, because this method has several exit paths and a missed one
+        // would leave a phantom session behind - which is precisely the "1 phone connected" with
+        // nothing attached that the presence work exists to fix.
+        using var session = sessionRegistry.Register(remoteAddress, webSocket);
+
+        // Loopback is the PC's own UI talking to itself and skips pairing by construction, so it is
+        // authenticated the moment it connects — the same reasoning that seeds isPaired below. Every
+        // other connection stays invisible in the registry until it clears the gate.
+        if (isLoopback) sessionRegistry.MarkAuthenticated(session);
+
         // Per-connection pairing gate. Loopback connections come from the embedded host on the
         // same machine, where pairing adds no security and is intentionally skipped on the client
         // side as well — see ConnectionViewModel.IsLoopbackHost. All other connections must
@@ -166,7 +180,15 @@ public sealed class PingPongHandler(
                     message.Type, message.ProtocolVersion);
 
                 if (!string.IsNullOrWhiteSpace(message.ClientId))
+                {
                     connectionClientId = message.ClientId;
+                    // The registry learns the identity at the same moment this connection does.
+                    // A device name is NOT available on most messages — only pairing_request
+                    // carries one (handled below) — so it is left null here rather than guessed.
+                    // ClientSession documents null as "not named", and PhonePresence falls back to
+                    // a count-only display, so this degrades rather than misreports.
+                    sessionRegistry.Identify(session, message.ClientId, deviceName: null);
+                }
 
                 // PAIR-1: a persisted clientId is NOT a bearer credential. Instead of trusting bare
                 // presence, challenge the reconnecting client to prove possession of the reconnect
@@ -360,6 +382,21 @@ public sealed class PingPongHandler(
 
                     // ── 2.0 Pairing ──
                     case MessageTypes.PairingRequest:
+                        // The ONLY message that carries a device name, so this is the only chance to
+                        // learn one.
+                        //
+                        // BE HONEST ABOUT WHAT THIS BUYS TODAY: NOTHING VISIBLE. Android pairs over a
+                        // dedicated throwaway socket that AndroidNativeExports disposes the moment
+                        // pairing succeeds, and the long-lived session RemexClientManager then opens
+                        // never sends pairing_request. So the sessions a presence UI would display are
+                        // never the ones that carried a name, and PairedClientRegistry stores
+                        // clientId → secret with nowhere to keep it. RemEx-yzqs is therefore a hard
+                        // prerequisite for showing a name at all, not a polish item, and RemEx-8m3r
+                        // matters after it because Android sends the constant "Android Client" rather
+                        // than the actual device. Recording it here is what makes fixing those two
+                        // sufficient instead of requiring a wire change as well.
+                        sessionRegistry.Identify(session, message.ClientId, message.PairingRequest?.ClientName);
+
                         var pairingResponse = await pairingHandler.HandlePairingRequestAsync(message, ct);
                         if (pairingResponse is not null)
                         {
@@ -385,6 +422,8 @@ public sealed class PingPongHandler(
                         {
                             isPaired = true;
                             pairingStarted = false;
+                            // Only now is this connection allowed to be counted, found or sent to.
+                            sessionRegistry.MarkAuthenticated(session);
                             logger.LogInformation("Pairing verified — connection authenticated.");
                             RecordDeviceConnectedActivity();
                         }
@@ -411,6 +450,7 @@ public sealed class PingPongHandler(
                         if (TryAuthenticateReconnect(message, pendingChallengeNonce, pairedClientRegistry, logger))
                         {
                             isPaired = true;
+                            sessionRegistry.MarkAuthenticated(session);
                             logger.LogInformation(
                                 "Reconnect proof verified — connection authenticated for client {ClientId}.",
                                 message.ReconnectProof?.ClientId ?? message.ClientId);
