@@ -21,14 +21,39 @@ import org.json.JSONArray
  * would have to carry a blank `fileName` to match it, and the blank-name guard in
  * `FileHostHandler.beginHostReceive` refuses that anyway.
  */
-internal fun mintPushGrants(filesArr: JSONArray): LinkedHashMap<String, String> {
-    val minted = LinkedHashMap<String, String>(filesArr.length())
+internal fun mintPushGrants(filesArr: JSONArray): LinkedHashMap<String, GrantedFile> {
+    val minted = LinkedHashMap<String, GrantedFile>(filesArr.length())
     for (i in 0 until filesArr.length()) {
         val id = UUID.randomUUID().toString().replace("-", "")
-        minted[id] = filesArr.optJSONObject(i)?.optString("name").orEmpty()
+        val entry = filesArr.optJSONObject(i)
+        minted[id] =
+            GrantedFile(
+                name = entry?.optString("name").orEmpty(),
+                size = entry?.optLong("size", -1L) ?: -1L,
+            )
     }
     return minted
 }
+
+/**
+ * What the user agreed to receive under one transfer id — the name AND the size they were shown.
+ *
+ * Both are checked, because authorising a name alone still leaves the interesting half open: a PC can
+ * prompt `holiday.jpg (1.0 KB)`, take the grant, and then negotiate the same id and the same name
+ * carrying five gigabytes. The receiver does enforce the transfer's declared size as a ceiling on the
+ * stream — but it was declaring its OWN number, and nothing compared that against the figure the user
+ * saw (RemEx-ccqb).
+ *
+ * A [size] of -1 means the offer did not state one, and cannot match a transfer offer: `handleOffer`
+ * refuses a negative size outright before any grant is consulted. That refusal is what makes the
+ * sentinel safe — remex.core declares `Size` as a bare `long` with no validator, so a peer is free to
+ * STATE -1 in both messages, and without the guard the two would have matched.
+ *
+ * Zero is deliberately NOT the sentinel: an empty file is a legitimate transfer, and the serializer
+ * writes `"size":0` for one rather than omitting the field (`WhenWritingNull`, not
+ * `WhenWritingDefault`), so absent and zero are distinguishable on the wire.
+ */
+data class GrantedFile(val name: String, val size: Long)
 
 /**
  * The transfer ids this device minted after the user consented to an incoming push.
@@ -57,30 +82,31 @@ class PushConsentRegistry(private val capacity: Int = DEFAULT_CAPACITY) {
     // Maps each id to the FILE NAME it was minted for. It used to be a bare set of ids, which made a
     // grant an authorisation to send *something* rather than to send the thing the user agreed to
     // (RemEx-tutz).
-    private val granted: MutableMap<String, String> =
+    private val granted: MutableMap<String, GrantedFile> =
         Collections.synchronizedMap(LinkedHashMap())
 
     /**
      * Records ids minted for a push the user accepted, each against the file name it was offered for.
      *
-     * [idsToFileNames] must be the names the offer the user answered was BUILT FROM —
-     * `describePushFiles` renders its prompt from the same array `mintPushGrants` walks, in the same
-     * order, so the two are aligned by construction. Binding anything else would make the check below
-     * theatre.
+     * [idsToFiles] must describe the offer the user answered — `describePushFiles` renders its prompt
+     * from the same array `mintPushGrants` walks, in the same order, so the two are aligned by
+     * construction. Binding anything else would make the check below theatre.
      *
-     * Not quite the same as "the names the user read", and the gap is worth naming: that prompt shows
-     * at most FIVE names before it elides the rest, so an offer of ten binds five names the user saw
-     * and five they did not. The substitution this guards against is closed either way — an id still
-     * only ever carries the file it was minted for — but a prompt that names everything it is
-     * authorising is RemEx-7iub. The offered SIZE is likewise shown and not bound: RemEx-ccqb.
+     * Not quite the same as "what the user read", and the gaps are worth naming. The prompt shows at
+     * most FIVE names before eliding the rest, so an offer of ten binds five names the user saw and
+     * five they did not (RemEx-7iub). It also shows one TOTAL size rather than a size per file, so at
+     * counts above one the per-file figure bound here was never displayed on its own. Both bind
+     * STRICTLY MORE than was shown, so both fail closed; neither is a licence to describe this as
+     * exactly what the user read.
      */
-    fun grant(idsToFileNames: Map<String, String>) {
+    fun grant(idsToFiles: Map<String, GrantedFile>) {
         synchronized(granted) {
-            for ((id, fileName) in idsToFileNames) {
-                // A blank name is dropped for the same reason a blank id is: it could only ever be
-                // matched by an offer carrying a blank fileName, which beginHostReceive refuses
-                // outright. Storing one occupies a capacity slot to authorise nothing.
-                if (id.isNotBlank() && fileName.isNotBlank()) granted[id] = fileName
+            for ((id, file) in idsToFiles) {
+                // A blank name or an unstated size is dropped for the same reason a blank id is: it
+                // could only ever be matched by an offer that is itself refused a step earlier, so
+                // storing one occupies a capacity slot to authorise nothing — and can evict a live
+                // grant to do it, since eviction is oldest-first.
+                if (id.isNotBlank() && file.name.isNotBlank() && file.size >= 0) granted[id] = file
             }
             // A grant only happens after a person taps Accept, so this cannot be driven by a remote
             // peer alone - but an unbounded map that only ever grows is still the wrong shape for
@@ -93,13 +119,14 @@ class PushConsentRegistry(private val capacity: Int = DEFAULT_CAPACITY) {
     }
 
     /**
-     * True when this id came from an accepted push offer AND names the file that offer described.
+     * True when this id came from an accepted push offer AND describes the file that offer described.
      *
-     * **THE NAME IS HALF THE CHECK, AND IT USED TO BE MISSING (RemEx-tutz).** Matching on the id
-     * alone authorises a transfer, not a file: a paired PC could take an id minted for `cat.jpg` and
-     * negotiate it carrying `resume.pdf`, and the phone would accept without prompting again — the
-     * user having agreed to receive something else entirely. The id proves a prompt was answered;
-     * the name proves it was answered about THIS.
+     * **THE ID ALONE AUTHORISES A TRANSFER, NOT A FILE, AND BOTH HALVES USED TO BE MISSING.** A
+     * paired PC could take an id minted for `cat.jpg` and negotiate it carrying `resume.pdf`
+     * (RemEx-tutz), or keep the name and inflate `holiday.jpg (1.0 KB)` into five gigabytes
+     * (RemEx-ccqb). Either way the phone accepted without prompting again, and the user had agreed to
+     * receive something else. The id proves a prompt was answered; the name and size prove it was
+     * answered about THIS.
      *
      * Exact comparison, deliberately — and the reason is a PC-side invariant rather than anything
      * about these two strings arriving together, which they do NOT: they come in two separate
@@ -114,7 +141,8 @@ class PushConsentRegistry(private val capacity: Int = DEFAULT_CAPACITY) {
      * while the transfer carried another. If it breaks again this check starts refusing honest
      * pushes, which is the safe direction to fail but an unhelpful one to debug.
      */
-    fun isGrantedFor(id: String, fileName: String): Boolean = granted[id] == fileName
+    fun isGrantedFor(id: String, fileName: String, size: Long): Boolean =
+        granted[id] == GrantedFile(fileName, size)
 
     /**
      * Forgets an id once its transfer is finished or abandoned.

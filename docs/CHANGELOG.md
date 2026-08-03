@@ -19,9 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Each ticket is now tied to the exact file name it was issued for, and a mismatch is refused. This
   needs a PC you have already paired with to exploit, which is the same attacker the ticket check
   itself was added to stop.
-  Two related gaps are deliberately **not** closed by this and are tracked separately: the prompt
-  still lists only the first five names when more files are offered, and the file size it shows is not
-  tied to the ticket the way the name now is.
+  **The size you were shown is tied to the ticket as well.** Otherwise a PC could offer
+  `holiday.jpg (1.0 KB)`, take the ticket you approved, and then send five gigabytes under the very
+  same name — your phone had nothing to compare the claim against, because the only size it knew was
+  the one the PC supplied at the last moment. It now compares against the figure you were shown, and
+  a file arriving without a believable size is refused rather than being allowed to write without
+  limit.
+  Separately, and on the PC rather than as a defence against one: the number sent is now taken from
+  the moment you were asked, so a file that changes size in between is not sent at all instead of
+  arriving as something other than what you agreed to.
+  One related gap is deliberately **not** closed and is tracked separately: the prompt still lists
+  only the first five names when more files than that are offered, and shows one combined size rather
+  than a size for each.
+  (`PushConsentRegistry.kt`, `FileHostHandler.kt`, `TransferSessionManager.cs`, `PingPongHandler.cs`;
+  RemEx-ccqb.)
   (`PushConsentRegistry.kt`, `AndroidFileTransferHost.kt`, `FileHostHandler.kt`; RemEx-tutz.)
 
 ### Fixed

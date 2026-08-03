@@ -834,10 +834,12 @@ public sealed class PingPongHandler(
 
         // One file offered, so one id back - the negotiation refuses any other count precisely so
         // this index is safe.
-        // THE SAME NAME THE OFFER CARRIED, not one re-derived from the path. Deriving it twice let
-        // the consent prompt show one name while the transfer carried another.
+        // THE SAME NAME AND SIZE THE OFFER CARRIED, not values re-derived from the path. Deriving the
+        // name twice let the consent prompt show one name while the transfer carried another; the
+        // size had the same shape of bug until RemEx-ccqb, and re-measuring it also left the phone
+        // with nothing to check the transfer's claim against.
         return await transferSessionManager.PushFileAsync(
-            clientId, outcome.TransferIds[0], absolutePath, fileName, webSocket, ct);
+            clientId, outcome.TransferIds[0], absolutePath, fileName, size, webSocket, ct);
     }
 
     private static RemexMessage MakeCommandResponse(bool success, string msg) => new()

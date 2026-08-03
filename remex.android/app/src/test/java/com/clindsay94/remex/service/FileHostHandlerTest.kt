@@ -395,7 +395,7 @@ class FileHostHandlerTest {
     @Test
     fun pushOffer_asThePcActuallySendsIt_isAccepted() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(mapOf("minted-id" to "pushed.txt"))
+        consent.grant(mapOf("minted-id" to GrantedFile("pushed.txt", 5)))
         val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
 
         h.handleControlMessage(
@@ -414,6 +414,57 @@ class FileHostHandlerTest {
     }
 
     /**
+     * A granted id carrying a DIFFERENT size than the one the consent prompt showed is refused.
+     *
+     * Exercised at the handler rather than only on the registry, because only this reaches the
+     * `"size"` wire key — every other push test matches its size by coincidence, the `offer()`
+     * helper's `"size":5` happening to equal the grants. Reading the wrong key here would bind
+     * everything to 0 and go unnoticed. (RemEx-ccqb.)
+     */
+    @Test
+    fun pushOffer_atADifferentSizeThanGranted_isRefused() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(mapOf("minted-id" to GrantedFile("pushed.txt", 5)))
+        val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"minted-id","mode":"push","fileName":"pushed.txt","size":5368709120}}
+            """.trimIndent()
+        )
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertFalse(
+            "five gigabytes under a grant for five bytes is the whole bead",
+            payload.getBoolean("accepted"),
+        )
+    }
+
+    /**
+     * A negative declared size is refused outright, for every mode.
+     *
+     * It is reachable — `Size` is a bare long in remex.core with no validator — and everything
+     * downstream is written assuming it is not: a negative would switch off the byte ceiling in
+     * HostReceiveSession and let the completion check pass, which is an unbounded write into staging.
+     */
+    @Test
+    fun offer_withANegativeSize_isRefused() = runBlocking {
+        val (h, sender, _) = build(sampleTree(), granted = true)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"any-id","mode":"upload","destRoot":"root1","fileName":"a.txt","size":-1}}
+            """.trimIndent()
+        )
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertFalse(payload.getBoolean("accepted"))
+        assertTrue(payload.getString("declineReason").contains("negative size"))
+    }
+
+    /**
      * A destRoot the PC sends anyway is IGNORED for a push.
      *
      * The honest PC sends none, so nothing legitimate depends on it — which means any push that does
@@ -426,7 +477,7 @@ class FileHostHandlerTest {
     @Test
     fun pushOffer_ignoresADestRootThePcTriesToChoose() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(mapOf("minted-id" to "pushed.txt"))
+        consent.grant(mapOf("minted-id" to GrantedFile("pushed.txt", 5)))
         val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
 
         // "not-shared" is NOT among the shared roots — which is the case that matters, since a
@@ -458,7 +509,7 @@ class FileHostHandlerTest {
     @Test
     fun pushOffer_withNoWritableSharedFolder_isRefusedAndTheGrantIsReleased() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(mapOf("minted-id" to "pushed.txt"))
+        consent.grant(mapOf("minted-id" to GrantedFile("pushed.txt", 5)))
         val readOnlyOnly = listOf(RootDescriptor("root1", "Shared", false, false, false, false, false))
         val (h, sender, _) =
             build(sampleTree(), granted = true, pushConsent = consent, roots = readOnlyOnly)
@@ -480,7 +531,7 @@ class FileHostHandlerTest {
         assertFalse(
             "a refused push must give its consent id back, or the registry keeps authorising a " +
                 "transfer that will never happen",
-            consent.isGrantedFor("minted-id", "pushed.txt"),
+            consent.isGrantedFor("minted-id", "pushed.txt", 5),
         )
     }
 
@@ -488,7 +539,7 @@ class FileHostHandlerTest {
     @Test
     fun pushOffer_withAConsentedId_isAccepted() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(mapOf("minted-id" to "pushed.txt"))
+        consent.grant(mapOf("minted-id" to GrantedFile("pushed.txt", 5)))
         val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
 
         h.handleControlMessage(offer("minted-id", FileTransferModes.PUSH))
@@ -516,14 +567,14 @@ class FileHostHandlerTest {
     @Test
     fun completingAPush_releasesItsGrant() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(mapOf("once-only" to "pushed.txt"))
+        consent.grant(mapOf("once-only" to GrantedFile("pushed.txt", 5)))
         val (h, _, _) = build(sampleTree(), granted = true, pushConsent = consent)
 
         h.handleControlMessage(
             """{"type":"file_transfer_complete","fileTransferComplete":{"transferId":"once-only"}}"""
         )
 
-        assertFalse(consent.isGrantedFor("once-only", "pushed.txt"))
+        assertFalse(consent.isGrantedFor("once-only", "pushed.txt", 5))
     }
 
     /**
@@ -541,7 +592,7 @@ class FileHostHandlerTest {
     @Test
     fun pushOffer_underAGrantForADifferentFile_isRefused() = runBlocking {
         val consent = PushConsentRegistry()
-        consent.grant(mapOf("minted-id" to "cat.jpg"))
+        consent.grant(mapOf("minted-id" to GrantedFile("cat.jpg", 5)))
         val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
 
         h.handleControlMessage(
@@ -559,6 +610,6 @@ class FileHostHandlerTest {
 
         // The grant survives: this offer failed its own check, and discarding the grant on the
         // strength of a message that did not match would let a bad offer cancel a good one.
-        assertTrue(consent.isGrantedFor("minted-id", "cat.jpg"))
+        assertTrue(consent.isGrantedFor("minted-id", "cat.jpg", 5))
     }
 }

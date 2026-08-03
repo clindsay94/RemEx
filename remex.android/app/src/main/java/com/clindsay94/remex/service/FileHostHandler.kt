@@ -507,10 +507,24 @@ class FileHostHandler(
         val destRoot = if (req.has("destRoot")) req.optString("destRoot") else null
         val destRelativePath = if (req.has("destRelativePath")) req.optString("destRelativePath") else null
         val fileName = req.optString("fileName")
+        // Defaulted to 0, NOT to the -1 that mintPushGrants uses, and the difference is load-bearing:
+        // an offer that omits the size must not accidentally match a grant minted from an offer that
+        // also omitted it. Harmonising these two defaults would silently reopen that hole with every
+        // test still green. (RemEx-ccqb.)
         val size = req.optLong("size", 0L)
         val resumeRequested = req.optBoolean("resumeRequested", false)
 
         if (transferId.isBlank()) return
+
+        // `size` is a bare long on the wire — remex.core declares it `required long Size` with no
+        // validator — so a peer can state a negative one. Nothing downstream is written to expect
+        // that: it would disable the byte ceiling in HostReceiveSession and let the completion check
+        // wave the transfer through, which is the same unbounded-write hole a zero size used to open.
+        // Refused for every mode, because an upload has no business declaring one either.
+        if (size < 0) {
+            sendReady(transferId, false, 0, "A transfer cannot declare a negative size.")
+            return
+        }
         when (mode) {
             FileTransferModes.DOWNLOAD -> beginHostSend(transferId, destRoot, destRelativePath, fileName)
             FileTransferModes.UPLOAD ->
@@ -525,15 +539,17 @@ class FileHostHandler(
                 // Checked HERE rather than in beginHostReceive because UPLOAD shares that function
                 // and must not be gated - an upload targets a folder the user already shared for
                 // writing, so the share is the consent.
-                // Checked against the FILE NAME too, not the id alone (RemEx-tutz). An id proves some
-                // prompt was answered; only the name proves it was answered about this file. Without
-                // it, an id minted for one file could be negotiated carrying another and accepted with
-                // no second prompt.
+                // Checked against the FILE NAME AND SIZE, not the id alone. An id proves some prompt
+                // was answered; only the name and size prove it was answered about this file. Without
+                // the name, an id minted for one file could be negotiated carrying another
+                // (RemEx-tutz); without the size, the same name could arrive five gigabytes larger
+                // than the figure the prompt showed (RemEx-ccqb). Both were accepted with no second
+                // prompt.
                 //
                 // No release on this path, unlike the declines inside beginHostReceive: the id may be
                 // perfectly valid and merely mis-addressed, and throwing away a grant on the strength
                 // of a message that failed its own check would let a bad offer cancel a good one.
-                if (!pushConsent.isGrantedFor(transferId, fileName)) {
+                if (!pushConsent.isGrantedFor(transferId, fileName, size)) {
                     sendReady(transferId, false, 0, "This push was not accepted on the device.")
                     return
                 }
@@ -860,7 +876,14 @@ class FileHostHandler(
                         close()
                         return
                     }
-                    if (expectedSize > 0 && bytesReceived + payload.size > expectedSize) {
+                    // `>= 0`, not `> 0`, AND REVIEW CAUGHT WHY THAT MATTERS. A declared size of zero
+                    // used to switch this ceiling OFF entirely, which was survivable only while
+                    // nothing else trusted the number. Binding the size to consent (RemEx-ccqb) made
+                    // zero a value the user could be shown and could approve — so a peer offering
+                    // "holiday.jpg (0 B)", getting a grant for it, and then streaming without limit
+                    // was the bead's own attack surviving at the one size it forgot to cover.
+                    // Negative sizes are refused before a session is built, so this covers the rest.
+                    if (expectedSize >= 0 && bytesReceived + payload.size > expectedSize) {
                         FileTransferChannelClient.sendError(transferId, "Overshot declared size.")
                         deleteStaging()
                         receiveSessions.remove(transferId)

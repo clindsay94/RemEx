@@ -534,8 +534,14 @@ public sealed class TransferSessionManager : IDisposable
     /// thing that differs about a push is who spoke first.
     /// </para>
     /// </remarks>
+    /// <param name="offeredSize">
+    /// The size the CONSENT PROMPT SHOWED, not one measured again here (RemEx-ccqb). The caller owes
+    /// it a file that has finished being written: this aborts rather than sending a file whose length
+    /// no longer agrees, so pointing it at something still growing would refuse every push.
+    /// </param>
     public async Task<bool> PushFileAsync(
-        string clientId, string transferId, string absolutePath, string fileName, WebSocket controlWs, CancellationToken ct)
+        string clientId, string transferId, string absolutePath, string fileName, long offeredSize,
+        WebSocket controlWs, CancellationToken ct)
     {
         var ready = new TaskCompletionSource<FileTransferReady>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -547,15 +553,41 @@ public sealed class TransferSessionManager : IDisposable
         FileStream? source = null;
         try
         {
-            long size;
             try
             {
                 source = File.OpenRead(absolutePath);
-                size = source.Length;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _logger.LogWarning(ex, "Cannot push {TransferId}: the file could not be opened.", transferId);
+                return false;
+            }
+
+            // **THE OFFERED SIZE IS WHAT GOES ON THE WIRE, AND A FILE THAT NO LONGER MATCHES IT IS
+            // NOT SENT.** The number sent used to be measured HERE, independently of the one the
+            // consent prompt was built from - two derivations from a file that could change in
+            // between, which is the same mistake the name above carries a warning about and which
+            // once cost a prompt showing one name while the transfer carried another.
+            //
+            // The file is still looked at twice; what changed is that the second look no longer
+            // decides anything, it only checks. Note the two measurements are not interchangeable
+            // even for an unchanged file: FileInfo.Length reads the cached directory entry while
+            // FileStream.Length queries the handle, and on Windows the directory entry can lag while
+            // another process holds the file open for writing.
+            //
+            // Deriving it twice also made the receiver unable to check it: it has no way to tell a
+            // grown file from a peer inflating the number after consent, so it had to trust whatever
+            // the transfer offer claimed. Sending one number the user actually saw is what lets the
+            // phone refuse the other case (RemEx-ccqb).
+            //
+            // Aborting rather than re-offering: the user agreed to receive a specific thing, and this
+            // is no longer that thing. Asking again is the caller's business, not ours.
+            if (source.Length != offeredSize)
+            {
+                _logger.LogWarning(
+                    "Not pushing {TransferId}: {FileName} is now {ActualSize} bytes, but {OfferedSize} "
+                        + "was offered and agreed to.",
+                    transferId, fileName, source.Length, offeredSize);
                 return false;
             }
 
@@ -569,7 +601,7 @@ public sealed class TransferSessionManager : IDisposable
                         TransferId = transferId,
                         Mode = "push",
                         FileName = fileName,
-                        Size = size,
+                        Size = offeredSize,
                     },
                 },
                 ct);
@@ -615,7 +647,7 @@ public sealed class TransferSessionManager : IDisposable
             // Handed off: the streaming task owns the stream from here and disposes it in its finally.
             var streaming = source;
             source = null;
-            _ = Task.Run(() => StreamSenderAsync(channel, session, streaming, size, controlWs, ct), CancellationToken.None);
+            _ = Task.Run(() => StreamSenderAsync(channel, session, streaming, offeredSize, controlWs, ct), CancellationToken.None);
             return true;
         }
         catch (Exception ex) when (ex is WebSocketException or InvalidOperationException)

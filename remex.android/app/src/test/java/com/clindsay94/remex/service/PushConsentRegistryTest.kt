@@ -17,18 +17,64 @@ import org.junit.Test
  */
 class PushConsentRegistryTest {
 
+    /** Files whose sizes differ from each other, so a size read from the wrong entry shows up. */
     private fun files(vararg names: String) =
         JSONArray().apply {
-            names.forEach { put(org.json.JSONObject().apply { put("name", it); put("size", 1) }) }
+            names.forEachIndexed { i, name ->
+                put(org.json.JSONObject().apply { put("name", name); put("size", 100L + i) })
+            }
         }
 
     @Test
     fun `each minted id is bound to its own file, in order`() {
         val minted = mintPushGrants(files("cat.jpg", "dog.jpg", "bird.jpg"))
 
-        // THE ALIGNMENT ASSERTION. A single-file offer cannot tell "bound to its own name" apart from
-        // "bound to whatever name happened to be first", so it takes three to say anything.
-        assertEquals(listOf("cat.jpg", "dog.jpg", "bird.jpg"), minted.values.toList())
+        // THE ALIGNMENT ASSERTION. A single-file offer cannot tell "bound to its own entry" apart
+        // from "bound to whatever entry happened to be first", so it takes three to say anything —
+        // and the sizes differ per entry so a name read from index i with a size from index 0 fails
+        // here rather than passing on the name alone.
+        assertEquals(
+            listOf(
+                GrantedFile("cat.jpg", 100L),
+                GrantedFile("dog.jpg", 101L),
+                GrantedFile("bird.jpg", 102L),
+            ),
+            minted.values.toList(),
+        )
+    }
+
+    @Test
+    fun `a grant refuses its own file at a different size`() {
+        // The other half of RemEx-ccqb. The prompt shows a size as well as a name, so a PC that
+        // offers holiday.jpg at 1 KB and then negotiates the same id and name carrying five
+        // gigabytes is sending something the user was never asked about.
+        val registry = PushConsentRegistry()
+        registry.grant(mapOf("id-1" to GrantedFile("holiday.jpg", 1024)))
+
+        assertTrue(registry.isGrantedFor("id-1", "holiday.jpg", 1024))
+        assertFalse(registry.isGrantedFor("id-1", "holiday.jpg", 5_368_709_120L))
+        assertFalse("smaller is still not what was agreed", registry.isGrantedFor("id-1", "holiday.jpg", 0))
+    }
+
+    @Test
+    fun `an offer that states no size cannot be matched at all`() {
+        // optLong's default is -1 here rather than 0, so an absent size fails closed: a real transfer
+        // offer carries a non-negative size, and 0 is a legitimate one (an empty file).
+        val noSize = JSONArray().apply { put(org.json.JSONObject().apply { put("name", "a.txt") }) }
+        val minted = mintPushGrants(noSize)
+
+        assertEquals(-1L, minted.values.single().size)
+
+        val registry = PushConsentRegistry()
+        registry.grant(minted)
+        val id = minted.keys.single()
+        assertFalse(registry.isGrantedFor(id, "a.txt", 0))
+        assertFalse(registry.isGrantedFor(id, "a.txt", 100))
+
+        // THE ASSERTION THE SENTINEL'S OWN ARGUMENT IMPLIES, and it failed before the -1 grants were
+        // dropped: remex.core declares Size as a bare long with no validator, so a peer can simply
+        // STATE -1 in both messages and match a sentinel that was only ever meant to mean "absent".
+        assertFalse("a stated -1 must not match an unstated one", registry.isGrantedFor(id, "a.txt", -1))
     }
 
     @Test
@@ -49,7 +95,7 @@ class PushConsentRegistryTest {
         val minted = mintPushGrants(malformed)
 
         assertEquals("an id is still minted per array slot, to keep index alignment", 2, minted.size)
-        assertTrue(minted.values.all { it.isEmpty() })
+        assertTrue(minted.values.all { it.name.isEmpty() })
 
         val registry = PushConsentRegistry()
         registry.grant(minted)
@@ -64,44 +110,44 @@ class PushConsentRegistryTest {
     @Test
     fun `a grant authorises its own file and refuses another`() {
         val registry = PushConsentRegistry()
-        registry.grant(mapOf("id-1" to "cat.jpg"))
+        registry.grant(mapOf("id-1" to GrantedFile("cat.jpg", 1024)))
 
-        assertTrue(registry.isGrantedFor("id-1", "cat.jpg"))
-        assertFalse("the whole point of the bead", registry.isGrantedFor("id-1", "resume.pdf"))
-        assertFalse("an id nobody granted", registry.isGrantedFor("id-2", "cat.jpg"))
+        assertTrue(registry.isGrantedFor("id-1", "cat.jpg", 1024))
+        assertFalse("the whole point of the bead", registry.isGrantedFor("id-1", "resume.pdf", 1024))
+        assertFalse("an id nobody granted", registry.isGrantedFor("id-2", "cat.jpg", 1024))
     }
 
     @Test
     fun `matching is exact`() {
         val registry = PushConsentRegistry()
-        registry.grant(mapOf("id-1" to "Photo.JPG"))
+        registry.grant(mapOf("id-1" to GrantedFile("Photo.JPG", 1024)))
 
         // Case and whitespace cannot legitimately differ - both copies come from one PC-side local
         // passed unmodified to both messages - so any difference is a crafted offer, not a quirk.
-        assertFalse(registry.isGrantedFor("id-1", "photo.jpg"))
-        assertFalse(registry.isGrantedFor("id-1", "Photo.JPG "))
+        assertFalse(registry.isGrantedFor("id-1", "photo.jpg", 1024))
+        assertFalse(registry.isGrantedFor("id-1", "Photo.JPG ", 1024))
     }
 
     @Test
     fun `the oldest grant is evicted first at capacity`() {
         val registry = PushConsentRegistry(capacity = 2)
-        registry.grant(mapOf("old" to "a.txt"))
-        registry.grant(mapOf("mid" to "b.txt"))
-        registry.grant(mapOf("new" to "c.txt"))
+        registry.grant(mapOf("old" to GrantedFile("a.txt", 1)))
+        registry.grant(mapOf("mid" to GrantedFile("b.txt", 1)))
+        registry.grant(mapOf("new" to GrantedFile("c.txt", 1)))
 
         assertEquals(2, registry.size)
-        assertFalse("the oldest should go", registry.isGrantedFor("old", "a.txt"))
-        assertTrue(registry.isGrantedFor("mid", "b.txt"))
-        assertTrue(registry.isGrantedFor("new", "c.txt"))
+        assertFalse("the oldest should go", registry.isGrantedFor("old", "a.txt", 1))
+        assertTrue(registry.isGrantedFor("mid", "b.txt", 1))
+        assertTrue(registry.isGrantedFor("new", "c.txt", 1))
     }
 
     @Test
     fun `releasing a grant withdraws it`() {
         val registry = PushConsentRegistry()
-        registry.grant(mapOf("id-1" to "cat.jpg"))
+        registry.grant(mapOf("id-1" to GrantedFile("cat.jpg", 1024)))
         registry.release("id-1")
 
-        assertFalse(registry.isGrantedFor("id-1", "cat.jpg"))
+        assertFalse(registry.isGrantedFor("id-1", "cat.jpg", 1024))
         // Idempotent: handleComplete and the decline paths can both release the same id.
         registry.release("id-1")
     }
