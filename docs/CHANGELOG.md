@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Tapping Connect no longer stutters the app while it unlocks your saved pairing.** Your PC's
+  identity is stored encrypted on the phone, and the first time the app needs it after starting up it
+  has to ask Android's secure hardware for the key — which on some phones takes a noticeable moment,
+  and on a brand-new install has to create the key first. That was happening on the thread that draws
+  the screen, so the app could freeze briefly on the first tap. It now happens in the background.
+  Nothing about what is stored, or how securely, has changed.
+
 - **Tapping Connect with a PIN no longer freezes the app while it pairs.** Pairing talks to your PC
   over the network, and if the PC is switched off or unreachable the phone waits a long time before
   it can say so — up to a minute and a half for the handshake, and another half minute for the PIN.

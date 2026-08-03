@@ -13,7 +13,9 @@ import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.aead.AesGcmKeyManager
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import java.util.Base64
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 // One DataStore instance per app (backed by applicationContext).
 private val Context.pinnedHostDataStore: DataStore<Preferences> by
@@ -37,6 +39,21 @@ private val Context.reconnectSecretDataStore: DataStore<Preferences> by
 
 /**
  * Encrypted storage for paired host SPKI hashes.
+ *
+ * **EVERY SUSPEND FUNCTION HERE HOPS TO [Dispatchers.IO] ITSELF (RemEx-7257).** Be precise about what that
+ * buys, because most of what looks blocking here is not: DataStore already does its file I/O on its
+ * own IO scope, so `data.first()` and `edit {}` never blocked the caller. The genuinely blocking work
+ * is [aead] — an `AndroidKeysetManager` build, which is a SharedPreferences read plus an Android
+ * Keystore round trip, and on first run a key GENERATION in the TEE. That ran on whichever thread
+ * called in, and RemexClientManager calls [getPin] from a `Dispatchers.Main` scope on every Connect
+ * tap, pin or no pin.
+ *
+ * The hop is inside rather than at the call sites for the reason it is inside `RemexCoreClient`
+ * (RemEx-66rf, RemEx-uach): a rule every caller must remember is a rule a new caller will not, and
+ * this store has callers in pairing, connection, file transfer, two screens and a view model.
+ * Nesting is free —
+ * a `withContext` to the dispatcher you are already on does not re-dispatch — so the functions here
+ * that call each other pay nothing.
  *
  * Each value is encrypted via Tink AES-256-GCM AEAD before being written to DataStore. The host
  * identifier is used as associated data, binding each ciphertext to its key so that a moved/swapped
@@ -74,8 +91,18 @@ object PinnedHostStore {
                     .apply()
 
                 // Clear the DataStore since its encrypted contents are now unreadable.
-                // We use runBlocking here because we are inside a synchronized block that must return an Aead synchronously.
-                // It's safe because DataStore edit runs quickly and this is an exceptional recovery path.
+                //
+                // runBlocking because this is inside a `synchronized` block, which cannot suspend —
+                // that is a language constraint, not a preference. What makes it acceptable is that
+                // every public function now enters on Dispatchers.IO (RemEx-7257), so the thread this
+                // parks is an IO worker rather than the UI thread it could previously have been. It
+                // is also the exceptional recovery path: reached only when Tink or the Keystore is
+                // already corrupt.
+                //
+                // It is NOT unavoidable, only deferred: a Mutex instead of `synchronized` would let
+                // aead() suspend and this become an ordinary edit, removing the runBlocking rather
+                // than relocating it (RemEx-v3bd). That restructures the only auth-critical key
+                // initialisation path, which did not belong in a threading fix.
                 kotlinx.coroutines.runBlocking {
                     context.applicationContext.pinnedHostDataStore.edit { it.clear() }
                 }
@@ -98,7 +125,12 @@ object PinnedHostStore {
 
     private fun prefKey(hostId: String) = stringPreferencesKey(hostId)
 
-    suspend fun setPin(context: Context, hostId: String, spkiHash: String) {
+    // The explicit <Unit> on this and the other five write functions is NOT decoration. An
+    // expression body infers its return type from its tail expression, and DataStore's `edit`
+    // returns Preferences — so without it these silently widen from Unit to Preferences, handing
+    // any caller a snapshot of the whole store. Caught by review on exactly the two that were
+    // missed here.
+    suspend fun setPin(context: Context, hostId: String, spkiHash: String) = withContext<Unit>(Dispatchers.IO) {
         val cipher =
                 aead(context)
                         .encrypt(
@@ -111,10 +143,10 @@ object PinnedHostStore {
         }
     }
 
-    suspend fun getPin(context: Context, hostId: String): String? {
+    suspend fun getPin(context: Context, hostId: String): String? = withContext(Dispatchers.IO) {
         val prefs = context.applicationContext.pinnedHostDataStore.data.first()
-        val encoded = prefs[prefKey(hostId)] ?: return null
-        return try {
+        val encoded = prefs[prefKey(hostId)] ?: return@withContext null
+        try {
             val cipher = Base64.getDecoder().decode(encoded)
             val plain = aead(context).decrypt(cipher, hostId.toByteArray(Charsets.UTF_8))
             String(plain, Charsets.UTF_8)
@@ -124,7 +156,7 @@ object PinnedHostStore {
         }
     }
 
-    suspend fun removePin(context: Context, hostId: String) {
+    suspend fun removePin(context: Context, hostId: String) = withContext<Unit>(Dispatchers.IO) {
         context.applicationContext.pinnedHostDataStore.edit { prefs ->
             prefs.remove(prefKey(hostId))
         }
@@ -136,7 +168,7 @@ object PinnedHostStore {
      * on connect to answer the host's proof-of-possession reconnect challenge; without it a paired
      * client is challenged and rejected as unverified. (RemEx-xuo)
      */
-    suspend fun setReconnectSecret(context: Context, hostId: String, secret: String) {
+    suspend fun setReconnectSecret(context: Context, hostId: String, secret: String) = withContext<Unit>(Dispatchers.IO) {
         val cipher =
                 aead(context)
                         .encrypt(
@@ -149,10 +181,10 @@ object PinnedHostStore {
         }
     }
 
-    suspend fun getReconnectSecret(context: Context, hostId: String): String? {
+    suspend fun getReconnectSecret(context: Context, hostId: String): String? = withContext(Dispatchers.IO) {
         val prefs = context.applicationContext.reconnectSecretDataStore.data.first()
-        val encoded = prefs[prefKey(hostId)] ?: return null
-        return try {
+        val encoded = prefs[prefKey(hostId)] ?: return@withContext null
+        try {
             val cipher = Base64.getDecoder().decode(encoded)
             val plain = aead(context).decrypt(cipher, hostId.toByteArray(Charsets.UTF_8))
             String(plain, Charsets.UTF_8)
@@ -174,9 +206,9 @@ object PinnedHostStore {
      *
      * Written under EVERY alias, so any one of them resolves the whole set.
      */
-    suspend fun recordAliases(context: Context, aliases: List<String>) {
+    suspend fun recordAliases(context: Context, aliases: List<String>) = withContext<Unit>(Dispatchers.IO) {
         val fresh = aliases.filter { it.isNotBlank() }.distinct()
-        if (fresh.size < 2) return
+        if (fresh.size < 2) return@withContext
 
         // MERGE, do not overwrite. The same PC gets re-paired at new addresses over time - LAN then
         // Tailscale, or after a DHCP change - and each pairing knows only the address it just used.
@@ -196,9 +228,9 @@ object PinnedHostStore {
 
     private const val ALIAS_SEPARATOR = "\u001F"
 
-    private suspend fun recordedAliases(context: Context, key: String): List<String>? {
+    private suspend fun recordedAliases(context: Context, key: String): List<String>? = withContext(Dispatchers.IO) {
         val prefs = context.applicationContext.hostAliasDataStore.data.first()
-        return prefs[prefKey(key)]?.split(ALIAS_SEPARATOR)?.filter { it.isNotBlank() }
+        prefs[prefKey(key)]?.split(ALIAS_SEPARATOR)?.filter { it.isNotBlank() }
     }
 
     /**
@@ -214,7 +246,7 @@ object PinnedHostStore {
      * Being one function is the point. Two calls that must always happen together is an invariant
      * nobody can see at a call site; one call is an invariant nobody can break.
      */
-    suspend fun forgetHost(context: Context, hostId: String) {
+    suspend fun forgetHost(context: Context, hostId: String) = withContext<Unit>(Dispatchers.IO) {
         // EVERY KEY PAIRING WROTE UNDER, not just the one the caller happens to hold (RemEx-1phe).
         // Pairing stores the pin under both the mDNS hostId and the typed host, and the secret under
         // those PLUS the SPKI hash - so clearing one key left the others behind, and the two paths
@@ -257,16 +289,16 @@ object PinnedHostStore {
         }
     }
 
-    suspend fun removeReconnectSecret(context: Context, hostId: String) {
+    suspend fun removeReconnectSecret(context: Context, hostId: String) = withContext<Unit>(Dispatchers.IO) {
         context.applicationContext.reconnectSecretDataStore.edit { prefs ->
             prefs.remove(prefKey(hostId))
         }
     }
 
-    suspend fun listPaired(context: Context): Map<String, String> {
+    suspend fun listPaired(context: Context): Map<String, String> = withContext(Dispatchers.IO) {
         val aead = aead(context)
         val prefs = context.applicationContext.pinnedHostDataStore.data.first()
-        return buildMap {
+        buildMap {
             for ((key, value) in prefs.asMap()) {
                 val hostId = key.name
                 val encoded = value as? String ?: continue
