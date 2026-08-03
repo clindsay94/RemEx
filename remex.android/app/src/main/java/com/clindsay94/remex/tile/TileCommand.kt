@@ -74,6 +74,45 @@ internal fun sendTileCommand(action: String, parameters: JSONObject = JSONObject
 }
 
 /**
+ * Broadcasts a Wake-on-LAN packet from THIS PHONE, for a tile whose whole job is waking a PC that is
+ * off (RemEx-wgpm).
+ *
+ * **NOT THE WAKEONLAN COMMAND VERB, WHICH IS WHAT THIS TILE USED TO SEND.** That verb travels over
+ * the control socket and asks the PC to do the broadcasting — so it needed a PC that was already
+ * awake and connected, which is the one state in which nothing needs waking. The MAC it sent came
+ * from `macAddressFlow`, which falls back to the host's own reported MAC, so the PC was broadcasting
+ * a wake packet FOR ITSELF onto its own network: a no-op, reachable only when its target was already
+ * on. The tile meanwhile advertises itself as available whenever a MAC is configured, connection or
+ * not — which is what the phone-side path actually supports.
+ *
+ * `WakePc` sends the magic packet from the phone's own interfaces and needs no connection at all,
+ * which is what the Dashboard and Remote Control screens have always used.
+ *
+ * The command verb itself is NOT dead — `PingPongHandler`'s WAKEONLAN case still serves the PC's own
+ * Wake-on-LAN UI and the TCP script ingress, both of which legitimately wake a third machine from an
+ * always-on PC.
+ */
+internal fun sendTileWake(macAddress: String, broadcastIp: String, port: Int) {
+    launchTileWork {
+        val response = RemexCoreClient.WakePc(macAddress, broadcastIp, port).getOrNull()
+
+        // runCatching, not a bare JSONObject(...) — see the identical note on
+        // WidgetCommand.reportedSuccess. TileCommandScope has a SupervisorJob and no
+        // CoroutineExceptionHandler, and a supervisor stops a failure reaching SIBLINGS rather than
+        // swallowing it: a JSONException here would reach the thread's default handler and kill the
+        // process, from a path whose only job is to log quietly.
+        val sent =
+            response != null &&
+                runCatching { JSONObject(response).optBoolean("success", false) }
+                    .getOrDefault(false)
+
+        // Loggable at all only since RemEx-52n0, which stopped the native side reporting success
+        // unconditionally. Before that there was nothing here worth writing down.
+        if (!sent) Log.w(TAG, "Tile wake did not leave the phone: $response")
+    }
+}
+
+/**
  * Runs a tile's fire-and-forget work somewhere it will not be cancelled out from under it.
  *
  * For tiles that must read something before they can send — Wake-on-LAN needs the stored MAC address

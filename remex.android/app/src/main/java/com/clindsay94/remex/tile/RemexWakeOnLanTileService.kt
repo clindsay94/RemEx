@@ -23,7 +23,14 @@ class RemexWakeOnLanTileService : TileService() {
     private var listenJob: Job? = null
 
     private fun executeCommand() {
-        // WoL doesn't require an active connection — it wakes the PC up.
+        // WoL doesn't require an active connection — it wakes the PC up. **THAT WAS TRUE OF THE
+        // INTENT AND FALSE OF THE CODE UNTIL RemEx-wgpm.** This used to send the WAKEONLAN command
+        // VERB over the control socket, asking the PC to broadcast — for its own MAC, since
+        // macAddressFlow falls back to the host's reported one. So the tile could only fire when the
+        // PC was awake and connected, and what it then did was ask that PC to wake itself. A tile
+        // whose entire purpose is waking a sleeping PC worked only when the PC was not asleep, and
+        // did nothing when it did work. sendTileWake broadcasts from this phone, as the Dashboard
+        // and Remote Control screens do.
         //
         // NOT ON serviceScope, WHICH onDestroy CANCELS (RemEx-66rf). The intent recorded when this
         // was written is that "a tapped wake still goes out" after the panel closes, and serviceScope
@@ -40,15 +47,13 @@ class RemexWakeOnLanTileService : TileService() {
         launchTileWork {
             val macAddress = settingsManager.macAddressFlow.first()
             if (macAddress.isNotEmpty()) {
-                sendTileCommand(
-                    "WAKEONLAN",
-                    JSONObject().apply {
-                        put("MacAddress", macAddress)
-                        // Using default broadcast IP and port as per PingPongHandler
-                        put("BroadcastIp", "255.255.255.255")
-                        put("Port", "9")
-                    },
-                )
+                // The user's configured broadcast address, not a hardcoded 255.255.255.255 — the
+                // screens have always read this, and it matters on networks where the global
+                // broadcast is dropped and a subnet-directed one is required. Read inside the check
+                // so a tap with no MAC configured does not touch DataStore for nothing. Its default
+                // IS 255.255.255.255, so a user who never set one is unaffected.
+                val broadcastIp = settingsManager.broadcastIpFlow.first()
+                sendTileWake(macAddress, broadcastIp, 9)
             }
         }
     }

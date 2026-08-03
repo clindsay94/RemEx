@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The Wake PC quick-settings tile could only work when the PC was already awake.** It asked the PC
+  to send the wake signal — which of course needs a PC that is switched on and connected, the one
+  situation where nothing needs waking. And what it asked for was the PC to wake *itself*, so even
+  then it did nothing. The tile offered itself as available whenever you had saved a MAC address,
+  connected or not, so there was nothing to suggest it would not work.
+  It now sends the wake signal from your phone, the same way the Dashboard and Remote Control buttons
+  always have, and uses the broadcast address you configured rather than a fixed one. If you never
+  set one, that is the same address it used before.
+  (`RemexWakeOnLanTileService.kt`, `TileCommand.kt`; RemEx-wgpm.)
+
 - **Accepting a file and then getting nothing now tells you why.** When you agreed to receive a file
   from the PC and it could not be saved, your phone said nothing at all — the reason went into a log
   on the PC, which you were never going to read. That is indistinguishable from the app being broken,

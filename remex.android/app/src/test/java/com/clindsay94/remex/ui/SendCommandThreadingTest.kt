@@ -6,7 +6,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Guards the one thing that keeps `RemexCoreClient.SendCommand` off the main thread (RemEx-66rf).
+ * Guards properties of the native command path that no compiler can see.
+ *
+ * Two unrelated ones now live here, both source-text checks because the failures are invisible at
+ * build time: that `RemexCoreClient.SendCommand` stays off the main thread (RemEx-66rf), and that no
+ * Quick Settings tile routes a Wake-on-LAN through the PC (RemEx-wgpm). They share a technique
+ * rather than a subject; if a third arrives, split them.
+ *
+ * On the first:
  *
  * The native export now WAITS for the PC's real answer — up to ten seconds if the host has gone
  * quiet — where it used to fire the send into a discarded task and return "dispatched" instantly.
@@ -105,6 +112,61 @@ class SendCommandThreadingTest {
             Regex("""withContext\(\s*Dispatchers\.(IO|Default)\s*\)""").containsMatchIn(guardedRegion),
         )
     }
+
+    /**
+     * The Wake-on-LAN tile broadcasts from the PHONE, not via the PC (RemEx-wgpm).
+     *
+     * It used to send the WAKEONLAN command verb over the control socket, asking the PC to do the
+     * broadcasting — for the PC's own MAC, since macAddressFlow falls back to the host's reported
+     * one. So it could only fire when the PC was awake and connected, and what it then asked for was
+     * that PC to wake itself. Its own comment claimed the opposite.
+     *
+     * Worth a guard because nothing else can see it: both spellings compile, both send something,
+     * and the difference only shows up on hardware that is switched off — the one state no test here
+     * can reach.
+     *
+     * **SCANS THE WHOLE PACKAGE, NOT JUST THE TILE.** Checking only the tile file left a hole one
+     * file wide: `sendTileWake` sits directly beside `sendTileCommand` in `TileCommand.kt` and is a
+     * near-copy of it, so reimplementing it through the verb would restore the exact defect with the
+     * guard still green.
+     */
+    @Test
+    fun `no tile sends its wake through the PC`() {
+        val tileDir = File(repoRoot(), "remex.android/app/src/main/java/com/clindsay94/remex/tile")
+        assertTrue("expected the tile package at ${tileDir.path}", tileDir.isDirectory)
+
+        val sources = tileDir.listFiles { f: File -> f.name.endsWith(".kt") }?.toList().orEmpty()
+        assertTrue("expected tile sources to scan", sources.size >= 8)
+
+        for (source in sources) {
+            val code =
+                source.readText().replace("\r\n", "\n")
+                    .replace(Regex("""/\*[\s\S]*?\*/"""), "")
+                    .replace(Regex("""//.*"""), "")
+
+            assertFalse(
+                "${source.name} sends the WAKEONLAN command verb. That asks the PC to broadcast, so " +
+                    "it needs the PC awake and connected — precisely when a wake tile is not wanted. " +
+                    "Broadcast from the phone via RemexCoreClient.WakePc instead.",
+                "WAKEONLAN" in code,
+            )
+        }
+
+        val helper = File(tileDir, "TileCommand.kt").readText()
+        assertTrue(
+            "sendTileWake must reach RemexCoreClient.WakePc — the phone-side broadcast is the whole " +
+                "point of the fix",
+            "RemexCoreClient.WakePc(" in helper,
+        )
+    }
+
+    private fun repoRoot(): File =
+        System.getProperty("remex.repoRoot")?.let(::File)
+            ?: File(".").absoluteFile.let { start ->
+                generateSequence(start) { it.parentFile }
+                    .firstOrNull { File(it, "remex.android").isDirectory }
+            }
+            ?: error("could not locate the repository root")
 
     @Test
     fun `no tile service calls SendCommand outside a coroutine`() {
