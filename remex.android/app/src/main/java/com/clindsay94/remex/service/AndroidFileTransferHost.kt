@@ -247,25 +247,27 @@ object AndroidFileTransferHost {
         FilePeerIdentity.deviceId(runCatching { settingsManager.hostFlow.first() }.getOrNull())
 
     /**
-     * Human-readable summary of a push offer's files (capped names + total size) for the consent
-     * prompt. Mirrors the PC's FileTransferHandler.DescribePushFiles so both prompts read the same.
+     * Human-readable summary of a push offer's files (names, elided by length, plus the total size)
+     * for the consent prompt. Mirrors the PC's FileTransferHandler.DescribePushFiles so both prompts
+     * read the same.
      */
     private fun describePushFiles(filesArr: JSONArray): String {
-        val count = filesArr.length()
-        if (count == 0) return ""
-        val maxNames = 5
-        val names = StringBuilder()
+        if (filesArr.length() == 0) return ""
+
         var totalBytes = 0L
-        for (i in 0 until count) {
-            val f = filesArr.optJSONObject(i) ?: continue
-            totalBytes += f.optLong("size", 0L)
-            if (i < maxNames) {
-                if (names.isNotEmpty()) names.append(", ")
-                names.append(f.optString("name"))
-            }
+        // ONE ENTRY PER SLOT, malformed included — do not `continue` past them. mintPushGrants mints a
+        // transfer id for every index, so skipping here would make the prompt's "+N" count fewer files
+        // than the grant actually covers: an offer of one real file and ten junk entries would show a
+        // single name and no remainder at all, while eleven ids went back. Understating the offer is
+        // the exact failure this bead exists to fix.
+        val names = ArrayList<String>(filesArr.length())
+        for (i in 0 until filesArr.length()) {
+            val f = filesArr.optJSONObject(i)
+            totalBytes += f?.optLong("size", 0L) ?: 0L
+            names.add(f?.optString("name").orEmpty())
         }
-        if (count > maxNames) names.append(", …")
-        return "$names (${formatBytes(totalBytes)})"
+
+        return "${joinOfferedNames(names)} (${formatBytes(totalBytes)})"
     }
 
     private fun formatBytes(bytes: Long): String =

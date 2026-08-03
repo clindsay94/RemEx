@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
+using System.Text;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services.FileTransfer;
@@ -677,22 +678,91 @@ public sealed class FileTransferHandler(
 
     /// <summary>
     /// Builds the human-readable <see cref="FileConsentRequest.Detail"/> for an incoming-push prompt: the
-    /// offered file names (capped) plus the total size. Kept data-forward (names + a locale-neutral size)
-    /// so the localized chrome lives in the consent dialog, not in this wire summary.
+    /// offered file names (elided by length, with the remainder counted) plus the total size. Kept
+    /// data-forward (names + a locale-neutral size) so the localized chrome lives in the consent
+    /// dialog, not in this wire summary.
     /// </summary>
     private static string DescribePushFiles(FilePushFile[] files)
     {
         if (files is null || files.Length == 0)
             return string.Empty;
 
-        const int maxNames = 5;
-        var names = files.Take(maxNames).Select(f => f.Name);
-        var joined = string.Join(", ", names);
-        if (files.Length > maxNames)
-            joined += ", …";
-
         var totalBytes = files.Sum(f => f.Size);
-        return $"{joined} ({FormatBytes(totalBytes)})";
+        return $"{JoinOfferedNames(files.Select(f => f.Name))} ({FormatBytes(totalBytes)})";
+    }
+
+    /// <summary>Roughly how many characters of file names a consent prompt should carry.</summary>
+    /// <remarks>
+    /// A soft budget, not a hard truncation: the name that crosses it is still shown whole, because a
+    /// half-written file name is worse than a long one. Sized so a share of eight or ten CAMERA
+    /// photos lists every name (those run 12–23 characters); longer names — screenshots at ~37 —
+    /// still overflow, which is why the remainder is counted rather than elided.
+    /// <para>
+    /// **MUST MATCH <c>OFFERED_NAMES_BUDGET</c> in the Kotlin <c>PushConsentRegistry.kt</c>**, or the
+    /// two ends of one protocol start describing the same offer differently.
+    /// </para>
+    /// </remarks>
+    private const int OfferedNamesBudget = 240;
+
+    /// <summary>
+    /// Joins the offered names for a consent prompt, saying how many are not shown (RemEx-7iub).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE PROMPT USED TO NAME FIVE AND AUTHORISE ALL OF THEM.** Beyond the fifth it appended a bare
+    /// "…", so a ten-file offer asked the user to approve five files they could read and five they
+    /// could not — and the grant covers every one. That mattered more once each id was bound to the
+    /// name it was minted for (RemEx-tutz), because the binding is only as meaningful as what the
+    /// person was shown.
+    /// </para>
+    /// <para>
+    /// Budgeting by LENGTH rather than by count is what closes it for real offers: five was arbitrary
+    /// and a share of eight photos is ordinary, so this lists them all. When a genuinely huge offer
+    /// still overflows, the remainder is stated as a NUMBER rather than an ellipsis — "+37" is a fact
+    /// the user can weigh, where "…" is only an admission that something was hidden.
+    /// </para>
+    /// <para>
+    /// Deliberately no words. This string is the data half of the prompt; the localized chrome around
+    /// it lives in the consent dialog, so prose here would be untranslated English on every platform
+    /// that renders it.
+    /// </para>
+    /// <para>
+    /// **HAS A TWIN: the Kotlin <c>joinOfferedNames</c> in <c>PushConsentRegistry.kt</c>**, which must
+    /// produce byte-identical text — the two describe one protocol to two people, and a prompt that
+    /// reads differently at each end is one nobody can reason about. Both suites pin the same literal,
+    /// but that is a convention rather than a mechanism: editing this and its expected string together
+    /// leaves both green while the platforms diverge.
+    /// </para>
+    /// <para>
+    /// A blank name is emitted as an empty entry ("a, , b") rather than dropped. Odd to read, but the
+    /// alternative hides a file from a prompt whose whole purpose is to say what is being authorised —
+    /// and the Kotlin side would have to hide it identically or the two texts part company.
+    /// </para>
+    /// </remarks>
+    internal static string JoinOfferedNames(IEnumerable<string?> names)
+    {
+        var all = names?.ToArray() ?? [];
+        if (all.Length == 0)
+            return string.Empty;
+
+        var builder = new StringBuilder();
+        var shown = 0;
+        foreach (var name in all)
+        {
+            if (shown > 0 && builder.Length >= OfferedNamesBudget)
+                break;
+
+            if (shown > 0)
+                builder.Append(", ");
+
+            builder.Append(name);
+            shown++;
+        }
+
+        if (shown < all.Length)
+            builder.Append(", +").Append(all.Length - shown);
+
+        return builder.ToString();
     }
 
     /// <summary>Formats a byte count into a compact, locale-neutral size string (e.g. "12.4 MB").</summary>

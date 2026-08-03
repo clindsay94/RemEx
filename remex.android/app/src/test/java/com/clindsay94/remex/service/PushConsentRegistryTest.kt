@@ -25,6 +25,108 @@ class PushConsentRegistryTest {
             }
         }
 
+    /**
+     * The shape the CHANGELOG promises: eight real camera photos, all named.
+     *
+     * Uses a genuine filename shape (Pixel's IMG_yyyyMMdd_HHmmss.jpg, 23 characters), not a short
+     * synthetic one. An earlier version used "photo-1.jpg" at 11 characters, which passed at a budget
+     * of 110 and so pinned nothing about whether 240 is right — it would have stayed green while the
+     * promise it exists to protect quietly broke.
+     */
+    @Test
+    fun `an ordinary eight-photo share names every file`() {
+        val eight = (1..8).map { "IMG_20260801_1435%02d.jpg".format(it) }
+        eight.forEach { assertEquals(23, it.length) }
+
+        val joined = joinOfferedNames(eight)
+
+        eight.forEach { assertTrue("$it should be named, got: $joined", it in joined) }
+        assertFalse("nothing was hidden, so there is nothing to count", "+" in joined)
+    }
+
+    /**
+     * A blank name is shown as an empty entry, not silently dropped.
+     *
+     * Load-bearing for the cross-platform equivalence: optString("name") yields "" for a missing or
+     * JSON-null name, and the PC must render that the same way. It is also the case a later tidy-up
+     * is most likely to "fix" on one side only.
+     */
+    @Test
+    fun `a blank name is an empty entry rather than a disappearance`() {
+        assertEquals("a.txt, , b.txt", joinOfferedNames(listOf("a.txt", "", "b.txt")))
+    }
+
+    /**
+     * The budget itself, so a change here fails HERE with a message naming the other platform —
+     * rather than surfacing as "expected 9, actual 11" in the overflow tests, which tells the next
+     * person nothing about the C# constant they also have to move.
+     */
+    @Test
+    fun `the name budget matches the PC's`() {
+        assertEquals(
+            "OFFERED_NAMES_BUDGET must equal FileTransferHandler.OfferedNamesBudget in " +
+                "remex.agent, or the two ends of one protocol describe the same offer differently",
+            240,
+            OFFERED_NAMES_BUDGET,
+        )
+    }
+
+    @Test
+    fun `an offer too long to show states how many are hidden`() {
+        // Long names blow the character budget after a handful, which is the point: the budget is on
+        // what a person can actually read, not on an arbitrary file count.
+        val many = (1..40).map { "a-rather-long-holiday-photo-file-name-$it.jpeg" }
+
+        val joined = joinOfferedNames(many)
+
+        assertTrue("the remainder must be a number, not a bare ellipsis: $joined", Regex(", \\+\\d+$").containsMatchIn(joined))
+        assertFalse("the old unquantified elision should be gone", "…" in joined)
+
+        // The count must be exactly what was left out, or it is a new way of misleading.
+        val shown = many.count { it in joined }
+        val claimed = Regex(", \\+(\\d+)$").find(joined)!!.groupValues[1].toInt()
+        assertEquals(many.size, shown + claimed)
+    }
+
+    @Test
+    fun `a single name is never truncated, however long`() {
+        // A half-written file name is worse than a long one: the user cannot tell what they are
+        // approving, and the name is exactly what the grant binds.
+        val monster = "x".repeat(OFFERED_NAMES_BUDGET * 2) + ".bin"
+
+        assertEquals(monster, joinOfferedNames(listOf(monster)))
+    }
+
+    @Test
+    fun `an empty offer describes nothing`() {
+        assertEquals("", joinOfferedNames(emptyList()))
+    }
+
+    /**
+     * The exact text, so the phone and the PC cannot drift apart silently.
+     *
+     * `OfferedNamesDescriptionTests` asserts these identical strings from the C# side. Both describe
+     * ONE protocol to two people, and nothing else in either suite would notice a divergence —
+     * each half only ever checks its own output against its own expectations.
+     */
+    @Test
+    fun `the exact same text as the PC produces`() {
+        val name = "a".repeat(25)
+        assertEquals("$name, $name", joinOfferedNames(listOf(name, name)))
+    }
+
+    @Test
+    fun `the overflow text is exactly what the PC produces`() {
+        // Ten 25-character names: nine fit inside the 240-character budget (241 once the separators
+        // are counted), the tenth does not, and the remainder is stated as a number.
+        val names = List(10) { "b".repeat(25) }
+
+        val joined = joinOfferedNames(names)
+
+        assertTrue("expected a trailing count, got: $joined", joined.endsWith(", +1"))
+        assertEquals(9, joined.split(", ").count { it.length == 25 })
+    }
+
     @Test
     fun `each minted id is bound to its own file, in order`() {
         val minted = mintPushGrants(files("cat.jpg", "dog.jpg", "bird.jpg"))

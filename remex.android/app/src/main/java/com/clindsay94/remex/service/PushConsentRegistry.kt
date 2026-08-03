@@ -5,6 +5,49 @@ import java.util.UUID
 import org.json.JSONArray
 
 /**
+ * Roughly how many characters of file names a consent prompt should carry.
+ *
+ * A soft budget, not a hard truncation: the name that crosses it is still shown whole, because a
+ * half-written file name is worse than a long one. Sized so an ordinary multi-file share lists every
+ * name — the cases this cannot show are the ones no prompt could show usefully anyway.
+ */
+internal const val OFFERED_NAMES_BUDGET = 240
+
+/**
+ * Joins the offered names for a consent prompt, saying how many are not shown (RemEx-7iub).
+ *
+ * **THE PROMPT USED TO NAME FIVE AND AUTHORISE ALL OF THEM.** Beyond the fifth it appended a bare
+ * "…", so a ten-file offer asked the user to approve five files they could read and five they could
+ * not — while the grant covers every one. That mattered more once each id was bound to the name it
+ * was minted for (RemEx-tutz), because a binding is only as meaningful as what the person was shown.
+ *
+ * Budgeting by LENGTH rather than by count is what closes it for real offers: five was arbitrary and
+ * a share of eight photos is ordinary, so this lists them all. When a genuinely huge offer still
+ * overflows, the remainder is stated as a NUMBER rather than an ellipsis — "+37" is a fact the user
+ * can weigh, where "…" is only an admission that something was hidden.
+ *
+ * Deliberately no words. This is the data half of the prompt and the localized chrome wraps it, so
+ * prose here would be untranslated English in eight of the nine languages. Kept character-identical
+ * to the PC's `FileTransferHandler.JoinOfferedNames` so both ends of the same protocol describe an
+ * offer the same way.
+ */
+internal fun joinOfferedNames(names: List<String>): String {
+    if (names.isEmpty()) return ""
+
+    val builder = StringBuilder()
+    var shown = 0
+    for (name in names) {
+        if (shown > 0 && builder.length >= OFFERED_NAMES_BUDGET) break
+        if (shown > 0) builder.append(", ")
+        builder.append(name)
+        shown++
+    }
+
+    if (shown < names.size) builder.append(", +").append(names.size - shown)
+    return builder.toString()
+}
+
+/**
  * Mints one transfer id per offered file, each bound to that file's name (RemEx-tutz).
  *
  * Extracted from `AndroidFileTransferHost.handlePushOffer` so it can be tested. It was the untested

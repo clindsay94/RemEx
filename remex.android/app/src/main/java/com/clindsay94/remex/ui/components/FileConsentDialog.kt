@@ -1,5 +1,7 @@
 package com.clindsay94.remex.ui.components
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,7 +75,23 @@ fun FileConsentDialogHost() {
         title = { Text(title) },
         text = {
             Column {
-                Text(message, style = MaterialTheme.typography.bodyMedium)
+                // **THE MESSAGE SCROLLS; THE CONTROLS BELOW IT MUST NOT BE PUSHED OUT (RemEx-7iub).**
+                // Material3 puts this slot in a Box(weight(1f, fill = false)) with no scrolling, so a
+                // message taller than the dialog is CLIPPED — silently, and from the bottom, which is
+                // where the Remember checkbox and the countdown live. Listing every offered file name
+                // instead of five made that reachable: at a large system font, or in landscape, the
+                // one prompt in the app where "how long do I have" and "does this stick" matter most
+                // could lose both and give no sign it had.
+                //
+                // weight(1f, fill = false) hands the message whatever room is left AFTER the checkbox
+                // and countdown have taken theirs, so they are laid out first and cannot be evicted.
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier =
+                        Modifier.weight(1f, fill = false)
+                            .verticalScroll(rememberScrollState()),
+                )
                 Spacer(Modifier.height(16.dp))
                 Row(
                     modifier =

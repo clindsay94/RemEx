@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **When several files are offered at once, the prompt now names all of them.** It used to list five
+  and trail off with "…", while what you were agreeing to covered every file in the offer — so a
+  ten-file offer asked you to approve five you could read and five you could not. How many are listed
+  now depends on how long their names are rather than on an arbitrary count of five: a share of eight
+  or ten camera photos is listed in full, while files with long names — screenshots, say — still run
+  out of room sooner. Whenever any are left out they are now **counted** (`+3`) instead of hidden
+  behind an ellipsis, so you can see how much you are not being shown.
+  The prompt also scrolls now, which it did not before: a longer list used to push the "remember this"
+  checkbox and the countdown off the bottom with no indication they were there.
+  Both the phone and the PC word this identically, since they are describing the same offer to two
+  people.
+  (`FileTransferHandler.cs`, `PushConsentRegistry.kt`, `AndroidFileTransferHost.kt`; RemEx-7iub.)
+
 ### Security
 
 - **Agreeing to receive one file no longer lets the PC send a different one.** When the PC offers your
