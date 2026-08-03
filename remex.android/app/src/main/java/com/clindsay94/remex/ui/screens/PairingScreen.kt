@@ -51,13 +51,16 @@ data class PairingUiState(
     // screen can prompt the user to type the PIN shown on the PC. Never set on untrusted transports
     // (where we deliberately never attempt an auto-fetch), so it doesn't nag in the normal manual case.
     val autoPinFetchFailed: Boolean = false,
-    // True once a native SubmitPin call has returned one of the five reachable "ERROR: " causes
-    // (wrong PIN, expired session, lost key state, confirm timeout, unexpected exception). Every one
-    // of those causes the native side to call ClearActivePairingState(), so the pairing session this
-    // screen was using is gone for good — re-submitting, with the same or a different PIN, can only
-    // repeat the same failure. Submit must stay disabled once this is true; only Cancel (which
-    // disposes this screen/ViewModel and lets the user start a fresh pairing attempt) still works.
-    // See RemEx-aor9.
+    // True once the native side has reported a cause that left the pairing session unusable — the
+    // set is PairingErrors.killsSession, and it is reached from TWO places now. SubmitPin's own
+    // failures (wrong PIN, expired session, lost key state, confirm timeout, an abandoned
+    // submission, an unexpected exception), and the PIN auto-fetch, where a timeout or an abandoned
+    // attempt cancels a read and cancelling a read aborts the socket (RemEx-d3z9).
+    //
+    // Whichever way it happened, the session is gone for good — re-submitting, with the same or a
+    // different PIN, can only repeat the same failure. Submit must stay disabled once this is true;
+    // only Cancel (which disposes this screen/ViewModel and lets the user start a fresh pairing
+    // attempt) still works. See RemEx-aor9.
     val sessionDead: Boolean = false,
 )
 
@@ -241,28 +244,55 @@ class PairingViewModel : ViewModel() {
                 // be observed only once the native side returned on its own. RemexCoreClient now
                 // runs these on a thread it can walk away from AND tells the native side to abandon
                 // the attempt, so giving up here actually gives up.
-                val fetchedPin: String? =
+                // Hoisted out of the fetch branch because the reply is read TWICE now — once for a
+                // PIN, once for whether the session survived — and those are different questions.
+                //
+                // FetchPairingPin hops to Dispatchers.IO itself (RemEx-uach). Caught by TYPE rather
+                // than by runCatching: runCatching would also swallow the CancellationException
+                // raised when the surrounding scope dies, and this continues on to publish UI state
+                // afterwards.
+                var abandonedByUs = false
+                val raw: String? =
                         if (allowAutoPin) {
-                            // FetchPairingPin hops to Dispatchers.IO itself (RemEx-uach).
-                            //
-                            // Caught by TYPE rather than by runCatching: runCatching would also
-                            // swallow the CancellationException raised when the surrounding scope
-                            // dies, and this continues on to publish UI state afterwards.
-                            val raw =
-                                    try {
-                                        withTimeout(8_000) { RemexCoreClient.FetchPairingPin().getOrNull() }
-                                    } catch (_: TimeoutCancellationException) {
-                                        null
-                                    }
-                            parseFetchedPin(raw)
+                            try {
+                                withTimeout(8_000) { RemexCoreClient.FetchPairingPin().getOrNull() }
+                            } catch (_: TimeoutCancellationException) {
+                                // OUR timeout kills the session just as surely as the native one.
+                                // Reaching here means the abandon was already sent, which cancels
+                                // the native read — and a cancelled read aborts the socket. The
+                                // native's reply says so, but nothing can read it: the abandoned
+                                // call's result is discarded by construction. So the fact has to be
+                                // carried across from here (RemEx-d3z9).
+                                abandonedByUs = true
+                                null
+                            }
                         } else null
+
+                val fetchedPin = if (allowAutoPin) parseFetchedPin(raw) else null
+
+                // A FETCH CAN TAKE THE SESSION WITH IT, so the outcome is not merely "did we get a
+                // PIN". Bounding the fetch means cancelling a read, and cancelling a read aborts the
+                // socket — so a fetch that timed out or was abandoned leaves nothing to type a PIN
+                // into (RemEx-d3z9). Inviting manual entry then is inviting a failure the user
+                // cannot understand: the submission dies on a dead socket and reports an unknown
+                // error. Saying the session is gone is the only followable answer.
+                val fetchFailure = if (allowAutoPin) parsePairingError(raw) else null
+                val sessionDied = abandonedByUs || PairingErrors.killsSession(fetchFailure?.code)
+
                 _uiState.value = PairingUiState(
                         isLoading = false,
                         autoFilledPin = fetchedPin,
+                        sessionDead = sessionDied,
+                        pairingError =
+                                if (sessionDied) {
+                                    context.getString(pairingErrorMessageRes(fetchFailure?.code))
+                                } else null,
                         // Only flag a failure when we actually attempted a fetch (trusted transport)
                         // and got nothing back — that's when the "enter the PIN shown on your PC"
                         // notice is helpful. On untrusted transports we never tried, so no notice.
-                        autoPinFetchFailed = allowAutoPin && fetchedPin == null,
+                        // Suppressed when the session died, because that message is the useful one
+                        // and two notices at once contradict each other.
+                        autoPinFetchFailed = allowAutoPin && fetchedPin == null && !sessionDied,
                 )
             } else {
                 // Every branch yields a COMPLETE, self-contained message, matching how submitPin()

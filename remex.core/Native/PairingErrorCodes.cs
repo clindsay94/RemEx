@@ -65,7 +65,14 @@ internal static class PairingErrorCodes
     /// <summary>The host rejected the PIN — wrong digits, or the session had already expired.</summary>
     internal const string PinRejected = "PIN_REJECTED";
 
-    /// <summary>Fetching the PIN from the host timed out.</summary>
+    /// <summary>
+    /// Fetching the PIN from the host timed out, AND the session died with it.
+    /// </summary>
+    /// <remarks>
+    /// The second half is not incidental. Bounding the fetch means cancelling the read, and
+    /// cancelling a read aborts the socket — so this is a dead-session cause, not a retryable one,
+    /// and the client must group it accordingly (RemEx-d3z9).
+    /// </remarks>
     internal const string PinFetchTimeout = "PIN_FETCH_TIMEOUT";
 
     /// <summary>

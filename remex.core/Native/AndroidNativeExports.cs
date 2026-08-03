@@ -919,20 +919,27 @@ public static class AndroidNativeExports
                         {
                             pinInfo = client.RequestPinAsync(fetchCts.Token).GetAwaiter().GetResult();
                         }
+                        // BOTH CANCELLATION PATHS TEAR THE SESSION DOWN, AND THAT IS NOT A CHOICE
+                        // MADE HERE — it is what cancelling the read does. ClientWebSocket registers
+                        // Abort() on the token it is given, so a cancelled ReceiveAsync does not
+                        // merely stop waiting, it kills the socket
+                        // (CancelledReceiveKillsTheSocketTests proves it against a real TLS
+                        // connection). §3.3's promise that the session survives so the user can type
+                        // the PIN in by hand cannot hold on these two paths, and pretending otherwise
+                        // is what left the fallback failing with an UNEXPECTED (RemEx-d3z9).
+                        //
+                        // So the state is cleared to match reality and the codes say the session is
+                        // gone. That loses nothing that worked — the socket was already dead — and
+                        // buys the user "start again", which is followable, instead of "unknown
+                        // error", which is not. Every OTHER failure here still honours §3.3.
                         catch (OperationCanceledException) when (abort.IsCancellationRequested)
                         {
-                            // DOES NOT ClearActivePairingState, per §3.3 — but be honest about what
-                            // that does and does not preserve. Cancelling ClientWebSocket.ReceiveAsync
-                            // ABORTS the socket, so the session this leaves behind is already dead and
-                            // a later manual PIN entry fails with an UNEXPECTED rather than the
-                            // dead-session advice it needs. That is pre-existing on the 5s timeout path
-                            // beside this one; the abort adds a second trigger for it (RemEx-d3z9).
-                            // Not clearing here anyway, because changing that is a behaviour question
-                            // for that bead rather than a comment fix for this one.
-                            return $"ERROR: {PairingErrorCodes.Aborted}: PIN fetch abandoned by the client";
+                            ClearActivePairingState();
+                            return $"ERROR: {PairingErrorCodes.AbortedSessionLost}: PIN fetch abandoned by the client";
                         }
                         catch (OperationCanceledException) when (fetchCts.IsCancellationRequested)
                         {
+                            ClearActivePairingState();
                             return $"ERROR: {PairingErrorCodes.PinFetchTimeout}: PIN fetch timed out";
                         }
                     }
@@ -946,9 +953,11 @@ public static class AndroidNativeExports
                 }
                 catch (Exception ex)
                 {
-                    // NON-DESTRUCTIVE CONTRACT (§3.3): never ClearActivePairingState() on any path in
-                    // this export. Whatever went wrong auto-fetching the PIN, the pairing session must
-                    // stay valid so the user can still type the PIN in manually.
+                    // NON-DESTRUCTIVE CONTRACT (§3.3), for every failure that does not cancel the
+                    // read. Whatever went wrong auto-fetching the PIN, the pairing session must stay
+                    // valid so the user can still type the PIN in manually. The two cancellation
+                    // paths above are the exception and cannot be otherwise: cancelling the read
+                    // aborts the socket, so there is no session left to preserve (RemEx-d3z9).
                     Console.Error.WriteLine($"[Pairing] FetchPairingPin failed: {ex.GetType().Name}: {ex.Message}");
                     return $"ERROR: {PairingErrorCodes.Unexpected}: {ex.GetType().Name}: {ex.Message}";
                 }

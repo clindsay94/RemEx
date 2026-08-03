@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **When fetching the PIN from your PC fails, the app now says so instead of sending you down a dead
+  end.** While pairing, the app tries to read the PIN off your PC automatically so you do not have to
+  type it. If that fetch ran out of time, the app quietly fell back to asking you to type the PIN in —
+  but the connection it would have used had already been closed by the timeout, so typing the PIN
+  always failed, with a message that said only "unexpected error". You would try again, and get the
+  same nothing.
+  The app now recognises that the connection is gone — whether the PC ran out of time to answer or
+  the app gave up waiting — and tells you to start pairing again, which is the only thing that can
+  work. Nothing that used to succeed stops succeeding: this only changes what you are told when it
+  has already failed.
+
 - **Giving up on a pairing attempt now actually gives up.** If the PC was switched off or unreachable,
   the app would keep trying for up to a minute and a half — and, worse, the next attempt had to wait
   for the abandoned one to finish before it could even start, so retrying looked broken. Cancelling or

@@ -125,6 +125,11 @@ class PairingErrorParseTest {
         // Only the dead-session group differs. Everything else already ends in a neutral "then
         // try again", so a surface split there would be noise — and a divergence would mean
         // someone quietly gave one surface worse advice than the other.
+        //
+        // PIN_FETCH_TIMEOUT LEFT THIS LIST IN RemEx-d3z9, and the reason is worth keeping: it was
+        // here because it reads like a retryable timeout. It is not. Bounding the fetch cancels a
+        // read, and cancelling a read aborts the socket — so it is dead-session, and dead-session
+        // advice is exactly the advice that has to differ by surface.
         for (code in
                 listOf(
                         "HOST_URL_INVALID",
@@ -133,7 +138,6 @@ class PairingErrorParseTest {
                         "TLS_TIMEOUT",
                         "PAIR_TIMEOUT",
                         "PAIR_MALFORMED",
-                        "PIN_FETCH_TIMEOUT",
                         "PIN_UNAVAILABLE",
                         "ARG_MISSING",
                         "UNEXPECTED",
@@ -194,8 +198,13 @@ class PairingErrorParseTest {
     fun `timeouts and missing-PIN causes map to their own messages`() {
         assertEquals(R.string.pairing_error_timeout, vm.pairingErrorMessageRes("PAIR_TIMEOUT"))
         assertEquals(R.string.pairing_error_malformed_response, vm.pairingErrorMessageRes("PAIR_MALFORMED"))
-        assertEquals(R.string.pairing_error_empty_response, vm.pairingErrorMessageRes("PIN_FETCH_TIMEOUT"))
+        // PIN_UNAVAILABLE keeps the empty-response message; PIN_FETCH_TIMEOUT no longer shares it.
+        // The two look alike and are not: a host that declines has REPLIED, so the session is fine
+        // and manual entry is the right next step. A timeout cancelled the read and killed the
+        // socket, so it belongs with the dead-session causes (RemEx-d3z9).
         assertEquals(R.string.pairing_error_empty_response, vm.pairingErrorMessageRes("PIN_UNAVAILABLE"))
+        // And its former room-mate now takes the dead-session advice instead.
+        assertEquals(R.string.pairing_error_verify_failed, vm.pairingErrorMessageRes("PIN_FETCH_TIMEOUT"))
     }
 
     @Test
