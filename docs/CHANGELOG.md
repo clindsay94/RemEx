@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A file the PC offered your phone was always refused, so nothing the PC sent ever arrived.** You
+  would see the prompt asking whether to accept the file, tap Allow — and nothing happened. Every file
+  was turned down immediately afterwards, silently, because the PC never said *where* on your phone to
+  put it and your phone insisted on being told.
+  Your phone now decides that for itself, which is the right way round: the PC has no business
+  choosing folders on your phone. A pushed file goes into the first folder you shared for writing, and
+  a file already there with the same name is **left alone** — the incoming one is saved beside it
+  under a new name. That matters because nobody picked this folder, so a file the PC happens to name
+  the same as one of yours must not be allowed to replace it.
+  If you have not shared any folder that can be written to, the transfer is declined. Be aware the
+  reason currently only reaches the PC's log — your phone still shows nothing either way, which is
+  tracked separately.
+  This is what was refusing every screenshot the PC tried to send. Whether one now arrives end to end
+  has not been confirmed on a real phone yet.
+  (`FileHostHandler.kt`; RemEx-h1p5.)
+
 - **Wake-on-LAN said the wake signal was sent even when your phone could not send it.** The signal is
   a broadcast aimed at a machine that is switched off, so nothing can ever confirm the PC woke up —
   but whether the signal left your phone at all is knowable, and that was being thrown away. A saved

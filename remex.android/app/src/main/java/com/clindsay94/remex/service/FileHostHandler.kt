@@ -12,6 +12,30 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
+/**
+ * Which shared folder a pushed file goes into, or null when nothing writable is shared (RemEx-h1p5).
+ *
+ * Top-level and pure so the choice can be tested without a handler, a socket or a filesystem — it is
+ * the whole decision, and everything around it is plumbing.
+ *
+ * **FIRST WRITABLE, AND THE ORDER IS NOT A GUARANTEE — REVIEW CAUGHT THIS BEING CLAIMED AS ONE.**
+ * Today the list arrives in the order folders were shared, but only incidentally: the underlying
+ * store is a DataStore `Set<String>` (`SettingsManager.sharedFolderUrisFlow`) with no ordering
+ * contract, preserved by `Set.plus` happening to return a LinkedHashSet. It also genuinely moves —
+ * `sharedRoots()` drops any root it can no longer read, so unmounting the card holding the first
+ * shared folder shifts the destination to the next one with nothing said to anybody.
+ *
+ * So this is "wherever the provider puts first", which is stable enough to ship and not stable enough
+ * to promise. Giving the user an explicit "save incoming files here" choice is RemEx-pwkc's business
+ * and would replace this rule outright.
+ *
+ * Read-only roots are skipped rather than tried and failed: `sharedRoots()` admits a root on
+ * `canRead` alone, so a readable-but-unwritable share is a real entry in this list, and offering to
+ * receive into one produces a refusal after the user has already agreed to the transfer.
+ */
+internal fun pushDestinationRoot(roots: List<RootDescriptor>): String? =
+    roots.firstOrNull { it.isWritable && it.rootId.isNotBlank() }?.rootId
+
 /** Sends a control-plane JSON envelope to the peer over the native `/ws` socket. */
 fun interface ControlMessageSender {
     fun send(json: String)
@@ -505,7 +529,45 @@ class FileHostHandler(
                     sendReady(transferId, false, 0, "This push was not accepted on the device.")
                     return
                 }
-                beginHostReceive(transferId, destRoot, destRelativePath, fileName, size, resumeRequested)
+
+                // **THE PHONE PICKS WHERE A PUSHED FILE LANDS, NOT THE PC (RemEx-h1p5).** The PC sends
+                // no destRoot at all — it has no way to know what this device has shared, and no
+                // business choosing a folder on somebody else's phone. beginHostReceive requires one
+                // and refused every push outright, so the consent-gated push has never delivered a
+                // byte: the user tapped Allow, the PC got its transfer ids, and each file was then
+                // declined with "A destination shared root is required."
+                //
+                // Resolving it from this device's own shared folders is the same reasoning the UPLOAD
+                // branch above already relies on — a folder shared for writing IS the consent to write
+                // there — with the push prompt on top of it, not instead of it.
+                val pushRoot = pushDestinationRoot(facade.listRoots())
+                if (pushRoot == null) {
+                    // Release the id: this transfer is over, and a grant left behind would sit in the
+                    // registry authorising a push that can never arrive.
+                    pushConsent.release(transferId)
+                    sendReady(
+                        transferId,
+                        false,
+                        0,
+                        "No folder on this device is shared for writing, so there is nowhere to save " +
+                            "the file. Share a folder in RemEx first.",
+                    )
+                    return
+                }
+
+                // Null relative path: pushed files go to the top of the chosen folder. The PC named no
+                // subfolder and inventing one would put the file somewhere the user did not expect.
+                // It is also what keeps the fileName guard below sufficient — with no relative path
+                // there is no path assembly for a crafted name to escape through.
+                beginHostReceive(
+                    transferId,
+                    pushRoot,
+                    null,
+                    fileName,
+                    size,
+                    resumeRequested,
+                    replaceExisting = false,
+                )
             }
             else -> sendReady(transferId, false, 0, "Unsupported transfer mode.")
         }
@@ -519,18 +581,31 @@ class FileHostHandler(
         fileName: String,
         size: Long,
         resumeRequested: Boolean,
+        /** True for UPLOAD (replace on name collision), false for PUSH (let SAF uniquify). */
+        replaceExisting: Boolean = true,
     ) {
+        // Every decline below hands a PUSH grant back. The id is granted before the offer arrives, and
+        // isGranted checks the id ALONE — it is not bound to the file name the user saw. A grant left
+        // behind after a refusal therefore stays usable, and a paired-but-hostile PC could re-offer
+        // the same id later under a different file name and be accepted with no second prompt. That is
+        // the actor RemEx-z6lh exists to constrain, so a refused push ends its grant. (RemEx-h1p5;
+        // binding the id to the offered name as well is RemEx-tutz.)
+        fun decline(reason: String) {
+            if (!replaceExisting) pushConsent.release(transferId)
+            sendReady(transferId, false, 0, reason)
+        }
+
         if (destRoot.isNullOrBlank()) {
-            sendReady(transferId, false, 0, "A destination shared root is required.")
+            decline("A destination shared root is required.")
             return
         }
         if (fileName.isBlank() || fileName.contains('/') || fileName.contains('\\')) {
-            sendReady(transferId, false, 0, "Invalid file name.")
+            decline("Invalid file name.")
             return
         }
         val parent = facade.resolve(destRoot, (destRelativePath ?: "").trim('/'))
         if (parent == null || !parent.canWrite) {
-            sendReady(transferId, false, 0, "Destination folder not found or read-only.")
+            decline("Destination folder not found or read-only.")
             return
         }
 
@@ -574,6 +649,7 @@ class FileHostHandler(
                 digest = digest,
                 bytesReceived = startOffset,
                 lastAcked = startOffset,
+                replaceExisting = replaceExisting,
             )
         receiveSessions[transferId]?.close()
         receiveSessions[transferId] = session
@@ -752,6 +828,11 @@ class FileHostHandler(
         val digest: MessageDigest,
         var bytesReceived: Long,
         var lastAcked: Long,
+        /**
+         * Whether a same-named file in the destination is replaced (upload) or left alone so SAF
+         * uniquifies the incoming one (push). See the commit site in [finalizeAndCommit].
+         */
+        val replaceExisting: Boolean,
     ) : FileFrameSink {
         private val raf = RandomAccessFile(partial, "rw").apply { seek(bytesReceived) }
         private val lock = Any()
@@ -810,7 +891,18 @@ class FileHostHandler(
                 deleteStaging()
                 return TransferOutcome(false, actual, "Destination no longer writable.")
             }
-            parent.findChild(fileName)?.delete()
+            // **ONLY AN UPLOAD REPLACES (RemEx-h1p5).** SAF's createFile uniquifies a colliding name
+            // by itself ("resume (1).pdf"); this delete exists to defeat that, which is right for an
+            // upload — the PC user is looking at that folder and named that file, so replacing it is
+            // what they asked for.
+            //
+            // A PUSH is the opposite situation and used to be unreachable, so this never applied to
+            // one. Nobody chose the folder: the PC does not know it and the phone picks it, and the
+            // consent prompt names the incoming files without ever saying where they will go. Deleting
+            // a same-named file there would destroy something the user never mentioned — silently,
+            // with no undo, and with no prompt at all for a device on remembered auto-accept. Letting
+            // SAF uniquify costs an odd file name in a rare case; the alternative costs a document.
+            if (replaceExisting) parent.findChild(fileName)?.delete()
             val target = parent.createFile("application/octet-stream", fileName)
             if (target == null) {
                 deleteStaging()

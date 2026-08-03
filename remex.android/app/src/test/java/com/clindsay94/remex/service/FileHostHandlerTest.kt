@@ -81,6 +81,12 @@ class FileHostHandlerTest {
         override fun listRoots() = roots
         override fun listVolumes() = volumes
         override fun resolve(rootId: String, relativePath: String): FileNode? {
+            // Unknown roots resolve to nothing. The fake used to ignore rootId and hand back the same
+            // tree for anything, which made "was the right root chosen?" untestable — every id looked
+            // valid. Production cannot tell either (SafFileSystemFacade just calls fromTreeUri), but a
+            // fake that answers for roots the user never shared cannot show a wrong choice at all.
+            if (roots.none { it.rootId == rootId }) return null
+
             var cur: FakeNode = root
             val trimmed = relativePath.trim('/')
             if (trimmed.isNotEmpty()) {
@@ -141,9 +147,10 @@ class FileHostHandlerTest {
         root: FakeNode,
         granted: Boolean = false,
         pushConsent: PushConsentRegistry = PushConsentRegistry(),
+        roots: List<RootDescriptor> = listOf(rootDescriptor()),
     ): Triple<FileHostHandler, CapturingSender, FakeMutator> {
-        val provider = FakeRoots(granted, listOf(rootDescriptor()))
-        val facade = FakeFacade(root, listOf(rootDescriptor()))
+        val provider = FakeRoots(granted, roots)
+        val facade = FakeFacade(root, roots)
         val sender = CapturingSender()
         val mutator = FakeMutator()
         val handler =
@@ -315,6 +322,16 @@ class FileHostHandlerTest {
 
     // -- Push consent gate (RemEx-z6lh) -------------------------------------------
 
+    /**
+     * An UPLOAD-shaped offer. **Not what the PC sends for a push** — see
+     * [pushOffer_asThePcActuallySendsIt_isAccepted].
+     *
+     * `destRoot`/`destRelativePath` are real for an upload: the user picked the destination folder on
+     * the phone and the PC echoes it back. A PUSH carries neither, because the PC does not know and
+     * does not choose where files land on someone's phone. Using this helper for push tests is what
+     * hid RemEx-h1p5 — it supplied a field the sender never sends, so the tests agreed with the
+     * handler while both disagreed with production.
+     */
     private fun offer(transferId: String, mode: String) = """
         {"type":"file_transfer_offer","fileTransferOffer":{
           "transferId":"$transferId","mode":"$mode","destRoot":"root1",
@@ -336,6 +353,135 @@ class FileHostHandlerTest {
         val payload = msg.getJSONObject("fileTransferReady")
         assertFalse(payload.getBoolean("accepted"))
         assertTrue(payload.getString("declineReason").contains("not accepted"))
+    }
+
+    @Test
+    fun pushDestination_isTheFirstWritableSharedFolder() {
+        val roots =
+            listOf(
+                RootDescriptor("read-only", "Photos", false, false, false, false, false),
+                RootDescriptor("writable-1", "Downloads", true, true, true, true, false),
+                RootDescriptor("writable-2", "Documents", true, true, true, true, false),
+            )
+
+        // Skips the read-only one rather than trying and failing it: a share CAN be read-only, and
+        // choosing it would refuse the transfer after the user had already agreed to it.
+        assertEquals("writable-1", pushDestinationRoot(roots))
+    }
+
+    @Test
+    fun pushDestination_isNullWhenNothingWritableIsShared() {
+        assertNull(pushDestinationRoot(emptyList()))
+        assertNull(
+            pushDestinationRoot(
+                listOf(RootDescriptor("read-only", "Photos", false, false, false, false, false))
+            )
+        )
+    }
+
+    /**
+     * A push offer shaped the way the PC ACTUALLY SENDS IT — no destRoot, no destRelativePath.
+     *
+     * **THIS IS THE CASE EVERY OTHER PUSH TEST HERE MISSES, AND IT IS WHY THE FEATURE SHIPPED DEAD
+     * (RemEx-h1p5).** The [offer] helper hard-codes `destRoot: "root1"`, but
+     * `TransferSessionManager.PushFileAsync` sends only transferId, mode, fileName and size. Against
+     * the real message `beginHostReceive` hit its `destRoot.isNullOrBlank()` guard and declined every
+     * file, so the consent-gated push never moved a byte: the user tapped Allow, the PC received its
+     * transfer ids, and each one came back refused.
+     *
+     * The fixture supplied the missing field, so the tests agreed with the code and both disagreed
+     * with production. A fixture that is more generous than the sender is not a test of the sender.
+     */
+    @Test
+    fun pushOffer_asThePcActuallySendsIt_isAccepted() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(listOf("minted-id"))
+        val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"minted-id","mode":"push","fileName":"pushed.txt","size":5}}
+            """.trimIndent()
+        )
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertTrue(
+            "a push carrying no destRoot must be accepted — the phone chooses the folder, and the " +
+                "PC has never sent one. Decline reason was: " + payload.optString("declineReason"),
+            payload.getBoolean("accepted"),
+        )
+    }
+
+    /**
+     * A destRoot the PC sends anyway is IGNORED for a push.
+     *
+     * The honest PC sends none, so nothing legitimate depends on it — which means any push that does
+     * carry one came from something trying to choose a folder on this phone. Before RemEx-h1p5 that
+     * choice was honoured outright, and `SafFileSystemFacade.resolve` never checks a rootId against
+     * the shared list: it just calls `DocumentFile.fromTreeUri`, so a granted push could name ANY tree
+     * the app still holds a persisted grant for, shared or not. Ignoring the field is what confines a
+     * push to one folder the user is currently sharing.
+     */
+    @Test
+    fun pushOffer_ignoresADestRootThePcTriesToChoose() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(listOf("minted-id"))
+        val (h, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
+
+        // "not-shared" is NOT among the shared roots — which is the case that matters, since a
+        // persisted SAF grant can outlive a share being removed. Honouring it would resolve to
+        // nothing and decline; ignoring it lands in the one root actually shared. So the assertion
+        // below genuinely distinguishes the two behaviours rather than passing either way.
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"minted-id","mode":"push","destRoot":"not-shared",
+              "fileName":"pushed.txt","size":5}}
+            """.trimIndent()
+        )
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertTrue(
+            "a push naming its own destRoot must be accepted into the phone's choice, not the PC's. " +
+                "Decline reason was: " + payload.optString("declineReason"),
+            payload.getBoolean("accepted"),
+        )
+    }
+
+    /**
+     * With nowhere writable shared, the push is refused AND the minted id is handed back.
+     *
+     * Releasing matters as much as refusing: the id was granted before the reply was sent, so a
+     * refusal that kept it would leave the registry authorising a transfer that can never arrive.
+     */
+    @Test
+    fun pushOffer_withNoWritableSharedFolder_isRefusedAndTheGrantIsReleased() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(listOf("minted-id"))
+        val readOnlyOnly = listOf(RootDescriptor("root1", "Shared", false, false, false, false, false))
+        val (h, sender, _) =
+            build(sampleTree(), granted = true, pushConsent = consent, roots = readOnlyOnly)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"minted-id","mode":"push","fileName":"pushed.txt","size":5}}
+            """.trimIndent()
+        )
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertFalse(payload.getBoolean("accepted"))
+        assertTrue(
+            "the refusal should say what the user can do about it, not name an internal concept. " +
+                "Got: " + payload.getString("declineReason"),
+            payload.getString("declineReason").contains("shared for writing"),
+        )
+        assertFalse(
+            "a refused push must give its consent id back, or the registry keeps authorising a " +
+                "transfer that will never happen",
+            consent.isGranted("minted-id"),
+        )
     }
 
     /** The id the device minted after the user tapped Accept is honoured. */
