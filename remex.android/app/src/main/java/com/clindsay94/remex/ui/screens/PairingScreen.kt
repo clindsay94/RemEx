@@ -82,10 +82,11 @@ class PairingViewModel : ViewModel() {
 
         val result =
                 try {
+                    // No withContext here: SubmitPairingPin hops to Dispatchers.IO itself
+                    // (RemEx-uach). A hop at the call site would model the very belief that let
+                    // RemexClientManager omit one and block the UI thread.
                     withTimeout(15_000) {
-                        withContext(Dispatchers.IO) {
-                            RemexCoreClient.SubmitPairingPin(pin).getOrNull() ?: ""
-                        }
+                        RemexCoreClient.SubmitPairingPin(pin).getOrNull() ?: ""
                     }
                 } catch (_: TimeoutCancellationException) {
                     _uiState.value =
@@ -182,17 +183,16 @@ class PairingViewModel : ViewModel() {
             _uiState.value = PairingUiState(isLoading = true)
             val result =
                     try {
+                        // StartPairing hops to Dispatchers.IO itself (RemEx-uach).
                         withTimeout(15_000) {
-                            withContext(Dispatchers.IO) {
-                                RemexCoreClient.StartPairing(
-                                                hostUrl,
-                                                clientName,
-                                                clientVersion,
-                                                clientId
-                                        )
-                                        .getOrNull()
-                                        ?: ""
-                            }
+                            RemexCoreClient.StartPairing(
+                                            hostUrl,
+                                            clientName,
+                                            clientVersion,
+                                            clientId
+                                    )
+                                    .getOrNull()
+                                    ?: ""
                         }
                     } catch (_: TimeoutCancellationException) {
                         startPairingInFlight = false
@@ -213,15 +213,25 @@ class PairingViewModel : ViewModel() {
                 // the SAME TransportTrust gate on its side; on untrusted transports it replies with
                 // no PIN and the user types it manually, so the PIN keeps its out-of-band, anti-MITM
                 // value. The old trust-all HTTPS fetch is gone — this uses the .NET-trusted socket,
-                // which Google Play's ASI scanner does not flag. The 8s outer bound is belt-and-
-                // braces over the native call's own 5s budget.
+                // which Google Play's ASI scanner does not flag.
+                //
+                // THE 8s withTimeout IS NOT A BOUND, whatever it looks like. The native call is a
+                // blocking JNI frame and coroutine cancellation cannot interrupt one, so the timeout
+                // is only observed once the native side returns on its own 5s budget. It is a
+                // backstop against that budget being raised, not a shorter leash (RemEx-defb).
                 val fetchedPin: String? =
                         if (allowAutoPin) {
-                            val raw = withContext(Dispatchers.IO) {
-                                runCatching {
-                                    withTimeout(8_000) { RemexCoreClient.FetchPairingPin().getOrNull() }
-                                }.getOrNull()
-                            }
+                            // FetchPairingPin hops to Dispatchers.IO itself (RemEx-uach).
+                            //
+                            // Caught by TYPE rather than by runCatching: runCatching would also
+                            // swallow the CancellationException raised when the surrounding scope
+                            // dies, and this continues on to publish UI state afterwards.
+                            val raw =
+                                    try {
+                                        withTimeout(8_000) { RemexCoreClient.FetchPairingPin().getOrNull() }
+                                    } catch (_: TimeoutCancellationException) {
+                                        null
+                                    }
                             parseFetchedPin(raw)
                         } else null
                 _uiState.value = PairingUiState(

@@ -8,10 +8,12 @@ import org.junit.Test
 /**
  * Guards properties of the native command path that no compiler can see.
  *
- * Two unrelated ones now live here, both source-text checks because the failures are invisible at
- * build time: that `RemexCoreClient.SendCommand` stays off the main thread (RemEx-66rf), and that no
- * Quick Settings tile routes a Wake-on-LAN through the PC (RemEx-wgpm). They share a technique
- * rather than a subject; if a third arrives, split them.
+ * Two unrelated SUBJECTS live here, both source-text checks because the failures are invisible at
+ * build time: that the blocking native calls stay off the main thread (RemEx-66rf, RemEx-52n0,
+ * RemEx-uach), and that no Quick Settings tile routes a Wake-on-LAN through the PC (RemEx-wgpm).
+ * They share a technique rather than a subject; if a third SUBJECT arrives, split them. The
+ * threading subject has since grown from one function to five, which is the same subject and belongs
+ * together — the pairing three were added when RemEx-uach found them blocking the UI thread.
  *
  * On the first:
  *
@@ -71,6 +73,111 @@ class SendCommandThreadingTest {
             "WakePc must move itself to a background dispatcher before crossing into the native call.",
             Regex("""withContext\(\s*Dispatchers\.(IO|Default)\s*\)""")
                 .containsMatchIn(afterDeclaration.substring(0, nativeCall)),
+        )
+    }
+
+    /**
+     * Asserts one native wrapper suspends AND hops, between its declaration and the call it guards.
+     *
+     * Both halves have to be checked separately because each is invisible to the compiler on its
+     * own. Every caller today already sits in a coroutine, so deleting `suspend` still compiles
+     * everywhere. And deleting the `withContext` while keeping `suspend` compiles too — a suspend
+     * function inherits its caller's dispatcher, which is exactly how RemexClientManager's automatic
+     * re-pair ran a 90-second handshake on `Dispatchers.Main` (RemEx-uach). Making those functions
+     * suspend did not even produce a compiler error there, because `connect()` was already a suspend
+     * function on the main dispatcher.
+     */
+    private fun assertHopsOffTheCallerThread(function: String, nativeCall: String, why: String) {
+        val code = code()
+
+        val declaration = Regex("""suspend fun ${Regex.escape(function)}\(""").find(code)
+        assertTrue("RemexCoreClient.$function must stay a suspend function. $why", declaration != null)
+
+        val afterDeclaration = code.substring(declaration!!.range.first)
+        val native = afterDeclaration.indexOf(nativeCall)
+        assertTrue(
+            "expected $function to still reach $nativeCall — if it no longer does, this test is " +
+                "guarding the wrong function",
+            native > 0,
+        )
+
+        assertTrue(
+            "$function must move itself to a background dispatcher BEFORE it crosses into the " +
+                "native call. Without the withContext it inherits the caller's dispatcher. $why",
+            Regex("""withContext\(\s*Dispatchers\.(IO|Default)\s*\)""")
+                .containsMatchIn(afterDeclaration.substring(0, native)),
+        )
+    }
+
+    @Test
+    fun `the pairing handshake is suspend and switches off the caller's thread`() {
+        // WORST CASE NINETY SECONDS, all of it blocking: a 10s TCP probe, a 20s TLS and WebSocket
+        // upgrade, then 60s waiting for the host's PairingResponse. RemexClientManager ran that on
+        // Dispatchers.Main, so an unreachable host was a guaranteed ANR (RemEx-uach).
+        //
+        // BE EXACT ABOUT THE PATH: toggleConnection's `managerScope.launch { connect(pin) }`, with a
+        // typed six-digit PIN. NOT the connection heartbeat, which launches on Dispatchers.IO and
+        // passes a null PIN — so it never reaches the pairing branch at all. The bead originally
+        // claimed both; only the tap was ever affected.
+        assertHopsOffTheCallerThread(
+            "StartPairing",
+            "StartPairingNative(",
+            "Its native budgets total 90 seconds against an unreachable host.",
+        )
+    }
+
+    @Test
+    fun `the PIN submission is suspend and switches off the caller's thread`() {
+        assertHopsOffTheCallerThread(
+            "SubmitPairingPin",
+            "SubmitPairingPinNative(",
+            "It waits up to 30 seconds for the host to confirm the PIN.",
+        )
+    }
+
+    @Test
+    fun `the PIN auto-fetch is suspend and switches off the caller's thread`() {
+        assertHopsOffTheCallerThread(
+            "FetchPairingPin",
+            "FetchPairingPinNative(",
+            "It waits up to 5 seconds on the pairing socket.",
+        )
+    }
+
+    @Test
+    fun `the connection manager does not block its main-thread scope on a pairing call`() {
+        // WHAT THIS CAN ACTUALLY CATCH, and what it deliberately does not.
+        //
+        // Reaching the *Native functions directly is already impossible — they are private to
+        // RemexCoreClient, and a test asserting that would pass for a reason the compiler owns
+        // rather than for the reason it states.
+        //
+        // runBlocking is the hole that stays open. The manager's scope is Dispatchers.Main, the
+        // pairing wrappers now suspend, and the tidy-looking way to call a suspend function from a
+        // non-suspend spot is runBlocking — which parks the main thread for the callee's full budget
+        // and puts the ANR straight back (RemEx-uach). It compiles, it reads as correct, and only a
+        // switched-off PC reveals it.
+        val manager =
+            File(repoRoot(), "remex.android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt")
+                .readText()
+                .replace("\r\n", "\n")
+                .replace(Regex("""/\*[\s\S]*?\*/"""), "")
+                .replace(Regex("""//.*"""), "")
+
+        assertTrue(
+            "RemexClientManager's scope is Dispatchers.Main — the guard below only matters while " +
+                "that holds, so it is asserted rather than assumed. If this scope moves to IO, " +
+                "reconsider this test rather than deleting the assertion.",
+            "CoroutineScope(SupervisorJob() + Dispatchers.Main)" in manager,
+        )
+
+        assertFalse(
+            "RemexClientManager uses runBlocking. On a Dispatchers.Main scope that parks the UI " +
+                "thread for the whole of whatever it wraps — up to 90 seconds for a pairing " +
+                "handshake against an unreachable host (RemEx-uach).",
+            // As a CALL, not as a substring, so a name or a string that merely contains the word
+            // is not reported as a blocking bug.
+            Regex("""\brunBlocking\s*[({]""").containsMatchIn(manager),
         )
     }
 

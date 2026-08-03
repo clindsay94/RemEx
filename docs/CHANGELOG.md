@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Tapping Connect with a PIN no longer freezes the app while it pairs.** Pairing talks to your PC
+  over the network, and if the PC is switched off or unreachable the phone waits a long time before
+  it can say so — up to a minute and a half for the handshake, and another half minute for the PIN.
+  The app was doing that waiting on the same thread that draws the screen, so nothing responded to
+  touch for the whole time and Android would offer to close the app. The waiting now happens in the
+  background; the screen keeps working and shows you it is still trying.
+  This does not make pairing any faster, and it does not shorten the wait against an unreachable PC —
+  it only stops that wait from taking the rest of the app down with it.
+
 ### Changed
 
 - **Your phone now introduces itself by its real name when you pair it.** Every Android device used

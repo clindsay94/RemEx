@@ -253,14 +253,32 @@ object RemexCoreClient {
             clientId: String
     ): String
 
+    /**
+     * Runs the pairing handshake against a host, blocking for as long as it takes.
+     *
+     * **SUSPENDS BECAUSE THE WORST CASE IS NINETY SECONDS** — a 10s TCP probe, then a 20s TLS and
+     * WebSocket upgrade, then 60s waiting for the host's PairingResponse. Those budgets are the
+     * native side's, not this function's, and nothing on this side can shorten them.
+     *
+     * The switch to [Dispatchers.IO] is INSIDE, for the same reason it is inside [SendCommand]
+     * (RemEx-66rf): it stops being a rule every call site has to remember, and stops a new call site
+     * failing silently until a PC happens to be unreachable — which is precisely how RemexClientManager
+     * came to run this on `Dispatchers.Main` and ANR the app when a user tapped Connect with a typed
+     * PIN (RemEx-uach).
+     *
+     * BE CLEAR ABOUT WHAT SUSPENDING DOES NOT BUY. A blocking JNI frame cannot be interrupted by
+     * coroutine cancellation, so a `withTimeout` around this call does not end it early — it only
+     * takes effect once the native call returns on its own (RemEx-defb). Suspending keeps the UI
+     * responsive; it does not make the wait shorter.
+     */
     @JvmStatic
-    fun StartPairing(
+    suspend fun StartPairing(
             hostUrl: String,
             clientName: String,
             clientVersion: String,
             clientId: String
-    ): Result<String> {
-        return if (isLibraryLoaded) {
+    ): Result<String> = withContext(Dispatchers.IO) {
+        if (isLibraryLoaded) {
             try {
                 // The client name is NOT logged. It used to be the constant "Android Client";
                 // since RemEx-8m3r it is the name the user gave their phone, which is very often
@@ -290,9 +308,16 @@ object RemexCoreClient {
     @JvmName("SubmitPairingPinNative")
     private external fun SubmitPairingPinNative(pin: String): String
 
+    /**
+     * Sends the PIN the user read off the host's screen, and waits up to 30s for confirmation.
+     *
+     * Suspends for the same reason as [StartPairing], and it is reached from the same two places:
+     * the pairing screen, which already dispatched correctly, and RemexClientManager's Connect tap,
+     * which did not (RemEx-uach).
+     */
     @JvmStatic
-    fun SubmitPairingPin(pin: String): Result<String> {
-        return if (isLibraryLoaded) {
+    suspend fun SubmitPairingPin(pin: String): Result<String> = withContext(Dispatchers.IO) {
+        if (isLibraryLoaded) {
             try {
                 Log.d(TAG, "SubmitPairingPin → native (pin length=${pin.length})")
                 val result = SubmitPairingPinNative(pin)
@@ -322,10 +347,13 @@ object RemexCoreClient {
      * native result string: "OK:<pin>|<expiryUnixMs>" on success, "UNSUPPORTED" against an older
      * host that can't relay the PIN, or "ERROR: ..." on timeout / no-session / denied transport.
      * Never mutates pairing state, so manual PIN entry always remains available on any failure.
+     *
+     * Suspends and hops to [Dispatchers.IO] itself, like the other two pairing calls (RemEx-uach).
+     * Its own budget is 5s, the shortest of the three, but it is still a blocking JNI frame.
      */
     @JvmStatic
-    fun FetchPairingPin(): Result<String> {
-        return if (isLibraryLoaded) {
+    suspend fun FetchPairingPin(): Result<String> = withContext(Dispatchers.IO) {
+        if (isLibraryLoaded) {
             try {
                 Log.d(TAG, "FetchPairingPin → native")
                 val result = FetchPairingPinNative()
