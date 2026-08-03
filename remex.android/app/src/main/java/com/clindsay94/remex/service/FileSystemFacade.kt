@@ -26,6 +26,15 @@ interface FileNode {
     val canWrite: Boolean
     val mimeType: String?
 
+    /**
+     * A `content://` URI another app could be handed, or null when this node has none (RemEx-pwkc).
+     *
+     * Needed so a file that arrives from the PC can offer Open and Share: both take a URI, and the
+     * rest of this interface deliberately hides where a node lives. Null on any implementation that
+     * is not SAF-backed, and callers must treat that as "no actions", not as an error.
+     */
+    val contentUri: String?
+
     fun listChildren(): List<FileNode>
     fun findChild(name: String): FileNode?
     fun createDirectory(name: String): FileNode?
@@ -86,6 +95,7 @@ class DocumentFileNode(
     override val canRead: Boolean get() = doc.canRead()
     override val canWrite: Boolean get() = doc.canWrite()
     override val mimeType: String? get() = doc.type
+    override val contentUri: String get() = doc.uri.toString()
 
     override fun listChildren(): List<FileNode> =
         doc.listFiles().map { DocumentFileNode(context, it) }

@@ -822,4 +822,7 @@
     <string name="file_push_failed_destination">Não foi possível salvar um arquivo: a pasta de destino não está mais disponível.</string>
     <string name="file_push_failed_wrong_file">Não foi possível salvar um arquivo: não era o arquivo que você aceitou receber.</string>
     <string name="file_push_failed_not_saved">Não foi possível salvar um arquivo do PC. Peça ao PC para enviá-lo novamente.</string>
+    <string name="file_received_title">Arquivo recebido</string>
+    <string name="file_received_text">%1$s chegou do seu PC.</string>
+    <string name="file_received_share">Compartilhar</string>
 </resources>

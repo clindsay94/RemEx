@@ -36,6 +36,17 @@ object FileTransferNotificationManager {
      */
     private const val PUSH_FAILED_NOTIFICATION_ID = 1004
 
+    /**
+     * Base for per-received-file ids (RemEx-pwkc).
+     *
+     * **CLEAR OF THE OTHER FAMILIES, WHICH THE FIRST VERSION WAS NOT.** At 1300 with a 0xFFF mask the
+     * whole range sat INSIDE both `COMPLETE_NOTIFICATION_ID_BASE + 0xFFFF` and
+     * `CONSENT_NOTIFICATION_ID_BASE + 0xFFFF` — so an arrival could silently replace a live CONSENT
+     * PROMPT, taking its Allow and Deny buttons with it, and the push would auto-deny on timeout with
+     * nothing shown. Far enough away that the doubled request-code space above stays disjoint too.
+     */
+    private const val RECEIVED_NOTIFICATION_ID_BASE = 200_000
+
     fun showTransferStarted(context: Context, fileName: String, isDownload: Boolean) {
         notify(
                 context = context,
@@ -216,6 +227,113 @@ object FileTransferNotificationManager {
                 indeterminate = false,
                 ongoing = false,
         )
+    }
+
+    /**
+     * Posts that a file the PC sent has arrived, with Open and Share (RemEx-pwkc).
+     *
+     * **THE FILE NAME IS THE SENSITIVE PART, AND HIDING IT IS NOT SOMETHING THIS APP DECIDES.** A file
+     * from the PC can be anything that was on that screen, and a name like `pw-vault-export.png`
+     * gives it away on its own. Review caught the first version claiming `VISIBILITY_PRIVATE` solved
+     * that: it is `NotificationCompat.Builder`'s DEFAULT, so setting it changed nothing, and
+     * redaction only happens for users who have switched on "hide sensitive notification content" —
+     * `LOCK_SCREEN_ALLOW_PRIVATE_NOTIFICATIONS` ships as true, so a stock phone shows the whole thing
+     * on the lock screen.
+     *
+     * What this CAN control is what such a user sees once they have asked for redaction, and without
+     * a public version they get the system's bare fallback. So one is supplied: the same title, no
+     * file name. That is the whole of the guarantee — "if you have asked for redaction, the name is
+     * not on your lock screen" — and it is worth stating narrowly rather than as a privacy feature.
+     *
+     * No `BigPictureStyle`, for a related but weaker reason: a preview would render the image itself
+     * into the shade. Weaker because the picture is in the gallery anyway — SAF scans a document into
+     * MediaStore when the write stream closes, so suppressing the preview buys tidiness rather than
+     * secrecy.
+     *
+     * Per-file notification id, so several arrivals do not overwrite one another the way a shared id
+     * would — a batch of files should not collapse into a claim about one.
+     */
+    fun showIncomingFileReceived(context: Context, fileName: String, contentUri: String?) {
+        if (!canPostNotifications(context)) return
+        ensureChannel(context)
+
+        val notificationId = RECEIVED_NOTIFICATION_ID_BASE + (fileName.hashCode() and 0xFFFF)
+        val text = context.getString(R.string.file_received_text, fileName)
+
+        val builder =
+                NotificationCompat.Builder(context, CHANNEL_ID)
+                        .setSmallIcon(R.drawable.ic_notification)
+                        .setContentTitle(context.getString(R.string.file_received_title))
+                        .setContentText(text)
+                        .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                        // The redacted form, for users who asked for one. Without it they get the
+                        // system's bare fallback; with it they still learn a file arrived.
+                        .setPublicVersion(
+                                NotificationCompat.Builder(context, CHANNEL_ID)
+                                        .setSmallIcon(R.drawable.ic_notification)
+                                        .setContentTitle(
+                                                context.getString(R.string.file_received_title)
+                                        )
+                                        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                                        .build()
+                        )
+                        .setAutoCancel(true)
+                        .setSilent(true)
+                        .setPriority(NotificationCompat.PRIORITY_LOW)
+
+        // REQUEST CODES *2 AND *2+1, NOT n AND n+1 — REVIEW CAUGHT THE ADJACENT PAIR. A PendingIntent
+        // is identified by (creator, requestCode, filterEquals), and filterEquals ignores extras. Every
+        // chooser this app builds is ACTION_CHOOSER with the payload in EXTRA_INTENT, so any two of
+        // them compare EQUAL. Two files whose names hashed to adjacent slots would then share one
+        // PendingIntent between file A's Share and file B's Open, and FLAG_UPDATE_CURRENT would
+        // rewrite both — tapping Share on one file could send the other. In a feature built around a
+        // file possibly being a bank page, that is the worst outcome available. Doubling keeps every
+        // slot disjoint, the same trick consentActionIntent already uses below.
+        var opened = false
+        if (contentUri != null) {
+            FileOpener.buildViewIntent(context, contentUri, fileName)?.let { view ->
+                val open =
+                        PendingIntent.getActivity(
+                                context,
+                                notificationId * 2,
+                                view,
+                                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                        )
+                builder.setContentIntent(open)
+                builder.addAction(0, context.getString(R.string.file_transfer_notification_open), open)
+                opened = true
+            }
+            FileOpener.buildShareIntent(context, contentUri, fileName)?.let { share ->
+                builder.addAction(
+                        0,
+                        context.getString(R.string.file_received_share),
+                        PendingIntent.getActivity(
+                                context,
+                                notificationId * 2 + 1,
+                                share,
+                                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                        ),
+                )
+            }
+        }
+
+        if (!opened) {
+            // No viewer resolvable — tapping opens the app rather than doing nothing. Without a
+            // content intent the notification is inert AND autoCancel cannot dismiss it, so the user
+            // is left with something they can only swipe away. Mirrors showDownloadComplete.
+            builder.setContentIntent(
+                    PendingIntent.getActivity(
+                            context,
+                            notificationId * 2,
+                            Intent(context, MainActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            },
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                    )
+            )
+        }
+
+        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
     }
 
     /**

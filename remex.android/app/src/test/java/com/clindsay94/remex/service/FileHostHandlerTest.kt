@@ -37,6 +37,9 @@ class FileHostHandlerTest {
         override var mimeType: String? = null,
         var parent: FakeNode? = null,
     ) : FileNode {
+        /** A fake stand-in for the SAF document URI, so "what was saved" is assertable. */
+        override val contentUri: String get() = "content://fake/$name"
+
         override val length: Long get() = if (isDirectory) 0L else content.size.toLong()
         override val lastModifiedMs: Long = 1000L
         override val canRead: Boolean = true
@@ -53,10 +56,30 @@ class FileHostHandlerTest {
             return n
         }
 
+        /**
+         * Uniquifies a colliding name, as SAF does.
+         *
+         * The fake used to overwrite the map entry and hand back a node named exactly what was asked
+         * for — so `target.name` could never differ from the offered name, and the one behaviour
+         * `aPushThatLandsIsReportedWithTheNameItWasSavedUnder` exists to pin was unverifiable.
+         * `FileUtils.buildUniqueFileWithExtension` appends " (n)" before the extension, and
+         * `DocumentFile.getName()` re-queries the provider, so production really does report the new
+         * name; a fake that cannot show that makes the assertion decorative.
+         */
         override fun createFile(mimeType: String, name: String): FileNode? {
-            val n = FakeNode(name, false, mimeType = mimeType, parent = this)
-            children[name] = n
-            return n
+            var unique = name
+            if (children.containsKey(unique)) {
+                val stem = name.substringBeforeLast('.', name)
+                val ext = name.substringAfterLast('.', "")
+                var n = 1
+                while (children.containsKey(unique)) {
+                    unique = if (ext.isEmpty()) "$stem ($n)" else "$stem ($n).$ext"
+                    n++
+                }
+            }
+            val node = FakeNode(unique, false, mimeType = mimeType, parent = this)
+            children[unique] = node
+            return node
         }
 
         override fun delete(): Boolean {
@@ -146,6 +169,9 @@ class FileHostHandlerTest {
     /** Refusals reported to the UI layer by the handler under test (RemEx-gipu). */
     private val pushRefusals = mutableListOf<PushRefusal>()
 
+    /** Arrivals reported to the UI layer: name actually saved, plus its URI (RemEx-pwkc). */
+    private val pushArrivals = mutableListOf<Pair<String, String?>>()
+
     private fun build(
         root: FakeNode,
         granted: Boolean = false,
@@ -167,6 +193,7 @@ class FileHostHandlerTest {
                 scope = CoroutineScope(Dispatchers.Unconfined),
                 pushConsent = pushConsent,
                 onPushRefused = { pushRefusals.add(it) },
+                onPushReceived = { name, uri -> pushArrivals.add(name to uri) },
             )
         return Triple(handler, sender, mutator)
     }
@@ -649,6 +676,94 @@ class FileHostHandlerTest {
 
         val payload = sender.last().getJSONObject("fileTransferReady")
         assertTrue(payload.getBoolean("accepted"))
+    }
+
+    /**
+     * A pushed file that lands is reported, with the name it was actually saved under (RemEx-pwkc).
+     *
+     * Until this, the ONLY outcome an incoming push ever reported was failure: a file the user agreed
+     * to receive simply appeared in a folder they were never told about, with nothing to open it
+     * from. The URI travels with it because Open and Share both need one.
+     *
+     * Uses a zero-byte file so the whole receive can be driven without a binary channel — the
+     * commit path is identical, and it is the commit that reports.
+     */
+    @Test
+    fun aPushThatLandsIsReportedWithTheNameItWasSavedUnder() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(mapOf("landing" to GrantedFile("pushed.txt", 0)))
+        val (h, _, _) = build(sampleTree(), granted = true, pushConsent = consent)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"landing","mode":"push","fileName":"pushed.txt","size":0}}
+            """.trimIndent()
+        )
+        h.handleControlMessage(
+            """{"type":"file_transfer_complete","fileTransferComplete":{"transferId":"landing"}}"""
+        )
+
+        assertEquals(1, pushArrivals.size)
+        val (name, uri) = pushArrivals.single()
+        assertEquals("pushed.txt", name)
+        assertEquals("content://fake/pushed.txt", uri)
+    }
+
+    /**
+     * When a file of that name is already there, the reported name is the one SAF actually used.
+     *
+     * RemEx-h1p5 made a pushed file uniquify rather than replace, so the name the user is told about
+     * has to be the new one — pointing them at "pushed.txt" when their file kept that name and the
+     * incoming one became "pushed (1).txt" would send them to the wrong document.
+     */
+    @Test
+    fun aPushOntoAnExistingNameReportsTheNameSafActuallyUsed() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(mapOf("collide" to GrantedFile("report.txt", 0)))
+        val tree = sampleTree()
+        tree.children["report.txt"] = FakeNode("report.txt", false, parent = tree)
+        val (h, _, _) = build(tree, granted = true, pushConsent = consent)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"collide","mode":"push","fileName":"report.txt","size":0}}
+            """.trimIndent()
+        )
+        h.handleControlMessage(
+            """{"type":"file_transfer_complete","fileTransferComplete":{"transferId":"collide"}}"""
+        )
+
+        val (name, uri) = pushArrivals.single()
+        assertEquals("report (1).txt", name)
+        assertEquals("content://fake/report (1).txt", uri)
+        assertNotNull("the file already there must survive", tree.findChild("report.txt"))
+    }
+
+    /**
+     * An UPLOAD landing is NOT reported. It is the PC's own operation into a folder the user shared
+     * for writing; a notification would announce something nobody on the phone did.
+     */
+    @Test
+    fun anUploadThatLandsIsNotReportedToThePhoneUser() = runBlocking {
+        val tree = sampleTree()
+        val (h, _, _) = build(tree, granted = true)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"up-2","mode":"upload","destRoot":"root1","fileName":"pushed.txt","size":0}}
+            """.trimIndent()
+        )
+        h.handleControlMessage(
+            """{"type":"file_transfer_complete","fileTransferComplete":{"transferId":"up-2"}}"""
+        )
+
+        // Asserts the upload LANDED as well as that it was silent. Without this the test passes
+        // just as happily if the offer is rejected outright and nothing ever happens.
+        assertNotNull("the upload should still have been written", tree.findChild("pushed.txt"))
+        assertTrue(pushArrivals.isEmpty())
     }
 
     /** A finished push cannot be replayed as a fresh one under the same id. */

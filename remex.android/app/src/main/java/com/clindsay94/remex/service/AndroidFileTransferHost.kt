@@ -175,6 +175,9 @@ object AndroidFileTransferHost {
             scope = scope,
             pushConsent = pushConsent,
             onPushRefused = ::notifyPushRefused,
+            onPushReceived = { fileName, uri ->
+                FileTransferNotificationManager.showIncomingFileReceived(context, fileName, uri)
+            },
         )
     }
 

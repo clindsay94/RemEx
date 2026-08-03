@@ -122,6 +122,14 @@ class FileHostHandler(
      * [AndroidFileTransferHost] supplies the real one.
      */
     private val onPushRefused: (PushRefusal) -> Unit = {},
+    /**
+     * Told when a pushed file has actually landed, so somebody can be shown that it did (RemEx-pwkc).
+     *
+     * The second argument is a `content://` URI for the saved file, or null when the destination has
+     * none — it is what makes Open and Share possible, and without it the notification can only say
+     * that something arrived.
+     */
+    private val onPushReceived: (fileName: String, contentUri: String?) -> Unit = { _, _ -> },
 ) {
     private val receiveSessions = ConcurrentHashMap<String, HostReceiveSession>()
     private val sendSessions = ConcurrentHashMap<String, HostSendSession>()
@@ -1044,6 +1052,21 @@ class FileHostHandler(
                 }
             deleteStaging()
             if (!ok && !replaceExisting) reportRefusal(PushRefusal.CouldNotBeSaved)
+
+            // A pushed file that lands says so (RemEx-pwkc). Until this, the ONLY outcome the phone
+            // ever reported was failure: a file the user agreed to receive simply appeared somewhere
+            // they were never told about, with nothing to open it from. target.name rather than the
+            // offered fileName, because SAF uniquifies a collision and the user needs the name that
+            // actually exists.
+            //
+            // Dispatched like the refusals, and for the same reason: this ends in a binder call, and
+            // it must not be able to disturb the transfer result that follows it.
+            if (ok && !replaceExisting) {
+                val savedName = target.name
+                val savedUri = target.contentUri
+                scope.launch { onPushReceived(savedName, savedUri) }
+            }
+
             return if (ok) TransferOutcome(true, actual, null)
             else TransferOutcome(false, actual, "Verified but could not be saved.")
         }

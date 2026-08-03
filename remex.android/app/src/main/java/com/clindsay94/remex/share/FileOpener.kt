@@ -48,6 +48,30 @@ object FileOpener {
             }
     }
 
+    /**
+     * Builds an ACTION_SEND chooser for the file at [localUri], or null when no shareable URI exists.
+     *
+     * Separate from [buildViewIntent] because sharing is a decision, not a nicety: a file that has
+     * just arrived from the PC could be anything that was on that screen, so the action is offered
+     * only where the user is already looking at a notification about that specific file — never
+     * automatically, and never with the content previewed. (RemEx-pwkc.)
+     */
+    fun buildShareIntent(context: Context, localUri: String, fileName: String): Intent? {
+        val shareUri = resolveViewUri(context, localUri) ?: return null
+        val send =
+            Intent(Intent.ACTION_SEND).apply {
+                type = resolveMimeType(context, fileName, shareUri)
+                putExtra(Intent.EXTRA_STREAM, shareUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        return Intent.createChooser(send, context.getString(R.string.file_received_share))
+            .apply {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+    }
+
     /** Attempts to open [localUri] immediately. Returns true when a viewer was launched. */
     fun open(context: Context, localUri: String, fileName: String): Boolean {
         val chooser = buildViewIntent(context, localUri, fileName) ?: return false

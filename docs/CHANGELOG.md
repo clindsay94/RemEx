@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A file the PC sends you now says it arrived, and offers to open or share it.** Until now, the only
+  *outcome* your phone ever reported for an incoming file was a failure — one that succeeded just
+  appeared in a folder you were never told about, with nothing to open it from. The notification names
+  the file as it was actually saved: if something of that name was already there, both are kept and
+  yours is the one saved under a new name, so that is the name you are pointed at.
+  **On the lock screen it follows your own setting, and does not override it.** A file from the PC can
+  be anything that was on that screen, and the file name alone can give it away — but whether
+  notification content is hidden when locked is an Android setting ("hide sensitive notification
+  content"), off by default, and not something an app should quietly decide for you. What this does
+  add is a proper redacted version for people who have turned that on: they are told a file arrived,
+  without its name, instead of the blank system placeholder.
+  The notification never previews the picture itself. Note this is tidiness rather than secrecy — a
+  received image is added to your gallery by Android the moment it is written, whatever the
+  notification does.
+  (`FileHostHandler.kt`, `FileTransferNotificationManager.kt`, `FileOpener.kt`; RemEx-pwkc.)
+
 ### Fixed
 
 - **Accepting a file and then getting nothing now tells you why.** When you agreed to receive a file

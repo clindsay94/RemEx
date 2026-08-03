@@ -818,4 +818,7 @@
     <string name="file_push_failed_destination">File tidak dapat disimpan: folder tujuannya sudah tidak tersedia.</string>
     <string name="file_push_failed_wrong_file">File tidak dapat disimpan: ini bukan file yang Anda setujui untuk diterima.</string>
     <string name="file_push_failed_not_saved">File dari PC tidak dapat disimpan. Minta PC mengirimkannya lagi.</string>
+    <string name="file_received_title">File diterima</string>
+    <string name="file_received_text">%1$s telah tiba dari PC Anda.</string>
+    <string name="file_received_share">Bagikan</string>
 </resources>

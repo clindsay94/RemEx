@@ -922,4 +922,7 @@
     <string name="file_push_failed_destination">A file could not be saved: the folder it was going to is no longer available.</string>
     <string name="file_push_failed_wrong_file">A file could not be saved: it was not the file you agreed to receive.</string>
     <string name="file_push_failed_not_saved">A file from the PC could not be saved. Ask the PC to send it again.</string>
+    <string name="file_received_title">File received</string>
+    <string name="file_received_text">%1$s arrived from your PC.</string>
+    <string name="file_received_share">Share</string>
 </resources>
