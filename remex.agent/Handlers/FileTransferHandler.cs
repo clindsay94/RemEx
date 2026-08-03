@@ -528,8 +528,10 @@ public sealed class FileTransferHandler(
     /// <summary>
     /// Handles a <c>file_volumes_request</c> (plan §1.2). Full-device browse is consent-gated per paired
     /// device: if <paramref name="clientId"/> does not already hold a full-browse grant, a consent prompt
-    /// is raised on this (serving) host and the response is held until the user decides or the 60-second
-    /// timeout auto-denies. On a grant the mounted volumes are enumerated and returned; on a deny an empty
+    /// is raised — on the phone that asked when it can render one, otherwise on this (serving) host
+    /// (RemEx-220r) — and the response is held until the user decides or the 60-second timeout
+    /// auto-denies. It may instead be refused outright, with no prompt and no wait, when the asking
+    /// client no longer has a live session. On a grant the mounted volumes are enumerated and returned; on a deny an empty
     /// list with <c>fullBrowseGranted=false</c> is returned (a deny is not an error).
     /// </summary>
     public async Task HandleFileVolumesRequestAsync(
@@ -592,17 +594,36 @@ public sealed class FileTransferHandler(
     /// <summary>
     /// Handles an inbound <c>file_consent_response</c> (plan §1.2 / §2). This is the peer's decision for a
     /// consent prompt this (serving) host previously raised via <see cref="IFileTrustService.RequestConsentAsync"/>
-    /// — it resolves the matching pending prompt exactly as the local consent UI would. Resolution is keyed
-    /// solely by <see cref="FileConsentResponse.ConsentId"/>, so whichever responder arrives first (the local
-    /// dialog or this remote message) wins; an unknown/already-resolved id is a no-op. There is no reply.
+    /// — it resolves the matching pending prompt exactly as the local consent UI would. Whichever
+    /// responder arrives first (the local dialog or this remote message) wins; an unknown or
+    /// already-resolved id is a no-op. There is no reply.
     /// </summary>
-    public void HandleFileConsentResponse(RemexMessage message)
+    /// <param name="clientId">
+    /// The AUTHENTICATED id of the connection this arrived on — not <c>message.ClientId</c>, which is
+    /// whatever the sender wrote. Resolution used to key on the consent id alone, which was harmless
+    /// only while nothing sent these prompts; now that the host asks a named phone (RemEx-220r), an
+    /// unbound response would let any paired device answer somebody else's question.
+    /// </param>
+    public void HandleFileConsentResponse(RemexMessage message, string? clientId)
     {
         var response = message.FileConsentResponse;
         if (response is null)
             return;
 
-        fileTrustService.ResolveConsent(response.ConsentId, response.Granted, response.Remember);
+        var applied = fileTrustService.TryResolveRemoteConsent(
+            clientId, response.ConsentId, response.Granted, response.Remember);
+
+        if (!applied)
+        {
+            // Expected and uninteresting in the ordinary case — a prompt that already timed out, or
+            // that the PC dialog answered first. Logged at a level that will not drown a real log,
+            // but logged, because the other cause is a client answering a question it was not asked.
+            logger.LogDebug(
+                "Ignored a file consent response for {ConsentId}: no matching prompt for this client.",
+                response.ConsentId);
+            return;
+        }
+
         logger.LogInformation(
             "Resolved file consent {ConsentId}: granted={Granted}, remember={Remember}.",
             response.ConsentId, response.Granted, response.Remember);
@@ -611,7 +632,8 @@ public sealed class FileTransferHandler(
     /// <summary>
     /// Handles an inbound <c>file_push_offer</c> (plan §1.2 / §2): a paired client offering to push one or
     /// more files to this PC. Incoming pushes are consent-gated per device — if <paramref name="clientId"/>
-    /// does not already hold an auto-accept-incoming grant, a consent prompt is raised on this host and held
+    /// does not already hold an auto-accept-incoming grant, a consent prompt is raised — on the phone
+    /// that asked when it can render one, otherwise on this host (RemEx-220r) — and held
     /// until the user decides or the 60-second timeout auto-denies. On acceptance the host assigns a fresh
     /// transfer id per offered file (index-aligned to <see cref="FilePushOffer.Files"/>) and returns them in
     /// the <c>file_push_response</c>; the client then negotiates each file with a

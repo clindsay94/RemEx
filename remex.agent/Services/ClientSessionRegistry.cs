@@ -60,6 +60,17 @@ public sealed class ClientSessionRegistry
 
         /// <summary>Whether the connection cleared the pairing gate. See <see cref="MarkAuthenticated"/>.</summary>
         public volatile bool Authenticated;
+
+        /// <summary>
+        /// Whether this connection PROVED which client it is, as opposed to merely clearing the gate.
+        /// </summary>
+        /// <remarks>
+        /// The two come apart for exactly one connection: loopback, which is authenticated by
+        /// construction because it is the PC talking to itself, and never proves an identity because
+        /// it has no pairing to prove. It can therefore claim any client id it likes — so it must not
+        /// be reachable BY one. See <see cref="Find"/>.
+        /// </remarks>
+        public volatile bool IdentityProven;
     }
 
     private readonly ConcurrentDictionary<Guid, Entry> _sessions = new();
@@ -121,17 +132,26 @@ public sealed class ClientSessionRegistry
     /// <c>file_consent_request</c> would be delivered to it, and a stranger would be answering
     /// consent prompts for somebody else's file transfers.
     /// </remarks>
-    public void MarkAuthenticated(IDisposable registration)
+    /// <param name="identityProven">
+    /// True when the connection proved WHICH client it is — pairing verified, or a reconnect proof
+    /// accepted. False for loopback, which is trusted to be here but has no identity to prove.
+    /// </param>
+    public void MarkAuthenticated(IDisposable registration, bool identityProven)
     {
         if (registration is Registration handle && _sessions.TryGetValue(handle.Id, out var entry))
+        {
+            entry.IdentityProven = identityProven;
             entry.Authenticated = true;
+        }
     }
 
     /// <summary>Records whether a client can be asked for consent on its own screen (RemEx-220r).</summary>
     /// <remarks>
-    /// NOTHING SETS THIS YET. No wire message advertises the capability, so the shipping build always
-    /// reports false — which is the correct compatibility answer, because a client that has not said
-    /// it can render the prompt cannot. RemEx-220r adds the wire field and the call.
+    /// Set from <c>clientCapabilities.supportsConsentPrompt</c> on any message that carries it
+    /// (RemEx-220r). ABSENT MEANS FALSE, which is the correct compatibility answer: a client that has
+    /// not said it can render the prompt cannot. No shipping client sends the field yet — the phone
+    /// half is RemEx-vyhm — so in practice this is still false everywhere, and every consent question
+    /// still goes to the PC dialog.
     /// </remarks>
     public void SetSupportsPhonePrompt(IDisposable registration, bool supported)
     {
@@ -240,7 +260,12 @@ public sealed class ClientSessionRegistry
         Entry? any = null;
         foreach (var (_, entry) in _sessions)
         {
-            if (!entry.Authenticated) continue;
+            // PROVEN, not merely authenticated. Loopback clears the gate without ever proving who it
+            // is, so any local process — including an unelevated one — could open /ws, claim a paired
+            // phone's id, and become the newest session for it. It would then be handed that phone's
+            // consent prompts and could answer them, which is precisely the outcome MarkAuthenticated
+            // exists to prevent. Being findable by a client id requires having proved that id.
+            if (!entry.IdentityProven) continue;
             if (!string.Equals(entry.ClientId, clientId, StringComparison.Ordinal)) continue;
 
             if (any is null || entry.Sequence > any.Sequence) any = entry;

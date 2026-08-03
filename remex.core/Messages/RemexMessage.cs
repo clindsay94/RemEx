@@ -113,6 +113,11 @@ public sealed record RemexMessage
     [JsonPropertyName("hostCapabilities")]
     public Remex.Core.Models.HostCapabilities? HostCapabilities { get; init; }
 
+    /// <summary>What the CLIENT can do. Absent from every build before RemEx-220r, and absence means
+    /// "none of it" — see <see cref="Remex.Core.Models.ClientCapabilities"/>.</summary>
+    [JsonPropertyName("clientCapabilities")]
+    public Remex.Core.Models.ClientCapabilities? ClientCapabilities { get; init; }
+
     /// <summary>Remote desktop input event.</summary>
     [JsonPropertyName("inputEvent")]
     public Remex.Core.Models.InputEvent? InputEvent { get; init; }

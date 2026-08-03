@@ -66,7 +66,7 @@ public sealed class PingPongHandler(
         // Loopback is the PC's own UI talking to itself and skips pairing by construction, so it is
         // authenticated the moment it connects — the same reasoning that seeds isPaired below. Every
         // other connection stays invisible in the registry until it clears the gate.
-        if (isLoopback) sessionRegistry.MarkAuthenticated(session);
+        if (isLoopback) sessionRegistry.MarkAuthenticated(session, identityProven: false);
 
         // Per-connection pairing gate. Loopback connections come from the embedded host on the
         // same machine, where pairing adds no security and is intentionally skipped on the client
@@ -86,6 +86,12 @@ public sealed class PingPongHandler(
         // file_volumes_request) can identify the paired device even on a message that omits it. The
         // connection is already authenticated via pairing / reconnect proof before any gated handler runs.
         string? connectionClientId = null;
+
+        // Whether this connection has PROVED which client it is. Until it has, connectionClientId is
+        // just the last thing the sender wrote — and every file-transfer handler below is given it.
+        // Freezing it at the proof points is what stops one paired device claiming another's id and
+        // being handed that device's consent prompts and grants (RemEx-220r).
+        var identityProven = false;
 
         // The device name and the moment it becomes safe to keep are in DIFFERENT MESSAGES.
         // pairing_request carries the name but is unauthenticated — anything on the network can send
@@ -187,7 +193,7 @@ public sealed class PingPongHandler(
                 logger.LogDebug("Received: {Type} (ProtocolVersion={ProtocolVersion})",
                     message.Type, message.ProtocolVersion);
 
-                if (!string.IsNullOrWhiteSpace(message.ClientId))
+                if (!string.IsNullOrWhiteSpace(message.ClientId) && !identityProven)
                 {
                     connectionClientId = message.ClientId;
                     // The registry learns the identity at the same moment this connection does,
@@ -197,6 +203,18 @@ public sealed class PingPongHandler(
                     // that has never reported a name still resolves to null, which ClientSession
                     // documents as "not named" and PhonePresence degrades to a count for.
                     sessionRegistry.Identify(session, message.ClientId, nameStore.Resolve(message.ClientId));
+                }
+
+                // WHAT THIS CLIENT CAN DO, read from any message that carries it (RemEx-220r).
+                //
+                // Not gated on authentication, and that is safe rather than sloppy: the flag only
+                // ever moves a consent question from the PC to the phone, and the registry refuses to
+                // find an unauthenticated session at all — so an unpaired peer setting it changes
+                // nothing about who gets asked. Absent means false, which is every build before this
+                // one and is the compatibility path.
+                if (message.ClientCapabilities is { } capabilities)
+                {
+                    sessionRegistry.SetSupportsPhonePrompt(session, capabilities.SupportsConsentPrompt);
                 }
 
                 // PAIR-1: a persisted clientId is NOT a bearer credential. Instead of trusting bare
@@ -444,13 +462,38 @@ public sealed class PingPongHandler(
                             // this one is blank — so falling back would file a name against an id
                             // that was never paired, which is the one case worth excluding.
                             var pairedClientId = message.PairingComplete?.ClientId;
-                            if (!string.IsNullOrWhiteSpace(pairedClientId))
+                            if (!identityProven && !string.IsNullOrWhiteSpace(pairedClientId))
                             {
                                 nameStore.Remember(pairedClientId, reportedDeviceName);
                                 sessionRegistry.Identify(session, pairedClientId, reportedDeviceName);
+
+                                // FROM HERE THE IDENTITY IS FROZEN. See the assignment further up:
+                                // until this point connectionClientId is whatever the sender last
+                                // wrote, which is fine while nothing trusts it and a hole the moment
+                                // anything does (RemEx-220r).
+                                connectionClientId = pairedClientId;
+                                identityProven = true;
+                            }
+                            else if (!identityProven)
+                            {
+                                // AUTHENTICATED WITH NO IDENTITY, WHICH MUST STILL FREEZE. A verified
+                                // PIN HMAC is enough for CommandSuccess even when the client omitted
+                                // its id — HandlePairingCompleteAsync only consults the id to file the
+                                // reconnect secret. Leaving identityProven false there would keep the
+                                // id malleable for the whole authenticated session, so a client could
+                                // pair once with the field deleted and then name itself anything on
+                                // every later message: inheriting another device's remembered grants,
+                                // and self-approving its own consent prompt because both sides of the
+                                // ownership check would read the id it just supplied.
+                                //
+                                // A pairing that files no id registers no reconnect secret, so that
+                                // device could never come back anyway. Freezing to NO identity is the
+                                // honest state, and every per-client handler already refuses a blank.
+                                connectionClientId = null;
+                                identityProven = true;
                             }
 
-                            sessionRegistry.MarkAuthenticated(session);
+                            sessionRegistry.MarkAuthenticated(session, identityProven: !string.IsNullOrWhiteSpace(connectionClientId));
                             logger.LogInformation("Pairing verified — connection authenticated.");
                             RecordDeviceConnectedActivity();
                         }
@@ -492,7 +535,17 @@ public sealed class PingPongHandler(
                             // named, and only removing both loses the name.
                             sessionRegistry.Identify(
                                 session, verifiedClientId, nameStore.Resolve(verifiedClientId));
-                            sessionRegistry.MarkAuthenticated(session);
+
+                            // The id whose stored secret produced the HMAC — proven, and frozen from
+                            // here on. Guarded like the pairing path so the freeze is enforced HERE
+                            // rather than relying on PairingService refusing a second handshake, which
+                            // is a property of a different class and not visible from this one.
+                            if (!identityProven)
+                            {
+                                connectionClientId = verifiedClientId;
+                                identityProven = true;
+                            }
+                            sessionRegistry.MarkAuthenticated(session, identityProven: true);
                             logger.LogInformation(
                                 "Reconnect proof verified — connection authenticated for client {ClientId}.",
                                 message.ReconnectProof?.ClientId ?? message.ClientId);
@@ -581,7 +634,7 @@ public sealed class PingPongHandler(
                     // receiver-assigned transfer ids. connectionClientId identifies the paired device even
                     // when the message body omits clientId — the connection is already authenticated above.
                     case MessageTypes.FileConsentResponse:
-                        fileTransferHandler.HandleFileConsentResponse(message);
+                        fileTransferHandler.HandleFileConsentResponse(message, connectionClientId);
                         break;
 
                     case MessageTypes.FilePushOffer:

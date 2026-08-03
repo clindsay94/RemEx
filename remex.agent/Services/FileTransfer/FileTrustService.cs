@@ -6,6 +6,7 @@ using Remex.Core.Models;
 using Remex.Core.Services;
 using Remex.Core.Services.FileTransfer;
 using Remex.Agent.Services.Security;
+using Remex.Core.Messages;
 
 namespace Remex.Agent.Services.FileTransfer;
 
@@ -14,6 +15,8 @@ namespace Remex.Agent.Services.FileTransfer;
 /// file-sharing consent to <c>file_transfer_trust.json</c> in the machine-wide RemEx data directory
 /// (beside <c>paired_clients.json</c>), and drives the local consent-prompt flow via
 /// <see cref="ConsentRequested"/> / <see cref="ResolveConsent"/> with a 60-second auto-deny timeout.
+/// Since RemEx-220r the prompt is ROUTED rather than always local: ConsentRoutePolicy decides whether
+/// to ask the phone that asked, ask on this PC, or refuse without asking anyone.
 ///
 /// <para>
 /// Grants are auto-revoked when a device is unpaired: every trust lookup is filtered through the
@@ -40,6 +43,9 @@ public sealed class FileTrustService : IFileTrustService
 
     private readonly ILogger<FileTrustService> _logger;
     private readonly PairedClientRegistry _pairedClients;
+
+    /// <summary>Who is connected, and who can be asked on their own screen (RemEx-xuyu).</summary>
+    private readonly Remex.Agent.Services.ClientSessionRegistry _sessions;
     private readonly string _storePath;
     private readonly TimeSpan _consentTimeout;
 
@@ -65,8 +71,11 @@ public sealed class FileTrustService : IFileTrustService
         public DateTimeOffset UpdatedUtc { get; init; }
     }
 
-    public FileTrustService(ILogger<FileTrustService> logger, PairedClientRegistry pairedClients)
-        : this(logger, pairedClients, storePath: null, consentTimeout: null)
+    public FileTrustService(
+        ILogger<FileTrustService> logger,
+        PairedClientRegistry pairedClients,
+        Remex.Agent.Services.ClientSessionRegistry sessions)
+        : this(logger, pairedClients, sessions, storePath: null, consentTimeout: null)
     {
     }
 
@@ -77,11 +86,13 @@ public sealed class FileTrustService : IFileTrustService
     internal FileTrustService(
         ILogger<FileTrustService> logger,
         PairedClientRegistry pairedClients,
+        Remex.Agent.Services.ClientSessionRegistry sessions,
         string? storePath,
         TimeSpan? consentTimeout)
     {
         _logger = Guard.NotNull(logger);
         _pairedClients = Guard.NotNull(pairedClients);
+        _sessions = Guard.NotNull(sessions);
         _consentTimeout = consentTimeout ?? DefaultConsentTimeout;
 
         if (storePath is null)
@@ -180,14 +191,62 @@ public sealed class FileTrustService : IFileTrustService
 
         try
         {
-            // Raise the local consent UI on this (serving) device. With no subscriber — e.g. a headless
-            // host or Phase A before the dialog is wired — the prompt simply times out into a clean deny.
-            ConsentRequested?.Invoke(new FileConsentPrompt
+            // ASK WHOEVER IS ACTUALLY IN A POSITION TO ANSWER (RemEx-220r). The decision belongs to the
+            // person who made the request, and until now it was always put in front of the PC — which,
+            // when the phone user is in another room, means a dialog waiting for nobody until it times
+            // out. The rule itself lives in ConsentRoutePolicy with its own tests; this is the wiring.
+            var route = ConsentRoutePolicy.Route(
+                _sessions.IsConnected(clientId),
+                _sessions.SupportsPhonePrompt(clientId));
+
+            switch (route)
             {
-                ClientId = clientId,
-                Request = request,
-                ExpiresAtUnixMs = expiresAtUnixMs,
-            });
+                case ConsentRoute.Deny:
+                    // The asker is gone. Not a prompt anywhere: a PC dialog would ask about a transfer
+                    // that can no longer happen, and an "allow" would grant durable trust to a device
+                    // that is not there. See ConsentRoutePolicy.Route.
+                    _logger.LogInformation(
+                        "Denying file consent {ConsentId}: the requesting client is no longer connected.",
+                        request.ConsentId);
+                    return new FileConsentDecision(Granted: false, Remember: false);
+
+                case ConsentRoute.Phone:
+                    var prompt = new RemexMessage
+                    {
+                        Type = MessageTypes.FileConsentRequest,
+                        FileConsentRequest = request,
+                    };
+
+                    if (!await _sessions.TrySendAsync(clientId, prompt, ct))
+                    {
+                        // DENY RATHER THAN FALL BACK TO THE PC. A failed send means the client went
+                        // away between the routing decision and this line — which is the same state
+                        // Route already calls a deny, for the same reason. Falling back would put a
+                        // question on the PC about an asker who is not there.
+                        _logger.LogInformation(
+                            "Denying file consent {ConsentId}: could not reach the requesting client.",
+                            request.ConsentId);
+                        return new FileConsentDecision(Granted: false, Remember: false);
+                    }
+
+                    break;
+
+                case ConsentRoute.Desktop:
+                default:
+                    // The compatibility path, and NOT dead code: a phone built before the phone-side
+                    // sheet cannot render the prompt, so it must still be asked somewhere it can be
+                    // answered. Worse UX that is reachable beats better UX that nobody can answer.
+                    //
+                    // With no subscriber — a headless host, or before the dialog is wired — the prompt
+                    // simply times out into a clean deny.
+                    ConsentRequested?.Invoke(new FileConsentPrompt
+                    {
+                        ClientId = clientId,
+                        Request = request,
+                        ExpiresAtUnixMs = expiresAtUnixMs,
+                    });
+                    break;
+            }
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(_consentTimeout);
@@ -212,6 +271,30 @@ public sealed class FileTrustService : IFileTrustService
         {
             _pendingConsents.TryRemove(request.ConsentId, out _);
         }
+    }
+
+    /// <inheritdoc />
+    public bool TryResolveRemoteConsent(string? clientId, string? consentId, bool granted, bool remember)
+    {
+        if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(consentId)) return false;
+
+        // BOUND TO THE CLIENT THE QUESTION WAS ASKED OF, which the local overload deliberately does not
+        // check. A decision typed on the PC is the PC user's to make about anything; a decision arriving
+        // over the wire is only the answer to the prompt THIS client was sent. Without the check, any
+        // paired device that learned a consentId could answer somebody else's prompt — and the answer
+        // that matters is "allow", which would hand it the access the other user was being asked about.
+        if (!_pendingConsents.TryGetValue(consentId, out var pending)) return false;
+
+        // The id rule — ordinal, and a resolved prompt is gone from the dictionary so a late answer
+        // cannot revive it — is stated once in ConsentRoutePolicy with its own tests. Restating it
+        // here is how two copies of a consent rule drift apart.
+        if (!ConsentRoutePolicy.ShouldApplyResponse(consentId, pending.Request.ConsentId)) return false;
+        if (!string.Equals(pending.ClientId, clientId, StringComparison.Ordinal)) return false;
+
+        // TrySetResult's own answer, not an assumption: another responder — the PC dialog, or the
+        // timeout — can win between the lookup above and here, and reporting "applied" then would log
+        // a resolution that did not happen.
+        return pending.Completion.TrySetResult(new FileConsentDecision(granted, remember));
     }
 
     /// <inheritdoc />

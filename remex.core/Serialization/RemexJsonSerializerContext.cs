@@ -138,6 +138,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(FileMetadataResponse))]
 [JsonSerializable(typeof(FileThumbnailRequest))]
 [JsonSerializable(typeof(FileThumbnailResponse))]
+[JsonSerializable(typeof(ClientCapabilities))]
 [JsonSerializable(typeof(FileConsentRequest))]
 [JsonSerializable(typeof(FileConsentResponse))]
 [JsonSerializable(typeof(FilePushFile))]

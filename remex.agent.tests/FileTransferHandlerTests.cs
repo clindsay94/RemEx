@@ -910,7 +910,9 @@ public sealed class FileTransferHandlerTests : IDisposable
             NullLogger<PairedClientRegistry>.Instance, Path.Combine(baseTemp, "paired_clients.json"));
         registry.RegisterClient(clientId);
         var trust = new FileTrustService(
-            NullLogger<FileTrustService>.Instance, registry, Path.Combine(baseTemp, "file_transfer_trust.json"), TimeSpan.FromSeconds(5));
+            NullLogger<FileTrustService>.Instance, registry,
+            FileTrustServiceTests.ConnectedSession(clientId),
+            Path.Combine(baseTemp, "file_transfer_trust.json"), TimeSpan.FromSeconds(5));
         if (grantFullBrowse)
             trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None).GetAwaiter().GetResult();
 
@@ -1120,6 +1122,7 @@ public sealed class FileTransferHandlerTests : IDisposable
         var trust = new FileTrustService(
             NullLogger<FileTrustService>.Instance,
             registry,
+            FileTrustServiceTests.ConnectedSession(clientId),
             Path.Combine(baseTemp, "file_transfer_trust.json"),
             TimeSpan.FromSeconds(5));
 
@@ -1160,7 +1163,7 @@ public sealed class FileTransferHandlerTests : IDisposable
                 Granted = true,
                 Remember = false,
             }
-        });
+        }, "client-a");
 
         var decision = await pending;
         Assert.True(decision.Granted);
@@ -1183,7 +1186,7 @@ public sealed class FileTransferHandlerTests : IDisposable
                 Granted = true,
                 Remember = true,
             }
-        });
+        }, "client-a");
 
         Assert.Empty(ws.ReceivedMessages);
         await Task.CompletedTask;

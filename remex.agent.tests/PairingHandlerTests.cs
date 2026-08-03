@@ -8,6 +8,7 @@ using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Agent.Services.Security;
 using Remex.Agent.Services;
+using Remex.Core.Services.FileTransfer;
 
 namespace Remex.Agent.Tests;
 

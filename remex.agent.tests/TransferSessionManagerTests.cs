@@ -296,6 +296,7 @@ public sealed class TransferSessionManagerTests
         registry.RegisterClient(clientId);
         var trust = new FileTrustService(
             NullLogger<FileTrustService>.Instance, registry,
+            FileTrustServiceTests.ConnectedSession(clientId),
             Path.Combine(baseTemp, "file_transfer_trust.json"), TimeSpan.FromSeconds(5));
         if (grantFullBrowse)
             trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None).GetAwaiter().GetResult();

@@ -9,7 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **A paired phone could answer a permission question meant for a different phone — and could ask for
+  access using another phone's name.** The PC identified a connection by whatever name the message
+  claimed, re-read on every message rather than fixed once the device proved who it was. So one of
+  your phones could say "I am your other phone", and the PC would believe it: it would send that
+  phone's permission prompts to the wrong device, and accept the wrong device's answer. Answering
+  "allow, and remember this" would have granted lasting access to a phone whose owner was never
+  asked. A device's name is now fixed at the moment it proves itself and cannot be changed afterwards.
+  **Be clear about what was and was not exposed.** Sending a permission question to the wrong phone
+  was never reachable in a released build, because nothing sent those questions until now. Inheriting
+  another phone's *already-granted* access was reachable, in every release since 2.1.0 — a paired
+  device that knew another paired device's internal identifier could browse your files under that
+  device's remembered permission. That identifier is a random value the PC never publishes, so this
+  needed a device you had already paired and trusted, but the protection the 2.4.0 notes described
+  was not in fact there.
+  Related: a program running on the PC itself could claim to be one of your phones. The PC's own app
+  connects to itself and is trusted to be there, but it never proves *which* device it is — so it can
+  no longer be reached by a phone's name at all.
+
 ### Added
+
+- **A permission question about your files can now be asked on the phone that asked for them.** When
+  your phone requests full access to your PC's files, or offers to send it something, the PC has to
+  ask you first — and it asked on the PC, which is no use when you are holding the phone in another
+  room. The question waited in front of nobody until it timed out and refused. The PC can now put
+  that question on the phone instead.
+  Nothing changes for you yet: the phone side of this arrives separately, and until it does the PC
+  keeps asking on the PC exactly as before. A phone too old to show the question always keeps the PC
+  dialog, so updating your PC cannot break a phone that was working.
+  One change you may notice: if your phone disconnects while the PC is waiting for an answer, the
+  request is now refused straight away instead of leaving a dialog on the PC for a phone that has
+  gone.
 
 - **Pairing now tells you what it is doing instead of just spinning.** Connecting to a PC for the
   first time can take a while — and if the PC is switched on but not answering properly, it can take

@@ -709,6 +709,8 @@ public class DestructiveActionFailClosedTests
         public Task<FileConsentDecision> RequestConsentAsync(string clientId, FileConsentRequest request, CancellationToken ct)
             => throw new NotSupportedException("the destructive-action tests never prompt for consent");
 
+        public bool TryResolveRemoteConsent(string? clientId, string? consentId, bool granted, bool remember) => false;
+
         public void ResolveConsent(string consentId, bool granted, bool remember)
             => throw new NotSupportedException("the destructive-action tests never prompt for consent");
 

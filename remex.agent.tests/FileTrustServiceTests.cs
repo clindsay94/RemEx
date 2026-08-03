@@ -22,9 +22,50 @@ public sealed class FileTrustServiceTests
         return registry;
     }
 
+    /// <summary>
+    /// A session registry holding one connected, AUTHENTICATED client that cannot render a phone
+    /// prompt — so ConsentRoutePolicy routes to the PC dialog, which is what these tests exercise.
+    /// </summary>
+    /// <remarks>
+    /// NOT AN EMPTY REGISTRY, and the difference is the whole point of RemEx-220r. An unknown client
+    /// is "not connected", which Route calls a DENY — so an empty registry would turn every consent
+    /// prompt in this file into an immediate refusal, and the tests would keep passing while proving
+    /// nothing about the prompt they are named for.
+    /// </remarks>
+    internal static Remex.Agent.Services.ClientSessionRegistry ConnectedSession(string clientId)
+    {
+        var sessions = new Remex.Agent.Services.ClientSessionRegistry();
+        var handle = sessions.Register("192.168.1.50", new ConsentTestSocket());
+        sessions.Identify(handle, clientId, deviceName: null);
+        sessions.MarkAuthenticated(handle, identityProven: true);
+        return sessions;
+    }
+
+    /// <summary>An open socket that swallows what it is handed; the ROUTING is what these test.</summary>
+    private sealed class ConsentTestSocket : System.Net.WebSockets.WebSocket
+    {
+        public override Task SendAsync(
+            ArraySegment<byte> buffer, System.Net.WebSockets.WebSocketMessageType type, bool end, CancellationToken ct)
+            => Task.CompletedTask;
+
+        public override System.Net.WebSockets.WebSocketState State => System.Net.WebSockets.WebSocketState.Open;
+        public override Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(
+            ArraySegment<byte> buffer, CancellationToken ct) => throw new NotSupportedException();
+        public override System.Net.WebSockets.WebSocketCloseStatus? CloseStatus => null;
+        public override string? CloseStatusDescription => null;
+        public override string? SubProtocol => null;
+        public override void Abort() { }
+        public override Task CloseAsync(
+            System.Net.WebSockets.WebSocketCloseStatus status, string? desc, CancellationToken ct) => Task.CompletedTask;
+        public override Task CloseOutputAsync(
+            System.Net.WebSockets.WebSocketCloseStatus status, string? desc, CancellationToken ct) => Task.CompletedTask;
+        public override void Dispose() { }
+    }
+
     private static FileTrustService NewService(
-        PairedClientRegistry registry, string storePath, TimeSpan? consentTimeout = null)
-        => new(NullLogger<FileTrustService>.Instance, registry, storePath,
+        PairedClientRegistry registry, string storePath, TimeSpan? consentTimeout = null,
+        string connectedClientId = "client-a")
+        => new(NullLogger<FileTrustService>.Instance, registry, ConnectedSession(connectedClientId), storePath,
             consentTimeout ?? TimeSpan.FromSeconds(5));
 
     private static FileConsentRequest FullBrowseRequest()

@@ -8,10 +8,13 @@ namespace Remex.Core.Services.FileTransfer;
 /// <c>paired_clients.json</c>. Grants are auto-revoked when a device is unpaired.
 ///
 /// <para>
-/// The serving device holds the response and raises consent UI: a request that isn't already covered by
-/// a remembered grant fires <see cref="ConsentRequested"/>; the UI collects the user's decision and calls
-/// <see cref="ResolveConsent"/>; <see cref="RequestConsentAsync"/> completes with that decision (or a clean
-/// deny on timeout). This mirrors the established <c>IPairingService</c> event pattern.
+/// The serving device holds the response and the prompt is ROUTED (RemEx-220r): a request not already
+/// covered by a remembered grant is put to the requesting client when it can render one, to this
+/// device's UI via <see cref="ConsentRequested"/> when it cannot, or refused immediately when that
+/// client has gone. A local decision calls <see cref="ResolveConsent"/> and a remote one
+/// <see cref="TryResolveRemoteConsent"/>; <see cref="RequestConsentAsync"/> completes with whichever
+/// arrives first, or a clean deny on timeout. This mirrors the established <c>IPairingService</c>
+/// event pattern.
 /// </para>
 ///
 /// <para>This interface lives in <c>Remex.Core</c>; the host implementation is NOT NativeAOT-constrained.</para>
@@ -45,6 +48,14 @@ public interface IFileTrustService
     /// as a clean deny (see plan §2). When the user chooses "remember", the grant is persisted before the
     /// returned decision resolves.
     /// </summary>
+    /// <remarks>
+    /// **MAY RETURN A DENY WITHOUT ASKING ANYONE.** Since RemEx-220r the question is routed: to the
+    /// requesting client if it can render a prompt, to this device's UI if it cannot, and to an
+    /// immediate refusal if that client no longer has a live session — because a prompt about a
+    /// request whose asker has gone is one nobody can answer, and an "allow" would grant durable
+    /// trust to a device that is not there. So a caller can no longer assume that calling this raises
+    /// anything, or that a deny took the full timeout.
+    /// </remarks>
     Task<FileConsentDecision> RequestConsentAsync(string clientId, FileConsentRequest request, CancellationToken ct);
 
     /// <summary>
@@ -52,6 +63,18 @@ public interface IFileTrustService
     /// <see cref="FileConsentRequest.ConsentId"/>. No-op if the id is unknown or already resolved.
     /// </summary>
     void ResolveConsent(string consentId, bool granted, bool remember);
+
+    /// <summary>
+    /// Applies a consent decision that arrived FROM a client, over the wire.
+    /// </summary>
+    /// <returns>True when it was applied; false when there is no such pending prompt, or it belongs to a different client.</returns>
+    /// <remarks>
+    /// Separate from <see cref="ResolveConsent"/> because the two have different trust. A decision typed
+    /// on the serving device is the operator's to make; a decision arriving over the wire is only ever
+    /// the answer to the prompt that particular client was sent, so it is matched against the pending
+    /// prompt's owner as well as its id (RemEx-220r).
+    /// </remarks>
+    bool TryResolveRemoteConsent(string? clientId, string? consentId, bool granted, bool remember);
 
     /// <summary>
     /// Raised on the serving device when a consent prompt must be shown. The UI subscribes and, when the

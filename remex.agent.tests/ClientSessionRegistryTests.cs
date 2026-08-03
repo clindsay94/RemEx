@@ -52,7 +52,7 @@ public sealed class ClientSessionRegistryTests
 
         var handle = registry.Register("192.168.1.50", new FakeSocket());
         registry.Identify(handle, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
         Assert.Single(registry.Snapshot());
 
         handle.Dispose();
@@ -71,7 +71,7 @@ public sealed class ClientSessionRegistryTests
         Assert.False(registry.IsConnected("phone-1"));
 
         registry.Identify(handle, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
         Assert.True(registry.IsConnected("phone-1"));
         Assert.False(registry.IsConnected("phone-2"));
     }
@@ -99,8 +99,8 @@ public sealed class ClientSessionRegistryTests
         using var loopback = registry.Register("127.0.0.1", new FakeSocket());
         registry.Identify(phone, "phone-1", deviceName: null);
         registry.Identify(loopback, "the-pc-ui", deviceName: null);
-        registry.MarkAuthenticated(phone);
-        registry.MarkAuthenticated(loopback);
+        registry.MarkAuthenticated(phone, identityProven: true);
+        registry.MarkAuthenticated(loopback, identityProven: true);
 
         var snapshot = registry.Snapshot();
 
@@ -125,7 +125,7 @@ public sealed class ClientSessionRegistryTests
         Assert.Empty(registry.Snapshot());
         Assert.False(registry.IsConnected("phone-1"));
 
-        registry.MarkAuthenticated(stranger);
+        registry.MarkAuthenticated(stranger, identityProven: true);
         Assert.Single(registry.Snapshot());
     }
 
@@ -142,7 +142,7 @@ public sealed class ClientSessionRegistryTests
         var phoneSocket = new FakeSocket();
         using var phone = registry.Register("192.168.1.50", phoneSocket);
         registry.Identify(phone, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(phone);
+        registry.MarkAuthenticated(phone, identityProven: true);
 
         var attackerSocket = new FakeSocket();
         using var attacker = registry.Register("192.168.1.99", attackerSocket);
@@ -168,7 +168,7 @@ public sealed class ClientSessionRegistryTests
         using var attacker = registry.Register("192.168.1.99", attackerSocket);
 
         registry.Identify(attacker, "attacker-own-id", deviceName: null);
-        registry.MarkAuthenticated(attacker);
+        registry.MarkAuthenticated(attacker, identityProven: true);
 
         registry.Identify(attacker, "the-real-phone", deviceName: "Not Really Connor's Pixel");
 
@@ -192,7 +192,7 @@ public sealed class ClientSessionRegistryTests
         registry.Identify(handle, "phone-1", "Connor's Pixel");
         registry.Identify(handle, "phone-1", deviceName: null);
         registry.Identify(handle, "phone-1", "   ");
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
 
         Assert.Equal("Connor's Pixel", Assert.Single(registry.Snapshot()).DeviceName);
     }
@@ -204,7 +204,7 @@ public sealed class ClientSessionRegistryTests
         var socket = new FakeSocket();
         using var handle = registry.Register("192.168.1.50", socket);
         registry.Identify(handle, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
 
         Assert.True(await registry.TrySendAsync("phone-1", Ping(), CancellationToken.None));
 
@@ -228,7 +228,7 @@ public sealed class ClientSessionRegistryTests
         var registry = new ClientSessionRegistry();
         using var handle = registry.Register("192.168.1.50", new FakeSocket(WebSocketState.Closed));
         registry.Identify(handle, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
 
         Assert.False(await registry.TrySendAsync("phone-1", Ping(), CancellationToken.None));
 
@@ -245,12 +245,12 @@ public sealed class ClientSessionRegistryTests
         var registry = new ClientSessionRegistry();
         using var dead = registry.Register("192.168.1.50", new FakeSocket(WebSocketState.Aborted));
         registry.Identify(dead, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(dead);
+        registry.MarkAuthenticated(dead, identityProven: true);
 
         var freshSocket = new FakeSocket();
         using var fresh = registry.Register("192.168.1.50", freshSocket);
         registry.Identify(fresh, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(fresh);
+        registry.MarkAuthenticated(fresh, identityProven: true);
 
         Assert.True(await registry.TrySendAsync("phone-1", Ping(), CancellationToken.None));
         Assert.Single(freshSocket.Sent);
@@ -270,12 +270,12 @@ public sealed class ClientSessionRegistryTests
         var abandoned = new FakeSocket();
         using var old = registry.Register("192.168.1.50", abandoned);
         registry.Identify(old, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(old);
+        registry.MarkAuthenticated(old, identityProven: true);
 
         var currentSocket = new FakeSocket();
         using var current = registry.Register("192.168.1.50", currentSocket);
         registry.Identify(current, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(current);
+        registry.MarkAuthenticated(current, identityProven: true);
 
         Assert.True(await registry.TrySendAsync("phone-1", Ping(), CancellationToken.None));
 
@@ -296,7 +296,7 @@ public sealed class ClientSessionRegistryTests
         var socket = new ThrowingSocket();
         using var handle = registry.Register("192.168.1.50", socket);
         registry.Identify(handle, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
 
         Assert.False(await registry.TrySendAsync("phone-1", Ping(), CancellationToken.None));
     }
@@ -312,7 +312,7 @@ public sealed class ClientSessionRegistryTests
         var socket = new BlockingSocket();
         var handle = registry.Register("192.168.1.50", socket);
         registry.Identify(handle, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
 
         var send = registry.TrySendAsync("phone-1", Ping(), CancellationToken.None);
         Assert.True(await socket.SendStarted.Task.WaitAsync(TimeSpan.FromSeconds(5)));
@@ -337,7 +337,7 @@ public sealed class ClientSessionRegistryTests
         var registry = new ClientSessionRegistry();
         using var handle = registry.Register("192.168.1.50", new AbortingSocket());
         registry.Identify(handle, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
 
         Assert.False(await registry.TrySendAsync("phone-1", Ping(), CancellationToken.None));
     }
@@ -350,7 +350,7 @@ public sealed class ClientSessionRegistryTests
         var registry = new ClientSessionRegistry();
         using var handle = registry.Register("192.168.1.50", new AbortingSocket());
         registry.Identify(handle, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
 
         using var cancelled = new CancellationTokenSource();
         await cancelled.CancelAsync();
@@ -398,7 +398,7 @@ public sealed class ClientSessionRegistryTests
         var registry = new ClientSessionRegistry();
         using var handle = registry.Register("192.168.1.50", new FakeSocket());
         registry.Identify(handle, "phone-1", deviceName: null);
-        registry.MarkAuthenticated(handle);
+        registry.MarkAuthenticated(handle, identityProven: true);
 
         Assert.False(registry.SupportsPhonePrompt("phone-1"));
         Assert.False(registry.SupportsPhonePrompt("never-seen"));
