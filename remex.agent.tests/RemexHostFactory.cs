@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Remex.Core.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Remex.Agent.Tests;
 
@@ -70,6 +71,17 @@ public sealed class RemexHostFactory : WebApplicationFactory<Program>
                 services.AddSingleton<IScreenCaptureService, FakeScreenCaptureService>();
                 services.AddSingleton<Remex.Agent.Services.Session.IInteractiveSessionGuard, NoOpInteractiveSessionGuard>();
                 services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, NoOpSystemCommandService>();
+
+                //  * Paired client names: PairedClientNameStore's production path is the MACHINE-WIDE
+                //    C:\ProgramData\RemEx store, beside the pairing secrets and the certificate. The
+                //    pairing integration tests drive a real pairing_request + pairing_complete to
+                //    success, so the host writes the test's device name into the developer's own
+                //    machine file and re-applies an ACL to it. Caught in review after it had already
+                //    happened. A per-factory temp file keeps the fixture hermetic. (RemEx-yzqs.)
+                services.AddSingleton(sp => new Remex.Agent.Services.Security.PairedClientNameStore(
+                    sp.GetRequiredService<ILogger<Remex.Agent.Services.Security.PairedClientNameStore>>(),
+                    Path.Combine(Path.GetTempPath(), $"remex-test-names-{Guid.NewGuid():N}.json")));
+
                 _configureServices?.Invoke(services);
             });
         app.Start();

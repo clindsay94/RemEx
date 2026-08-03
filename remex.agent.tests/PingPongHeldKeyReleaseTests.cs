@@ -6,6 +6,7 @@ using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
 using Xunit;
+using Remex.Agent.Services.Security;
 
 namespace Remex.Agent.Tests;
 
@@ -73,7 +74,8 @@ public class PingPongHeldKeyReleaseTests
             null!,
             null!,
             null!,  // FilePushOriginator: this test never pushes
-            new Remex.Agent.Services.ClientSessionRegistry());
+            new Remex.Agent.Services.ClientSessionRegistry(),
+            NewNameStore());
 
     private static InputEvent Key(string type, int keyCode) =>
         new() { EventType = type, KeyCode = keyCode };
@@ -123,4 +125,17 @@ public class PingPongHeldKeyReleaseTests
 
         Assert.Empty(recorder.Events);
     }
+
+    /// <summary>
+    /// A name store pointed at a throwaway file.
+    /// </summary>
+    /// <remarks>
+    /// NEVER the production path. That resolves to the machine-wide ProgramData store beside the
+    /// pairing secrets, so a test constructing the default would read — and on any write, replace —
+    /// the real device names on the developer's own machine.
+    /// </remarks>
+    private static PairedClientNameStore NewNameStore() =>
+        new(NullLogger<PairedClientNameStore>.Instance,
+            Path.Combine(Path.GetTempPath(), $"remex-names-{Guid.NewGuid():N}.json"));
+
 }

@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Agent.Services.Security;
+using Remex.Agent.Services;
 
 namespace Remex.Agent.Tests;
 
@@ -364,6 +365,186 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>
                 next(builder);
             };
         }
+    }
+
+
+    /// <summary>
+    /// A RECONNECTING device is still recognised by name (RemEx-yzqs).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The bug this covers: a device name crosses the wire exactly once, on pairing_request, and
+    /// initial pairing happens once in a device's life. Every connection after that presents a client
+    /// id and nothing else — so the PC knew a phone's name for its first connection and never again.
+    /// </para>
+    /// <para>
+    /// **THE ASSERTION HAS TO RUN WHILE THE SOCKET IS STILL OPEN**, because a session exists only for
+    /// as long as its connection does. The layout round-trip is the synchronisation point: once the
+    /// host has answered it, the reconnect proof it processed first has definitely been handled.
+    /// </para>
+    /// <para>
+    /// Self-contained rather than folded into PairingComplete_EnablesSecondSocket_OnlyWithSameClientId,
+    /// which would mean hoisting that test's derived session key out of the block that scopes it and
+    /// editing assertions about the pairing gate itself. The ECDH/HKDF dance is duplicated knowingly:
+    /// leaving the pairing-gate test untouched is worth more than the lines saved.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task AReconnectingDeviceIsStillKnownByTheNameItGaveAtPairing()
+    {
+        var factory = new RemexHostFactory().WithServices(services =>
+            services.AddSingleton<IStartupFilter, NonLoopbackStartupFilter>());
+
+        var pairingService = factory.Services.GetRequiredService<PairingService>();
+        pairingService.CancelPairing();
+
+        var nameStore = factory.Services.GetRequiredService<PairedClientNameStore>();
+        var sessions = factory.Services.GetRequiredService<ClientSessionRegistry>();
+        var wsClient = factory.Server.CreateWebSocketClient();
+
+        const string clientId = "reconnect-name-client";
+        const string deviceName = "Connor's Pixel";
+        byte[] sessionKey;
+
+        // Pair for the first and only time — the one connection that ever carries the name.
+        using (var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            using var clientEcdh = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.PairingRequest,
+                ClientId = clientId,
+                PairingRequest = new PairingRequest
+                {
+                    ClientPublicKeyBase64 = Convert.ToBase64String(clientEcdh.PublicKey.ExportSubjectPublicKeyInfo()),
+                    ClientName = deviceName,
+                    ClientVersion = "2.0.0",
+                    ClientId = clientId,
+                },
+            }, CancellationToken.None);
+
+            var pairingResponse = await ReceiveOfTypeAsync(ws, MessageTypes.PairingResponse);
+            Assert.NotNull(pairingResponse?.PairingResponse);
+
+            using var hostPeer = ECDiffieHellman.Create();
+            hostPeer.ImportSubjectPublicKeyInfo(
+                Convert.FromBase64String(pairingResponse!.PairingResponse!.HostPublicKeyBase64), out _);
+
+            sessionKey = HKDF.DeriveKey(
+                HashAlgorithmName.SHA256,
+                clientEcdh.DeriveRawSecretAgreement(hostPeer.PublicKey),
+                outputLength: 32,
+                salt: Convert.FromBase64String(pairingResponse.PairingResponse.CertificateSpkiHashBase64),
+                info: System.Text.Encoding.UTF8.GetBytes("remex-pair-v1"));
+
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.PairingComplete,
+                ClientId = clientId,
+                PairingComplete = new PairingComplete
+                {
+                    ClientId = clientId,
+                    ClientPinHmacBase64 = Convert.ToBase64String(HMACSHA256.HashData(
+                        sessionKey,
+                        System.Text.Encoding.UTF8.GetBytes("ack:" + pairingService.GetActivePin()))),
+                },
+            }, CancellationToken.None);
+
+            var complete = await ReceiveOfTypeAsync(ws, MessageTypes.PairingComplete);
+            Assert.True(complete?.CommandSuccess);
+        }
+
+        // The name outlived the connection that carried it. Everything below depends on this.
+        //
+        // POLLED, BECAUSE THE HOST ANSWERS BEFORE IT STORES. PingPongHandler sends the
+        // pairing_complete response and only then records the name, so a client that asserts the
+        // instant it sees "Pairing verified" is racing the host and wins about half the time. The
+        // ordering is fine for the product — nothing reads the name until a later connection — but a
+        // test has to wait for it rather than assume it.
+        await WaitForAsync(() => nameStore.Resolve(clientId) is not null);
+        Assert.Equal(deviceName, nameStore.Resolve(clientId));
+
+        // WAIT FOR THE PAIRING SESSION TO DRAIN BEFORE RECONNECTING, or this test proves nothing.
+        // Closing the client socket does not instantly unwind HandleAsync, so the pairing connection
+        // lingers in the registry for a moment — still carrying the name it was told directly. A
+        // reconnect asserted against that leftover would pass with the reconnect lookup deleted,
+        // which is the exact line this test exists to protect.
+        // Generous, because this waits on the SERVER side of a socket the client has already closed,
+        // and the whole suite is running in parallel around it. It is a wait for a state, not a sleep:
+        // it returns the moment the session is gone.
+        await WaitForSessionCountAsync(sessions, 0);
+        Assert.Empty(sessions.Snapshot());
+
+        // Now reconnect exactly as a phone does the next morning: a client id, a proof, and no name.
+        using (var ws = await wsClient.ConnectAsync(new Uri("ws://localhost/ws"), CancellationToken.None))
+        {
+            await MessageSerializer.SendAsync(
+                ws, new RemexMessage { Type = MessageTypes.Ping, ClientId = clientId }, CancellationToken.None);
+
+            var challenge = await ReceiveOfTypeAsync(ws, MessageTypes.ReconnectChallenge);
+            Assert.NotNull(challenge?.ReconnectChallenge);
+
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.ReconnectProof,
+                ClientId = clientId,
+                ReconnectProof = new ReconnectProof
+                {
+                    ClientId = clientId,
+                    ProofHmacBase64 = Convert.ToBase64String(HMACSHA256.HashData(
+                        sessionKey,
+                        Convert.FromBase64String(challenge!.ReconnectChallenge!.NonceBase64))),
+                },
+            }, CancellationToken.None);
+
+            // Round-trip anything: once the host answers this, it has finished with the proof.
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.LayoutRequest,
+                ClientId = clientId,
+                CorrelationId = "reconnect-name-sync",
+            }, CancellationToken.None);
+            Assert.NotNull(await ReceiveOfTypeAsync(ws, MessageTypes.LayoutSync));
+
+            // The ONLY session now is the reconnected one, and it never heard the name over the
+            // wire — it can only have come from the store.
+            await WaitForSessionCountAsync(sessions, 1);
+            var session = Assert.Single(sessions.Snapshot());
+            Assert.Equal(deviceName, session.DeviceName);
+        }
+    }
+
+    /// <summary>Waits for the registry to settle on a session count, rather than sleeping.</summary>
+    private static Task WaitForSessionCountAsync(ClientSessionRegistry sessions, int expected) =>
+        WaitForAsync(() => sessions.Snapshot().Count == expected);
+
+    /// <summary>
+    /// Waits for a condition the host reaches on its own schedule.
+    /// </summary>
+    /// <remarks>
+    /// Returns the moment it holds, so the generous deadline costs nothing when things are working —
+    /// it only buys tolerance for the whole suite running in parallel around this. Deliberately does
+    /// NOT assert on timeout: the caller asserts the real thing afterwards, so a failure reports what
+    /// was actually wrong rather than "timed out".
+    /// </remarks>
+    private static async Task WaitForAsync(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!condition() && DateTime.UtcNow < deadline)
+            await Task.Delay(25);
+    }
+
+    /// <summary>Reads until the wanted type arrives; the host also pushes host_info and syncs.</summary>
+    private static async Task<RemexMessage?> ReceiveOfTypeAsync(WebSocket socket, string type)
+    {
+        for (var i = 0; i < 12; i++)
+        {
+            var message = await MessageSerializer.ReceiveAsync(socket, CancellationToken.None);
+            if (message is null) return null;
+            if (message.Type == type) return message;
+        }
+
+        return null;
     }
 
     [Fact]

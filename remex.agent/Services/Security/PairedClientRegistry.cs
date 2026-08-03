@@ -302,6 +302,9 @@ public sealed class PairedClientRegistry
         fileInfo.SetAccessControl(security);
     }
 
+    /// <summary>Exposes the resolved store path so tests can pin the names file beside it.</summary>
+    internal static string DefaultStorePathForTests => GetDefaultStorePath();
+
     private static string GetDefaultStorePath()
     {
         if (OperatingSystem.IsAndroid())

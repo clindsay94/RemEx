@@ -155,6 +155,32 @@ public sealed class ClientSessionRegistryTests
     }
 
     [Fact]
+    public async Task AnAuthenticatedSessionCannotBeRekeyedToAnIdItNeverProved()
+    {
+        // THE HIJACK, THROUGH A SECOND DOOR. Requiring authentication in Find stops a stranger
+        // claiming a paired id on its own connection — but every message carrying a client id calls
+        // Identify, so without this a connection could authenticate as the id it can prove and then
+        // simply say it is somebody else on the next message. It would be an AUTHENTICATED session
+        // keyed to an id it never proved, which is precisely what the authentication gate exists to
+        // make impossible. Identity is settled when the connection authenticates, not after.
+        var registry = new ClientSessionRegistry();
+        var attackerSocket = new FakeSocket();
+        using var attacker = registry.Register("192.168.1.99", attackerSocket);
+
+        registry.Identify(attacker, "attacker-own-id", deviceName: null);
+        registry.MarkAuthenticated(attacker);
+
+        registry.Identify(attacker, "the-real-phone", deviceName: "Not Really Connor's Pixel");
+
+        Assert.False(registry.IsConnected("the-real-phone"));
+        Assert.False(await registry.TrySendAsync("the-real-phone", Ping(), CancellationToken.None));
+        Assert.Empty(attackerSocket.Sent);
+
+        // Its own identity is untouched — this refuses a CHANGE, it does not deauthenticate.
+        Assert.True(registry.IsConnected("attacker-own-id"));
+    }
+
+    [Fact]
     public void ADeviceNameIsCarriedThroughAndSurvivesLaterAnonymousMessages()
     {
         // Only pairing_request carries a name, and it arrives once — every later message identifies

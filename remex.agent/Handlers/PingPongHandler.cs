@@ -33,7 +33,8 @@ public sealed class PingPongHandler(
     TransferSessionManager transferSessionManager,
     PairedClientRegistry pairedClientRegistry,
     Remex.Agent.Services.FileTransfer.FilePushOriginator pushOriginator,
-    ClientSessionRegistry sessionRegistry) : IDisposable
+    ClientSessionRegistry sessionRegistry,
+    PairedClientNameStore nameStore) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -85,6 +86,13 @@ public sealed class PingPongHandler(
         // file_volumes_request) can identify the paired device even on a message that omits it. The
         // connection is already authenticated via pairing / reconnect proof before any gated handler runs.
         string? connectionClientId = null;
+
+        // The device name and the moment it becomes safe to keep are in DIFFERENT MESSAGES.
+        // pairing_request carries the name but is unauthenticated — anything on the network can send
+        // one, choosing both the id and the name — while pairing_complete is where the pairing
+        // verifies but carries no name. So the name is held here across the two and only written once
+        // the handshake has proved itself.
+        string? reportedDeviceName = null;
 
         if (isLoopback)
             logger.LogInformation("Client connected from loopback — pairing gate auto-satisfied.");
@@ -182,12 +190,13 @@ public sealed class PingPongHandler(
                 if (!string.IsNullOrWhiteSpace(message.ClientId))
                 {
                     connectionClientId = message.ClientId;
-                    // The registry learns the identity at the same moment this connection does.
-                    // A device name is NOT available on most messages — only pairing_request
-                    // carries one (handled below) — so it is left null here rather than guessed.
-                    // ClientSession documents null as "not named", and PhonePresence falls back to
-                    // a count-only display, so this degrades rather than misreports.
-                    sessionRegistry.Identify(session, message.ClientId, deviceName: null);
+                    // The registry learns the identity at the same moment this connection does,
+                    // and the name comes from the store rather than the wire: pairing_request is the
+                    // only message that carries one, and it is sent once in a device's life. This is
+                    // where every connection after the first went nameless (RemEx-yzqs). A device
+                    // that has never reported a name still resolves to null, which ClientSession
+                    // documents as "not named" and PhonePresence degrades to a count for.
+                    sessionRegistry.Identify(session, message.ClientId, nameStore.Resolve(message.ClientId));
                 }
 
                 // PAIR-1: a persisted clientId is NOT a bearer credential. Instead of trusting bare
@@ -395,7 +404,8 @@ public sealed class PingPongHandler(
                         // matters after it because Android sends the constant "Android Client" rather
                         // than the actual device. Recording it here is what makes fixing those two
                         // sufficient instead of requiring a wire change as well.
-                        sessionRegistry.Identify(session, message.ClientId, message.PairingRequest?.ClientName);
+                        reportedDeviceName = message.PairingRequest?.ClientName;
+                        sessionRegistry.Identify(session, message.ClientId, reportedDeviceName);
 
                         var pairingResponse = await pairingHandler.HandlePairingRequestAsync(message, ct);
                         if (pairingResponse is not null)
@@ -422,7 +432,24 @@ public sealed class PingPongHandler(
                         {
                             isPaired = true;
                             pairingStarted = false;
-                            // Only now is this connection allowed to be counted, found or sent to.
+                            // Only now is this connection allowed to be counted, found or sent to —
+                            // and only now is the name it claimed on pairing_request safe to keep.
+                            //
+                            // BE PRECISE ABOUT WHAT WAS VERIFIED: the PIN HMAC, and nothing else.
+                            // PairingComplete.ClientId is still client-chosen text. The reason to key
+                            // on it anyway is that it is the SAME key HandlePairingCompleteAsync just
+                            // filed the reconnect secret under, so a name and a secret can never end
+                            // up under different ids. NO FALLBACK to connectionClientId, deliberately:
+                            // that id is unauthenticated, and the registry skips its own write when
+                            // this one is blank — so falling back would file a name against an id
+                            // that was never paired, which is the one case worth excluding.
+                            var pairedClientId = message.PairingComplete?.ClientId;
+                            if (!string.IsNullOrWhiteSpace(pairedClientId))
+                            {
+                                nameStore.Remember(pairedClientId, reportedDeviceName);
+                                sessionRegistry.Identify(session, pairedClientId, reportedDeviceName);
+                            }
+
                             sessionRegistry.MarkAuthenticated(session);
                             logger.LogInformation("Pairing verified — connection authenticated.");
                             RecordDeviceConnectedActivity();
@@ -447,9 +474,24 @@ public sealed class PingPongHandler(
                         // PAIR-1: verify the client's proof-of-possession against the nonce we issued.
                         // A correct HMAC-SHA256(reconnectSecret, nonce) authenticates the reconnect; a
                         // missing/incorrect proof (or a clientId with no stored secret) is rejected.
-                        if (TryAuthenticateReconnect(message, pendingChallengeNonce, pairedClientRegistry, logger))
+                        if (TryAuthenticateReconnect(
+                                message, pendingChallengeNonce, pairedClientRegistry, logger,
+                                out var verifiedClientId))
                         {
                             isPaired = true;
+                            // RE-KEYS TO THE VERIFIED ID, and that is why this call exists rather
+                            // than leaving it to the generic identify above. The id on the wire is
+                            // whatever the client last said; this one is the id whose stored secret
+                            // produced the HMAC, handed back by the verifier rather than re-derived
+                            // here. Setting it BEFORE MarkAuthenticated matters — Identify freezes an
+                            // authenticated session's id, so afterwards would be too late.
+                            //
+                            // The name lookup is belt-and-braces: the generic identify already
+                            // resolved it from the store on the message that triggered the challenge.
+                            // Verified by deleting each in turn — either alone keeps the reconnect
+                            // named, and only removing both loses the name.
+                            sessionRegistry.Identify(
+                                session, verifiedClientId, nameStore.Resolve(verifiedClientId));
                             sessionRegistry.MarkAuthenticated(session);
                             logger.LogInformation(
                                 "Reconnect proof verified — connection authenticated for client {ClientId}.",
@@ -955,12 +997,26 @@ public sealed class PingPongHandler(
     /// Returns false (without leaking timing) when there is no outstanding challenge, the proof or
     /// clientId is missing/malformed, the client has no stored secret, or the HMAC does not match.
     /// </summary>
+    /// <param name="verifiedClientId">
+    /// On success, the id whose stored secret produced the HMAC — the only id this connection has
+    /// actually proved it owns.
+    /// </param>
+    /// <remarks>
+    /// HANDING THE ID BACK IS THE POINT OF THE OUT PARAMETER. The caller needs to know who it just
+    /// authenticated, and deriving that a second time from the same message is how the two answers
+    /// drift apart: this method's own rule is <c>proof.ClientId ?? message.ClientId</c>, and any
+    /// caller re-deriving it is guessing at a rule it does not own. Empty on failure, so a caller
+    /// that ignores the return value still has nothing usable.
+    /// </remarks>
     private static bool TryAuthenticateReconnect(
         RemexMessage message,
         byte[]? pendingChallengeNonce,
         PairedClientRegistry pairedClientRegistry,
-        ILogger logger)
+        ILogger logger,
+        out string verifiedClientId)
     {
+        verifiedClientId = string.Empty;
+
         if (pendingChallengeNonce is null)
         {
             logger.LogWarning("Received reconnect_proof with no outstanding challenge.");
@@ -996,7 +1052,10 @@ public sealed class PingPongHandler(
                 return false;
             }
 
-            return CryptographicOperations.FixedTimeEquals(expected, provided);
+            if (!CryptographicOperations.FixedTimeEquals(expected, provided)) return false;
+
+            verifiedClientId = clientId!;
+            return true;
         }
         finally
         {

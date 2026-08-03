@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Your PC now remembers what your phone is called, not just the first time it connects.** A phone
+  tells the PC its name once, while you are pairing it, and never again — so the PC knew the name for
+  that one connection and then forgot it for every connection afterwards. It is kept now, and read
+  back each time the phone reconnects.
+  The name is stored in its own small file rather than in the file that holds your pairing. That is
+  on purpose: the pairing file is the one thing that must never be damaged, because damaging it would
+  silently unpair every device you own and there would be no obvious reason why. A name is worth very
+  little by comparison, so it is kept somewhere a problem with it can only ever cost you the name. The
+  trade is that unpairing a device does not yet clear its remembered name — the button to unpair does
+  not exist yet, and the two will be joined up when it does.
+  Two things still limit what you will see: the Android app currently sends "Android Client" for every
+  phone rather than the actual device, and the PC has nowhere to show the name yet. Both are tracked.
+
 - **The PC now keeps track of which phones are actually connected to it.** Nothing on the PC could
   answer that before: a connection was known only to the piece of code handling it, and forgotten the
   moment that code moved on. So the PC could not say how many phones were attached, could not check

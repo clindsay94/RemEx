@@ -79,16 +79,33 @@ public sealed class ClientSessionRegistry
 
     /// <summary>Attaches the identity a connection presented, once it has presented one.</summary>
     /// <remarks>
+    /// <para>
     /// Callable repeatedly: the client id arrives on the first message carrying one, and the device
     /// name (if it comes at all) only on the pairing request. A blank value never clears a name that
     /// was already learned.
+    /// </para>
+    /// <para>
+    /// **AN AUTHENTICATED SESSION'S CLIENT ID IS FROZEN, AND THAT IS A SECURITY PROPERTY.** Every
+    /// message carrying a client id calls this. Without the freeze a connection could authenticate as
+    /// the one id it can actually prove, then simply claim to be somebody else on its next message —
+    /// leaving an AUTHENTICATED session keyed to an id it never proved, which is exactly what
+    /// <see cref="MarkAuthenticated"/> exists to make impossible. Identity is settled at the moment a
+    /// connection authenticates: callers that need to correct it (the reconnect path re-keying to the
+    /// id whose secret produced the HMAC) must do so BEFORE marking it, which they do.
+    /// </para>
     /// </remarks>
     public void Identify(IDisposable registration, string? clientId, string? deviceName)
     {
         if (registration is not Registration handle || !_sessions.TryGetValue(handle.Id, out var entry))
             return;
 
-        if (!string.IsNullOrWhiteSpace(clientId)) entry.ClientId = clientId;
+        if (!string.IsNullOrWhiteSpace(clientId)
+            && (!entry.Authenticated || entry.ClientId is null
+                || string.Equals(entry.ClientId, clientId, StringComparison.Ordinal)))
+        {
+            entry.ClientId = clientId;
+        }
+
         if (!string.IsNullOrWhiteSpace(deviceName)) entry.DeviceName = deviceName;
     }
 

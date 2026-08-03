@@ -196,6 +196,7 @@ public static class HostBootstrapper
         // plane, and TransferQueueService owns the process-death-surviving transfer_queue.json.
         // Singleton: it IS the live-session list, so a per-request instance would be empty.
         builder.Services.AddSingleton<ClientSessionRegistry>();
+        builder.Services.AddSingleton<PairedClientNameStore>();
         builder.Services.AddSingleton<TransferSessionManager>();
         builder.Services.AddSingleton<TransferQueueService>();
         builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.DesktopSessionRegistry>();
@@ -427,7 +428,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<TransferSessionManager>(),
                 context.RequestServices.GetRequiredService<PairedClientRegistry>(),
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.FileTransfer.FilePushOriginator>(),
-                context.RequestServices.GetRequiredService<ClientSessionRegistry>());
+                context.RequestServices.GetRequiredService<ClientSessionRegistry>(),
+                context.RequestServices.GetRequiredService<PairedClientNameStore>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

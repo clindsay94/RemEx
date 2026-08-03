@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Remex.Agent.Handlers;
 using Remex.Agent.Services;
+using Remex.Agent.Services.Security;
 using Remex.Agent.Services.Telemetry;
 using Remex.Core.Messages;
 using Remex.Core.Services;
@@ -127,7 +128,8 @@ public class LoopbackTelemetryStreamTests
             null!,
             null!,
             null!,  // FilePushOriginator: this test never pushes
-            sessionRegistry ?? new ClientSessionRegistry());
+            sessionRegistry ?? new ClientSessionRegistry(),
+            NewNameStore());
 
         var socket = new OneShotWebSocket();
         try
@@ -190,4 +192,17 @@ public class LoopbackTelemetryStreamTests
 
         Assert.Contains(sent, m => m.Type == MessageTypes.Telemetry && m.Telemetry is not null);
     }
+
+    /// <summary>
+    /// A name store pointed at a throwaway file.
+    /// </summary>
+    /// <remarks>
+    /// NEVER the production path. That resolves to the machine-wide ProgramData store beside the
+    /// pairing secrets, so a test constructing the default would read — and on any write, replace —
+    /// the real device names on the developer's own machine.
+    /// </remarks>
+    private static PairedClientNameStore NewNameStore() =>
+        new(NullLogger<PairedClientNameStore>.Instance,
+            Path.Combine(Path.GetTempPath(), $"remex-names-{Guid.NewGuid():N}.json"));
+
 }
