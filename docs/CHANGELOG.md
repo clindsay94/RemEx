@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Your PC's log now shows which version of the app your phone is actually running.** Every phone
+  told the PC it was version 2.0.0, whatever version it really was — wrong for every pairing since
+  2.0.1. Nothing behaved differently because of it and nothing was stored wrongly; the PC only writes
+  this to its log. But that log line is the first thing anyone looks at when working out why a phone
+  and a PC disagree, and it was quietly misleading.
+
 - **When fetching the PIN from your PC fails, the app now says so instead of sending you down a dead
   end.** While pairing, the app tries to read the PIN off your PC automatically so you do not have to
   type it. If that fetch ran out of time, the app quietly fell back to asking you to type the PIN in —

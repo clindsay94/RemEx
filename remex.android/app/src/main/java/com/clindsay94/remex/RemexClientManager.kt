@@ -322,7 +322,12 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                                                 DeviceName.forPairing(
                                                         settings.context.applicationContext
                                                 ),
-                                                "2.0.0",
+                                                // The real version, as on the pairing screen
+                                                // (RemEx-2zng). Both paths must be TRUTHFUL, which
+                                                // is the actual requirement — two call sites that
+                                                // agreed on the old literal would have "agreed" and
+                                                // still both been wrong.
+                                                BuildConfig.VERSION_NAME,
                                                 clientId
                                         )
                                         .getOrNull()

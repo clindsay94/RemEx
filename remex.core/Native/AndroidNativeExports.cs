@@ -614,7 +614,7 @@ public static class AndroidNativeExports
     /// </summary>
     /// <param name="hostUrlPtr">Host WebSocket URL.</param>
     /// <param name="clientNamePtr">Device name shown to the user on the PC.</param>
-    /// <param name="clientVersionPtr">Client version, recorded by the host.</param>
+    /// <param name="clientVersionPtr">Client version. The host LOGS this and nothing else — it is not stored, compared, or gated on.</param>
     /// <param name="clientIdPtr">Stable client identity; the key the host files the pairing under.</param>
     /// <returns>JSON <see cref="AndroidNativeOperationResponse"/>.</returns>
     /// <remarks>

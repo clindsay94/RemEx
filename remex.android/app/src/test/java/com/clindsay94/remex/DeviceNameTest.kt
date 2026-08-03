@@ -6,16 +6,19 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Pins what this phone tells a PC it is called (RemEx-8m3r).
+ * Pins what this phone tells a PC about ITSELF at pairing — its name and its version.
  *
- * Every device used to send the literal `"Android Client"`. That was invisible while nothing on the
- * PC kept the name, but the PC now stores it at pairing and reads it back on every reconnect
- * (RemEx-yzqs) — so with the constant, three phones in a household would render as three identical
- * rows next to three unpair buttons.
+ * Two kinds of test live here, and the file is organised by the failure rather than by the class:
  *
- * Only [DeviceName.choose] is exercised: `Build.MANUFACTURER` and `Settings.Global` have no value
- * under plain JUnit and this project has no Robolectric, which is exactly why the decision was
- * written as a pure function of its three inputs instead of reading the platform inline.
+ * The unit tests exercise [DeviceName.choose] only. `Build.MANUFACTURER` and `Settings.Global` have
+ * no value under plain JUnit and this project has no Robolectric, which is exactly why the decision
+ * was written as a pure function of its three inputs instead of reading the platform inline.
+ *
+ * The source-scanning guards cover the two pairing call sites, which pass the name and the version
+ * in adjacent arguments and got the same treatment for the same reason. Every device used to send
+ * the literal `"Android Client"` (RemEx-8m3r) and the literal `"2.0.0"` (RemEx-2zng); the first is
+ * now stored and displayed by the PC, the second is logged by it. Neither wrong value had a symptom
+ * anybody would notice, which is what a guard is for.
  */
 class DeviceNameTest {
 
@@ -112,6 +115,90 @@ class DeviceNameTest {
         }
     }
 
+    /** The repository root, so a source-scanning guard does not depend on the working directory. */
+    private fun repoRoot(): File =
+        System.getProperty("remex.repoRoot")?.let(::File)
+            ?: File(".").absoluteFile.let { start ->
+                generateSequence(start) { it.parentFile }
+                    .firstOrNull { File(it, "remex.android").isDirectory }
+            }
+            ?: error("could not locate the repository root")
+
+    @Test
+    fun `no shipping code reports a hardcoded client version`() {
+        // Same failure as the device name beside it, in the field next to it (RemEx-2zng). Both
+        // pairing call sites passed the literal "2.0.0" while the app was 2.4, so the PC logged
+        // every device paired since 2.1 as a 2.0 client — the one record you would reach for while
+        // debugging a protocol or capability question, quietly wrong.
+        //
+        // Nothing on the host compares it: PairingHandler logs it, PairingMessages carries it, and
+        // no code anywhere gates behaviour on it. So this is a truthfulness fix, and a truthfulness
+        // fix has no symptom to notice when it regresses — which is what the guard is for.
+        val root = repoRoot()
+        val callSites =
+            listOf(
+                "remex.android/app/src/main/java/com/clindsay94/remex/ui/screens/PairingScreen.kt",
+                "remex.android/app/src/main/java/com/clindsay94/remex/RemexClientManager.kt",
+            )
+
+        for (relative in callSites) {
+            val file = File(root, relative)
+            assertTrue("expected a pairing call site at $relative", file.isFile)
+
+            // Comments stripped first: the fix's own explanation quotes the literal it replaced,
+            // and a guard that trips on its own rationale is a guard nobody keeps.
+            val code =
+                file.readText().replace("\r\n", "\n")
+                    .replace(Regex("""/\*[\s\S]*?\*/"""), "")
+                    .replace(Regex("""//.*"""), "")
+
+            // ANY version-shaped literal, not just the one that was there. Pinning it to "2.0.0"
+            // is the trap the device-name guard next door already fell into: a DIFFERENT literal
+            // defeats it, which the mutation test proves.
+            val hardcoded = Regex(""""\d+\.\d+(\.\d+)?"""").find(code)
+            assertTrue(
+                "$relative hardcodes a client version (${hardcoded?.value}). Pass " +
+                    "BuildConfig.VERSION_NAME so the host logs what the phone actually is.",
+                hardcoded == null,
+            )
+
+            // Kept as well, but no longer the load-bearing half. On its own it has an expiry date:
+            // four screens already render "v${'$'}{BuildConfig.VERSION_NAME}", so the day one of these
+            // files displays the version too, this assertion is satisfied by the display string and
+            // stops saying anything about the pairing argument.
+            assertTrue(
+                "$relative must pass BuildConfig.VERSION_NAME as the client version.",
+                "BuildConfig.VERSION_NAME" in code,
+            )
+        }
+    }
+
+    @Test
+    fun `version properties actually supplies a version`() {
+        // BLANK IS NOT A DEGRADED VERSION, IT IS A BRICK. StartPairingNative rejects an empty
+        // clientVersion with ArgMissing before it opens a socket, so a blank BuildConfig.VERSION_NAME
+        // fails EVERY pairing on BOTH call sites. Before RemEx-2zng the argument was a literal and
+        // could not be empty; now it is only as non-empty as version.properties happens to be.
+        //
+        // The gap is real rather than theoretical: build.gradle.kts uses
+        // getProperty("versionName", "1.0.0"), and Properties returns the default only when the key
+        // is ABSENT — a present-but-blank `versionName=` yields "" and builds happily.
+        val properties = File(repoRoot(), "remex.android/app/version.properties")
+        assertTrue("expected version.properties at ${properties.path}", properties.isFile)
+
+        val versionName =
+            properties.readLines()
+                .firstOrNull { it.trimStart().startsWith("versionName=") }
+                ?.substringAfter("versionName=")
+                ?.trim()
+
+        assertTrue(
+            "version.properties has no usable versionName ($versionName). BuildConfig.VERSION_NAME " +
+                "would be blank, and every pairing would fail with ArgMissing before opening a socket.",
+            !versionName.isNullOrBlank(),
+        )
+    }
+
     @Test
     fun `no shipping code sends the old constant`() {
         // The constant lived at TWO call sites — the pairing screen and the automatic re-pair inside
@@ -119,13 +206,7 @@ class DeviceNameTest {
         // left the name depending on which route the user happened to take, and the automatic path
         // is the one nobody watches. Scans the whole source tree so a third caller cannot reintroduce
         // it either.
-        val root =
-            System.getProperty("remex.repoRoot")?.let(::File)
-                ?: File(".").absoluteFile.let { start ->
-                    generateSequence(start) { it.parentFile }
-                        .firstOrNull { File(it, "remex.android").isDirectory }
-                }
-                ?: error("could not locate the repository root")
+        val root = repoRoot()
 
         val sources =
             File(root, "remex.android/app/src/main/java")

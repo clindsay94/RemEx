@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import com.clindsay94.remex.DeviceName
+import com.clindsay94.remex.BuildConfig
 
 data class PairingUiState(
     val isLoading: Boolean = false,
@@ -392,7 +393,12 @@ fun PairingScreen(
                 context,
                 hostUrl,
                 DeviceName.forPairing(context),
-                "2.0.0",
+                // The app's real version, not the literal every build used to send (RemEx-2zng).
+                // The host LOGS this and does nothing else with it — it is not stored, compared or
+                // gated on — so the cost of the old literal was one wrong line in the log, on every
+                // pairing since 2.0.1. That line is the first thing anyone reads when a phone and a
+                // PC disagree, which is what made a cosmetic-looking value worth fixing.
+                BuildConfig.VERSION_NAME,
                 clientId,
                 allowAutoPin
         )
