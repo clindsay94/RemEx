@@ -3,6 +3,7 @@ package com.clindsay94.remex
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
 
 private const val TAG = "RemexCoreClient"
 
@@ -250,7 +251,8 @@ object RemexCoreClient {
             hostUrl: String,
             clientName: String,
             clientVersion: String,
-            clientId: String
+            clientId: String,
+            attemptId: Long
     ): String
 
     /**
@@ -258,7 +260,7 @@ object RemexCoreClient {
      *
      * **SUSPENDS BECAUSE THE WORST CASE IS NINETY SECONDS** — a 10s TCP probe, then a 20s TLS and
      * WebSocket upgrade, then 60s waiting for the host's PairingResponse. Those budgets are the
-     * native side's, not this function's, and nothing on this side can shorten them.
+     * native side's; a caller can now abandon the wait (see below) but cannot shorten the work.
      *
      * The switch to [Dispatchers.IO] is INSIDE, for the same reason it is inside [SendCommand]
      * (RemEx-66rf): it stops being a rule every call site has to remember, and stops a new call site
@@ -266,10 +268,12 @@ object RemexCoreClient {
      * came to run this on `Dispatchers.Main` and ANR the app when a user tapped Connect with a typed
      * PIN (RemEx-uach).
      *
-     * BE CLEAR ABOUT WHAT SUSPENDING DOES NOT BUY. A blocking JNI frame cannot be interrupted by
-     * coroutine cancellation, so a `withTimeout` around this call does not end it early — it only
-     * takes effect once the native call returns on its own (RemEx-defb). Suspending keeps the UI
-     * responsive; it does not make the wait shorter.
+     * BE CLEAR ABOUT WHICH PART DOES WHAT. Suspending keeps the UI responsive; it is
+     * [abandonablePairing] that makes a caller's `withTimeout` mean anything. A blocking JNI frame
+     * cannot be interrupted by coroutine cancellation, so until RemEx-defb a `withTimeout` here took
+     * effect only once the native call returned on its own. It now runs the call on a thread the
+     * caller can walk away from AND tells the native side to abandon the attempt. The work still
+     * takes as long as it takes — what changed is that nobody has to wait for it.
      */
     @JvmStatic
     suspend fun StartPairing(
@@ -289,12 +293,20 @@ object RemexCoreClient {
                         TAG,
                         "StartPairing → native (host=$hostUrl, clientNameLength=${clientName.length} v$clientVersion)"
                 )
-                val result = StartPairingNative(hostUrl, clientName, clientVersion, clientId)
+                val result = abandonablePairing("start") { id -> StartPairingNative(hostUrl, clientName, clientVersion, clientId, id) }
                 Log.d(TAG, "StartPairing ← native result: $result")
                 Result.success(result)
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "StartPairingNative not loaded", e)
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                // AHEAD OF RuntimeException, WHICH IT IS A SUBCLASS OF. Since RemEx-defb the caller's
+                // cancellation resumes this coroutine from inside the try, so without this every
+                // timeout and every user cancel would be logged as the native having crashed and
+                // briefly become a Result.failure. The outer coroutine re-throws it either way, but
+                // only because a cancelled job's cause outranks a returned value — an undocumented
+                // dependency to be resting a log line on.
+                throw e
             } catch (e: RuntimeException) {
                 Log.e(TAG, "StartPairingNative crashed", e)
                 Result.failure(e)
@@ -305,22 +317,61 @@ object RemexCoreClient {
     }
 
     @JvmStatic
+    @JvmName("CancelPairingNative")
+    private external fun CancelPairingNative(attemptId: Long): String
+
+    /**
+     * Runs a blocking pairing native so that cancelling the caller actually ends it (RemEx-defb).
+     *
+     * The mechanism lives in [abandonable] — extracted so it can be tested for real, since nothing
+     * about a JNI call can be exercised in a unit test. What is supplied here is the pairing-specific
+     * part: how to tell the native side to abandon the attempt.
+     */
+    private suspend fun <T> abandonablePairing(name: String, block: (Long) -> T): T {
+        // MINTED PER CALL, and the cancel carries it. Without an identity the cancel lands on
+        // "whatever is in flight", which is routinely NOT this attempt: the cancellation handler is
+        // registered before the JNI call is made, and an attempt can sit queued on the native pairing
+        // lock while a previous one runs. Unidentified, a cancel would either miss (this attempt then
+        // runs its full budget with nobody waiting) or abort a DIFFERENT surface's pairing — and
+        // aborting a PIN submission tears the session down.
+        val attemptId = nextPairingAttemptId.incrementAndGet()
+        return abandonable(
+            name = name,
+            cancel = { CancelPairingNative(attemptId) },
+            onCancelFailure = {
+                // LOUD, because a failure here silently restores the bug this whole mechanism fixes:
+                // the caller stops waiting, the native runs on holding the pairing lock, and the next
+                // attempt queues behind it with nothing in the logs to explain the wait.
+                Log.e(TAG, "Could not abandon pairing attempt $attemptId ($name) — it will run to its own budget", it)
+            },
+            block = { block(attemptId) },
+        )
+    }
+
+    /** Source of the attempt ids above. Monotonic, so an id is never reused. */
+    private val nextPairingAttemptId = java.util.concurrent.atomic.AtomicLong()
+
+    @JvmStatic
     @JvmName("SubmitPairingPinNative")
-    private external fun SubmitPairingPinNative(pin: String): String
+    private external fun SubmitPairingPinNative(pin: String, attemptId: Long): String
 
     /**
      * Sends the PIN the user read off the host's screen, and waits up to 30s for confirmation.
      *
-     * Suspends for the same reason as [StartPairing], and it is reached from the same two places:
-     * the pairing screen, which already dispatched correctly, and RemexClientManager's Connect tap,
-     * which did not (RemEx-uach).
+     * Suspends for the same reason as [StartPairing], and abandonable in the same way (RemEx-defb).
+     * Reached from the same two places: the pairing screen, which already dispatched correctly, and
+     * RemexClientManager's Connect tap, which did not (RemEx-uach).
+     *
+     * ABANDONING THIS ONE TEARS THE SESSION DOWN, unlike the other two. The PairingComplete has gone
+     * out and its answer was never read, so the session is indeterminate and the user must start
+     * again rather than submit a second time.
      */
     @JvmStatic
     suspend fun SubmitPairingPin(pin: String): Result<String> = withContext(Dispatchers.IO) {
         if (isLibraryLoaded) {
             try {
                 Log.d(TAG, "SubmitPairingPin → native (pin length=${pin.length})")
-                val result = SubmitPairingPinNative(pin)
+                val result = abandonablePairing("submit-pin") { id -> SubmitPairingPinNative(pin, id) }
                 // Don't log the raw OK result — it contains hostId and SPKI hash. Just log shape.
                 val redacted = if (result.startsWith("OK:")) "OK:<hostId>|<spkiHash>" else result
                 Log.d(TAG, "SubmitPairingPin ← native result: $redacted")
@@ -328,6 +379,14 @@ object RemexCoreClient {
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "SubmitPairingPinNative not loaded", e)
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                // AHEAD OF RuntimeException, WHICH IT IS A SUBCLASS OF. Since RemEx-defb the caller's
+                // cancellation resumes this coroutine from inside the try, so without this every
+                // timeout and every user cancel would be logged as the native having crashed and
+                // briefly become a Result.failure. The outer coroutine re-throws it either way, but
+                // only because a cancelled job's cause outranks a returned value — an undocumented
+                // dependency to be resting a log line on.
+                throw e
             } catch (e: RuntimeException) {
                 Log.e(TAG, "SubmitPairingPinNative crashed", e)
                 Result.failure(e)
@@ -339,7 +398,7 @@ object RemexCoreClient {
 
     @JvmStatic
     @JvmName("FetchPairingPinNative")
-    private external fun FetchPairingPinNative(): String
+    private external fun FetchPairingPinNative(attemptId: Long): String
 
     /**
      * Fetches the host's currently-active pairing PIN over the already-open native pairing
@@ -356,7 +415,7 @@ object RemexCoreClient {
         if (isLibraryLoaded) {
             try {
                 Log.d(TAG, "FetchPairingPin → native")
-                val result = FetchPairingPinNative()
+                val result = abandonablePairing("fetch-pin") { id -> FetchPairingPinNative(id) }
                 // Never log the raw PIN — log only the response shape.
                 val redacted = if (result.startsWith("OK:")) "OK:<pin>|<expiry>" else result
                 Log.d(TAG, "FetchPairingPin ← native result: $redacted")
@@ -364,6 +423,14 @@ object RemexCoreClient {
             } catch (e: UnsatisfiedLinkError) {
                 Log.e(TAG, "FetchPairingPinNative not loaded", e)
                 Result.failure(e)
+            } catch (e: CancellationException) {
+                // AHEAD OF RuntimeException, WHICH IT IS A SUBCLASS OF. Since RemEx-defb the caller's
+                // cancellation resumes this coroutine from inside the try, so without this every
+                // timeout and every user cancel would be logged as the native having crashed and
+                // briefly become a Result.failure. The outer coroutine re-throws it either way, but
+                // only because a cancelled job's cause outranks a returned value — an undocumented
+                // dependency to be resting a log line on.
+                throw e
             } catch (e: RuntimeException) {
                 Log.e(TAG, "FetchPairingPinNative crashed", e)
                 Result.failure(e)

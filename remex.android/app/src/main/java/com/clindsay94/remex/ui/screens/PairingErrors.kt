@@ -75,11 +75,12 @@ internal object PairingErrors {
      * rather than surfacing the raw diagnostic, which is what lets new codes be added natively
      * without a coordinated release.
      *
-     * NOTE ON THE DEAD-SESSION GROUP: for those four causes the native session is unusable, though
-     * NOT all for the same reason — PIN_REJECTED and PIN_CONFIRM_TIMEOUT have had
-     * ClearActivePairingState() called on them, whereas NO_SESSION and SESSION_KEY_LOST are bare
-     * guard returns where the session was already absent or its key already gone (and for
-     * SESSION_KEY_LOST the socket stays non-null, so resubmitting returns it again indefinitely).
+     * NOTE ON THE DEAD-SESSION GROUP: for those five causes the native session is unusable, though
+     * NOT all for the same reason — PIN_REJECTED, PIN_CONFIRM_TIMEOUT and
+     * PAIRING_ABORTED_SESSION_LOST have had ClearActivePairingState() called on them, whereas
+     * NO_SESSION and SESSION_KEY_LOST are bare guard returns where the session was already absent or
+     * its key already gone (and for SESSION_KEY_LOST the socket stays non-null, so resubmitting
+     * returns it again indefinitely).
      * What they share is that none can be fixed by resubmitting, so the advice depends entirely on
      * [surface]: on [PairingSurface.Dedicated] Submit stays enabled but re-uses that dead session
      * (RemEx-aor9), so the only escape is Cancel; on [PairingSurface.InlineConnect] there is no
@@ -96,10 +97,22 @@ internal object PairingErrors {
                 // Reached the host during start, but it never answered. No stale Submit button is
                 // sitting there on this path, so "check it is on and try again" is followable.
                 "PAIR_TIMEOUT" -> R.string.pairing_error_timeout
+                // The caller abandoned the attempt (RemEx-defb) — usually its own timeout, but any
+                // cancellation of the surrounding scope does it too. Grouped with PAIR_TIMEOUT
+                // because the session survives, so trying again is followable advice. Normally
+                // unreachable: by the time the native returns this, the coroutine has already thrown
+                // TimeoutCancellationException and that path showed the message. Mapping it anyway
+                // keeps a surfaced abort from rendering as "unknown".
+                "PAIRING_ABORTED" -> R.string.pairing_error_timeout
                 "PAIR_MALFORMED" -> R.string.pairing_error_malformed_response
                 // The native session is unusable for all of these — see the note above. The advice
                 // has to match the recovery the surface actually offers.
-                "PIN_REJECTED", "NO_SESSION", "SESSION_KEY_LOST", "PIN_CONFIRM_TIMEOUT" ->
+                // PAIRING_ABORTED_SESSION_LOST belongs here rather than with its sibling above:
+                // abandoning a PIN submission calls ClearActivePairingState, so it is dead-session
+                // like PIN_CONFIRM_TIMEOUT beside it, and on Dedicated the Submit button that stays
+                // enabled can only fail (RemEx-aor9).
+                "PIN_REJECTED", "NO_SESSION", "SESSION_KEY_LOST", "PIN_CONFIRM_TIMEOUT",
+                "PAIRING_ABORTED_SESSION_LOST" ->
                         when (surface) {
                             PairingSurface.Dedicated -> R.string.pairing_error_verify_failed
                             PairingSurface.InlineConnect -> R.string.pairing_error_bad_pin

@@ -194,6 +194,19 @@ public static class AndroidNativeExports
     // StartPairing/SubmitPin from a second Java thread waits here instead of disposing-then-using
     // the active ClientWebSocket (JNI-4 / RemEx-8ay).
     private static readonly object PairingSyncRoot = new();
+
+    /// <summary>
+    /// Lets a caller abandon the pairing attempt it started (RemEx-defb).
+    /// </summary>
+    /// <remarks>
+    /// The bookkeeping lives in <see cref="PairingAbortRegistry"/> so it can be tested — nothing
+    /// about a JNI export can be. **It has its own lock and never takes <see cref="PairingSyncRoot"/>,
+    /// which is what lets a cancel arrive WHILE the attempt it is cancelling holds that lock.** A
+    /// canceller that waited for its own target would deadlock, and silently: the caller would appear
+    /// to hang for exactly the budget it was trying to escape.
+    /// </remarks>
+    private static readonly PairingAbortRegistry PairingAborts = new();
+
     private static readonly ConcurrentDictionary<string, string> _pinnedHashes = new();
     private static readonly Channel<RemexMessage> OutboundMessageQueue = Channel.CreateUnbounded<RemexMessage>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
@@ -559,6 +572,30 @@ public static class AndroidNativeExports
             });
         });
 
+    /// <summary>
+    /// Abandons the pairing attempt in flight, if any. Returns immediately; safe to call when idle.
+    /// </summary>
+    /// <remarks>
+    /// **THIS IS WHAT MAKES A CALLER'S TIMEOUT REAL (RemEx-defb).** The pairing exports block the JNI
+    /// thread for their own budgets — 10s + 20s + 60s for a handshake — and no amount of Kotlin
+    /// `withTimeout` can interrupt a blocking JNI frame. A caller that gives up must therefore tell
+    /// the native side to stop, or the work runs on holding <see cref="PairingSyncRoot"/> and the
+    /// user's next attempt queues behind it.
+    /// </remarks>
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_CancelPairingNative")]
+    public static IntPtr CancelPairingNative(IntPtr env, IntPtr thiz, long attemptId)
+    {
+        return Export(env, () =>
+        {
+            if (PairingAborts.Cancel(attemptId))
+            {
+                Console.Error.WriteLine($"[Pairing] Attempt {attemptId} abandoned by the client — unwinding.");
+            }
+
+            return "OK";
+        });
+    }
+
     private static void ClearActivePairingState()
     {
         if (_pairingWebSocket != null)
@@ -586,7 +623,7 @@ public static class AndroidNativeExports
     /// then <see cref="SubmitPairingPinNative"/>.
     /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_StartPairingNative")]
-    public static IntPtr StartPairingNative(IntPtr env, IntPtr thiz, IntPtr hostUrlPtr, IntPtr clientNamePtr, IntPtr clientVersionPtr, IntPtr clientIdPtr)
+    public static IntPtr StartPairingNative(IntPtr env, IntPtr thiz, IntPtr hostUrlPtr, IntPtr clientNamePtr, IntPtr clientVersionPtr, IntPtr clientIdPtr, long attemptId)
     {
         return Export(env, () =>
         {
@@ -603,6 +640,10 @@ public static class AndroidNativeExports
             {
                 ClientWebSocket? ws = null;
                 PairingClient? client = null;
+
+                // Every budget below is linked to this, so a caller that gives up can end the attempt
+                // instead of leaving it running on this lock (RemEx-defb).
+                var abort = PairingAborts.Begin(attemptId);
                 try
                 {
                     // Always discard any previous pairing state before starting a new attempt.
@@ -634,7 +675,10 @@ public static class AndroidNativeExports
                     using (var tcp = new System.Net.Sockets.TcpClient { NoDelay = true })
                     {
                         var probeTask = tcp.ConnectAsync(uri.Host, uri.Port);
-                        var probeWon = probeTask.Wait(TimeSpan.FromSeconds(10));
+                        // Wait(int, CancellationToken) rather than Wait(TimeSpan): TcpClient.ConnectAsync
+                        // takes no token, so the abort has to be observed by the WAIT instead. The probe
+                        // itself keeps running and the TcpClient's using disposes it on the way out.
+                        var probeWon = probeTask.Wait(10_000, abort);
                         if (!probeWon)
                         {
                             return $"ERROR: {PairingErrorCodes.TcpTimeout}: TCP probe to {uri.Host}:{uri.Port} timed out after 10s — host unreachable, firewall, or wrong IP/port";
@@ -655,11 +699,19 @@ public static class AndroidNativeExports
 
                     // Phase 1: connect (TLS handshake + HTTP/1.1 upgrade). Bounded so a wedged TLS
                     // doesn't hang the JNI thread.
-                    using (var connectCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+                    using (var connectCts = CancellationTokenSource.CreateLinkedTokenSource(abort))
                     {
+                        connectCts.CancelAfter(TimeSpan.FromSeconds(20));
                         try
                         {
                             ws.ConnectAsync(uri, connectCts.Token).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) when (abort.IsCancellationRequested)
+                        {
+                            // Ordered BEFORE the timeout catch: a linked source is cancelled in both
+                            // cases, so testing the timeout first would report every abort as a
+                            // 20-second TLS timeout that never actually elapsed.
+                            return $"ERROR: {PairingErrorCodes.Aborted}: pairing abandoned by the client during TLS";
                         }
                         catch (OperationCanceledException) when (connectCts.IsCancellationRequested)
                         {
@@ -672,8 +724,9 @@ public static class AndroidNativeExports
                     // Phase 2: pairing handshake (send PairingRequest, await PairingResponse).
                     // Generous budget — host generates PIN, derives ECDH session key, computes HMAC, and sends back.
                     // Should be fast (<1s) but allow margin for first-time TLS sessions, slow hardware, etc.
-                    using (var handshakeCts = new CancellationTokenSource(TimeSpan.FromSeconds(60)))
+                    using (var handshakeCts = CancellationTokenSource.CreateLinkedTokenSource(abort))
                     {
+                        handshakeCts.CancelAfter(TimeSpan.FromSeconds(60));
                         client = new PairingClient(ws, log: msg => Console.Error.WriteLine($"[PairingClient] {msg}"))
                         {
                             ClientId = clientId
@@ -681,6 +734,11 @@ public static class AndroidNativeExports
                         try
                         {
                             _activePairingResponse = client.StartPairingAsync(clientName, clientVersion, handshakeCts.Token).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) when (abort.IsCancellationRequested)
+                        {
+                            try { ws.Dispose(); } catch { /* as below */ }
+                            return $"ERROR: {PairingErrorCodes.Aborted}: pairing abandoned by the client during the handshake";
                         }
                         catch (OperationCanceledException) when (handshakeCts.IsCancellationRequested)
                         {
@@ -702,6 +760,14 @@ public static class AndroidNativeExports
                     Console.Error.WriteLine($"[Pairing] PairingResponse received from host {_activePairingResponse.HostId}");
                     return "OK";
                 }
+                catch (OperationCanceledException) when (abort.IsCancellationRequested)
+                {
+                    // The TCP probe's wait, and anything else that observes the token without its own
+                    // catch. Ordered ahead of the general handler so an abort is never reported as an
+                    // unexpected failure.
+                    _activePairingClient = null;
+                    return $"ERROR: {PairingErrorCodes.Aborted}: pairing abandoned by the client";
+                }
                 catch (Exception ex)
                 {
                     _activePairingClient = null;
@@ -710,6 +776,8 @@ public static class AndroidNativeExports
                 }
                 finally
                 {
+                    PairingAborts.End(abort);
+
                     // If we created a socket but didn't promote it to _pairingWebSocket, dispose it now.
                     if (ws != null)
                     {
@@ -727,7 +795,7 @@ public static class AndroidNativeExports
     /// <param name="pinPtr">The 6-digit PIN as typed.</param>
     /// <returns>JSON <see cref="AndroidNativeOperationResponse"/>; failure means a wrong or expired PIN.</returns>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SubmitPairingPinNative")]
-    public static IntPtr SubmitPairingPinNative(IntPtr env, IntPtr thiz, IntPtr pinPtr)
+    public static IntPtr SubmitPairingPinNative(IntPtr env, IntPtr thiz, IntPtr pinPtr, long attemptId)
     {
         return Export(env, () =>
         {
@@ -738,6 +806,7 @@ public static class AndroidNativeExports
             // by a concurrent pairing export (JNI-4 / RemEx-8ay).
             lock (PairingSyncRoot)
             {
+                var abort = PairingAborts.Begin(attemptId);
                 try
                 {
                     if (string.IsNullOrEmpty(pin))
@@ -751,11 +820,20 @@ public static class AndroidNativeExports
 
                     var client = _activePairingClient;
                     bool success;
-                    using (var completeCts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+                    using (var completeCts = CancellationTokenSource.CreateLinkedTokenSource(abort))
                     {
+                        completeCts.CancelAfter(TimeSpan.FromSeconds(30));
                         try
                         {
                             success = client.CompletePairingAsync(pin, _activePairingResponse, completeCts.Token).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) when (abort.IsCancellationRequested)
+                        {
+                            // Torn down like the timeout beside it, and for the same reason: the
+                            // PairingComplete went out and its answer was never read, so the session
+                            // is indeterminate and the user must start again rather than submit twice.
+                            ClearActivePairingState();
+                            return $"ERROR: {PairingErrorCodes.AbortedSessionLost}: PIN submission abandoned by the client";
                         }
                         catch (OperationCanceledException) when (completeCts.IsCancellationRequested)
                         {
@@ -786,6 +864,10 @@ public static class AndroidNativeExports
                     ClearActivePairingState();
                     return $"ERROR: {PairingErrorCodes.Unexpected}: {ex.GetType().Name}: {ex.Message}";
                 }
+                finally
+                {
+                    PairingAborts.End(abort);
+                }
             }
         });
     }
@@ -805,7 +887,7 @@ public static class AndroidNativeExports
     /// <c>OnNativeMessageReceived</c> (RemEx-1t0b).
     /// </remarks>
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_FetchPairingPinNative")]
-    public static IntPtr FetchPairingPinNative(IntPtr env, IntPtr thiz)
+    public static IntPtr FetchPairingPinNative(IntPtr env, IntPtr thiz, long attemptId)
     {
         return Export(env, () =>
         {
@@ -814,6 +896,7 @@ public static class AndroidNativeExports
             // concurrent manual Submit could wait on this lock.
             lock (PairingSyncRoot)
             {
+                var abort = PairingAborts.Begin(attemptId);
                 try
                 {
                     if (_pairingWebSocket == null || _activePairingClient == null || _activePairingResponse == null)
@@ -829,11 +912,24 @@ public static class AndroidNativeExports
 
                     var client = _activePairingClient;
                     PairingPinInfo? pinInfo;
-                    using (var fetchCts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                    using (var fetchCts = CancellationTokenSource.CreateLinkedTokenSource(abort))
                     {
+                        fetchCts.CancelAfter(TimeSpan.FromSeconds(5));
                         try
                         {
                             pinInfo = client.RequestPinAsync(fetchCts.Token).GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) when (abort.IsCancellationRequested)
+                        {
+                            // DOES NOT ClearActivePairingState, per §3.3 — but be honest about what
+                            // that does and does not preserve. Cancelling ClientWebSocket.ReceiveAsync
+                            // ABORTS the socket, so the session this leaves behind is already dead and
+                            // a later manual PIN entry fails with an UNEXPECTED rather than the
+                            // dead-session advice it needs. That is pre-existing on the 5s timeout path
+                            // beside this one; the abort adds a second trigger for it (RemEx-d3z9).
+                            // Not clearing here anyway, because changing that is a behaviour question
+                            // for that bead rather than a comment fix for this one.
+                            return $"ERROR: {PairingErrorCodes.Aborted}: PIN fetch abandoned by the client";
                         }
                         catch (OperationCanceledException) when (fetchCts.IsCancellationRequested)
                         {
@@ -855,6 +951,10 @@ public static class AndroidNativeExports
                     // stay valid so the user can still type the PIN in manually.
                     Console.Error.WriteLine($"[Pairing] FetchPairingPin failed: {ex.GetType().Name}: {ex.Message}");
                     return $"ERROR: {PairingErrorCodes.Unexpected}: {ex.GetType().Name}: {ex.Message}";
+                }
+                finally
+                {
+                    PairingAborts.End(abort);
                 }
             }
         });

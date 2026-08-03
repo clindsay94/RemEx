@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Giving up on a pairing attempt now actually gives up.** If the PC was switched off or unreachable,
+  the app would keep trying for up to a minute and a half — and, worse, the next attempt had to wait
+  for the abandoned one to finish before it could even start, so retrying looked broken. Cancelling or
+  navigating away now stops the attempt properly, and a retry begins immediately.
+  The wait itself has not been shortened: the app still gives a struggling PC the same time to answer
+  it always did, because cutting that short would fail pairings on slow networks that used to work.
+  What changed is that you are no longer stuck waiting for an attempt you have already given up on.
+
 - **Tapping Connect no longer stutters the app while it unlocks your saved pairing.** Your PC's
   identity is stored encrypted on the phone, and the first time the app needs it after starting up it
   has to ask Android's secure hardware for the key — which on some phones takes a noticeable moment,

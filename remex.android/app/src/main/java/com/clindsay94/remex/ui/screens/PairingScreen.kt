@@ -85,7 +85,13 @@ class PairingViewModel : ViewModel() {
                     // No withContext here: SubmitPairingPin hops to Dispatchers.IO itself
                     // (RemEx-uach). A hop at the call site would model the very belief that let
                     // RemexClientManager omit one and block the UI thread.
-                    withTimeout(15_000) {
+                    //
+                    // ABOVE THE NATIVE BUDGET, NOT BELOW IT. The native gives the host 30s to confirm
+                    // the PIN. This bound did nothing until RemEx-defb made it real — and a real 15s
+                    // bound over a 30s budget would abandon pairings that were about to succeed, and
+                    // tear the session down doing it. A backstop catches a native that never returns;
+                    // it must not pre-empt one that is still working.
+                    withTimeout(35_000) {
                         RemexCoreClient.SubmitPairingPin(pin).getOrNull() ?: ""
                     }
                 } catch (_: TimeoutCancellationException) {
@@ -121,22 +127,24 @@ class PairingViewModel : ViewModel() {
         val message =
                 when {
                     // Every reachable native SubmitPin failure lands here — wrong PIN, expired
-                    // session, lost key state, confirm timeout, or an unexpected exception. All
-                    // five are developer-grade English naming ports, paths and cert internals, so
+                    // session, lost key state, confirm timeout, an abandoned submission, or an
+                    // unexpected exception. All six are developer-grade English naming ports, paths
+                    // and cert internals, so
                     // the diagnostic is logged and the failure's cause code selects a localized
                     // sentence for the user instead (RemEx-6gkr). Nothing logged it before, so
                     // logcat gains what the screen loses.
                     //
-                    // Four of the five resolve to advice that names Cancel, because Submit stays
+                    // Five of the six resolve to advice that names Cancel, because Submit stays
                     // enabled here while re-using a session that is already unusable — so "get a
                     // fresh PIN and try again", followed literally in place, just comes back "No
                     // active pairing session" and repeats forever. See the dead-session note in
                     // PairingErrors, which also explains why the connection screen needs the
                     // opposite advice. The fifth, an unexpected exception, is unclassified and
-                    // falls to the generic message.
+                    // falls to the generic message. The abandoned case joins the dead-session
+                    // group because abandoning a submission tears the session down too (RemEx-defb).
                     //
                     // Careful if the Submit predicate ever loosens: SubmitPairingPinNative has a
-                    // SIXTH error return, "PIN is required" (ARG_MISSING), and it is the one case
+                    // SEVENTH error return, "PIN is required" (ARG_MISSING), and it is the one case
                     // that does NOT clear pairing state — so "get a fresh PIN" would be wrong
                     // advice for it. It is unreachable only because Submit requires 6 digits.
                     result.startsWith("ERROR: ") -> {
@@ -184,7 +192,20 @@ class PairingViewModel : ViewModel() {
             val result =
                     try {
                         // StartPairing hops to Dispatchers.IO itself (RemEx-uach).
-                        withTimeout(15_000) {
+                        //
+                        // 95s because the native budgets total 90 — a 10s TCP probe, then 20s of TLS
+                        // and upgrade, then 60s of handshake. Same reasoning as the PIN submission
+                        // below: this became a real bound in RemEx-defb, and at its old 15s it would
+                        // have killed any pairing whose probe was slow, which is most of the ones
+                        // that need patience. Shortening what the user actually waits for is a
+                        // question about the NATIVE budgets, and a separate one (RemEx-r89n).
+                        //
+                        // The margin does NOT cover time spent queued on the native pairing lock,
+                        // which is unbudgeted — behind a connection-screen auto-pair this can fire
+                        // before the attempt even starts. The outcome is a spurious "timed out" and
+                        // then an immediate unwind once the attempt does begin, because the abort is
+                        // recorded against its id and consumed at the start. Not a hang.
+                        withTimeout(95_000) {
                             RemexCoreClient.StartPairing(
                                             hostUrl,
                                             clientName,
@@ -215,10 +236,11 @@ class PairingViewModel : ViewModel() {
                 // value. The old trust-all HTTPS fetch is gone — this uses the .NET-trusted socket,
                 // which Google Play's ASI scanner does not flag.
                 //
-                // THE 8s withTimeout IS NOT A BOUND, whatever it looks like. The native call is a
-                // blocking JNI frame and coroutine cancellation cannot interrupt one, so the timeout
-                // is only observed once the native side returns on its own 5s budget. It is a
-                // backstop against that budget being raised, not a shorter leash (RemEx-defb).
+                // The 8s bound is real now. It was not until RemEx-defb: the native call is a
+                // blocking JNI frame, and cancellation cannot interrupt one, so this timeout used to
+                // be observed only once the native side returned on its own. RemexCoreClient now
+                // runs these on a thread it can walk away from AND tells the native side to abandon
+                // the attempt, so giving up here actually gives up.
                 val fetchedPin: String? =
                         if (allowAutoPin) {
                             // FetchPairingPin hops to Dispatchers.IO itself (RemEx-uach).

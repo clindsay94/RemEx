@@ -68,6 +68,27 @@ internal static class PairingErrorCodes
     /// <summary>Fetching the PIN from the host timed out.</summary>
     internal const string PinFetchTimeout = "PIN_FETCH_TIMEOUT";
 
+    /// <summary>
+    /// The client gave up and asked for the attempt to be abandoned (RemEx-defb).
+    /// </summary>
+    /// <remarks>
+    /// NOT A HOST FAILURE, and normally never seen: by the time this is returned the caller has
+    /// already stopped waiting for it. It exists so the abandoned attempt reports something truthful
+    /// rather than a timeout it did not reach, and so the log says who stopped it.
+    /// </remarks>
+    internal const string Aborted = "PAIRING_ABORTED";
+
+    /// <summary>
+    /// A PIN submission was abandoned, and the session was torn down with it (RemEx-defb).
+    /// </summary>
+    /// <remarks>
+    /// SEPARATE FROM <see cref="Aborted"/> BECAUSE THE RECOVERY IS DIFFERENT, which is the only thing
+    /// these codes exist to tell the user. Abandoning a start or a PIN fetch leaves the session
+    /// usable; abandoning a submission calls ClearActivePairingState, so resubmitting the same PIN
+    /// can only fail. Sharing one code would put "try again" next to a button that cannot work.
+    /// </remarks>
+    internal const string AbortedSessionLost = "PAIRING_ABORTED_SESSION_LOST";
+
     /// <summary>The host has no PIN available to relay.</summary>
     internal const string PinUnavailable = "PIN_UNAVAILABLE";
 
