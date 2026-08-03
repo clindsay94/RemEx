@@ -188,6 +188,18 @@ class PushConsentRegistry(private val capacity: Int = DEFAULT_CAPACITY) {
         granted[id] == GrantedFile(fileName, size)
 
     /**
+     * Whether this id was granted at all, whatever file it was granted for.
+     *
+     * Distinguishes the two ways [isGrantedFor] fails, which are not the same event: an id nobody
+     * granted came from a peer inventing one, while a granted id carrying the wrong file means this
+     * device DID accept something and the offer no longer matches it. Only the second is worth telling
+     * anybody about — reporting the first would let a peer post notifications at will (RemEx-gipu).
+     *
+     * NOT an authorisation check, and nothing may decide to receive a file on this alone.
+     */
+    fun hasGrant(id: String): Boolean = granted.containsKey(id)
+
+    /**
      * Forgets an id once its transfer is finished or abandoned.
      *
      * Deliberately NOT called when the offer is first accepted: a resumable transfer legitimately

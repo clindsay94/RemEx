@@ -817,4 +817,9 @@
     <string name="action_take_screenshot">Fazer uma captura de tela do PC</string>
     <string name="screenshot_taken">Captura de tela feita no PC. Verifique suas notificações para recebê-la.</string>
     <string name="screenshot_failed">O PC não conseguiu fazer a captura de tela.</string>
+    <string name="file_push_failed_no_folder">Não foi possível salvar um arquivo: nenhuma pasta deste telefone está compartilhada para gravação. Compartilhe uma no RemEx para receber arquivos.</string>
+    <string name="file_push_failed_bad_name">Não foi possível salvar um arquivo por causa do nome dele.</string>
+    <string name="file_push_failed_destination">Não foi possível salvar um arquivo: a pasta de destino não está mais disponível.</string>
+    <string name="file_push_failed_wrong_file">Não foi possível salvar um arquivo: não era o arquivo que você aceitou receber.</string>
+    <string name="file_push_failed_not_saved">Não foi possível salvar um arquivo do PC. Peça ao PC para enviá-lo novamente.</string>
 </resources>

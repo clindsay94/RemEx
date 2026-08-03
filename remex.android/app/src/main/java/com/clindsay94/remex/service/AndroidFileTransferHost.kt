@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Base64
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
+import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
@@ -173,8 +174,48 @@ object AndroidFileTransferHost {
             stagingDir = stagingDir(),
             scope = scope,
             pushConsent = pushConsent,
+            onPushRefused = ::notifyPushRefused,
         )
     }
+
+    /**
+     * Tells the user that a file they agreed to receive is not coming, and why (RemEx-gipu).
+     *
+     * Before this, every one of these ended in silence: the consent prompt was answered, the transfer
+     * was declined on the wire, the reason went into the PC's log, and the phone showed nothing. That
+     * is indistinguishable from the app being broken — and it was the exact symptom of RemEx-h1p5,
+     * where pushes really were broken, which is why nobody could tell the two apart.
+     *
+     * The reason code becomes a localized sentence HERE rather than in [FileHostHandler], which is
+     * deliberately pure logic with no Context to resolve strings from.
+     */
+    private fun notifyPushRefused(refusal: PushRefusal) {
+        // Deduped. A grant on a device that remembered an earlier answer is issued with no prompt and
+        // no tap, so a paired-but-hostile PC can drive the same refusal in a loop with no interaction
+        // at all. Repeating one identical notification is noise rather than information; the FIRST is
+        // what the user needs, and each distinct reason still gets through.
+        if (!reportedRefusals.add(refusal)) return
+
+        val message =
+            context.getString(
+                when (refusal) {
+                    PushRefusal.NoWritableSharedFolder -> R.string.file_push_failed_no_folder
+                    PushRefusal.OfferedFileDiffers -> R.string.file_push_failed_wrong_file
+                    PushRefusal.UnusableFileName -> R.string.file_push_failed_bad_name
+                    PushRefusal.DestinationUnavailable -> R.string.file_push_failed_destination
+                    PushRefusal.CouldNotBeSaved -> R.string.file_push_failed_not_saved
+                }
+            )
+        FileTransferNotificationManager.showIncomingPushFailed(context, message)
+    }
+
+    /**
+     * Refusal reasons already shown, so a repeat does not re-post the same notification.
+     *
+     * Cleared whenever a push is freshly consented to, so a genuinely new attempt is reported again —
+     * the point is to suppress a loop, not to silence the feature after one failure.
+     */
+    private val reportedRefusals = java.util.Collections.synchronizedSet(mutableSetOf<PushRefusal>())
 
     /**
      * Ensures the shared binary `/ws/files` socket is open before serving a v3 transfer. The socket is
@@ -230,6 +271,9 @@ object AndroidFileTransferHost {
                     // Record BEFORE replying: the PC may negotiate the first file the instant this
                     // response lands, and an offer arriving before the grant would be refused.
                     pushConsent.grant(minted)
+                    // A fresh acceptance is a fresh chance to be told what went wrong: without this,
+                    // one failure would silence that reason for the rest of the process's life.
+                    reportedRefusals.clear()
                     put("transferIds", JSONArray().apply { minted.keys.forEach { put(it) } })
                 }
             }

@@ -817,4 +817,9 @@
     <string name="action_take_screenshot">पीसी का स्क्रीनशॉट लें</string>
     <string name="screenshot_taken">पीसी पर स्क्रीनशॉट लिया गया। इसे पाने के लिए अपनी सूचनाएं देखें।</string>
     <string name="screenshot_failed">पीसी स्क्रीनशॉट नहीं ले सका।</string>
+    <string name="file_push_failed_no_folder">फ़ाइल सहेजी नहीं जा सकी: इस फ़ोन का कोई फ़ोल्डर लिखने के लिए साझा नहीं है। फ़ाइलें पाने के लिए RemEx में एक साझा करें।</string>
+    <string name="file_push_failed_bad_name">नाम के कारण फ़ाइल सहेजी नहीं जा सकी।</string>
+    <string name="file_push_failed_destination">फ़ाइल सहेजी नहीं जा सकी: जिस फ़ोल्डर में वह जा रही थी वह अब उपलब्ध नहीं है।</string>
+    <string name="file_push_failed_wrong_file">फ़ाइल सहेजी नहीं जा सकी: यह वह फ़ाइल नहीं थी जिसे पाने के लिए आपने सहमति दी थी।</string>
+    <string name="file_push_failed_not_saved">पीसी से आई फ़ाइल सहेजी नहीं जा सकी। पीसी से इसे दोबारा भेजने को कहें।</string>
 </resources>

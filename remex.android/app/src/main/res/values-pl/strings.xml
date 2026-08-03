@@ -833,4 +833,9 @@
     <string name="action_take_screenshot">Zrób zrzut ekranu komputera</string>
     <string name="screenshot_taken">Zrzut ekranu wykonany na komputerze. Sprawdź powiadomienia, aby go odebrać.</string>
     <string name="screenshot_failed">Komputer nie mógł wykonać zrzutu ekranu.</string>
+    <string name="file_push_failed_no_folder">Nie udało się zapisać pliku: żaden folder w tym telefonie nie jest udostępniony do zapisu. Udostępnij jeden w RemEx, aby odbierać pliki.</string>
+    <string name="file_push_failed_bad_name">Nie udało się zapisać pliku z powodu jego nazwy.</string>
+    <string name="file_push_failed_destination">Nie udało się zapisać pliku: folder docelowy nie jest już dostępny.</string>
+    <string name="file_push_failed_wrong_file">Nie udało się zapisać pliku: to nie był plik, na który wyrażono zgodę.</string>
+    <string name="file_push_failed_not_saved">Nie udało się zapisać pliku z komputera. Poproś komputer o ponowne wysłanie.</string>
 </resources>

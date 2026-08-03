@@ -819,4 +819,9 @@
     <string name="action_take_screenshot">Bilgisayarın ekran görüntüsünü al</string>
     <string name="screenshot_taken">Ekran görüntüsü bilgisayarda alındı. Almak için bildirimlerinizi kontrol edin.</string>
     <string name="screenshot_failed">Bilgisayar ekran görüntüsü alamadı.</string>
+    <string name="file_push_failed_no_folder">Bir dosya kaydedilemedi: bu telefonda yazma için paylaşılan bir klasör yok. Dosya almak için RemEx\'te bir klasör paylaşın.</string>
+    <string name="file_push_failed_bad_name">Bir dosya adı nedeniyle kaydedilemedi.</string>
+    <string name="file_push_failed_destination">Bir dosya kaydedilemedi: gideceği klasör artık kullanılabilir değil.</string>
+    <string name="file_push_failed_wrong_file">Bir dosya kaydedilemedi: bu, almayı kabul ettiğiniz dosya değildi.</string>
+    <string name="file_push_failed_not_saved">Bilgisayardan gelen bir dosya kaydedilemedi. Bilgisayardan tekrar göndermesini isteyin.</string>
 </resources>

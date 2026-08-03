@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Accepting a file and then getting nothing now tells you why.** When you agreed to receive a file
+  from the PC and it could not be saved, your phone said nothing at all — the reason went into a log
+  on the PC, which you were never going to read. That is indistinguishable from the app being broken,
+  and for a while it *was* broken in exactly that way, which is why nobody could tell the two apart.
+  You now get a notification — including for the worst case, where the whole file transfers and then
+  cannot be saved, which is the point you have waited longest. The one that matters most says what to
+  do: if no folder on your phone is shared for writing, there is nowhere to put an incoming file, and
+  it tells you to share one.
+  An offer refused under a ticket your phone never issued stays silent, deliberately — nothing on your
+  phone agreed to it, so there is nothing to explain, and announcing it would let a paired PC post
+  notifications at you at will. Repeats of the same reason are shown once.
+  (`FileHostHandler.kt`, `AndroidFileTransferHost.kt`; RemEx-gipu.)
+
 ### Changed
 
 - **When several files are offered at once, the prompt now names all of them.** It used to list five

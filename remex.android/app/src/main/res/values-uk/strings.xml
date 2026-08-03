@@ -833,4 +833,9 @@
     <string name="action_take_screenshot">Зробити знімок екрана ПК</string>
     <string name="screenshot_taken">Знімок екрана зроблено на ПК. Перевірте сповіщення, щоб отримати його.</string>
     <string name="screenshot_failed">ПК не зміг зробити знімок екрана.</string>
+    <string name="file_push_failed_no_folder">Не вдалося зберегти файл: жодна папка на цьому телефоні не надана для запису. Надайте одну в RemEx, щоб отримувати файли.</string>
+    <string name="file_push_failed_bad_name">Не вдалося зберегти файл через його назву.</string>
+    <string name="file_push_failed_destination">Не вдалося зберегти файл: папка призначення більше недоступна.</string>
+    <string name="file_push_failed_wrong_file">Не вдалося зберегти файл: це був не той файл, який ви погодилися отримати.</string>
+    <string name="file_push_failed_not_saved">Не вдалося зберегти файл з ПК. Попросіть ПК надіслати його ще раз.</string>
 </resources>

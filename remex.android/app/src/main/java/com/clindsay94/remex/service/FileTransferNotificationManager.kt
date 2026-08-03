@@ -30,6 +30,12 @@ object FileTransferNotificationManager {
     // finished download's "Open" prompt is not clobbered by the ongoing-progress notification.
     private const val COMPLETE_NOTIFICATION_ID_BASE = 1100
 
+    /**
+     * Its own id, so an incoming-push refusal is not clobbered by an unrelated transfer's progress
+     * ticks on 1002, nor dismissed by `cancel()` when some other transfer is cancelled (RemEx-gipu).
+     */
+    private const val PUSH_FAILED_NOTIFICATION_ID = 1004
+
     fun showTransferStarted(context: Context, fileName: String, isDownload: Boolean) {
         notify(
                 context = context,
@@ -210,6 +216,34 @@ object FileTransferNotificationManager {
                 indeterminate = false,
                 ongoing = false,
         )
+    }
+
+    /**
+     * Posts why an incoming push could not be received, on its OWN notification id (RemEx-gipu).
+     *
+     * **NOT [showTransferFailed], WHICH SHARES ID 1002 WITH PROGRESS AND COMPLETION.** A refusal put
+     * there is overwritten by the next progress tick of any unrelated transfer, and
+     * `cancelLegacyTransfer` cancels 1002 outright — so the one message explaining why nothing
+     * arrived could be wiped by something the user did somewhere else entirely. This is the message
+     * that must survive to be read.
+     */
+    fun showIncomingPushFailed(context: Context, message: String) {
+        if (!canPostNotifications(context)) return
+        ensureChannel(context)
+
+        val builder =
+                NotificationCompat.Builder(context, CHANNEL_ID)
+                        .setSmallIcon(R.drawable.ic_notification)
+                        .setContentTitle(
+                                context.getString(R.string.file_transfer_notification_failed_title)
+                        )
+                        .setContentText(message)
+                        .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+                        .setAutoCancel(true)
+                        .setSilent(true)
+                        .setPriority(NotificationCompat.PRIORITY_LOW)
+
+        NotificationManagerCompat.from(context).notify(PUSH_FAILED_NOTIFICATION_ID, builder.build())
     }
 
     fun cancel(context: Context) {

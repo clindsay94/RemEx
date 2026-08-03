@@ -13,6 +13,49 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
+ * Why an incoming push could not be received, for somebody who is owed an explanation (RemEx-gipu).
+ *
+ * A reason code rather than a sentence, because [FileHostHandler] is pure logic over injected seams
+ * and has no Context: turning this into something a person reads is the Android layer's job, and
+ * prose here would be untranslated English in eight of the nine languages.
+ *
+ * **ONLY RAISED WHERE A GRANT FOR THAT TRANSFER ID EXISTS.** That is the line, and it is narrower
+ * than "after a tap": on a device that remembered an earlier answer, `requestConsent` grants without
+ * prompting, so nobody taps anything and a refusal is still worth reporting. What the line does
+ * guarantee is that this device minted the id after deciding to accept, so an offer under an id
+ * nobody granted — the forged case — stays silent. Notifying there would let a paired PC post silent
+ * notifications on somebody's phone at will, by inventing ids.
+ *
+ * That protection is real but partial: on an auto-accept device a hostile PC can still drive
+ * [NoWritableSharedFolder] in a loop with no interaction, which is why the reporting side dedupes.
+ */
+enum class PushRefusal {
+    /** Nothing writable is shared, so there is nowhere to put the file. The user can fix this. */
+    NoWritableSharedFolder,
+
+    /**
+     * The offer named a different file than the grant it used.
+     *
+     * NOT the forged case — a grant for this id exists, so this device did accept something under it.
+     * The user agreed to receive one file and the PC negotiated another (RemEx-tutz), which from their
+     * side looks like the file they approved simply never arriving.
+     */
+    OfferedFileDiffers,
+
+    /** A name containing a path separator, which this device cannot file under. Not user-fixable. */
+    UnusableFileName,
+
+    /** The folder this device picked went away or turned read-only. Re-sharing it fixes this. */
+    DestinationUnavailable,
+
+    /**
+     * The bytes arrived but could not be committed — incomplete, hash mismatch, or the destination
+     * file could not be created. The remedy is the same in every case: ask the PC to send it again.
+     */
+    CouldNotBeSaved,
+}
+
+/**
  * Which shared folder a pushed file goes into, or null when nothing writable is shared (RemEx-h1p5).
  *
  * Top-level and pure so the choice can be tested without a handler, a socket or a filesystem — it is
@@ -73,9 +116,31 @@ class FileHostHandler(
      * tests that never exercise push keep working; AndroidFileTransferHost passes the shared one.
      */
     private val pushConsent: PushConsentRegistry = PushConsentRegistry(),
+    /**
+     * Told when a push the user accepted cannot be received, so somebody can be shown why
+     * (RemEx-gipu). Defaulted to a no-op so the existing tests and call sites are unaffected;
+     * [AndroidFileTransferHost] supplies the real one.
+     */
+    private val onPushRefused: (PushRefusal) -> Unit = {},
 ) {
     private val receiveSessions = ConcurrentHashMap<String, HostReceiveSession>()
     private val sendSessions = ConcurrentHashMap<String, HostSendSession>()
+
+    /**
+     * Hands a refusal to whoever can show it, without letting that get in the way of the protocol.
+     *
+     * **LAUNCHED, NOT CALLED INLINE, AND REVIEW CAUGHT THE VERSION THAT WAS.** The reporter ends in a
+     * `NotificationManagerCompat.notify` — a synchronous binder call that can throw. Called inline
+     * before `sendReady`, a throw would skip the decline entirely: the PC would hear nothing, sit out
+     * its thirty-second deadline and log "the peer never acknowledged", turning a clean refusal into
+     * a hang. In the method whose whole purpose is removing unexplained silence.
+     *
+     * Dispatching also keeps it off the inbound control-message collector, which this file already
+     * requires of anything slow — the consent prompt is launched for exactly that reason.
+     */
+    private fun reportRefusal(refusal: PushRefusal) {
+        scope.launch { onPushRefused(refusal) }
+    }
 
     /** Dispatches one inbound control-plane message. Returns true if this handler consumed it. */
     suspend fun handleControlMessage(json: String): Boolean {
@@ -551,6 +616,14 @@ class FileHostHandler(
                 // of a message that failed its own check would let a bad offer cancel a good one.
                 if (!pushConsent.isGrantedFor(transferId, fileName, size)) {
                     sendReady(transferId, false, 0, "This push was not accepted on the device.")
+
+                    // A MISMATCH IS NOT THE FORGED CASE, and an earlier version of this reported
+                    // neither. isGrantedFor fails two ways: no grant for the id at all (nobody here
+                    // agreed to anything — stay silent), or a grant that names a different file. The
+                    // second means this device DID accept something under that id and the PC then
+                    // negotiated another file, which to the user is simply the file they approved
+                    // never arriving. hasGrant is what tells the two apart.
+                    if (pushConsent.hasGrant(transferId)) reportRefusal(PushRefusal.OfferedFileDiffers)
                     return
                 }
 
@@ -569,6 +642,9 @@ class FileHostHandler(
                     // Release the id: this transfer is over, and a grant left behind would sit in the
                     // registry authorising a push that can never arrive.
                     pushConsent.release(transferId)
+                    // The most actionable refusal there is: a file was accepted and there is nowhere
+                    // to put it.
+                    reportRefusal(PushRefusal.NoWritableSharedFolder)
                     sendReady(
                         transferId,
                         false,
@@ -618,22 +694,29 @@ class FileHostHandler(
         // Contrast the name-mismatch check in the PUSH branch, which deliberately does NOT release:
         // a decline here is evidence about the TRANSFER, while a mismatch is evidence about one
         // MESSAGE, and the grant behind it may be perfectly good. (RemEx-h1p5, RemEx-tutz.)
-        fun decline(reason: String) {
-            if (!replaceExisting) pushConsent.release(transferId)
+        //
+        // The refusal is also reported to whoever can show it (RemEx-gipu), but ONLY for a push: the
+        // user answered a prompt and is owed an explanation for the silence that followed. An upload
+        // is the PC's own operation and the PC already sees the decline reason.
+        fun decline(reason: String, refusal: PushRefusal) {
+            if (!replaceExisting) {
+                pushConsent.release(transferId)
+                reportRefusal(refusal)
+            }
             sendReady(transferId, false, 0, reason)
         }
 
         if (destRoot.isNullOrBlank()) {
-            decline("A destination shared root is required.")
+            decline("A destination shared root is required.", PushRefusal.NoWritableSharedFolder)
             return
         }
         if (fileName.isBlank() || fileName.contains('/') || fileName.contains('\\')) {
-            decline("Invalid file name.")
+            decline("Invalid file name.", PushRefusal.UnusableFileName)
             return
         }
         val parent = facade.resolve(destRoot, (destRelativePath ?: "").trim('/'))
         if (parent == null || !parent.canWrite) {
-            decline("Destination folder not found or read-only.")
+            decline("Destination folder not found or read-only.", PushRefusal.DestinationUnavailable)
             return
         }
 
@@ -918,12 +1001,16 @@ class FileHostHandler(
             val matches = expectedSha.isNullOrEmpty() || actual == expectedSha
             if (!complete || !matches) {
                 deleteStaging()
+                // Post-consent and post-transfer: every byte arrived and the file still is not
+                // there. The silence here was the longest of the lot (RemEx-gipu).
+                if (!replaceExisting) reportRefusal(PushRefusal.CouldNotBeSaved)
                 return TransferOutcome(false, actual, if (!complete) "Transfer incomplete." else "SHA-256 mismatch.")
             }
             // Commit the verified partial into the SAF destination.
             val parent = facade.resolve(destRoot, (destRelativePath ?: "").trim('/'))
             if (parent == null || !parent.canWrite) {
                 deleteStaging()
+                if (!replaceExisting) reportRefusal(PushRefusal.DestinationUnavailable)
                 return TransferOutcome(false, actual, "Destination no longer writable.")
             }
             // **ONLY AN UPLOAD REPLACES (RemEx-h1p5).** SAF's createFile uniquifies a colliding name
@@ -941,6 +1028,7 @@ class FileHostHandler(
             val target = parent.createFile("application/octet-stream", fileName)
             if (target == null) {
                 deleteStaging()
+                if (!replaceExisting) reportRefusal(PushRefusal.CouldNotBeSaved)
                 return TransferOutcome(false, actual, "Could not create destination file.")
             }
             val ok =
@@ -955,6 +1043,7 @@ class FileHostHandler(
                     false
                 }
             deleteStaging()
+            if (!ok && !replaceExisting) reportRefusal(PushRefusal.CouldNotBeSaved)
             return if (ok) TransferOutcome(true, actual, null)
             else TransferOutcome(false, actual, "Verified but could not be saved.")
         }

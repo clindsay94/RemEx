@@ -813,4 +813,9 @@
     <string name="action_take_screenshot">Ambil tangkapan layar PC</string>
     <string name="screenshot_taken">Tangkapan layar diambil di PC. Periksa notifikasi Anda untuk menerimanya.</string>
     <string name="screenshot_failed">PC tidak dapat mengambil tangkapan layar.</string>
+    <string name="file_push_failed_no_folder">File tidak dapat disimpan: tidak ada folder di ponsel ini yang dibagikan untuk ditulisi. Bagikan satu di RemEx untuk menerima file.</string>
+    <string name="file_push_failed_bad_name">File tidak dapat disimpan karena namanya.</string>
+    <string name="file_push_failed_destination">File tidak dapat disimpan: folder tujuannya sudah tidak tersedia.</string>
+    <string name="file_push_failed_wrong_file">File tidak dapat disimpan: ini bukan file yang Anda setujui untuk diterima.</string>
+    <string name="file_push_failed_not_saved">File dari PC tidak dapat disimpan. Minta PC mengirimkannya lagi.</string>
 </resources>

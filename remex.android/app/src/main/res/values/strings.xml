@@ -913,4 +913,13 @@
     <string name="action_take_screenshot">Take a screenshot of the PC</string>
     <string name="screenshot_taken">Screenshot taken on the PC. Check your notifications to receive it.</string>
     <string name="screenshot_failed">The PC could not take a screenshot.</string>
+
+    <!-- Shown when a file the user ALREADY ACCEPTED cannot be received (RemEx-gipu). Before these,
+         accepting a file and receiving nothing looked exactly like the app being broken. Only the
+         first is something the user can act on; the other two exist so the silence is explained. -->
+    <string name="file_push_failed_no_folder">A file could not be saved: no folder on this phone is shared for writing. Share one in RemEx to receive files.</string>
+    <string name="file_push_failed_bad_name">A file could not be saved because of its name.</string>
+    <string name="file_push_failed_destination">A file could not be saved: the folder it was going to is no longer available.</string>
+    <string name="file_push_failed_wrong_file">A file could not be saved: it was not the file you agreed to receive.</string>
+    <string name="file_push_failed_not_saved">A file from the PC could not be saved. Ask the PC to send it again.</string>
 </resources>

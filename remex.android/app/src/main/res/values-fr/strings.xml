@@ -817,4 +817,9 @@
     <string name="action_take_screenshot">Prendre une capture d\'écran du PC</string>
     <string name="screenshot_taken">Capture d\'écran prise sur le PC. Surveillez vos notifications pour la recevoir.</string>
     <string name="screenshot_failed">Le PC n\'a pas pu prendre de capture d\'écran.</string>
+    <string name="file_push_failed_no_folder">Un fichier n\'a pas pu être enregistré : aucun dossier de ce téléphone n\'est partagé en écriture. Partagez-en un dans RemEx pour recevoir des fichiers.</string>
+    <string name="file_push_failed_bad_name">Un fichier n\'a pas pu être enregistré à cause de son nom.</string>
+    <string name="file_push_failed_destination">Un fichier n\'a pas pu être enregistré : le dossier de destination n\'est plus disponible.</string>
+    <string name="file_push_failed_wrong_file">Un fichier n\'a pas pu être enregistré : ce n\'était pas celui que vous aviez accepté.</string>
+    <string name="file_push_failed_not_saved">Un fichier du PC n\'a pas pu être enregistré. Demandez au PC de le renvoyer.</string>
 </resources>

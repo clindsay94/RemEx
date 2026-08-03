@@ -143,6 +143,9 @@ class FileHostHandlerTest {
     private fun rootDescriptor() =
         RootDescriptor("root1", "Shared", true, true, true, true, false)
 
+    /** Refusals reported to the UI layer by the handler under test (RemEx-gipu). */
+    private val pushRefusals = mutableListOf<PushRefusal>()
+
     private fun build(
         root: FakeNode,
         granted: Boolean = false,
@@ -163,6 +166,7 @@ class FileHostHandlerTest {
                 stagingDir = tmp.newFolder("staging"),
                 scope = CoroutineScope(Dispatchers.Unconfined),
                 pushConsent = pushConsent,
+                onPushRefused = { pushRefusals.add(it) },
             )
         return Triple(handler, sender, mutator)
     }
@@ -462,6 +466,90 @@ class FileHostHandlerTest {
         val payload = sender.last().getJSONObject("fileTransferReady")
         assertFalse(payload.getBoolean("accepted"))
         assertTrue(payload.getString("declineReason").contains("negative size"))
+    }
+
+    /**
+     * A push refused AFTER the user accepted it is reported so somebody can be told (RemEx-gipu).
+     *
+     * Accepting a file and then receiving nothing, with no explanation anywhere on the phone, is
+     * indistinguishable from the app being broken — and it was the literal symptom of RemEx-h1p5,
+     * where pushes genuinely were broken, which is why nobody could tell the two states apart.
+     */
+    @Test
+    fun pushRefusedAfterConsent_isReportedWithAnActionableReason() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(mapOf("minted-id" to GrantedFile("pushed.txt", 5)))
+        val readOnlyOnly = listOf(RootDescriptor("root1", "Shared", false, false, false, false, false))
+        val (h, _, _) =
+            build(sampleTree(), granted = true, pushConsent = consent, roots = readOnlyOnly)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"minted-id","mode":"push","fileName":"pushed.txt","size":5}}
+            """.trimIndent()
+        )
+
+        assertEquals(listOf(PushRefusal.NoWritableSharedFolder), pushRefusals)
+    }
+
+    /**
+     * A granted id carrying the WRONG file is reported — it is not the forged case.
+     *
+     * Review caught the first version calling this "before consent" and staying silent. isGrantedFor
+     * fails two ways, and only one of them means nobody agreed to anything: here a grant for this very
+     * id exists, so this device accepted something under it and the PC then negotiated another file.
+     * From the user's side that is the file they approved never arriving.
+     */
+    @Test
+    fun pushUnderAGrantForAnotherFile_isReported() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(mapOf("minted-id" to GrantedFile("cat.jpg", 5)))
+        val (h, _, _) = build(sampleTree(), granted = true, pushConsent = consent)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"minted-id","mode":"push","fileName":"resume.pdf","size":5}}
+            """.trimIndent()
+        )
+
+        assertEquals(listOf(PushRefusal.OfferedFileDiffers), pushRefusals)
+    }
+
+    /**
+     * An offer refused BEFORE consent stays silent.
+     *
+     * The user never agreed to anything, so there is nothing to explain — and notifying here would
+     * hand a paired-but-hostile PC a way to ring somebody's phone at will, by sending offers under
+     * transfer ids nobody granted.
+     */
+    @Test
+    fun pushRefusedBeforeConsent_isNotReportedToTheUser() = runBlocking {
+        val (h, sender, _) = build(sampleTree(), granted = true)
+
+        h.handleControlMessage(offer("forged-id", FileTransferModes.PUSH))
+
+        assertFalse(sender.last().getJSONObject("fileTransferReady").getBoolean("accepted"))
+        assertTrue("a refusal the user never invited must not notify them", pushRefusals.isEmpty())
+    }
+
+    /**
+     * An UPLOAD decline is not reported either: it is the PC's own operation and the PC already sees
+     * the reason. Notifying would put a message on the phone about something nobody there did.
+     */
+    @Test
+    fun uploadDecline_isNotReportedToThePhoneUser() = runBlocking {
+        val (h, _, _) = build(sampleTree(), granted = true, roots = emptyList())
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"up-1","mode":"upload","destRoot":"gone","fileName":"a.txt","size":5}}
+            """.trimIndent()
+        )
+
+        assertTrue(pushRefusals.isEmpty())
     }
 
     /**
