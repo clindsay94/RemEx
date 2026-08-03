@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Your phone now introduces itself by its real name when you pair it.** Every Android device used
+  to tell the PC it was called "Android Client" — so if you paired two phones, the PC had two
+  devices with the same name and no way to tell which was which. It now sends the name you gave the
+  phone in its own settings ("Connor's Pixel"), falling back to the make and model of the handset if
+  you never set one.
+  This only travels while you are pairing, so a phone paired before this update keeps whatever name
+  it gave then until you pair it again. The name is also no longer written to the phone's diagnostic
+  log, since it is often a person's real name.
+
 ### Added
 
 - **Your PC now remembers what your phone is called, not just the first time it connects.** A phone
@@ -21,8 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   little by comparison, so it is kept somewhere a problem with it can only ever cost you the name. The
   trade is that unpairing a device does not yet clear its remembered name — the button to unpair does
   not exist yet, and the two will be joined up when it does.
-  Two things still limit what you will see: the Android app currently sends "Android Client" for every
-  phone rather than the actual device, and the PC has nowhere to show the name yet. Both are tracked.
+  One thing still limits what you will see: the PC has nowhere to show the name yet. That is tracked.
 
 - **The PC now keeps track of which phones are actually connected to it.** Nothing on the PC could
   answer that before: a connection was known only to the piece of code handling it, and forgotten the

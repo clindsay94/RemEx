@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import com.clindsay94.remex.DeviceName
 
 data class PairingUiState(
     val isLoading: Boolean = false,
@@ -322,7 +323,17 @@ fun PairingScreen(
         // manually and the PIN retains its out-of-band, anti-MITM value.
         val allowAutoPin =
                 com.clindsay94.remex.security.TransportTrust.canAutoFetchPin(context, host)
-        viewModel.startPairing(context, hostUrl, "Android Client", "2.0.0", clientId, allowAutoPin)
+        // What this phone calls itself, rather than the constant every phone used to send
+        // (RemEx-8m3r). The PC keeps this at pairing and shows it from then on, so three phones in
+        // one household must not arrive as three identical rows.
+        viewModel.startPairing(
+                context,
+                hostUrl,
+                DeviceName.forPairing(context),
+                "2.0.0",
+                clientId,
+                allowAutoPin
+        )
     }
 
     // Auto-fill PIN when the host relays it over the pairing WebSocket after the handshake

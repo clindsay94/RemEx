@@ -309,7 +309,19 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
                         val pairResult =
                                 RemexCoreClient.StartPairing(
                                                 "wss://$host:$port/ws",
-                                                "Android Client",
+                                                // The same real device name the pairing screen
+                                                // sends (RemEx-8m3r). This path pairs without ever
+                                                // showing that screen, so leaving it on the old
+                                                // constant would have made the name depend on which
+                                                // route the user happened to take.
+                                                //
+                                                // applicationContext for the reason stated further
+                                                // down this function: settings.context is whichever
+                                                // context won the early return in initialize(), and
+                                                // may be a long-destroyed Activity.
+                                                DeviceName.forPairing(
+                                                        settings.context.applicationContext
+                                                ),
                                                 "2.0.0",
                                                 clientId
                                         )

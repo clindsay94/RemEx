@@ -262,9 +262,14 @@ object RemexCoreClient {
     ): Result<String> {
         return if (isLibraryLoaded) {
             try {
+                // The client name is NOT logged. It used to be the constant "Android Client";
+                // since RemEx-8m3r it is the name the user gave their phone, which is very often
+                // their real name — and minify is on but no assumenosideeffects rule strips
+                // android.util.Log, so this line survives into release builds and any bug report
+                // taken from one. Its length is enough to debug an ArgMissing rejection.
                 Log.d(
                         TAG,
-                        "StartPairing → native (host=$hostUrl, client=$clientName v$clientVersion)"
+                        "StartPairing → native (host=$hostUrl, clientNameLength=${clientName.length} v$clientVersion)"
                 )
                 val result = StartPairingNative(hostUrl, clientName, clientVersion, clientId)
                 Log.d(TAG, "StartPairing ← native result: $result")

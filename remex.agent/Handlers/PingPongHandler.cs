@@ -400,10 +400,10 @@ public sealed class PingPongHandler(
                         // never sends pairing_request. So the sessions a presence UI would display are
                         // never the ones that carried a name, and PairedClientRegistry stores
                         // clientId → secret with nowhere to keep it. RemEx-yzqs is therefore a hard
-                        // prerequisite for showing a name at all, not a polish item, and RemEx-8m3r
-                        // matters after it because Android sends the constant "Android Client" rather
-                        // than the actual device. Recording it here is what makes fixing those two
-                        // sufficient instead of requiring a wire change as well.
+                        // prerequisite for showing a name at all, not a polish item. Android used
+                        // to send the constant "Android Client" here too, which RemEx-8m3r fixed —
+                        // so what arrives now is the real device. Recording it here is what made
+                        // fixing that sufficient instead of also needing a wire change.
                         reportedDeviceName = message.PairingRequest?.ClientName;
                         sessionRegistry.Identify(session, message.ClientId, reportedDeviceName);
 
