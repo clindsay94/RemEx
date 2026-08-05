@@ -134,6 +134,24 @@ android {
     buildToolsVersion = "37.0.0"
     ndkVersion = "30.0.14904198"
 
+    // Unit tests run against the RELEASE variant, which is what actually ships and gets
+    // installed on device. Without this line AGP 9 generates a unit-test component for the
+    // default testBuildType ("debug") and for NO other variant, so `testReleaseUnitTest`
+    // simply does not exist - `scripts/verify.ps1 -Scope android` invoked it for weeks and
+    // failed every time with "task not found", which was swallowed and reported as "Android
+    // unit tests failed" (RemEx-thvf). Under AGP 8 both variants got one, which is why the
+    // task name looked reasonable when it was written.
+    //
+    // Consequences, so they are not a surprise later:
+    //  - `testDebugUnitTest` no longer exists. Android Studio's default run configurations
+    //    follow the Build Variants panel, so select "release" there to run tests from the IDE.
+    //  - testBuildType also steers INSTRUMENTED tests. app/src/androidTest holds 7 Compose UI
+    //    tests; they now target the minified release build and may need testProguardFiles
+    //    rules if they are ever wired into an automated path. Nothing runs them today.
+    //
+    // Verified at the time of the change: 530 unit tests, 0 failures, on both variants.
+    testBuildType = "release"
+
     testOptions {
         unitTests {
             // Return defaults instead of throwing on unmocked android.* framework calls

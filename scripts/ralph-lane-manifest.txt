@@ -1,0 +1,62 @@
+# ralph-lane-manifest.txt - the files a parallel board-drain lane must be handed by hand.
+#
+# WHY THIS FILE EXISTS
+#
+# `git worktree add` populates a new working copy from the git index, so every gitignored
+# path is simply absent from it. Most of those absences are correct and deliberate. A few
+# of them break the build in a way that does not obviously point back at provisioning -
+# a missing local.properties reads as "your Android SDK is broken", not "your lane is only
+# half set up". This file is the short list of that second kind.
+#
+# It is a file rather than an array inside ralph-lane-bootstrap.ps1 because a manifest shows
+# up in a diff and can be asserted against. A list buried in a script rots quietly the first
+# time somebody adds a new ignored config file.
+#
+# FORMAT
+#
+#   One path per line, relative to the repository root.
+#   A leading '?' marks the entry optional - copied when present, skipped when absent.
+#   Anything after '#' is a comment. Blank lines are ignored.
+#
+# Consumed by scripts/ralph-lane-bootstrap.ps1.
+# Designed in docs/SPEC-parallel-board-drain-dispatcher.md section 3 (RemEx-56fu.5.2).
+
+# Holds sdk.dir. Without it the Gradle build fails during configuration, and the message
+# talks about the SDK location rather than about the missing file.
+remex.android/local.properties
+
+# Absent on a machine that has never built with Firebase, which is a legitimate state, so
+# this entry is optional. Present-in-the-repo-but-not-copied is NOT legitimate: the lane
+# would build a different app from the integration copy.
+?remex.android/app/google-services.json
+
+
+# ---------------------------------------------------------------------------------------
+# DELIBERATELY NOT COPIED
+#
+# Listed here because "why is this missing?" is exactly the question this file should
+# answer, and silence on the point looks like an oversight rather than a decision.
+#
+#   .beads/, .dolt/    The board is shared, never forked. Copying it would let two lanes
+#                      claim the same bead into two databases that never see each other.
+#                      Lanes reach the one real board through BEADS_DIR, which the
+#                      bootstrap writes into the lane environment file.
+#
+#   .ralph/            A verify receipt describes one working copy at one instant, so
+#                      copying one into a fresh lane would be a lie by construction.
+#                      Each lane writes its own. (The bootstrap does put the lane
+#                      environment file here, because .ralph/ is gitignored and therefore
+#                      invisible to the verify.ps1 source fingerprint.)
+#
+#   artifacts/         Each lane pays one cold build on purpose. Carrying warm build output
+#                      between working copies is how stale-build defects (RemEx-t0f3,
+#                      RemEx-n3z6, RemEx-u5q0) were reintroduced before. The cost of the
+#                      cold build is what Phase 0 (RemEx-56fu.5.1) measured and accepted.
+#
+#   .claude/ (most)    Per-machine state. Note that settings.json, scripts/ and skills/ are
+#                      TRACKED as of RemEx-56fu, so a lane inherits the PostToolUse edit
+#                      guard and the /ralph skill straight from git with no entry here.
+#                      That is load-bearing: before it, every lane ran unguarded.
+#
+# One more provisioning step is a git config change rather than a copy, so it cannot live in
+# this manifest - see the safe.directory handling in ralph-lane-bootstrap.ps1.

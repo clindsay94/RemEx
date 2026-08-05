@@ -23,3 +23,18 @@
 *.otf  binary
 *.keystore binary
 *.jks  binary
+
+# Append-only files — keep both sides instead of conflicting.
+#
+# Both of these are lists that only ever grow, and two branches adding their own entry is the
+# normal case, not a disagreement. Without this, the parallel board drain deadlocks on itself:
+# every lane adds a CHANGELOG entry under [Unreleased], so every landing after the first hits a
+# conflict in a file where the correct resolution is always "take both" — and the merge queue
+# refuses to auto-resolve conflicts on purpose, so it would hand every one of those beads back.
+# (Measured, not predicted: without this line the second landing in a batch conflicts. RemEx-56fu.5.3.)
+#
+# The trade: union also takes both sides when two branches edit the SAME existing line, where a
+# conflict would have been the honest answer. On an append-only list that is rare, and the result
+# is a visible duplicate line in a document rather than anything that can break a build.
+docs/CHANGELOG.md      merge=union
+docs/ralph-state.jsonl merge=union

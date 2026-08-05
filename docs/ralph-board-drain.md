@@ -259,11 +259,19 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
     `## [Unreleased]` in the correct Keep-a-Changelog section. Do NOT create a version heading or
     move entries out of `[Unreleased]` — cutting a release is the operator's decision.
 
-12. Append this iteration's result to **`docs/ralph-state.json`** (tracked). One object per
-    iteration: `{"bead", "outcome", "sourceHash", "commit", "timestampUtc"}`, where `sourceHash`
-    is copied from the verify receipt. A session fork loses in-memory loop state and the loop
-    then silently stops or repeats work; this file is what the next iteration reads to know what
-    already happened.
+12. Append this iteration's result to **`docs/ralph-state.jsonl`** (tracked). One JSON object per
+    line, one line per iteration: `{"bead", "outcome", "sourceHash", "commit", "timestampUtc"}`,
+    where `sourceHash` is copied from the verify receipt. A session fork loses in-memory loop
+    state and the loop then silently stops or repeats work; this file is what the next iteration
+    reads to know what already happened.
+
+    **`.jsonl`, not `.json`.** `verify.ps1` fingerprints `*.json` among its source patterns, and
+    a git pathspec of `*.json` matches at any depth — so a `docs/ralph-state.json` would be part
+    of the fingerprint, and writing this entry would invalidate the very receipt that proves the
+    bead is done. Closing a bead and recording that you closed it would be mutually exclusive.
+    `.jsonl` sits outside that pattern, and a line-per-entry format suits an append-only log
+    anyway. (RemEx-56fu.5.3, which found this while building the parallel merge queue. The file
+    had never been written at that point, so nothing needed migrating.)
 
     **It goes in `docs/`, not `.ralph/`.** `/.ralph` is gitignored (`.gitignore:144`), and
     `git worktree add` does not copy ignored files — so state kept there is invisible to any

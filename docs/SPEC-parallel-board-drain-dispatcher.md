@@ -1,7 +1,10 @@
 # SPEC — Parallel-worktree board-drain dispatcher
 
-Status: **design, not built.** Implementation beads are filed off this document and listed at the
-end. Nothing here has been implemented; where a claim is unverified, it says so.
+Status: **partly built.** Phase 0 (`.5.1`), lane provisioning (`.5.2`), the merge queue (`.5.3`) and
+clustering (`.5.4`) are implemented; only the dispatcher that drives them (`.5.5`) is not. Implementation
+beads are listed at the end with their state. Where a claim is still unverified, it says so — and
+several claims that were unverified when this was written have since been measured and corrected
+inline, marked **MEASURED**.
 
 Bead: `RemEx-56fu.5`. Parent: `RemEx-56fu` (workflow hardening from the Claude Code Insights report,
 2026-08-03), suggestion 8.
@@ -9,7 +12,7 @@ Bead: `RemEx-56fu.5`. Parent: `RemEx-56fu` (workflow hardening from the Claude C
 ## What this is for
 
 `docs/ralph-board-drain.md` describes a **sequential** autonomous loop: one agent, one working copy,
-one bead at a time, twelve steps from `bd update --claim` to `docs/ralph-state.json`. It works. Its
+one bead at a time, twelve steps from `bd update --claim` to `docs/ralph-state.jsonl`. It works. Its
 ceiling is that everything is serialised behind one working copy — including the parts where the
 agent is doing nothing but waiting for a build.
 
@@ -21,6 +24,14 @@ handful of amendments in [§6](#6-what-changes-inside-a-lane). Everything this s
 the loop: choosing what runs in parallel, isolating it, and merging it safely. If the parallel layer
 is deleted, the sequential loop still works exactly as it does now. That is deliberate — the loop is
 the asset, the dispatcher is scaffolding.
+
+> **Phase 0 ran on 2026-08-05 and the epic PASSED the gate — see
+> `docs/MEASURE-parallel-lane-contention.md`.** Three lanes model out at 2.89× serial bead
+> throughput against a 1.8× threshold. Three parts of this spec are now wrong and are corrected
+> inline below, marked **MEASURED**: the Android lane token is harmful and removed (§4), the copy
+> manifest was missing `safe.directory` (§3), and the machine-contention worry that motivated §1
+> is answered. The dominant risk moved from CPU to whether concurrent agent sessions get
+> concurrent API throughput, which no local measurement can settle (§1).
 
 ## 1. Do not build this yet — Phase 0 first
 
@@ -46,6 +57,20 @@ three slow builds at once. A dispatcher that produces 1.3× for this much machin
 
 Recording the negative result is a successful outcome for Phase 0. Write it to
 `docs/MEASURE-parallel-lane-contention.md` either way.
+
+**MEASURED — this section is answered.** Serial baseline 3.30 beads/hour (median 18.2 min, 181
+samples). Four concurrent `verify.ps1 -Scope dotnet` runs slow each other by 17%; three by 6%.
+Modelled throughput at three lanes: **2.89×**, comfortably past the gate.
+
+The reason the gate passed is worth carrying: **build is 8.8% of a bead, not the dominant term.**
+The other 91.2% is model API latency and agent reasoning, which does not contend for cores. This
+section was written expecting CPU contention to decide the question; it was never in a position to.
+
+**The gate that replaces it.** The model assumes that 91.2% scales linearly across lanes, and no
+local measurement can establish that — it depends on API concurrency and rate limits. Phase 0
+proves the *machine* is not the bottleneck; it does not prove nothing is. Treat the first live
+three-lane run as the remaining gate, measuring real beads/hour against **5.94**. If concurrent
+sessions are throttled, every number above is an upper bound.
 
 ## 2. Topology
 
@@ -94,6 +119,7 @@ is a decision, not an oversight.
 | `remex.android/app/google-services.json` | **Yes — copy if present** | Absent on a machine that has never built with Firebase; the bootstrap treats missing as fine, present as must-copy. |
 | `.claude/settings.json`, `.claude/scripts/`, `.claude/skills/` | **Yes — already tracked** | These were un-ignored as part of `RemEx-56fu`. That change is load-bearing here: it is what gives a lane agent the PostToolUse edit guard and the `/ralph` skill. Before it, every lane would have run unguarded. |
 | `.claude/*` (everything else) | No | Per-machine state. Correct to omit. |
+| **`safe.directory` git config** | **Yes — a config step, not a copy** | **MEASURED, and not predicted by this design.** `Z:` does not record ownership, so git refuses any *new* worktree path with "detected dubious ownership" and `verify.ps1` dies at the fingerprint stage. Every lane needs `git config --global --add safe.directory <lane>` before first use. `safe.directory` already listed `Z:/RemEx-hardening-sweep` and `Z:/RemEx/.claude/worktrees/splash-refresh`, so earlier worktree experiments hit this and patched it by hand. |
 
 The copy set lives in a **manifest file**, `scripts/ralph-lane-manifest.txt` — one path per line,
 comments allowed — not inline in the bootstrap script. A manifest is reviewable in a diff and can be
@@ -136,12 +162,23 @@ What *is* genuinely shared, and what to do about it:
 - **`dotnet build-server`** — shut down per lane at teardown so a lingering server does not hold
   file handles in a worktree the dispatcher is about to remove.
 
-**Android lane token.** At most **one** lane at a time may hold Android scope. The dispatcher owns a
-single token; a lane whose bead touches `remex.android/**` or `remex.core/**` (NativeAOT surface)
-must acquire it before verifying, and blocks otherwise. NativeAOT + NDK is heavy enough that two
-concurrent Android builds are plausibly slower than one, and Phase 0's Android contention number
-sets the token count — if it turns out two is fine, the token count becomes 2. It starts at 1
-because that is the safe default.
+**~~Android lane token.~~ MEASURED — removed. Do not build it.**
+
+The plan was one exclusive token for Android scope, on the assumption that concurrent NativeAOT/NDK
+builds would be slower than serialised ones. Measured, they are not:
+
+- three concurrent `assembleRelease`: **1.59×** throughput (1.88× per-build slowdown, cold 175 s
+  against a cold solo baseline of 93 s)
+- exclusive token, one at a time: **1.00×** by construction
+
+The token converts a measured 1.59× into 1.0×. Android contention is real — roughly 30× worse than
+.NET's 1.06× at three lanes — but "worse than .NET" is not the same as "worse than serialising".
+Cap total lanes instead; that bounds CPU pressure without singling out a build type.
+
+Removing it also removes an Amdahl trap the token itself created. 46% of bead commits touch
+`remex.android/` or `remex.core/`, so gating them on one exclusive resource caps three lanes at
+`1/(0.46 + 0.54/3)` = **1.56×** — below the kill criterion in §1. The spec's own mitigation was the
+thing most likely to kill the epic.
 
 ## 5. Constraint 3 — file-overlap estimation is only a heuristic
 
@@ -153,19 +190,61 @@ behaviour, not a failure.
 So the design does not depend on the prediction being right. Three layers, in increasing order of
 how much they are trusted:
 
+Both of the first two layers are `scripts/ralph-cluster.ps1`.
+
 **Layer 1 — estimate (advisory only).** Union of: paths named literally in the bead description and
 acceptance criteria; `gitnexus impact` on symbols the bead names; files historically co-changed with
 beads carrying the same labels (`git log` over closed beads). Used **only to order and cluster work**
 so collisions are rarer. Never used to authorise anything. A bad estimate costs throughput, never
 correctness.
 
+Three things about it were settled by measurement rather than by design, and the plan output names
+each source separately so a thin estimate is visible instead of silently thin:
+
+- **Literal paths must be validated against the repository.** Real bead text contains
+  `Windows/PowerShell` and `codex/openai`, which are shaped exactly like paths and are not paths.
+  A candidate is kept only if it, or its parent directory, actually exists.
+- **A fourth source was needed and is now the main one: identifiers grepped to files.** Many beads
+  name a symbol and no path at all — `file_volumes_request`, `connectionClientId` — and those were
+  the beads producing no estimate whatsoever. `git grep -l` resolves them (10 and 2 files
+  respectively). An identifier appearing in more files than the cap is too generic to be evidence
+  and contributes nothing.
+- **The label co-change source is off by default because it was measured and is nearly empty**:
+  nine closed `tooling` beads yield ONE distinct file between them, since most closed beads have no
+  bead-id-tagged commit within reach of the log window. With it on, the label→file map balloons to
+  ~1000 entries across all labels, which is diffuse enough to cause false collisions. A false
+  collision costs a whole wave of throughput; a missed one costs one rebase conflict that layer 3
+  already handles safely. `-UseLabelHistory` turns it on and the plan reports its yield.
+- **`gitnexus impact` is used only when the index is FRESH** (it is stale as of writing). A graph
+  describing code that has since changed produces a confidently wrong estimate, and the operator
+  cannot tell it is wrong by looking — so the source reports itself as skipped instead.
+
+**`docs/CHANGELOG.md` and `docs/ralph-state.jsonl` are excluded from every estimate, and that is
+load-bearing.** Every bead touches the changelog — the merge queue refuses to land one that does not
+(§7) — so counting it as overlap would make every bead collide with every other and nothing would
+ever be parallelised. Both are `merge=union`, which is what makes ignoring them safe rather than
+optimistic. This is the same trap as §6's changelog conflict, one level up.
+
 **Layer 2 — claims (advisory, enforced at start).** A lane records the paths it intends to touch on
-its bead, via `bd update <id> --metadata`, keyed under a `ralphLane` object. bd is already the single
-shared mutable store with a server mediating access, so no new coordination primitive is introduced —
-which matters, because a *tracked file* used as a claim registry would itself become the most
-contended file in the repo. The dispatcher refuses to start a lane whose claimed paths intersect a
-live claim. A lane that discovers it needs an unclaimed path amends its claim; if the amendment
-collides with a live claim, the lane finishes what it can, stops, and returns the bead with a note.
+its bead, via `bd update <id> --set-metadata`, under a `ralphLanePaths` key. (Not the `ralphLane`
+object the design first proposed: `ralphLane` was already taken by the merge queue for the lane
+*number*, alongside `ralphLaneState` for the lifecycle. Three flat keys, not one object.) bd is
+already the single shared mutable store with a server mediating access, so no new coordination
+primitive is introduced — which matters, because a *tracked file* used as a claim registry would
+itself become the most contended file in the repo. The planner refuses to schedule a bead whose
+estimate intersects a claim a live lane is holding, and refuses to record a claim that collides with
+one. A lane that discovers it needs an unclaimed path amends its claim; if the amendment collides,
+the lane finishes what it can, stops, and returns the bead with a note.
+
+A claim is live only while its bead's `ralphLaneState` is `working` or `ready-to-land`. A returned or
+quarantined bead still has a branch, but no agent is inside it, so its paths are free again.
+
+**Beads with no estimate at all.** A bead naming neither a file nor an identifier could touch
+anything, which is not evidence of safety. Exactly one such bead goes out per wave, and only into a
+lane that is otherwise empty — two beads nobody can predict are the likeliest pair to hand the merge
+queue an avoidable conflict. In practice, with a long ready queue, known work fills every lane and
+these are simply not scheduled; the plan says so and says why, because the real fix is to name a file
+or a symbol in the bead rather than to loosen the rule.
 
 **Layer 3 — git (the only source of truth).** Overlap is *detected*, never predicted, at land time.
 Because merges are serialised (§7), exactly one lane is ever rebasing onto the integration head. A
@@ -191,48 +270,85 @@ A lane runs `docs/ralph-board-drain.md` as written, with these amendments:
 3. **Step 9 (commit)** — unchanged. Commit to the lane branch. Still no push.
 4. **Step 10 (`bd close`)** — **moved.** A lane does not close its bead. Work that has not landed on
    the integration branch is not done, and a closed bead whose branch later fails to merge is a lie
-   in the tracker. The lane marks the bead ready-to-land; the merge queue closes it after the merge
-   verifies green.
-5. **Step 12 (`docs/ralph-state.json`)** — **moved,** for a mechanical reason: every lane appending
+   in the tracker. The lane marks the bead ready-to-land — concretely,
+   `bd update <id> --set-metadata ralphLaneState=ready-to-land`, which is what the merge queue
+   scans for — and the queue closes it after the merge verifies green.
+5. **Step 12 (`docs/ralph-state.jsonl`)** — **moved,** for a mechanical reason: every lane appending
    to one tracked file guarantees a merge conflict on every single landing. The merge queue writes
    the entry, in the integration tree, one at a time. It records the lane number alongside the
-   existing fields.
-6. **Review gate (step 8)** — unchanged per bead, and additionally mandatory per merge (§7).
+   existing fields. (Renamed from `.json` while building the queue: `*.json` is inside
+   `verify.ps1`'s fingerprint, so the journal would have invalidated its own receipt.
+   RemEx-56fu.5.3.)
+6. **Step 11 (`docs/CHANGELOG.md`)** — **stays in the lane, and becomes a landing gate.** Only the
+   lane knows what changed, so only the lane can write the entry; the queue refuses to land a
+   branch that does not touch `docs/CHANGELOG.md`, which turns CLAUDE.md's "no task is complete
+   until the changelog has an entry" from a convention into something checked. That refusal
+   happens before the merge, so a forgotten entry costs no build.
+
+   This step is why `.gitattributes` now carries `docs/CHANGELOG.md merge=union`. **Measured while
+   implementing the queue:** without it, every lane appends under `[Unreleased]`, every landing
+   after the first hits a CHANGELOG conflict, and since the queue refuses to auto-resolve
+   conflicts on principle, it hands nearly every bead straight back — one bead lands per drain and
+   the epic quietly buys nothing. Union merge takes both sides, which for an append-only list is
+   always the right answer.
+7. **Review gate (step 8)** — unchanged per bead, and additionally mandatory per merge (§7).
 
 Amendments 4 and 5 are the whole difference in the contract: **a lane produces a verified branch, not
 a closed bead.**
 
 ## 7. The merge queue
 
-One queue, one writer, in `Z:\RemEx`. Serialised by construction — the concurrency is in the lanes,
-never in the landing.
+`scripts/ralph-merge-queue.ps1`. One queue, one writer, in `Z:\RemEx`. Serialised by construction —
+the concurrency is in the lanes, never in the landing. It holds a lock in `.ralph/` so a second
+queue in the same tree refuses rather than resetting the first one's merges, and it reconstructs
+the queue itself from `git for-each-ref refs/heads/ralph/` plus each bead's `ralphLaneState`, so a
+crashed dispatcher loses nothing.
 
-For each candidate, in the order lanes finish:
+Preconditions, all refused loudly rather than assumed: on the integration branch, never `main` or
+`master`, no half-finished rebase or merge, and **a clean tree** — the quarantine path resets hard,
+so a dirty tree would be destroyed by the first failure.
 
+For each candidate, in the order lanes finish (the tip commit's date, which needs no bookkeeping of
+its own and cannot drift out of step with the branches):
+
+0. Refuse the branch outright if it carries no `docs/CHANGELOG.md` entry, or changes nothing at all.
+   Both are checked before the merge, so neither costs a build.
 1. Rebase the lane branch onto the current integration head. Conflict → layer 3 of §5; the bead goes
-   back, the branch is kept as evidence, next candidate.
+   back, the branch is kept as evidence, next candidate. Skipped entirely when the integration head
+   is already an ancestor, which is every first landing of a batch — and that fast path needs no
+   worktree, so a lane whose worktree was reaped early can still land.
 2. Fast-forward the integration branch to the rebased lane branch.
 3. Run `./scripts/verify.ps1` **in the integration tree**. This is the receipt that counts. A lane's
    own receipt proves the lane was green in isolation; it says nothing about the lane's work combined
    with everything that landed since. The whole reason to re-verify per landing is that isolated
    green plus isolated green is not green.
 4. `-Check` must say **VALID** at the moment of closing, per CLAUDE.md's verification rule.
-5. PASS → `bd close <id>`, append `docs/ralph-state.json`, add the `docs/CHANGELOG.md` entry, delete
-   the lane branch, release the lane.
+5. PASS → `bd close <id>`, append `docs/ralph-state.jsonl`, remove the lane worktree, delete the
+   lane branch, release the lane. The changelog entry is already there — it was gate 0.
 6. FAIL → **quarantine.** Reset the integration branch to the pre-merge commit (`git reset --hard`
    to the recorded SHA, safe here because the integration tree is clean by invariant at this point
    and the SHA was captured in step 1). Reopen the bead with the failure output attached via
-   `bd update --status open --append-notes`. Keep the branch. Do not retry automatically — a lane
-   that verified green alone and fails on integration has found a real interaction, and that
-   deserves a human or a fresh attempt with the failure in hand, not a retry loop.
+   `bd update --status open --append-notes`. Keep the branch **and its worktree**. Do not retry
+   automatically — a lane that verified green alone and fails on integration has found a real
+   interaction, and that deserves a human or a fresh attempt with the failure in hand, not a retry
+   loop. The pre-merge receipt is put back as part of the reset: the failing run overwrote it, and
+   leaving a FAIL receipt describing a tree that has been returned to a proven-green commit would
+   throw the proof away for no reason.
 
-**Cost, stated plainly.** One full verify per landing. At ~49s for `-Scope dotnet` that is
-acceptable. `-Scope all` is not, once Android is in the loop — so the queue runs `-Scope dotnet` per
-landing and `-Scope all` once per drained batch, or immediately after any landing that held the
-Android token. This is a deliberate trade: it accepts that an Android-only regression can be
-attributed to a batch rather than to a single commit, in exchange for a merge queue that is not
-dominated by NDK builds. If Phase 0 shows Android verify is cheaper than feared, drop the
-distinction and always run `-Scope all`.
+   Anything the queue did *not* anticipate is caught the same way. A crash between the
+   fast-forward and the close would otherwise leave the integration branch holding an unverified
+   merge, so the script resets to the recorded SHA on any unhandled error too. This is not
+   hypothetical — the first end-to-end run crashed in exactly that window.
+
+**Cost, stated plainly.** One full verify per landing. This spec originally ran `-Scope dotnet` per
+landing with `-Scope all` once per batch, on the assumption Android would dominate. **Phase 0
+measured otherwise:** `-Scope all` is 94s against ~49s for dotnet, with the queue at 14%
+utilisation — doubling a number that small does not make it a bottleneck. So the default is now
+`-Scope all` per landing, which buys back what the trade gave away: an Android regression
+attributed to a commit rather than to a batch. `-Scope dotnet` remains available for a batch known
+to be .NET-only, and the queue then runs one `-Scope all` at the end if any landing touched
+`remex.android/` or `remex.core/` — the original fallback, kept for the case it was written for.
+Note that the Android *lane token* is gone entirely; Phase 0 found it actively harmful (§4).
 
 ## 8. The dispatcher
 
@@ -264,7 +380,7 @@ prohibition is absolute here and there is no case in this design that needs one.
 which bead is claimed by which lane, and which branches exist — lives in bd and in `git branch`, both
 of which survive the process. `-Status` reconstructs from those two sources alone and holds no
 authoritative state of its own. No in-memory or `.ralph/`-resident state is trusted across
-invocations; that is the same reasoning that moved loop state to the tracked `docs/ralph-state.json`
+invocations; that is the same reasoning that moved loop state to the tracked `docs/ralph-state.jsonl`
 in the first place.
 
 ## 9. Constraints summary
@@ -278,15 +394,15 @@ in the first place.
 | 5 | *(new)* `verify.ps1` fingerprint sees untracked files | §2 — lanes placed outside the repo root |
 | 6 | *(new)* the bd database is gitignored and single | §3 — `BEADS_DIR`; concurrent-write safety is a Phase 0 gate |
 | 7 | *(new)* a lane's receipt does not describe the merged tree | §7 — the integration-tree receipt is the one that gates closing |
-| 8 | *(new)* every lane appending `ralph-state.json` conflicts every time | §6 — the merge queue writes it, serialised |
+| 8 | *(new)* every lane appending `ralph-state.jsonl` conflicts every time | §6 — the merge queue writes it, serialised; and `merge=union` for the changelog, without which every landing after the first conflicts (measured) |
 
 Constraints 5–8 were found while writing this spec and were not in the originating bead.
 
 ## 10. Open questions
 
-- **Dolt concurrent writes.** Unverified. Phase 0 gate. If unsafe, the fallback is to funnel all bd
-  mutations through the dispatcher process rather than letting lanes write directly — more
-  plumbing, same semantics.
+- ~~**Dolt concurrent writes.**~~ **MEASURED — closed, safe.** Six concurrent `bd` processes
+  appending to six distinct beads, then all six to the *same* bead: 12/12 writes reported success
+  and 12/12 survived read-back. Zero lost writes. Lanes may write to bd directly as designed.
 - **Agent launch mechanism.** Whether lanes are separate Claude Code sessions, background tasks, or
   subagents is deliberately unspecified. It is the most likely thing to change and the design does
   not depend on it: a lane is anything that can run the loop in a directory and exit.
@@ -301,10 +417,15 @@ Constraints 5–8 were found while writing this spec and were not in the origina
 
 Filed off this spec. Phase 0 blocks everything else — deliberately.
 
-| Bead | Work |
-|---|---|
-| `RemEx-56fu.5.1` | Phase 0: measure serial baseline, lane contention, Dolt concurrency, ignored-file gap. Write `docs/MEASURE-parallel-lane-contention.md`. Honour the 1.8× kill criterion |
-| `RemEx-56fu.5.2` | `scripts/ralph-lane-manifest.txt` + `scripts/ralph-lane-bootstrap.ps1`, including the artifacts-path assertion |
-| `RemEx-56fu.5.3` | Merge queue: `-Land`, integration-tree verify, quarantine-on-fail, state/changelog writes |
-| `RemEx-56fu.5.4` | Clustering and claims: layers 1 and 2 of §5, plus `-PlanOnly` |
-| `RemEx-56fu.5.5` | `scripts/ralph-dispatch.ps1` end to end, plus the §6 amendments to `docs/ralph-board-drain.md` |
+| Bead | Work | State |
+|---|---|---|
+| `RemEx-56fu.5.1` | Phase 0: measure serial baseline, lane contention, Dolt concurrency, ignored-file gap. Write `docs/MEASURE-parallel-lane-contention.md`. Honour the 1.8× kill criterion | **done** — 2.89×, passed |
+| `RemEx-56fu.5.2` | `scripts/ralph-lane-manifest.txt` + `scripts/ralph-lane-bootstrap.ps1`, including the artifacts-path assertion | **done** |
+| `RemEx-56fu.5.3` | Merge queue: `scripts/ralph-merge-queue.ps1`, integration-tree verify, quarantine-on-fail, journal writes, changelog gate | **done** |
+| `RemEx-56fu.5.4` | Clustering and claims: `scripts/ralph-cluster.ps1`, layers 1 and 2 of §5 | **done** |
+| `RemEx-56fu.5.5` | `scripts/ralph-dispatch.ps1` end to end, plus the §6 amendments to `docs/ralph-board-drain.md` | open |
+
+`.5.5` inherits one loose end from `.5.3`: the queue reads `ralphLaneState` from bead metadata, and
+nothing writes it yet. Until the §6 amendments land, a lane is marked ready by hand with
+`bd update <id> --set-metadata ralphLaneState=ready-to-land`. The queue is deliberately strict about
+this rather than inferring readiness from a branch existing — a half-finished lane must not land.

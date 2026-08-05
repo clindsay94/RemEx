@@ -56,9 +56,10 @@ These are the ones most often skipped under time pressure, so they are restated 
 
 ## Step 4 — record each iteration
 
-Append the result to `docs/ralph-state.json` as described in the procedure. This is tracked on
+Append the result to `docs/ralph-state.jsonl` as described in the procedure. This is tracked on
 purpose: `.ralph/` is gitignored, so state kept there does not survive a fresh worktree and cannot
-be read by a parallel drain.
+be read by a parallel drain. The `.jsonl` suffix is also deliberate — `.json` would fall inside
+`verify.ps1`'s source fingerprint, so recording an iteration would invalidate its own receipt.
 
 ## When to stop and ask
 

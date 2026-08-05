@@ -31,6 +31,115 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Clustering and lane claims for the parallel board drain — `scripts/ralph-cluster.ps1`.** Works
+  out which ready beads can be drained side by side without two agents landing in the same file,
+  and holds the claims that keep them apart. Run with no arguments it prints the plan and changes
+  nothing, because the clustering is the part most likely to be wrong and has to be inspectable
+  before anything is provisioned.
+  The estimate is explicitly advisory. A bead records intent, not a file set, and an agent
+  discovering it must edit something nobody anticipated is normal — so a wrong guess costs
+  throughput and never correctness, with the merge queue catching real overlap at rebase time
+  whatever the plan said. Four sources, each reported separately so a thin estimate is visible
+  rather than silently thin: paths written literally in the bead text, identifiers resolved to
+  files with `git grep`, `gitnexus impact`, and label co-change history.
+  Most of the design was settled by measuring rather than guessing. Literal paths have to be
+  validated against the repository, because real bead text contains `Windows/PowerShell` and
+  `codex/openai`, which are shaped exactly like paths and are not paths. The grep source had to be
+  added at all because many beads name a symbol and no path — `file_volumes_request`,
+  `connectionClientId` — and those were the ones producing no estimate whatsoever. `gitnexus` is
+  consulted only when its index is fresh, since a graph describing code that has since changed
+  gives a confidently wrong answer an operator cannot spot by looking. And label co-change is off
+  by default because it was measured and is nearly empty: nine closed `tooling` beads share one
+  file between them, while switching it on inflates the map to roughly a thousand entries, which
+  is diffuse enough to invent collisions that cost a whole wave.
+  `docs/CHANGELOG.md` and the loop journal are excluded from every estimate, and that is
+  load-bearing rather than tidiness — every bead touches the changelog, so counting it as overlap
+  would make every bead collide with every other and nothing would ever run in parallel. It is the
+  same trap as the changelog merge conflict one level up, and `merge=union` is what makes ignoring
+  it safe.
+  Claims live on the bead itself under `ralphLanePaths`, so no new coordination primitive is
+  introduced and no tracked file becomes the most contended thing in the repository. A claim counts
+  only while its lane is actually working; a returned or quarantined bead still has a branch but
+  nobody inside it, so its paths are free again. A bead that names neither a file nor an identifier
+  could touch anything, so at most one goes out per wave and only into an otherwise empty lane —
+  and when it cannot be placed the plan says the real fix is to name a file in the bead.
+  (`scripts/ralph-cluster.ps1`, `docs/SPEC-parallel-board-drain-dispatcher.md`; RemEx-56fu.5.4.)
+
+- **The merge queue for parallel board-drain lanes — `scripts/ralph-merge-queue.ps1`.** Several
+  lanes work at once; exactly one thing lands at a time, and this is that one thing. A lane now
+  produces a verified *branch* rather than a closed bead, because work that has not landed on the
+  integration branch is not done, and a closed bead whose branch later fails to merge is a lie in
+  the tracker. Per candidate the queue rebases onto the integration head, fast-forwards, runs
+  `verify.ps1` **in the integration tree**, requires `-Check` to say VALID, and only then closes the
+  bead. The reason to re-verify every single landing is that isolated green plus isolated green is
+  not green.
+  A failure quarantines rather than retries: the integration branch is reset to the recorded
+  pre-merge commit, the bead is reopened with the failure attached, and the lane's branch *and its
+  worktree* are kept as evidence. A lane that was green alone and fails on integration has found a
+  real interaction, which deserves a fresh attempt with the failure in hand rather than a retry
+  loop. Rebase conflicts are never auto-resolved — a merge resolution is a code change nobody
+  reviewed and nothing verified — so the bead goes back with the conflicting paths named.
+  **A changelog entry is now an enforced gate, not a convention.** The queue refuses to land a
+  branch that does not touch `docs/CHANGELOG.md`, checked before the merge so a forgotten entry
+  costs no build. The lane writes the entry, because only the lane knows what changed.
+  Three things had to change elsewhere to make that work, and each was measured rather than
+  predicted. `docs/CHANGELOG.md` and `docs/ralph-state.jsonl` are now `merge=union` in
+  `.gitattributes`: without it every lane appends under `[Unreleased]`, every landing after the
+  first hits a changelog conflict, and the queue hands nearly every bead straight back — one bead
+  lands per drain and the whole parallel effort buys nothing. The loop journal moved from
+  `docs/ralph-state.json` to `.jsonl`, because `verify.ps1` fingerprints `*.json` at any depth, so
+  the old name meant recording a landing invalidated the very receipt proving it was green —
+  closing a bead and journalling it were mutually exclusive. And a quarantine now restores the
+  pre-merge receipt, since the failing run overwrites it and leaving a FAIL receipt describing a
+  tree that has been returned to a proven-green commit throws the proof away for nothing.
+  Preconditions are refused loudly rather than assumed: on the integration branch, never `main`,
+  no half-finished rebase, and a clean tree — the quarantine path resets hard, so a dirty tree
+  would be destroyed by the first failure. One lock in `.ralph/` keeps a second queue from
+  resetting the first one's merges. Nothing is remembered between runs: the queue rebuilds itself
+  from `git for-each-ref` and bd, both of which survive the process dying. Any unhandled error
+  mid-landing also resets the tree, because a crash between the fast-forward and the close would
+  otherwise leave the integration branch holding a merge nobody verified.
+  Default verify scope is now `-Scope all` per landing rather than the `dotnet`-per-landing trade
+  the spec assumed: Phase 0 measured `all` at 94s against ~49s, with the queue at 14% utilisation,
+  so an Android regression can be attributed to a commit instead of to a whole batch.
+  (`scripts/ralph-merge-queue.ps1`, `.gitattributes`,
+  `docs/SPEC-parallel-board-drain-dispatcher.md`, `docs/ralph-board-drain.md`; RemEx-56fu.5.3.)
+
+- **Provisioning for parallel board-drain lanes — `scripts/ralph-lane-manifest.txt` and
+  `scripts/ralph-lane-bootstrap.ps1`.** A lane is a sibling git worktree where one agent works one
+  bead, so several beads can be drained at once. What makes provisioning worth a script is that
+  `git worktree add` populates from the git index, so **every gitignored file is simply absent from a
+  new lane** — and the resulting failures point away from the cause. A missing
+  `remex.android/local.properties` fails Gradle during configuration with a message about the SDK
+  location, which reads as a broken machine rather than a half-provisioned worktree; discovered after
+  an agent has spent twenty minutes on a bead, it gets blamed on the bead. So the bootstrap ends by
+  running the lane's own `verify.ps1 -Scope dotnet` once. A lane that cannot build clean is a
+  provisioning bug, and this is where it should surface — before any agent is given work there.
+  The copy set is a **manifest file rather than an array inside the script**, because a manifest shows
+  up in a diff and can be asserted against, where the same list buried in a script rots quietly the
+  first time someone adds an ignored config file. It also records what is deliberately *not* copied
+  and why: `.beads/` (shared via `BEADS_DIR` — copying it would fork the board and let two lanes claim
+  the same bead into two databases that never see each other), `.ralph/` (a receipt describes one
+  working copy at one instant, so copying one into a fresh lane would be a lie by construction), and
+  `artifacts/` (each lane pays one cold build on purpose; carrying warm output between working copies
+  is how RemEx-t0f3, RemEx-n3z6 and RemEx-u5q0 were reintroduced).
+  **Lanes sit outside the repository root and the script refuses any layout where they do not.** That
+  is not a style preference: `verify.ps1` fingerprints tracked files *plus untracked-not-ignored*
+  ones, so a worktree nested at `.worktrees/lane-1` would show up in every other lane's fingerprint
+  and the receipts would stop meaning what they say. For the same reason the lane environment file is
+  written into the gitignored `.ralph/`, where it cannot alter the fingerprint of the very build used
+  to prove the lane works.
+  Two properties are checked rather than assumed. Build output is asserted to resolve under the lane
+  root — it already does so for free, because `Directory.Build.props` sets `UseArtifactsOutput` with
+  no explicit `ArtifactsPath` and every worktree has its own copy of that file, so the assertion is a
+  tripwire against a future explicit path silently re-sharing output between lanes. And each new lane
+  gets a `git config --global --add safe.directory` entry, which was measured rather than predicted:
+  `Z:` records no ownership, so git refuses a new worktree path there with "detected dubious
+  ownership" and verification dies at the fingerprint stage.
+  Nothing here deletes anything. If the lane path or branch is already in use the script stops and
+  prints the removal command, because a failed lane's branch is the evidence for its reopened bead.
+  (`scripts/ralph-lane-bootstrap.ps1`, `scripts/ralph-lane-manifest.txt`; RemEx-56fu.5.2.)
+
 - **A permission question about your files can now be asked on the phone that asked for them.** When
   your phone requests full access to your PC's files, or offers to send it something, the PC has to
   ask you first — and it asked on the PC, which is no use when you are holding the phone in another
@@ -53,6 +162,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   changes. The wait itself is unchanged — this only makes it possible to understand.
 
 ### Fixed
+
+- **The Android half of `scripts/verify.ps1` was never running, and said so in a way that pointed
+  away from the cause.** `-Scope android` invoked `testReleaseUnitTest`, which does not exist in this
+  project: AGP 9 builds a unit-test component only for `testBuildType`, and that defaults to `debug`,
+  so the only task ever generated was `testDebugUnitTest`. Under AGP 8 both variants got one, which
+  is why the name looked right when it was written. So `-Scope android` and `-Scope all` failed every
+  time — while CLAUDE.md documented `-Scope all` as a working command — and the failure was reported
+  as "Android unit tests failed", which reads like a failing test and sends the reader to look at
+  test code rather than at a task name. Gradle's own message, *"Task 'testReleaseUnitTest' not found
+  in root project 'RemEx'"*, was piped to `Out-Null` and never seen. **The fix runs the tests against
+  the release variant rather than working around it**, via `testBuildType = "release"` in
+  `app/build.gradle.kts`: release is what ships and gets installed, so it is what the 530 unit tests
+  should exercise, and the repo's release-only rule becomes literally true instead of aspirational.
+  Both variants were measured green first (530 tests, 0 failures, on debug and on release), so the
+  switch costs nothing in coverage. Two consequences are recorded next to the line that causes them:
+  `testDebugUnitTest` no longer exists, so Android Studio's Build Variants panel has to be set to
+  release to run tests from the IDE; and `testBuildType` also steers the 7 instrumented Compose tests
+  in `app/src/androidTest`, which now target the minified release build and would need
+  `testProguardFiles` rules if they are ever automated — nothing runs them today. **Verification now
+  distinguishes "a test failed" from "nothing was tested",** which are different problems needing
+  different responses, and prints what Gradle actually said with its six lines of `* Try:` boilerplate
+  trimmed. Proved by injecting a bad task name and confirming the run fails with the new message and
+  a non-zero exit rather than passing quietly — a check that has only ever been seen passing is not a
+  check. Found while measuring worktree contention for RemEx-56fu.5.1, and it survived this long
+  because `-Scope dotnet` was the only scope ever run and its PASS receipt was read as the whole tool
+  working. (`app/build.gradle.kts`, `scripts/verify.ps1`; RemEx-thvf.)
 
 - **Your PC's log now shows which version of the app your phone is actually running.** Every phone
   told the PC it was version 2.0.0, whatever version it really was — wrong for every pairing since

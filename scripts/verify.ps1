@@ -374,9 +374,17 @@ if ($Scope -in @('android', 'all')) {
         try {
             # Release variant only. Debug is never installed on device here, and only the
             # release variant runs the lintVitalRelease gate.
+            # This task only exists because app/build.gradle.kts sets testBuildType =
+            # "release"; AGP 9 builds a unit-test component for that variant and no other.
             $gradleArgs = @('testReleaseUnitTest', '--console=plain')
             if (-not $NoClean) { $gradleArgs = @('clean') + $gradleArgs }
-            & $gradlew @gradleArgs 2>&1 | Out-Null
+
+            # Capture rather than discard. This used to pipe to Out-Null, so when the task
+            # name was wrong Gradle's "Task 'testReleaseUnitTest' not found" went nowhere and
+            # the only thing reported was "Android unit tests failed" - which reads like a
+            # failing test and sent the reader looking in entirely the wrong place. Whatever
+            # goes wrong here, the person running it should see what Gradle actually said.
+            $gradleOutput = & $gradlew @gradleArgs 2>&1
             $gradleOk = ($LASTEXITCODE -eq 0)
         }
         finally {
@@ -403,9 +411,43 @@ if ($Scope -in @('android', 'all')) {
         }
 
         if (-not $gradleOk) {
-            $problems.Add('Android unit tests failed')
-            Write-Problem "The Android unit tests failed." `
-                "Run: cd remex.android; ./gradlew testReleaseUnitTest"
+            # Distinguish "a test failed" from "the build never got as far as running tests".
+            # They need completely different responses and the old message conflated them.
+            $text = ($gradleOutput | Out-String)
+            $noSuchTask = $text -match "Task '.*' not found"
+
+            if ($noSuchTask) {
+                $problems.Add('Android test task does not exist')
+                Write-Problem "The Android test task does not exist, so nothing was tested." `
+                    "app/build.gradle.kts must set testBuildType = `"release`" for testReleaseUnitTest to exist (AGP 9 only builds a unit-test component for testBuildType). Check that line is still present."
+            }
+            else {
+                $problems.Add('Android unit tests failed')
+                Write-Problem "The Android unit tests failed." `
+                    "Run: cd remex.android; ./gradlew testReleaseUnitTest"
+            }
+
+            # Show what Gradle actually said. The 'What went wrong' block is the useful part;
+            # fall back to the tail if Gradle failed in some way that does not produce one.
+            $reason = @($gradleOutput | Select-String -Pattern '^\* What went wrong:' -Context 0, 6)
+            if ($reason.Count -gt 0) {
+                Write-Host ""
+                Write-Host "  Gradle said:"
+                foreach ($line in ($reason[0].Context.PostContext)) {
+                    # Stop at Gradle's boilerplate. "* Try: > Run with --stacktrace" and the
+                    # docs links are the same six lines on every failure and bury the one
+                    # line that actually differs.
+                    if ($line -match '^\* Try:') { break }
+                    if ($line.Trim()) { Write-Host "    $line" }
+                }
+            }
+            elseif ($text.Trim()) {
+                Write-Host ""
+                Write-Host "  Last few lines of the Gradle output:"
+                foreach ($line in (@($gradleOutput) | Select-Object -Last 8)) {
+                    if ("$line".Trim()) { Write-Host "    $line" }
+                }
+            }
         }
         elseif ($suites.Count -eq 0) {
             $problems.Add('no Android test results produced')
