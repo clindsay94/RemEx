@@ -1,6 +1,20 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file covers **Claude-specific tooling only** — MCP routing, the bulk-write workflow, and issue
+tracking.
+
+## 📖 Read `AGENTS.md` first
+
+**[`AGENTS.md`](AGENTS.md) holds the project rules that apply to every agent** — architecture
+invariants, the Hard Rules, build commands, the `scripts/verify.ps1` verification gate, coding
+conventions, cross-platform parity, and UI verification axes. It is the cross-vendor file (Codex,
+Gemini CLI, Cursor and Antigravity read it; none of them read this one), so it is the authority on
+anything that is not Claude-harness-specific.
+
+Those rules used to be duplicated here. They are not any more — **if a rule is missing from this
+file, it is in `AGENTS.md`, not absent.** Do not copy them back: two copies drift, and the last time
+they did, this repo shipped an instruction telling agents to do the exact opposite of what the code
+does.
 
 ## 🛑 STRICT MCP SERVER ROUTING FOR TOKEN CONSERVATION
 
@@ -64,266 +78,13 @@ git diff                     # grade — do NOT Read generated files back into c
 Only intervene via `Edit`/`Write` if the diff reveals hallucinations or logic flaws.
 
 
-## Project Overview
+## Regression Guards
 
-Remote Execution (RemEx) is a cross-platform PC remote management tool. **Architecture: Android (Client) → PC (Host). The connection is always non-loopback Android-to-PC.** `remex.agent` is the host execution entry point, while `remex.desktop` houses the PC-side UI and Localization. `remex.android` is the Android mobile client and the **only** network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+**Read [`docs/REGRESSION-GUARDS.md`](docs/REGRESSION-GUARDS.md) before touching capture, the remote-desktop stream or its pacing, the Android H.264 decoder, SurfaceView zoom/pan, pairing and trust, or the session guard.**
 
-> **There is no desktop client.** `remex.desktop/` contains the live PC-side UI (Avalonia Views, ViewModels, and 812 fully-translated Localization keys). If you encounter references to a PC-side client connecting to a PC-side host, those are outdated. The PC runs `remex.agent` only. The Android app is the only client.
+Every rule in that file exists because breaking it reintroduced a real failure that presented as *silence* — a black screen, a dead stream, a bricked pairing — with no exception and no log line pointing back at the cause. Code review does not catch these; the file is the institutional memory.
 
-### 🔒 Hard Rules — repeat mistakes, do not re-litigate these
-
-These exist because the same corrections have had to be made multiple times across sessions. If any other doc (including AGENTS.md, old commit messages, or a stale bead status) disagrees with these, **this file wins**.
-
-1. **There is no headless host process and never has one separate from the UI.** `remex.agent` is a single process that IS both the former host service and the UI. Never describe or design around a "PC-side client connecting to a PC-side host" — that pair doesn't exist.
-2. **`remex.desktop/` is permanent, not being removed.** It holds only UI code (Views/ViewModels/Localization) and is a real, current `<ProjectReference>` of `remex.agent`. "Legacy" describes the leftover folder name from a pre-rename layout, not its lifecycle status — do not treat it as dead code, do not suggest deleting it, do not say it's "being phased out." A prior removal effort (bead `RemEx-d8s`) was closed without deleting it; the current, intended end state IS "UI code lives in remex.desktop, gets compiled into remex.agent."
-3. **Before citing a bead's status from AGENTS.md (or any doc) as a fact, verify it with `bd show <id>` first.** AGENTS.md's status tables have gone stale relative to the real bead tracker more than once — treat `bd` as the source of truth for issue status, docs as a cache that can lag.
-4. **Never construct a `git add`/file path (or any case-sensitive path comparison) from memory — copy exact case from `git status`/`ls` output.** This repo is Windows-authored but must build on case-sensitive Linux; a case mismatch in a git pathspec silently stages nothing (Windows git is case-insensitive by default), which has previously left real fixes stranded uncommitted. Never use PowerShell `-eq`/`-ne` to compare paths/namespaces that must be case-sensitive — use `-ceq`/`-cne`.
-
-## Build & Run
-
-```powershell
-# Run PC host service (Android connects to this — this IS the entire PC side)
-dotnet run --project remex.agent
-
-# NOTE: remex.desktop contains the PC-side UI components and localization.
-
-# Run all tests
-dotnet test Remex.sln
-
-# Unified build (all platforms, release)
-pwsh ./build-remex.ps1 -c release -t all
-
-# Android only — hardened fresh build
-.\scripts\android-fresh.ps1 -Configuration Release
-
-# Linux packages (run from repo root; uses WSL on Windows)
-./installer/build-linux.sh
-```
-
-## Architecture
-
-```
-remex.core/         Shared models, messages, validation, Guards, serialization
-                    ↳ Also compiled as libRemexCore.so (NativeAOT JNI) for Android
-remex.agent/         ★ THE PC SIDE — single elevated interactive-session app + all PC functionality
-                    ↳ Combines the former host service + desktop UI into ONE process. No Windows
-                      Service: it runs in the signed-in user's session, always elevated, auto-started
-                      by a Task Scheduler logon task (Windows) or an XDG autostart .desktop (Linux, RemEx-aep.7).
-                    ↳ ASP.NET Minimal APIs, WebSocket, mDNS. Android connects TO this.
-remex.android/      ★ THE ONLY CLIENT — Kotlin + Jetpack Compose + JNI → libRemexCore.so
-                    ↳ Android phone app. Connects to remex.agent on the PC. Nothing else is a client.
-remex.desktop/       PC-SIDE UI CODE — NOT a separate app, NOT "legacy" in the sense of dead/removable.
-                    ↳ Compiled directly into remex.agent via a real <ProjectReference>. "Legacy" here
-                      refers ONLY to the leftover pre-rename folder/namespace name, not the code's
-                      status. remex.agent.Program.cs does `using Remex.Desktop.Services;` — this is a
-                      live, load-bearing dependency, not dead weight. Do not describe it as "being
-                      phased out," "removed," or "optional" — that removal was decided against.
-```
-
-### Communication Protocols
-
-| Protocol | Endpoint | Port | Purpose |
-|---|---|---|---|
-| WSS | `/ws` | 5005 | Telemetry, power commands, pairing, file transfer |
-| WSS | `/ws/desktop` | 5005 | H.264 / MJPEG remote desktop stream |
-| TCP (TLS) | — | 8338 | External script command ingress |
-
-> The former `RemExLocalIPC` / `RemExHostControl` named pipes are **gone** (RemEx-aep). The UI and host
-> live in one process, so the UI resolves host services straight from DI via `EmbeddedHostServiceLocator`.
-
-All messages over `/ws` use the `RemexMessage` JSON envelope with `protocolVersion: 2`. Pairing uses ECDH P-256 + 6-digit PIN; clients then pin the host certificate SPKI hash.
-
-### High-Risk Code Areas
-
-The following areas are **security-critical or tightly coupled between `remex.agent` and `remex.android`**. Changes here require explicit user sign-off and must be coordinated across both sides of the connection:
-
-- **Pairing flow** (`PairingHandler`, `PairedClientRegistry`) — ECDH P-256 key exchange and PIN verification. `PairedClientRegistry` is the ONLY authentication path in production (non-loopback). Breakage silently bricks all device pairing with no clear error on either end.
-- **Certificate pinning** — Android pins the host's SPKI hash at pairing time. If the host cert changes without a re-pair, the connection is permanently refused until the user re-pairs. Never regenerate or rotate certs silently.
-- **`RemexMessage` envelope / `protocolVersion`** — Wire format changes must be backward-compatible or require a `protocolVersion` bump AND a coordinated Android + host release. Mismatched versions cause silent deserialization failures.
-- **Elevation + cert ACLs** (`app.manifest`, `CertificateService`, `PairedClientRegistry`) — `remex.agent` MUST start elevated (`requireAdministrator`). An elevated token keeps FullControl over the machine-wide `cert.pfx` / `paired_clients.json` (ACL = LocalSystem + Administrators, inheritance disabled). A non-elevated start gets Administrators as deny-only, fails to read `cert.pfx`, and would brick every SPKI-pinned pairing. Never ship a path that auto-starts non-elevated. `CertificateService` has a brick canary: it logs Critical and refuses to regenerate when an existing `cert.pfx` is unreadable.
-
-## Versioning
-
-- **.NET projects**: centrally managed in `Directory.Build.props` (`<Version>`)
-- **Android**: managed in `remex.android/app/version.properties` (`versionName` / `versionCode`)
-- `build-remex.ps1` syncs `Directory.Build.props` from `version.properties` automatically
-
-## Coding Conventions
-
-### Async
-**Do NOT use `ConfigureAwait(false)` anywhere.** On the desktop side the captured context is load-bearing — continuations assign bound properties after awaits that complete off the UI thread — so the flag is harmful there, not merely redundant; on the ASP.NET Core host side there is no context, so there is nothing to gain. CA2007 is suppressed in `.editorconfig` (the rule here is the opposite of its default advice); `ConfigureAwaitBanTests` enforces the ban instead. **Not** justified by "Avalonia has no `SynchronizationContext`" — that was the old reason given here and it is false (RemEx-rbfq). See `docs/ASYNC_GUIDELINES.md`.
-
-### Null Safety
-Nullable reference types are enabled in all projects. Use `Guard.NotNull(arg)` (from `remex.core/Guards/Guard.cs`) in constructors for required dependencies. Use `GetRequiredService<T>()` (not `GetService<T>()`) for DI resolution. See `docs/NULL_SAFETY_GUIDELINES.md`.
-
-### Validation
-All network-facing input must be validated through the shared validation helpers in `remex.core/Validation/`. See `docs/VALIDATION_GUIDELINES.md`.
-
-### NativeAOT Constraints (`Remex.Core`)
-
-`Remex.Core` is compiled as a NativeAOT JNI library (`libRemexCore.so`) for Android. Code in `Remex.Core` **must be NativeAOT-safe** or the Android build will break at link time — often with no obvious connection to the change you made. Hard rules:
-
-- **No reflection** — `typeof(T).GetMethod(...)`, `Activator.CreateInstance`, `JsonSerializer` with non-source-generated options, etc. are all forbidden.
-- **No dynamic code generation** — no `System.Linq.Expressions` compilation, no `Emit`, no runtime type building.
-- **Trimming-safe** — use `[DynamicallyAccessedMembers]` and `[RequiresUnreferencedCode]` where necessary. The build has trimming enabled; unannotated reflection silently disappears.
-- **Source-generated JSON** — use `[JsonSerializable]` + `JsonSerializerContext` for any new serializable types. Do not use `JsonSerializer.Serialize<T>(obj)` without a source-gen context.
-- If you're unsure whether something is NativeAOT-safe, check `Remex.Core` for existing patterns before writing new code.
-
-### Elevated interactive-session app (`remex.agent` on Windows)
-
-`remex.agent` runs **in the signed-in user's interactive session, always elevated (high integrity)** — NOT as a Windows Service and NOT in Session 0. It is auto-started by a Task Scheduler logon task (`scripts/autostart-remex.ps1`, task name `RemEx`, `RunLevel=Highest`, `LogonType=InteractiveToken`) so it starts elevated at sign-in with no UAC prompt. (RemEx-aep.) Implications:
-
-- **Capture + input work directly** — being inside the session, screen capture and `SendInput` reach the user's desktop; HIGH→HIGH UIPI is permitted so input reaches elevated windows. There is no session bridging or `CreateProcessAsUser`.
-- **Machine-wide config still uses `HKLM` / `ProgramData`** — `cert.pfx`, `paired_clients.json`, and `CaptureBackendPreference` stay machine-wide so they are stable across logins and protected by the elevated-only ACL (see High-Risk Areas). `HKCU` / `%APPDATA%` are now valid for genuinely user-scoped state, but keep security-sensitive state machine-wide.
-- **Elevation is load-bearing, never weaken it** — see the Elevation + cert ACLs high-risk note. A medium-integrity start bricks pairings.
-- **No Windows Service, no named pipes** — `LocalIpcServerService`, `RemExLocalIPC`, `HostControlServer/Client`, `AgentCoordinator`, `SessionBridgingCommandService`, and `WindowsActiveSession` were deleted. The UI resolves host services in-process via `EmbeddedHostServiceLocator`.
-
-### Localization
-
-All user-facing strings in `remex.agent` (UI labels, tooltips, error messages, notifications) **must** go through the localization system in `Localization/`. The app supports 8 languages with live switching — hardcoded English strings are a regression. Rules:
-
-- Add new strings to the appropriate `.resx` / localization file, not inline in code or XAML.
-- Never use `string.Format` or interpolation directly in UI-bound properties; use localized format strings.
-- If a string is purely internal (logs, exception messages, developer-facing), it may stay in English without localization.
-- **Bulk-edit `.resx`/`.xml` with a Python script and explicit UTF-8, never PowerShell string interpolation.** Apostrophe mis-escaping and array flattening have written NUL bytes into `Strings.tr.resx` more than once. The PostToolUse guard (`.claude/scripts/guard_edit.py`) now catches NUL bytes, duplicate keys, and malformed XML at write time, but it catches the corruption — it does not prevent you causing it.
-
-### Protocol Versioning
-
-`RemexMessage` carries `protocolVersion: 2`. If you make a breaking change to the wire format:
-1. Bump `protocolVersion` in both `remex.agent` and `remex.android`.
-2. Coordinate the release — a version mismatch between host and Android causes silent deserialization failures, not clean errors.
-3. Non-breaking additions (new optional fields) do not require a bump, but document them in CHANGELOG.md.
-4. **Adding a new message TYPE the Android client must receive? You MUST also route it to the phone.** Inbound `/ws` messages reach Kotlin only if `AndroidNativeExports.OnNativeMessageReceived` (in `Remex.Core`, compiled into `libRemexCore.so`) forwards them to a JNI callback. File messages now forward by `file_*` prefix, so any `file_*` type is covered — but a **non-`file_` client-bound type still needs its own callback wiring**, and a type the router doesn't recognize is **silently dropped with no error on either side**. This exact stale-allowlist gap bricked all of v3 file transfer with "Peer did not respond" (RemEx-y6x6). Always test the round-trip on a real device after adding a client-bound message type. **Deliberate exception — `pairing_pin_response` (RemEx-1t0b):** this host→client reply is intentionally *not* routed through `OnNativeMessageReceived`. It arrives on the pairing `/ws` socket, which only `PairingClient` reads, and is consumed synchronously as the return value of the `FetchPairingPinNative` native export — so it needs no JNI callback and cannot be silently dropped by construction. Do **not** "fix" this by adding it to the router.
-
-## Android Prerequisites
-
-- Android SDK API Level 37 platform required
-- NDK version **30.0.14904198** required for NativeAOT JNI compilation
-- `build-remex.ps1` auto-installs both via `sdkmanager` if absent
-- Set `ANDROID_HOME` or configure `remex.android/local.properties` (`sdk.dir=...`)
-
-## Host Diagnostics
-
-On Linux, run `dotnet run --project remex.agent -- --doctor` to check PipeWire/X11/VAAPI prerequisites.
-
-## Cross-Platform Parity (Windows ↔ CachyOS/Linux)
-
-This repo lives on a shared drive and must work equally on **Windows** and **CachyOS/Linux**. Any change that touches the PC side (remex.agent, scripts, installers, build tooling) **must maintain parity**:
-
-- Every `.ps1` script must work under `pwsh` on Linux **or** have a `.sh` equivalent that does the same thing.
-- Never hardcode Windows-only paths. Use path helpers or environment variables.
-- `build-remex.ps1` is the canonical cross-platform build entry point. New build steps must be added for both platforms.
-- Before closing a task: verify the change works on both platforms, or explicitly note which OS was tested and file a follow-up beads issue for the other.
-
-### Running the test suite on Linux from a Windows box (WSL)
-
-You can actually check parity rather than promising it. The obvious command does **not** work — the
-WSL .NET install typically has only `Microsoft.NETCore.App`, not `Microsoft.AspNetCore.App`, so a
-plain `dotnet test` on `remex.agent.tests` dies with *"You must install or update .NET to run this
-application"*. Building self-contained bundles the ASP.NET runtime into the test output and needs no
-package install or other change to the WSL system:
-
-```bash
-wsl -- bash -lc "cd /mnt/z/RemEx && dotnet test remex.agent.tests/remex.agent.tests.csproj \
-  -c Release -p:RuntimeIdentifier=linux-x64 -p:SelfContained=true"
-```
-
-The same flags work for `remex.core.tests` and `remex.desktop.tests` (both are already Linux-clean;
-the desktop suite needs no display). Note this shares the `artifacts/` directory with the Windows
-build, so **rebuild on Windows afterwards** before trusting a Windows test run.
-
-**Windows-only tests are marked, not deleted.** `WindowsOnlyFactAttribute` (in `remex.agent.tests`)
-takes a mandatory reason and skips on non-Windows, so a Linux run is green and a real regression is
-visible instead of drowning in permanent noise. Use it when a test asserts a genuinely Windows-only
-primitive — named memory-mapped files, UNC path semantics — and never weaken a test so it passes on
-both; that trades away coverage on the platform the code actually runs on. There is deliberately no
-`Theory` counterpart until something needs one; see the note in `WindowsOnlyAttributes.cs` for the
-xUnit quirk that would complicate one.
-
-## Verification
-
-`scripts/verify.ps1` is the only accepted proof that work is finished. It force-cleans, rebuilds, runs the suite, checks the edit guard and the translations, and writes a **receipt** to `.ralph/verify-receipt.json` recording a SHA-256 fingerprint of every source file it verified against.
-
-```powershell
-./scripts/verify.ps1              # .NET solution
-./scripts/verify.ps1 -Scope all   # .NET plus Android unit tests
-./scripts/verify.ps1 -Check       # does the last receipt still describe the code on disk?
-```
-
-- **A bead is not done until `-Check` says VALID.** "The tests passed" is not a claim anyone can check; a matching fingerprint is. Edit anything afterwards and the receipt is void — that is the point, not a bug.
-- **Never revert a defect injection with `git checkout -- <file>`.** It discards *every* uncommitted change in that file, not the line you injected, and has silently thrown away real fixes. Capture and reverse a scoped patch instead:
-  ```bash
-  git diff -- <file> > /tmp/inject.patch   # then inject the defect, run the tests
-  git apply -R /tmp/inject.patch           # restores exactly what you changed
-  ```
-  Prove the injection worked: the test must **fail** with the defect present and pass once restored. A defect-injection run where everything stays green proves the test is blind, not that the code is correct.
-- Receipts are per-machine and gitignored deliberately. They record `platform`, so a receipt written under WSL/Linux is refused on Windows — `artifacts/` is shared between those builds.
-
-## Code Quality Standards
-
-**No lazy code.** Every implementation must be the most correct, robust, and maintainable approach for the task. Rules:
-
-- Use `gitnexus: query` and `token-savior` to understand existing patterns **before** writing new code. Match the codebase's conventions.
-- No placeholder implementations, stub methods, `TODO:` bodies, or "good enough for now" code. If a full implementation is out of scope, file a beads issue and implement what IS in scope correctly.
-- Prefer correctness over speed-to-write. If there's a real tradeoff, explain it.
-- Use existing infrastructure before rolling new ones: `remex.core/Guards`, `remex.core/Validation`, `GetRequiredService<T>()`, etc.
-
-## Documentation & CHANGELOG Maintenance
-
-**Update docs on every change.** No task is complete until:
-
-1. **CHANGELOG.md** has an entry under the correct version heading (Keep a Changelog format: `Added`, `Changed`, `Fixed`, `Removed`, `Security`).
-2. Affected XML doc comments, README sections, or `docs/` guideline files are updated.
-3. `AGENTS.md` / `CLAUDE.md` are updated if project structure, tooling, or conventions changed.
-4. `Directory.Build.props` and `remex.android/app/version.properties` are bumped if the change warrants a version increment.
-
-### Where a written artefact goes
-
-**Specs, spikes, investigations and measurements go in `docs/`, NOT in `docs/superpowers/specs/`.**
-
-`docs/superpowers/` is gitignored (`.gitignore`, under `# Misc`), so anything written there is never
-committed — the task closes, the author believes the artefact exists, and the repo has nothing. It
-looks like the right home because the directory exists locally and holds a pile of earlier specs, and
-nothing warns you at write time; you only find out when `git add` silently stages nothing. This has
-caught three separate spikes (RemEx-0l9x).
-
-It was left ignored deliberately rather than fixed by un-ignoring: it also holds a `plans/` tree and a
-large body of historical scratch, so un-ignoring would sweep in far more than specs. `docs/` is the
-convention by weight — `SPIKE-*.md` and `MEASURE-*.md` already live there.
-
-**After writing any artefact, confirm it is actually tracked** (`git status` should show it, or
-`git check-ignore -v <path>` should say nothing). A closed bead pointing at an untracked file is worse
-than one that admits it produced nothing.
-
-## User Experience Standards
-
-The target user **may not be technical**. Every user-facing element must be:
-
-- **Plain English** — no jargon, no abbreviations, no assumed knowledge in scripts, installers, UI tooltips, or error messages.
-- **Hand-holdy** — scripts print friendly status messages and tell the user exactly what to do when something fails. Always provide a "what to do next" step.
-- **Consistent** — `build-remex.ps1` is the canonical entry point for all major build/install operations. All major operations should be accessible from it, not buried in sub-scripts.
-- **Theme-safe** — every UI change must be verified across the theming axes of the platform it
-  touches. **The two platforms theme completely differently — do not apply one's axes to the other.**
-
-  - **PC only (`remex.desktop` / `remex.agent`)** — the four named themes **CyberNOC, Monolith,
-    SolarFlare, BaseDarkGlass**. Each has distinct contrast ratios and background treatments; a
-    change that looks fine on one can break another. **These four do not exist on Android.** The
-    only occurrences of the word "monolith" in `remex.android/` are comments about the former
-    monolithic `SplashScreen.kt` — unrelated. Never ask for four-theme verification of an Android
-    change; there is nothing to verify against and the instruction is pure noise.
-  - **Android only (`remex.android`)** — Material 3 dynamic theming, not named themes. `RemExTheme`
-    (`ui/theme/Theme.kt`) resolves a scheme from three mutually exclusive sources, and a change must
-    hold up under all of them:
-    1. **Custom seed** — `colorSchemeFromSeed(seedColor, darkTheme, themeStyle, themeContrast)`
-    2. **Dynamic color** — `dynamicDark/LightColorScheme(context)`, only when `dynamicColor` is on
-       AND `Build.VERSION.SDK_INT >= S`
-    3. **Static fallback** — `DarkColorScheme`/`LightColorScheme`, used on API < 31 or with dynamic
-       color off. This is a real shipping path, not dead code.
-
-    Orthogonal axes on top of that: `darkTheme` (light/dark/system), `themeStyle` (7 values —
-    `tonal_spot` default, plus expressive, vibrant, neutral, **monochrome**, fruit_salad, rainbow),
-    and `themeContrast` (0.0 → 1.0). Monochrome and contrast 1.0 are the harshest tests — a
-    hardcoded color literal that looks fine on the default scheme will fail there.
+It is hand-maintained and anchored to `file:line`. It replaced an auto-generated block in `AGENTS.md` that drifted out of sync with the code and, in one case, instructed agents to do the exact opposite of what the code does. **Do not regenerate it, and do not copy its guards back into `AGENTS.md` or here** — one authoritative copy is the entire point.
 
 ## Beads Issue Tracking (`bd`)
 
