@@ -185,6 +185,7 @@ All user-facing strings in `remex.agent` (UI labels, tooltips, error messages, n
 - Add new strings to the appropriate `.resx` / localization file, not inline in code or XAML.
 - Never use `string.Format` or interpolation directly in UI-bound properties; use localized format strings.
 - If a string is purely internal (logs, exception messages, developer-facing), it may stay in English without localization.
+- **Bulk-edit `.resx`/`.xml` with a Python script and explicit UTF-8, never PowerShell string interpolation.** Apostrophe mis-escaping and array flattening have written NUL bytes into `Strings.tr.resx` more than once. The PostToolUse guard (`.claude/scripts/guard_edit.py`) now catches NUL bytes, duplicate keys, and malformed XML at write time, but it catches the corruption — it does not prevent you causing it.
 
 ### Protocol Versioning
 
@@ -238,6 +239,25 @@ primitive — named memory-mapped files, UNC path semantics — and never weaken
 both; that trades away coverage on the platform the code actually runs on. There is deliberately no
 `Theory` counterpart until something needs one; see the note in `WindowsOnlyAttributes.cs` for the
 xUnit quirk that would complicate one.
+
+## Verification
+
+`scripts/verify.ps1` is the only accepted proof that work is finished. It force-cleans, rebuilds, runs the suite, checks the edit guard and the translations, and writes a **receipt** to `.ralph/verify-receipt.json` recording a SHA-256 fingerprint of every source file it verified against.
+
+```powershell
+./scripts/verify.ps1              # .NET solution
+./scripts/verify.ps1 -Scope all   # .NET plus Android unit tests
+./scripts/verify.ps1 -Check       # does the last receipt still describe the code on disk?
+```
+
+- **A bead is not done until `-Check` says VALID.** "The tests passed" is not a claim anyone can check; a matching fingerprint is. Edit anything afterwards and the receipt is void — that is the point, not a bug.
+- **Never revert a defect injection with `git checkout -- <file>`.** It discards *every* uncommitted change in that file, not the line you injected, and has silently thrown away real fixes. Capture and reverse a scoped patch instead:
+  ```bash
+  git diff -- <file> > /tmp/inject.patch   # then inject the defect, run the tests
+  git apply -R /tmp/inject.patch           # restores exactly what you changed
+  ```
+  Prove the injection worked: the test must **fail** with the defect present and pass once restored. A defect-injection run where everything stays green proves the test is blind, not that the code is correct.
+- Receipts are per-machine and gitignored deliberately. They record `platform`, so a receipt written under WSL/Linux is refused on Windows — `artifacts/` is shared between those builds.
 
 ## Code Quality Standards
 

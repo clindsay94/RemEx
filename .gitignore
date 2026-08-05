@@ -124,8 +124,23 @@ review-report.md
 /installer/output/
 /build_output/
 
-# Claude agent files
-/.claude/
+# Claude agent files.
+#
+# Most of this directory is per-machine state, but three things in it are PROJECT TOOLING and
+# have to travel with the repo: the shared settings (which wire up the PostToolUse edit guard),
+# the hook scripts themselves, and the skills. Ignoring them wholesale meant they existed only on
+# the machine that wrote them - invisible to a fresh clone, to the CachyOS install, and to any
+# `git worktree` (which does not copy ignored files at all). CLAUDE.md already cites
+# `.claude/skills/gitnexus/*/SKILL.md` by path, and those citations pointed at nothing for anyone
+# who had not generated them locally.
+#
+# Note on the syntax: git does not descend into an excluded DIRECTORY, so `!` on a file inside an
+# ignored directory has no effect. Excluding the children with `/*` and then re-including the
+# specific subdirectories is what makes the negations work.
+/.claude/*
+!/.claude/settings.json
+!/.claude/scripts/
+!/.claude/skills/
 # Firebase
 remex.android/app/google-services.json
 

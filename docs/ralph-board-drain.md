@@ -77,8 +77,11 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
    if it does not exist). NEVER work on `main`.
 
 2. Run `git status`. If the tree is dirty, a previous iteration died mid-work. Inspect the diff
-   and either finish coherent work or `git checkout -- .` to discard incoherent scraps. Do not
-   start new work on top of an unexplained dirty tree.
+   and either finish coherent work or discard the incoherent scraps with
+   `git restore -- <the specific paths>`. **Never `git checkout -- .` or `git restore -- .`** — this
+   working copy can be shared with another session, and the wildcard would delete that session's
+   uncommitted work along with yours. Name the paths. Do not start new work on top of an
+   unexplained dirty tree.
 
 3. Pick a bead, in this order of preference:
    a. `bd list --status in_progress` — a bead already claimed by a prior iteration or session that
@@ -105,6 +108,14 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
    them are in HIGH-RISK WORK below, and the review gate is mandatory for them.
 
 7. Verify via `ctx_execute`:
+   - **One command does the whole thing: `./scripts/verify.ps1`.** It force-cleans, rebuilds, runs
+     the suite, checks the edit guard and the translations, and writes a receipt to
+     `.ralph/verify-receipt.json` fingerprinting the exact source it verified against.
+     **No bead closes unless `./scripts/verify.ps1 -Check` says VALID at the moment you close it.**
+     `-Check` recomputes the fingerprint, so a receipt stops being valid the instant anything is
+     edited after it — which is precisely the "tests passed, but against what?" hole. Everything
+     below this bullet is still true and is what to reach for when narrowing down a specific
+     failure; the one command is what to reach for to answer "is this finished?".
    - PC / core changes: `dotnet build Remex.sln` then `dotnet test Remex.sln`.
    - **Counting warnings: grep `": warning "`, never `"warning CS"`.** `warning CS` matches compiler
      diagnostics and nothing else, so analyzer warnings — xUnit, CA, IDE, NuGet — cannot appear in
@@ -155,6 +166,22 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
      ```
      dotnet build Remex.sln -c Release --nologo -t:Rebuild || echo "INJECTION INVALID - result means nothing"
      ```
+   - **Restoring after an injection: capture a scoped patch, never `git checkout -- <file>`.**
+     That command discards *every* uncommitted change in the file, not the line you injected, and
+     this working copy may be shared with another session — so it can throw away work that is not
+     even yours. It has silently destroyed real fixes. Capture before, reverse after:
+
+     ```
+     git diff -- <file> > .ralph/inject.patch     # BEFORE injecting anything
+     # ... inject, dotnet build -t:Rebuild, dotnet test --no-build, read the result ...
+     git apply -R .ralph/inject.patch             # restores exactly what you changed, nothing else
+     ```
+
+     Then confirm the restore landed (`git diff -- <file>` should match what you captured) before
+     believing anything downstream of it.
+   - **An injection that leaves the tests green has proved the test blind, not the code correct.**
+     The whole point is that the test must FAIL while the defect is present. If it does not, you
+     have learned something about your test, and reporting the fix as verified would be false.
    - **Re-run every injection after the last edit to the tests.** Adding or renaming a test changes
      the counts, and a figure carried across a review round is a false claim even when it was true
      when first measured.
@@ -213,8 +240,9 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
    > specific, actionable findings. Do not pass a diff you have doubts about; do not fail one over
    > pure style preference.
 
-   **On FAIL:** address the findings and re-review. MAXIMUM 2 fix rounds. If it still fails, run
-   `git checkout -- .`, append the reviewer's findings verbatim via
+   **On FAIL:** address the findings and re-review. MAXIMUM 2 fix rounds. If it still fails,
+   restore the paths this iteration touched with `git restore -- <paths>` (never the `.` wildcard —
+   the tree may be shared), append the reviewer's findings verbatim via
    `bd update <id> --status open --append-notes "..."`, and end the iteration without committing.
    Do not argue with the reviewer or re-run it hoping for a different verdict.
 
@@ -230,6 +258,18 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
 11. Add a changelog entry to **`docs/CHANGELOG.md`** — NOT the root `CHANGELOG.md` stub — under
     `## [Unreleased]` in the correct Keep-a-Changelog section. Do NOT create a version heading or
     move entries out of `[Unreleased]` — cutting a release is the operator's decision.
+
+12. Append this iteration's result to **`docs/ralph-state.json`** (tracked). One object per
+    iteration: `{"bead", "outcome", "sourceHash", "commit", "timestampUtc"}`, where `sourceHash`
+    is copied from the verify receipt. A session fork loses in-memory loop state and the loop
+    then silently stops or repeats work; this file is what the next iteration reads to know what
+    already happened.
+
+    **It goes in `docs/`, not `.ralph/`.** `/.ralph` is gitignored (`.gitignore:144`), and
+    `git worktree add` does not copy ignored files — so state kept there is invisible to any
+    parallel worktree and vanishes on a fresh clone. Receipts stay in `.ralph/` on purpose: a
+    receipt describes one machine's working copy at one instant and is meaningless elsewhere.
+    Loop history is the opposite; it is the record.
 
 ## HIGH-RISK WORK — allowed, but under these rules
 
@@ -281,7 +321,9 @@ No bead is off the table, including ones touching security-critical or protocol 
 If you cannot complete the claimed bead — the approach doesn't work, acceptance criteria are
 ambiguous, or the build won't go green:
 
-1. `git checkout -- .` to leave the tree clean. Never commit a broken or half-finished state.
+1. `git restore -- <the paths this iteration touched>` to leave the tree clean. Never commit a
+   broken or half-finished state — and never use the `.` wildcard to get there, because another
+   session may be working in this same copy.
 2. `bd update <id> --status open --append-notes "Ralph attempt failed: <specific reason, what you
    tried, what you'd need to proceed>"`
 3. If the notes show this bead has already failed twice, run
