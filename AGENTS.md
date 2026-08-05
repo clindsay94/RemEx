@@ -403,24 +403,17 @@ This protocol applies when ending a Beads implementation workflow. It is subordi
 - If a required sync or push is blocked, stop and report the exact command and error.
 <!-- END BEADS INTEGRATION -->
 
-<!-- AUTO-MANAGED: project-description -->
-## Overview
 
-Remote Execution (RemEx) is a cross-platform PC remote management tool. Architecture is **Android (client) → PC (host)**, always non-loopback. `remex.agent` is the entire PC side — a **single interactive elevated user-session app** (no Windows Service; always elevated via `requireAdministrator`, auto-started by a Task Scheduler logon task on Windows). `remex.android` is the only network client. `Remex.Core` is shared across all targets and is also compiled as a NativeAOT JNI native library (`libRemexCore.so`) for Android.
+### Common commands
 
-<!-- END AUTO-MANAGED -->
-
-<!-- AUTO-MANAGED: build-commands -->
-## Build & Development Commands
-
-- `dotnet run --project remex.agent` — run the PC host service (Android connects to this).
+- `dotnet run --project remex.agent` — run the PC side (Android connects to this).
 - `dotnet test Remex.sln` — run all tests.
-- `pwsh ./build-remex.ps1 -c release -t all` — unified cross-platform release build (canonical entry point).
-- `pwsh ./scripts/android-fresh.ps1 -Configuration Release` — hardened fresh Android build; runs under `pwsh` on both Windows and Linux (resolves `gradlew.bat` vs the POSIX `gradlew` via `$IsWindows`, invoking the latter through `sh` since git may not preserve its executable bit on a shared drive).
+- `pwsh ./scripts/android-fresh.ps1 -Configuration Release` — hardened fresh Android build. Runs
+  under `pwsh` on Windows and Linux: it resolves `gradlew.bat` vs the POSIX `gradlew` via `$IsWindows`
+  and invokes the latter through `sh`, because git may not preserve its executable bit on a shared
+  drive.
 - `./installer/build-linux.sh` — build Linux packages (uses WSL on Windows).
 - `dotnet run --project remex.agent -- --doctor` — check Linux PipeWire/X11/VAAPI prerequisites.
-
-<!-- END AUTO-MANAGED -->
 
 <!-- AUTO-MANAGED: architecture -->
 ## Architecture
