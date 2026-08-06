@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.DiscoveredHost
+import com.clindsay94.remex.data.KnownHost
+import com.clindsay94.remex.data.KnownHosts
 import com.clindsay94.remex.data.NsdDiscoveryManager
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.RemexConnectionService
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import android.content.Context
+import com.clindsay94.remex.security.HostIdentity
 import com.clindsay94.remex.security.PinnedHostStore
 
 class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
@@ -62,7 +65,20 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     private val _discoveredHost = MutableStateFlow<DiscoveredHost?>(null)
     val discoveredHost: StateFlow<DiscoveredHost?> = _discoveredHost.asStateFlow()
 
+    // The paired-host map is a suspend read of a separate DataStore, not a flow, so it is snapshotted
+    // here and refreshed on the events that can change it: a connection, an unpair, a screen resume.
+    private val _pairedByAddress = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** The Known PCs list: one row per physical PC, most recently connected first (RemEx-k62t). */
+    val knownHosts: StateFlow<List<KnownHost>> =
+            combine(_pairedByAddress, settingsManager.knownHostRecordsFlow) { paired, records ->
+                        KnownHosts.build(paired, records)
+                    }
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
+        refreshKnownHosts()
+
         viewModelScope.launch {
             RemexClientManager.isConnecting.collect { connecting ->
                 _isConnecting.value = connecting
@@ -77,6 +93,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     _connectionError.value = null
                     _isCertMismatch.value = false
                     _connectionStatus.value = res.getString(R.string.status_connected)
+                    recordCurrentHostAsLastConnected()
                 } else if (!_isConnecting.value) {
                     _connectionStatus.value = res.getString(R.string.status_disconnected)
                 }
@@ -159,11 +176,102 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             PinnedHostStore.forgetHost(context, hostId)
             _isCertMismatch.value = false
             _connectionError.value = null
+            // That address may have been one of a Known PCs row's; the list is a snapshot and would
+            // otherwise keep offering a PC this phone no longer trusts.
+            _pairedByAddress.value = PinnedHostStore.listPaired(getApplication())
         }
     }
 
     fun consumeDiscoveredHost() {
         _discoveredHost.value = null
+    }
+
+    /** Re-reads the pinned-host store behind the Known PCs list. */
+    fun refreshKnownHosts() {
+        viewModelScope.launch {
+            _pairedByAddress.value = PinnedHostStore.listPaired(getApplication())
+        }
+    }
+
+    /**
+     * Connects to a row in the Known PCs list.
+     *
+     * Goes through [connect] rather than straight to the client, so the tapped PC also becomes the
+     * stored host. That is what re-points everything else that reads `hostFlow` — the Quick Settings
+     * tiles, the keepalive service, the widgets, file transfer — at the PC the user last chose,
+     * instead of leaving them aimed at whatever was typed into the form once.
+     */
+    fun connectToKnownHost(knownHost: KnownHost) {
+        val cp = connectionPreferences.value
+        val dp = remoteDesktopPreferences.value
+        connect(
+                newHost = knownHost.preferredAddress,
+                newPort = knownHost.port,
+                macAddress = cp?.macAddress ?: "",
+                broadcastIp = cp?.broadcastIp ?: "255.255.255.255",
+                subnetMask = cp?.subnetMask ?: "255.255.255.0",
+                // Already paired by definition — a PIN is for a PC this phone has never met, and
+                // sending a stale one would fail the pairing exchange instead of reconnecting.
+                pairingPin = "",
+                desktopQuality = dp?.quality ?: 50,
+                desktopTargetFps = dp?.targetFps ?: 120,
+                desktopScale = dp?.scale ?: 1.0f
+        )
+    }
+
+    fun renameKnownHost(identity: String, nickname: String) {
+        viewModelScope.launch { settingsManager.setKnownHostNickname(identity, nickname) }
+    }
+
+    /**
+     * Unpairs one PC: every address it answers at, plus what the app remembered about it.
+     *
+     * ALL of its addresses, not just the one displayed. The row is one machine reached several ways
+     * and the user asked to forget the machine; leaving the Tailscale pin behind would make the same
+     * PC reappear as a second, half-forgotten row.
+     */
+    fun unpairKnownHost(context: Context, knownHost: KnownHost) {
+        viewModelScope.launch {
+            for (address in knownHost.addresses) {
+                // Pin AND reconnect secret, via forgetHost — a surviving secret fails the next
+                // proof-of-possession challenge and leaves the user stuck (RemEx-j9ei).
+                PinnedHostStore.forgetHost(context, address)
+            }
+            settingsManager.forgetKnownHost(knownHost.identity)
+            _pairedByAddress.value = PinnedHostStore.listPaired(getApplication())
+        }
+    }
+
+    /**
+     * Stamps the PC that just connected as the most recently used one.
+     *
+     * Keyed off the pin rather than the address, so the same machine reached over Tailscale today
+     * and the LAN tomorrow keeps one timestamp instead of two. A host with no pin is skipped: it has
+     * not finished pairing, so it has no identity to stamp.
+     *
+     * Driven by the disconnected-to-connected edge of a StateFlow, which conflates equal values —
+     * so a host switch the native client serviced WITHOUT ever reporting a disconnect would leave
+     * the new PC unstamped. Stamping on the host changing while still connected would close that,
+     * and was rejected: the host is saved BEFORE the connection is attempted, so it would stamp a
+     * PC that had not connected yet. A missing stamp understates; a false one corrupts the ordering
+     * this whole list is sorted by. Whether that edge actually fires on a switch needs a device to
+     * answer (RemEx-bz9t).
+     */
+    private fun recordCurrentHostAsLastConnected() {
+        viewModelScope.launch {
+            val host = settingsManager.hostFlow.first()
+            if (host.isBlank()) return@launch
+            val identity =
+                    HostIdentity.keyFor(PinnedHostStore.getPin(getApplication(), host))
+                            ?: return@launch
+            settingsManager.recordKnownHostConnection(
+                    identity = identity,
+                    address = host,
+                    port = settingsManager.portFlow.first(),
+                    atMillis = System.currentTimeMillis()
+            )
+            _pairedByAddress.value = PinnedHostStore.listPaired(getApplication())
+        }
     }
 
     fun discoverHost() {

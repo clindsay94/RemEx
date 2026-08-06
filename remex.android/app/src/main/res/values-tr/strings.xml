@@ -230,6 +230,16 @@
     <string name="connection_status_label">Durum: %1$s</string>
     <string name="connection_paired">Eşleştirildi</string>
     <string name="connection_unpair">Eşleştirmeyi kaldır</string>
+    <string name="connection_known_pcs_title">Bilinen bilgisayarlar</string>
+    <string name="connection_known_pcs_hint">Bağlanmak için bir bilgisayara dokunun.</string>
+    <string name="connection_known_pc_last_connected">Son bağlantı: %1$s</string>
+    <string name="connection_known_pc_never_connected">Henüz bağlanılmadı</string>
+    <string name="connection_known_pc_actions">%1$s seçenekleri</string>
+    <string name="connection_known_pc_rename">Yeniden adlandır</string>
+    <string name="connection_known_pc_rename_title">Bu bilgisayara ad verin</string>
+    <string name="connection_known_pc_nickname_label">Takma ad</string>
+    <string name="connection_known_pc_unpair_title">%1$s eşleştirmesi kaldırılsın mı?</string>
+    <string name="connection_known_pc_unpair_message">Bu telefon, yanıt verdiği tüm adreslerde bu bilgisayarı unutacak. Yeniden eşleştirmek için bilgisayarda görünen PIN gerekir.</string>
     <string name="pairing_title">Güvenli Eşleştirme</string>
     <string name="pairing_prompt">Bilgisayarınızda gösterilen 6 haneli PIN kodunu girin</string>
     <string name="pairing_auto_pin_failed">PIN otomatik olarak alınamadı — bilgisayarınızda görünen PIN\'i girin.</string>

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -709,5 +710,76 @@ class SettingsManager(val context: Context) {
 
         suspend fun setFileTrustAutoAccept(deviceId: String, enabled: Boolean) {
                 context.dataStore.edit { prefs -> prefs[fileTrustAutoAcceptKey(deviceId)] = enabled }
+        }
+
+        // ── Known PCs: per-PC nickname and last-connected record (RemEx-k62t) ─────
+        // Keyed by HostIdentity, NEVER by address: one PC answers at a LAN IP, a Tailscale address
+        // and a hostname, so an address-keyed nickname would show one machine three times with a
+        // third of the user's settings each. Same prefixed-key shape as fileTrust_ above; the
+        // scheme itself lives in KnownHosts so it can be tested without DataStore.
+
+        private fun knownHostNicknameKey(identity: String) =
+                stringPreferencesKey(KnownHosts.nicknameKeyName(identity))
+
+        private fun knownHostLastAddressKey(identity: String) =
+                stringPreferencesKey(KnownHosts.lastAddressKeyName(identity))
+
+        private fun knownHostLastPortKey(identity: String) =
+                intPreferencesKey(KnownHosts.lastPortKeyName(identity))
+
+        private fun knownHostLastConnectedKey(identity: String) =
+                longPreferencesKey(KnownHosts.lastConnectedKeyName(identity))
+
+        val knownHostRecordsFlow: Flow<Map<String, KnownHostRecord>> =
+                context.dataStore.data.map { prefs ->
+                        KnownHosts.parseRecords(prefs.asMap().mapKeys { it.key.name })
+                }
+
+        /** Blank clears the nickname rather than storing one, so the row falls back to its address. */
+        suspend fun setKnownHostNickname(identity: String, nickname: String) {
+                if (identity.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        val trimmed = nickname.trim()
+                        if (trimmed.isEmpty()) prefs.remove(knownHostNicknameKey(identity))
+                        else prefs[knownHostNicknameKey(identity)] = trimmed
+                }
+        }
+
+        /**
+         * Records a connection that actually succeeded.
+         *
+         * Attempts are deliberately not recorded: "last connected" ordering the user can trust has
+         * to mean connected, or a PC that is powered off climbs to the top of the list every time
+         * they try it and fail.
+         */
+        suspend fun recordKnownHostConnection(
+                identity: String,
+                address: String,
+                port: Int,
+                atMillis: Long
+        ) {
+                if (identity.isBlank() || address.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        prefs[knownHostLastAddressKey(identity)] = address
+                        prefs[knownHostLastPortKey(identity)] = port
+                        prefs[knownHostLastConnectedKey(identity)] = atMillis
+                }
+        }
+
+        /**
+         * Drops everything remembered about one PC.
+         *
+         * Called when the user unpairs it. Leaving the nickname behind would silently re-attach it
+         * to the next PC that derived the same identity — which can only be the same machine, but
+         * would also mean an unpair that did not forget.
+         */
+        suspend fun forgetKnownHost(identity: String) {
+                if (identity.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        prefs.remove(knownHostNicknameKey(identity))
+                        prefs.remove(knownHostLastAddressKey(identity))
+                        prefs.remove(knownHostLastPortKey(identity))
+                        prefs.remove(knownHostLastConnectedKey(identity))
+                }
         }
 }

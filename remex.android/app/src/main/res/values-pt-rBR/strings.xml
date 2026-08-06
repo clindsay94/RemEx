@@ -230,6 +230,16 @@
     <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Pareado</string>
     <string name="connection_unpair">Desparear</string>
+    <string name="connection_known_pcs_title">PCs conhecidos</string>
+    <string name="connection_known_pcs_hint">Toque em um PC para se conectar a ele.</string>
+    <string name="connection_known_pc_last_connected">Última conexão: %1$s</string>
+    <string name="connection_known_pc_never_connected">Ainda não conectado</string>
+    <string name="connection_known_pc_actions">Opções de %1$s</string>
+    <string name="connection_known_pc_rename">Renomear</string>
+    <string name="connection_known_pc_rename_title">Dê um nome a este PC</string>
+    <string name="connection_known_pc_nickname_label">Apelido</string>
+    <string name="connection_known_pc_unpair_title">Desparear %1$s?</string>
+    <string name="connection_known_pc_unpair_message">Este telefone vai esquecer este PC em todos os endereços em que ele responde. Você vai precisar do PIN exibido no PC para parear de novo.</string>
     <string name="pairing_title">Pareamento seguro</string>
     <string name="pairing_prompt">Insira o PIN de 6 dígitos exibido no seu PC</string>
     <string name="pairing_auto_pin_failed">Não foi possível obter o PIN automaticamente — digite o PIN exibido no seu PC.</string>

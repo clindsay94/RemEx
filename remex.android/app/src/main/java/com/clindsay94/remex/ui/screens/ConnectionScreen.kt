@@ -3,6 +3,7 @@ package com.clindsay94.remex.ui.screens
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.text.format.DateUtils
 import android.view.HapticFeedbackConstants
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -46,6 +47,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.DiscoveredHost
+import com.clindsay94.remex.data.KnownHost
+import com.clindsay94.remex.data.KnownHosts
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.security.PinnedHostStore
 import com.clindsay94.remex.ui.components.RemexFlexibleTopBar
@@ -69,6 +72,7 @@ fun ConnectionScreen(
         val capabilitySummary by viewModel.capabilitySummary.collectAsStateWithLifecycle()
         val isDiscovering by viewModel.isDiscovering.collectAsStateWithLifecycle()
         val discoveredHost by viewModel.discoveredHost.collectAsStateWithLifecycle()
+        val knownHosts by viewModel.knownHosts.collectAsStateWithLifecycle()
 
         ConnectionScreenContent(
                 connectionPrefs = connectionPrefs,
@@ -81,6 +85,7 @@ fun ConnectionScreen(
                 capabilitySummary = capabilitySummary,
                 isDiscovering = isDiscovering,
                 discoveredHost = discoveredHost,
+                knownHosts = knownHosts,
                 onNavigateToQrScanner = onNavigateToQrScanner,
                 onConnect = { host, port, mac, broadcast, subnet, pairingPin, quality, fps, scale ->
                         viewModel.connect(
@@ -98,7 +103,15 @@ fun ConnectionScreen(
                 onClearError = { viewModel.clearError() },
                 onDiscoverHost = { viewModel.discoverHost() },
                 onRepair = { context, host -> viewModel.clearPinForHost(context, host) },
-                onConsumeDiscoveredHost = { viewModel.consumeDiscoveredHost() }
+                onConsumeDiscoveredHost = { viewModel.consumeDiscoveredHost() },
+                onConnectToKnownHost = { knownHost -> viewModel.connectToKnownHost(knownHost) },
+                onRenameKnownHost = { identity, nickname ->
+                        viewModel.renameKnownHost(identity, nickname)
+                },
+                onUnpairKnownHost = { context, knownHost ->
+                        viewModel.unpairKnownHost(context, knownHost)
+                },
+                onRefreshKnownHosts = { viewModel.refreshKnownHosts() }
         )
 }
 
@@ -115,12 +128,17 @@ fun ConnectionScreenContent(
         capabilitySummary: String,
         isDiscovering: Boolean,
         discoveredHost: DiscoveredHost?,
+        knownHosts: List<KnownHost>,
         onNavigateToQrScanner: () -> Unit,
         onConnect: (String, Int, String, String, String, String, Int, Int, Float) -> Unit,
         onClearError: () -> Unit,
         onDiscoverHost: () -> Unit,
         onRepair: (android.content.Context, String) -> Unit,
-        onConsumeDiscoveredHost: () -> Unit
+        onConsumeDiscoveredHost: () -> Unit,
+        onConnectToKnownHost: (KnownHost) -> Unit,
+        onRenameKnownHost: (String, String) -> Unit,
+        onUnpairKnownHost: (android.content.Context, KnownHost) -> Unit,
+        onRefreshKnownHosts: () -> Unit
 ) {
         val view = LocalView.current
         val context = LocalContext.current
@@ -138,9 +156,21 @@ fun ConnectionScreenContent(
         var scaleInput by remember { mutableFloatStateOf(1.0f) }
         var showHelpSection by remember { mutableStateOf(false) }
 
+        // Known PCs row actions (RemEx-k62t). Held at screen level rather than inside the row so a
+        // dialog is not torn down by the very action it confirms — unpairing removes the row.
+        var renamingHost by remember { mutableStateOf<KnownHost?>(null) }
+        var unpairingHost by remember { mutableStateOf<KnownHost?>(null) }
+        var nicknameInput by remember { mutableStateOf("") }
+
         // Pending flags for deferred actions after permission grants
         var pendingConnect by remember { mutableStateOf(false) }
         var pendingConnectNeedsLan by remember { mutableStateOf(false) }
+        // The Known PCs row whose tap is waiting on a permission grant, if it was a row rather than
+        // the form. Without this the deferred path falls through to doConnect(), which carries the
+        // form's pairing PIN — and a 6-digit PIN makes RemexClientManager drop the pinned hash and
+        // force a re-pair, so a tap meant to RECONNECT to an already-paired PC would try to pair it
+        // again with a PIN belonging to a different machine.
+        var pendingKnownHost by remember { mutableStateOf<KnownHost?>(null) }
         var pendingDiscover by remember { mutableStateOf(false) }
 
         // Snackbar state declared early so permission launchers below can reference it.
@@ -209,6 +239,8 @@ fun ConnectionScreenContent(
                 ) { results ->
                         if (pendingConnect) {
                                 pendingConnect = false
+                                val knownHost = pendingKnownHost
+                                pendingKnownHost = null
                                 // Only treat a LAN-permission denial as fatal when this connection
                                 // actually needs the local network. A Tailscale/VPN target does not,
                                 // so a denial there must still fall through to doConnect().
@@ -224,7 +256,9 @@ fun ConnectionScreenContent(
                                         // Do not attempt connection — it will fail silently without LAN access.
                                         return@rememberLauncherForActivityResult
                                 }
-                                doConnect()
+                                // A deferred Known PCs tap resumes as that tap, not as the form: it
+                                // is already paired, and doConnect() would send the form's PIN.
+                                if (knownHost != null) onConnectToKnownHost(knownHost) else doConnect()
                         }
                 }
 
@@ -265,6 +299,25 @@ fun ConnectionScreenContent(
                                 targetFpsInput = desktopPrefs.targetFps.toFloat()
                         if (scaleInput == 1.0f && desktopPrefs.scale != 1.0f) scaleInput =
                             desktopPrefs.scale
+                }
+        }
+
+        // The Known PCs list is a snapshot of a separate DataStore, so refresh it on entry rather
+        // than showing whatever was true when the ViewModel was created.
+        LaunchedEffect(Unit) { onRefreshKnownHosts() }
+
+        // Most recently used PC as the default connect target (RemEx-k62t). The stored host is
+        // normally already that PC — tapping a row saves it — so this is the fallback for the case
+        // where nothing is stored, not the mechanism. It is deliberately narrow: the stored host is
+        // the last one ATTEMPTED rather than the last one that succeeded, and replacing a failed
+        // address the user is still trying to reach would be the screen arguing with them. Waits
+        // for prefs to load, so a slow DataStore read cannot lose to this and leave them unused.
+        LaunchedEffect(knownHosts, connectionPrefs) {
+                if (connectionPrefs == null) return@LaunchedEffect
+                if (hostInput.isNotEmpty() || connectionPrefs.host.isNotEmpty()) return@LaunchedEffect
+                KnownHosts.mostRecentlyConnected(knownHosts)?.let { mostRecent ->
+                        hostInput = mostRecent.preferredAddress
+                        portInput = mostRecent.port.toString()
                 }
         }
 
@@ -648,6 +701,276 @@ fun ConnectionScreenContent(
                                                         }
                                                 }
                                         }
+                                }
+
+                                // --- Known PCs (RemEx-k62t) ---
+                                // One row per physical PC, keyed by its pinned certificate rather
+                                // than its address: the same machine answers at a LAN IP, a
+                                // Tailscale address and a hostname, and an address-keyed list would
+                                // show it three times with a third of the user's settings each.
+                                AnimatedVisibility(
+                                        visible = knownHosts.isNotEmpty(),
+                                        enter =
+                                                expandVertically(motionScheme.fastSpatialSpec()) +
+                                                        fadeIn(motionScheme.fastEffectsSpec()),
+                                        exit =
+                                                shrinkVertically(motionScheme.fastSpatialSpec()) +
+                                                        fadeOut(motionScheme.fastEffectsSpec())
+                                ) {
+                                        Card(modifier = Modifier.fillMaxWidth()) {
+                                                Column(
+                                                        modifier = Modifier.padding(16.dp),
+                                                        verticalArrangement =
+                                                                Arrangement.spacedBy(4.dp)
+                                                ) {
+                                                        Row(
+                                                                verticalAlignment =
+                                                                        Alignment.CenterVertically
+                                                        ) {
+                                                                Icon(
+                                                                        Icons.Default.Computer,
+                                                                        contentDescription = null,
+                                                                        tint =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .onSurfaceVariant
+                                                                )
+                                                                Spacer(Modifier.width(8.dp))
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_known_pcs_title
+                                                                        ),
+                                                                        style =
+                                                                                MaterialTheme
+                                                                                        .typography
+                                                                                        .titleSmallEmphasized
+                                                                )
+                                                        }
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pcs_hint
+                                                                ),
+                                                                style =
+                                                                        MaterialTheme.typography
+                                                                                .bodySmall,
+                                                                color =
+                                                                        MaterialTheme.colorScheme
+                                                                                .onSurfaceVariant
+                                                        )
+                                                        knownHosts.forEach { knownHost ->
+                                                                // Keyed by identity, not by
+                                                                // position: the list re-sorts when
+                                                                // a connection lands, and a row's
+                                                                // remembered state (its open
+                                                                // overflow menu) would otherwise
+                                                                // stay with the SLOT and end up
+                                                                // acting on whichever PC moved into
+                                                                // it.
+                                                                key(knownHost.identity) {
+                                                                KnownPcRow(
+                                                                        knownHost = knownHost,
+                                                                        enabled = !isConnecting,
+                                                                        onConnect = {
+                                                                                // Fill the form as
+                                                                                // well as connect:
+                                                                                // it shows what was
+                                                                                // tapped, and the
+                                                                                // deferred
+                                                                                // permission path
+                                                                                // below reads it.
+                                                                                hostInput =
+                                                                                        knownHost
+                                                                                                .preferredAddress
+                                                                                portInput =
+                                                                                        knownHost.port
+                                                                                                .toString()
+                                                                                val perms =
+                                                                                        connectPermissionsFor(
+                                                                                                knownHost.preferredAddress
+                                                                                        )
+                                                                                pendingConnectNeedsLan =
+                                                                                        com.clindsay94
+                                                                                                .remex
+                                                                                                .security
+                                                                                                .TransportTrust
+                                                                                                .requiresLocalNetworkAccess(
+                                                                                                        knownHost.preferredAddress
+                                                                                                )
+                                                                                val allGranted =
+                                                                                        perms.all {
+                                                                                                ContextCompat
+                                                                                                        .checkSelfPermission(
+                                                                                                                context,
+                                                                                                                it
+                                                                                                        ) ==
+                                                                                                        PackageManager
+                                                                                                                .PERMISSION_GRANTED
+                                                                                        }
+                                                                                if (perms.isNotEmpty() &&
+                                                                                                !allGranted
+                                                                                ) {
+                                                                                        pendingKnownHost =
+                                                                                                knownHost
+                                                                                        pendingConnect =
+                                                                                                true
+                                                                                        connectPermissionLauncher
+                                                                                                .launch(
+                                                                                                        perms
+                                                                                                )
+                                                                                } else {
+                                                                                        onConnectToKnownHost(
+                                                                                                knownHost
+                                                                                        )
+                                                                                }
+                                                                        },
+                                                                        onRename = {
+                                                                                nicknameInput =
+                                                                                        knownHost.nickname
+                                                                                renamingHost =
+                                                                                        knownHost
+                                                                        },
+                                                                        onUnpair = {
+                                                                                unpairingHost =
+                                                                                        knownHost
+                                                                        }
+                                                                )
+                                                                }
+                                                        }
+                                                }
+                                        }
+                                }
+
+                                renamingHost?.let { target ->
+                                        AlertDialog(
+                                                onDismissRequest = { renamingHost = null },
+                                                title = {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pc_rename_title
+                                                                )
+                                                        )
+                                                },
+                                                text = {
+                                                        OutlinedTextField(
+                                                                value = nicknameInput,
+                                                                onValueChange = {
+                                                                        nicknameInput = it
+                                                                },
+                                                                singleLine = true,
+                                                                label = {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_known_pc_nickname_label
+                                                                                )
+                                                                        )
+                                                                },
+                                                                keyboardOptions =
+                                                                        androidx.compose.foundation
+                                                                                .text
+                                                                                .KeyboardOptions(
+                                                                                        capitalization =
+                                                                                                KeyboardCapitalization
+                                                                                                        .Words,
+                                                                                        imeAction =
+                                                                                                ImeAction.Done
+                                                                                )
+                                                        )
+                                                },
+                                                confirmButton = {
+                                                        TextButton(
+                                                                onClick = {
+                                                                        onRenameKnownHost(
+                                                                                target.identity,
+                                                                                nicknameInput
+                                                                        )
+                                                                        renamingHost = null
+                                                                }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .button_confirm
+                                                                        )
+                                                                )
+                                                        }
+                                                },
+                                                dismissButton = {
+                                                        TextButton(
+                                                                onClick = { renamingHost = null }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string.button_cancel
+                                                                        )
+                                                                )
+                                                        }
+                                                }
+                                        )
+                                }
+
+                                // Confirm first: unpairing is not undoable from the phone. Pairing
+                                // again needs the PIN showing on the PC, which the user may not be
+                                // standing in front of.
+                                unpairingHost?.let { target ->
+                                        AlertDialog(
+                                                onDismissRequest = { unpairingHost = null },
+                                                title = {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pc_unpair_title,
+                                                                        target.nickname.ifBlank {
+                                                                                target.preferredAddress
+                                                                        }
+                                                                )
+                                                        )
+                                                },
+                                                text = {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pc_unpair_message
+                                                                )
+                                                        )
+                                                },
+                                                confirmButton = {
+                                                        TextButton(
+                                                                onClick = {
+                                                                        onUnpairKnownHost(
+                                                                                context,
+                                                                                target
+                                                                        )
+                                                                        unpairingHost = null
+                                                                }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_unpair
+                                                                        ),
+                                                                        color =
+                                                                                MaterialTheme
+                                                                                        .colorScheme
+                                                                                        .error
+                                                                )
+                                                        }
+                                                },
+                                                dismissButton = {
+                                                        TextButton(
+                                                                onClick = { unpairingHost = null }
+                                                        ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string.button_cancel
+                                                                        )
+                                                                )
+                                                        }
+                                                }
+                                        )
                                 }
 
                                 // --- How to connect help section ---
@@ -1284,6 +1607,12 @@ fun ConnectionScreenContent(
                                                                                                 context,
                                                                                                 hostInput
                                                                                         )
+                                                                                // That address may
+                                                                                // be one of a Known
+                                                                                // PCs row's — the
+                                                                                // list is a
+                                                                                // snapshot.
+                                                                                onRefreshKnownHosts()
                                                                         }
                                                                         isPaired = false
                                                                 },
@@ -1339,14 +1668,161 @@ private fun ConnectionScreenPreview() {
             isDiscovering = false,
             discoveredHost = null,
             isCertMismatch = false,
+            knownHosts = listOf(
+                KnownHost(
+                    identity = "0123456789abcdef",
+                    nickname = "Studio PC",
+                    addresses = listOf("192.168.1.10", "100.72.10.4"),
+                    port = 5005,
+                    lastConnectedAtMillis = 1_700_000_000_000L
+                ),
+                KnownHost(
+                    identity = "fedcba9876543210",
+                    nickname = "",
+                    addresses = listOf("192.168.1.11"),
+                    port = 5005,
+                    lastConnectedAtMillis = 0L
+                )
+            ),
             onNavigateToQrScanner = {},
             onConnect = { _, _, _, _, _, _, _, _, _ -> },
             onClearError = {},
             onDiscoverHost = {},
             onRepair = { _, _ -> },
-            onConsumeDiscoveredHost = {}
+            onConsumeDiscoveredHost = {},
+            onConnectToKnownHost = {},
+            onRenameKnownHost = { _, _ -> },
+            onUnpairKnownHost = { _, _ -> },
+            onRefreshKnownHosts = {}
         )
     }
+}
+
+/**
+ * One PC in the Known PCs list: tap to connect, overflow to rename or unpair (RemEx-k62t).
+ *
+ * The whole row is the connect target rather than a trailing "Connect" button — reconnecting to a
+ * PC the phone is already paired with is the common action on this screen, and it should not need
+ * aim. The destructive action is behind the overflow for the same reason: an unpair that is one
+ * mis-tap away from a connect is one mis-tap away from needing the PIN off the PC to undo.
+ */
+@Composable
+private fun KnownPcRow(
+        knownHost: KnownHost,
+        enabled: Boolean,
+        onConnect: () -> Unit,
+        onRename: () -> Unit,
+        onUnpair: () -> Unit
+) {
+        val view = LocalView.current
+        var menuExpanded by remember { mutableStateOf(false) }
+        val displayName = knownHost.nickname.ifBlank { knownHost.preferredAddress }
+        val lastConnected =
+                if (knownHost.hasEverConnected) {
+                        stringResource(
+                                R.string.connection_known_pc_last_connected,
+                                // The system's own relative-time wording, so it is localized and
+                                // formatted the way the rest of the phone does it rather than by a
+                                // string this app would have to translate nine times.
+                                DateUtils.getRelativeTimeSpanString(
+                                                knownHost.lastConnectedAtMillis,
+                                                System.currentTimeMillis(),
+                                                DateUtils.MINUTE_IN_MILLIS
+                                        )
+                                        .toString()
+                        )
+                } else {
+                        stringResource(R.string.connection_known_pc_never_connected)
+                }
+
+        ListItem(
+                modifier =
+                        Modifier.clickable(enabled = enabled) {
+                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                onConnect()
+                        },
+                leadingContent = {
+                        Icon(
+                                Icons.Default.Computer,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                        )
+                },
+                supportingContent = {
+                        Column {
+                                // Only when the name is a nickname, otherwise the headline already
+                                // IS the address and this would print it twice.
+                                if (knownHost.nickname.isNotBlank()) {
+                                        Text(
+                                                knownHost.preferredAddress,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                }
+                                Text(
+                                        lastConnected,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                        }
+                },
+                trailingContent = {
+                        Box {
+                                IconButton(onClick = { menuExpanded = true }) {
+                                        Icon(
+                                                Icons.Default.MoreVert,
+                                                contentDescription =
+                                                        stringResource(
+                                                                R.string
+                                                                        .connection_known_pc_actions,
+                                                                displayName
+                                                        )
+                                        )
+                                }
+                                DropdownMenu(
+                                        expanded = menuExpanded,
+                                        onDismissRequest = { menuExpanded = false }
+                                ) {
+                                        DropdownMenuItem(
+                                                text = {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string
+                                                                                .connection_known_pc_rename
+                                                                )
+                                                        )
+                                                },
+                                                onClick = {
+                                                        menuExpanded = false
+                                                        onRename()
+                                                }
+                                        )
+                                        DropdownMenuItem(
+                                                text = {
+                                                        Text(
+                                                                stringResource(
+                                                                        R.string.connection_unpair
+                                                                ),
+                                                                color =
+                                                                        MaterialTheme.colorScheme
+                                                                                .error
+                                                        )
+                                                },
+                                                onClick = {
+                                                        menuExpanded = false
+                                                        onUnpair()
+                                                }
+                                        )
+                                }
+                        }
+                },
+                colors =
+                        ListItemDefaults.colors(
+                                containerColor = androidx.compose.ui.graphics.Color.Transparent
+                        )
+        ) {
+                Text(displayName, style = MaterialTheme.typography.bodyLargeEmphasized)
+        }
 }
 
 @Composable

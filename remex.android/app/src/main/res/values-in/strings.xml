@@ -230,6 +230,16 @@
     <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Disandingkan</string>
     <string name="connection_unpair">Lepas sandingan</string>
+    <string name="connection_known_pcs_title">PC yang dikenal</string>
+    <string name="connection_known_pcs_hint">Ketuk PC untuk terhubung dengannya.</string>
+    <string name="connection_known_pc_last_connected">Terakhir terhubung: %1$s</string>
+    <string name="connection_known_pc_never_connected">Belum pernah terhubung</string>
+    <string name="connection_known_pc_actions">Opsi untuk %1$s</string>
+    <string name="connection_known_pc_rename">Ganti nama</string>
+    <string name="connection_known_pc_rename_title">Beri nama PC ini</string>
+    <string name="connection_known_pc_nickname_label">Nama panggilan</string>
+    <string name="connection_known_pc_unpair_title">Lepas sandingan %1$s?</string>
+    <string name="connection_known_pc_unpair_message">Ponsel ini akan melupakan PC ini di semua alamat yang dipakainya. Anda memerlukan PIN yang ditampilkan di PC untuk menyandingkannya lagi.</string>
     <string name="pairing_title">Penyandingan Aman</string>
     <string name="pairing_prompt">Masukkan PIN 6 digit yang ditampilkan di PC Anda</string>
     <string name="pairing_auto_pin_failed">Tidak dapat mengambil PIN secara otomatis — masukkan PIN yang ditampilkan di PC Anda.</string>

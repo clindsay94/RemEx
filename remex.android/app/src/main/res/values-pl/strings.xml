@@ -217,6 +217,16 @@
     <string name="connection_status_label">Status: %1$s</string>
     <string name="connection_paired">Sparowano</string>
     <string name="connection_unpair">Usuń sparowanie</string>
+    <string name="connection_known_pcs_title">Znane komputery</string>
+    <string name="connection_known_pcs_hint">Dotknij komputera, aby się z nim połączyć.</string>
+    <string name="connection_known_pc_last_connected">Ostatnie połączenie: %1$s</string>
+    <string name="connection_known_pc_never_connected">Jeszcze nie połączono</string>
+    <string name="connection_known_pc_actions">Opcje: %1$s</string>
+    <string name="connection_known_pc_rename">Zmień nazwę</string>
+    <string name="connection_known_pc_rename_title">Nazwij ten komputer</string>
+    <string name="connection_known_pc_nickname_label">Nazwa</string>
+    <string name="connection_known_pc_unpair_title">Usunąć sparowanie z %1$s?</string>
+    <string name="connection_known_pc_unpair_message">Ten telefon zapomni ten komputer pod wszystkimi adresami, pod którymi odpowiada. Aby sparować ponownie, potrzebny będzie PIN wyświetlony na komputerze.</string>
     <string name="pairing_title">Bezpieczne parowanie</string>
     <string name="pairing_prompt">Wprowadź 6-cyfrowy kod PIN wyświetlony na komputerze</string>
     <string name="pairing_auto_pin_failed">Nie udało się automatycznie pobrać kodu PIN — wpisz PIN wyświetlony na komputerze.</string>

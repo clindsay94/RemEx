@@ -349,6 +349,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suggestions 8 and 9 were filed as separate design work. Those two sentences contradicted each
   other from the day it was filed. The acceptance criteria now say what the description always did.
   (RemEx-56fu.)
+- **The Connection screen now lists the PCs your phone is paired with, and you connect by tapping
+  one.** Before this there was one remembered PC — whatever was typed into the form last — so a
+  second machine meant retyping its address every time you switched. The list gives each PC a row
+  you can name, shows when you last connected to it, and puts an unpair behind a confirmation on
+  that row rather than only on the PC currently in the form.
+  **One row per machine, not one per address.** Your PC answers at a LAN address, possibly a
+  Tailscale one, maybe a hostname, and a new one every time DHCP changes its mind — and the phone
+  stores a pin for each of those separately. Keying the list on the address would have shown one PC
+  three times, each row holding a third of your nickname, your last-connected time and your
+  settings. The rows are keyed on the PC's certificate instead, so the machine is one row however
+  many ways your phone can reach it, and unpairing forgets all of them at once. The row dials the
+  address that last worked, which is the one worth trying first when you are somewhere your PC is
+  only reachable one of those ways.
+  **"Last connected" means connected.** A failed attempt does not stamp the row, so a PC that is
+  powered off does not climb to the top of the list every time you try it. The most recently
+  connected PC is what the connect form fills in when nothing is stored yet, and tapping a row
+  points the Quick Settings tiles, the widgets and the keepalive service at that PC too — they read
+  the same stored host, so choosing a PC here chooses it everywhere.
+  Nicknames and last-connected times are not included in a settings export. They say which machines
+  you own and when you use them, and an export is a file that leaves the phone. (RemEx-k62t.)
 
 ### Fixed
 
