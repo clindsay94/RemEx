@@ -15,6 +15,10 @@ The prompt argument is deliberately short. Ralph re-feeds the *same* string ever
 model has no memory between them — so the instructions live here, on disk, where each fresh
 iteration re-reads them and where the operator can edit them mid-run without restarting the loop.
 
+To run several of these at once, each in its own worktree, use
+`./scripts/ralph-dispatch.ps1 -Lanes 3` and read LANE MODE below. The dispatcher provisions the
+lanes and lands their branches; the loop itself is unchanged.
+
 **This loop runs on Opus.** The board contains genuinely hard beads (wire-format changes, capture
 pipeline rewrites, JNI boundary work), so the executor itself needs the judgment this time — not
 just the reviewer. The review gate still runs on Opus subagents for a second, independent pair of
@@ -70,11 +74,55 @@ nonzero.
 reports HIGH or CRITICAL, do NOT defer the bead — proceed carefully, tell the reviewer the risk
 rating and the affected callers, and treat the review gate as mandatory (no skip).
 
+## LANE MODE — when you are one lane of a parallel drain
+
+Most iterations run in the integration copy (`Z:\RemEx`, branch `v2.5-board-drain`), one at a time.
+Some run as a **lane**: one of several git worktrees draining different beads at the same time,
+provisioned by `scripts/ralph-dispatch.ps1` and landed one-at-a-time by
+`scripts/ralph-merge-queue.ps1`. Specified in `docs/SPEC-parallel-board-drain-dispatcher.md` §6.
+
+**Work out which you are before step 1.** A lane has a `.ralph/lane.env` at the root of its working
+copy holding `RALPH_LANE`, `RALPH_LANE_BEAD`, `RALPH_LANE_BRANCH` and `BEADS_DIR`. If that file is
+not there, you are the sequential loop and none of this section applies. Do not guess from the
+directory name.
+
+The per-bead contract is otherwise **unchanged** — same verification, same review gate, same
+guardrails, same one-bead-per-iteration rule. These are the only differences:
+
+| Step | In a lane |
+|---|---|
+| 1 branch | You are already on `ralph/lane-<n>/<bead-id>`. Check you are on **that** branch, not `v2.5-board-drain`. Refusing to work on `main` still holds. Never `git checkout` a different branch — the merge queue derives the bead id from the branch name, so leaving it lands your work under someone else's id. |
+| 2 dirty tree | Unchanged, including **never `git checkout -- .` or `git restore -- .`**. A lane is not shared, so the reason it was written does not apply here — but the reason it is right is broader than the reason it was written, and a lane that learns to use wildcards is a lane that does it in the integration tree later. |
+| 3 pick a bead | **You do not pick.** Your bead is `RALPH_LANE_BEAD` and it is named in your branch. Work that one. (Not in the spec's list, and it follows from the branch naming: the queue reads the bead id out of the branch, and the dispatcher already recorded a path claim against it. A lane that picked its own bead would land it under the assigned bead's id and hold a claim for files it never touches.) |
+| 4 claim | Already done for you — the dispatcher ran `bd update --claim` before provisioning, because a bead left `open` holds a path claim the next lane's collision check cannot see. Run `bd show <id>` and confirm it is yours; running `--claim` again is harmless. |
+| 7 verify | Unchanged. Your receipt proves **your lane** is green in isolation, which is not the same as green once merged — the queue re-verifies in the integration tree and that is the receipt that closes the bead. Your verify still matters: it fails a broken lane in the lane, instead of poisoning the queue. |
+| 8 review gate | Unchanged per bead, and additionally mandatory per merge. |
+| 9 commit | Unchanged. Commit to your lane branch. Still no push. |
+| 10 `bd close` | **Do not.** A lane produces a verified branch, not a closed bead. Work that has not landed on the integration branch is not done, and a closed bead whose branch later fails to merge is a lie in the tracker. Instead mark it ready and stop: `bd update <id> --set-metadata ralphLaneState=ready-to-land`. The queue closes it after the merge verifies green. |
+| 11 changelog | **Stays here, and is now a gate.** Only you know what changed, so only you can write the entry — and the merge queue refuses to land a branch that does not touch `docs/CHANGELOG.md`, before it builds anything. A forgotten entry costs you the whole landing. |
+| 12 `docs/ralph-state.jsonl` | **Do not.** Every lane appending to one tracked file guarantees a conflict on every landing. The queue writes the entry, in the integration tree, one at a time, and records your lane number in it. |
+
+**Path claims.** The dispatcher recorded the files it predicted you would touch under the
+`ralphLanePaths` metadata key, and another lane is refused any file you hold. The prediction will
+sometimes be wrong, which is normal: if you find you need a path nobody anticipated, amend the claim
+with `./scripts/ralph-cluster.ps1 -Claim <id> -Paths <the full new set>`. If that is **refused**,
+another lane is in those files right now. Do not edit them anyway. Finish what you can without them,
+then return the bead with a note saying exactly which paths were taken:
+`bd update <id> --status open --set-metadata ralphLaneState=returned --append-notes "..."`.
+
+**If you get stuck**, the IF YOU GET STUCK section applies unchanged, except that you also set
+`ralphLaneState=returned` so the queue skips your branch and your claim stops blocking other lanes.
+Leave the branch alone — a failed lane's branch is the evidence for its reopened bead, and nothing
+reaps a branch whose bead is not closed.
+
 ## PROCEDURE — follow in order
 
 1. Run `git branch --show-current`. If it is not `v2.5-board-drain`, run
    `git checkout v2.5-board-drain` (create it from `main` with `git checkout -b v2.5-board-drain`
    if it does not exist). NEVER work on `main`.
+
+   **Lane mode:** you belong on `ralph/lane-<n>/<bead-id>` instead — see LANE MODE above, and check
+   for `.ralph/lane.env` before doing anything here.
 
 2. Run `git status`. If the tree is dirty, a previous iteration died mid-work. Inspect the diff
    and either finish coherent work or discard the incoherent scraps with
@@ -95,6 +143,8 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
       decision) — and then append a note saying exactly that.
 
    Run `bd show <id>` and read the full issue including notes and acceptance criteria.
+
+   **Lane mode:** do not pick. Your bead is `RALPH_LANE_BEAD` and it is named in your branch.
 
 4. Run `bd update <id> --claim`.
 
@@ -255,6 +305,9 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
 
 10. Run `bd close <id>`.
 
+    **Lane mode: do NOT close it.** Run `bd update <id> --set-metadata ralphLaneState=ready-to-land`
+    and let the merge queue close it once the integration tree verifies green with your work in it.
+
 11. Add a changelog entry to **`docs/CHANGELOG.md`** — NOT the root `CHANGELOG.md` stub — under
     `## [Unreleased]` in the correct Keep-a-Changelog section. Do NOT create a version heading or
     move entries out of `[Unreleased]` — cutting a release is the operator's decision.
@@ -264,6 +317,10 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
     where `sourceHash` is copied from the verify receipt. A session fork loses in-memory loop
     state and the loop then silently stops or repeats work; this file is what the next iteration
     reads to know what already happened.
+
+    **Lane mode: do NOT write this file.** Every lane appending to one tracked file guarantees a
+    merge conflict on every landing. The merge queue writes the entry in the integration tree, one
+    at a time, with your lane number in it.
 
     **`.jsonl`, not `.json`.** `verify.ps1` fingerprints `*.json` among its source patterns, and
     a git pathspec of `*.json` matches at any depth — so a `docs/ralph-state.json` would be part
@@ -339,6 +396,10 @@ ambiguous, or the build won't go green:
 4. End the iteration. Do NOT output the completion promise. The next iteration picks different work.
 
 ## COMPLETION
+
+**Lane mode: never output the completion promise.** A lane sees one assigned bead and cannot know
+whether anything has landed, so the board it would be reporting on is not the board. The drain is
+finished when the dispatcher's `-Status` is empty and the queue has nothing to land.
 
 Before ending ANY iteration, run this exact check:
 

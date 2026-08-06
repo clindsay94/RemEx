@@ -31,6 +31,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The parallel board drain now has a front end — `scripts/ralph-dispatch.ps1`.** Plans a wave,
+  provisions one worktree per lane, hands each one a bead, lands the finished branches through the
+  merge queue and tears down what landed: `-Lanes 3`, `-PlanOnly`, `-Land`, `-Reap`, `-Status`.
+  It is a composer, not a coordinator — the clustering, provisioning and landing scripts already
+  existed and are unchanged apart from one new input.
+  **The dispatcher stores nothing.** Every phase reconstructs what it needs from the two places that
+  survive the process dying: bd, and the branches under `refs/heads/ralph/`. `-Status` is the proof —
+  it reads those two sources and nothing else, so it is correct on a machine where the dispatcher has
+  never run, and a dispatcher that dies mid-wave loses no state because it never held any.
+  What launches an agent inside a lane is still deliberately undecided. `-Launcher` takes a program
+  and starts it once per lane with a fixed argument list; without it the lanes are provisioned,
+  claimed and idle, with the command to start each one printed. Nothing else in the design depends on
+  the answer.
+  Refusals worth knowing about: it will not run from inside a lane (the dispatcher belongs to the
+  integration copy, where the one board and the one merge queue live), not on `main`, and not with
+  uncommitted changes in the integration tree — lanes branch from HEAD, so uncommitted work would be
+  missing from every lane and would then conflict with every landing.
+  `-Reap` removes only lanes whose bead is **closed**, which is the one state that means the merge
+  queue verified the work green after merging it. Returned and quarantined lanes keep their branch
+  and worktree, because a failed lane's branch is the evidence for its reopened bead.
+
+- **The board-drain loop prompt now has a LANE MODE section** (`docs/ralph-board-drain.md`), so one
+  document still describes both the sequential loop and a parallel lane. A lane detects itself from
+  `.ralph/lane.env` rather than from its directory name. The per-bead contract is unchanged — same
+  verification, same review gate, same guardrails — and the differences are that a lane works the
+  bead it was assigned, does **not** close it (`ralphLaneState=ready-to-land` instead: work that has
+  not landed is not done, and a closed bead whose branch later fails to merge is a lie in the
+  tracker), and does **not** append to the loop journal (every lane writing one tracked file
+  guarantees a conflict on every landing — the merge queue writes it, serialised). The changelog
+  entry stays in the lane and became a landing gate: only the lane knows what changed.
+
+- **`scripts/ralph-cluster.ps1` gained `-PathsFile`**, a claim list read from a file, one path per
+  line. `pwsh -File child.ps1 -Paths a,b,c` binds the literal string `"a,b,c"` as a single element,
+  and calling the script in-process instead would run its `exit` in the caller and kill the
+  dispatcher — so a multi-path claim has to travel through a file, which is the shape the spec's
+  no-heredocs constraint asks for anyway.
+
 - **Clustering and lane claims for the parallel board drain — `scripts/ralph-cluster.ps1`.** Works
   out which ready beads can be drained side by side without two agents landing in the same file,
   and holds the claims that keep them apart. Run with no arguments it prints the plan and changes

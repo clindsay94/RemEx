@@ -1,7 +1,7 @@
 # SPEC — Parallel-worktree board-drain dispatcher
 
-Status: **partly built.** Phase 0 (`.5.1`), lane provisioning (`.5.2`), the merge queue (`.5.3`) and
-clustering (`.5.4`) are implemented; only the dispatcher that drives them (`.5.5`) is not. Implementation
+Status: **built.** Phase 0 (`.5.1`), lane provisioning (`.5.2`), the merge queue (`.5.3`), clustering
+(`.5.4`) and the dispatcher (`.5.5`) are all implemented. Implementation
 beads are listed at the end with their state. Where a claim is still unverified, it says so — and
 several claims that were unverified when this was written have since been measured and corrected
 inline, marked **MEASURED**.
@@ -406,6 +406,14 @@ Constraints 5–8 were found while writing this spec and were not in the origina
 - **Agent launch mechanism.** Whether lanes are separate Claude Code sessions, background tasks, or
   subagents is deliberately unspecified. It is the most likely thing to change and the design does
   not depend on it: a lane is anything that can run the loop in a directory and exit.
+
+  **Still open, and now parameterised rather than decided.** The dispatcher's `-Launcher` takes a
+  program and starts it once per lane with a fixed argument list — `<laneRoot> <laneNumber> <beadId>
+  <branch> <promptPath>` — as argv, never as a composed command string, since constraint 4 forbids
+  generating script text and argv passing removes the quoting corruption shell strings keep causing
+  here. Without `-Launcher` the dispatcher provisions the lanes, claims their beads, and prints what
+  to run. That default is the honest one while the question is open: everything except *what an
+  agent is* has already happened, and it is a one-line change to plug in an answer.
 - **Whether a lane should verify at all.** If the merge queue re-verifies every landing anyway, a
   lane's own verify is partly redundant. Keeping it means a broken lane fails in the lane instead of
   poisoning the queue, which is worth the duplication — but Phase 0's numbers may say otherwise.
@@ -423,9 +431,23 @@ Filed off this spec. Phase 0 blocks everything else — deliberately.
 | `RemEx-56fu.5.2` | `scripts/ralph-lane-manifest.txt` + `scripts/ralph-lane-bootstrap.ps1`, including the artifacts-path assertion | **done** |
 | `RemEx-56fu.5.3` | Merge queue: `scripts/ralph-merge-queue.ps1`, integration-tree verify, quarantine-on-fail, journal writes, changelog gate | **done** |
 | `RemEx-56fu.5.4` | Clustering and claims: `scripts/ralph-cluster.ps1`, layers 1 and 2 of §5 | **done** |
-| `RemEx-56fu.5.5` | `scripts/ralph-dispatch.ps1` end to end, plus the §6 amendments to `docs/ralph-board-drain.md` | open |
+| `RemEx-56fu.5.5` | `scripts/ralph-dispatch.ps1` end to end, plus the §6 amendments to `docs/ralph-board-drain.md` | **done** |
 
-`.5.5` inherits one loose end from `.5.3`: the queue reads `ralphLaneState` from bead metadata, and
-nothing writes it yet. Until the §6 amendments land, a lane is marked ready by hand with
-`bd update <id> --set-metadata ralphLaneState=ready-to-land`. The queue is deliberately strict about
-this rather than inferring readiness from a branch existing — a half-finished lane must not land.
+`.5.5` closed the loose end it inherited from `.5.3`: `ralphLaneState` now has writers on both sides.
+The dispatcher sets `working` (and `ralphLane`) at provisioning time, and the §6 amendments tell the
+lane to set `ready-to-land` instead of closing its bead. The queue stays deliberately strict about
+reading it rather than inferring readiness from a branch existing — a half-finished lane must not land.
+
+Two things were settled while building it, neither of them predicted here:
+
+- **The lane must be told which bead it is on.** §6 lists the amendments to steps 1, 2, 9, 10, 11 and
+  12 and says the contract otherwise does not change, but step 3 — *pick a bead* — cannot survive
+  contact with a lane. The branch name carries the bead id and the merge queue reads the id back out
+  of it, so a lane that picked its own bead would land the work under the assigned bead's id while
+  holding a path claim for files it never touched. Step 4 goes with it: the dispatcher has to run
+  `bd update --claim` itself, because `ralph-cluster.ps1` checks new claims against
+  `bd list --status in_progress`, so a bead left `open` holds a claim the next lane cannot see.
+- **Passing a path list to a child script needed a file.** `pwsh -File child.ps1 -Paths a,b,c` binds
+  the literal string `"a,b,c"` as one element, and calling the script in-process instead is not an
+  option because its `exit` would terminate the dispatcher. So `ralph-cluster.ps1` grew `-PathsFile`,
+  one path per line, which is the shape constraint 4 asks for anyway.

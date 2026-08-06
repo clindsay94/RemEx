@@ -76,6 +76,17 @@
 .PARAMETER Paths
     The paths to claim. Used with -Claim.
 
+.PARAMETER PathsFile
+    A file holding the paths to claim, one per line, blank lines and # comments ignored. Same
+    thing as -Paths and mutually exclusive with it.
+
+    This exists because of how PowerShell starts a child process: `pwsh -File this.ps1 -Paths
+    a,b,c` binds the literal string "a,b,c" as ONE element, since -File passes arguments as
+    strings and never builds an array from commas. The dispatcher cannot avoid the child process
+    either - calling this script in-process would run its `exit 0` in the caller and kill the
+    dispatcher. So a claim of more than one path has to travel through a file, which is also the
+    shape the spec's constraint 4 asks for: real files, passed by path.
+
 .PARAMETER Json
     Print one line of JSON and nothing else. For the dispatcher.
 
@@ -114,8 +125,11 @@ param(
     [Parameter(ParameterSetName = 'Claim', Mandatory = $true)]
     [string]$Claim,
 
-    [Parameter(ParameterSetName = 'Claim', Mandatory = $true)]
+    [Parameter(ParameterSetName = 'Claim')]
     [string[]]$Paths,
+
+    [Parameter(ParameterSetName = 'Claim')]
+    [string]$PathsFile,
 
     [Parameter(ParameterSetName = 'Release', Mandatory = $true)]
     [string]$Release,
@@ -301,7 +315,23 @@ if ($PSCmdlet.ParameterSetName -ceq 'Claim') {
         Stop-WithProblem 'claim' "bd does not know a bead called '$Claim'." 'Check the id with: bd list'
     }
 
-    $wanted = @($Paths | ForEach-Object { ($_ -replace '\\', '/').Trim().TrimEnd('/') } | Where-Object { $_ } | Sort-Object -Unique)
+    if ($Paths -and $PathsFile) {
+        Stop-WithProblem 'claim' 'Both -Paths and -PathsFile were given.' `
+            'They are two spellings of the same input. Pass one.'
+    }
+
+    $requested = @($Paths)
+    if ($PathsFile) {
+        if (-not (Test-Path -LiteralPath $PathsFile -PathType Leaf)) {
+            Stop-WithProblem 'claim' "-PathsFile does not exist: $PathsFile" `
+                'The caller is meant to write it immediately before this runs, so an absent file means the caller failed silently.'
+        }
+        $requested = @(Get-Content -LiteralPath $PathsFile |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ -and -not $_.StartsWith('#') })
+    }
+
+    $wanted = @($requested | ForEach-Object { ($_ -replace '\\', '/').Trim().TrimEnd('/') } | Where-Object { $_ } | Sort-Object -Unique)
     if ($wanted.Count -eq 0) {
         Stop-WithProblem 'claim' 'No paths were given to claim.' `
             'Pass the files this lane intends to touch, for example: -Paths remex.core/Foo.cs,remex.core/Bar.cs'
