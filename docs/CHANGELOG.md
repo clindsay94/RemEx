@@ -48,6 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   integration copy, where the one board and the one merge queue live), not on `main`, and not with
   uncommitted changes in the integration tree — lanes branch from HEAD, so uncommitted work would be
   missing from every lane and would then conflict with every landing.
+  Lane numbers are allocated against what is actually free, not taken from the planner — the planner
+  numbers every wave `1..N` because it plans in isolation, so dispatching a second wave while the
+  first is still running would otherwise try to reuse a busy lane directory and fail with a message
+  about a path, which reads like a bug rather than like "that lane is busy".
   `-Reap` removes only lanes whose bead is **closed**, which is the one state that means the merge
   queue verified the work green after merging it. Returned and quarantined lanes keep their branch
   and worktree, because a failed lane's branch is the evidence for its reopened bead.

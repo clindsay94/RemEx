@@ -756,6 +756,42 @@ Write-Stage 'Provisioning'
 $provisioned = [System.Collections.Generic.List[object]]::new()
 $refused = [System.Collections.Generic.List[object]]::new()
 
+# The planner numbers its buckets 1..N every time, because it is planning a wave in isolation and
+# has no idea what is already running. Reusing a number whose lane directory is still occupied
+# fails in the bootstrap - measured, on the second wave dispatched while the first was still live -
+# and the bead gets rolled back with a message about a directory, which reads like a bug rather
+# than like "that lane is busy". So the numbers are reassigned here, to whatever is actually free.
+#
+# Occupied means EITHER a branch under refs/heads/ralph/lane-<n>/ or a directory at <root>/lane-<n>.
+# Both, because they go missing independently: a reaped lane leaves neither, a quarantined one
+# leaves both, and a lane whose worktree someone deleted by hand leaves only the branch.
+$occupied = [System.Collections.Generic.HashSet[int]]::new()
+foreach ($row in (Get-LaneBoard)) {
+    if ($row.Lane -gt 0) { $null = $occupied.Add($row.Lane) }
+}
+if (Test-Path -LiteralPath $LanesRoot) {
+    foreach ($dir in @(Get-ChildItem -LiteralPath $LanesRoot -Directory -ErrorAction SilentlyContinue)) {
+        if ($dir.Name -match '^lane-(\d+)$') { $null = $occupied.Add([int]$Matches[1]) }
+    }
+}
+
+$nextLane = 1
+foreach ($p in $planned) {
+    while ($occupied.Contains($nextLane) -and $nextLane -lt 99) { $nextLane++ }
+    if ($occupied.Contains($nextLane)) {
+        # 99 is the bootstrap's own ceiling on a lane number, so there is nowhere left to put this.
+        # Lane 0 is the marker for "not placed"; the provisioning loop below skips it.
+        $refused.Add(@{ lane = 0; bead = $p.Bead; why = 'no free lane number below 100' })
+        $p.Lane = 0
+        continue
+    }
+    if ($p.Lane -ne $nextLane) {
+        Write-Say "  $($p.Bead): lane $($p.Lane) is taken, using lane $nextLane instead." 'DarkGray'
+    }
+    $p.Lane = $nextLane
+    $null = $occupied.Add($nextLane)
+}
+
 # Undoes everything provisioning did to a bead, so a failure leaves the board exactly as it was
 # rather than holding a claim no lane is honouring.
 function Reset-BeadAfterFailure {
@@ -766,6 +802,7 @@ function Reset-BeadAfterFailure {
 }
 
 foreach ($p in $planned) {
+    if ($p.Lane -le 0) { continue }   # no free lane number; already recorded as refused
     $branch = "ralph/lane-$($p.Lane)/$($p.Bead)"
 
     $exists = Invoke-Git -In $RepoRoot rev-parse --verify --quiet "refs/heads/$branch"
