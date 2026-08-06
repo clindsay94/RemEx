@@ -88,9 +88,17 @@ if (Test-Path 'variable:PSNativeCommandUseErrorActionPreference') {
     $PSNativeCommandUseErrorActionPreference = $false
 }
 
+# This script is started detached by the dispatcher, so its console goes nowhere. Everything it
+# says therefore also goes to the lane log - including the elapsed time, which is the number the
+# spec's remaining gate is measured in (real beads/hour against 5.94) and which was otherwise
+# written to a window nobody ever sees.
+$LogFile = $null
+
 function Write-Line {
     param([string]$Text, [string]$Colour = 'Gray')
-    Write-Host "[lane $Lane] $Text" -ForegroundColor $Colour
+    $stamped = "[lane $Lane $(([datetime]::UtcNow).ToString('HH:mm:ss'))Z] $Text"
+    Write-Host $stamped -ForegroundColor $Colour
+    if ($LogFile) { Add-Content -LiteralPath $LogFile -Value $stamped -Encoding utf8NoBOM }
 }
 
 function Stop-Hard {
@@ -156,6 +164,11 @@ $logDir = Join-Path $IntegrationRoot '.ralph' 'lanes'
 if (-not (Test-Path -LiteralPath $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 $logPath = Join-Path $logDir "lane-$Lane-$Bead.log"
 
+# From here on Write-Line lands in the log as well. Started fresh per run: a lane branch is
+# reprovisioned after a failure, and two runs interleaved in one file is not a transcript.
+Set-Content -LiteralPath $logPath -Value "# lane $Lane, bead $Bead, branch $Branch, started $(([datetime]::UtcNow).ToString('yyyy-MM-ddTHH:mm:ssZ'))" -Encoding utf8NoBOM
+$LogFile = $logPath
+
 function Invoke-Bd {
     $raw = & bd --directory $IntegrationRoot @args 2>&1
     $code = $LASTEXITCODE
@@ -188,9 +201,13 @@ Write-Line "log: $logPath"
 $startedAt = Get-Date
 Push-Location -LiteralPath $LaneRoot
 try {
-    # Tee rather than plain redirection so the log is readable WHILE the lane runs - the operator
-    # watching a wave wants to see where a lane got to, not a file that appears at the end.
-    & $claude.Source @claudeArgs 2>&1 | Tee-Object -FilePath $logPath
+    # -Append, not a plain Tee: without it Tee-Object truncates, and the header and the launcher's
+    # own lines written above would be gone by the time anyone read the file.
+    #
+    # Note what this does NOT buy. `claude -p` prints its result when the session ends, so the
+    # transcript arrives in one go at the end rather than streaming - the log is a transcript, not
+    # a progress bar. -Watch on the dispatcher is the progress signal.
+    & $claude.Source @claudeArgs 2>&1 | Tee-Object -FilePath $logPath -Append
     $agentExit = $LASTEXITCODE
 }
 finally {
