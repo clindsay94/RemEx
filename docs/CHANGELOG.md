@@ -47,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **A lane that stops without marking itself ready is returned automatically.** A lane stuck in
   `working` holds a path claim, and a claim nobody is honouring blocks every future wave from files
   nobody is editing — so a crash must not quietly cost throughput for the rest of the day.
+  Each lane writes a transcript to `.ralph/lanes/lane-<n>-<bead>.log`, in the integration tree
+  rather than the lane, because the reaper deletes a lane once its work lands and the record of how
+  the work was done is exactly what is worth keeping. It is a transcript and not a progress bar:
+  `claude -p` prints its result when the session ends, so the file arrives all at once. Watch a wave
+  with `-Watch`; read the logs afterwards.
   `.claude/skills/drain/SKILL.md` is the new `/drain` skill: a session plans, waits for one
   approval, then provisions, launches, watches, lands, reaps and starts the next wave on its own,
   stopping on any quarantine. `/ralph` is untouched and is still the sequential pre-flight — two
