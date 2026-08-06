@@ -231,6 +231,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A lane amending its path claim could have stopped the parallel drain parallelising.** The
+  clustering script excludes `docs/CHANGELOG.md` and the loop journal from every *estimate*, because
+  every bead touches them and counting them as overlap would make every bead collide with every
+  other. The same exclusion was missing from the *claim* path. Measured on the first live lane run:
+  an agent asked to write one file amended its claim to include the changelog entirely unprompted,
+  which is correct behaviour on its part — but honour it and the first lane to amend locks the
+  changelog, every later amendment is refused as a collision, and each of those lanes stops early
+  and hands its bead back. Nothing would have been corrupted; the epic would have quietly stopped
+  buying anything. Claims now drop those paths the same way estimates do.
+
+- **A multi-line commit message written with the wrong shell's syntax fails silently.** PowerShell's
+  here-string is a syntax error to Git Bash, which does not fail — it puts a literal `@` in the
+  subject line and commits happily. The loop procedure now says to use each shell's own form. Found
+  by the first headless lane agent, which caught it and amended its own commit; in a lane nobody
+  reads the subject line afterwards, so the next one would not have been caught.
+
 - **The Android half of `scripts/verify.ps1` was never running, and said so in a way that pointed
   away from the cause.** `-Scope android` invoked `testReleaseUnitTest`, which does not exist in this
   project: AGP 9 builds a unit-test component only for `testBuildType`, and that defaults to `debug`,

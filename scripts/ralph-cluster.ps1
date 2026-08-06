@@ -331,9 +331,31 @@ if ($PSCmdlet.ParameterSetName -ceq 'Claim') {
             Where-Object { $_ -and -not $_.StartsWith('#') })
     }
 
-    $wanted = @($requested | ForEach-Object { ($_ -replace '\\', '/').Trim().TrimEnd('/') } | Where-Object { $_ } | Sort-Object -Unique)
+    $normalised = @($requested | ForEach-Object { ($_ -replace '\\', '/').Trim().TrimEnd('/') } | Where-Object { $_ } | Sort-Object -Unique)
+
+    # The same exclusion the ESTIMATE applies, applied to the claim, and for the same reason one
+    # level up. Every bead touches docs/CHANGELOG.md - the merge queue refuses to land one that does
+    # not - so a lane amending its claim to the files it really touched will name it. Honour that and
+    # the FIRST lane to amend locks the changelog, every later amendment is refused as a collision,
+    # and each of those lanes stops early and hands its bead back. Nothing would be corrupted; the
+    # epic would just quietly stop parallelising.
+    #
+    # Measured on the first live lane run: an agent asked to write one file amended its claim to
+    # ["docs/CHANGELOG.md", "docs/SMOKE-TEST-lane-agent.md"] entirely unprompted, which is correct
+    # behaviour on its part. Both files are merge=union in .gitattributes, which is what makes
+    # ignoring them safe here rather than optimistic.
+    $wanted = @($normalised | Where-Object { $AlwaysExcluded -cnotcontains $_ })
+    $dropped = @($normalised | Where-Object { $AlwaysExcluded -ccontains $_ })
+    foreach ($d in $dropped) {
+        Write-Say "  not claiming $d - every bead touches it, so claiming it would collide with every other lane." 'DarkGray'
+    }
+
     if ($wanted.Count -eq 0) {
-        Stop-WithProblem 'claim' 'No paths were given to claim.' `
+        $why = if ($dropped.Count -gt 0) {
+            "Every path given is one no lane may claim: $($dropped -join ', ')."
+        }
+        else { 'No paths were given to claim.' }
+        Stop-WithProblem 'claim' $why `
             'Pass the files this lane intends to touch, for example: -Paths remex.core/Foo.cs,remex.core/Bar.cs'
     }
 

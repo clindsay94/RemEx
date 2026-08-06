@@ -75,7 +75,13 @@ would be missing from every lane and would then conflict with every landing. Ask
 commit or stash. Do not commit their work for them.
 
 Report the lane → bead map and the log paths (`.ralph/lanes/lane-<n>-<bead>.log`) once the lanes are
-up. The operator should be able to look over any lane's shoulder without asking you.
+up.
+
+**Do not promise a live view of those logs.** `claude -p` prints its result when the session ends,
+so a lane's log is empty for the whole time the lane is working and then appears all at once. It is
+a transcript, not a progress bar. `-Watch` is the progress signal; the log is what you read
+afterwards, and it is worth reading — a lane reports what it decided and what surprised it there,
+and that is the only place it says so.
 
 ## Step 3 — watch
 

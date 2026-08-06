@@ -303,6 +303,13 @@ reaps a branch whose bead is not closed.
    appropriate. Copy file paths for `git add` character-for-character from `git status` output —
    never from memory (case-sensitivity rule, CLAUDE.md Hard Rule 4). Do not push.
 
+   **A multi-line commit message must go through the shell that can parse it.** PowerShell's
+   here-string (`@'...'@`) is a syntax error to Git Bash, which does not fail — it puts a literal
+   `@` in your subject line and commits happily. Use a here-string in the PowerShell tool, or a
+   heredoc (`<<'EOF'`) in the Bash tool, and never one in the other. Measured in the first headless
+   lane run: the agent caught it and amended, but nothing would have caught it if the commit had not
+   been read afterwards, and in a lane nobody reads it.
+
 10. Run `bd close <id>`.
 
     **Lane mode: do NOT close it.** Run `bd update <id> --set-metadata ralphLaneState=ready-to-land`
