@@ -844,4 +844,21 @@
     <string name="pairing_phase_probe">Перевірка доступності вашого ПК…</string>
     <string name="pairing_phase_securing">Встановлення безпечного з’єднання…</string>
     <string name="pairing_phase_awaiting_host">Очікування, поки ПК покаже PIN…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Поділитися діагностикою</string>
+    <string name="settings_share_diagnostics_body">Створіть звіт про цей застосунок і його з’єднання з вашим ПК, який ви можете надіслати тому, хто вам допомагає. Спершу ви читаєте його повністю, і ніщо не залишає ваш телефон, доки ви його не надішлете.</string>
+    <string name="screen_share_diagnostics_title">Поділитися діагностикою</string>
+    <string name="share_diagnostics_explainer">Цей звіт містить версію застосунку, модель телефона, версію Android, те, що ваш ПК останнім повідомив про себе, та останні рядки журналу цього застосунку. Ключі створення пари вилучаються, а шляхи до файлів скорочуються лише до назви файлу. Те, що ви бачите нижче, — саме те, що буде надіслано.</string>
+    <string name="share_diagnostics_network_toggle">Включити мережеві адреси</string>
+    <string name="share_diagnostics_network_toggle_body">Типово вимкнено. Вмикайте лише для проблеми зі з’єднанням: тоді IP-адреси залишаться у звіті.</string>
+    <string name="share_diagnostics_preview_title">Попередній перегляд звіту</string>
+    <string name="share_diagnostics_collecting">Створення звіту…</string>
+    <string name="share_diagnostics_send">Поділитися звітом</string>
+    <string name="share_diagnostics_chooser">Поділитися діагностикою</string>
+    <string name="share_diagnostics_failed">Не вдалося підготувати звіт до надсилання.</string>
 </resources>

@@ -828,4 +828,21 @@
     <string name="pairing_phase_probe">Vérification que votre PC répond…</string>
     <string name="pairing_phase_securing">Établissement d’une connexion sécurisée…</string>
     <string name="pairing_phase_awaiting_host">En attente du code PIN sur votre PC…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Partager le diagnostic</string>
+    <string name="settings_share_diagnostics_body">Créez un rapport sur cette application et sa connexion à votre PC, que vous pouvez envoyer à la personne qui vous aide. Vous le lisez entièrement avant, et rien ne quitte votre téléphone tant que vous ne l’envoyez pas.</string>
+    <string name="screen_share_diagnostics_title">Partager le diagnostic</string>
+    <string name="share_diagnostics_explainer">Ce rapport contient la version de l’application, le modèle du téléphone, la version d’Android, ce que votre PC a annoncé en dernier à son sujet et les lignes de journal récentes de cette application. Les clés d’association sont supprimées et les chemins de fichiers sont réduits au seul nom du fichier. Ce que vous voyez ci-dessous est exactement ce qui sera envoyé.</string>
+    <string name="share_diagnostics_network_toggle">Inclure les adresses réseau</string>
+    <string name="share_diagnostics_network_toggle_body">Désactivé par défaut. Ne l’activez que pour un problème de connexion : les adresses IP restent alors dans le rapport.</string>
+    <string name="share_diagnostics_preview_title">Aperçu du rapport</string>
+    <string name="share_diagnostics_collecting">Création du rapport…</string>
+    <string name="share_diagnostics_send">Partager le rapport</string>
+    <string name="share_diagnostics_chooser">Partager le diagnostic</string>
+    <string name="share_diagnostics_failed">Le rapport n’a pas pu être préparé pour le partage.</string>
 </resources>

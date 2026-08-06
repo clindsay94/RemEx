@@ -928,4 +928,21 @@
     <string name="pairing_phase_probe">Checking your PC is reachable…</string>
     <string name="pairing_phase_securing">Setting up a secure connection…</string>
     <string name="pairing_phase_awaiting_host">Waiting for your PC to show a PIN…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Share diagnostics</string>
+    <string name="settings_share_diagnostics_body">Build a report about this app and its connection to your PC that you can send to whoever is helping you. You read all of it first, and nothing leaves your phone until you send it.</string>
+    <string name="screen_share_diagnostics_title">Share diagnostics</string>
+    <string name="share_diagnostics_explainer">This report contains your app version, phone model, Android version, what your PC last said about itself, and recent log lines from this app. Pairing keys are removed and file paths are shortened to just the file name. What you see below is exactly what gets sent.</string>
+    <string name="share_diagnostics_network_toggle">Include network addresses</string>
+    <string name="share_diagnostics_network_toggle_body">Off by default. Turn it on only for a connection problem: it keeps IP addresses in the report.</string>
+    <string name="share_diagnostics_preview_title">Report preview</string>
+    <string name="share_diagnostics_collecting">Building the report…</string>
+    <string name="share_diagnostics_send">Share report</string>
+    <string name="share_diagnostics_chooser">Share diagnostics</string>
+    <string name="share_diagnostics_failed">The report could not be prepared for sharing.</string>
 </resources>

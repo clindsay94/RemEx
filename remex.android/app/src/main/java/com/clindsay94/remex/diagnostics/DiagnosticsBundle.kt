@@ -110,6 +110,20 @@ object DiagnosticsBundle {
         } catch (e: org.json.JSONException) {
             "host_info could not be parsed (${e.javaClass.simpleName}) - " +
                     "this is itself worth reporting, it usually means a host/client version skew"
+        } catch (e: StackOverflowError) {
+            // AOSP's JSONTokener.nextValue RECURSES, so a deeply nested host_info overflows the
+            // stack ON THE DEVICE. That is an Error, not an Exception, so the branch above does not
+            // see it, and the share screen would die on the one payload it most needs to report.
+            // Caught rather than left to propagate for the same reason the JSONException is: a
+            // host_info this build cannot read is usually the fault being diagnosed.
+            //
+            // THE JVM SUITE CANNOT REACH THIS LINE and no test here claims to. The unit tests run
+            // against JSON-java, which caps nesting depth and throws JSONException instead, so a
+            // nesting test would exercise the branch above on the JVM and this one only on a phone.
+            // Recording that is the honest half; a green test asserting otherwise would be worse
+            // than none. (RemEx-0iww, from the RemEx-3rjf review.)
+            "host_info could not be parsed (${e.javaClass.simpleName}) - " +
+                    "it was nested too deeply for this build to read, which is itself worth reporting"
         }
     }
 

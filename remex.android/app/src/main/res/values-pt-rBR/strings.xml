@@ -828,4 +828,21 @@
     <string name="pairing_phase_probe">Verificando se o seu PC está acessível…</string>
     <string name="pairing_phase_securing">Estabelecendo uma conexão segura…</string>
     <string name="pairing_phase_awaiting_host">Aguardando o seu PC mostrar um PIN…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Compartilhar diagnóstico</string>
+    <string name="settings_share_diagnostics_body">Crie um relatório sobre este aplicativo e a conexão dele com o seu PC para enviar a quem está ajudando você. Você lê tudo antes, e nada sai do seu telefone até você enviar.</string>
+    <string name="screen_share_diagnostics_title">Compartilhar diagnóstico</string>
+    <string name="share_diagnostics_explainer">Este relatório contém a versão do aplicativo, o modelo do telefone, a versão do Android, o que o seu PC informou por último sobre si mesmo e as linhas de registro recentes deste aplicativo. As chaves de pareamento são removidas e os caminhos de arquivos são reduzidos apenas ao nome do arquivo. O que você vê abaixo é exatamente o que será enviado.</string>
+    <string name="share_diagnostics_network_toggle">Incluir endereços de rede</string>
+    <string name="share_diagnostics_network_toggle_body">Desativado por padrão. Ative apenas para um problema de conexão: os endereços IP permanecem no relatório.</string>
+    <string name="share_diagnostics_preview_title">Prévia do relatório</string>
+    <string name="share_diagnostics_collecting">Criando o relatório…</string>
+    <string name="share_diagnostics_send">Compartilhar relatório</string>
+    <string name="share_diagnostics_chooser">Compartilhar diagnóstico</string>
+    <string name="share_diagnostics_failed">Não foi possível preparar o relatório para compartilhamento.</string>
 </resources>

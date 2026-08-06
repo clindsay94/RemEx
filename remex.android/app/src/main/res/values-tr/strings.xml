@@ -830,4 +830,21 @@
     <string name="pairing_phase_probe">Bilgisayarınıza ulaşılabiliyor mu diye bakılıyor…</string>
     <string name="pairing_phase_securing">Güvenli bağlantı kuruluyor…</string>
     <string name="pairing_phase_awaiting_host">Bilgisayarınızın PIN göstermesi bekleniyor…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Tanılamayı paylaş</string>
+    <string name="settings_share_diagnostics_body">Bu uygulama ve bilgisayarınızla olan bağlantısı hakkında, size yardım eden kişiye gönderebileceğiniz bir rapor oluşturun. Önce raporun tamamını okursunuz ve siz göndermeden hiçbir şey telefonunuzdan çıkmaz.</string>
+    <string name="screen_share_diagnostics_title">Tanılamayı paylaş</string>
+    <string name="share_diagnostics_explainer">Bu rapor uygulama sürümünü, telefon modelini, Android sürümünü, bilgisayarınızın kendisi hakkında en son bildirdiklerini ve bu uygulamanın son günlük satırlarını içerir. Eşleştirme anahtarları kaldırılır ve dosya yolları yalnızca dosya adına kısaltılır. Aşağıda gördüğünüz şey, tam olarak gönderilecek olan şeydir.</string>
+    <string name="share_diagnostics_network_toggle">Ağ adreslerini dahil et</string>
+    <string name="share_diagnostics_network_toggle_body">Varsayılan olarak kapalıdır. Yalnızca bağlantı sorunu için açın: IP adresleri raporda kalır.</string>
+    <string name="share_diagnostics_preview_title">Rapor önizlemesi</string>
+    <string name="share_diagnostics_collecting">Rapor oluşturuluyor…</string>
+    <string name="share_diagnostics_send">Raporu paylaş</string>
+    <string name="share_diagnostics_chooser">Tanılamayı paylaş</string>
+    <string name="share_diagnostics_failed">Rapor paylaşıma hazırlanamadı.</string>
 </resources>

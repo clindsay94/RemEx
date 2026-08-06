@@ -844,4 +844,21 @@
     <string name="pairing_phase_probe">Sprawdzanie, czy komputer jest osiągalny…</string>
     <string name="pairing_phase_securing">Nawiązywanie bezpiecznego połączenia…</string>
     <string name="pairing_phase_awaiting_host">Oczekiwanie, aż komputer wyświetli PIN…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Udostępnij diagnostykę</string>
+    <string name="settings_share_diagnostics_body">Utwórz raport o tej aplikacji i jej połączeniu z komputerem, który możesz wysłać osobie pomagającej Ci. Najpierw czytasz go w całości, a nic nie opuszcza telefonu, dopóki go nie wyślesz.</string>
+    <string name="screen_share_diagnostics_title">Udostępnij diagnostykę</string>
+    <string name="share_diagnostics_explainer">Ten raport zawiera wersję aplikacji, model telefonu, wersję Androida, to, co komputer ostatnio o sobie zgłosił, oraz ostatnie wiersze dziennika tej aplikacji. Klucze parowania są usuwane, a ścieżki plików skracane do samej nazwy pliku. To, co widzisz poniżej, jest dokładnie tym, co zostanie wysłane.</string>
+    <string name="share_diagnostics_network_toggle">Uwzględnij adresy sieciowe</string>
+    <string name="share_diagnostics_network_toggle_body">Domyślnie wyłączone. Włącz tylko przy problemie z połączeniem: adresy IP pozostaną wtedy w raporcie.</string>
+    <string name="share_diagnostics_preview_title">Podgląd raportu</string>
+    <string name="share_diagnostics_collecting">Tworzenie raportu…</string>
+    <string name="share_diagnostics_send">Udostępnij raport</string>
+    <string name="share_diagnostics_chooser">Udostępnij diagnostykę</string>
+    <string name="share_diagnostics_failed">Nie udało się przygotować raportu do udostępnienia.</string>
 </resources>

@@ -44,6 +44,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Linux; drawing it means one code path for both, and it is the only version of this surface that can
   follow the theme you picked. Closing to the tray is on by default, so this is the channel most
   events actually arrive on.
+- **Settings → Help now builds a diagnostics report, shows you all of it, and only then offers to
+  send it.** The two pure halves of this shipped earlier: the rules that strip secrets out of a
+  report, and the assembly that routes every section through them. What was missing was everything
+  that touches the phone. The report now gathers this app's own recent log lines, previews the
+  finished text, and hands it to the share sheet as a `.txt` attachment. It goes out as a file
+  rather than as message text because mail and chat apps treat a long body as something to fold,
+  wrap or clip, and a bug report arrives whole or it is not worth sending.
+  **What you preview is what gets sent, character for character.** The report is built once, held,
+  and both displayed and attached from that same string — there is no path where the screen shows
+  one thing and the mail carries another. The "include network addresses" toggle is off by default
+  and only re-renders the report already collected; it never goes back to the log, because a preview
+  that moves while you are reading it is not a preview.
+  **The log is cut at line boundaries, and that is a security rule rather than a tidy one.**
+  Redaction recognises a secret by length: a base64 run of 40 characters or more. The reconnect
+  secret is 44. A cut by character count landing inside one leaves two shorter runs that no rule
+  matches, and the secret then travels in plain text through the one file whose whole promise is
+  that it cannot — invisibly, because what arrives looks like ordinary log text. A line too long to
+  fit is therefore dropped whole rather than shortened. The test that pins this sweeps every
+  character budget across a range instead of probing one, since a single budget only ever proves
+  that budget was safe; injecting the naive cut fails it, and two of its neighbours besides.
+  Collection is bounded on every axis — `logcat -d` dumps and exits rather than following, `--pid`
+  narrows it to this app, then 500 lines, 128KB and four seconds — and tripping any of them returns
+  a shorter report that says so. An app that hangs collecting its own logs in order to report a hang
+  is its own bug report. Nothing new was added to the FileProvider configuration; the cache
+  directory the report is staged in was already declared.
+  Checked against 4,050 lines of real logcat pulled off a connected Samsung SM-S948U1 and run
+  through the real code: 454KB in, 500 whole lines out, not one partial line, no surviving key, and
+  no address unless you ask for one.
+  A deeply nested `host_info` no longer takes the screen down with it. Android's own JSON parser
+  recurses, so on a phone it throws `StackOverflowError` rather than a parse error, which the
+  existing handler could not catch. The unit tests cannot reach that branch — they run against a
+  parser that caps nesting instead — and none of them pretends otherwise.
 
 - **A lane is now a headless Claude Code session, and `/drain` drives the whole thing.** The last
   open question in the parallel-drain design was what a lane actually *is*.

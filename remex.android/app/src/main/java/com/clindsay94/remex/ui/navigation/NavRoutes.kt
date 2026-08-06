@@ -20,12 +20,12 @@ import com.clindsay94.remex.R
  * A navigable route.
  *
  * A plain [Screen] carries only its route, because that is all most destinations need. Splash,
- * Connection, Tutorial, QrScanner and Pairing are reached programmatically and never appear in a
- * navigation surface, so they have no label or icon to give TO ONE.
+ * Connection, Tutorial, QrScanner, Pairing and ShareDiagnostics are reached programmatically and
+ * never appear in a navigation surface, so they have no label or icon to give TO ONE.
  *
- * That is not the same as being untitled: Connection, QrScanner and Pairing all render their own
- * heading from their own screen. What they do not need is a second copy of it here, feeding a
- * navigation item that does not exist — which is precisely what this split removed.
+ * That is not the same as being untitled: Connection, QrScanner, Pairing and ShareDiagnostics all
+ * render their own heading from their own screen. What they do not need is a second copy of it here,
+ * feeding a navigation item that does not exist — which is precisely what this split removed.
  */
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
@@ -33,6 +33,15 @@ sealed class Screen(val route: String) {
     object Tutorial : Screen("tutorial")
     object QrScanner : Screen("qr_scanner")
     object Pairing : Screen("pairing")
+
+    /**
+     * Reached only from Settings → Help, never from a navigation surface (RemEx-0iww).
+     *
+     * Sharing a diagnostics report is something a user does when they are already being walked
+     * through a problem; putting it in the More list would offer it to everyone else, permanently,
+     * for the sake of one visit.
+     */
+    object ShareDiagnostics : Screen("share_diagnostics")
 
     // ── Destinations that appear in a navigation surface ──────────────────────
     object Dashboard :

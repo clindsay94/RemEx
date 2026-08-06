@@ -98,6 +98,7 @@ import com.clindsay94.remex.ui.screens.RemoteControlScreen
 import com.clindsay94.remex.ui.screens.RemoteDesktopScreen
 import com.clindsay94.remex.ui.screens.RemoteMouseScreen
 import com.clindsay94.remex.ui.screens.SettingsScreen
+import com.clindsay94.remex.ui.screens.ShareDiagnosticsScreen
 import com.clindsay94.remex.ui.screens.SplashScreen
 import com.clindsay94.remex.ui.screens.TaskManagerScreen
 import com.clindsay94.remex.ui.screens.TutorialScreen
@@ -958,10 +959,17 @@ private fun RemexNavHost(
                                                 launchSingleTop = true
                                         }
                                 },
+                                onNavigateToShareDiagnostics = {
+                                        navController.navigate(Screen.ShareDiagnostics.route) {
+                                                launchSingleTop = true
+                                        }
+                                },
                         )
                 }
 
                 composable(Screen.Faq.route) { FaqScreen() }
+
+                composable(Screen.ShareDiagnostics.route) { ShareDiagnosticsScreen() }
 
                 composable(Screen.About.route) { AboutScreen() }
 

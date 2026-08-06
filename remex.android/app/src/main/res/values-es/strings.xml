@@ -828,4 +828,21 @@
     <string name="pairing_phase_probe">Comprobando que se puede acceder a tu PC…</string>
     <string name="pairing_phase_securing">Estableciendo una conexión segura…</string>
     <string name="pairing_phase_awaiting_host">Esperando a que tu PC muestre un PIN…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Compartir diagnóstico</string>
+    <string name="settings_share_diagnostics_body">Crea un informe sobre esta aplicación y su conexión con tu PC que puedes enviar a quien te esté ayudando. Lo lees entero antes, y nada sale de tu teléfono hasta que lo envías.</string>
+    <string name="screen_share_diagnostics_title">Compartir diagnóstico</string>
+    <string name="share_diagnostics_explainer">Este informe contiene la versión de la aplicación, el modelo del teléfono, la versión de Android, lo último que dijo tu PC sobre sí mismo y las líneas de registro recientes de esta aplicación. Las claves de emparejamiento se eliminan y las rutas de archivos se reducen solo al nombre del archivo. Lo que ves abajo es exactamente lo que se envía.</string>
+    <string name="share_diagnostics_network_toggle">Incluir direcciones de red</string>
+    <string name="share_diagnostics_network_toggle_body">Desactivado de forma predeterminada. Actívalo solo si el problema es de conexión: mantiene las direcciones IP en el informe.</string>
+    <string name="share_diagnostics_preview_title">Vista previa del informe</string>
+    <string name="share_diagnostics_collecting">Creando el informe…</string>
+    <string name="share_diagnostics_send">Compartir informe</string>
+    <string name="share_diagnostics_chooser">Compartir diagnóstico</string>
+    <string name="share_diagnostics_failed">No se pudo preparar el informe para compartirlo.</string>
 </resources>

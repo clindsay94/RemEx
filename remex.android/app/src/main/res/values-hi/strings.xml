@@ -828,4 +828,21 @@
     <string name="pairing_phase_probe">आपका पीसी उपलब्ध है या नहीं, जाँचा जा रहा है…</string>
     <string name="pairing_phase_securing">सुरक्षित कनेक्शन बनाया जा रहा है…</string>
     <string name="pairing_phase_awaiting_host">आपके पीसी पर पिन दिखने का इंतज़ार किया जा रहा है…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">डायग्नोस्टिक्स साझा करें</string>
+    <string name="settings_share_diagnostics_body">इस ऐप और आपके पीसी से इसके कनेक्शन के बारे में एक रिपोर्ट बनाएँ, जिसे आप मदद करने वाले को भेज सकते हैं। आप उसे पहले पूरा पढ़ते हैं, और जब तक आप न भेजें तब तक कुछ भी आपके फ़ोन से बाहर नहीं जाता।</string>
+    <string name="screen_share_diagnostics_title">डायग्नोस्टिक्स साझा करें</string>
+    <string name="share_diagnostics_explainer">इस रिपोर्ट में ऐप का संस्करण, फ़ोन का मॉडल, Android का संस्करण, आपके पीसी ने अपने बारे में आख़िरी बार जो बताया था, और इस ऐप की हाल की लॉग पंक्तियाँ शामिल हैं। पेयरिंग कुंजियाँ हटा दी जाती हैं और फ़ाइल पथ घटाकर केवल फ़ाइल का नाम कर दिए जाते हैं। नीचे आप जो देख रहे हैं, ठीक वही भेजा जाता है।</string>
+    <string name="share_diagnostics_network_toggle">नेटवर्क पते शामिल करें</string>
+    <string name="share_diagnostics_network_toggle_body">डिफ़ॉल्ट रूप से बंद। इसे केवल कनेक्शन की समस्या के लिए चालू करें: इससे रिपोर्ट में IP पते बने रहते हैं।</string>
+    <string name="share_diagnostics_preview_title">रिपोर्ट का पूर्वावलोकन</string>
+    <string name="share_diagnostics_collecting">रिपोर्ट बनाई जा रही है…</string>
+    <string name="share_diagnostics_send">रिपोर्ट साझा करें</string>
+    <string name="share_diagnostics_chooser">डायग्नोस्टिक्स साझा करें</string>
+    <string name="share_diagnostics_failed">रिपोर्ट को साझा करने के लिए तैयार नहीं किया जा सका।</string>
 </resources>

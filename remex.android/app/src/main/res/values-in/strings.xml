@@ -824,4 +824,21 @@
     <string name="pairing_phase_probe">Memeriksa apakah PC Anda dapat dijangkau…</string>
     <string name="pairing_phase_securing">Menyiapkan koneksi yang aman…</string>
     <string name="pairing_phase_awaiting_host">Menunggu PC Anda menampilkan PIN…</string>
+
+    <!-- Share diagnostics (RemEx-0iww). The REPORT ITSELF is deliberately English and lives in
+         DiagnosticsBundle, because it is read by whoever is debugging the fault; everything here is
+         read by the person sending it and localizes normally. The explainer has to be honest about
+         the preview promise - what is shown IS what is sent - because that promise is the only
+         reason it is safe to offer this at all. -->
+    <string name="settings_share_diagnostics">Bagikan diagnostik</string>
+    <string name="settings_share_diagnostics_body">Buat laporan tentang aplikasi ini dan koneksinya ke PC Anda yang dapat Anda kirim kepada orang yang membantu Anda. Anda membacanya lengkap terlebih dahulu, dan tidak ada yang meninggalkan ponsel Anda sampai Anda mengirimnya.</string>
+    <string name="screen_share_diagnostics_title">Bagikan diagnostik</string>
+    <string name="share_diagnostics_explainer">Laporan ini berisi versi aplikasi, model ponsel, versi Android, hal terakhir yang disampaikan PC Anda tentang dirinya, dan baris log terbaru dari aplikasi ini. Kunci penyandingan dihapus dan jalur berkas dipersingkat menjadi hanya nama berkas. Apa yang Anda lihat di bawah persis seperti yang akan dikirim.</string>
+    <string name="share_diagnostics_network_toggle">Sertakan alamat jaringan</string>
+    <string name="share_diagnostics_network_toggle_body">Nonaktif secara bawaan. Aktifkan hanya untuk masalah koneksi: alamat IP akan tetap ada di laporan.</string>
+    <string name="share_diagnostics_preview_title">Pratinjau laporan</string>
+    <string name="share_diagnostics_collecting">Membuat laporan…</string>
+    <string name="share_diagnostics_send">Bagikan laporan</string>
+    <string name="share_diagnostics_chooser">Bagikan diagnostik</string>
+    <string name="share_diagnostics_failed">Laporan tidak dapat disiapkan untuk dibagikan.</string>
 </resources>
