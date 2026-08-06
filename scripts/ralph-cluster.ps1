@@ -87,6 +87,11 @@
     dispatcher. So a claim of more than one path has to travel through a file, which is also the
     shape the spec's constraint 4 asks for: real files, passed by path.
 
+.PARAMETER SelfTest
+    Check the lane placement rule and exit. Needs no board, no git history and no network, because
+    the rule is pure - which is why verify.ps1 runs it on every pass. Non-zero exit means concurrent
+    lanes could be scheduled over the same files.
+
 .PARAMETER Json
     Print one line of JSON and nothing else. For the dispatcher.
 
@@ -133,6 +138,9 @@ param(
 
     [Parameter(ParameterSetName = 'Release', Mandatory = $true)]
     [string]$Release,
+
+    [Parameter(ParameterSetName = 'SelfTest', Mandatory = $true)]
+    [switch]$SelfTest,
 
     [switch]$Json
 )
@@ -275,6 +283,168 @@ function Get-PathOverlap {
         }
     }
     return , $hits.ToArray()
+}
+
+# Which lane takes this bead. The correctness of a whole wave is in this one answer.
+#
+# Lanes run CONCURRENTLY, but the beads inside a lane are a queue for LATER waves: a wave launches
+# only each lane's head bead, because ralph-dispatch.ps1 takes beads[0] and reports the rest as
+# "next wave". So two beads can only collide in practice when they are the HEADS of two different
+# lanes. The invariant this function has to hold is therefore narrow and exact:
+#
+#     the head beads of the lanes are pairwise disjoint.
+#
+# Which makes the obvious bin-fill - first lane whose paths I do not overlap - not merely imperfect
+# but backwards. It moves a colliding bead into a fresh lane precisely BECAUSE it collides, so the
+# second and third heads are chosen from the beads that clash with the first. Measured on the first
+# real three-lane wave: two consent beads went to lanes 2 and 3 sharing 8 files, among them
+# remex.core/Messages/RemexMessage.cs and remex.agent/Services/FileTransfer/FileTrustService.cs.
+#
+# The rule that holds the invariant is the inverse. A bead may only START a lane if it collides
+# with nothing scheduled anywhere. Whatever it does collide with, it queues BEHIND, in that same
+# lane, where the two are separated by a wave and never run beside each other.
+function Select-LaneForBead {
+    param(
+        [string[]]$Paths,
+        [object[]]$Buckets
+    )
+
+    $clashing = @($Buckets | Where-Object { (Get-PathOverlap -Left $Paths -Right @($_.Paths)).Count -gt 0 })
+    if ($clashing.Count -gt 0) {
+        # Behind the work it collides with. Colliding with two lanes means no placement avoids
+        # both, so take the shortest of those queues - the next wave replans against live claims
+        # and will see for itself what is free by then.
+        return @($clashing | Sort-Object { $_.Beads.Count })[0]
+    }
+
+    # Collides with nothing, so it is safe in any lane. An empty one first: only heads run, so a
+    # lane left idle is a lane doing no work this wave.
+    $empty = @($Buckets | Where-Object { $_.Beads.Count -eq 0 })
+    if ($empty.Count -gt 0) { return $empty[0] }
+    return @($Buckets | Sort-Object { $_.Beads.Count })[0]
+}
+
+# ---------------------------------------------------------------------------
+# Self-test. Runs before preflight on purpose: the placement rule is pure, so it is checkable on a
+# machine with no board, no git history and no network, which is what makes it worth having.
+# ---------------------------------------------------------------------------
+
+if ($SelfTest) {
+    $failures = [System.Collections.Generic.List[string]]::new()
+    $checked = 0
+
+    function New-TestBuckets {
+        param([int]$Count)
+        $out = @()
+        for ($i = 1; $i -le $Count; $i++) {
+            $out += [pscustomobject]@{
+                Lane  = $i
+                Beads = [System.Collections.Generic.List[object]]::new()
+                Paths = [System.Collections.Generic.List[string]]::new()
+                HasUnknown = $false
+            }
+        }
+        return , $out
+    }
+
+    function Add-TestBead {
+        param([object]$Bucket, [string]$Bead, [string[]]$Paths)
+        $Bucket.Beads.Add([pscustomobject]@{ Bead = $Bead; Paths = $Paths })
+        foreach ($p in $Paths) { $Bucket.Paths.Add($p) }
+    }
+
+    function Assert-Lane {
+        param([string]$What, [int]$Expected, [int]$Actual)
+        $script:checked++
+        if ($Expected -ne $Actual) { $failures.Add("$What - expected lane $Expected, got lane $Actual") }
+    }
+
+    # An empty board hands the first bead to the first lane.
+    $b = New-TestBuckets -Count 3
+    Assert-Lane 'first bead of a wave' 1 (Select-LaneForBead -Paths @('a/one.cs') -Buckets $b).Lane
+
+    # Disjoint work opens a new lane, because an idle lane does nothing this wave.
+    $b = New-TestBuckets -Count 3
+    Add-TestBead -Bucket $b[0] -Bead 'X' -Paths @('a/one.cs')
+    Assert-Lane 'disjoint bead takes an empty lane' 2 (Select-LaneForBead -Paths @('b/two.cs') -Buckets $b).Lane
+
+    # THE REGRESSION. Colliding work must queue behind the bead it collides with, even though an
+    # empty lane is sitting right there - taking that empty lane is what put two consent beads
+    # into concurrent lanes over RemexMessage.cs.
+    $b = New-TestBuckets -Count 3
+    Add-TestBead -Bucket $b[0] -Bead 'X' -Paths @('a/one.cs', 'a/two.cs')
+    Assert-Lane 'colliding bead queues behind, never into an empty lane' 1 `
+        (Select-LaneForBead -Paths @('a/two.cs', 'c/three.cs') -Buckets $b).Lane
+
+    # Colliding with two lanes: no placement avoids both, so take the shorter queue.
+    $b = New-TestBuckets -Count 3
+    Add-TestBead -Bucket $b[0] -Bead 'X' -Paths @('a/one.cs')
+    Add-TestBead -Bucket $b[0] -Bead 'Y' -Paths @('a/four.cs')
+    Add-TestBead -Bucket $b[1] -Bead 'Z' -Paths @('b/two.cs')
+    Assert-Lane 'collides with two lanes, takes the shorter queue' 2 `
+        (Select-LaneForBead -Paths @('a/one.cs', 'b/two.cs') -Buckets $b).Lane
+
+    # Every lane busy and nothing collides: spread by queue length rather than always lane 1.
+    $b = New-TestBuckets -Count 3
+    Add-TestBead -Bucket $b[0] -Bead 'X' -Paths @('a/one.cs')
+    Add-TestBead -Bucket $b[1] -Bead 'Y' -Paths @('b/two.cs')
+    Add-TestBead -Bucket $b[1] -Bead 'Y2' -Paths @('b/five.cs')
+    Add-TestBead -Bucket $b[2] -Bead 'Z' -Paths @('c/three.cs')
+    Assert-Lane 'disjoint bead with no empty lane takes the lightest' 1 `
+        (Select-LaneForBead -Paths @('d/four.cs') -Buckets $b).Lane
+
+    # A directory claim covers the files under it, so this is a collision, not a free lane.
+    $b = New-TestBuckets -Count 3
+    Add-TestBead -Bucket $b[0] -Bead 'X' -Paths @('remex.core')
+    Assert-Lane 'a directory claim collides with a file beneath it' 1 `
+        (Select-LaneForBead -Paths @('remex.core/Messages/RemexMessage.cs') -Buckets $b).Lane
+
+    # The invariant itself, over the shape that exposed the bug. Note it takes four beads to
+    # reproduce, which is why it was not obvious by reading: the first-fit rule only starts
+    # producing colliding heads once a lane has been poisoned for the beads that follow. Here
+    # consent-a is pushed off lane 1 by the opener, and consent-b is then pushed off both - so
+    # first-fit hands lanes 2 and 3 two heads that share remex.core/Messages/RemexMessage.cs.
+    # The disjoint bead is in the list to prove the fix still opens lanes rather than serialising
+    # everything into lane 1.
+    $b = New-TestBuckets -Count 3
+    $wave = @(
+        @{ Bead = 'lane-opener'; Paths = @('docs/ralph-board-drain.md', 'remex.agent/Services/ClientSessionRegistry.cs') }
+        @{ Bead = 'consent-a'; Paths = @('docs/ralph-board-drain.md', 'remex.core/Messages/RemexMessage.cs') }
+        @{ Bead = 'consent-b'; Paths = @('remex.agent/Services/ClientSessionRegistry.cs', 'remex.core/Messages/RemexMessage.cs', 'remex.agent/Services/FileTransfer/FileTrustService.cs') }
+        @{ Bead = 'unrelated'; Paths = @('remex.desktop/Themes/SolarFlare.axaml') }
+    )
+    foreach ($w in $wave) {
+        $target = Select-LaneForBead -Paths $w.Paths -Buckets $b
+        Add-TestBead -Bucket $target -Bead $w.Bead -Paths $w.Paths
+    }
+    $heads = @($b | Where-Object { $_.Beads.Count -gt 0 } | ForEach-Object { $_.Beads[0] })
+
+    # Holding the invariant by serialising everything into one lane would be safe and useless, so
+    # assert the parallelism as well as the safety.
+    $checked++
+    if ($heads.Count -lt 2) {
+        $failures.Add("only $($heads.Count) lane(s) got work - a disjoint bead was available and should have opened one")
+    }
+
+    for ($i = 0; $i -lt $heads.Count; $i++) {
+        for ($k = $i + 1; $k -lt $heads.Count; $k++) {
+            $checked++
+            $shared = Get-PathOverlap -Left $heads[$i].Paths -Right $heads[$k].Paths
+            if ($shared.Count -gt 0) {
+                $failures.Add("head beads $($heads[$i].Bead) and $($heads[$k].Bead) would run concurrently over $($shared -join ', ')")
+            }
+        }
+    }
+
+    if ($failures.Count -gt 0) {
+        Write-Host "Lane placement self-test FAILED - $($failures.Count) of $checked check(s)." -ForegroundColor Red
+        foreach ($f in $failures) { Write-Host "  $f" -ForegroundColor Red }
+        Write-Host '  The rule under test is Select-LaneForBead: a bead may only start a lane if it collides with nothing.'
+        exit 1
+    }
+
+    Write-Host "Lane placement self-test passed - $checked check(s)." -ForegroundColor Green
+    exit 0
 }
 
 # ---------------------------------------------------------------------------
@@ -661,19 +831,12 @@ foreach ($e in $ordered) {
 
     if ($e.Paths.Count -eq 0) { $unknownFootprint.Add($e); continue }
 
-    $placed = $false
-    foreach ($bucket in $laneBuckets) {
-        $overlap = Get-PathOverlap -Left $e.Paths -Right @($bucket.Paths)
-        if ($overlap.Count -gt 0) { continue }
-        $bucket.Beads.Add($e)
-        foreach ($p in $e.Paths) { $bucket.Paths.Add($p) }
-        $placed = $true
-        break
-    }
-
-    if (-not $placed) {
-        $unscheduled.Add(@{ bead = $e.Bead; why = 'its files are already spoken for in every lane this wave' })
-    }
+    # Every bead with a known footprint gets a home. One that collides goes behind the work it
+    # collides with rather than being dropped: it is not unschedulable, it is next wave's, and
+    # saying so is both truer and more useful than reporting it as refused.
+    $bucket = Select-LaneForBead -Paths $e.Paths -Buckets $laneBuckets
+    $bucket.Beads.Add($e)
+    foreach ($p in $e.Paths) { $bucket.Paths.Add($p) }
 }
 
 # Second pass. Exactly ONE unknown goes out per wave, into a lane that is otherwise empty.

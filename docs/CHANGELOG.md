@@ -52,6 +52,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the work was done is exactly what is worth keeping. It is a transcript and not a progress bar:
   `claude -p` prints its result when the session ends, so the file arrives all at once. Watch a wave
   with `-Watch`; read the logs afterwards.
+  **The planner was putting beads that touch the same files into lanes that run at the same time.**
+  Found on the first real three-lane wave, before it launched: two consent bugs were scheduled into
+  lanes 2 and 3 sharing eight files, `remex.core/Messages/RemexMessage.cs` and
+  `remex.agent/Services/FileTransfer/FileTrustService.cs` among them. The cause was a bin-fill that
+  placed each bead in the first lane whose files it did *not* overlap — reasonable for packing bins,
+  backwards for lanes, because it moved a colliding bead into a fresh lane precisely *because* it
+  collided. A bead now only starts a lane if it collides with nothing scheduled; anything it does
+  collide with queues behind it in that same lane, where the two are separated by a wave and never
+  meet. Nothing with a predictable footprint is refused any more — a bead that used to be reported
+  as unschedulable is simply next wave's, which is both truer and more useful.
+  `ralph-cluster.ps1 -SelfTest` checks the rule and `verify.ps1` runs it every pass. The rule is
+  pure — no board, no git, no network — so the check costs milliseconds, and it is worth having
+  because the failure is silent: a wrong rule still produces a plan that reads as sensible, and the
+  only symptom is a lane returning on a conflict an hour later.
   `.claude/skills/drain/SKILL.md` is the new `/drain` skill: a session plans, waits for one
   approval, then provisions, launches, watches, lands, reaps and starts the next wave on its own,
   stopping on any quarantine. `/ralph` is untouched and is still the sequential pre-flight — two

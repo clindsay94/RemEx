@@ -484,6 +484,31 @@ else {
     Write-Say "  Skipped - .claude/scripts/test_guard_edit.py is not present."
 }
 
+# --- Lane placement --------------------------------------------------------
+# The dispatcher's whole safety argument is that concurrent lanes touch disjoint files, and the
+# rule enforcing it is pure - no board, no git, no network - so it is checkable here for
+# milliseconds. It is checked here because the failure is silent: a wrong rule still produces a
+# plan that looks reasonable, and the only symptom is a lane returning on a conflict an hour later.
+
+Write-Stage "Checking lane placement"
+$cluster = Join-Path $PSScriptRoot 'ralph-cluster.ps1'
+if (Test-Path -LiteralPath $cluster) {
+    # No capture: the self-test reports through Write-Host, which goes to the console rather than
+    # down the pipeline, so its failures are already on screen and a variable would hold nothing.
+    & $cluster -SelfTest
+    if ($LASTEXITCODE -ne 0) {
+        $problems.Add('lane placement self-test failed')
+        Write-Problem "Lanes could be scheduled over the same files." `
+            "Run: ./scripts/ralph-cluster.ps1 -SelfTest"
+    }
+    else {
+        Write-Say "  Concurrent lanes are scheduled over disjoint files."
+    }
+}
+else {
+    Write-Say "  Skipped - scripts/ralph-cluster.ps1 is not present."
+}
+
 # --- Translations ----------------------------------------------------------
 
 if (-not $SkipLocalization) {

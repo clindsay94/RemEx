@@ -219,6 +219,21 @@ each source separately so a thin estimate is visible instead of silently thin:
   describing code that has since changed produces a confidently wrong estimate, and the operator
   cannot tell it is wrong by looking — so the source reports itself as skipped instead.
 
+**The invariant layer 1 exists to hold is narrower than it looks: the HEAD beads of the lanes are
+pairwise disjoint.** A wave launches only `beads[0]` of each lane and reports the rest as "next
+wave", so the beads queued behind a head are an ordering hint for a future wave, not work that runs
+now. Which means the natural bin-fill — put the bead in the first lane whose files it does not
+overlap — is not merely imprecise here but inverted: it moves a colliding bead into a *fresh* lane
+precisely *because* it collides, so every head after the first is chosen from the beads that clash
+with the ones before it. That shipped, and the first real three-lane wave scheduled two consent bugs
+into lanes 2 and 3 over eight shared files. The rule is now the inverse: **a bead may only start a
+lane if it collides with nothing scheduled anywhere; whatever it does collide with, it queues behind
+that work in the same lane**, where a wave boundary separates them. A consequence worth stating,
+because it changes what the plan output means: no bead with a predictable footprint is refused any
+more. `-SelfTest` checks the rule without a board and `verify.ps1` runs it every pass, because a
+wrong rule still produces a plan that reads as sensible and the only symptom is a lane returning on
+a conflict an hour later.
+
 **`docs/CHANGELOG.md` and `docs/ralph-state.jsonl` are excluded from every estimate, and that is
 load-bearing.** Every bead touches the changelog — the merge queue refuses to land one that does not
 (§7) — so counting it as overlap would make every bead collide with every other and nothing would
