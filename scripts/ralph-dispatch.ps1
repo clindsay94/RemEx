@@ -300,12 +300,48 @@ function Get-PwshPath {
 # invoked in-process runs its `exit` in THIS session - the dispatcher would terminate partway
 # through provisioning, having already claimed beads, with no summary and no reap.
 function Invoke-ChildScript {
-    param([string]$Script, [string[]]$ScriptArgs)
+    param(
+        [string]$Script,
+        [string[]]$ScriptArgs,
+        # Print the child's output as well as capturing it. Off by default because most callers
+        # here want a JSON answer and nothing else; on for the merge queue, whose report IS the
+        # thing the operator needs and which used to be swallowed whole.
+        [switch]$Echo
+    )
 
     $pwshExe = Get-PwshPath
-    $raw = & $pwshExe -NoProfile -File $Script @ScriptArgs 2>&1
-    $code = $LASTEXITCODE
-    $lines = @(@($raw) | ForEach-Object { $_.ToString() })
+
+    # Redirect to a file and wait on the PROCESS rather than capturing with `& ... 2>&1`. The call
+    # operator returns when every handle on the child's stdout closes, not when the child exits,
+    # and verify.ps1 -Scope all - reachable from here through both the merge queue and the lane
+    # bootstrap - starts a Gradle daemon that inherits that handle and outlives the build by
+    # design. That cost one landing three and a half hours after 139 seconds of real work. An
+    # inherited file handle blocks nobody. See RemEx-xx1u.
+    $outFile = [System.IO.Path]::GetTempFileName()
+    $errFile = [System.IO.Path]::GetTempFileName()
+    $lines = @()
+    $code = 1
+    try {
+        $proc = Start-Process -FilePath $pwshExe `
+            -ArgumentList (@('-NoProfile', '-File', $Script) + @($ScriptArgs)) `
+            -NoNewWindow -PassThru `
+            -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+        $proc.WaitForExit()
+        $code = $proc.ExitCode
+
+        foreach ($f in @($outFile, $errFile)) {
+            if (Test-Path -LiteralPath $f) {
+                $lines += @(Get-Content -LiteralPath $f -ErrorAction SilentlyContinue)
+            }
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $outFile -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $errFile -Force -ErrorAction SilentlyContinue
+    }
+
+    $lines = @($lines | ForEach-Object { [string]$_ })
+    if ($Echo) { foreach ($l in $lines) { Write-Host $l } }
 
     # Scan back for the last line that parses. The scripts print exactly one JSON line under
     # -Json, but a child of a child (verify.ps1 inside the bootstrap) can still reach this
@@ -599,9 +635,13 @@ function Invoke-LandPhase {
     $queueArgs = @('-Scope', $Scope, '-LanesRoot', $LanesRoot)
     if ($Json) { $queueArgs += '-Json' }
 
-    $run = Invoke-ChildScript -Script $QueueScript -ScriptArgs $queueArgs
+    # -Echo because the queue's own report is the only account of what happened to each bead, and
+    # capturing it without printing it meant a quarantine surfaced as "Merge queue exited 1" and
+    # nothing else. Reconstructing one landing then took the journal, the bd note, the reflog and
+    # process CPU counters to recover what the queue had already worked out and printed. The
+    # instruction not to paraphrase the queue only works if the queue can be heard. See RemEx-gprg.
+    $run = Invoke-ChildScript -Script $QueueScript -ScriptArgs $queueArgs -Echo:(-not $Json)
     if (-not $Json) {
-        # The queue already printed its own report; do not paraphrase it.
         Write-Say "  Merge queue exited $($run.ExitCode)." $(if ($run.ExitCode -eq 0) { 'Green' } else { 'Yellow' })
     }
     return $run

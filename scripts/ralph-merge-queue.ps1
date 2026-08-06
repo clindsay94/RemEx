@@ -110,6 +110,9 @@ param(
     [switch]$KeepLanes,
 
     [Parameter(Mandatory = $false)]
+    [switch]$SelfTest,
+
+    [Parameter(Mandatory = $false)]
     [switch]$Json
 )
 
@@ -320,6 +323,185 @@ function Add-JournalEntry {
     if ($commitResult.ExitCode -ne 0) {
         Write-Warn "could not commit $JournalRelative - $($commitResult.Output)"
     }
+}
+
+# Pull the receipt out of whatever verify.ps1 actually printed.
+#
+# `-Json` is documented as printing the receipt and nothing else. It does not, and cannot on its
+# own: verify.ps1 silences its own Write-Say under -Json, but the scripts it calls report through
+# Write-Host, which writes to the HOST rather than down the pipeline - so `| Out-Null` in the
+# caller does not catch it and it arrives on stdout regardless. check-localization.ps1 alone has
+# 47 such calls. ConvertFrom-Json over the whole capture therefore throws on the human text in
+# front of the receipt, the result reads as null, and a PASS is recorded as a failure. That is
+# what quarantined a green RemEx-56fu on the first real three-lane wave: 2413/2414 passing, zero
+# failures, filed as an integration failure with the passing localization tail as its reason.
+#
+# So take the LAST line that parses as an object rather than the whole blob. That is robust to any
+# amount of chatter in front of it, including chatter added later by someone who never reads this
+# file - which is the failure mode worth designing against, since the leak is invisible until a
+# landing blames it on the wrong thing hours later.
+function ConvertFrom-ReceiptText {
+    param([string]$Text)
+
+    if ([string]::IsNullOrWhiteSpace($Text)) { return $null }
+    $candidates = @($Text -split "`r?`n" |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_.StartsWith('{') -and $_.EndsWith('}') })
+
+    for ($i = $candidates.Count - 1; $i -ge 0; $i--) {
+        try { return ($candidates[$i] | ConvertFrom-Json) } catch { continue }
+    }
+    return $null
+}
+
+# Run verify.ps1 and wait for the PROCESS, not for its output pipe.
+#
+# `& pwsh ... 2>&1` looks equivalent and is not. The call operator returns when every handle on the
+# child's stdout closes, and verify.ps1 -Scope all starts a Gradle daemon that inherits that handle
+# and outlives the build on purpose. Measured on the first real wave: verify wrote its receipt at
+# 11:57:26Z after 139 seconds, and the queue did not move until 15:30:51Z - three hours and
+# thirty-three minutes, matching the Gradle daemon's default 3h idle timeout from its last use to
+# the minute. Landings are serialised by design, so that is not one slow landing, it is a ceiling
+# on the entire dispatcher.
+#
+# Redirecting to a file removes the pipe from the picture entirely: an inherited file handle blocks
+# nobody. WaitForExit() on the process object is then the real signal, and unlike -Wait it makes no
+# claim about the rest of the process tree - which is exactly the distinction that bit us.
+function Invoke-VerifyProcess {
+    param(
+        [string[]]$Arguments,
+        # Only the self-test passes this. It exists so the pipe behaviour above can be checked
+        # against a stub that reproduces it in a second, instead of against a real Android build.
+        [string]$Script = $null
+    )
+
+    $target = if ($Script) { $Script } else { $VerifyScript }
+    $outFile = [System.IO.Path]::GetTempFileName()
+    $errFile = [System.IO.Path]::GetTempFileName()
+    try {
+        $proc = Start-Process -FilePath $pwshPath `
+            -ArgumentList (@('-NoProfile', '-File', $target) + $Arguments) `
+            -NoNewWindow -PassThru `
+            -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+        $proc.WaitForExit()
+
+        $out = ''
+        $err = ''
+        if (Test-Path -LiteralPath $outFile) { $out = [string](Get-Content -LiteralPath $outFile -Raw) }
+        if (Test-Path -LiteralPath $errFile) { $err = [string](Get-Content -LiteralPath $errFile -Raw) }
+
+        return [pscustomobject]@{
+            ExitCode = $proc.ExitCode
+            Text     = (@($out, $err) | Where-Object { $_ }) -join "`n"
+            Receipt  = ConvertFrom-ReceiptText $out
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $outFile -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $errFile -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Self-test. Before preflight, so it needs no clean tree, no lock and no lanes.
+#
+# Both things checked here failed in production and neither was visible from the queue's own
+# output: the first reported a passing build as an integration failure, the second stalled a
+# landing for three and a half hours. A landing is the serialised step, so anything that can
+# silently break one is worth a second of checking on every pass.
+# ---------------------------------------------------------------------------
+
+if ($SelfTest) {
+    $failures = [System.Collections.Generic.List[string]]::new()
+    $checked = 0
+
+    function Assert-Receipt {
+        param([string]$What, [string]$Text, [string]$ExpectResult)
+        $script:checked++
+        $got = ConvertFrom-ReceiptText $Text
+        $actual = if ($null -eq $got) { '<null>' } else { [string](Get-Prop $got 'result') }
+        if ($actual -cne $ExpectResult) { $failures.Add("$What - expected '$ExpectResult', got '$actual'") }
+    }
+
+    $receiptLine = '{"schema":1,"result":"PASS","scope":"all","testsRun":2414,"problems":[]}'
+
+    # The plain case, which never broke.
+    Assert-Receipt 'a bare receipt parses' $receiptLine 'PASS'
+
+    # THE REGRESSION. This is the exact shape that quarantined a green RemEx-56fu: pages of
+    # Write-Host chatter from a child script, then the receipt.
+    $leaky = @(
+        '  Axis 1: key parity across all 9 files...'
+        '  Reading 34 historical versions of strings.xml...'
+        '  No new localization problems. Every key exists in all 9 files on both platforms,'
+        $receiptLine
+    ) -join "`n"
+    Assert-Receipt 'a receipt behind child-script chatter still parses' $leaky 'PASS'
+
+    # Trailing chatter too - nothing guarantees the receipt is last.
+    Assert-Receipt 'a receipt with chatter on both sides parses' `
+        ("noise`n$receiptLine`n  Receipt written to .ralph/verify-receipt.json") 'PASS'
+
+    # A real FAIL must still read as FAIL rather than as a parse failure, or the two become
+    # indistinguishable and quarantine stops meaning anything.
+    Assert-Receipt 'a failing receipt is read as FAIL' `
+        ('  build noise' + "`n" + '{"schema":1,"result":"FAIL","problems":["3 tests failed"]}') 'FAIL'
+
+    # No receipt at all is still null. Being permissive about where the receipt is must not make
+    # us permissive about whether there is one.
+    $checked++
+    if ($null -ne (ConvertFrom-ReceiptText "just noise`nand more noise")) {
+        $failures.Add('output with no receipt should not parse as one')
+    }
+    $checked++
+    if ($null -ne (ConvertFrom-ReceiptText '')) { $failures.Add('empty output should not parse as a receipt') }
+
+    # A brace-shaped line that is not JSON must not be mistaken for the receipt, and must not
+    # stop us finding the real one further up.
+    Assert-Receipt 'a malformed brace line is skipped for the real receipt' `
+        ("$receiptLine`n{not json at all}") 'PASS'
+
+    # THE OTHER REGRESSION. A grandchild holding stdout is exactly the Gradle daemon, and the
+    # call operator waits for it. Redirecting to a file must not: this stub exits at once while
+    # leaving a child alive for well beyond the tolerance below.
+    $stub = Join-Path ([System.IO.Path]::GetTempPath()) 'ralph-mq-selftest-stub.ps1'
+    $pwshPath = Get-PwshPath
+    @'
+Start-Process -FilePath (Get-Process -Id $PID).Path -ArgumentList @('-NoProfile','-Command','Start-Sleep -Seconds 30') -NoNewWindow | Out-Null
+Write-Host '  pretend build output'
+Write-Output '{"schema":1,"result":"PASS","scope":"stub"}'
+exit 0
+'@ | Set-Content -LiteralPath $stub -Encoding UTF8
+
+    try {
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        $run = Invoke-VerifyProcess -Arguments @() -Script $stub
+        $sw.Stop()
+
+        $checked++
+        if ($sw.Elapsed.TotalSeconds -ge 20) {
+            $failures.Add(("waited $([int]$sw.Elapsed.TotalSeconds)s for a child that exited immediately - " +
+                'the runner is waiting on the output pipe again, not on the process'))
+        }
+        $checked++
+        if ($run.ExitCode -ne 0) { $failures.Add("stub exit code came back $($run.ExitCode), expected 0") }
+        $checked++
+        if ($null -eq $run.Receipt -or (Get-Prop $run.Receipt 'scope') -cne 'stub') {
+            $failures.Add('the runner did not return the stub receipt')
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $stub -Force -ErrorAction SilentlyContinue
+    }
+
+    if ($failures.Count -gt 0) {
+        Write-Host "Merge queue self-test FAILED - $($failures.Count) of $checked check(s)." -ForegroundColor Red
+        foreach ($f in $failures) { Write-Host "  $f" -ForegroundColor Red }
+        exit 1
+    }
+
+    Write-Host "Merge queue self-test passed - $checked check(s)." -ForegroundColor Green
+    exit 0
 }
 
 # ---------------------------------------------------------------------------
@@ -694,12 +876,10 @@ foreach ($candidate in $queue) {
 
     Write-Say "  Running ./scripts/verify.ps1 -Scope $Scope here. This is the receipt that counts."
 
-    $verifyOut = & $pwshPath -NoProfile -File $VerifyScript -Scope $Scope -Json 2>&1
-    $verifyExit = $LASTEXITCODE
-    $verifyText = (@($verifyOut) | ForEach-Object { $_.ToString() }) -join "`n"
-
-    $receipt = $null
-    try { $receipt = $verifyText | ConvertFrom-Json } catch { $receipt = $null }
+    $verifyRun = Invoke-VerifyProcess -Arguments @('-Scope', $Scope, '-Json')
+    $verifyExit = $verifyRun.ExitCode
+    $verifyText = $verifyRun.Text
+    $receipt = $verifyRun.Receipt
 
     $verifyPassed = ($verifyExit -eq 0) -and ($null -ne $receipt) -and ((Get-Prop $receipt 'result') -ceq 'PASS')
     $failureDetail = ''
@@ -709,11 +889,9 @@ foreach ($candidate in $queue) {
         # process against the receipt just written, because "the tests passed" is a claim and a
         # matching fingerprint is a fact. It also catches anything that edited the tree while
         # the build was running.
-        $checkOut = & $pwshPath -NoProfile -File $VerifyScript -Check -Json 2>&1
-        $checkExit = $LASTEXITCODE
-        $checkText = (@($checkOut) | ForEach-Object { $_.ToString() }) -join "`n"
-        $checkObj = $null
-        try { $checkObj = $checkText | ConvertFrom-Json } catch { $checkObj = $null }
+        $checkRun = Invoke-VerifyProcess -Arguments @('-Check', '-Json')
+        $checkExit = $checkRun.ExitCode
+        $checkObj = $checkRun.Receipt
         $checkVerdict = if ($checkObj) { Get-Prop $checkObj 'check' } else { $null }
 
         if (($checkExit -ne 0) -or ($checkVerdict -cne 'VALID')) {
@@ -856,11 +1034,9 @@ if ($Scope -ceq 'dotnet' -and $androidTouched -and $landed.Count -gt 0) {
     Write-Say '  A landing touched remex.android/ or remex.core/ and the per-landing scope was dotnet,'
     Write-Say '  so the Android suite has not run yet. Running -Scope all once over everything that landed.'
 
-    $sweepOut = & $pwshPath -NoProfile -File $VerifyScript -Scope all -Json 2>&1
-    $sweepExit = $LASTEXITCODE
-    $sweepText = (@($sweepOut) | ForEach-Object { $_.ToString() }) -join "`n"
-    $sweepReceipt = $null
-    try { $sweepReceipt = $sweepText | ConvertFrom-Json } catch { $sweepReceipt = $null }
+    $sweepRun = Invoke-VerifyProcess -Arguments @('-Scope', 'all', '-Json')
+    $sweepExit = $sweepRun.ExitCode
+    $sweepReceipt = $sweepRun.Receipt
 
     if ($sweepExit -eq 0 -and $sweepReceipt -and ((Get-Prop $sweepReceipt 'result') -ceq 'PASS')) {
         $batchSweep = 'PASS'

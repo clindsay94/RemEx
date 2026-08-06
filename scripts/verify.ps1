@@ -509,6 +509,25 @@ else {
     Write-Say "  Skipped - scripts/ralph-cluster.ps1 is not present."
 }
 
+# The queue is the serialised step, so a defect in it stalls or misreports every landing rather
+# than one. Both things its self-test covers reached production and neither showed up in the
+# queue's own output: a passing build filed as an integration failure, and a landing that sat for
+# three and a half hours after 139 seconds of work.
+
+Write-Stage "Checking the merge queue"
+$mergeQueue = Join-Path $PSScriptRoot 'ralph-merge-queue.ps1'
+if (Test-Path -LiteralPath $mergeQueue) {
+    & $mergeQueue -SelfTest
+    if ($LASTEXITCODE -ne 0) {
+        $problems.Add('merge queue self-test failed')
+        Write-Problem "The merge queue would misread or stall a landing." `
+            "Run: ./scripts/ralph-merge-queue.ps1 -SelfTest"
+    }
+}
+else {
+    Write-Say "  Skipped - scripts/ralph-merge-queue.ps1 is not present."
+}
+
 # --- Translations ----------------------------------------------------------
 
 if (-not $SkipLocalization) {

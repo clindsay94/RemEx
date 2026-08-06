@@ -66,6 +66,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pure — no board, no git, no network — so the check costs milliseconds, and it is worth having
   because the failure is silent: a wrong rule still produces a plan that reads as sensible, and the
   only symptom is a lane returning on a conflict an hour later.
+  **A landing read a passing build as a failure, and then sat for three and a half hours.** Both
+  showed up on the first real three-lane wave and both were invisible from the queue's own output.
+  `RemEx-56fu` verified green in the integration tree — 2413 of 2414 tests, no failures, 139
+  seconds — and was quarantined anyway. The cause: `verify.ps1 -Json` promises to print the receipt
+  and nothing else, and cannot deliver that on its own, because the scripts it calls report through
+  `Write-Host`, which writes to the host rather than down the pipeline — so piping them to
+  `Out-Null` does not silence them and their text lands on stdout in front of the receipt.
+  `ConvertFrom-Json` over the whole capture then throws, the result reads as absent, and absent is
+  treated as failure. The queue now takes the last line that parses as an object, which the
+  dispatcher had been doing all along for exactly this reason. The quarantine note, meanwhile, was
+  showing the *passing* localization output as the reason the bead had failed.
+  The three and a half hours were a different bug wearing the same clothes. Capturing a child with
+  `& pwsh ... 2>&1` returns when every handle on its output closes, not when the child exits, and
+  an Android build leaves a Gradle daemon holding that handle on purpose. The daemon's idle timeout
+  defaults to three hours, so a 139-second verify blocked the queue until 15:30 — matching the
+  daemon's last use plus three hours to the minute. Verify now runs redirected to a file and is
+  waited on as a process, so an inherited handle blocks nobody. The same fix went into the
+  dispatcher, which reaches `verify.ps1` through both the merge queue and the lane bootstrap.
+  Landings are serialised by design, so either bug caps the whole dispatcher rather than costing
+  one bead.
+  **The dispatcher now lets the merge queue be heard.** `-Land` captured the queue's report and
+  printed `Merge queue exited 1` in its place, so a quarantine arrived with no reason attached and
+  a three-hour stall looked exactly like progress. Recovering what happened to one bead took the
+  journal, the bd note, the reflog and process CPU counters — all to read back what the queue had
+  already worked out and printed. `ralph-merge-queue.ps1 -SelfTest` covers both defects, including
+  a stub that reproduces the daemon-holds-the-pipe stall in a second rather than three hours, and
+  `verify.ps1` runs it every pass.
   `.claude/skills/drain/SKILL.md` is the new `/drain` skill: a session plans, waits for one
   approval, then provisions, launches, watches, lands, reaps and starts the next wave on its own,
   stopping on any quarantine. `/ralph` is untouched and is still the sequential pre-flight — two
