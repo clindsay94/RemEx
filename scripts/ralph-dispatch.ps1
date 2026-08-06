@@ -29,6 +29,11 @@
 
         <launcher> <laneRoot> <laneNumber> <beadId> <branch> <promptPath>
 
+    where promptPath is the LANE's own copy of docs/ralph-board-drain.md, because an agent's
+    workspace is its worktree and a path pointing back at the integration tree is at best
+    unreadable to it. scripts/ralph-lane-agent.ps1 is the launcher that ships with this, running
+    the lane as a headless Claude Code session.
+
     A program and an argument array, never a command string - the dispatcher must not compose
     shell text (constraint 4), and passing argv directly removes the quoting and encoding
     corruption that has repeatedly bitten this repository.
@@ -78,6 +83,22 @@
 
 .PARAMETER Status
     Print what is running, claimed and queued, reconstructed from bd and git alone.
+
+.PARAMETER Watch
+    Poll the same reconstruction and print ONE LINE PER CHANGE, then exit once no lane is working
+    any more. Built for an orchestrator watching a wave: -Status answers "what now", -Watch answers
+    "tell me when something happens" without anyone re-running anything.
+
+    It reports every terminal state, not just the good one. A watcher that printed only
+    'ready-to-land' would stay silent through a quarantine, and silence looks exactly like a lane
+    that is still thinking.
+
+.PARAMETER IntervalSeconds
+    How often -Watch re-reads the board. Default 60. A bead takes ~18 minutes; polling faster buys
+    nothing and costs a bd query per lane per poll.
+
+.PARAMETER MaxMinutes
+    How long -Watch keeps going before giving up and saying so. Default 240.
 
 .PARAMETER LanesRoot
     Where lanes live. Defaults to a sibling of the repository - Z:\RemEx gives Z:\RemEx.lanes.
@@ -144,6 +165,17 @@ param(
 
     [Parameter(ParameterSetName = 'Status', Mandatory = $true)]
     [switch]$Status,
+
+    [Parameter(ParameterSetName = 'Watch', Mandatory = $true)]
+    [switch]$Watch,
+
+    [Parameter(ParameterSetName = 'Watch')]
+    [ValidateRange(10, 3600)]
+    [int]$IntervalSeconds = 60,
+
+    [Parameter(ParameterSetName = 'Watch')]
+    [ValidateRange(1, 1440)]
+    [int]$MaxMinutes = 240,
 
     [string]$LanesRoot,
 
@@ -501,6 +533,59 @@ if ($PSCmdlet.ParameterSetName -ceq 'Status') {
         Write-Say '  Quarantined lanes are kept on purpose: the branch and its worktree are the evidence.' 'Yellow'
     }
     Write-Say "`n  All of the above came from bd and git branch. This script stores nothing." 'DarkGray'
+    exit 0
+}
+
+# ===========================================================================
+# -Watch. The same reconstruction as -Status, on a timer, emitting only what
+# CHANGED. Every line on stdout is an event for whatever is watching this.
+# ===========================================================================
+
+if ($PSCmdlet.ParameterSetName -ceq 'Watch') {
+    $deadline = (Get-Date).AddMinutes($MaxMinutes)
+    $seen = @{}
+    $firstPass = $true
+
+    while ($true) {
+        $board = Get-LaneBoard
+        $current = @{}
+
+        foreach ($row in $board) {
+            $disposition = Get-RowDisposition $row
+            $current[$row.Branch] = $disposition
+
+            if (-not $seen.ContainsKey($row.Branch)) {
+                $suffix = if ($firstPass) { '' } else { ' (new lane)' }
+                Write-Output "lane $($row.Lane)  $($row.Bead)  $disposition$suffix"
+            }
+            elseif ($seen[$row.Branch] -cne $disposition) {
+                Write-Output "lane $($row.Lane)  $($row.Bead)  $($seen[$row.Branch]) -> $disposition"
+            }
+        }
+
+        foreach ($gone in @($seen.Keys | Where-Object { -not $current.ContainsKey($_) })) {
+            Write-Output "$gone is gone (landed and reaped, or deleted by hand)"
+        }
+
+        $seen = $current
+        # Flushed explicitly: whatever is watching this treats a line as an event, and a line
+        # sitting in a buffer for the next poll interval is an event that arrives late enough to
+        # be useless.
+        [Console]::Out.Flush()
+
+        $working = @($board | Where-Object { (Get-RowDisposition $_) -ceq 'working' })
+        if ($working.Count -eq 0) {
+            Write-Output "idle - no lane is working. $($board.Count) lane branch(es) remain."
+            break
+        }
+        if ((Get-Date) -gt $deadline) {
+            Write-Output "watch gave up after $MaxMinutes minute(s) with $($working.Count) lane(s) still working."
+            break
+        }
+
+        $firstPass = $false
+        Start-Sleep -Seconds $IntervalSeconds
+    }
     exit 0
 }
 
@@ -901,7 +986,11 @@ if ($Launcher) {
         # A program and an argument ARRAY. Never a composed command string: constraint 4 forbids
         # this script generating script text, and argv passing removes the quoting corruption
         # that shell strings have repeatedly caused in this repository.
-        $launchArgs = @($lane.LaneRoot, "$($lane.Lane)", $lane.Bead, $lane.Branch, $PromptPath)
+        # The LANE's copy of the procedure, not the integration copy. An agent's workspace is its
+        # own worktree, so a path pointing back here is at best unreadable to it. The file is
+        # tracked and the lane branched from HEAD, so the two copies are identical by construction.
+        $lanePrompt = Join-Path $lane.LaneRoot 'docs' 'ralph-board-drain.md'
+        $launchArgs = @($lane.LaneRoot, "$($lane.Lane)", $lane.Bead, $lane.Branch, $lanePrompt)
 
         # Start-Process cannot execute a .ps1 - it is not an executable image on any platform - so
         # a script launcher is run through the interpreter already running. Still argv, still no

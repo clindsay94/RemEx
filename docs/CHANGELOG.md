@@ -31,6 +31,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A lane is now a headless Claude Code session, and `/drain` drives the whole thing.** The last
+  open question in the parallel-drain design was what a lane actually *is*.
+  `scripts/ralph-lane-agent.ps1` answers it: one `claude -p` session on Opus, running the loop in
+  the lane's own worktree on its one assigned bead. It plugs into the dispatcher's existing
+  `-Launcher` contract, so it is a single file nothing else imports — delete it and lanes go back
+  to being started by hand.
+  The session runs with permission checks skipped, and the reason is specific rather than general:
+  a lane is a throwaway worktree outside the repository, on its own branch, and nothing it does
+  reaches the integration branch except through the merge queue, which rebases, re-verifies and
+  quarantines what fails. It is also the only setting that does not deadlock, since a permission
+  prompt in a headless session with nobody watching blocks that lane silently until it times out.
+  The lane is deliberately not given access to the integration tree's files; it reaches the shared
+  board through `BEADS_DIR`, which bd reads as a subprocess.
+  **A lane that stops without marking itself ready is returned automatically.** A lane stuck in
+  `working` holds a path claim, and a claim nobody is honouring blocks every future wave from files
+  nobody is editing — so a crash must not quietly cost throughput for the rest of the day.
+  `.claude/skills/drain/SKILL.md` is the new `/drain` skill: a session plans, waits for one
+  approval, then provisions, launches, watches, lands, reaps and starts the next wave on its own,
+  stopping on any quarantine. `/ralph` is untouched and is still the sequential pre-flight — two
+  names because they carry two different contracts, and the failure mode of merging them is a lane
+  agent reading sequential rules.
+
+- **`ralph-dispatch.ps1 -Watch`** — the same reconstruction as `-Status`, on a timer, printing one
+  line per change and exiting when no lane is working. It reports every terminal state rather than
+  only the good one: a watcher that printed only "ready-to-land" would stay silent through a
+  quarantine, and silence looks exactly like a lane that is still thinking.
+
 - **The parallel board drain now has a front end — `scripts/ralph-dispatch.ps1`.** Plans a wave,
   provisions one worktree per lane, hands each one a bead, lands the finished branches through the
   merge queue and tears down what landed: `-Lanes 3`, `-PlanOnly`, `-Land`, `-Reap`, `-Status`.

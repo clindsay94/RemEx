@@ -407,19 +407,45 @@ Constraints 5–8 were found while writing this spec and were not in the origina
   subagents is deliberately unspecified. It is the most likely thing to change and the design does
   not depend on it: a lane is anything that can run the loop in a directory and exit.
 
-  **Still open, and now parameterised rather than decided.** The dispatcher's `-Launcher` takes a
-  program and starts it once per lane with a fixed argument list — `<laneRoot> <laneNumber> <beadId>
-  <branch> <promptPath>` — as argv, never as a composed command string, since constraint 4 forbids
-  generating script text and argv passing removes the quoting corruption shell strings keep causing
-  here. Without `-Launcher` the dispatcher provisions the lanes, claims their beads, and prints what
-  to run. That default is the honest one while the question is open: everything except *what an
-  agent is* has already happened, and it is a one-line change to plug in an answer.
+  **ANSWERED — a lane is a headless `claude -p` session.** `scripts/ralph-lane-agent.ps1`, decided
+  with the operator on 2026-08-06. The dispatcher's `-Launcher` takes a program and starts it once
+  per lane with a fixed argument list — `<laneRoot> <laneNumber> <beadId> <branch> <promptPath>` —
+  as argv, never as a composed command string, since constraint 4 forbids generating script text
+  and argv passing removes the quoting corruption shell strings keep causing here. Without
+  `-Launcher` the dispatcher still just provisions and prints, which is what the manual path was.
+
+  The design's claim that it does not depend on the answer held up: the launcher is one file that
+  nothing else imports, and deleting it puts lanes back to being started by hand.
+
+  Two decisions inside it are worth carrying:
+
+  - **The session runs with `--dangerously-skip-permissions`, and the justification is specific
+    rather than general.** A lane is a throwaway worktree outside the repository root, on its own
+    branch, and nothing it does reaches the integration branch except through the merge queue,
+    which rebases, re-verifies in the integration tree and quarantines what fails. Nothing a lane
+    does is trusted because the lane did it. It is also the only setting that does not deadlock —
+    a permission prompt in a headless session with nobody watching blocks that lane silently until
+    it times out. The session is deliberately not given `--add-dir` for the integration tree; it
+    reaches the shared board through `BEADS_DIR`, because bd is a subprocess reading the
+    environment rather than a file tool.
+  - **A lane that stops without marking itself ready is returned by the launcher.** A lane stuck in
+    `working` holds a path claim, and a claim nobody is honouring blocks every future wave from
+    files nobody is editing. A crash must not quietly cost throughput for the rest of the day.
+
+  The prompt passed to the agent is the LANE's copy of `docs/ralph-board-drain.md`, not the
+  integration copy: an agent's workspace is its own worktree, so a path pointing back at the
+  integration tree is at best unreadable to it.
+
+- ~~**Interaction with `/ralph`.**~~ **DECIDED — a separate skill.** `/drain`
+  (`.claude/skills/drain/SKILL.md`) makes a session the orchestrator: plan, approve, provision,
+  launch, watch, land, reap, repeat. `/ralph` is untouched and remains the sequential pre-flight.
+  Two names because they carry two different contracts, and the failure mode of merging them is a
+  lane agent reading sequential rules — the exact class of mistake `docs/REGRESSION-GUARDS.md`
+  exists to prevent. The dispatcher grew `-Watch` for the orchestrator: same reconstruction as
+  `-Status`, one line per change, exits when no lane is working.
 - **Whether a lane should verify at all.** If the merge queue re-verifies every landing anyway, a
   lane's own verify is partly redundant. Keeping it means a broken lane fails in the lane instead of
   poisoning the queue, which is worth the duplication — but Phase 0's numbers may say otherwise.
-- **Interaction with `/ralph`.** The skill is a pre-flight for the sequential loop. Whether it grows
-  a parallel mode or the dispatcher stays a separate entry point is deferred until something exists
-  to launch.
 
 ## 11. Implementation beads
 
