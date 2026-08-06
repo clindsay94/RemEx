@@ -273,6 +273,59 @@ public class FileTransferProtocolSerializationTests
     }
 
     [Fact]
+    public void RoundTrip_ConsentRequest_PreservesTheAutoDenyDeadline()
+    {
+        // RemEx-6mxu. The deadline reaching the renderer intact is the entire bead: the phone cannot
+        // show a countdown for a number it never received, and a prompt with no deadline is one the
+        // user can still answer after this side has already denied.
+        var message = new RemexMessage
+        {
+            Type = MessageTypes.FileConsentRequest,
+            FileConsentRequest = new FileConsentRequest
+            {
+                ConsentId = "c1",
+                Kind = FileConsentKinds.IncomingPush,
+                ExpiresAtUnixMs = 1_754_500_000_123L,
+            },
+        };
+
+        Assert.Equal(1_754_500_000_123L, RoundTrip(message).FileConsentRequest!.ExpiresAtUnixMs);
+
+        // AND UNDER THAT EXACT NAME, which a round-trip alone cannot prove — it reads back whatever
+        // name it wrote, so renaming the property passes it while breaking every non-.NET reader. The
+        // phone sheet (RemEx-vyhm) parses this key by hand, so the string IS the contract. Also pins
+        // the number as a bare integer: quote it and Kotlin's Long parse fails on arrival.
+        var json = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(message));
+        Assert.Contains("\"expiresAtUnixMs\":1754500000123", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AConsentRequestWithoutAnExpiryIsStillValidOnTheWireInBothDirections()
+    {
+        // ADDITIVE, WHICH IS WHY THIS NEEDS NO protocolVersion BUMP — asserted rather than assumed,
+        // in both directions. Inbound: a host that predates the field sends JSON without it, and that
+        // must parse rather than throw. Outbound: an unstamped request must not put `expiresAtUnixMs`
+        // on the wire at all, so a peer cannot read a null as "expires at the epoch" and dismiss the
+        // prompt the instant it arrives.
+        var fromAnOlderHost = System.Text.Encoding.UTF8.GetBytes(
+            """{"type":"file_consent_request","fileConsentRequest":{"consentId":"c1","kind":"full_browse"}}""");
+
+        var parsed = MessageSerializer.Deserialize(fromAnOlderHost);
+
+        Assert.NotNull(parsed);
+        Assert.Equal("c1", parsed!.FileConsentRequest!.ConsentId);
+        Assert.Null(parsed.FileConsentRequest.ExpiresAtUnixMs);
+
+        var json = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(new RemexMessage
+        {
+            Type = MessageTypes.FileConsentRequest,
+            FileConsentRequest = new FileConsentRequest { ConsentId = "c1", Kind = FileConsentKinds.FullBrowse },
+        }));
+
+        Assert.DoesNotContain("expiresAtUnixMs", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void RoundTrip_FileRootsResponse_PreservesFileCapabilities()
     {
         var back = RoundTrip(new RemexMessage

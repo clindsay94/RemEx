@@ -452,6 +452,15 @@ public sealed record FileConsentRequest
     [JsonPropertyName("kind")] public required string Kind { get; init; } // "full_browse" | "incoming_push"
     /// <summary>Human-readable detail (file names / total size) for the prompt.</summary>
     [JsonPropertyName("detail")] public string? Detail { get; init; }
+    /// <summary>
+    /// Absolute Unix-epoch milliseconds at which the serving device auto-denies this request, so a
+    /// remote prompt can show a countdown and dismiss itself instead of collecting an answer nobody
+    /// is still listening for (RemEx-6mxu). Stamped by the serving device when it routes the prompt
+    /// over the wire; null from a host that predates the field, in which case the renderer has no
+    /// deadline to show — do not substitute a locally invented one, because the whole point is that
+    /// it is the SERVING device's clock that decides, and the two are not the same clock.
+    /// </summary>
+    [JsonPropertyName("expiresAtUnixMs")] public long? ExpiresAtUnixMs { get; init; }
 }
 
 /// <summary>Requester → serving device: the user's consent decision.</summary>

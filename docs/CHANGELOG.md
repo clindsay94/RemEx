@@ -352,6 +352,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A file-permission prompt sent to your phone carried no deadline, so the phone had no way to know
+  the question had already expired.** The PC gives you 60 seconds to answer and then refuses on your
+  behalf. The dialog on the PC has always known that and counted down; the version routed to your
+  phone was sent without the deadline attached, while the timer ran anyway. Answer at 61 seconds and
+  the phone would say "allowed" while the PC had already said no — the two devices disagreeing about
+  what you just decided, with nothing on either screen admitting it. The prompt now carries the exact
+  moment it expires, so the phone can show the countdown and stop asking when the PC has stopped
+  listening.
+  **The deadline is the PC's clock, not the phone's.** It is sent as an absolute time rather than a
+  duration, because a phone that started its own 60 seconds on arrival would drift later than the PC
+  every time, which is the direction that produces the disagreement above. A phone too old to
+  understand the field sees exactly what it saw before — the field is simply absent — so no version
+  of the protocol changes and no app needs updating in step.
+
 - **A lane amending its path claim could have stopped the parallel drain parallelising.** The
   clustering script excludes `docs/CHANGELOG.md` and the loop journal from every *estimate*, because
   every bead touches them and counting them as overlap would make every bead collide with every

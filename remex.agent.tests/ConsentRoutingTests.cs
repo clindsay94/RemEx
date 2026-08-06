@@ -216,6 +216,44 @@ public sealed class ConsentRoutingTests : IDisposable
     }
 
     [Fact]
+    public async Task ThePhonesPromptCarriesTheSameAutoDenyDeadlineThePcDialogGets()
+    {
+        // RemEx-6mxu. The expiry was computed and handed only to the PC dialog, so the routed phone
+        // prompt was a question with no visible deadline attached to a timer that ran anyway: allow at
+        // 61s and this side has already denied, TryResolveRemoteConsent returns false into a log line,
+        // and the two devices disagree with nothing on either screen saying so.
+        var timeout = TimeSpan.FromSeconds(30);
+        var socket = new RecordingSocket();
+        var sessions = new ClientSessionRegistry();
+        var handle = sessions.Register("192.168.1.50", socket);
+        sessions.Identify(handle, "phone-1", deviceName: null);
+        sessions.MarkAuthenticated(handle, identityProven: true);
+        sessions.SetSupportsPhonePrompt(handle, true);
+
+        var service = NewService(sessions, timeout);
+        var request = Request();
+        Assert.Null(request.ExpiresAtUnixMs);
+
+        var before = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var pending = service.RequestConsentAsync("phone-1", request, CancellationToken.None);
+        await WaitForPromptAsync(socket);
+        var after = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        var sent = Assert.Single(socket.Sent).FileConsentRequest;
+        Assert.NotNull(sent!.ExpiresAtUnixMs);
+
+        // PINNED TO now+timeout FROM BOTH SIDES, not merely non-null. The stamp is taken between these
+        // two readings of the same clock, so the deadline can only be that instant plus the timeout —
+        // which fails a hardcoded constant, a seconds/milliseconds mix-up, and a deadline in the past
+        // (dismisses the sheet on arrival) alike. A bare not-null assertion passes all three.
+        var timeoutMs = (long)timeout.TotalMilliseconds;
+        Assert.InRange(sent.ExpiresAtUnixMs!.Value, before + timeoutMs, after + timeoutMs);
+
+        Assert.True(service.TryResolveRemoteConsent("phone-1", request.ConsentId, granted: false, remember: false));
+        await pending;
+    }
+
+    [Fact]
     public async Task ANOTHERClientCannotAnswerSomebodyElsesPrompt()
     {
         // THE REASON THE RESPONSE IS BOUND TO A CLIENT. Resolution used to key on the consent id

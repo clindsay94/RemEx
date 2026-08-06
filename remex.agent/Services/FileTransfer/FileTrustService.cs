@@ -211,10 +211,23 @@ public sealed class FileTrustService : IFileTrustService
                     return new FileConsentDecision(Granted: false, Remember: false);
 
                 case ConsentRoute.Phone:
+                    // STAMP THE DEADLINE ON THE WIRE COPY (RemEx-6mxu). The PC branch below has always
+                    // been handed expiresAtUnixMs; the phone branch sent a prompt with no expiry at all,
+                    // so a phone could render it, wait, and tap Allow after this side had already timed
+                    // out into a deny — TryResolveRemoteConsent then returns false into a log line and
+                    // the two devices disagree with nothing on either screen saying so.
+                    //
+                    // Computed BEFORE the send while the timeout starts after it, so the advertised
+                    // deadline is a hair EARLIER than the real one. That asymmetry is the safe
+                    // direction: a prompt that gives up slightly early is a clean deny both sides
+                    // agree on, whereas a late one is exactly the disagreement above.
+                    //
+                    // The pending entry keeps the caller's unstamped request: expiry is a property of
+                    // this attempt to ask, not of what was asked, and only the remote renderer needs it.
                     var prompt = new RemexMessage
                     {
                         Type = MessageTypes.FileConsentRequest,
-                        FileConsentRequest = request,
+                        FileConsentRequest = request with { ExpiresAtUnixMs = expiresAtUnixMs },
                     };
 
                     if (!await _sessions.TrySendAsync(clientId, prompt, ct))
