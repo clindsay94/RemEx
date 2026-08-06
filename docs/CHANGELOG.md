@@ -321,6 +321,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   connection, or waiting for your PC to show you a PIN. Screen readers announce each step as it
   changes. The wait itself is unchanged — this only makes it possible to understand.
 
+- **The workflow-hardening epic from the 2026-08-03 insights report is finished, and the closing act
+  was checking rather than building.** The report read 98 sessions and named two friction classes:
+  verification that reports green without having verified anything, and Windows shell fragility. Its
+  suggestions were implemented across five beads over the days that followed — `scripts/verify.ps1`
+  and its anti-stale receipt, the `PostToolUse` edit guard, the rule blocks routed to the file whose
+  audience they belong to, the loop prompt's missing verification clauses, and the parallel-drain
+  dispatcher that suggestion 8 asked for.
+  What was left was to confirm all of that is still on disk and still wired, which is the one thing
+  an epic like this must not take on trust — an epic about false greens that closes on a false green
+  would be the joke writing itself. Every artifact is present and every hook fires:
+  `.claude/settings.json` runs the guard on `Edit|Write`, `python3` resolves to the uv shim rather
+  than hanging, and the guard correctly refuses a phantom edit in 57ms. `verify.ps1` invokes both the
+  guard's own test suite and `check-localization.ps1`. The report's rule blocks live in `AGENTS.md`
+  and the global `~/.agents/AGENTS.md`, not in `CLAUDE.md` — `AGENTS.md` is where the later split
+  moved them, and where they still are. No live reference to `docs/ralph-state.json` remains either:
+  the only two mentions left are the comments explaining why the file is `.jsonl`.
+  **Two follow-ups are not done, and that was the decision at filing time rather than a shortfall
+  found now.** Consolidating the shared config under a Claude-native name means renaming junctions on
+  Windows and symlinks on CachyOS and verifying both boots, which no session running inside one of
+  those two operating systems can honestly claim to have done; it is deferred, waiting on a human at
+  the machine across a reboot. Folding the three MCP servers into one plugin stays open on the ready
+  queue and was deliberately *not* deferred — its filing text says not to start it now, but the
+  measurement it needs is work any session can do, and only the go/no-go at the end is a human's
+  call. That is a reason to hand the measurement over, not a reason to hide the bead for 90 days.
+  The epic's acceptance criteria said "all child beads closed" while its own description said
+  suggestions 8 and 9 were filed as separate design work. Those two sentences contradicted each
+  other from the day it was filed. The acceptance criteria now say what the description always did.
+  (RemEx-56fu.)
+
 ### Fixed
 
 - **A lane amending its path claim could have stopped the parallel drain parallelising.** The
