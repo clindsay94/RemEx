@@ -93,6 +93,18 @@ public partial class App : Application
         // This prevents a dark-glass flash for SolarFlare (or any non-default) users.
         ApplyThemeBeforeWindowShown();
 
+        // Install the notification surfaces BEFORE app init, because app init is one of the things
+        // that can fail and needs to announce it. The in-app toast host is not set here — ShellView
+        // installs it once there is a window to draw the toast over.
+        //
+        // The probe re-reads the lifetime on every call rather than capturing a window: MainWindow
+        // is created lazily and can be replaced, and a captured reference would go on reporting the
+        // visibility of a window that is no longer the one on screen.
+        NotificationService.Instance.TrayBalloon = new TrayBalloonSink();
+        NotificationService.Instance.WindowVisibleProbe = () =>
+            ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime
+            && lifetime.MainWindow is { IsVisible: true, WindowState: not WindowState.Minimized };
+
         _ = InitializeAppAsync();
 
         base.OnFrameworkInitializationCompleted();
@@ -294,6 +306,14 @@ public partial class App : Application
             // is how it reaches someone who can act on it.
             InMemoryLogSink.Append(LogLevel.Error, "App", "Failed to initialize app", ex);
             System.Diagnostics.Debug.WriteLine($"Failed to initialize app: {ex.Message}");
+
+            // AND SHOW IT. The log line above is what a support case reads; this is what the user
+            // in front of the machine gets. Without it the app simply comes up wrong and the only
+            // person who could say so has no idea anything failed (RemEx-5wc2).
+            NotificationService.Instance.Notify(
+                NotificationImportance.Problem,
+                LocalizationService.Instance["Notification_StartupFailed_Title"],
+                LocalizationService.Instance["Notification_StartupFailed_Message"]);
         }
     }
 
@@ -339,6 +359,15 @@ public partial class App : Application
                 "File consent dialog failed; denying the request fail-closed", ex);
             System.Diagnostics.Debug.WriteLine($"File consent dialog failed: {ex.Message}");
             service.ResolveConsent(prompt.Request.ConsentId, granted: false, remember: false);
+
+            // Denying is correct, but from the phone's end it is indistinguishable from the user
+            // having said no — and from this end it is indistinguishable from nothing happening at
+            // all. Announce it so the person at the PC knows a request arrived and was refused for
+            // a reason they did not choose.
+            NotificationService.Instance.Notify(
+                NotificationImportance.Problem,
+                LocalizationService.Instance["Notification_ConsentFailed_Title"],
+                LocalizationService.Instance["Notification_ConsentFailed_Message"]);
         }
     }
 

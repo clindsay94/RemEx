@@ -2902,4 +2902,28 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="SystemStatus_Unavailable" xml:space="preserve">
     <value>RemEx bu bilgisayarı denetleyemedi, çünkü RemEx'in denetimi yapan bölümü çalışmıyor. O çalışmaya başlayana kadar telefonunuz bağlanamayacak.</value>
   </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>Dosya alındı</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>{0} telefonunuzdan geldi.</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>Tanılama dışa aktarıldı</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>{0} konumuna kaydedildi.</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx düzgün başlamadı</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>RemEx'in bir bölümü başlatılamadı, bu yüzden bazı şeyler çalışmayacak. Ayrıntılar Tanılama bölümünde.</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>Dosya isteği reddedildi</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx izin istemini gösteremedi, bu yüzden dosya isteğini sizin adınıza reddetti.</value>
+  </data>
 </root>

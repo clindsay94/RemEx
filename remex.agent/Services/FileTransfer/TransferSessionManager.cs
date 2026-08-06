@@ -450,6 +450,15 @@ public sealed class TransferSessionManager : IDisposable
         {
             Remex.Desktop.Services.ActivityService.Instance.Record(
                 Remex.Desktop.Services.ActivityKind.FileReceived, receivedName);
+
+            // The activity feed is the RECORD; this is the ANNOUNCEMENT. A received file used to
+            // produce nothing visible at all, and close-to-tray is on by default, so the window it
+            // would have appeared in is usually not on screen when the file lands (RemEx-5wc2).
+            var localization = Remex.Desktop.Services.LocalizationService.Instance;
+            Remex.Desktop.Services.NotificationService.Instance.Notify(
+                Remex.Desktop.Services.NotificationImportance.Outcome,
+                localization["Notification_FileReceived_Title"],
+                string.Format(localization["Notification_FileReceived_Message"], receivedName));
         }
     }
 

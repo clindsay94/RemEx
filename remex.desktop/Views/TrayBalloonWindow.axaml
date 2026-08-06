@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.TrayBalloonWindow"
+    Width="360" Height="132" CanResize="False" Focusable="False" ShowActivated="False" ShowInTaskbar="False"
+    Topmost="True" Background="Transparent" TransparencyLevelHint="AcrylicBlur, Mica, None" SystemDecorations="None">
+
+    <Window.Styles>
+        <!-- The stripe carries the importance. Colour comes from the theme's own system brushes, so
+             it stays legible on all four PC themes rather than hardcoding a red and a blue. -->
+        <Style Selector="Border.accent-stripe">
+            <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+        <Style Selector="Border.accent-stripe.problem">
+            <Setter Property="Background" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+
+        <Style Selector="Button.balloon-close">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
+        <Style Selector="Button.balloon-close:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
+    </Window.Styles>
+
+    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusLarge}"
+            BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12"
+            BoxShadow="0 8 28 0 #60000000" ClipToBounds="True">
+        <Grid ColumnDefinitions="4,Auto,*,Auto">
+            <Border Grid.Column="0" x:Name="AccentStripe" Classes="accent-stripe"/>
+
+            <TextBlock Grid.Column="1" x:Name="GlyphText" FontSize="20" Margin="14,0,0,0"
+                       VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+            <!-- Pressing the body opens the main window, which is the only useful thing a balloon
+                 can offer: it appears precisely when the window is not on screen. -->
+            <StackPanel Grid.Column="2" Background="Transparent" Spacing="4"
+                        Margin="12,16,8,16" VerticalAlignment="Center" Cursor="Hand"
+                        PointerPressed="OnBalloonPressed">
+                <TextBlock x:Name="TitleText" FontSize="13" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                <TextBlock x:Name="MessageText" FontSize="12" TextWrapping="Wrap" MaxLines="3"
+                           Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+
+            <Button Grid.Column="3" Classes="balloon-close" Content="✕" Click="OnCloseBalloon"
+                    AutomationProperties.Name="{local:Localize A11y_Close}"/>
+        </Grid>
+    </Border>
+</Window>

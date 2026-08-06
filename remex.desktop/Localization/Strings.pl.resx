@@ -2899,4 +2899,28 @@ Możesz zmienić:
   <data name="SystemStatus_Unavailable" xml:space="preserve">
     <value>RemEx nie mógł sprawdzić tego komputera, ponieważ część RemEx odpowiedzialna za sprawdzanie nie działa. Twój telefon nie zdoła się połączyć, dopóki to się nie zmieni.</value>
   </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>Odebrano plik</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>{0} dotarł z Twojego telefonu.</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>Wyeksportowano diagnostykę</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>Zapisano w {0}.</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx nie uruchomił się poprawnie</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>Część RemEx nie wystartowała, więc niektóre funkcje nie zadziałają. Szczegóły są w Diagnostyce.</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>Odrzucono prośbę o plik</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx nie mógł pokazać prośby o zgodę, więc odrzucił transfer za Ciebie.</value>
+  </data>
 </root>

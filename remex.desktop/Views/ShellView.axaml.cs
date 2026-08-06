@@ -1,7 +1,9 @@
 using System.ComponentModel;
 using Avalonia.Animation;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Input;
+using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 
 namespace Remex.Desktop.Views;
@@ -25,6 +27,19 @@ public partial class ShellView : UserControl
 
         if (DataContext is ShellViewModel vm)
             vm.BeginWelcomeSplash();
+
+        // The in-app toast host. Guarded for the same reason the boot splash below is: OnLoaded runs
+        // again on every reattach to the visual tree, and a second manager over the same TopLevel
+        // would stack a second overlay layer of toasts on top of the first.
+        if (!_toastHostInstalled && TopLevel.GetTopLevel(this) is { } topLevel)
+        {
+            _toastHostInstalled = true;
+            NotificationService.Instance.InApp = new WindowToastSink(new WindowNotificationManager(topLevel)
+            {
+                Position = NotificationPosition.BottomRight,
+                MaxItems = 3,
+            });
+        }
 
         var bootSplash = this.FindControl<Controls.Splash.SkiaSplashControl>("BootSplash");
         if (bootSplash != null && !_bootSplashHooked)
@@ -55,6 +70,22 @@ public partial class ShellView : UserControl
     }
 
     private bool _bootSplashHooked;
+    private bool _toastHostInstalled;
+
+    /// <summary>
+    /// Adapts Avalonia's toast host to the notification service's sink, mapping how much the user
+    /// needs to be told onto the card's own severity styling.
+    /// </summary>
+    private sealed class WindowToastSink(WindowNotificationManager manager) : IInAppNotificationSink
+    {
+        public void Show(NotificationImportance importance, string title, string message) =>
+            manager.Show(new Notification(title, message, importance switch
+            {
+                NotificationImportance.Problem => NotificationType.Error,
+                NotificationImportance.Outcome => NotificationType.Success,
+                _ => NotificationType.Information,
+            }));
+    }
 
     private ShellViewModel? _previousVm;
 

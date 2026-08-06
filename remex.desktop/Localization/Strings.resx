@@ -2904,4 +2904,28 @@ You can change:
   <data name="SystemStatus_Unavailable" xml:space="preserve">
     <value>RemEx could not check this PC, because the part of RemEx that does the checking is not running. Your phone will not be able to connect until it is.</value>
   </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>File received</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>{0} arrived from your phone.</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>Diagnostics exported</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>Saved to {0}.</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx did not start cleanly</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>Part of RemEx failed to start, so some of it will not work. Diagnostics has the details.</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>File request refused</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx could not show the permission prompt, so the file request was refused for you.</value>
+  </data>
 </root>

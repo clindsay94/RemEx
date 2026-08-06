@@ -2899,4 +2899,28 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="SystemStatus_Unavailable" xml:space="preserve">
     <value>RemEx не зміг перевірити цей ПК, бо частина RemEx, яка виконує перевірки, не працює. Доки це не зміниться, ваш телефон не зможе під'єднатися.</value>
   </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>Файл отримано</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>{0} надійшов із вашого телефона.</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>Діагностику експортовано</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>Збережено у {0}.</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx запустився не повністю</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>Частина RemEx не змогла запуститися, тож дещо не працюватиме. Подробиці — у Діагностиці.</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>Запит на файл відхилено</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx не зміг показати запит дозволу, тому відхилив передавання файлу за вас.</value>
+  </data>
 </root>

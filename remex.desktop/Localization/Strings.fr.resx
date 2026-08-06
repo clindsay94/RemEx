@@ -2898,4 +2898,28 @@ Vous pouvez modifier :
   <data name="SystemStatus_Unavailable" xml:space="preserve">
     <value>RemEx n'a pas pu vérifier ce PC, car la partie de RemEx qui effectue les vérifications ne fonctionne pas. Votre téléphone ne pourra pas se connecter tant que ce sera le cas.</value>
   </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>Fichier reçu</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>{0} est arrivé depuis votre téléphone.</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>Diagnostics exportés</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>Enregistré dans {0}.</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx n'a pas démarré correctement</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>Une partie de RemEx n'a pas pu démarrer, donc certaines fonctions ne marcheront pas. Les détails sont dans Diagnostics.</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>Demande de fichier refusée</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx n'a pas pu afficher la demande d'autorisation, il a donc refusé le transfert à votre place.</value>
+  </data>
 </root>

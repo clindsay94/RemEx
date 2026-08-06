@@ -2898,4 +2898,28 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="SystemStatus_Unavailable" xml:space="preserve">
     <value>RemEx इस PC की जाँच नहीं कर सका, क्योंकि RemEx का जाँच करने वाला हिस्सा नहीं चल रहा है। जब तक वह नहीं चलेगा, आपका फ़ोन कनेक्ट नहीं हो पाएगा।</value>
   </data>
+  <data name="Notification_FileReceived_Title" xml:space="preserve">
+    <value>फ़ाइल मिली</value>
+  </data>
+  <data name="Notification_FileReceived_Message" xml:space="preserve">
+    <value>आपके फ़ोन से {0} आ गई।</value>
+  </data>
+  <data name="Notification_LogsExported_Title" xml:space="preserve">
+    <value>डायग्नोस्टिक्स निर्यात हो गए</value>
+  </data>
+  <data name="Notification_LogsExported_Message" xml:space="preserve">
+    <value>{0} में सहेजा गया।</value>
+  </data>
+  <data name="Notification_StartupFailed_Title" xml:space="preserve">
+    <value>RemEx ठीक से शुरू नहीं हुआ</value>
+  </data>
+  <data name="Notification_StartupFailed_Message" xml:space="preserve">
+    <value>RemEx का एक हिस्सा शुरू नहीं हो सका, इसलिए कुछ चीज़ें काम नहीं करेंगी। विवरण डायग्नोस्टिक्स में हैं।</value>
+  </data>
+  <data name="Notification_ConsentFailed_Title" xml:space="preserve">
+    <value>फ़ाइल का अनुरोध अस्वीकार किया गया</value>
+  </data>
+  <data name="Notification_ConsentFailed_Message" xml:space="preserve">
+    <value>RemEx अनुमति का संकेत नहीं दिखा सका, इसलिए उसने आपकी ओर से यह अनुरोध अस्वीकार कर दिया।</value>
+  </data>
 </root>

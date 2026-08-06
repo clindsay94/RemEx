@@ -311,6 +311,19 @@
         <Style Selector="Ellipse.status-ring.connected">
             <Setter Property="Stroke" Value="{DynamicResource SystemSuccessBrush}"/>
         </Style>
+
+        <!-- ═══ In-app toast (RemEx-5wc2) ═══
+             The Fluent control theme dresses NotificationCard from its own palette, which follows
+             the light/dark variant but knows nothing about CyberNOC, Monolith, SolarFlare or
+             BaseDarkGlass - so a toast would be the one surface in the app that ignores the theme
+             the user picked. A Style setter outranks a ControlTheme setter, so these win; the
+             values are theme resources rather than literals for the usual reason. -->
+        <Style Selector="NotificationCard">
+            <Setter Property="Background" Value="{DynamicResource GlassBaseDarkBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        </Style>
     </Application.Styles>
 
     <TrayIcon.Icons>

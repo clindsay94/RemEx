@@ -212,12 +212,23 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         if (file is null)
             return;
 
-        await using var stream = await file.OpenWriteAsync();
-        await using var writer = new StreamWriter(stream, new UTF8Encoding(false));
-        if (isJson)
-            await writer.WriteAsync(SerializeJson(entries));
-        else
-            await writer.WriteAsync(string.Join(Environment.NewLine, entries.Select(e => e.ToString())));
+        // Scoped rather than `await using var` so the writer has actually flushed and closed before
+        // the notification below claims the export finished.
+        await using (var stream = await file.OpenWriteAsync())
+        await using (var writer = new StreamWriter(stream, new UTF8Encoding(false)))
+        {
+            if (isJson)
+                await writer.WriteAsync(SerializeJson(entries));
+            else
+                await writer.WriteAsync(string.Join(Environment.NewLine, entries.Select(e => e.ToString())));
+        }
+
+        // An export is an outcome the user asked for and is waiting on. The save dialog closing is
+        // the only feedback it had, and that is indistinguishable from cancelling it (RemEx-5wc2).
+        NotificationService.Instance.Notify(
+            NotificationImportance.Outcome,
+            LocalizationService.Instance["Notification_LogsExported_Title"],
+            string.Format(LocalizationService.Instance["Notification_LogsExported_Message"], file.Name));
     }
 
     private IReadOnlyList<LogEntry> ResolveScope(LogExportScope scope) => scope.Kind switch

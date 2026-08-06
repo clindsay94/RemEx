@@ -31,6 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A file arriving from your phone now says so, and so do the failures that used to happen in
+  silence.** RemEx already knew *where* each kind of event belonged — in-app when you are looking at
+  the window, a tray balloon when you are not, nothing at all for routine chatter — but neither
+  surface existed, so the answer went nowhere. Both exist now, and four events are wired to them: a
+  file received from your phone, a diagnostics export finishing, RemEx failing to start cleanly, and
+  a file-permission prompt that could not be shown (which refuses the request on your behalf, and
+  previously looked exactly like nothing happening).
+  **The tray balloon is drawn by RemEx rather than by Windows.** Avalonia's tray icon has no balloon
+  API on any platform, so the choice was not "which platforms support it" but what to show instead. A
+  native balloon would have meant a second tray registration on Windows and a different path again on
+  Linux; drawing it means one code path for both, and it is the only version of this surface that can
+  follow the theme you picked. Closing to the tray is on by default, so this is the channel most
+  events actually arrive on.
+
 - **A lane is now a headless Claude Code session, and `/drain` drives the whole thing.** The last
   open question in the parallel-drain design was what a lane actually *is*.
   `scripts/ralph-lane-agent.ps1` answers it: one `claude -p` session on Opus, running the loop in
