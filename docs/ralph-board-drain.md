@@ -96,7 +96,7 @@ guardrails, same one-bead-per-iteration rule. These are the only differences:
 | 3 pick a bead | **You do not pick.** Your bead is `RALPH_LANE_BEAD` and it is named in your branch. Work that one. (Not in the spec's list, and it follows from the branch naming: the queue reads the bead id out of the branch, and the dispatcher already recorded a path claim against it. A lane that picked its own bead would land it under the assigned bead's id and hold a claim for files it never touches.) |
 | 4 claim | Already done for you — the dispatcher ran `bd update --claim` before provisioning, because a bead left `open` holds a path claim the next lane's collision check cannot see. Run `bd show <id>` and confirm it is yours; running `--claim` again is harmless. |
 | 7 verify | Unchanged. Your receipt proves **your lane** is green in isolation, which is not the same as green once merged — the queue re-verifies in the integration tree and that is the receipt that closes the bead. Your verify still matters: it fails a broken lane in the lane, instead of poisoning the queue. |
-| 8 review gate | Unchanged per bead, and additionally mandatory per merge. |
+| 8 review gate | Unchanged per bead, and **the queue enforces it**: no `Reviewed-by: <agent> (PASS)` trailer and no qualifying skip means the branch is returned before anything is built. Your review is only visible to the operator if you write the trailer — the lane log is gitignored, so a verdict recorded only there cannot be audited afterwards. |
 | 9 commit | Unchanged. Commit to your lane branch. Still no push. |
 | 10 `bd close` | **Do not.** A lane produces a verified branch, not a closed bead. Work that has not landed on the integration branch is not done, and a closed bead whose branch later fails to merge is a lie in the tracker. Instead mark it ready and stop: `bd update <id> --set-metadata ralphLaneState=ready-to-land`. The queue closes it after the merge verifies green. |
 | 11 changelog | **Stays here, and is now a gate.** Only you know what changed, so only you can write the entry — and the merge queue refuses to land a branch that does not touch `docs/CHANGELOG.md`, before it builds anything. A forgotten entry costs you the whole landing. |
@@ -260,7 +260,14 @@ reaps a branch whose bead is not closed.
      even for "PC-side" core edits.
    A red build or failing test is never an acceptable stopping point.
 
-8. **REVIEW GATE — default ON.** Skip it ONLY if ALL of these hold:
+8. **REVIEW GATE — default ON, and in a lane it is enforced.** The merge queue re-checks this
+   before it builds anything: `ralph-merge-queue.ps1` refuses a branch that carries no
+   `Reviewed-by: <agent> (PASS)` trailer unless the diff mechanically satisfies the skip
+   conditions below. It was not always enforced, and of the first five landed feature commits
+   only two carried the trailer — two more had been reviewed and simply did not say so, which
+   is indistinguishable from having skipped the gate. Write the trailer.
+
+   Skip it ONLY if ALL of these hold:
    - bead priority is 3 or 4, AND
    - the diff is small and mechanical (roughly ≤30 changed lines: doc text, a string resource plus
      its locale copies, an ellipsis/overflow attribute, a rename with no logic change), AND
@@ -268,16 +275,26 @@ reaps a branch whose bead is not closed.
      code, elevation/manifest/ACL code, the capture/encode path, `Theme.kt`, `DashboardInteraction.kt`,
      or anything `gitnexus: impact` rated HIGH/CRITICAL.
 
-   Everything else gets reviewed. Run `git diff`, then dispatch a reviewer subagent **on Opus**:
-   - Kotlin/Android diff → `Agent(subagent_type: "ecc:kotlin-reviewer", model: "opus")`
-   - C#/Avalonia/host diff → `Agent(subagent_type: "ecc:csharp-reviewer", model: "opus")`
-   - Mixed diff → dispatch both, each scoped to its language's files.
-   - If the `ecc` agents are unavailable in this session, fall back to
-     `Agent(subagent_type: "general-purpose", model: "opus")` with the same instructions.
+   Everything else gets reviewed. Run `git diff`, then dispatch a reviewer subagent
+   **on Opus** — `Agent(subagent_type: "general-purpose", model: "opus")`.
+
+   **The model and the prompt are what matter, not the agent type.** This used to name
+   `ecc:kotlin-reviewer` and `ecc:csharp-reviewer` with `general-purpose` as a fallback. No `ecc`
+   plugin has ever been installed, so every review that has ever run in this repo took the
+   fallback and nobody noticed — which is its own small lesson about instructions that name
+   things nobody checks. Those reviews were good: the one on RemEx-k62t returned five findings,
+   two of them real behaviour bugs. The language expertise has to arrive in the prompt, because
+   that is the only part guaranteed to be there.
+
+   If this session lists a reviewer that genuinely knows the stack — check the available agent
+   types, do not assume — prefer it and name it in the trailer. A mixed diff can go to two
+   reviewers, each scoped to its language's files. Neither is required.
 
    The subagent cannot see your conversation. Give it: the bead id, title, and full acceptance
-   criteria; the complete diff; the impact-analysis result; the guardrails below that apply; and
-   this instruction —
+   criteria; the complete diff; the impact-analysis result; the guardrails below that apply;
+   which stack the diff is in and what that implies (Compose recomposition and state hoisting for
+   Kotlin; NativeAOT-unsafe reflection and pooled-buffer lifetimes for `Remex.Core`; Avalonia
+   binding and dispatcher affinity for the desktop app); and this instruction —
 
    > Review this diff against the stated acceptance criteria and guardrails. Answer four questions
    > explicitly: (1) Does it actually meet the acceptance criteria, or does it only appear to?
@@ -290,14 +307,42 @@ reaps a branch whose bead is not closed.
    > specific, actionable findings. Do not pass a diff you have doubts about; do not fail one over
    > pure style preference.
 
+   **In a lane, publish the verdict the moment it arrives**, before you act on it:
+
+   ```
+   bd update <id> --set-metadata ralphReviewVerdict="PASS - 5 findings, 2 fixed"
+   bd update <id> --set-metadata ralphReviewVerdict="FAIL (round 1) - <the headline finding>"
+   ```
+
+   `ralph-dispatch.ps1 -Watch` emits that as an event and `-Status` shows it, so it is the only
+   thing that tells the operator review happened while the lane is still running. Your log
+   reaches them ~18 minutes later, when the session ends and it all arrives at once. Keep it to
+   one line; the detail belongs in the commit and the log.
+
    **On FAIL:** address the findings and re-review. MAXIMUM 2 fix rounds. If it still fails,
    restore the paths this iteration touched with `git restore -- <paths>` (never the `.` wildcard —
    the tree may be shared), append the reviewer's findings verbatim via
    `bd update <id> --status open --append-notes "..."`, and end the iteration without committing.
    Do not argue with the reviewer or re-run it hoping for a different verdict.
 
-   **On PASS:** the bead is approved for closure — proceed to step 9 and include
-   `Reviewed-by: <agent> (PASS)` in the commit message.
+   **On PASS:** the bead is approved for closure — proceed to step 9 and put
+
+   ```
+   Reviewed-by: <agent> (PASS)
+   ```
+
+   in the commit message as a real trailer: last paragraph, one blank line above it, exactly
+   that key. `git log --format='%(trailers:key=Reviewed-by,valueonly)'` is what reads it, so a
+   line buried mid-message or spelled `Reviewed by` does not count and the queue will refuse the
+   branch. Any commit in the range may carry it — a follow-up that fixes review findings is the
+   natural place when the first round came back FAIL.
+
+   **If review genuinely does not apply** and the diff does not qualify for the skip above — a
+   revert of an already-reviewed commit is the honest case — say so explicitly with
+   `bd update <id> --set-metadata ralphReviewSkipped="<reason>"`. The queue lands it and writes
+   the reason into the journal and the bead's close reason. It is an override, not a bypass:
+   it makes an unreviewed landing loud rather than invisible. Do not reach for it to get past a
+   reviewer you disagree with.
 
 9. Commit, naming the bead: `perf: <what changed> (<bead-id>)` / `fix: ...` / `docs: ...` as
    appropriate. Copy file paths for `git add` character-for-character from `git status` output —

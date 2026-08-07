@@ -425,6 +425,11 @@ function Get-LaneBoard {
             Bead       = $beadId
             Lane       = $laneNumber
             State      = if ($issue) { [string](Get-Prop $meta 'ralphLaneState') } else { '' }
+            # The lane's review verdict, published the moment review finishes rather than at the
+            # end of the session. A lane's log is a transcript that arrives all at once when
+            # 'claude -p' exits, so without this the operator has no way to know whether the
+            # work was reviewed until it is already over. See RemEx-2eoo.
+            Review     = if ($issue) { [string](Get-Prop $meta 'ralphReviewVerdict') } else { '' }
             BeadStatus = if ($issue) { [string](Get-Prop $issue 'status') } else { '' }
             Title      = if ($issue) { [string](Get-Prop $issue 'title') } else { '' }
             Paths      = $paths
@@ -515,6 +520,7 @@ if ($PSCmdlet.ParameterSetName -ceq 'Status') {
             title       = $_.Title
             paths       = @($_.Paths)
             why         = $_.Why
+            review      = $_.Review
         }
     })
 
@@ -546,6 +552,15 @@ if ($PSCmdlet.ParameterSetName -ceq 'Status') {
         Write-Host ("  lane {0,-2} {1,-14} {2}" -f $r.lane, $r.disposition, $r.branch) -ForegroundColor $colour
         if ($r.title) { Write-Host "              $($r.title)" -ForegroundColor DarkGray }
         if ($r.why) { Write-Host "              $($r.why)" -ForegroundColor Red }
+        # Shown even for a lane still working, which is the point: an operator arriving mid-wave
+        # can see that review has happened and what it said, without waiting for the transcript.
+        if ($r.review) {
+            $reviewColour = if ($r.review -match '^\s*FAIL') { 'Yellow' } else { 'Green' }
+            Write-Host "              review $($r.review)" -ForegroundColor $reviewColour
+        }
+        elseif ($r.disposition -ceq 'ready-to-land') {
+            Write-Host '              no review verdict published - the merge queue will check for a Reviewed-by trailer' -ForegroundColor DarkGray
+        }
         if ($r.worktree) { Write-Host "              worktree $($r.worktree)" -ForegroundColor DarkGray }
         elseif ($r.disposition -ceq 'working') {
             Write-Host '              marked working but has no worktree - nothing is running in it' -ForegroundColor Yellow
@@ -580,6 +595,7 @@ if ($PSCmdlet.ParameterSetName -ceq 'Status') {
 if ($PSCmdlet.ParameterSetName -ceq 'Watch') {
     $deadline = (Get-Date).AddMinutes($MaxMinutes)
     $seen = @{}
+    $seenReview = @{}
     $firstPass = $true
 
     while ($true) {
@@ -597,6 +613,17 @@ if ($PSCmdlet.ParameterSetName -ceq 'Watch') {
             elseif ($seen[$row.Branch] -cne $disposition) {
                 Write-Output "lane $($row.Lane)  $($row.Bead)  $($seen[$row.Branch]) -> $disposition"
             }
+
+            # A second event stream on the same lane. Kept separate from the disposition rather
+            # than folded into it because review is not a lane state: a lane goes on working
+            # after a FAIL verdict, and collapsing the two would either lose the verdict or
+            # invent a state the merge queue does not understand.
+            $verdict = [string]$row.Review
+            $priorVerdict = if ($seenReview.ContainsKey($row.Branch)) { [string]$seenReview[$row.Branch] } else { '' }
+            if ($verdict -and $verdict -cne $priorVerdict) {
+                Write-Output "lane $($row.Lane)  $($row.Bead)  review $verdict"
+            }
+            $seenReview[$row.Branch] = $verdict
         }
 
         foreach ($gone in @($seen.Keys | Where-Object { -not $current.ContainsKey($_) })) {
@@ -921,8 +948,11 @@ foreach ($p in $planned) {
 # rather than holding a claim no lane is honouring.
 function Reset-BeadAfterFailure {
     param([string]$BeadId, [string]$Note)
+    # ralphReviewVerdict goes too: a verdict left over from a failed attempt would show against
+    # the next lane to pick this bead up, and a stale PASS is worse than no verdict at all.
     Invoke-Bd update $BeadId --status open `
         --unset-metadata ralphLaneState --unset-metadata ralphLane --unset-metadata ralphLanePaths `
+        --unset-metadata ralphReviewVerdict `
         --append-notes $Note | Out-Null
 }
 

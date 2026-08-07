@@ -15,6 +15,10 @@
     For each candidate, in the order the lanes finished:
 
       1. Check the branch carries a docs/CHANGELOG.md entry. Refuse before building if not.
+      1b. Check a reviewer saw it: a 'Reviewed-by: <agent> (PASS)' trailer somewhere in the
+         range, OR a diff that mechanically qualifies for step 8's skip, OR an explicit
+         ralphReviewSkipped reason that gets recorded rather than swallowed. Also before
+         building, and for the same reason.
       2. Record the pre-merge SHA, then rebase the lane branch onto the integration head.
          A conflict returns the bead with the conflicting paths named. Never auto-resolved:
          a merge resolution is a code change nobody reviewed and nothing verified.
@@ -135,6 +139,28 @@ $JournalPath = Join-Path $RepoRoot 'docs' 'ralph-state.jsonl'
 $JournalRelative = 'docs/ralph-state.jsonl'
 $ChangelogRelative = 'docs/CHANGELOG.md'
 $LockPath = Join-Path $RepoRoot '.ralph' 'merge-queue.lock'
+
+# --- The review gate's inputs ----------------------------------------------
+# docs/ralph-board-drain.md step 8 makes review default-ON and lets it be skipped only when a
+# bead is P3/P4 AND the diff is small and mechanical AND it touches nothing sensitive. That was
+# prose, so the only thing enforcing it was the lane's own good faith - and of the first five
+# landed feature commits, two carried the required trailer while two more had been reviewed and
+# simply forgot it. Review was happening; it just could not be audited from git.
+#
+# These three constants are step 8's skip conditions in a form the queue can check. Where the
+# doc says "roughly", this rounds toward MORE review: over-including a path costs one subagent,
+# under-including it lands an unreviewed change in the capture path.
+$ReviewTrailerKey = 'Reviewed-by'
+$ReviewSkipMaxPriority = 3          # P3/P4 only; P0-P2 always needs a reviewer
+$ReviewSkipMaxLines = 30            # changed lines, excluding the changelog entry itself
+$ReviewSensitivePattern = @(
+    '^remex\.core/'                                     # wire format, serialization, JNI, NativeAOT
+    'pair|cert|trust|pinned|consent'                    # pairing and certificate code
+    'elevat|manifest|privileg|\.acl|acl\.'              # elevation, manifests, ACLs
+    'capture|encoder|h264|dxgi|screengrab|xrandr'       # the capture and encode path
+    'Theme\.kt$|DashboardInteraction\.kt$'              # named explicitly in step 8
+) -join '|'
+
 $ReceiptPath = Join-Path $RepoRoot '.ralph' 'verify-receipt.json'
 $ReceiptBackup = Join-Path $RepoRoot '.ralph' 'verify-receipt.premerge.json'
 $started = Get-Date
@@ -280,6 +306,84 @@ function Get-BeadJson {
         return $parsed
     }
     catch { return $null }
+}
+
+# Decides whether a lane branch may land without a reviewer having seen it, and says how it
+# earned that. Three ways through, in order of strength:
+#
+#   trailer   a commit in the range carries 'Reviewed-by: <agent> (PASS)'. This is the norm.
+#   auto      the diff mechanically satisfies step 8's skip conditions, so no review was owed.
+#   override  the bead carries ralphReviewSkipped=<reason>. Lands, but the reason is written
+#             into the journal and the close reason, so an unreviewed landing is never silent.
+#
+# Anything else is refused. The verdict is returned rather than acted on here so the caller can
+# keep every gate's return-the-bead handling in one shape.
+# The decision itself, with every input already gathered. Split from the git calls below so the
+# self-test can drive all six outcomes without building a repository to hold them.
+function Resolve-ReviewVerdict {
+    param(
+        [string[]]$PassTrailers, [int]$Priority,
+        [string[]]$ChangedPaths, [int]$ChangedLines, [string]$Override
+    )
+
+    $pass = @($PassTrailers | Where-Object { $_ -match '\(PASS\)' })
+    if ($pass.Count -gt 0) {
+        return @{ Ok = $true; How = 'trailer'; Detail = $pass[0].Trim() }
+    }
+
+    $sensitive = @($ChangedPaths | Where-Object { $_ -imatch $ReviewSensitivePattern })
+
+    # ChangedLines of 0 fails the skip deliberately: it means the diff could not be measured,
+    # and an unmeasurable diff is the last thing that should slip through unreviewed.
+    if ($Priority -ge $ReviewSkipMaxPriority -and $sensitive.Count -eq 0 -and
+        $ChangedLines -gt 0 -and $ChangedLines -le $ReviewSkipMaxLines) {
+        return @{ Ok = $true; How = 'auto'; Detail = "P$Priority, $ChangedLines changed line(s), nothing sensitive" }
+    }
+
+    if ($Override) {
+        return @{ Ok = $true; How = 'override'; Detail = $Override }
+    }
+
+    # Say which condition failed. A lane told only 'no review' re-runs the whole gate guessing;
+    # one told 'P1, and it touches PinnedHostStore.kt' knows immediately what is being asked.
+    $why = [System.Collections.Generic.List[string]]::new()
+    if ($Priority -lt $ReviewSkipMaxPriority) { $why.Add("the bead is P$Priority (skip needs P$ReviewSkipMaxPriority or lower)") }
+    if ($sensitive.Count -gt 0) { $why.Add("it touches $($sensitive.Count) sensitive path(s): $($sensitive -join ', ')") }
+    if ($ChangedLines -gt $ReviewSkipMaxLines) { $why.Add("$ChangedLines changed lines (skip needs $ReviewSkipMaxLines or fewer)") }
+    if ($ChangedLines -le 0) { $why.Add('the diff could not be measured') }
+
+    return @{ Ok = $false; How = 'none'; Detail = ($why -join '; ') }
+}
+
+function Test-ReviewEvidence {
+    param([string]$Range, [int]$Priority, [string[]]$ChangedPaths, $Metadata)
+
+    # Trailers over the whole RANGE, so a follow-up commit carrying the trailer counts even when
+    # the feature commit does not - which is what happens when review finds something and the
+    # lane fixes it. 'valueonly' keeps the key itself out of the match.
+    $trailers = @()
+    $log = Invoke-Git -In $RepoRoot log --format="%(trailers:key=$ReviewTrailerKey,valueonly)" $Range
+    if ($log.ExitCode -eq 0) {
+        $trailers = @($log.Output -split "`n" | Where-Object { $_.Trim() })
+    }
+
+    $lines = 0
+    $stat = Invoke-Git -In $RepoRoot diff --numstat $Range
+    if ($stat.ExitCode -eq 0) {
+        foreach ($row in ($stat.Output -split "`n")) {
+            $cols = $row -split "`t"
+            if ($cols.Count -lt 3) { continue }
+            if ($cols[2] -ceq $ChangelogRelative) { continue }   # the entry is not the change
+            foreach ($n in @($cols[0], $cols[1])) {
+                $parsed = 0
+                if ([int]::TryParse($n, [ref]$parsed)) { $lines += $parsed }   # '-' means binary
+            }
+        }
+    }
+
+    return Resolve-ReviewVerdict -PassTrailers $trailers -Priority $Priority `
+        -ChangedPaths $ChangedPaths -ChangedLines $lines `
+        -Override ([string](Get-Prop $Metadata 'ralphReviewSkipped'))
 }
 
 # One line per event, appended and committed as it happens rather than at the end of the drain.
@@ -494,6 +598,125 @@ exit 0
         Remove-Item -LiteralPath $stub -Force -ErrorAction SilentlyContinue
     }
 
+    # --- The review gate ----------------------------------------------------
+    # Every one of these is a way an unreviewed change could reach the integration branch, which
+    # is exactly what happened before the gate existed: RemEx-k62t and RemEx-0iww were reviewed
+    # and landed with no trace of it, so nothing downstream could tell them from work that
+    # skipped the gate entirely.
+    function Assert-Verdict {
+        # NOT named $Args: that is an automatic variable, and declaring it makes the whole
+        # self-test block fail to define with no output at all.
+        param([string]$What, [hashtable]$Case, [bool]$ExpectOk, [string]$ExpectHow)
+        $script:checked++
+        $got = Resolve-ReviewVerdict @Case
+        if ($got.Ok -ne $ExpectOk -or $got.How -cne $ExpectHow) {
+            $failures.Add("$What - expected Ok=$ExpectOk/$ExpectHow, got Ok=$($got.Ok)/$($got.How) ($($got.Detail))")
+        }
+    }
+
+    $bigDiff = @{ PassTrailers = @(); Priority = 1; ChangedPaths = @('remex.desktop/Foo.cs'); ChangedLines = 400; Override = '' }
+
+    Assert-Verdict 'a PASS trailer lands a P0 change' `
+        @{ PassTrailers = @('general-purpose (opus) (PASS)'); Priority = 0
+           ChangedPaths = @('remex.core/Wire.cs'); ChangedLines = 900; Override = '' } $true 'trailer'
+
+    Assert-Verdict 'a big unreviewed diff is refused' $bigDiff $false 'none'
+
+    # A trailer that is not a PASS must not count. A FAIL trailer landing the work would be
+    # worse than no gate at all - it would launder a rejection into a receipt.
+    Assert-Verdict 'a FAIL trailer does not count as review' `
+        @{ PassTrailers = @('general-purpose (opus) (FAIL)'); Priority = 1
+           ChangedPaths = @('remex.desktop/Foo.cs'); ChangedLines = 90; Override = '' } $false 'none'
+
+    Assert-Verdict 'a PASS on a later commit in the range counts' `
+        @{ PassTrailers = @('', 'kotlin-reviewer (opus) (PASS)'); Priority = 2
+           ChangedPaths = @('remex.desktop/Foo.cs'); ChangedLines = 90; Override = '' } $true 'trailer'
+
+    # Step 8's skip, mechanised. Each condition is tested by breaking exactly one of them.
+    Assert-Verdict 'a small mechanical P3 diff owes no review' `
+        @{ PassTrailers = @(); Priority = 3
+           ChangedPaths = @('docs/CHANGELOG.md', 'remex.desktop/Assets/Strings.resx'); ChangedLines = 12; Override = '' } $true 'auto'
+
+    Assert-Verdict 'the same diff at P2 still owes review' `
+        @{ PassTrailers = @(); Priority = 2
+           ChangedPaths = @('remex.desktop/Assets/Strings.resx'); ChangedLines = 12; Override = '' } $false 'none'
+
+    Assert-Verdict 'a small P4 diff in the capture path still owes review' `
+        @{ PassTrailers = @(); Priority = 4
+           ChangedPaths = @('remex.agent/Capture/DxgiCapture.cs'); ChangedLines = 4; Override = '' } $false 'none'
+
+    Assert-Verdict 'a small P4 diff touching pairing still owes review' `
+        @{ PassTrailers = @(); Priority = 4
+           ChangedPaths = @('remex.android/app/src/main/java/com/clindsay94/remex/security/PinnedHostStore.kt'); ChangedLines = 3; Override = '' } $false 'none'
+
+    Assert-Verdict 'anything in remex.core still owes review' `
+        @{ PassTrailers = @(); Priority = 4
+           ChangedPaths = @('remex.core/Protocol/Frame.cs'); ChangedLines = 2; Override = '' } $false 'none'
+
+    Assert-Verdict 'a 31-line P4 diff is over the skip threshold' `
+        @{ PassTrailers = @(); Priority = 4
+           ChangedPaths = @('docs/notes.md'); ChangedLines = 31; Override = '' } $false 'none'
+
+    # An unmeasurable diff must not fall through the skip. This is the fail-open case: if the
+    # numstat parse ever breaks, every landing would silently qualify as 'small and mechanical'.
+    Assert-Verdict 'an unmeasurable diff does not qualify for the skip' `
+        @{ PassTrailers = @(); Priority = 4; ChangedPaths = @('docs/notes.md'); ChangedLines = 0; Override = '' } $false 'none'
+
+    Assert-Verdict 'an explicit override lands, and is reported as an override' `
+        @{ PassTrailers = @(); Priority = 1; ChangedPaths = @('remex.core/Wire.cs')
+           ChangedLines = 400; Override = 'revert of an already-reviewed commit' } $true 'override'
+
+    # The override must never outrank a real trailer, or the provenance recorded on the bead
+    # would read 'landed without review' for work that was in fact reviewed.
+    Assert-Verdict 'a trailer outranks an override' `
+        @{ PassTrailers = @('opus (PASS)'); Priority = 1; ChangedPaths = @('remex.core/Wire.cs')
+           ChangedLines = 400; Override = 'some reason' } $true 'trailer'
+
+    # The refusal has to say WHY, naming each failed condition - a bare 'no review' sends the
+    # lane back to guess at which of three thresholds it missed.
+    $checked++
+    $detail = (Resolve-ReviewVerdict @bigDiff).Detail
+    if ($detail -notmatch 'P1' -or $detail -notmatch '400 changed lines') {
+        $failures.Add("the refusal should name the priority and the line count, got: $detail")
+    }
+
+    # --- Trailer extraction against real git --------------------------------
+    # The pure cases above trust that git hands back what this expects. That assumption is the
+    # load-bearing one - '%(trailers:key=...,valueonly)' is easy to get subtly wrong, and if it
+    # returns nothing then every branch reads as unreviewed and the whole board stalls.
+    $tmpRepo = Join-Path ([System.IO.Path]::GetTempPath()) "ralph-mq-selftest-repo-$PID"
+    try {
+        Remove-Item -LiteralPath $tmpRepo -Recurse -Force -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Path $tmpRepo -Force | Out-Null
+        & git -C $tmpRepo init -q *> $null
+        & git -C $tmpRepo config user.email 'selftest@example.invalid' *> $null
+        & git -C $tmpRepo config user.name 'selftest' *> $null
+        'one' | Set-Content -LiteralPath (Join-Path $tmpRepo 'a.txt')
+        & git -C $tmpRepo add -A *> $null
+        & git -C $tmpRepo commit -q -m 'base' *> $null
+        'two' | Set-Content -LiteralPath (Join-Path $tmpRepo 'a.txt')
+        & git -C $tmpRepo add -A *> $null
+        & git -C $tmpRepo commit -q -m "feat: a thing`n`n$ReviewTrailerKey`: general-purpose (opus) (PASS)" *> $null
+
+        $out = (& git -C $tmpRepo log --format="%(trailers:key=$ReviewTrailerKey,valueonly)" 'HEAD~1..HEAD' 2>&1) -join "`n"
+        $checked++
+        if ($out -notmatch '\(PASS\)') {
+            $failures.Add("git did not return the $ReviewTrailerKey trailer for a real commit - got '$($out.Trim())'")
+        }
+
+        # And the base commit, which has no trailer, must come back empty rather than inheriting.
+        $none = (& git -C $tmpRepo log --format="%(trailers:key=$ReviewTrailerKey,valueonly)" -1 'HEAD~1' 2>&1) -join ''
+        $checked++
+        if ($none.Trim()) { $failures.Add("a commit with no trailer returned '$($none.Trim())'") }
+    }
+    catch {
+        $checked++
+        $failures.Add("the git trailer check could not run - $($_.Exception.Message)")
+    }
+    finally {
+        Remove-Item -LiteralPath $tmpRepo -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     if ($failures.Count -gt 0) {
         Write-Host "Merge queue self-test FAILED - $($failures.Count) of $checked check(s)." -ForegroundColor Red
         foreach ($f in $failures) { Write-Host "  $f" -ForegroundColor Red }
@@ -658,9 +881,14 @@ foreach ($ref in $refs) {
         continue
     }
 
+    # Priority and metadata ride along for the review gate, which needs both and should not
+    # spend a second 'bd show' per candidate to get what this loop already fetched.
+    $priority = Get-Prop $issue 'priority'
     $candidates.Add([pscustomobject]@{
         Branch = $branch; Bead = $beadId; Lane = $laneNumber
         FinishedAt = $finishedAt; Title = (Get-Prop $issue 'title')
+        Priority = $(if ($null -ne $priority) { [int]$priority } else { 0 })
+        Metadata = (Get-Prop $issue 'metadata')
     })
 }
 
@@ -775,6 +1003,29 @@ foreach ($candidate in $queue) {
         Invoke-Bd update $beadId --status open --set-metadata ralphLaneState=returned --append-notes "Merge queue refused to land $branch : it does not touch $ChangelogRelative. Every change needs an entry under [Unreleased] (CLAUDE.md). Add one on the lane branch, then mark it ready again with: bd update $beadId --set-metadata ralphLaneState=ready-to-land" | Out-Null
         Add-JournalEntry -BeadId $beadId -Outcome 'returned' -LaneNumber $laneNumber -Commit $preMergeSha -Detail $why
         continue
+    }
+
+    # --- Gate: did a reviewer actually see this? ----------------------------
+    # Also before the build, and for the same reason as the changelog gate. Note what this can
+    # and cannot prove: it verifies that a lane RECORDED a passing review, not that the review
+    # was any good. That is the honest limit of a mechanical check, and it is still the
+    # difference between a claim in a gitignored log and a receipt in the commit history.
+    $review = Test-ReviewEvidence -Range "$preMergeSha...$branch" `
+        -Priority $candidate.Priority -ChangedPaths $changedPaths -Metadata $candidate.Metadata
+
+    if (-not $review.Ok) {
+        $why = "no code review on record - $($review.Detail)"
+        Write-Say "  Returned: $why" 'Red'
+        $returned.Add(@{ bead = $beadId; lane = $laneNumber; why = $why })
+        Invoke-Bd update $beadId --status open --set-metadata ralphLaneState=returned --append-notes "Merge queue refused to land $branch : no '$ReviewTrailerKey' trailer carrying (PASS), and the diff does not qualify for the step 8 skip - $($review.Detail). Run the review gate (docs/ralph-board-drain.md step 8) on the lane branch, commit with '$ReviewTrailerKey`: <agent> (PASS)', then mark it ready again with: bd update $beadId --set-metadata ralphLaneState=ready-to-land. If review genuinely does not apply, say why with: bd update $beadId --set-metadata ralphReviewSkipped='<reason>'" | Out-Null
+        Add-JournalEntry -BeadId $beadId -Outcome 'returned' -LaneNumber $laneNumber -Commit $preMergeSha -Detail $why
+        continue
+    }
+
+    switch ($review.How) {
+        'trailer'  { Write-Say "  review          : $($review.Detail)" 'Green' }
+        'auto'     { Write-Say "  review          : not owed - $($review.Detail)" 'DarkGray' }
+        'override' { Write-Warn "landing WITHOUT review on an explicit override: $($review.Detail)" }
     }
 
     $touchesAndroid = @($changedPaths | Where-Object { $_.StartsWith('remex.android/') -or $_.StartsWith('remex.core/') }).Count -gt 0
@@ -966,15 +1217,24 @@ foreach ($candidate in $queue) {
 
     if ($touchesAndroid) { $androidTouched = $true }
 
-    $closeReason = "Landed on $IntegrationBranch at $mergedSha from lane $laneNumber ($branch). Integration-tree verify.ps1 -Scope $Scope PASSED ($testsPassed of $testsRun tests) and -Check reported VALID against source fingerprint $sourceHash."
-    Invoke-Bd update $beadId --unset-metadata ralphLaneState --unset-metadata ralphLane | Out-Null
+    # The review provenance goes in the close reason on purpose: 'who verified this?' should be
+    # answerable from bd and from git log, without reading a gitignored lane transcript.
+    $reviewNote = switch ($review.How) {
+        'trailer'  { "Reviewed: $($review.Detail)." }
+        'auto'     { "Review not owed under step 8 ($($review.Detail))." }
+        'override' { "LANDED WITHOUT REVIEW on an explicit ralphReviewSkipped override: $($review.Detail)." }
+        default    { '' }
+    }
+    $closeReason = "Landed on $IntegrationBranch at $mergedSha from lane $laneNumber ($branch). Integration-tree verify.ps1 -Scope $Scope PASSED ($testsPassed of $testsRun tests) and -Check reported VALID against source fingerprint $sourceHash. $reviewNote".Trim()
+    Invoke-Bd update $beadId --unset-metadata ralphLaneState --unset-metadata ralphLane `
+        --unset-metadata ralphReviewSkipped --unset-metadata ralphReviewVerdict | Out-Null
     $close = Invoke-Bd close $beadId --reason $closeReason
     if ($close.ExitCode -ne 0) {
         Write-Warn "the bead did not close cleanly - $($close.Output)"
     }
 
     Add-JournalEntry -BeadId $beadId -Outcome 'landed' -LaneNumber $laneNumber `
-        -SourceHash $sourceHash -Commit $mergedSha
+        -SourceHash $sourceHash -Commit $mergedSha -Detail "review=$($review.How): $($review.Detail)"
 
     # Settled. From here on, resetting to the pre-merge commit would undo a bead that is
     # already closed, so the safety net must stop pointing at it.

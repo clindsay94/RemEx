@@ -98,6 +98,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the work was done is exactly what is worth keeping. It is a transcript and not a progress bar:
   `claude -p` prints its result when the session ends, so the file arrives all at once. Watch a wave
   with `-Watch`; read the logs afterwards.
+  **The merge queue now checks that a reviewer actually saw the work, instead of trusting that one
+  did.** Every lane runs a code review before it commits — that was never the gap. The gap was that
+  nothing downstream could tell a reviewed branch from an unreviewed one: the verdict lived in a
+  gitignored lane transcript, and of the first five feature commits to land, only two carried the
+  `Reviewed-by` trailer the procedure asks for. The other three had been reviewed too, and said so
+  nowhere that survives. "Who verified this?" was not answerable from the repository.
+  It is now. Before the queue builds anything, it requires a `Reviewed-by: <agent> (PASS)` trailer
+  somewhere in the branch's commits, and returns the branch with the reason if there is none — the
+  same shape as the changelog gate, which refuses for the same reason at the same moment. The
+  procedure's escape hatch for small mechanical work is checked rather than asserted: the queue
+  re-derives it from the bead's priority, the diff's size and whether it touches the wire format,
+  pairing, elevation, the capture path or the two files named in the procedure. A change that
+  genuinely qualifies lands without a reviewer; nothing else does. Where review truly does not
+  apply, `ralphReviewSkipped=<reason>` still lands it, and writes the reason into the journal and
+  the bead's close reason — an override that is loud rather than a bypass that is silent.
+  What this proves is bounded, and worth stating plainly: it verifies that a passing review was
+  *recorded*, not that the review was any good. That is the honest ceiling on a mechanical check,
+  and it is still the difference between a claim in a deleted file and a receipt in the history.
+  **A review verdict is now visible while the lane is still working.** A lane publishes its
+  verdict to `ralphReviewVerdict` the moment review returns, so `-Watch` emits
+  `lane 2  RemEx-k62t  review PASS - 5 findings, 2 fixed` as an event and `-Status` shows it
+  against a lane that is still running. It is tracked separately from the lane's disposition on
+  purpose: a lane goes on working after a FAIL verdict, so folding review into the lane state
+  would either lose the verdict or invent a state the merge queue does not understand. The
+  verdict is cleared when the bead lands or is reset, because a stale PASS shown against a fresh
+  attempt is worse than showing nothing.
+  **The review gate had been naming two reviewer agents that do not exist.** It asked for
+  `ecc:kotlin-reviewer` or `ecc:csharp-reviewer` and named `general-purpose` as a fallback. No
+  `ecc` plugin has ever been installed here, so every review ever run in this repo silently took
+  the fallback. No harm done — those reviews found real bugs — but the instruction was describing
+  a world that was never true, which is the same failure mode as the regression guards that once
+  told agents to do the opposite of what the code does. The gate now asks for `general-purpose`
+  on Opus outright, and the stack-specific knowledge it used to delegate to a specialist agent
+  (Compose recomposition, NativeAOT-unsafe constructs in `Remex.Core`, Avalonia dispatcher
+  affinity) is stated in the prompt instead, where it is guaranteed to arrive.
   **The planner was putting beads that touch the same files into lanes that run at the same time.**
   Found on the first real three-lane wave, before it launched: two consent bugs were scheduled into
   lanes 2 and 3 sharing eight files, `remex.core/Messages/RemexMessage.cs` and
