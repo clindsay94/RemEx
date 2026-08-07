@@ -293,18 +293,59 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// What this client build can do, told to the host on every message (RemEx-vyhm).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>SupportsConsentPrompt</c> is true because the Kotlin layer that ships in the same APK as this
+    /// library renders the routed consent sheet (<c>RemoteConsentResponder</c>). They cannot skew by
+    /// BUILD — there is no way to get this <c>.so</c> without the Kotlin that handles
+    /// <c>file_consent_request</c> — which is why the claim is hardcoded here rather than asserted by
+    /// Kotlin across the JNI boundary.
+    /// </para>
+    /// <para>
+    /// They CAN skew by runtime state, and this claim is deliberately the optimistic side of that. The
+    /// handler lives in <c>AndroidFileTransferHost</c>'s collector, which is started and cancelled with
+    /// <c>RemexConnectionService</c>, while the socket that carries this field is owned by
+    /// <c>RemexClientManager</c> and outlives it. Socket up with the service down means the host routes
+    /// a question nothing is listening for, and it dies on the host's clean-deny timeout instead of
+    /// being answered on the PC. That is a prompt lost, not a grant leaked — the safe direction — but it
+    /// is the window an on-device test should be looking for (RemEx-0p1q).
+    /// </para>
+    /// <para>
+    /// **STAMPED ON EVERY MESSAGE, NOT ONCE AT CONNECT.** The host keeps this in a per-session registry
+    /// entry that is born fresh with each connection, so a single announcement would be lost by any
+    /// reconnect — and the failure would be silent and intermittent: consent would simply start
+    /// appearing on the PC again. Repeating it is idempotent on the host side (a plain field write) and
+    /// costs ~48 bytes on a JSON control message.
+    /// </para>
+    /// </remarks>
+    public static ClientCapabilities BuildCapabilities { get; } = new() { SupportsConsentPrompt = true };
+
+    /// <summary>
+    /// Applies the identity and capability fields every outbound message must carry.
+    /// </summary>
+    /// <remarks>
+    /// Extracted so it can be tested: the send paths themselves need a live socket, and "does the host
+    /// ever learn this client can render a prompt" is otherwise only answerable on a device.
+    /// </remarks>
+    public static RemexMessage StampOutbound(RemexMessage message, string? clientId) =>
+        // Ensure we satisfy Host protocol version and identity checks.
+        // RemexMessage defaults to version 2, but we set it explicitly here
+        // to be safe under NativeAOT serialization rules.
+        message with
+        {
+            ProtocolVersion = 2,
+            ClientId = clientId,
+            ClientCapabilities = BuildCapabilities,
+        };
+
     public async Task SendMessageAsync(RemexMessage message, CancellationToken ct = default)
     {
         if (_webSocket == null || _webSocket.State != WebSocketState.Open) return;
 
-        // Ensure we satisfy Host protocol version and identity checks.
-        // RemexMessage defaults to version 2, but we set it explicitly here 
-        // to be safe under NativeAOT serialization rules.
-        var outgoing = message with 
-        { 
-            ProtocolVersion = 2,
-            ClientId = _clientId 
-        };
+        var outgoing = StampOutbound(message, _clientId);
 
         var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Default.RemexMessage);
 
@@ -333,11 +374,7 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     {
         if (targetSocket is null || targetSocket.State != WebSocketState.Open) return;
 
-        var outgoing = message with
-        {
-            ProtocolVersion = 2,
-            ClientId = _clientId
-        };
+        var outgoing = StampOutbound(message, _clientId);
 
         var bytes = RemexJson.SerializeToUtf8Bytes(outgoing, RemexJsonSerializerContext.Default.RemexMessage);
 

@@ -289,6 +289,34 @@ object AndroidFileTransferHost {
         )
     }
 
+    /**
+     * Handles an inbound `file_consent_request`: the paired PC asking THIS phone to decide a question
+     * about the PC's own files, because this phone is the device that asked for them (RemEx-vyhm).
+     *
+     * The opposite direction to [handlePushOffer], and the reason [FileConsentPrompt] carries an
+     * origin: the two arrive as the same two [FileConsentKinds] values and mean opposite things.
+     * Answering happens on the wire — see [RemoteConsentResponder], which owns the fail-closed rules.
+     *
+     * `expiresAtUnixMs` is read as ABSENT-vs-present rather than through `optLong`, whose 0 default
+     * would be indistinguishable from a host stamping the epoch and would render as an expiry 56 years
+     * in the past. A host that predates the field must produce no deadline at all.
+     */
+    private suspend fun handleRemoteConsentRequest(req: JSONObject) {
+        val consentId = req.optString("consentId")
+        if (consentId.isBlank()) return
+
+        FileConsentManager.handleRemoteRequest(
+            deviceId = peerDeviceId(),
+            consentId = consentId,
+            kind = req.optString("kind"),
+            detail = req.optString("detail").takeIf { it.isNotBlank() },
+            expiresAtUnixMs =
+                if (req.has("expiresAtUnixMs") && !req.isNull("expiresAtUnixMs")) {
+                    req.optLong("expiresAtUnixMs")
+                } else null,
+        )
+    }
+
     /** Stable per-device trust id for the paired PC (its configured host address). */
     private suspend fun peerDeviceId(): String =
         FilePeerIdentity.deviceId(runCatching { settingsManager.hostFlow.first() }.getOrNull())
@@ -349,6 +377,14 @@ object AndroidFileTransferHost {
                 "file_push_offer" -> {
                     val offer = obj.optJSONObject("filePushOffer")
                     if (offer != null) scope.launch { handlePushOffer(offer) }
+                }
+                // A consent question the PC routed BACK to this phone, because this phone is what asked
+                // (RemEx-vyhm). Dispatched off the collector for the same reason file_push_offer is: it
+                // suspends for as long as the user takes, and the browse/manage responses this phone is
+                // waiting on share this one stream.
+                "file_consent_request" -> {
+                    val req = obj.optJSONObject("fileConsentRequest")
+                    if (req != null) scope.launch { handleRemoteConsentRequest(req) }
                 }
                 else -> {
                     // roots/browse/manage/root_manage/volumes/search/metadata/thumbnail/

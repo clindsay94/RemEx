@@ -729,6 +729,11 @@
     <string name="file_consent_push_message_generic">PC Anda ingin mengirim file ke ponsel ini. Izinkan?</string>
     <string name="file_consent_full_browse_title">Permintaan penelusuran perangkat</string>
     <string name="file_consent_full_browse_message">PC Anda ingin menelusuri penyimpanan ponsel ini. Izinkan?</string>
+    <string name="file_consent_remote_full_browse_title">Telusuri file di PC Anda?</string>
+    <string name="file_consent_remote_full_browse_message">Ponsel ini meminta untuk menelusuri semua isi PC Anda, bukan hanya folder yang dibagikan. Izinkan?</string>
+    <string name="file_consent_remote_push_title">Kirim file ke PC Anda?</string>
+    <string name="file_consent_remote_push_message">Ponsel ini meminta untuk mengirim: %1$s. Izinkan?</string>
+    <string name="file_consent_remote_push_message_generic">Ponsel ini meminta untuk mengirim file ke PC Anda. Izinkan?</string>
     <string name="file_consent_allow">Izinkan</string>
     <string name="file_consent_deny">Tolak</string>
     <string name="file_consent_remember">Ingat pilihan saya untuk PC ini</string>

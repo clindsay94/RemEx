@@ -1,11 +1,13 @@
 package com.clindsay94.remex.service
 
 import android.content.Context
+import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import org.json.JSONObject
 
 /**
  * Stable identity of the paired peer PC as seen from the Android (client) side. RemEx connects to a
@@ -56,6 +58,7 @@ object FileConsentManager {
 
     private var appContext: Context? = null
     private var coordinator: FileConsentCoordinator? = null
+    private var remote: RemoteConsentResponder? = null
 
     /** Idempotently wires the coordinator to the application context. Safe to call on every host start. */
     @Synchronized
@@ -77,6 +80,45 @@ object FileConsentManager {
                 }
             }
         coordinator = FileConsentCoordinator(store, prompter)
+        // The routed half (RemEx-vyhm) shares the prompter, so a question from the PC reaches the same
+        // notification and the same foreground dialog as a locally served one. Only the wording and
+        // where the answer goes differ.
+        // Named, and not a trailing lambda: the responder's last parameter is its clock, so a trailing
+        // lambda binds there instead of to the sender and the answer never reaches the wire.
+        remote =
+            RemoteConsentResponder(
+                prompter = prompter,
+                sender = ConsentResponseSender { consentId, granted, remember ->
+                    RemexCoreClient.SendMessage(
+                        JSONObject()
+                            .put("type", "file_consent_response")
+                            .put("protocolVersion", 3)
+                            .put(
+                                "fileConsentResponse",
+                                JSONObject()
+                                    .put("consentId", consentId)
+                                    .put("granted", granted)
+                                    .put("remember", remember),
+                            )
+                            .toString()
+                    )
+                },
+            )
+    }
+
+    /**
+     * Renders a consent question the paired PC routed to this phone and answers it on the wire
+     * (RemEx-vyhm). A no-op before [start], which is a clean deny by omission: with no serving context
+     * there is nothing to prompt with, and staying silent lets the host's own timeout decide.
+     */
+    suspend fun handleRemoteRequest(
+        deviceId: String,
+        consentId: String,
+        kind: String,
+        detail: String?,
+        expiresAtUnixMs: Long?,
+    ) {
+        remote?.handle(deviceId, consentId, kind, detail, expiresAtUnixMs)
     }
 
     /**
@@ -91,8 +133,16 @@ object FileConsentManager {
         coordinator?.requestConsent(deviceId, kind, detail)
             ?: FileConsentDecision(granted = false, remember = false)
 
-    /** Resolves an outstanding prompt (notification action or dialog button). */
+    /**
+     * Resolves an outstanding prompt (notification action, dialog button, or dismissal).
+     *
+     * Offered to BOTH halves rather than routed by inspecting the active prompt: the dialog and the
+     * notification receiver know only a consent id, ids from the two halves cannot collide, and each
+     * half ignores one it is not holding. Asking the wrong one first is free; guessing wrong would
+     * drop a real answer.
+     */
     fun resolve(consentId: String, granted: Boolean, remember: Boolean) {
         coordinator?.resolve(consentId, granted, remember)
+        remote?.resolve(consentId, granted, remember)
     }
 }

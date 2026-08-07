@@ -749,6 +749,11 @@
     <string name="file_consent_push_message_generic">Ваш ПК хоче надіслати файли на цей телефон. Дозволити?</string>
     <string name="file_consent_full_browse_title">Запит на перегляд пристрою</string>
     <string name="file_consent_full_browse_message">Ваш ПК хоче переглянути сховище цього телефона. Дозволити?</string>
+    <string name="file_consent_remote_full_browse_title">Переглянути файли на вашому ПК?</string>
+    <string name="file_consent_remote_full_browse_message">Цей телефон просить переглянути весь вміст вашого ПК, а не лише спільні теки. Дозволити?</string>
+    <string name="file_consent_remote_push_title">Надіслати файли на ваш ПК?</string>
+    <string name="file_consent_remote_push_message">Цей телефон просить надіслати: %1$s. Дозволити?</string>
+    <string name="file_consent_remote_push_message_generic">Цей телефон просить надіслати файли на ваш ПК. Дозволити?</string>
     <string name="file_consent_allow">Дозволити</string>
     <string name="file_consent_deny">Відхилити</string>
     <string name="file_consent_remember">Запам\'ятати мій вибір для цього ПК</string>

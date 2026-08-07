@@ -735,6 +735,11 @@
     <string name="file_consent_push_message_generic">Votre PC veut envoyer des fichiers vers ce téléphone. Autoriser ?</string>
     <string name="file_consent_full_browse_title">Demande d\'exploration de l\'appareil</string>
     <string name="file_consent_full_browse_message">Votre PC veut explorer le stockage de ce téléphone. Autoriser ?</string>
+    <string name="file_consent_remote_full_browse_title">Explorer les fichiers de votre PC ?</string>
+    <string name="file_consent_remote_full_browse_message">Ce téléphone demande à explorer tout le contenu de votre PC, et pas seulement ses dossiers partagés. Autoriser ?</string>
+    <string name="file_consent_remote_push_title">Envoyer des fichiers vers votre PC ?</string>
+    <string name="file_consent_remote_push_message">Ce téléphone demande à envoyer : %1$s. Autoriser ?</string>
+    <string name="file_consent_remote_push_message_generic">Ce téléphone demande à envoyer des fichiers vers votre PC. Autoriser ?</string>
     <string name="file_consent_allow">Autoriser</string>
     <string name="file_consent_deny">Refuser</string>
     <string name="file_consent_remember">Mémoriser mon choix pour ce PC</string>

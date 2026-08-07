@@ -35,17 +35,38 @@ interface ConsentPrompter {
 }
 
 /**
- * One outstanding consent prompt raised on this (serving) device. [kind] is a wire value from
- * [FileConsentKinds] ("full_browse" / "incoming_push"); [detail] is the human-readable file summary
- * for an incoming push. [expiresAtUnixMs] drives the dialog countdown; the authoritative timeout is
- * enforced by [FileConsentCoordinator].
+ * Whose files a consent prompt is about — the only thing that changes its wording, and the one thing
+ * the user must not be confused about when they tap Allow (RemEx-vyhm).
+ *
+ * The two directions ask genuinely opposite questions and both are reachable on this phone, so the
+ * prompt cannot infer it from [FileConsentPrompt.kind]: the host asks about a full browse and about an
+ * incoming push using exactly the same two [FileConsentKinds] values this device does.
+ */
+enum class FileConsentOrigin {
+    /** This phone is the serving device: the paired PC wants at this phone's files. */
+    THIS_PHONE,
+
+    /** The paired PC is the serving device and routed its question here, because this phone asked. */
+    PAIRED_PC,
+}
+
+/**
+ * One outstanding consent prompt. [kind] is a wire value from [FileConsentKinds] ("full_browse" /
+ * "incoming_push"); [detail] is the human-readable file summary for a push. [origin] says which
+ * device's files are at stake and therefore how the prompt reads.
+ *
+ * [expiresAtUnixMs] drives the dialog countdown and is **nullable**: a prompt routed from a host that
+ * predates the expiry field carries no deadline, and the renderer must then show none rather than
+ * invent a local one — it is the SERVING device's clock that actually denies (RemEx-6mxu). The
+ * authoritative timeout for a locally served prompt is enforced by [FileConsentCoordinator].
  */
 data class FileConsentPrompt(
     val consentId: String,
     val deviceId: String,
     val kind: String,
     val detail: String?,
-    val expiresAtUnixMs: Long,
+    val expiresAtUnixMs: Long?,
+    val origin: FileConsentOrigin = FileConsentOrigin.THIS_PHONE,
 )
 
 /** The user's consent decision. [remember] persists the grant so future requests auto-accept. */

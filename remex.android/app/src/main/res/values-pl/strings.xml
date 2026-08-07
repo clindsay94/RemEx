@@ -728,6 +728,11 @@
     <string name="file_consent_push_message_generic">Komputer chce wysłać pliki na ten telefon. Zezwolić?</string>
     <string name="file_consent_full_browse_title">Prośba o przeglądanie urządzenia</string>
     <string name="file_consent_full_browse_message">Komputer chce przeglądać pamięć tego telefonu. Zezwolić?</string>
+    <string name="file_consent_remote_full_browse_title">Przeglądać pliki na komputerze?</string>
+    <string name="file_consent_remote_full_browse_message">Ten telefon prosi o przeglądanie całej zawartości komputera, nie tylko folderów udostępnionych. Zezwolić?</string>
+    <string name="file_consent_remote_push_title">Wysłać pliki na komputer?</string>
+    <string name="file_consent_remote_push_message">Ten telefon prosi o wysłanie: %1$s. Zezwolić?</string>
+    <string name="file_consent_remote_push_message_generic">Ten telefon prosi o wysłanie plików na komputer. Zezwolić?</string>
     <string name="file_consent_allow">Zezwól</string>
     <string name="file_consent_deny">Odmów</string>
     <string name="file_consent_remember">Zapamiętaj mój wybór dla tego komputera</string>

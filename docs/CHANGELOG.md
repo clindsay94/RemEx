@@ -47,6 +47,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Your phone can now answer the PC's file-permission questions itself.** When you browse your PC's
+  whole drive from your phone, or send files to it, the PC asks before allowing it. Until now that
+  question could only appear on the PC — on a monitor you are not sitting in front of, waiting in
+  front of nobody until it timed out and refused. Your phone now tells the PC it can show that
+  question, and the PC sends it there instead. The sheet is worded about the PC's files rather than
+  the phone's: in this direction it is your PC's storage at stake, and a request that reads
+  identically on the wire means the opposite thing.
+  Refusing is still the outcome of anything that is not a clear yes — dismissing the sheet, ignoring
+  it, or the app being torn down all end as a refusal, and the PC keeps counting down on its own
+  clock regardless of what the phone does. The countdown on the phone is the PC's deadline, and it is
+  left off entirely when the PC sends none or when the phone's own clock turns it into nonsense; a
+  locally invented deadline would be a claim about the one clock that actually decides, which is not
+  the phone's.
+  **A phone that has not been updated is unaffected.** The PC only routes the question to a phone
+  that says it can show it, so an older phone keeps being asked on the PC exactly as before.
+
 - **A file arriving from your phone now says so, and so do the failures that used to happen in
   silence.** RemEx already knew *where* each kind of event belonged — in-app when you are looking at
   the window, a tray balloon when you are not, nothing at all for routine chatter — but neither

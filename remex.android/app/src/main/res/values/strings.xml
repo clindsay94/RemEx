@@ -638,6 +638,11 @@
     <string name="file_consent_push_message_generic">Your PC wants to send files to this phone. Allow?</string>
     <string name="file_consent_full_browse_title">Full-device browse request</string>
     <string name="file_consent_full_browse_message">Your PC wants to browse this phone\'s storage. Allow?</string>
+    <string name="file_consent_remote_full_browse_title">Browse your PC\'s files?</string>
+    <string name="file_consent_remote_full_browse_message">This phone is asking to browse everything on your PC, not just its shared folders. Allow?</string>
+    <string name="file_consent_remote_push_title">Send files to your PC?</string>
+    <string name="file_consent_remote_push_message">This phone is asking to send: %1$s. Allow?</string>
+    <string name="file_consent_remote_push_message_generic">This phone is asking to send files to your PC. Allow?</string>
     <string name="file_consent_allow">Allow</string>
     <string name="file_consent_deny">Deny</string>
     <string name="file_consent_remember">Remember my choice for this PC</string>

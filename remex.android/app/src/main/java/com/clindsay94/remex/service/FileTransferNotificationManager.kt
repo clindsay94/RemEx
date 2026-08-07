@@ -383,13 +383,25 @@ object FileTransferNotificationManager {
         ensureConsentChannel(context)
 
         val isPush = prompt.kind == FileConsentKinds.INCOMING_PUSH
+        // Kept in step with FileConsentDialog: the notification is a parallel surface for the SAME
+        // prompt, so a routed question must not read here as though this phone's files were at stake
+        // (RemEx-vyhm). The two are wired to the same prompter for exactly that reason.
+        val fromPc = prompt.origin == FileConsentOrigin.PAIRED_PC
         val title =
             context.getString(
-                if (isPush) R.string.file_consent_push_title
-                else R.string.file_consent_full_browse_title
+                when {
+                    fromPc && isPush -> R.string.file_consent_remote_push_title
+                    fromPc -> R.string.file_consent_remote_full_browse_title
+                    isPush -> R.string.file_consent_push_title
+                    else -> R.string.file_consent_full_browse_title
+                }
             )
         val body =
             when {
+                fromPc && isPush && !prompt.detail.isNullOrBlank() ->
+                    context.getString(R.string.file_consent_remote_push_message, prompt.detail)
+                fromPc && isPush -> context.getString(R.string.file_consent_remote_push_message_generic)
+                fromPc -> context.getString(R.string.file_consent_remote_full_browse_message)
                 isPush && !prompt.detail.isNullOrBlank() ->
                     context.getString(R.string.file_consent_push_message, prompt.detail)
                 isPush -> context.getString(R.string.file_consent_push_message_generic)

@@ -735,6 +735,11 @@
     <string name="file_consent_push_message_generic">आपका PC इस फ़ोन पर फ़ाइलें भेजना चाहता है। अनुमति दें?</string>
     <string name="file_consent_full_browse_title">डिवाइस ब्राउज़ अनुरोध</string>
     <string name="file_consent_full_browse_message">आपका PC इस फ़ोन के स्टोरेज को ब्राउज़ करना चाहता है। अनुमति दें?</string>
+    <string name="file_consent_remote_full_browse_title">अपने PC की फ़ाइलें ब्राउज़ करें?</string>
+    <string name="file_consent_remote_full_browse_message">यह फ़ोन आपके PC की सभी फ़ाइलें ब्राउज़ करने का अनुरोध कर रहा है, केवल साझा फ़ोल्डर नहीं। अनुमति दें?</string>
+    <string name="file_consent_remote_push_title">अपने PC पर फ़ाइलें भेजें?</string>
+    <string name="file_consent_remote_push_message">यह फ़ोन भेजने का अनुरोध कर रहा है: %1$s. अनुमति दें?</string>
+    <string name="file_consent_remote_push_message_generic">यह फ़ोन आपके PC पर फ़ाइलें भेजने का अनुरोध कर रहा है। अनुमति दें?</string>
     <string name="file_consent_allow">अनुमति दें</string>
     <string name="file_consent_deny">अस्वीकार करें</string>
     <string name="file_consent_remember">इस PC के लिए मेरा चयन याद रखें</string>

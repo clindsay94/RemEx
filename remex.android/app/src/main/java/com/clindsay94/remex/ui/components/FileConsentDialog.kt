@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clindsay94.remex.R
 import com.clindsay94.remex.service.FileConsentKinds
 import com.clindsay94.remex.service.FileConsentManager
+import com.clindsay94.remex.service.FileConsentOrigin
 import kotlinx.coroutines.delay
 
 /**
@@ -47,11 +48,16 @@ fun FileConsentDialogHost() {
 
     // Reset per prompt: a new consentId is a distinct request, so "remember" must not leak across.
     var rememberChoice by remember(active.consentId) { mutableStateOf(false) }
-    var secondsLeft by remember(active.consentId) { mutableStateOf(secondsRemaining(active.expiresAtUnixMs)) }
+    // Null deadline means the serving device sent none, so there is no countdown to run and none to
+    // show. Inventing one from this phone's clock would be a guess about the only clock that matters,
+    // and it is not this one (RemEx-6mxu).
+    val deadline = active.expiresAtUnixMs
+    var secondsLeft by remember(active.consentId) { mutableStateOf(deadline?.let(::secondsRemaining) ?: 0) }
 
     LaunchedEffect(active.consentId) {
+        if (deadline == null) return@LaunchedEffect
         while (true) {
-            val remaining = secondsRemaining(active.expiresAtUnixMs)
+            val remaining = secondsRemaining(deadline)
             secondsLeft = remaining
             if (remaining <= 0) break
             delay(1_000)
@@ -59,11 +65,23 @@ fun FileConsentDialogHost() {
     }
 
     val isPush = active.kind == FileConsentKinds.INCOMING_PUSH
+    // WHOSE FILES THE QUESTION IS ABOUT DECIDES THE WORDING, and it is not implied by the kind: the PC
+    // routes a full-browse and an incoming-push question here using the same two wire values this phone
+    // uses when it is the one serving (RemEx-vyhm). Same prompt, opposite meaning.
+    val fromPc = active.origin == FileConsentOrigin.PAIRED_PC
     val title =
-        if (isPush) stringResource(R.string.file_consent_push_title)
-        else stringResource(R.string.file_consent_full_browse_title)
+        when {
+            fromPc && isPush -> stringResource(R.string.file_consent_remote_push_title)
+            fromPc -> stringResource(R.string.file_consent_remote_full_browse_title)
+            isPush -> stringResource(R.string.file_consent_push_title)
+            else -> stringResource(R.string.file_consent_full_browse_title)
+        }
     val message =
         when {
+            fromPc && isPush && !active.detail.isNullOrBlank() ->
+                stringResource(R.string.file_consent_remote_push_message, active.detail)
+            fromPc && isPush -> stringResource(R.string.file_consent_remote_push_message_generic)
+            fromPc -> stringResource(R.string.file_consent_remote_full_browse_message)
             isPush && !active.detail.isNullOrBlank() ->
                 stringResource(R.string.file_consent_push_message, active.detail)
             isPush -> stringResource(R.string.file_consent_push_message_generic)
@@ -105,11 +123,13 @@ fun FileConsentDialogHost() {
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
-                Text(
-                    stringResource(R.string.file_consent_expires_in, secondsLeft.coerceAtLeast(0)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (deadline != null) {
+                    Text(
+                        stringResource(R.string.file_consent_expires_in, secondsLeft.coerceAtLeast(0)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         },
         confirmButton = {

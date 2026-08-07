@@ -735,6 +735,11 @@
     <string name="file_consent_push_message_generic">PC\'niz bu telefona dosya göndermek istiyor. İzin verilsin mi?</string>
     <string name="file_consent_full_browse_title">Cihazda gezinme isteği</string>
     <string name="file_consent_full_browse_message">PC\'niz bu telefonun depolamasında gezinmek istiyor. İzin verilsin mi?</string>
+    <string name="file_consent_remote_full_browse_title">PC\'nizdeki dosyalarda gezinilsin mi?</string>
+    <string name="file_consent_remote_full_browse_message">Bu telefon, yalnızca paylaşılan klasörlerde değil, PC\'nizdeki her şeyde gezinmeyi istiyor. İzin verilsin mi?</string>
+    <string name="file_consent_remote_push_title">Dosyalar PC\'nize gönderilsin mi?</string>
+    <string name="file_consent_remote_push_message">Bu telefon şunu göndermeyi istiyor: %1$s. İzin verilsin mi?</string>
+    <string name="file_consent_remote_push_message_generic">Bu telefon PC\'nize dosya göndermeyi istiyor. İzin verilsin mi?</string>
     <string name="file_consent_allow">İzin ver</string>
     <string name="file_consent_deny">Reddet</string>
     <string name="file_consent_remember">Bu PC için seçimimi hatırla</string>
