@@ -5,3 +5,4 @@
 {"bead":"RemEx-6mxu","outcome":"landed","lane":1,"sourceHash":"6a08de901916030af6d0df14d495f7fcd2f13ec7a68e82ae4966b250032e38e0","commit":"43a8e7c8edc99ec9a211abffa25f41b8795dbbe9","timestampUtc":"2026-08-06T21:01:12Z"}
 {"bead":"RemEx-k62t","outcome":"landed","lane":2,"sourceHash":"c68c27d921c7995998aa4b030f5c845cbbd8b0204be4805e7763ed8333ee2cc6","commit":"547b120a47bc7ada2a95a9578a6884c395deb21d","timestampUtc":"2026-08-06T21:25:17Z"}
 {"bead":"RemEx-vnps","outcome":"landed","lane":3,"sourceHash":"fbb9cae8f6fff156e18121125ce2b859a30a1a9a1ba4ac95e76e2d5dfd78213c","commit":"478c407ca625623dafcfe7a8caf4de29e2603fde","timestampUtc":"2026-08-07T11:37:33Z","detail":"review=trailer: general-purpose (opus) (PASS)"}
+{"bead":"RemEx-vyhm","outcome":"returned","lane":1,"sourceHash":"","commit":"aece35fb9572703378d658a07539f19a0fc03cf9","timestampUtc":"2026-08-07T12:03:52Z","detail":"the lane branch changes nothing relative to the integration head"}
