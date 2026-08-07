@@ -36,6 +36,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -73,8 +74,10 @@ fun ConnectionScreen(
         val isDiscovering by viewModel.isDiscovering.collectAsStateWithLifecycle()
         val discoveredHost by viewModel.discoveredHost.collectAsStateWithLifecycle()
         val knownHosts by viewModel.knownHosts.collectAsStateWithLifecycle()
+        val certRepair by viewModel.certRepair.collectAsStateWithLifecycle()
 
         ConnectionScreenContent(
+                certRepair = certRepair,
                 connectionPrefs = connectionPrefs,
                 desktopPrefs = desktopPrefs,
                 isConnecting = isConnecting,
@@ -102,7 +105,9 @@ fun ConnectionScreen(
                 },
                 onClearError = { viewModel.clearError() },
                 onDiscoverHost = { viewModel.discoverHost() },
-                onRepair = { context, host -> viewModel.clearPinForHost(context, host) },
+                onRepair = { context, host, port -> viewModel.beginCertRepair(context, host, port) },
+                onDismissCertRepair = { viewModel.dismissCertRepair() },
+                onConfirmCertRepair = { context -> viewModel.confirmCertRepair(context) },
                 onConsumeDiscoveredHost = { viewModel.consumeDiscoveredHost() },
                 onConnectToKnownHost = { knownHost -> viewModel.connectToKnownHost(knownHost) },
                 onRenameKnownHost = { identity, nickname ->
@@ -129,11 +134,14 @@ fun ConnectionScreenContent(
         isDiscovering: Boolean,
         discoveredHost: DiscoveredHost?,
         knownHosts: List<KnownHost>,
+        certRepair: CertRepairPrompt? = null,
         onNavigateToQrScanner: () -> Unit,
         onConnect: (String, Int, String, String, String, String, Int, Int, Float) -> Unit,
         onClearError: () -> Unit,
         onDiscoverHost: () -> Unit,
-        onRepair: (android.content.Context, String) -> Unit,
+        onRepair: (android.content.Context, String, Int) -> Unit,
+        onDismissCertRepair: () -> Unit = {},
+        onConfirmCertRepair: (android.content.Context) -> Unit = {},
         onConsumeDiscoveredHost: () -> Unit,
         onConnectToKnownHost: (KnownHost) -> Unit,
         onRenameKnownHost: (String, String) -> Unit,
@@ -445,7 +453,21 @@ fun ConnectionScreenContent(
                                                                 )
                                                                 if (isCertMismatch) {
                                                                         TextButton(
-                                                                                onClick = { onRepair(context, hostInput) },
+                                                                                // Opens the
+                                                                                // comparison
+                                                                                // dialog; nothing
+                                                                                // is cleared until
+                                                                                // the user
+                                                                                // confirms there
+                                                                                // (RemEx-vnps).
+                                                                                onClick = {
+                                                                                        onRepair(
+                                                                                                context,
+                                                                                                hostInput,
+                                                                                                portInput.toIntOrNull()
+                                                                                                        ?: 5005
+                                                                                        )
+                                                                                },
                                                                                 modifier = Modifier.align(Alignment.End)
                                                                         ) {
                                                                                 Text(stringResource(R.string.connection_action_repair), color = MaterialTheme.colorScheme.onErrorContainer)
@@ -963,6 +985,269 @@ fun ConnectionScreenContent(
                                                         TextButton(
                                                                 onClick = { unpairingHost = null }
                                                         ) {
+                                                                Text(
+                                                                        stringResource(
+                                                                                R.string.button_cancel
+                                                                        )
+                                                                )
+                                                        }
+                                                }
+                                        )
+                                }
+
+                                // The certificate-change confirmation (RemEx-vnps). What used to be
+                                // behind the Re-pair tap was the clearing itself: an error the user
+                                // wanted rid of, one button, and the pin protecting them from an
+                                // impostor was gone before they had read the sentence above it.
+                                // Nothing here clears anything — only the confirm button does.
+                                certRepair?.let { prompt ->
+                                        AlertDialog(
+                                                // Tapping outside is a cancel, and cancel costs the
+                                                // user nothing. Fail closed.
+                                                onDismissRequest = onDismissCertRepair,
+                                                icon = {
+                                                        Icon(
+                                                                Icons.Default.ErrorOutline,
+                                                                contentDescription = null
+                                                        )
+                                                },
+                                                title = {
+                                                        Text(
+                                                                stringResource(
+                                                                        if (prompt.state ==
+                                                                                        CertRepairState
+                                                                                                .Unchanged
+                                                                        )
+                                                                                R.string
+                                                                                        .connection_cert_repair_title_unchanged
+                                                                        else
+                                                                                R.string
+                                                                                        .connection_cert_repair_title
+                                                                )
+                                                        )
+                                                },
+                                                text = {
+                                                        Column(
+                                                                modifier =
+                                                                        Modifier.verticalScroll(
+                                                                                rememberScrollState()
+                                                                        ),
+                                                                verticalArrangement =
+                                                                        Arrangement.spacedBy(12.dp)
+                                                        ) {
+                                                                when (prompt.state) {
+                                                                        CertRepairState.Checking ->
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_checking
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                        CertRepairState.Unchanged ->
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_unchanged
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                        CertRepairState.Unknown -> {
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_unknown
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                                // The warning
+                                                                                // belongs here MORE
+                                                                                // than under
+                                                                                // Changed, not
+                                                                                // less: this branch
+                                                                                // also offers to
+                                                                                // discard the pin,
+                                                                                // and it does so
+                                                                                // against a host
+                                                                                // that did not even
+                                                                                // answer.
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_when_unsafe
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium,
+                                                                                        color =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .error
+                                                                                )
+                                                                        }
+                                                                        CertRepairState.Changed -> {
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_changed
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_when_safe
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium
+                                                                                )
+                                                                                // The one line that
+                                                                                // must not read as
+                                                                                // routine. Error
+                                                                                // ROLE, not a
+                                                                                // literal — it has
+                                                                                // to survive
+                                                                                // monochrome and
+                                                                                // contrast 1.0.
+                                                                                Text(
+                                                                                        stringResource(
+                                                                                                R.string
+                                                                                                        .connection_cert_repair_when_unsafe
+                                                                                        ),
+                                                                                        style =
+                                                                                                MaterialTheme
+                                                                                                        .typography
+                                                                                                        .bodyMedium,
+                                                                                        color =
+                                                                                                MaterialTheme
+                                                                                                        .colorScheme
+                                                                                                        .error
+                                                                                )
+                                                                        }
+                                                                }
+
+                                                                // SpkiFingerprint's own marker for
+                                                                // an absent pin is a model value,
+                                                                // not display text — this dialog is
+                                                                // the first thing to put one on
+                                                                // screen, and it must not be the
+                                                                // one English word in a Ukrainian
+                                                                // dialog. "Not known" and
+                                                                // "checking" are also genuinely
+                                                                // different states, and the user
+                                                                // draws opposite conclusions from
+                                                                // them.
+                                                                val unavailable =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_cert_repair_fingerprint_unavailable
+                                                                        )
+                                                                val checking =
+                                                                        stringResource(
+                                                                                R.string
+                                                                                        .connection_cert_repair_fingerprint_checking
+                                                                        )
+
+                                                                CertFingerprintRow(
+                                                                        label =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_cert_repair_label_pinned
+                                                                                ),
+                                                                        fingerprint =
+                                                                                if (prompt.pinnedPin
+                                                                                                .isNullOrBlank()
+                                                                                )
+                                                                                        unavailable
+                                                                                else
+                                                                                        prompt.pinnedFingerprint
+                                                                )
+                                                                CertFingerprintRow(
+                                                                        label =
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_cert_repair_label_presented
+                                                                                ),
+                                                                        fingerprint =
+                                                                                when {
+                                                                                        prompt.state ==
+                                                                                                CertRepairState
+                                                                                                        .Checking ->
+                                                                                                checking
+                                                                                        prompt.presentedPin
+                                                                                                .isNullOrBlank() ->
+                                                                                                unavailable
+                                                                                        else ->
+                                                                                                prompt.presentedFingerprint
+                                                                                }
+                                                                )
+
+                                                                if (prompt.canRepair) {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_cert_repair_effect
+                                                                                ),
+                                                                                style =
+                                                                                        MaterialTheme
+                                                                                                .typography
+                                                                                                .bodySmall,
+                                                                                color =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .onSurfaceVariant
+                                                                        )
+                                                                }
+                                                        }
+                                                },
+                                                confirmButton = {
+                                                        // Absent entirely while checking, and when
+                                                        // the certificate turns out to be
+                                                        // unchanged. A disabled button still reads
+                                                        // as "this is the way forward"; no button
+                                                        // says there is nothing to decide.
+                                                        if (prompt.canRepair) {
+                                                                TextButton(
+                                                                        onClick = {
+                                                                                view.performHapticFeedback(
+                                                                                        HapticFeedbackConstants
+                                                                                                .KEYBOARD_TAP
+                                                                                )
+                                                                                onConfirmCertRepair(
+                                                                                        context
+                                                                                )
+                                                                        }
+                                                                ) {
+                                                                        Text(
+                                                                                stringResource(
+                                                                                        R.string
+                                                                                                .connection_cert_repair_confirm
+                                                                                ),
+                                                                                color =
+                                                                                        MaterialTheme
+                                                                                                .colorScheme
+                                                                                                .error
+                                                                        )
+                                                                }
+                                                        }
+                                                },
+                                                dismissButton = {
+                                                        TextButton(onClick = onDismissCertRepair) {
                                                                 Text(
                                                                         stringResource(
                                                                                 R.string.button_cancel
@@ -1643,6 +1928,30 @@ fun ConnectionScreenContent(
         }
 }
 
+/**
+ * One labelled fingerprint in the certificate-change dialog (RemEx-vnps).
+ *
+ * Monospaced on purpose. The value is already grouped in fours by [SpkiFingerprint], and grouping
+ * only helps if the groups line up vertically between the two rows — in a proportional face they do
+ * not, and the comparison the dialog is asking the user to make gets harder than reading one long
+ * run would have been.
+ */
+@Composable
+private fun CertFingerprintRow(label: String, fingerprint: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = fingerprint,
+            style = MaterialTheme.typography.bodyMedium,
+            fontFamily = FontFamily.Monospace
+        )
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun ConnectionScreenPreview() {
@@ -1688,7 +1997,7 @@ private fun ConnectionScreenPreview() {
             onConnect = { _, _, _, _, _, _, _, _, _ -> },
             onClearError = {},
             onDiscoverHost = {},
-            onRepair = { _, _ -> },
+            onRepair = { _, _, _ -> },
             onConsumeDiscoveredHost = {},
             onConnectToKnownHost = {},
             onRenameKnownHost = { _, _ -> },

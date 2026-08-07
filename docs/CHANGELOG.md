@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Deleting your PC's security pin took one tap, and nothing said what it cost.** When a PC answers
+  with a different certificate than the one your phone paired with, RemEx shows an error and a
+  "Re-pair" button. That button used to clear the pin the instant you touched it. The pin is the only
+  thing separating "I reinstalled RemEx on my PC" from something else sitting at that address
+  pretending to be your PC, so tapping the button to make an error go away meant giving up that
+  protection before you had finished reading the sentence above it. It now opens a confirmation that
+  shows both fingerprints — the one your phone trusts, and the one answering at that address right
+  now — says plainly when a change is expected (you reinstalled RemEx or Windows, or replaced the
+  PC's hardware) and when it is not, and clears nothing unless you confirm. Cancelling, or tapping
+  outside the dialog, leaves everything exactly as it was.
+  There are two cases where it no longer offers to clear anything at all: while it is still checking,
+  and when the certificate turns out to be the one you already trust. That second case was reachable
+  — the error card also appears for ordinary SSL failures such as a handshake timing out, which had
+  made "discard my pin" a one-tap answer to a passing network problem. Confirming now forgets the PC
+  and takes you straight into pairing, instead of leaving you to work out the next step yourself.
+
 - **A paired phone could answer a permission question meant for a different phone — and could ask for
   access using another phone's name.** The PC identified a connection by whatever name the message
   claimed, re-read on every message rather than fixed once the device proved who it was. So one of

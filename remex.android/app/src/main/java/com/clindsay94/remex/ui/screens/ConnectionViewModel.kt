@@ -16,8 +16,81 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import android.content.Context
+import com.clindsay94.remex.security.HostCertificateProbe
 import com.clindsay94.remex.security.HostIdentity
 import com.clindsay94.remex.security.PinnedHostStore
+import com.clindsay94.remex.security.SpkiFingerprint
+
+/** What the certificate-change dialog knows about the host it is asking the user about. */
+enum class CertRepairState {
+    /** The probe has not come back yet. Nothing is offered while this is true. */
+    Checking,
+
+    /** The host is presenting a different certificate. This is the case re-pairing is for. */
+    Changed,
+
+    /**
+     * The host is presenting the certificate this phone already trusts.
+     *
+     * REACHABLE, AND THE REASON THIS STATE EXISTS. The error card turns on for any failure whose
+     * text mentions SSL — a timeout mid-handshake, a proxy resetting the connection — not only a
+     * genuine pin mismatch. Offering "clear my pin" for those would make an unrelated network
+     * blip a one-tap way to discard the protection, so nothing is offered here.
+     */
+    Unchanged,
+
+    /** Nothing answered, so the presented certificate could not be read. */
+    Unknown
+}
+
+/**
+ * The state behind the cert-change confirmation dialog (RemEx-vnps).
+ *
+ * Everything here is derived, so the dialog cannot disagree with itself about whether the
+ * certificate changed while showing fingerprints that say otherwise.
+ */
+data class CertRepairPrompt(
+        val hostId: String,
+        /** What this phone pinned at pairing time. */
+        val pinnedPin: String? = null,
+        /** What answered at the address just now, per [HostCertificateProbe]. */
+        val presentedPin: String? = null,
+        /** False while the probe is still running. */
+        val probeFinished: Boolean = false,
+        /**
+         * Identifies one opening of the dialog, so a probe that finishes after the user cancelled
+         * cannot write its answer into a dialog that is gone — or worse, back onto the screen.
+         */
+        val requestId: Long = 0L
+) {
+    val state: CertRepairState
+        get() =
+                when {
+                    !probeFinished -> CertRepairState.Checking
+                    presentedPin.isNullOrBlank() -> CertRepairState.Unknown
+                    SpkiFingerprint.isSameCertificate(pinnedPin, presentedPin) ->
+                            CertRepairState.Unchanged
+                    else -> CertRepairState.Changed
+                }
+
+    /** The fingerprint this phone trusts, ready to render. */
+    val pinnedFingerprint: String
+        get() = SpkiFingerprint.forDisplay(pinnedPin)
+
+    /** The fingerprint being presented now, ready to render. */
+    val presentedFingerprint: String
+        get() = SpkiFingerprint.forDisplay(presentedPin)
+
+    /**
+     * Whether clearing the pin may be offered at all.
+     *
+     * FAIL CLOSED IN BOTH DIRECTIONS. While the probe is running there is nothing to decide on, and
+     * when the certificate turns out to be unchanged there is nothing to repair — in neither case
+     * does the user get a button that discards their pin.
+     */
+    val canRepair: Boolean
+        get() = state == CertRepairState.Changed || state == CertRepairState.Unknown
+}
 
 class ConnectionViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsManager = SettingsManager(application)
@@ -168,17 +241,82 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         _isCertMismatch.value = false
     }
 
-    fun clearPinForHost(context: Context, hostId: String) {
+    private val _certRepair = MutableStateFlow<CertRepairPrompt?>(null)
+
+    /** Non-null while the certificate-change dialog is up. */
+    val certRepair: StateFlow<CertRepairPrompt?> = _certRepair.asStateFlow()
+
+    private var certRepairRequests = 0L
+
+    /**
+     * Opens the certificate-change dialog and starts gathering what it shows.
+     *
+     * **THIS CLEARS NOTHING.** It reads the pinned fingerprint and looks at what the address is
+     * presenting; the pin survives until [confirmCertRepair]. That split is the bead: the repair
+     * used to be a bare tap that discarded the user's pin on the spot, so someone dismissing an
+     * error had already disabled their own protection by the time they understood the message.
+     */
+    fun beginCertRepair(context: Context, hostId: String, port: Int) {
+        val host = hostId.trim()
+        if (host.isEmpty()) return
+
+        val requestId = ++certRepairRequests
+        _certRepair.value = CertRepairPrompt(hostId = host, requestId = requestId)
+
+        viewModelScope.launch {
+            val pinned = PinnedHostStore.getPin(context, host)
+            _certRepair.update {
+                if (it?.requestId == requestId) it.copy(pinnedPin = pinned) else it
+            }
+
+            // Not a connection: the probe rejects every certificate it is shown and only reports
+            // what it saw. See HostCertificateProbe.
+            val presented = HostCertificateProbe.observedPin(host, port)
+            _certRepair.update {
+                // The requestId guard is what makes cancel final. Cancelling nulls the state, and a
+                // probe landing afterwards must not put the dialog back on screen carrying an
+                // answer to a question the user already declined.
+                if (it?.requestId == requestId) {
+                    it.copy(presentedPin = presented, probeFinished = true)
+                } else {
+                    it
+                }
+            }
+        }
+    }
+
+    /** Closes the dialog, changing nothing. Cancel must never cost the user their pin. */
+    fun dismissCertRepair() {
+        _certRepair.value = null
+    }
+
+    /**
+     * The user read the comparison and accepted the new certificate: forget this PC and pair again.
+     *
+     * Re-checks [CertRepairPrompt.canRepair] rather than trusting the screen not to have offered
+     * the button. The UI hides it, but the decision to discard a certificate pin should not depend
+     * on a composable's `if`.
+     */
+    fun confirmCertRepair(context: Context) {
+        val prompt = _certRepair.value ?: return
+        _certRepair.value = null
+        if (!prompt.canRepair) return
+
         viewModelScope.launch {
             // Both, not just the pin: a stale reconnect secret makes the very next connect fail the
             // proof-of-possession challenge, so "repair" would leave the user exactly as stuck
             // (RemEx-j9ei).
-            PinnedHostStore.forgetHost(context, hostId)
+            PinnedHostStore.forgetHost(context, prompt.hostId)
             _isCertMismatch.value = false
             _connectionError.value = null
             // That address may have been one of a Known PCs row's; the list is a snapshot and would
             // otherwise keep offering a PC this phone no longer trusts.
             _pairedByAddress.value = PinnedHostStore.listPaired(getApplication())
+
+            // Into a fresh pairing flow, which is the half of "repair" that was missing: with the
+            // pin gone, connect() finds nothing pinned and emits pairingRequired, and AppNavigation
+            // walks the user to the PIN screen. No new route — the same one an unpaired host takes.
+            RemexClientManager.toggleConnection()
         }
     }
 
