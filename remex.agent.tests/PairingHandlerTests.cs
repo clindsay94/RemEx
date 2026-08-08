@@ -559,12 +559,16 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>
 
         if (outcome.Satisfied) return;
 
-        var leftover = sessions.Snapshot();
+        // The headline number is the last count the WAIT saw, not a fresh one. A near miss — the
+        // session draining a moment after the budget expired — is the case this message exists to
+        // name, and re-reading the registry here would report it as "gave up at 0", which is the one
+        // thing that did not happen. What is there NOW is worth printing too, separately.
+        var now = sessions.Snapshot();
         Assert.Fail(
-            $"The session count never reached {expected}: gave up at {leftover.Count} after "
+            $"The session count never reached {expected}: gave up at {counts[^1]} after "
             + $"{outcome.Elapsed.TotalSeconds:F1}s, having seen {string.Join(" -> ", counts)}. "
-            + "Left in the registry: "
-            + string.Join(", ", leftover.Select(s => $"[{s.RemoteAddress} / {s.DeviceName}]")) + ".");
+            + $"In the registry now ({now.Count}): "
+            + string.Join(", ", now.Select(s => $"[{s.RemoteAddress} / {s.DeviceName}]")) + ".");
     }
 
     /// <summary>What one <see cref="WaitForAsync"/> call ended up doing.</summary>
@@ -624,6 +628,12 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>
         Assert.Contains("gave up at 1", failure.Message);
         Assert.Contains("192.168.1.100", failure.Message);
         Assert.Contains("Connor's Pixel", failure.Message);
+
+        // The elapsed time and the trajectory are half the diagnostic — they are what separates a
+        // near miss from a session that never moved, and from a wait that overshot its own budget
+        // because the pool was starved. Pinned, so neither can be dropped quietly.
+        Assert.Contains("having seen 1", failure.Message);
+        Assert.Matches(@"after \d+[.,]\ds", failure.Message);
     }
 
     /// <summary>Reads until the wanted type arrives; the host also pushes host_info and syncs.</summary>

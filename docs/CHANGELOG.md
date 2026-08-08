@@ -47,6 +47,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **A test that failed only when the whole suite ran said the wrong thing about why.** The test that
+  proves a reconnecting phone is still known by the name it gave at pairing waits for the previous
+  connection to finish unwinding on the PC before it reconnects — asserting against that leftover
+  connection would pass even with the feature deleted, which is the whole point of the test. The wait
+  gave up silently, so the only trace of an expiry was the next line printing one leftover session,
+  which reads exactly like state left behind by a different test and was read that way for two days.
+  It was the same test's own connection, still closing. The wait now reports the count it gave up at,
+  the counts it saw on the way, how long it actually waited and the sessions it found, so the next
+  occurrence says which of the two it is without a dig through the test-results file. It also waits
+  longer before giving up, which costs nothing while things are working because it returns the moment
+  the connection goes. Nothing in the product changed.
+
 - **Running the test suite edited your own settings: your certificate pins, your dashboard layout and
   your activity feed.** An earlier fix stopped the tests reaching the machine-wide store the PC host
   keeps under `C:\ProgramData\RemEx`, which is where the pairing registry and the file-transfer
