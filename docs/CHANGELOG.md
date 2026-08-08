@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Removing a program from the launcher, ending a task, or deleting a remote file did nothing —
+  and then RemEx locked up.** Every one of those asks you to confirm first, and the confirmation
+  window could never be built. It failed the moment it was created, before anything appeared on
+  screen, so there was no dialog to answer and no error to read: the app simply stopped. The cause
+  was a piece of setup code in each window that quietly replaced the one the UI toolkit generates.
+  Both look identical from the outside and the app still built and drew correctly, which is why this
+  went unnoticed — but only the generated version connects the window to the pieces inside it, so
+  every one of those pieces was missing at the moment it was needed. Confirmations now work, and
+  with them the actions behind them. The same fault was found and fixed in the first-run restore
+  prompt and in the tray notification popup, which had been failing silently and showing nothing.
+  A check now runs with the tests and refuses this mistake anywhere in the app, so it cannot come
+  back the next time a window is added.
+
 - **RemEx on the PC could lock up completely — no window, no error, nothing in a log — and the only
   way out was Task Manager.** When something went unexpectedly wrong inside the app's own window
   handling, RemEx was supposed to close and leave an error behind. Instead it hung. On the way out it
