@@ -46,16 +46,27 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// <summary>Raised after a profile is successfully written to disk by <see cref="SaveInternalAsync"/> (i.e. after <see cref="SaveAsync"/> or a flushed <see cref="RequestSave"/>).</summary>
     public event Action? ProfileSaved;
 
+    /// <summary>
+    /// The layout file: the per-user RemEx directory, or the test redirect when it is set. A test
+    /// that constructs this service used to create and overwrite the developer's own saved dashboard
+    /// (RemEx-ln0k) — this is that user's arrangement of their cards, not scratch state.
+    /// </summary>
+    private static string DefaultFilePath =>
+        Path.Combine(RemexDataPaths.PerUserDirectory, "dashboard_layout.json");
+
+    /// <summary>Exposes the resolved default path so tests can assert the redirect covers it.</summary>
+    internal static string DefaultFilePathForTests => DefaultFilePath;
+
+    /// <summary>The file this instance actually resolved, so a test can pin the constructor.</summary>
+    internal string FilePathForTests => _filePath;
+
     public DashboardLayoutService(ThemeService themeService)
     {
         _themeService = themeService;
 
-        var baseFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        _filePath = DefaultFilePath;
 
-        var appData = Path.Combine(baseFolder, "Remex");
-
-        Directory.CreateDirectory(appData);
-        _filePath = Path.Combine(appData, "dashboard_layout.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
     }
 
     /// <inheritdoc />

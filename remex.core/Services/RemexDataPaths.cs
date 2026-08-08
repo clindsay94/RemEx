@@ -29,7 +29,15 @@ namespace Remex.Core.Services;
 public static class RemexDataPaths
 {
     private const string WindowsFolderName = "RemEx";
-    private const string LegacyWindowsFolderName = "Remex";
+
+    /// <summary>
+    /// The per-user RemEx folder, under <see cref="Environment.SpecialFolder.LocalApplicationData"/>
+    /// on every platform. It is both the source of the one-time Windows migration in
+    /// <see cref="TryMigrateWindowsFile"/> — the "legacy" location, for the host state that moved to
+    /// ProgramData — and the current, correct home of the client-side stores resolved by
+    /// <see cref="PerUserDirectory"/>. One folder, two roles; hence one constant.
+    /// </summary>
+    private const string PerUserFolderName = "Remex";
 
     /// <summary>
     /// <see cref="AppContext"/> key holding an absolute directory that replaces every host-state
@@ -85,6 +93,36 @@ public static class RemexDataPaths
         WindowsFolderName);
 
     /// <summary>
+    /// The per-user RemEx directory — <c>%LOCALAPPDATA%\Remex</c> on Windows,
+    /// <c>~/.local/share/Remex</c> elsewhere — or the directory named by
+    /// <see cref="HostStateDirectoryOverrideKey"/> when it is set.
+    ///
+    /// <para>
+    /// FOR THE STORES THAT ARE GENUINELY PER-USER (RemEx-ln0k), which is why this is not
+    /// <see cref="ResolveDirectory"/>. That method relocates Windows to
+    /// <see cref="WindowsMachineWideDirectory"/> because the state it resolves belongs to the host
+    /// and has to survive a change of signed-in user. These do not: <c>pinned_hosts.json</c> is the
+    /// CLIENT's record of which host certificates this user has trusted, and
+    /// <c>dashboard_layout.json</c> / <c>recent_activity.json</c> are that user's own layout and
+    /// history. Putting them in ProgramData would share one account's pinned-certificate trust with
+    /// every other account on the PC, and would silently orphan every existing layout. So the
+    /// production path is deliberately left exactly where it was; the only thing this adds is that
+    /// the override wins.
+    /// </para>
+    ///
+    /// <para>
+    /// It does NOT create the directory, unlike <see cref="ResolveDirectory"/>. Callers here differ
+    /// on when the folder should appear — <c>PinnedCertStore</c> creates it lazily at first write,
+    /// and <c>PathSettings</c> resolves its defaults in a property initializer, where creating three
+    /// directories as a side effect of binding configuration would be a surprise. Resolving a path
+    /// and making a folder are separate decisions and this only makes the first one.
+    /// </para>
+    /// </summary>
+    public static string PerUserDirectory => HostStateDirectoryOverride ?? Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        PerUserFolderName);
+
+    /// <summary>
     /// Returns the directory a service should use for its state, relocating only Windows to the
     /// machine-wide location. <paramref name="legacyPerUserDirectory"/> is the per-user folder the
     /// caller used historically and is returned unchanged on non-Windows platforms. The resulting
@@ -137,7 +175,7 @@ public static class RemexDataPaths
 
             var legacyPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                LegacyWindowsFolderName,
+                PerUserFolderName,
                 fileName);
 
             if (string.Equals(legacyPath, targetPath, StringComparison.OrdinalIgnoreCase)

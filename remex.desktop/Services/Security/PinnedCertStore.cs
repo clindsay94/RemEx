@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Serialization;
+using Remex.Core.Services;
 
 namespace Remex.Desktop.Services.Security;
 
@@ -16,11 +17,21 @@ public sealed class PinnedCertStore
     private readonly SemaphoreSlim _lock = new(1, 1);
     private bool _loaded;
 
+    /// <summary>
+    /// Where the pins live when no path is injected: the per-user RemEx directory, or the test
+    /// redirect when it is set. A pin is a trust decision — "this SPKI is the host I paired with" —
+    /// so a fixture must not be able to add, change or delete one in the real store (RemEx-ln0k).
+    /// </summary>
+    private static string DefaultStorePath =>
+        Path.Combine(RemexDataPaths.PerUserDirectory, "pinned_hosts.json");
+
+    /// <summary>Exposes the resolved default path so tests can assert the redirect covers it.</summary>
+    internal static string DefaultStorePathForTests => DefaultStorePath;
+
     public PinnedCertStore(ILogger<PinnedCertStore> logger)
     {
         _logger = logger;
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        _storePath = Path.Combine(appData, "Remex", "pinned_hosts.json");
+        _storePath = DefaultStorePath;
     }
 
     internal PinnedCertStore(ILogger<PinnedCertStore> logger, string storePath)
@@ -28,6 +39,9 @@ public sealed class PinnedCertStore
         _logger = logger;
         _storePath = storePath;
     }
+
+    /// <summary>The store this instance actually resolved, so a test can pin the constructor.</summary>
+    internal string StorePathForTests => _storePath;
 
     /// <summary>
     /// Returns true if the given hostId has a pinned SPKI hash.

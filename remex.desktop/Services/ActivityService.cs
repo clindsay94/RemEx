@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Avalonia.Threading;
+using Remex.Core.Services;
 
 namespace Remex.Desktop.Services;
 
@@ -119,13 +120,24 @@ public sealed class ActivityService
     /// <summary>Live, newest-first feed bound by the Home page. Mutated only on the UI thread.</summary>
     public ObservableCollection<ActivityEntry> Recent { get; } = new();
 
+    /// <summary>
+    /// The activity file: the per-user RemEx directory, or the test redirect when it is set. This
+    /// singleton is reachable from the agent's message handlers, so a test that drove a transfer or
+    /// a ping appended fixture entries to the developer's own activity feed (RemEx-ln0k).
+    /// </summary>
+    private static string DefaultFilePath =>
+        Path.Combine(RemexDataPaths.PerUserDirectory, "recent_activity.json");
+
+    /// <summary>Exposes the resolved default path so tests can assert the redirect covers it.</summary>
+    internal static string DefaultFilePathForTests => DefaultFilePath;
+
+    /// <summary>The file this instance actually resolved, so a test can pin the constructor.</summary>
+    internal string FilePathForTests => _filePath;
+
     private ActivityService()
     {
-        var appData = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Remex");
-        Directory.CreateDirectory(appData);
-        _filePath = Path.Combine(appData, "recent_activity.json");
+        _filePath = DefaultFilePath;
+        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
         Load();
     }
 
