@@ -532,7 +532,9 @@ public sealed class FileTransferHandler(
     /// (RemEx-220r) — and the response is held until the user decides or the 60-second timeout
     /// auto-denies. It may instead be refused outright, with no prompt and no wait, when the asking
     /// client no longer has a live session. On a grant the mounted volumes are enumerated and returned; on a deny an empty
-    /// list with <c>fullBrowseGranted=false</c> is returned (a deny is not an error).
+    /// list with <c>fullBrowseGranted=false</c> is returned (a deny is not an error) — carrying a
+    /// <c>denyReason</c> when nobody was asked, so the phone can tell that apart from a refusal its user made
+    /// (RemEx-l580).
     /// </summary>
     public async Task HandleFileVolumesRequestAsync(
         RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
@@ -546,6 +548,10 @@ public sealed class FileTransferHandler(
             if (string.IsNullOrWhiteSpace(clientId))
                 throw new UnauthorizedAccessException("A paired client identity is required to browse volumes.");
 
+            // Null unless the host refused without asking anyone; see FileConsentDenyReasons. It stays
+            // null on the already-granted path above, which never denies anything (RemEx-l580).
+            string? denyReason = null;
+
             var granted = await fileTrustService.IsFullBrowseGrantedAsync(clientId, ct);
             if (!granted)
             {
@@ -556,6 +562,7 @@ public sealed class FileTransferHandler(
                 };
                 var decision = await fileTrustService.RequestConsentAsync(clientId, consent, ct);
                 granted = decision.Granted;
+                denyReason = decision.DenyReason;
             }
 
             var volumes = granted ? volumeEnumerator.Enumerate() : Array.Empty<FileVolumeInfo>();
@@ -567,6 +574,7 @@ public sealed class FileTransferHandler(
                     RequestId = req.RequestId,
                     Volumes = [.. volumes],
                     FullBrowseGranted = granted,
+                    DenyReason = denyReason,
                 }
             };
         }
@@ -638,7 +646,8 @@ public sealed class FileTransferHandler(
     /// transfer id per offered file (index-aligned to <see cref="FilePushOffer.Files"/>) and returns them in
     /// the <c>file_push_response</c>; the client then negotiates each file with a
     /// <c>file_transfer_offer(mode="push")</c> carrying its assigned id. On denial (or timeout) the response
-    /// is <c>accepted=false</c> with no ids (a deny is not an error).
+    /// is <c>accepted=false</c> with no ids (a deny is not an error), plus a <c>denyReason</c> when the refusal
+    /// was the host's rather than a person's (RemEx-l580).
     /// </summary>
     public async Task HandleFilePushOfferAsync(
         RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
@@ -677,6 +686,8 @@ public sealed class FileTransferHandler(
                     PushId = offer.PushId,
                     Accepted = decision.Granted,
                     TransferIds = transferIds,
+                    // Null whenever a person decided; set only when nobody was asked (RemEx-l580).
+                    DenyReason = decision.DenyReason,
                 }
             };
         }

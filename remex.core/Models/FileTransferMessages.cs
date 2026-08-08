@@ -340,6 +340,17 @@ public sealed record FileVolumesResponse
     /// <summary>True when this paired client currently holds a full-browse grant.</summary>
     [JsonPropertyName("fullBrowseGranted")] public bool FullBrowseGranted { get; init; }
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
+    /// <summary>
+    /// Why the host refused without anyone being asked, one of <see cref="FileConsentDenyReasons"/>,
+    /// or null when a person actually decided (RemEx-l580).
+    /// </summary>
+    /// <remarks>
+    /// SEPARATE FROM <see cref="ErrorMessage"/> BECAUSE A DENY IS NOT AN ERROR. The desktop client
+    /// throws <c>FileTransferHostException</c> on any non-empty <c>errorMessage</c>, so reporting an
+    /// unreachable phone through that field would turn a correctly-handled refusal into a host fault
+    /// on the peer — and the prose it carries is untranslatable English besides.
+    /// </remarks>
+    [JsonPropertyName("denyReason")] public string? DenyReason { get; init; }
 }
 
 /// <summary>Client → host: bounded recursive search under a root subtree.</summary>
@@ -492,6 +503,11 @@ public sealed record FilePushResponse
     [JsonPropertyName("pushId")] public required string PushId { get; init; }
     [JsonPropertyName("accepted")] public required bool Accepted { get; init; }
     [JsonPropertyName("transferIds")] public string[]? TransferIds { get; init; }
+    /// <summary>
+    /// Why the receiver refused without anyone being asked, one of <see cref="FileConsentDenyReasons"/>,
+    /// or null when a person actually decided (RemEx-l580).
+    /// </summary>
+    [JsonPropertyName("denyReason")] public string? DenyReason { get; init; }
 }
 
 // ── Shared vocabularies and limits (single source of truth for both sides of the wire) ──
@@ -543,6 +559,45 @@ public static class FileConsentKinds
 {
     public const string FullBrowse = "full_browse";
     public const string IncomingPush = "incoming_push";
+}
+
+/// <summary>
+/// Machine-readable reasons a consent-gated request was refused WITHOUT the user being asked
+/// (RemEx-l580). Carried on <see cref="FileVolumesResponse.DenyReason"/> and
+/// <see cref="FilePushResponse.DenyReason"/>.
+/// </summary>
+/// <remarks>
+/// <para>
+/// **A REFUSAL THE USER NEVER SAW USED TO BE INDISTINGUISHABLE FROM ONE THEY MADE.** Both came back
+/// as <c>fullBrowseGranted=false</c> / <c>accepted=false</c> and nothing else, so the phone that
+/// asked seconds ago could only show a flat no — for a state the person could actually have fixed.
+/// A code is what lets the client tell the two apart; prose cannot be branched on and cannot be
+/// localized on the phone.
+/// </para>
+/// <para>
+/// **NULL IS THE ANSWER FOR EVERY DENY SOMEBODY MADE**, including one that was delivered and timed
+/// out. That is what keeps a code meaningful: if every refusal carried one, a user who just tapped
+/// Deny would be told their PC could not reach them.
+/// </para>
+/// <para>
+/// ADDITIVE AND OPTIONAL, so no <c>protocolVersion</c> bump — same shape as
+/// <see cref="FileTransferErrorCodes"/>. An older client ignores the field and shows what it shows
+/// today; a newer client against an older host sees null and does the same.
+/// </para>
+/// </remarks>
+public static class FileConsentDenyReasons
+{
+    /// <summary>
+    /// The host could not put the question to the device that asked it.
+    /// </summary>
+    /// <remarks>
+    /// ONE CODE FOR BOTH UNREACHABLE PATHS — the asking client had no live session when the prompt
+    /// was routed, and the prompt failed to send after it was. They are separate log lines on the
+    /// host because the distinction is diagnostic, and one code on the wire because the client's
+    /// answer to both is the same: the phone is not reachable, reconnect and ask again. Splitting
+    /// them would offer a client two branches it would have to write identically.
+    /// </remarks>
+    public const string ClientUnreachable = "client_unreachable";
 }
 
 /// <summary>Numeric protocol limits shared by the PC host and Android mirror.</summary>

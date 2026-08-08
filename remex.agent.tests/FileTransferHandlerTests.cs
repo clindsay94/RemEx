@@ -1108,7 +1108,12 @@ public sealed class FileTransferHandlerTests : IDisposable
     // through RequestConsentAsync / ResolveConsent is exercised end-to-end.
     // ──────────────────────────────────────────────────────────────────────────
 
-    private (FileTransferHandler handler, FileTrustService trust) CreateTrustHandler(string clientId)
+    /// <param name="askerConnected">
+    /// False builds the handler over an EMPTY session registry, which is what "the phone that asked
+    /// has gone" looks like to <c>ConsentRoutePolicy</c> — the deny-without-asking path (RemEx-l580).
+    /// </param>
+    private (FileTransferHandler handler, FileTrustService trust) CreateTrustHandler(
+        string clientId, bool askerConnected = true)
     {
         var baseTemp = Path.Combine(Path.GetTempPath(), "remex-jjdb-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(baseTemp);
@@ -1122,7 +1127,9 @@ public sealed class FileTransferHandlerTests : IDisposable
         var trust = new FileTrustService(
             NullLogger<FileTrustService>.Instance,
             registry,
-            FileTrustServiceTests.ConnectedSession(clientId),
+            askerConnected
+                ? FileTrustServiceTests.ConnectedSession(clientId)
+                : new Remex.Agent.Services.ClientSessionRegistry(),
             Path.Combine(baseTemp, "file_transfer_trust.json"),
             TimeSpan.FromSeconds(5));
 
@@ -1247,6 +1254,84 @@ public sealed class FileTransferHandlerTests : IDisposable
         Assert.Equal("push-2", resp.PushId);
         Assert.False(resp.Accepted);
         Assert.Null(resp.TransferIds);
+
+        // A DENY SOMEBODY MADE CARRIES NO CODE (RemEx-l580) — that is what makes the code below mean
+        // something. If this one were tagged too, the phone could not tell the two apart and would be
+        // no better off than with the flat no it has now.
+        Assert.Null(resp.DenyReason);
+    }
+
+    [Fact]
+    public async Task PushOffer_DeniedBecauseTheAskerIsGone_SaysSoOnTheWire()
+    {
+        // RemEx-l580. The refusal used to be byte-identical to "the PC user tapped Deny": accepted
+        // false, nothing else. The phone user made this request seconds ago, so a bare no with no next
+        // step is the case CLAUDE.md's UX standard names outright.
+        var (handler, trust) = CreateTrustHandler("client-a", askerConnected: false);
+        var raised = false;
+        trust.ConsentRequested += _ => raised = true;
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFilePushOfferAsync(new RemexMessage
+        {
+            Type = MessageTypes.FilePushOffer,
+            FilePushOffer = new FilePushOffer
+            {
+                PushId = "push-3",
+                Files = [new FilePushFile { Name = "holiday.jpg", Size = 5 }]
+            }
+        }, ws, "client-a", CancellationToken.None);
+
+        var resp = LastPushResponse(ws);
+        Assert.False(resp.Accepted);
+        Assert.Equal(FileConsentDenyReasons.ClientUnreachable, resp.DenyReason);
+
+        // Nobody was asked, which is the premise: a reason on a question somebody answered would be a lie.
+        Assert.False(raised);
+    }
+
+    [Fact]
+    public async Task VolumesRequest_DeniedBecauseTheAskerIsGone_SaysSoOnTheWire()
+    {
+        // The full-browse half of the same bead. fullBrowseGranted=false with errorMessage=null was
+        // the entire answer, so "we could not reach you" and "the user said no" arrived identical.
+        var (handler, _) = CreateTrustHandler("client-a", askerConnected: false);
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFileVolumesRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileVolumesRequest,
+            FileVolumesRequest = new FileVolumesRequest { RequestId = "vol-1" }
+        }, ws, "client-a", CancellationToken.None);
+
+        var resp = ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileVolumesResponse).FileVolumesResponse!;
+        Assert.Equal("vol-1", resp.RequestId);
+        Assert.False(resp.FullBrowseGranted);
+        Assert.Empty(resp.Volumes);
+        Assert.Equal(FileConsentDenyReasons.ClientUnreachable, resp.DenyReason);
+
+        // NOT AN ERROR, STILL. errorMessage is what the desktop client throws on, so routing a deny
+        // through it would turn a refusal into a host exception on a peer that behaved correctly.
+        Assert.Null(resp.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task VolumesRequest_DeniedByTheUser_CarriesNoReasonCode()
+    {
+        var (handler, trust) = CreateTrustHandler("client-a");
+        trust.ConsentRequested += prompt =>
+            trust.ResolveConsent(prompt.Request.ConsentId, granted: false, remember: false);
+
+        var ws = new FakeWebSocket();
+        await handler.HandleFileVolumesRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileVolumesRequest,
+            FileVolumesRequest = new FileVolumesRequest { RequestId = "vol-2" }
+        }, ws, "client-a", CancellationToken.None);
+
+        var resp = ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileVolumesResponse).FileVolumesResponse!;
+        Assert.False(resp.FullBrowseGranted);
+        Assert.Null(resp.DenyReason);
     }
 
     public void Dispose()

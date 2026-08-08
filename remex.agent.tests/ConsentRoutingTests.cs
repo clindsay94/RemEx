@@ -151,6 +151,10 @@ public sealed class ConsentRoutingTests : IDisposable
         Assert.False(decision.Granted);
         Assert.False(decision.Remember);
         Assert.False(raised);
+
+        // AND IT SAYS WHY (RemEx-l580). Without this the refusal is byte-identical to the PC user
+        // tapping Deny, so the phone can only show a flat no for a state the person can actually fix.
+        Assert.Equal(FileConsentDenyReasons.ClientUnreachable, decision.DenyReason);
     }
 
     [Fact]
@@ -190,6 +194,58 @@ public sealed class ConsentRoutingTests : IDisposable
 
         Assert.False(decision.Granted);
         Assert.False(raised);
+
+        // Same reason as the asker-has-gone branch, because it is the same state and the same
+        // remedy: reconnect the phone and ask again (RemEx-l580). The two are told apart in the
+        // host log, which is where the difference is diagnostic; on the wire it is one answer.
+        Assert.Equal(FileConsentDenyReasons.ClientUnreachable, decision.DenyReason);
+    }
+
+    [Fact]
+    public async Task ADenialSomebodyActuallyMadeCarriesNoReasonCode()
+    {
+        // THE OTHER HALF OF RemEx-l580, and the one that keeps the code meaningful. If every deny
+        // carried ClientUnreachable the phone would tell a user who just tapped Deny that their PC
+        // could not reach them — a followable instruction pointing at nothing.
+        var socket = new RecordingSocket();
+        var sessions = new ClientSessionRegistry();
+        var handle = sessions.Register("192.168.1.50", socket);
+        sessions.Identify(handle, "phone-1", deviceName: null);
+        sessions.MarkAuthenticated(handle, identityProven: true);
+        sessions.SetSupportsPhonePrompt(handle, true);
+
+        var service = NewService(sessions, TimeSpan.FromSeconds(30));
+        var request = Request();
+
+        var pending = service.RequestConsentAsync("phone-1", request, CancellationToken.None);
+        await WaitForPromptAsync(socket);
+        Assert.True(service.TryResolveRemoteConsent("phone-1", request.ConsentId, granted: false, remember: false));
+
+        var decision = await pending;
+        Assert.False(decision.Granted);
+        Assert.Null(decision.DenyReason);
+    }
+
+    [Fact]
+    public async Task ATimedOutPromptCarriesNoReasonCodeEither()
+    {
+        // A prompt that was DELIVERED and ran out is not an unreachable phone: it was put in front of
+        // someone who did not answer. Tagging it ClientUnreachable would send the user to reconnect a
+        // connection that is fine.
+        var socket = new RecordingSocket();
+        var sessions = new ClientSessionRegistry();
+        var handle = sessions.Register("192.168.1.50", socket);
+        sessions.Identify(handle, "phone-1", deviceName: null);
+        sessions.MarkAuthenticated(handle, identityProven: true);
+        sessions.SetSupportsPhonePrompt(handle, true);
+
+        var service = NewService(sessions, TimeSpan.FromMilliseconds(200));
+
+        var decision = await service.RequestConsentAsync("phone-1", Request(), CancellationToken.None);
+
+        Assert.Single(socket.Sent);
+        Assert.False(decision.Granted);
+        Assert.Null(decision.DenyReason);
     }
 
     [Fact]

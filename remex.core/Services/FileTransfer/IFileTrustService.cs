@@ -96,7 +96,14 @@ public sealed record FileTrustRecord
 }
 
 /// <summary>Outcome of a consent prompt returned by <see cref="IFileTrustService.RequestConsentAsync"/>.</summary>
-public readonly record struct FileConsentDecision(bool Granted, bool Remember);
+/// <param name="DenyReason">
+/// Why the host refused WITHOUT anyone being asked — one of <see cref="FileConsentDenyReasons"/> — or
+/// null whenever a person decided, including a delivered prompt that timed out (RemEx-l580). Callers
+/// put it on the wire so the requesting device can say something followable rather than a flat no.
+/// Optional so that every existing <c>new FileConsentDecision(granted, remember)</c> still means what
+/// it did: a decision somebody made.
+/// </param>
+public readonly record struct FileConsentDecision(bool Granted, bool Remember, string? DenyReason = null);
 
 /// <summary>
 /// Event payload raised to the serving device's consent UI. Carries the originating client, the request

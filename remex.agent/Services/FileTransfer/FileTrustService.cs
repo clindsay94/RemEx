@@ -205,10 +205,15 @@ public sealed class FileTrustService : IFileTrustService
                     // The asker is gone. Not a prompt anywhere: a PC dialog would ask about a transfer
                     // that can no longer happen, and an "allow" would grant durable trust to a device
                     // that is not there. See ConsentRoutePolicy.Route.
+                    //
+                    // AND IT SAYS WHY (RemEx-l580). A bare deny here is byte-identical to the PC user
+                    // tapping Deny, so the phone that asked seconds ago can only show a flat no for a
+                    // state its user could have fixed.
                     _logger.LogInformation(
                         "Denying file consent {ConsentId}: the requesting client is no longer connected.",
                         request.ConsentId);
-                    return new FileConsentDecision(Granted: false, Remember: false);
+                    return new FileConsentDecision(
+                        Granted: false, Remember: false, DenyReason: FileConsentDenyReasons.ClientUnreachable);
 
                 case ConsentRoute.Phone:
                     // STAMP THE DEADLINE ON THE WIRE COPY (RemEx-6mxu). The PC branch below has always
@@ -236,10 +241,15 @@ public sealed class FileTrustService : IFileTrustService
                         // away between the routing decision and this line — which is the same state
                         // Route already calls a deny, for the same reason. Falling back would put a
                         // question on the PC about an asker who is not there.
+                        //
+                        // Same reason code as that branch, deliberately: the two are told apart in
+                        // this log because the difference is diagnostic, and are one answer on the
+                        // wire because the client's next step for both is to reconnect and ask again.
                         _logger.LogInformation(
                             "Denying file consent {ConsentId}: could not reach the requesting client.",
                             request.ConsentId);
-                        return new FileConsentDecision(Granted: false, Remember: false);
+                        return new FileConsentDecision(
+                            Granted: false, Remember: false, DenyReason: FileConsentDenyReasons.ClientUnreachable);
                     }
 
                     break;

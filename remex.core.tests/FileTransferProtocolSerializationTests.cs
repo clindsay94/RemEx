@@ -273,6 +273,50 @@ public class FileTransferProtocolSerializationTests
     }
 
     [Fact]
+    public void RoundTrip_UnaskedDenials_CarryTheirReasonCode()
+    {
+        // RemEx-l580. The reason exists so the phone can say something followable instead of a flat
+        // no; a field that does not survive the wire says nothing at all. Both responses carry it
+        // because both refuse without asking anyone, and both used to look exactly like a user's Deny.
+        var volumes = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FileVolumesResponse,
+            FileVolumesResponse = new FileVolumesResponse
+            {
+                RequestId = "req-vol",
+                Volumes = [],
+                FullBrowseGranted = false,
+                DenyReason = FileConsentDenyReasons.ClientUnreachable,
+            },
+        });
+        Assert.Equal(FileConsentDenyReasons.ClientUnreachable, volumes.FileVolumesResponse!.DenyReason);
+
+        // errorMessage stays null: a deny is not an error, and the desktop client throws on that field.
+        Assert.Null(volumes.FileVolumesResponse.ErrorMessage);
+
+        var push = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FilePushResponse,
+            FilePushResponse = new FilePushResponse
+            {
+                PushId = "p2",
+                Accepted = false,
+                DenyReason = FileConsentDenyReasons.ClientUnreachable,
+            },
+        });
+        Assert.Equal(FileConsentDenyReasons.ClientUnreachable, push.FilePushResponse!.DenyReason);
+
+        // ADDITIVE AND OPTIONAL, so no protocolVersion bump: an omitted field must deserialize to
+        // null rather than throwing, which is what every already-installed host will send.
+        var older = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FilePushResponse,
+            FilePushResponse = new FilePushResponse { PushId = "p3", Accepted = false },
+        });
+        Assert.Null(older.FilePushResponse!.DenyReason);
+    }
+
+    [Fact]
     public void RoundTrip_ConsentRequest_PreservesTheAutoDenyDeadline()
     {
         // RemEx-6mxu. The deadline reaching the renderer intact is the entire bead: the phone cannot
