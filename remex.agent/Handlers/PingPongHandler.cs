@@ -193,7 +193,20 @@ public sealed class PingPongHandler(
                 logger.LogDebug("Received: {Type} (ProtocolVersion={ProtocolVersion})",
                     message.Type, message.ProtocolVersion);
 
-                if (!string.IsNullOrWhiteSpace(message.ClientId) && !identityProven)
+                // LOOPBACK IS EXCLUDED BECAUSE IT NEVER REACHES A FREEZE POINT (RemEx-4215). It is
+                // authenticated by construction — the PC talking to itself — and has no pairing to
+                // prove, so identityProven stays false for its whole session and this assignment would
+                // run on every message. RemEx-220r stopped loopback being REACHED by a phone's client
+                // id (Find requires IdentityProven); it did not stop loopback ACTING AS one, and that
+                // is one call away: any local process, INCLUDING AN UNELEVATED ONE, could open /ws on
+                // 127.0.0.1, name itself a paired phone, and inherit that phone's remembered
+                // fullBrowseGranted / autoAcceptIncoming through file_volumes_request and
+                // file_push_offer. So loopback is frozen at NO identity, which is the same honest state
+                // the pair-with-no-id branch below settles on, and every per-client handler already
+                // refuses a blank. The PC's own UI never sets ClientId on an outbound message, so it
+                // loses nothing — and a local connection that DOES prove an id (a real PIN pairing)
+                // still gets one from the freeze points below.
+                if (!string.IsNullOrWhiteSpace(message.ClientId) && !identityProven && !isLoopback)
                 {
                     connectionClientId = message.ClientId;
                     // The registry learns the identity at the same moment this connection does,
