@@ -44,6 +44,22 @@
     # are merge=union in .gitattributes on purpose.
     AlwaysSharedPaths    = @('docs/CHANGELOG.md', 'docs/ralph-state.jsonl', '.token-savior-cache.json')
 
+    # Files that move together. If the planner's estimate resolves ANY member of a group it claims
+    # the whole group, so the collision surfaces at planning time instead of 16 minutes into a lane.
+    #
+    # The string table is the case this exists for (RemEx-oojq): a bead that adds five user-facing
+    # strings touches values/strings.xml AND all eight locale variants, and nothing in the bead
+    # text says so - it talks about the feature, not about localization. Two beads were planned
+    # into the same wave on that basis, one built about 1000 lines with tests, and the collision
+    # only appeared at the -Claim step. This is the most collision-prone group in the repo and it
+    # is mechanically derivable, which is exactly what makes it worth declaring.
+    CoChangeGroups       = @(
+        , @(
+            'remex.android/app/src/main/res/values/strings.xml'
+            'remex.android/app/src/main/res/values-*/strings.xml'
+        )
+    )
+
     # The changelog every landing must touch, and the journal the merge queue appends to.
     Changelog            = 'docs/CHANGELOG.md'
     Journal              = 'docs/ralph-state.jsonl'
