@@ -1,4 +1,13 @@
-# RemEx Board-Drain Ralph Loop
+# RemEx Board-Drain Ralph Loop — the RemEx overlay
+
+**This is the project overlay, not the whole procedure.** The generic loop lives with the tooling
+at `~/.claude/ralph/board-drain.md`; a lane is handed both, concatenated into
+`<lane>/.ralph/procedure.md`, with this file second. **Where the two disagree, this file wins** —
+it knows RemEx and the generic one only knows the shape of the work.
+
+Everything below is what is true *here*: the board this loop drains, the verification contract,
+the build commands, the warning-count and defect-injection rules, and the subsystem guardrails
+that each exist because a previous run got a wrong answer and believed it.
 
 Autonomous loop that drains the ENTIRE bead board — perf sweep findings (P1 capture/serialization
 hot paths through P4 strategic items), open bugs, polish, and docs beads. Filed 2026-07-31 from the
@@ -7,17 +16,14 @@ security-adjacent beads are in scope — they get a mandatory Opus review instea
 
 ## How to run it
 
-```
-/ralph-loop "Read docs/ralph-board-drain.md and follow it exactly. Complete ONE bead this iteration." --max-iterations 100 --completion-promise "BOARD_DRAINED"
-```
+Say `/ralph` for one bead at a time in this working copy, or `/drain` for several lanes at once.
+Both skills are installed globally (`~/.claude/skills/`), so they work in any repo that has a
+tracked `.ralph.psd1`; RemEx's is at the repo root and names the verify contract, the changelog
+gate and the scope-escalation paths.
 
-The prompt argument is deliberately short. Ralph re-feeds the *same* string every iteration and the
-model has no memory between them — so the instructions live here, on disk, where each fresh
-iteration re-reads them and where the operator can edit them mid-run without restarting the loop.
-
-To run several of these at once, each in its own worktree, use
-`./scripts/ralph-dispatch.ps1 -Lanes 3` and read LANE MODE below. The dispatcher provisions the
-lanes and lands their branches; the loop itself is unchanged.
+Under the hood `/drain` runs `~/.claude/ralph/ralph-dispatch.ps1 -Lanes 3`, which provisions the
+lane worktrees, launches one headless agent per lane, opens the live dashboard, and lands each
+branch through the merge queue. Read LANE MODE below — it overrides several steps for a lane.
 
 **This loop runs on Opus.** The board contains genuinely hard beads (wire-format changes, capture
 pipeline rewrites, JNI boundary work), so the executor itself needs the judgment this time — not
@@ -76,10 +82,11 @@ rating and the affected callers, and treat the review gate as mandatory (no skip
 
 ## LANE MODE — when you are one lane of a parallel drain
 
-Most iterations run in the integration copy (`Z:\RemEx`, branch `v2.5-board-drain`), one at a time.
-Some run as a **lane**: one of several git worktrees draining different beads at the same time,
-provisioned by `scripts/ralph-dispatch.ps1` and landed one-at-a-time by
-`scripts/ralph-merge-queue.ps1`. Specified in `docs/SPEC-parallel-board-drain-dispatcher.md` §6.
+Most iterations run in the integration copy (the RemEx checkout itself, on the integration branch),
+one at a time. Some run as a **lane**: one of several git worktrees draining different beads at the
+same time, provisioned by `~/.claude/ralph/ralph-dispatch.ps1` and landed one-at-a-time by
+`~/.claude/ralph/ralph-merge-queue.ps1`. Specified in
+`docs/SPEC-parallel-board-drain-dispatcher.md` §6.
 
 **Work out which you are before step 1.** A lane has a `.ralph/lane.env` at the root of its working
 copy holding `RALPH_LANE`, `RALPH_LANE_BEAD`, `RALPH_LANE_BRANCH` and `BEADS_DIR`. If that file is
@@ -91,7 +98,7 @@ guardrails, same one-bead-per-iteration rule. These are the only differences:
 
 | Step | In a lane |
 |---|---|
-| 1 branch | You are already on `ralph/lane-<n>/<bead-id>`. Check you are on **that** branch, not `v2.5-board-drain`. Refusing to work on `main` still holds. Never `git checkout` a different branch — the merge queue derives the bead id from the branch name, so leaving it lands your work under someone else's id. |
+| 1 branch | You are already on `ralph/lane-<n>/<bead-id>`. Check you are on **that** branch, not the integration branch. Refusing to work on `main` still holds. Never `git checkout` a different branch — the merge queue derives the bead id from the branch name, so leaving it lands your work under someone else's id. |
 | 2 dirty tree | Unchanged, including **never `git checkout -- .` or `git restore -- .`**. A lane is not shared, so the reason it was written does not apply here — but the reason it is right is broader than the reason it was written, and a lane that learns to use wildcards is a lane that does it in the integration tree later. |
 | 3 pick a bead | **You do not pick.** Your bead is `RALPH_LANE_BEAD` and it is named in your branch. Work that one. (Not in the spec's list, and it follows from the branch naming: the queue reads the bead id out of the branch, and the dispatcher already recorded a path claim against it. A lane that picked its own bead would land it under the assigned bead's id and hold a claim for files it never touches.) |
 | 4 claim | Already done for you — the dispatcher ran `bd update --claim` before provisioning, because a bead left `open` holds a path claim the next lane's collision check cannot see. Run `bd show <id>` and confirm it is yours; running `--claim` again is harmless. |
@@ -105,7 +112,7 @@ guardrails, same one-bead-per-iteration rule. These are the only differences:
 **Path claims.** The dispatcher recorded the files it predicted you would touch under the
 `ralphLanePaths` metadata key, and another lane is refused any file you hold. The prediction will
 sometimes be wrong, which is normal: if you find you need a path nobody anticipated, amend the claim
-with `./scripts/ralph-cluster.ps1 -Claim <id> -Paths <the full new set>`. If that is **refused**,
+with `~/.claude/ralph/ralph-cluster.ps1 -Claim <id> -Paths <the full new set>`. If that is **refused**,
 another lane is in those files right now. Do not edit them anyway. Finish what you can without them,
 then return the bead with a note saying exactly which paths were taken:
 `bd update <id> --status open --set-metadata ralphLaneState=returned --append-notes "..."`.
@@ -314,10 +321,10 @@ reaps a branch whose bead is not closed.
    bd update <id> --set-metadata ralphReviewVerdict="FAIL (round 1) - <the headline finding>"
    ```
 
-   `ralph-dispatch.ps1 -Watch` emits that as an event and `-Status` shows it, so it is the only
-   thing that tells the operator review happened while the lane is still running. Your log
-   reaches them ~18 minutes later, when the session ends and it all arrives at once. Keep it to
-   one line; the detail belongs in the commit and the log.
+   `ralph-dispatch.ps1 -Watch` emits that as an event and both `-Status` and the live dashboard
+   show it. The dashboard also tails your session, so the operator sees what you are doing as you
+   do it — but the verdict is the one thing they cannot infer from a tool call. Keep it to one
+   line; the detail belongs in the commit and the log.
 
    **On FAIL:** address the findings and re-review. MAXIMUM 2 fix rounds. If it still fails,
    restore the paths this iteration touched with `git restore -- <paths>` (never the `.` wildcard —

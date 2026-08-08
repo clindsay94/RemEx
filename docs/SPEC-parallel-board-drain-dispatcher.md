@@ -9,6 +9,14 @@ inline, marked **MEASURED**.
 Bead: `RemEx-56fu.5`. Parent: `RemEx-56fu` (workflow hardening from the Claude Code Insights report,
 2026-08-03), suggestion 8.
 
+**Where the code is now (2026-08-07, `RemEx-xh9j`).** Every `scripts/ralph-*.ps1` this document
+names moved to `~/.claude/ralph/` so the workflow could be used on other projects; the RemEx
+specifics they used to carry are read from the tracked `.ralph.psd1` at the repo root. The design
+below is unchanged and still accurate — read a path like `scripts/ralph-dispatch.ps1` as
+`~/.claude/ralph/ralph-dispatch.ps1`. The one behavioural change since: lanes now run with
+`--output-format stream-json`, which is what feeds the live dashboard, and §10's "what a lane IS"
+answer additionally pins the token-routing rules to the lane's system prompt at launch.
+
 ## What this is for
 
 `docs/ralph-board-drain.md` describes a **sequential** autonomous loop: one agent, one working copy,

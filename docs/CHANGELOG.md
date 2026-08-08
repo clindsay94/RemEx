@@ -45,6 +45,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   connects to itself and is trusted to be there, but it never proves *which* device it is — so it can
   no longer be reached by a phone's name at all.
 
+### Internal
+
+- **The autonomous board-drain workflow moved out of this repository.** The `/ralph` and `/drain`
+  skills and the five scripts behind them now live in `~/.claude/ralph/` and apply to any project,
+  not just this one. What stays here is what is actually about RemEx: `.ralph.psd1` (the verify
+  contract, the bead prefix, which paths force a full-suite verify and which force a code review),
+  `docs/ralph-board-drain.md` — now the project overlay rather than the whole procedure — and the
+  journal. Every RemEx-specific assumption the scripts used to carry is read from that config
+  instead, so the workflow's own iterations stop appearing in this repository's history.
+  Three things changed while moving. Lanes now stream their transcripts as they work rather than
+  dumping them at the end, so a live dashboard can show what each lane is doing, what it has spent,
+  and when it last did anything. The token-routing rules are attached to each lane's system prompt
+  at launch instead of being inherited from whatever instruction file happened to be present. And a
+  wave refuses to start at all if the three MCP servers those rules depend on do not answer — a lane
+  that cannot route its reads costs far more than the wave is worth.
+
 ### Added
 
 - **Your phone can now answer the PC's file-permission questions itself.** When you browse your PC's

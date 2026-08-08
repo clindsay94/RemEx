@@ -81,6 +81,16 @@ other doc, old commit message, or stale issue status disagrees with these, **the
    PowerShell, never use `-eq` / `-ne` to compare paths or namespaces that must be case-sensitive —
    use `-ceq` / `-cne`.
 
+### Autonomous board drain — `/ralph` and `/drain`
+
+The board-drain workflow is **installed globally**, not in this repo: skills at
+`~/.claude/skills/{ralph,drain}`, scripts and the generic procedure at `~/.claude/ralph/`. What
+lives here is what is actually about RemEx — `.ralph.psd1` at the repo root (the verify contract,
+the bead prefix, which paths force a full-suite verify and which force a code review),
+`docs/ralph-board-drain.md` as the project overlay appended to the generic procedure, and
+`docs/ralph-state.jsonl` as the journal. `.ralph.psd1` is tracked on purpose: lane worktrees only
+materialise tracked files, so an untracked config would leave lanes unable to find their settings.
+
 ### Verification — `scripts/verify.ps1`
 
 **`scripts/verify.ps1` is the only accepted proof that work is finished.** It force-cleans, rebuilds,
