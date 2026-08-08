@@ -230,6 +230,17 @@ public class LoopbackIdentityClaimTests
         trust.Verify(
             t => t.RequestConsentAsync(PhoneClientId, It.IsAny<FileConsentRequest>(), It.IsAny<CancellationToken>()),
             Times.Never);
+
+        // BE PRECISE ABOUT WHERE THE REFUSAL COMES FROM. Unlike the volumes handler, this one does not
+        // bail on a blank id — it asks anyway, with string.Empty — so the assertion above would hold
+        // even if the ask were the granting kind. What makes the deny real in production is
+        // FileTrustService.RequestConsentAsync refusing a blank clientId outright, before any prompt
+        // and before any remembered grant is consulted (FileTrustService.cs, first line of the consent
+        // flow). Pinning the id it asks WITH is what ties this test to that behaviour rather than to a
+        // Moq default.
+        trust.Verify(
+            t => t.RequestConsentAsync(string.Empty, It.IsAny<FileConsentRequest>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]

@@ -45,6 +45,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   connects to itself and is trusted to be there, but it never proves *which* device it is — so it can
   no longer be reached by a phone's name at all.
 
+- **A program on your PC could still use one of your phones' file permissions.** The fix above stopped
+  the PC's own app being *mistaken for* a phone. It did not stop it *acting as* one. The PC's app
+  connects to itself over the machine's internal address and is trusted to be there — it is the PC
+  talking to itself — but it never proves which device it is, so the name on its messages stayed
+  changeable for the life of the connection. Any program running on the PC, including one running
+  without administrator rights, could open that same internal connection, put a paired phone's
+  internal identifier on a message, and inherit whatever that phone had been granted and asked the PC
+  to remember: browsing every drive, and accepting incoming files without asking. No PIN, no prompt,
+  nothing on screen. A connection that has not proved which device it is now has no device name at
+  all, and the PC refuses every per-device file request it makes — not only the two above, but
+  browsing a shared folder, searching it, reading file details or thumbnails, starting a download, and
+  answering a permission question meant for a phone. The PC's own app never put a name on its messages
+  in the first place, so nothing you use changes; a local connection that does prove itself by pairing
+  normally is unaffected. Reachable in every release since 2.1.0, and it needed a program already
+  running on your PC and knowledge of an identifier the PC never publishes. The separate channel the
+  file *contents* travel over still accepts a claimed name on this machine, which is filed as
+  RemEx-4u0d.
+
 ### Internal
 
 - **The PC now says why it refused a file request nobody was ever asked about.** When your phone asks
