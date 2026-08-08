@@ -164,5 +164,7 @@ FINAL_AUDIT_OPUS.md
 FINAL_AUDIT_SONNET.md
 /.beads/
 /docs/OLD DOCS
-.token-savior-cache.json
-.token-savior-cache.json
+
+# Local ralph loop procedure. Untracked on purpose: it carries the device unlock PIN so the loop
+# can drive the physical phone, and that does not belong in a repo with a remote.
+/docs/ralph-serial-drain.md

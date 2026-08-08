@@ -1,5 +1,13 @@
 # RemEx Board-Drain Ralph Loop — the RemEx overlay
 
+> **SUPERSEDED 2026-08-08 — use [`ralph-serial-drain.md`](ralph-serial-drain.md) instead.**
+> The parallel lane system this file describes was retired: the worktrees are gone, the merge queue
+> is unused, and the machinery beads are deferred. It was retired on measurement — lanes cost
+> $14.05 per landed bead with 25% lost to session limits killing agents mid-flight, because
+> parallelism buys wall-clock and the binding constraint here is a token quota.
+> This file is kept for the LANE MODE contract and the history, and because `.ralph.psd1` still
+> references it as `ProcedureOverlay`. Do not follow it for new work.
+
 **This is the project overlay, not the whole procedure.** The generic loop lives with the tooling
 at `~/.claude/ralph/board-drain.md`; a lane is handed both, concatenated into
 `<lane>/.ralph/procedure.md`, with this file second. **Where the two disagree, this file wins** —
