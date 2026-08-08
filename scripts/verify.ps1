@@ -361,9 +361,62 @@ function Get-TrxFailedTests {
     return $failures.ToArray()
 }
 
+# Same defect, same fix, other platform: the Android branch reads testsuite/@failures and
+# @errors and never looks at the <testcase> nodes carrying the names, so an Android failure
+# reports a count with nothing to file (identical shape to RemEx-ffxl, just JUnit XML instead
+# of .trx). Kept pure and self-tested for the same reason as Get-TrxFailedTests above.
+function Get-JUnitFailedTests {
+    param([xml]$Document, [int]$Limit = 20)
+
+    $failures = [System.Collections.Generic.List[string]]::new()
+
+    # GetElementsByTagName / GetAttribute, not a dotted walk - same reasoning as
+    # Get-TrxFailedTests: this file runs under Set-StrictMode with $ErrorActionPreference =
+    # 'Stop', and a dotted walk over a document with no <testcase> nodes at all (a run that
+    # produced no results) would throw instead of yielding nothing, which is exactly the case
+    # that matters here.
+    foreach ($node in $Document.GetElementsByTagName('testcase')) {
+        # Gradle's JUnit XML marks a non-passing case with a <failure> or an <error> child -
+        # both mean the case did not pass, and a case can only sensibly carry one, but check
+        # both rather than assume which.
+        $failureNode = $null
+        $candidates = $node.GetElementsByTagName('failure')
+        if ($candidates.Count -gt 0) { $failureNode = $candidates[0] }
+        else {
+            $candidates = $node.GetElementsByTagName('error')
+            if ($candidates.Count -gt 0) { $failureNode = $candidates[0] }
+        }
+        if ($null -eq $failureNode) { continue }
+
+        $className = $node.GetAttribute('classname')
+        $name = $node.GetAttribute('name')
+        $label = if ($className -and $name) { "$className.$name" }
+                 elseif ($name) { $name }
+                 elseif ($className) { $className }
+                 else { '(unnamed test)' }
+
+        # First non-blank line of the failure message only - same reasoning as the .trx parser:
+        # a full stack trace in the receipt buries the one fact worth keeping.
+        $firstLine = ''
+        $message = [string]$failureNode.GetAttribute('message')
+        foreach ($line in ($message -split "`r?`n")) {
+            if ($line.Trim()) { $firstLine = $line.Trim(); break }
+        }
+        if ($firstLine.Length -gt 160) { $firstLine = $firstLine.Substring(0, 157) + '...' }
+
+        $failures.Add($(if ($firstLine) { "$label - $firstLine" } else { $label }))
+        # Per file, not per run - same reasoning as Get-TrxFailedTests.
+        if ($failures.Count -ge $Limit) { break }
+    }
+
+    # No unary comma - see Get-TrxFailedTests.
+    return $failures.ToArray()
+}
+
 <#
 .SYNOPSIS
-    Checks Get-TrxFailedTests against known input. Returns the number of failed checks.
+    Checks Get-TrxFailedTests and Get-JUnitFailedTests against known input. Returns the number
+    of failed checks.
 #>
 function Invoke-ResultParserSelfTest {
     function Assert-Check {
@@ -433,6 +486,47 @@ Actual:   False</Message></ErrorInfo></Output>
         '</Results></TestRun>'
     $capped = @(Get-TrxFailedTests -Document $many -Limit 5)
     Assert-Check ($capped.Count -eq 5) "the limit is honoured (got $($capped.Count))"
+
+    # A real Gradle JUnit report, reduced: one pass, one <failure>, one <error>, one <skipped>.
+    [xml]$junitSample = @'
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.remex.SampleTest" tests="4" failures="1" errors="1" skipped="1">
+  <testcase classname="com.remex.SampleTest" name="testPassing" time="0.01" />
+  <testcase classname="com.remex.SampleTest" name="testFailing" time="0.02">
+    <failure message="expected:&lt;true&gt; but was:&lt;false&gt;" type="java.lang.AssertionError">java.lang.AssertionError: expected:&lt;true&gt; but was:&lt;false&gt;
+	at com.remex.SampleTest.testFailing(SampleTest.java:42)</failure>
+  </testcase>
+  <testcase classname="com.remex.SampleTest" name="testErroring" time="0.01">
+    <error message="null pointer" type="java.lang.NullPointerException">java.lang.NullPointerException: null pointer
+	at com.remex.SampleTest.testErroring(SampleTest.java:55)</error>
+  </testcase>
+  <testcase classname="com.remex.SampleTest" name="testSkipped" time="0.0">
+    <skipped />
+  </testcase>
+</testsuite>
+'@
+
+    $junitFound = @(Get-JUnitFailedTests -Document $junitSample)
+    Assert-Check ($junitFound.Count -eq 2) "exactly two JUnit failures are reported (got $($junitFound.Count))"
+    Assert-Check (($junitFound -join '|') -like '*com.remex.SampleTest.testFailing - expected:<true> but was:<false>*') `
+        'the <failure> case is named with its message'
+    Assert-Check (($junitFound -join '|') -like '*com.remex.SampleTest.testErroring - null pointer*') `
+        'the <error> case is also reported, not just <failure>'
+    Assert-Check (-not (($junitFound -join '') -like '*testPassing*')) 'a passing JUnit testcase is not reported'
+    Assert-Check (-not (($junitFound -join '') -like '*testSkipped*')) 'a skipped JUnit testcase is not reported'
+
+    # A run that produced no results at all - the JUnit equivalent of the empty-.trx case above,
+    # and the same StrictMode trap a dotted walk would not survive.
+    [xml]$junitEmpty = '<testsuite name="empty" tests="0" failures="0" errors="0" skipped="0" />'
+    $junitNone = @(Get-JUnitFailedTests -Document $junitEmpty)
+    Assert-Check ($junitNone.Count -eq 0) 'a result-less JUnit run yields nothing instead of throwing'
+
+    # The cap exists here for the same reason it exists on the .trx side.
+    [xml]$junitMany = '<testsuite name="many">' +
+        ((1..30 | ForEach-Object { "<testcase classname=`"T`" name=`"t$_`"><failure message=`"boom`" /></testcase>" }) -join '') +
+        '</testsuite>'
+    $junitCapped = @(Get-JUnitFailedTests -Document $junitMany -Limit 5)
+    Assert-Check ($junitCapped.Count -eq 5) "the JUnit limit is honoured (got $($junitCapped.Count))"
 
     return $script:parserCheckFailures
 }
@@ -611,6 +705,10 @@ if ($Scope -in @('android', 'all')) {
 
         $resultsDir = Join-Path $androidDir 'app' 'build' 'test-results' 'testReleaseUnitTest'
         $suites = @(Get-ChildItem -LiteralPath $resultsDir -Filter '*.xml' -ErrorAction SilentlyContinue)
+        # Local to this run, unlike $testsFailed which also carries the .NET total - the
+        # "recorded but none named" split below needs to know what THIS run counted.
+        $androidTestsFailed = 0
+        $androidFailedTestNames = [System.Collections.Generic.List[string]]::new()
         foreach ($suite in $suites) {
             try {
                 [xml]$doc = Get-Content -LiteralPath $suite.FullName -Raw
@@ -622,6 +720,13 @@ if ($Scope -in @('android', 'all')) {
                 $testsFailed += $failed
                 $testsSkipped += $skipped
                 $testsPassed += ($total - $failed - $skipped)
+                $androidTestsFailed += $failed
+
+                # Same file, same read: the names cost nothing extra here - mirrors the .NET
+                # fix (RemEx-ffxl). The Android test-results directory is not cleaned between
+                # runs by this script, but Gradle overwrites it on the next test run, so this
+                # is the only place a name survives past that.
+                foreach ($f in @(Get-JUnitFailedTests -Document $doc)) { $androidFailedTestNames.Add($f) }
             }
             catch {
                 $problems.Add("could not read Android results from $($suite.Name)")
@@ -643,6 +748,34 @@ if ($Scope -in @('android', 'all')) {
                 $problems.Add('Android unit tests failed')
                 Write-Problem "The Android unit tests failed." `
                     "Run: cd remex.android; ./gradlew testReleaseUnitTest"
+
+                # Into problems, so the NAME survives in the receipt - same reasoning as the
+                # .NET branch (RemEx-ffxl): the Android test-results directory is overwritten
+                # by the next run, so by the time anyone asks which test it was, the receipt is
+                # the only place the answer can still exist.
+                foreach ($f in $androidFailedTestNames) { $problems.Add("failed: $f") }
+                foreach ($f in $androidFailedTestNames) { Write-Say "    $f" 'Red' }
+
+                if ($androidFailedTestNames.Count -eq 0) {
+                    if ($androidTestsFailed -eq 0) {
+                        # Gradle reported failure but no individual case was counted as failed -
+                        # the run itself died (a crashed test JVM, an instrumentation error)
+                        # rather than a flaky test. Looking for a failing test would be looking
+                        # in the wrong place entirely.
+                        $problems.Add('no individual Android test was recorded as failed - the run itself failed')
+                        Write-Say "    No individual test was recorded as failed - the run itself failed." 'Yellow'
+                    }
+                    else {
+                        # Counters DID record failures but no name came back, which means this
+                        # parser has gone blind - a changed JUnit report shape would do it.
+                        # Reporting "the run itself failed" here would be a confident wrong
+                        # answer at exactly the moment the diagnostics broke, which is worse
+                        # than the silence this replaced.
+                        $problems.Add("$androidTestsFailed Android test failure(s) recorded but no test name could be parsed - the result parser needs attention")
+                        Write-Problem "$androidTestsFailed Android test(s) failed but none could be named." `
+                            "The JUnit XML parser matched nothing. Run: ./scripts/verify.ps1 -SelfTest"
+                    }
+                }
             }
 
             # Show what Gradle actually said. The 'What went wrong' block is the useful part;
