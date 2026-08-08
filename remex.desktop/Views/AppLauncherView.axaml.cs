@@ -4,7 +4,6 @@ using Avalonia.Platform.Storage;
 using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -54,10 +53,10 @@ public partial class AppLauncherView : UserControl
         AddHandler(DragDrop.DropEvent, OnFileDrop);
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
+    // No hand-written InitializeComponent — see the note in ConfirmationDialog. A parameterless one
+    // shadows the generated `InitializeComponent(bool loadXaml = true)` and leaves LauncherGrid null.
+    // This file happened to survive it by reaching the control through FindControl<T> instead of the
+    // generated field, so it was latent rather than live (RemEx-wdqx). Both now work.
 
     private void OnFileDragOver(object? sender, DragEventArgs e)
     {

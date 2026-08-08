@@ -1,6 +1,5 @@
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Remex.Desktop.ViewModels;
 
 namespace Remex.Desktop.Views;
@@ -22,10 +21,9 @@ public partial class TrayFlyoutWindow : Window
         // We will rely on explicit Toggle from the TrayIcon.
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
+    // No hand-written InitializeComponent — see the note in ConfirmationDialog. This markup
+    // names nothing, so the declaration was inert here; it is removed so the pattern cannot be
+    // primed by a later edit that adds a named control (RemEx-wdqx).
 
     public void ShowAtTray()
     {

@@ -1,7 +1,6 @@
 using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Remex.Desktop.Services;
 
 namespace Remex.Desktop.Views;
@@ -27,10 +26,10 @@ public partial class RestorePromptWindow : Window
             snapshotTimestampUtc.ToLocalTime().ToString("g", CultureInfo.CurrentCulture));
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
+    // No hand-written InitializeComponent — see the note in ConfirmationDialog. A parameterless one
+    // shadows the generated `InitializeComponent(bool loadXaml = true)` and leaves MessageText,
+    // SkipBtn and RestoreBtn null (RemEx-wdqx). This file inherited the pattern by being copied from
+    // that dialog, which is exactly how the defect spread.
 
     private void OnSkipClicked(object? sender, RoutedEventArgs e) => Close(false);
 

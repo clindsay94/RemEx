@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Remex.Desktop.Services;
@@ -47,8 +46,7 @@ public partial class AddProgramWindow : Window
         Title = LocalizationService.Instance[isEditMode ? "AddProgram_EditTitle" : "AddProgram_Title"];
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
+    // No hand-written InitializeComponent — see the note in ConfirmationDialog. This markup
+    // names nothing, so the declaration was inert here; it is removed so the pattern cannot be
+    // primed by a later edit that adds a named control (RemEx-wdqx).
 }

@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
-using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -49,10 +48,11 @@ public partial class TrayBalloonWindow : Window
         _dismissTimer.Tick += OnDismissTick;
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
+    // No hand-written InitializeComponent — see the note in ConfirmationDialog. A parameterless one
+    // shadows the generated `InitializeComponent(bool loadXaml = true)` and leaves AccentStripe,
+    // GlyphText, TitleText and MessageText null (RemEx-wdqx). This one was the least likely to be
+    // noticed: the fields are read when a balloon is SHOWN, not when the window is constructed, so
+    // the failure waits for the first tray notification rather than arriving at startup.
 
     /// <summary>
     /// Shows (or re-uses) the balloon for one event. Call on the UI thread.
