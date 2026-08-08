@@ -278,7 +278,7 @@ public class FileTransferProtocolSerializationTests
         // RemEx-l580. The reason exists so the phone can say something followable instead of a flat
         // no; a field that does not survive the wire says nothing at all. Both responses carry it
         // because both refuse without asking anyone, and both used to look exactly like a user's Deny.
-        var volumes = RoundTrip(new RemexMessage
+        var volumesMessage = new RemexMessage
         {
             Type = MessageTypes.FileVolumesResponse,
             FileVolumesResponse = new FileVolumesResponse
@@ -288,13 +288,14 @@ public class FileTransferProtocolSerializationTests
                 FullBrowseGranted = false,
                 DenyReason = FileConsentDenyReasons.ClientUnreachable,
             },
-        });
+        };
+        var volumes = RoundTrip(volumesMessage);
         Assert.Equal(FileConsentDenyReasons.ClientUnreachable, volumes.FileVolumesResponse!.DenyReason);
 
         // errorMessage stays null: a deny is not an error, and the desktop client throws on that field.
         Assert.Null(volumes.FileVolumesResponse.ErrorMessage);
 
-        var push = RoundTrip(new RemexMessage
+        var pushMessage = new RemexMessage
         {
             Type = MessageTypes.FilePushResponse,
             FilePushResponse = new FilePushResponse
@@ -303,17 +304,39 @@ public class FileTransferProtocolSerializationTests
                 Accepted = false,
                 DenyReason = FileConsentDenyReasons.ClientUnreachable,
             },
-        });
+        };
+        var push = RoundTrip(pushMessage);
         Assert.Equal(FileConsentDenyReasons.ClientUnreachable, push.FilePushResponse!.DenyReason);
+
+        // AND UNDER THAT EXACT NAME, on both responses. A round-trip alone cannot prove it — it reads
+        // back whatever name it wrote, so a typo in [JsonPropertyName] passes every other assertion
+        // here while breaking every non-.NET reader. The phone half (RemEx-3qmd) will read this key by
+        // hand out of org.json, so the string IS the contract.
+        var volumesJson = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(volumesMessage));
+        Assert.Contains("""
+            "denyReason":"client_unreachable"
+            """, volumesJson, StringComparison.Ordinal);
+
+        var pushJson = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(pushMessage));
+        Assert.Contains("""
+            "denyReason":"client_unreachable"
+            """, pushJson, StringComparison.Ordinal);
 
         // ADDITIVE AND OPTIONAL, so no protocolVersion bump: an omitted field must deserialize to
         // null rather than throwing, which is what every already-installed host will send.
-        var older = RoundTrip(new RemexMessage
+        var olderMessage = new RemexMessage
         {
             Type = MessageTypes.FilePushResponse,
             FilePushResponse = new FilePushResponse { PushId = "p3", Accepted = false },
-        });
-        Assert.Null(older.FilePushResponse!.DenyReason);
+        };
+        Assert.Null(RoundTrip(olderMessage).FilePushResponse!.DenyReason);
+
+        // AND OMITTED RATHER THAN WRITTEN AS AN EXPLICIT NULL, which the round-trip cannot tell apart
+        // because both deserialize to null. Android's optString() on a JSON null hands back the
+        // literal string "null" — the defect WhenWritingNull exists to prevent — so a phone would
+        // read "the PC could not reach you" out of a deny somebody made.
+        var olderJson = System.Text.Encoding.UTF8.GetString(MessageSerializer.Serialize(olderMessage));
+        Assert.DoesNotContain("denyReason", olderJson, StringComparison.Ordinal);
     }
 
     [Fact]

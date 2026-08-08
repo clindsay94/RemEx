@@ -47,6 +47,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The PC now says why it refused a file request nobody was ever asked about.** When your phone asks
+  to browse the PC's drives, or offers to send it a file, the PC normally puts the question on a
+  screen someone can answer. Two cases skip that: the phone is no longer connected by the time the
+  question is ready, and the question cannot be delivered to it. Both were refused correctly — and
+  reported in a way that was indistinguishable from someone tapping Deny, so the phone could only
+  show a flat no for something its owner could have fixed by reconnecting. Those two refusals now
+  carry a reason code, and every refusal a person actually made — including one that was shown and
+  timed out — carries none, which is what keeps the code worth reading. Nothing looks different yet:
+  no client reads the field. The phone side is filed as RemEx-3qmd, and until it lands this is
+  groundwork rather than a fix you can see. The field is additive and optional, so nothing already
+  installed is affected and the protocol version is unchanged.
+
 - **A test that failed only when the whole suite ran said the wrong thing about why.** The test that
   proves a reconnecting phone is still known by the name it gave at pairing waits for the previous
   connection to finish unwinding on the PC before it reconnects — asserting against that leftover
