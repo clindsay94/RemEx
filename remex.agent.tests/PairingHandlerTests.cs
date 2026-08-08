@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Builder;
@@ -9,6 +10,7 @@ using Remex.Core.Models;
 using Remex.Agent.Services.Security;
 using Remex.Agent.Services;
 using Remex.Core.Services.FileTransfer;
+using Xunit.Sdk;
 
 namespace Remex.Agent.Tests;
 
@@ -472,8 +474,8 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>
         // which is the exact line this test exists to protect.
         // Generous, because this waits on the SERVER side of a socket the client has already closed,
         // and the whole suite is running in parallel around it. It is a wait for a state, not a sleep:
-        // it returns the moment the session is gone.
-        await WaitForSessionCountAsync(sessions, 0);
+        // it returns the moment the session is gone, and it says what it gave up at if it never is.
+        await WaitForSessionCountAsync(sessions, 0, SessionDrainBudget);
         Assert.Empty(sessions.Snapshot());
 
         // Now reconnect exactly as a phone does the next morning: a client id, a proof, and no name.
@@ -515,24 +517,113 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>
         }
     }
 
-    /// <summary>Waits for the registry to settle on a session count, rather than sleeping.</summary>
-    private static Task WaitForSessionCountAsync(ClientSessionRegistry sessions, int expected) =>
-        WaitForAsync(() => sessions.Snapshot().Count == expected);
+    /// <summary>How long a wait on something the host does on its own schedule may take.</summary>
+    private static readonly TimeSpan DefaultWaitBudget = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// The drain wait gets longer than the rest, because it is the one that has been seen to expire.
+    /// </summary>
+    /// <remarks>
+    /// It waits on the SERVER side of a socket the client has already closed — <c>HandleAsync</c>
+    /// unwinding through its finally block — with every other test in the solution running in
+    /// parallel around it, and it expired once mid whole-suite run while passing on its own
+    /// (RemEx-w7ei). The extra budget costs nothing when things are working, because the wait
+    /// returns the instant the session goes: only a real regression ever spends it.
+    /// </remarks>
+    private static readonly TimeSpan SessionDrainBudget = TimeSpan.FromSeconds(60);
+
+    /// <summary>
+    /// Waits for the registry to settle on a session count, and says what it saw if it never does.
+    /// </summary>
+    /// <remarks>
+    /// **THE MESSAGE ON TIMEOUT IS THE POINT** (RemEx-w7ei). When this wait expired, the only
+    /// evidence it left behind was the caller's next assertion printing one leftover session — which
+    /// reads exactly like state leaked in from another test, and was read that way. It was not: the
+    /// leftover was this test's own pairing connection, still unwinding. The count it gave up at,
+    /// the counts it saw on the way, and the sessions themselves are what tell those two apart the
+    /// next time without a trx dig. An elapsed time well past the budget is a third answer again —
+    /// a starved thread pool rather than a host that never got there.
+    /// </remarks>
+    private static async Task WaitForSessionCountAsync(
+        ClientSessionRegistry sessions, int expected, TimeSpan? budget = null)
+    {
+        var counts = new List<int>();
+        var outcome = await WaitForAsync(
+            () =>
+            {
+                var count = sessions.Snapshot().Count;
+                if (counts.Count == 0 || counts[^1] != count) counts.Add(count);
+                return count == expected;
+            },
+            budget);
+
+        if (outcome.Satisfied) return;
+
+        var leftover = sessions.Snapshot();
+        Assert.Fail(
+            $"The session count never reached {expected}: gave up at {leftover.Count} after "
+            + $"{outcome.Elapsed.TotalSeconds:F1}s, having seen {string.Join(" -> ", counts)}. "
+            + "Left in the registry: "
+            + string.Join(", ", leftover.Select(s => $"[{s.RemoteAddress} / {s.DeviceName}]")) + ".");
+    }
+
+    /// <summary>What one <see cref="WaitForAsync"/> call ended up doing.</summary>
+    /// <param name="Satisfied">Whether the condition held before the budget ran out.</param>
+    /// <param name="Elapsed">How long the wait actually took, overshoot of the budget included.</param>
+    private readonly record struct WaitOutcome(bool Satisfied, TimeSpan Elapsed);
 
     /// <summary>
     /// Waits for a condition the host reaches on its own schedule.
     /// </summary>
     /// <remarks>
     /// Returns the moment it holds, so the generous deadline costs nothing when things are working —
-    /// it only buys tolerance for the whole suite running in parallel around this. Deliberately does
-    /// NOT assert on timeout: the caller asserts the real thing afterwards, so a failure reports what
-    /// was actually wrong rather than "timed out".
+    /// it only buys tolerance for the whole suite running in parallel around this. Does NOT assert on
+    /// timeout: what a timeout means is the caller's to say, and a caller waiting for a value asserts
+    /// the real thing afterwards so a failure reports what was actually wrong rather than "timed
+    /// out". <see cref="WaitForSessionCountAsync"/> is the one caller that does report it, because
+    /// there the count IS the real thing.
     /// </remarks>
-    private static async Task WaitForAsync(Func<bool> condition)
+    private static async Task<WaitOutcome> WaitForAsync(Func<bool> condition, TimeSpan? budget = null)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(30);
-        while (!condition() && DateTime.UtcNow < deadline)
+        var limit = budget ?? DefaultWaitBudget;
+        var started = Stopwatch.StartNew();
+
+        bool satisfied;
+        while (!(satisfied = condition()) && started.Elapsed < limit)
             await Task.Delay(25);
+
+        return new WaitOutcome(satisfied, started.Elapsed);
+    }
+
+    /// <summary>
+    /// The drain wait says what it gave up at, rather than leaving the next reader to guess.
+    /// </summary>
+    /// <remarks>
+    /// Pins the diagnostic, not the timing (RemEx-w7ei). The recorded occurrence of that flake left
+    /// nothing behind but a single leftover session, and it was misread as state leaking in from
+    /// another test — the leftover was in fact the same test's own pairing connection, still
+    /// unwinding on the server. A message carrying the count, the elapsed wait and the sessions
+    /// themselves is what makes those two readings distinguishable, so it is worth its own test.
+    /// </remarks>
+    [Fact]
+    public async Task TheDrainWaitReportsWhatItGaveUpAt()
+    {
+        var registry = new ClientSessionRegistry();
+
+        // Snapshot() reads the address and the name and never the socket, so an unconnected one is
+        // enough to stand a session up here.
+        using var socket = new ClientWebSocket();
+        using var handle = registry.Register("192.168.1.100", socket);
+        registry.Identify(handle, "reconnect-name-client", "Connor's Pixel");
+        registry.MarkAuthenticated(handle, identityProven: true);
+
+        var failure = await Assert.ThrowsAnyAsync<XunitException>(
+            () => WaitForSessionCountAsync(registry, 0, TimeSpan.FromMilliseconds(250)));
+
+        Assert.Contains("never reached 0", failure.Message);
+        Assert.Contains("gave up at 1", failure.Message);
+        Assert.Contains("192.168.1.100", failure.Message);
+        Assert.Contains("Connor's Pixel", failure.Message);
     }
 
     /// <summary>Reads until the wanted type arrives; the host also pushes host_info and syncs.</summary>
