@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Services;
 using Remex.Core.Services.Security;
 
 namespace Remex.Agent.Services.Security;
@@ -317,6 +318,15 @@ public sealed class CertificateService : ICertificateService
     {
         if (_certPathOverride is not null)
             return _certPathOverride;
+
+        // Ahead of the platform branches, for the same reason as the pairing store (RemEx-4u29) and
+        // with more at stake: a test that resolves the production path does not merely read the
+        // machine's TLS certificate, it CREATES one when the file is absent — and a regenerated
+        // cert.pfx is a new SPKI, which unpairs every pinned client on the machine.
+        if (RemexDataPaths.HostStateDirectoryOverride is { } stateDirectory)
+        {
+            return Path.Combine(stateDirectory, "cert.pfx");
+        }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {

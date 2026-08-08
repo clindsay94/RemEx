@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Services;
 using Remex.Desktop.Services;
 
 namespace Remex.Agent.Services.Security;
@@ -175,6 +176,14 @@ public sealed class PairedClientNameStore
     /// </remarks>
     private static string GetDefaultStorePath()
     {
+        // Ahead of every platform branch — see PairedClientRegistry.GetDefaultStorePath. This store
+        // must stay in the same directory as the registry it names clients for, and the redirect
+        // keeps that true (RemEx-4u29).
+        if (RemexDataPaths.HostStateDirectoryOverride is { } stateDirectory)
+        {
+            return Path.Combine(stateDirectory, "paired_client_names.json");
+        }
+
         if (OperatingSystem.IsAndroid())
         {
             return Path.Combine(

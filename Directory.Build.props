@@ -191,4 +191,36 @@
     -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);IL3053</WarningsNotAsErrors>
   </PropertyGroup>
+
+  <!--
+    Every test project gets the host-state redirect compiled into it, whether or not anyone
+    remembered to ask for it (RemEx-4u29).
+
+    WHAT IT DOES AND WHY IT IS HERE RATHER THAN IN EACH .csproj. build/TestHostStateRedirect.cs holds
+    a [ModuleInitializer] that points RemEx's host-state stores — paired_clients.json, cert.pfx,
+    file_transfer_trust.json and the rest — at a per-run temp directory. Without it, a test that does
+    not inject a path resolves the SAME machine-wide C:\ProgramData\RemEx store the real host uses,
+    and the suite writes credential records and filesystem-browse grants into the developer's live
+    security state. That is not hypothetical: seven fixture identities were found in the real pairing
+    registry, and a fixture's fullBrowseGranted record in the real trust store.
+
+    Opting in per project is what failed the first time — every one of those tests was written by
+    someone who did not know the default reached ProgramData. A condition here covers the test
+    project nobody has added yet, which is the only version of this guard that stays true.
+
+    A LINKED SOURCE FILE RATHER THAN A SHARED PROJECT REFERENCE, because a module initializer in a
+    referenced assembly only runs once something touches that assembly — a test that never did would
+    still reach the real store. The initializer has to be compiled INTO each test assembly.
+
+    ToLowerInvariant() BEFORE EndsWith, NOT EndsWith(value, comparison): MSBuild's property-function
+    binder does not resolve the two-argument String.EndsWith overload on every SDK — it evaluates on
+    10.0.302 and dies on 10.0.104 with MSB4184. The long-form reasoning is in the comment above the
+    TreatWarningsAsErrors PropertyGroup, which is where that was measured. Case-insensitive because
+    this repo must build on a case-sensitive filesystem and a future Remex.Foo.Tests.csproj would
+    otherwise be skipped in silence — which here means silently writing to ProgramData again.
+  -->
+  <ItemGroup Condition="$(MSBuildProjectName.ToLowerInvariant().EndsWith('.tests'))">
+    <Compile Include="$(MSBuildThisFileDirectory)build\TestHostStateRedirect.cs"
+             Link="TestHostStateRedirect.cs" />
+  </ItemGroup>
 </Project>

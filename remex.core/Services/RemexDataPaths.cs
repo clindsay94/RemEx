@@ -32,6 +32,51 @@ public static class RemexDataPaths
     private const string LegacyWindowsFolderName = "Remex";
 
     /// <summary>
+    /// <see cref="AppContext"/> key holding an absolute directory that replaces every host-state
+    /// directory this class resolves, on every platform. Unset in production; the test assemblies set
+    /// it to a per-run temp directory from a module initializer (<c>build/TestHostStateRedirect.cs</c>),
+    /// before any test code runs.
+    ///
+    /// <para>
+    /// WHY THIS EXISTS (RemEx-4u29). Without it the suite writes into the machine-wide store the host
+    /// itself uses: a test's fixture identity became a real entry in
+    /// <c>C:\ProgramData\RemEx\paired_clients.json</c>, and a fixture grant became a real
+    /// <c>fullBrowseGranted</c> record in <c>file_transfer_trust.json</c>. Both files are security
+    /// state — a pairing entry is a credential record and a full-browse grant is standing
+    /// authorisation to read the PC's filesystem — so a test fixture must not be able to create
+    /// either, and after a test run you could no longer tell a real pairing from a fixture by
+    /// inspection. Seven fixture identities were found on the developer's machine when this was
+    /// filed; six remained when it was fixed, because a later test run deleted one — the same suite,
+    /// still editing the same live credential store, which is the point.
+    /// </para>
+    ///
+    /// <para>
+    /// AN <see cref="AppContext"/> KEY RATHER THAN AN ENVIRONMENT VARIABLE, deliberately. These paths
+    /// decide where pairing credentials and browse grants are read from, so the redirect should be as
+    /// hard to set from outside as the binary is to replace. An environment variable is inherited by
+    /// anything the host launches and can be set by anything that can start it. This key needs either
+    /// code already running in the process, or write access to <c>Remex.Agent.runtimeconfig.json</c>
+    /// beside the executable — the .NET host seeds AppContext from its <c>configProperties</c>, so
+    /// the guarantee is NOT "in-process only", and review corrected a first draft that said it was.
+    /// On a Program Files install that write access is admin-equivalent, which is the same access
+    /// needed to swap the binary outright, so the choice stands on the comparison rather than on an
+    /// absolute.
+    /// </para>
+    /// </summary>
+    public const string HostStateDirectoryOverrideKey = "Remex.HostStateDirectoryOverride";
+
+    /// <summary>
+    /// The directory named by <see cref="HostStateDirectoryOverrideKey"/>, or <c>null</c> when unset
+    /// — which is always, in production. Blank or non-string values read as unset so a half-applied
+    /// override cannot silently redirect state to the process working directory.
+    /// </summary>
+    public static string? HostStateDirectoryOverride
+        => AppContext.GetData(HostStateDirectoryOverrideKey) is string dir
+            && !string.IsNullOrWhiteSpace(dir)
+                ? dir
+                : null;
+
+    /// <summary>
     /// The machine-wide RemEx data directory on Windows (<c>C:\ProgramData\RemEx</c>). Matches the
     /// folder the TLS certificate is stored in (see <c>CertificateService.GetCertificatePath</c>).
     /// </summary>
@@ -44,10 +89,17 @@ public static class RemexDataPaths
     /// machine-wide location. <paramref name="legacyPerUserDirectory"/> is the per-user folder the
     /// caller used historically and is returned unchanged on non-Windows platforms. The resulting
     /// directory is created if it does not exist.
+    ///
+    /// <para>
+    /// <see cref="HostStateDirectoryOverrideKey"/> wins over both, on every platform — the redirect
+    /// has to cover Linux and macOS too, where these stores live under the per-user
+    /// <c>LocalApplicationData\Remex</c> rather than in ProgramData.
+    /// </para>
     /// </summary>
     public static string ResolveDirectory(string legacyPerUserDirectory)
     {
-        var dir = OperatingSystem.IsWindows() ? WindowsMachineWideDirectory : legacyPerUserDirectory;
+        var dir = HostStateDirectoryOverride
+            ?? (OperatingSystem.IsWindows() ? WindowsMachineWideDirectory : legacyPerUserDirectory);
         Directory.CreateDirectory(dir);
         return dir;
     }
@@ -58,10 +110,18 @@ public static class RemexDataPaths
     /// when the target already exists, or when the legacy file is absent/unreadable by the current
     /// account (for example a legacy file left in another user's profile — that case requires a
     /// one-time re-pair / re-configure). Returns true when a file was copied.
+    ///
+    /// <para>
+    /// Also a no-op while <see cref="HostStateDirectoryOverrideKey"/> is set. The migration reads the
+    /// real per-user profile, so leaving it enabled under the override would copy the developer's
+    /// live state into the test directory — the redirect would stop tests writing real state while
+    /// still letting them read it, and a test asserting "no clients are paired" would start failing
+    /// on whichever machine had a pairing.
+    /// </para>
     /// </summary>
     public static bool TryMigrateWindowsFile(string fileName)
     {
-        if (!OperatingSystem.IsWindows())
+        if (!OperatingSystem.IsWindows() || HostStateDirectoryOverride is not null)
         {
             return false;
         }

@@ -47,6 +47,140 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The test suite was writing into the machine's real pairing and file-trust stores, and now it
+  cannot reach them at all.** A test that did not inject a path resolved the same machine-wide
+  location the running host uses, so fixtures wrote to `C:\ProgramData\RemEx` for real. This is not
+  untidiness: an entry in `paired_clients.json` is a credential record, and an entry in
+  `file_transfer_trust.json` with `fullBrowseGranted` is a standing authorisation to browse the PC's
+  filesystem. Both were created by fixtures. It also made the stores useless as evidence — after a
+  test run you could no longer tell a real pairing from a fixture by inspection.
+  Every `*.tests` project now compiles in `build/TestHostStateRedirect.cs`, a module initializer that
+  points all host state at a per-run temp directory before any test executes. **Wired in
+  `Directory.Build.props` rather than opted into per project, deliberately:** every one of the
+  offending tests was written by someone who did not know the default reached ProgramData, so a guard
+  that has to be remembered is the same guard that already failed. A test project added later is
+  covered without anyone doing anything. It is a module initializer, and one copy compiled into each
+  assembly, because those are the only two properties that make it total — the runtime guarantees a
+  module initializer runs before any other code in its module, which an xUnit fixture cannot, and a
+  referenced library's initializer only runs once something touches that library, so a test that
+  never did would still reach the real store.
+  The redirect is an `AppContext` key rather than an environment variable, and that is a security
+  choice rather than a style one: these paths decide where pairing credentials are read from, so the
+  switch should be as hard to set from outside as the binary is to replace. An env var is inherited
+  by anything the host launches; this key needs code inside the process, or write access to
+  `Remex.Agent.runtimeconfig.json` beside the executable, since the .NET host seeds AppContext from
+  its `configProperties`. **Review corrected a first draft that claimed in-process only** — the
+  guarantee is a comparison, not an absolute, and on a Program Files install that write access is the
+  same admin-equivalent access needed to swap the binary outright. Production never sets it, so the
+  shipped resolution is byte-for-byte what it was. It covers Linux and macOS too, where
+  these stores live under the per-user profile rather than in ProgramData, and it suppresses the
+  legacy-file migration while active — otherwise the redirect would stop tests *writing* real state
+  while still letting them *read* it, and "no clients are paired" would start failing on whichever
+  machine had a pairing.
+  **The sharpest edge was the one nobody had noticed.** `cert.pfx` resolves through the same
+  machine-wide directory, and a test that reaches it does not merely read the host's TLS identity —
+  `GetOrCreateCertificateAsync` creates one when the file is absent, and a regenerated certificate is
+  a new SPKI, which unpairs every pinned client on the machine.
+  Proved by injection four times, each with the build's exit code checked first since a mutation
+  that does not compile "passes" every test it never runs. Disabling the override wholesale fails 7 of
+  the 10 new tests — the three survivors are the two source-level pins described below and the
+  behavioural safety net beside them, which correctly still pass, because they measure a different
+  thing. (That figure was 8 of 9 before review, and the change is instructive rather than cosmetic:
+  the test that stopped failing here is precisely the vacuous one described below, which only ever
+  failed because a helper throws once the override is gone. Splitting it removed a number that had
+  been counted as evidence and was not.) Pointing just the pairing store's redirect at
+  the machine-wide directory fails exactly `PairingStore_DefaultPath_IsRedirected` and the
+  pre-existing test that pins the names file beside the registry it describes. Simplifying the
+  pairing registry's migration guard back to `storePath is null` fails exactly that store's pin.
+  Deleting the override clause from `RemexDataPaths.TryMigrateWindowsFile` fails exactly that
+  method's pin. The tests assert on the DEFAULT paths on purpose — injecting a temp path was never
+  the failing case.
+  **The fourth injection is there because review found the test that was supposed to catch it could
+  not.** The first draft of that test asserted on `paired_clients.json` by name and was
+  order-dependent; the second replaced it with a GUID probe name and was *vacuous*, which is worse,
+  because it still read as evidence. With no migration source for the probe, `TryMigrateWindowsFile`
+  returns false at its `File.Exists(legacyPath)` check whether or not the guard is present, and the
+  second assertion looked in the override directory — a path that method never writes to under any
+  mutation. Measured after the fact: deleting the override clause outright left all nine tests green,
+  and no other test in the suite noticed either. Its contribution to the original "8 of 9" figure was
+  only that the `OverrideDirectory` helper throws once the override is gone. That matters more than a normal test bug, because
+  `TryMigrateWindowsFile` is the one remaining path in this change that WRITES into
+  `C:\ProgramData\RemEx`, and its guard is the only thing stopping a test run from copying the
+  developer's real `%LOCALAPPDATA%\Remex` state into the machine-wide store. It is now split in two:
+  a source-level pin that does fail when the clause is deleted, and a separate behavioural check
+  labelled as the safety net it is, asserting against the machine-wide directory rather than a path
+  the method cannot produce.
+  **Both migration guards are pinned by source assertions rather than behavioural ones, and that is a
+  real weakness rather than a stylistic choice.** Neither guard's live branch can be reached from a
+  test: the redirect is unconditional in every test assembly, so nothing can observe either code path
+  with the override unset, and both migrations read from `%LOCALAPPDATA%`, which is not redirectable
+  and must not be fabricated — fabricating it is the bead, and if a guard were then removed the test
+  would itself write into ProgramData. So the tests pin the conditions. They catch deletion, which is
+  the regression that actually occurs, but they assert only that the guard *mentions* the override, so
+  an *inverted* guard would still pass. Tightening the regexes further would only make them brittle
+  against reformatting. Both migrations are deliberately left without a test seam: their copy logic is
+  straight-line, neither had coverage before this change so none was lost, and every added seam on a
+  credential-path resolver is a permanent surface. Review pointed out that the sibling
+  `PairedClientRegistry.TryMigrateLegacyStore` is exactly such a seam and is what makes that store's
+  guard testable at all, so "no test-only production API here" would have been the wrong reason; the
+  cost/benefit is the right one. Filed as RemEx-9lbg.
+  **Review found three blocking defects in the first draft and a fourth in the second, and the
+  pattern in the first three is worth more than any one of them: each was the right rule applied to
+  only some of the places it governs.** The fourth was a different animal and is described above — a
+  test that could not fail, guarding the one path that still writes to ProgramData.
+  `PairedClientRegistry` runs its *own* legacy migration, separate from the one in `RemexDataPaths`,
+  and the first draft suppressed the second under the redirect while leaving the first live — on the
+  one store the bead was actually filed over. Its source is the developer's real
+  `%LOCALAPPDATA%\Remex` store, which the move to ProgramData copied rather than deleted, so it still
+  exists on every machine that ran an older build; the redirect would have stopped tests writing real
+  credentials while quietly starting to feed them real ones. Latent on this PC only because that
+  particular file happens to be absent. Second, the new migration test asserted on
+  `paired_clients.json` by name, and the whole assembly shares one redirect directory — `RemexHostFactory`
+  boots a real host that registers the registry on the default path, so `PairingHandlerTests`
+  legitimately creates that file. The full-suite pass was xUnit discovery order, and review reproduced
+  the failure with a two-class filter; the assertion now uses a GUID probe name nothing else can
+  create. Third, `-WriteProposal` wrote its cleaned copy *beside* the store, and a proposal for
+  `paired_clients.json` contains every genuine client's reconnect secret: `C:\ProgramData\RemEx`
+  grants `BUILTIN\Users` write access by inheritance, and the live store escapes that only because
+  `RestrictStorePermissions` breaks inheritance on that one file. The copy did not escape it. Review
+  checked the actual ACL rather than reasoning about it. Proposals now go to a per-user temp
+  directory and are hardened as they are written.
+  **What was already written is reported, not deleted.** `scripts/find-test-fixture-identities.ps1`
+  lists entries in the three stores whose client id is not the 32 hex characters a real client
+  generates. Run against this machine it found six fixture credentials still sitting in the live
+  pairing registry beside four genuine ones — attacker-phone, bodyless-phone,
+  integration-test-client-1, reconnect-name-client, victim-phone, volumes-phone.
+  **Six, where the bead reported seven, and the missing one is not a miscount.** Review asked for the
+  discrepancy to be ruled out rather than papered over, so it was: `probe-phone` is present in the
+  2026-08-07 backup of the store and absent from the live file, which was last written at
+  05:31:19Z on 2026-08-08. All four genuine client ids are present in both, so no real pairing was
+  lost — but the suite did not merely *add* fixture credentials to a live security file, it deleted
+  an entry from one, while this bead was open. That is the argument for the change, made by the thing
+  the change prevents. The seven/six figures are now reconciled in all five places that quote them
+  rather than silently harmonised to one number. It changes nothing:
+  the same file holds the user's real pairings, the fixture test is a heuristic, and a heuristic must
+  not be allowed to revoke credentials unattended — a wrong deletion unpairs a phone silently, with
+  no way back short of re-pairing by PIN. `-WriteProposal` writes a cleaned copy into a per-user temp
+  directory — not beside the store, for the ACL reason above — for a person to inspect and move into
+  place. The proposal file is created empty, hardened to owner-only, and only then filled: writing
+  first and hardening afterwards leaves a window in which every genuine client's reconnect secret is
+  readable at a predictable path. The containing directory is hardened too, which matters only off
+  Windows — `%TEMP%` is already owner-only, `/tmp` is not.
+  **What this change deliberately does NOT cover**, all filed rather than folded in: stores outside
+  ProgramData that tests can still write to in the developer's real profile — `PinnedCertStore`,
+  `RemexClientSettings`, `DashboardLayoutService`, `ActivityService` and the HKCU Run key
+  (RemEx-ln0k); the new full-browse test's order-coupling to the assembly-shared redirect directory,
+  currently safe only because parallelization is disabled (RemEx-sc23); two now-stale comments
+  about ProgramData writes under test (RemEx-rj0a); and the predictable, symlink-attackable proposal
+  path the script uses on Linux (RemEx-97aa — the silent-failure half is fixed here, since
+  `$ErrorActionPreference` does not stop on a failing *native* command before PowerShell 7.4 and this
+  script requires only 7.0, so both `chmod` calls now check `$LASTEXITCODE` and throw). 1911 of 1912 tests pass (1 skipped), 0
+  warnings on a `-t:Rebuild`. Verified on Windows; the Linux paths in the redirect and the script's
+  `chmod` branch are reasoned, not run. (`RemexDataPaths.cs`, `PairedClientRegistry.cs`, `PairedClientNameStore.cs`,
+  `CertificateService.cs`, `SessionGuardSettings.cs`, `Directory.Build.props`,
+  `build/TestHostStateRedirect.cs`, `HostStateRedirectionTests.cs`,
+  `scripts/find-test-fixture-identities.ps1`; RemEx-4u29.)
+
 - **The autonomous board-drain workflow moved out of this repository.** The `/ralph` and `/drain`
   skills and the five scripts behind them now live in `~/.claude/ralph/` and apply to any project,
   not just this one. What stays here is what is actually about RemEx: `.ralph.psd1` (the verify

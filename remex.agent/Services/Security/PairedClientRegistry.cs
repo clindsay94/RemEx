@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Remex.Core.Services;
 
 namespace Remex.Agent.Services.Security;
 
@@ -36,11 +37,20 @@ public sealed class PairedClientRegistry
         _logger = logger;
 
         // storePath is only supplied by tests; production resolves the default machine-wide path.
-        // Only attempt legacy migration for the production path so tests stay hermetic.
-        var useDefaultPath = storePath is null;
+        // Only attempt legacy migration for the production path so tests stay hermetic — and NOT
+        // under the host-state redirect either, even though that path is also "the default one".
+        // The migration's SOURCE is the developer's real %LOCALAPPDATA%\Remex store, which the move
+        // to ProgramData copied rather than deleted, so it still exists on every machine that ran an
+        // older build. Migrating under the redirect would import their actual client ids and
+        // reconnect secrets into the test directory: the redirect would stop tests writing real
+        // credentials while quietly starting to feed them real ones, and "no clients are paired"
+        // would fail on whichever machine had a pairing. Same reasoning as, and found missing
+        // against, RemexDataPaths.TryMigrateWindowsFile (RemEx-4u29).
+        var shouldMigrateLegacyStore =
+            storePath is null && RemexDataPaths.HostStateDirectoryOverride is null;
         _storePath = storePath ?? GetDefaultStorePath();
 
-        if (useDefaultPath)
+        if (shouldMigrateLegacyStore)
         {
             MigrateLegacyStoreIfNeeded();
         }
@@ -307,6 +317,14 @@ public sealed class PairedClientRegistry
 
     private static string GetDefaultStorePath()
     {
+        // Ahead of every platform branch: a redirected run must not reach the real store on ANY of
+        // them, and this file is the one the bead was filed over — seven test fixture identities,
+        // each with a stored key, sitting in the developer's machine-wide registry (RemEx-4u29).
+        if (RemexDataPaths.HostStateDirectoryOverride is { } stateDirectory)
+        {
+            return Path.Combine(stateDirectory, "paired_clients.json");
+        }
+
         if (OperatingSystem.IsAndroid())
         {
             return Path.Combine(

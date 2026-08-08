@@ -1,3 +1,5 @@
+using Remex.Core.Services;
+
 namespace Remex.Agent.Services.Session;
 
 /// <summary>
@@ -16,10 +18,17 @@ namespace Remex.Agent.Services.Session;
 /// </summary>
 public static class SessionGuardSettings
 {
+    // The override keeps a test from arming the real flag: a "1" here is what lets the host run
+    // `tscon /dest:console` and physically lock the developer's session (RemEx-21g, RemEx-4u29).
     private static string FlagPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-        "RemEx",
+        RemexDataPaths.HostStateDirectoryOverride
+            ?? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "RemEx"),
         "keep-session-unlocked.flag");
+
+    /// <summary>Exposes the resolved flag path so tests can pin it inside the redirected store.</summary>
+    internal static string FlagPathForTests => FlagPath;
 
     /// <summary>True only when the user has explicitly enabled the feature; false on any error.</summary>
     public static bool IsKeepUnlockedEnabled()
