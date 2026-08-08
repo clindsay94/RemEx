@@ -455,6 +455,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Switching straight from one PC to another could leave the second one reading "Not connected
+  yet".** The Known PCs list puts the machine you used most recently at the top, and it learned when
+  that happened from a flag that only says whether *a* connection exists — never which PC is on the
+  other end of it. Tap a second PC's row while the first one is still connected and the phone does
+  drop the old connection before making the new one, but that flag goes off and back on in the space
+  of a single handshake, and the list only checks it when the phone gets a moment to look. Busy
+  drawing the screen you just tapped, it could look once, see "connected" both times, and conclude
+  nothing had changed. The PC you were now sitting on kept a blank last-connected time, showed
+  "Not connected yet" underneath its own name, and never became the machine RemEx offers you first.
+  The list now hears which PC connected rather than that one did, so a switch is something it cannot
+  miss no matter how busy the phone is.
+  It also takes the PC's address from the connection itself instead of reading it back out of your
+  settings. The settings are written before the connection is attempted, so reading them afterwards
+  names the PC you asked for rather than the one that answered — and a PC that never answered must
+  never be recorded as the one you last used, or the ordering of the whole list starts describing
+  something that did not happen.
+
 - **A file-permission prompt sent to your phone carried no deadline, so the phone had no way to know
   the question had already expired.** The PC gives you 60 seconds to answer and then refuses on your
   behalf. The dialog on the PC has always known that and counted down; the version routed to your

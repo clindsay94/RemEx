@@ -3,6 +3,7 @@ package com.clindsay94.remex.ui.screens
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.clindsay94.remex.EstablishedConnection
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.DiscoveredHost
@@ -166,10 +167,18 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                     _connectionError.value = null
                     _isCertMismatch.value = false
                     _connectionStatus.value = res.getString(R.string.status_connected)
-                    recordCurrentHostAsLastConnected()
                 } else if (!_isConnecting.value) {
                     _connectionStatus.value = res.getString(R.string.status_disconnected)
                 }
+            }
+        }
+
+        // Stamped off the PC that connected, NOT off the connected flag — see
+        // recordHostAsLastConnected. A new subscriber gets the current value, so a screen created
+        // while already connected still stamps.
+        viewModelScope.launch {
+            RemexClientManager.connectedHost.collect { established ->
+                if (established != null) recordHostAsLastConnected(established)
             }
         }
 
@@ -387,17 +396,37 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
      * and the LAN tomorrow keeps one timestamp instead of two. A host with no pin is skipped: it has
      * not finished pairing, so it has no identity to stamp.
      *
-     * Driven by the disconnected-to-connected edge of a StateFlow, which conflates equal values —
-     * so a host switch the native client serviced WITHOUT ever reporting a disconnect would leave
-     * the new PC unstamped. Stamping on the host changing while still connected would close that,
-     * and was rejected: the host is saved BEFORE the connection is attempted, so it would stamp a
-     * PC that had not connected yet. A missing stamp understates; a false one corrupts the ordering
-     * this whole list is sorted by. Whether that edge actually fires on a switch needs a device to
-     * answer (RemEx-bz9t).
+     * Driven by [RemexClientManager.connectedHost] rather than by the false-to-true edge of the
+     * connected flag, and takes the PC from that event rather than reading it back out of settings.
+     * Both halves of that are the fix for RemEx-bz9t:
+     *
+     * The edge was never safe to rely on. A host switch does reach the native client as a real
+     * disconnect — `RemexNativeClient.ConnectAsync` awaits `DisconnectAsync` before it opens the new
+     * socket, and `DisconnectAsync` raises `ConnectionStateChanged(false)` on its way out whether or
+     * not anything was open — so the false is always SENT. But a StateFlow only guarantees the latest
+     * value, and drops one that equals the last it delivered: a collector not scheduled between the
+     * false and the true (the main thread is busy recomposing the screen the user just tapped, which
+     * is exactly when a switch happens) sees `true` following `true` and never re-fires. The PC the
+     * user is now sitting on would keep `lastConnectedAtMillis = 0`, read "Not connected yet", and
+     * never become the most-recently-used default. Keying the value on the host and an incrementing
+     * epoch removes the possibility rather than shortening the window: consecutive establishments
+     * are never equal, so a slow collector can fall behind but cannot mistake one for another.
+     *
+     * Taking the host from the event closes the other half. The original stamped
+     * `settingsManager.hostFlow`, which `connect` writes BEFORE it attempts the connection — so a
+     * settings read at stamp time names the PC the user asked for, not the one that answered, and
+     * on a switch it is briefly the wrong one. Stamping on a host change alone was rejected in
+     * RemEx-k62t for exactly that reason: a missing stamp understates, but a false one corrupts the
+     * ordering this whole list is sorted by. An event that arrives only on an established connection
+     * and carries its own host has neither failure.
      */
-    private fun recordCurrentHostAsLastConnected() {
+    private fun recordHostAsLastConnected(connection: EstablishedConnection) {
+        // Read before the launch. The pin lookup below suspends, so two connections close together
+        // could otherwise reach the clock out of order and hand the earlier PC the later stamp —
+        // inverting the one thing this list is sorted by.
+        val connectedAtMillis = System.currentTimeMillis()
         viewModelScope.launch {
-            val host = settingsManager.hostFlow.first()
+            val host = connection.host
             if (host.isBlank()) return@launch
             val identity =
                     HostIdentity.keyFor(PinnedHostStore.getPin(getApplication(), host))
@@ -405,8 +434,8 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             settingsManager.recordKnownHostConnection(
                     identity = identity,
                     address = host,
-                    port = settingsManager.portFlow.first(),
-                    atMillis = System.currentTimeMillis()
+                    port = connection.port,
+                    atMillis = connectedAtMillis
             )
             _pairedByAddress.value = PinnedHostStore.listPaired(getApplication())
         }

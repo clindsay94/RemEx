@@ -17,7 +17,20 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 import org.json.JSONObject
+
+/**
+ * One connection the native client actually established, identified by the PC it reached.
+ *
+ * [epoch] counts established connections and exists only to make consecutive values unequal.
+ * [RemexClientManager.connectedHost] is a StateFlow, so a collector that is not scheduled between
+ * two updates sees only the later one and skips it entirely when it compares equal to the value it
+ * last handled — which for a plain `Boolean` connected flag means a reconnect can pass unobserved.
+ * Counting makes every establishment its own value, so a collector may fall behind but can never
+ * mistake a new connection for the one it already handled. (RemEx-bz9t)
+ */
+data class EstablishedConnection(val host: String, val port: Int, val epoch: Long)
 
 object RemexClientManager : RemexCoreClient.RemexCallback {
 
@@ -26,6 +39,24 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected = _isConnected.asStateFlow()
+
+    /**
+     * The PC currently connected, or null while disconnected.
+     *
+     * Carries the host the native client was pointed at rather than whatever the settings say now:
+     * the settings are written BEFORE the connection is attempted, so a settings read at
+     * notification time names the PC the user asked for, not the one that answered. Anything that
+     * records "this PC connected" must key off this, not off [isConnected] plus a settings lookup.
+     * (RemEx-bz9t)
+     */
+    private val _connectedHost = MutableStateFlow<EstablishedConnection?>(null)
+    val connectedHost = _connectedHost.asStateFlow()
+
+    /** Host/port of the connect attempt in flight, so a success can be attributed to a PC. */
+    @Volatile private var pendingTarget: Pair<String, Int>? = null
+
+    /** Monotonic counter behind [EstablishedConnection.epoch]. Written from the JNI callback thread. */
+    private val connectionEpoch = AtomicLong(0L)
 
     private val _isConnecting = MutableStateFlow(false)
     val isConnecting = _isConnecting.asStateFlow()
@@ -301,6 +332,11 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         val port = settings.portFlow.first()
         val clientId = settings.getOrCreateClientId()
 
+        // Every connect — manual, auto-reconnect, heartbeat self-heal — funnels through here, so
+        // this is the one place that knows which PC the native client is about to be pointed at.
+        // Recorded now and read back when the native side reports success (RemEx-bz9t).
+        setPendingTarget(host, port)
+
         _isConnecting.value = true
         try {
             if (RemexCoreClient.isLibraryLoaded) {
@@ -550,6 +586,18 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     override fun onConnectionStateChanged(isConnected: Boolean) {
         _isConnected.value = isConnected
         _isConnecting.value = false
+        // Which PC this is, not merely that there is one. A host switch drives this callback false
+        // then true — the native ConnectAsync closes the existing socket before opening the new one
+        // — but [isConnected] alone cannot express the difference between "still A" and "now B", so
+        // a collector that missed the intervening false would see no change at all. (RemEx-bz9t)
+        _connectedHost.value =
+                if (isConnected) {
+                    pendingTarget?.let { (host, port) ->
+                        EstablishedConnection(host, port, connectionEpoch.incrementAndGet())
+                    }
+                } else {
+                    null
+                }
         // _pairingRequired is a replay=1 SharedFlow, so a stale "pairing needed" event would
         // otherwise linger in the replay cache and re-fire every time a fresh collector
         // subscribes (e.g. MainActivity recreated by a widget tap), wrongly throwing the user
@@ -561,6 +609,16 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     fun setConnecting(isConnecting: Boolean) {
         _isConnecting.value = isConnecting
+    }
+
+    /**
+     * Names the PC a connect attempt is aimed at, so a subsequent success can be attributed to it.
+     *
+     * Called by [connect] for every real attempt; exposed because the connect path itself needs a
+     * loaded native library and a SettingsManager, which a JVM unit test has neither of.
+     */
+    internal fun setPendingTarget(host: String, port: Int) {
+        pendingTarget = host to port
     }
 
     override fun onLauncherSync(launcherData: String?) {
@@ -650,6 +708,7 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     override fun onConnectionError(reason: String?) {
         _isConnected.value = false
         _isConnecting.value = false
+        _connectedHost.value = null
         reason?.let { _connectionError.tryEmit(it) }
     }
 
