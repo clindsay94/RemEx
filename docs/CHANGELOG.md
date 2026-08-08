@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **RemEx on the PC could lock up completely — no window, no error, nothing in a log — and the only
+  way out was Task Manager.** When something went unexpectedly wrong inside the app's own window
+  handling, RemEx was supposed to close and leave an error behind. Instead it hung. On the way out it
+  waited for its background half to shut down, and it waited on the same thread that ran the window
+  loop — so the shutdown could only finish if that loop was still running, and by that point it had
+  already stopped. Each side was waiting for the other, forever. There was no time limit on the wait
+  and nothing was written down, so the failure left nothing to diagnose and no way to close the app
+  normally. That shutdown now runs off to one side where it cannot get tangled up in the window loop,
+  and it gives up after ten seconds and exits anyway if something else wedges it. An unexpected error
+  now ends the app the way it always should have, leaving a real error behind to look at.
+
 ### Security
 
 - **Deleting your PC's security pin took one tap, and nothing said what it cost.** When a PC answers
