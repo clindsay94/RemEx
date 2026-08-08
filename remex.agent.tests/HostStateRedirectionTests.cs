@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Remex.Agent.Services;
 using Remex.Agent.Services.FileTransfer;
 using Remex.Agent.Services.Security;
 using Remex.Agent.Services.Session;
@@ -246,6 +247,79 @@ public sealed class HostStateRedirectionTests
         Assert.Contains(
             nameof(RemexDataPaths.HostStateDirectoryOverride),
             guard.Groups["condition"].Value);
+    }
+
+    /// <summary>
+    /// Autostart registration is the one piece of user state here that is not a file RemEx owns, and
+    /// on Linux it is still a file: <c>~/.config/autostart/remex-agent.desktop</c>. The redirect
+    /// moves the directory it hangs off, so a test that registered autostart registers it in the
+    /// per-run temp directory instead of the developer's session. (RemEx-ln0k)
+    /// </summary>
+    [Fact]
+    public void LinuxAutostartDirectory_IsRedirected()
+        => AssertRedirected(
+            StartupRegistrationService.LinuxAutostartDirectoryForTests, "The XDG autostart directory");
+
+    /// <summary>
+    /// Windows autostart has no directory to redirect — it is a Task Scheduler logon task plus an
+    /// HKCU <c>Run</c> value — so the redirect suppresses it instead, reads included.
+    /// </summary>
+    /// <remarks>
+    /// THE READ IS SUPPRESSED WITH THE WRITES, and this is the test that pins it. Without the guard
+    /// the query returns the developer's real answer: <c>true</c> on a machine where autostart is
+    /// registered and <c>false</c> on one where it is not, but never <c>null</c> — so this fails on
+    /// either machine. Off Windows it exercises the Linux branch instead, which answers from the
+    /// redirected directory and therefore says "not registered" in a fresh per-run one.
+    /// </remarks>
+    [Fact]
+    public void AutostartQuery_AnswersFromTheRedirect_NotTheRealMachine()
+    {
+        var service = new StartupRegistrationService();
+
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Null(service.TryIsEnabled());
+        }
+        else
+        {
+            Assert.False(service.TryIsEnabled());
+        }
+    }
+
+    /// <summary>
+    /// The three Windows code paths that MUTATE the real registration must each refuse to run under
+    /// the redirect.
+    /// </summary>
+    /// <remarks>
+    /// A SOURCE ASSERTION, FOR THE SAME REASON AS THE TWO ABOVE IT, AND HERE THE REASON IS SHARPEST.
+    /// Observing these behaviourally means letting them run: the injection that proves the test can
+    /// fail would then register a logon task pointing at the test host, or delete the developer's
+    /// real one — and nothing would put that back. There is no seam that avoids it either, because
+    /// the thing being tested is precisely that no seam is used. So this pins the condition. It
+    /// catches deletion of a guard, which is the regression that actually happens; it would not
+    /// catch one being inverted.
+    /// </remarks>
+    [Theory]
+    [InlineData("RemoveLegacyWindowsRunKey")]
+    [InlineData("RegisterWindowsLogonTask")]
+    [InlineData("RemoveWindowsLogonTask")]
+    public void WindowsAutostartMutation_IsGuardedByTheRedirect(string methodName)
+    {
+        var source = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.agent", "Services", "StartupRegistrationService.cs"));
+
+        // Comments carry the word too, and a comment is not a guard.
+        var code = Regex.Replace(source, @"//[^\n]*", string.Empty);
+
+        // Everything between the method's opening brace and its first `return;` — which is the
+        // early-return guard, and nothing else fits between the two.
+        var guard = Regex.Match(
+            code,
+            $@"void\s+{methodName}\s*\([^)]*\)\s*\{{(?<guard>.*?)return\s*;",
+            RegexOptions.Singleline);
+
+        Assert.True(guard.Success, $"{methodName} no longer opens with an early-return guard.");
+        Assert.Contains("IsHostStateRedirected", guard.Groups["guard"].Value);
     }
 
     // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path
