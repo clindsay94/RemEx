@@ -91,6 +91,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The verification gate now names the test that failed, instead of only counting it.** It used to
+  report "1 of 1884 tests failed" and record nothing else, which made an intermittent failure
+  impossible to chase: the detailed results are deleted at the start of the next run, so by the time
+  anyone looked, the only record was a number. The failing test's name and the reason it failed were
+  sitting in the same file the count came from the whole time. They now appear on screen and in the
+  saved receipt, which is the copy that survives. The gate also checks its own reporting on every
+  run, because a diagnostic that quietly stops working looks exactly like nothing being wrong.
+
 - **The PC now says why it refused a file request nobody was ever asked about.** When your phone asks
   to browse the PC's drives, or offers to send it a file, the PC normally puts the question on a
   screen someone can answer. Two cases skip that: the phone is no longer connected by the time the
