@@ -172,6 +172,39 @@ function Get-SourceFingerprint {
             throw "git ls-files failed. Is this a git working copy?"
         }
 
+        # --exclude-standard above only filters the "-o" (untracked) half of the listing.
+        # "-c" (tracked) is unconditional, so a file that is both tracked AND gitignored
+        # rides along regardless. That happened for real: .token-savior-cache.json was a
+        # 4.3MB auto-generated MCP index that was tracked, gitignored, and matched the
+        # dotnet scope's '*.json' pattern, so it silently invalidated every receipt each
+        # time the MCP server touched it. Run the tracked-or-untracked list back through
+        # check-ignore and drop anything it flags, so no other tracked-and-ignored file
+        # can do that again.
+        if ($files.Count -gt 0) {
+            # --no-index is required here, not optional: by default check-ignore skips
+            # paths that are already in the index and reports them as NOT ignored, which
+            # is precisely the tracked-and-ignored case this block exists to catch.
+            #
+            # The stdin payload is built as one LF-joined string with a trailing newline
+            # rather than piped as a PowerShell array. Piping the array (or a joined
+            # string missing the final newline) leaves check-ignore's last record without
+            # a terminating LF, and on Windows that corrupts its output - the last path
+            # comes back misattributed with a stray trailing CR. A trailing newline avoids
+            # that entirely.
+            $stdinPayload = ($files -join "`n") + "`n"
+            $ignoredOutput = @($stdinPayload | git check-ignore --no-index --stdin)
+            $checkIgnoreExit = $LASTEXITCODE
+            # Exit code 1 from check-ignore means "none of the paths are ignored" - that
+            # is the expected, common case, not a failure. Only treat 2+ as real trouble.
+            if ($checkIgnoreExit -gt 1) {
+                throw "git check-ignore failed while filtering the fingerprint file list."
+            }
+            if ($ignoredOutput.Count -gt 0) {
+                $ignored = [System.Collections.Generic.HashSet[string]]::new([string[]]$ignoredOutput)
+                $files = $files | Where-Object { -not $ignored.Contains($_) }
+            }
+        }
+
         # Sort explicitly. git's ordering is stable in practice but the fingerprint
         # must not depend on that, or the same tree could hash two different ways.
         $files = $files | Where-Object { $_ } | Sort-Object -CaseSensitive
