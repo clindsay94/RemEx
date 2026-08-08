@@ -571,6 +571,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The phone no longer freezes a thread while it repairs a damaged pairing key.** The store that
+  keeps your paired PCs' identities encrypted builds its key once, behind a lock. If that key or the
+  phone's own keystore has been damaged — app data cleared while the keystore survived, or a lock
+  screen change invalidating it — the store wipes the unreadable data and rebuilds. That wipe had to
+  block the thread it ran on, because the old lock was the kind that cannot pause and resume: a
+  language rule, not a choice. The lock is now one that can, so the wipe waits without holding a
+  thread hostage, and the blocking call is gone rather than moved somewhere less visible. The key is
+  still built exactly once, and a damaged one is still repaired exactly once no matter how many
+  connections race into it at the same moment. A repair that has started now also finishes even if
+  you leave the screen part-way through it, which the old version could abandon halfway — leaving
+  your saved PCs unreadable with nothing left to notice and retry the repair.
+
 - **Your phone now introduces itself by its real name when you pair it.** Every Android device used
   to tell the PC it was called "Android Client" — so if you paired two phones, the PC had two
   devices with the same name and no way to tell which was which. It now sends the name you gave the

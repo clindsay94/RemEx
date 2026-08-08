@@ -82,11 +82,13 @@ class PinnedHostStoreThreadingTest {
         val suspendIndices = all.indices.filter { all[it].value.contains("suspend fun") }
 
         // Exactly the count there is, not a floor loose enough to let one be deleted silently:
-        // a guard that says "at least nine" happily guards nine of ten.
+        // a guard that says "at least nine" happily guards nine of ten. Eleven since RemEx-v3bd:
+        // aead() became suspend when its monitor became a Mutex, so it is now one of the functions
+        // this loop checks rather than something checked separately.
         assertEquals(
             "the store's suspend function count changed. If that is deliberate, update this number " +
                 "— it is what stops a function being deleted or added without a hop.",
-            10,
+            11,
             suspendIndices.size,
         )
 
@@ -104,86 +106,121 @@ class PinnedHostStoreThreadingTest {
     }
 
     @Test
-    fun `the keyset build is never reached without that hop`() {
-        // aead() is the blocking part and it is NOT suspend — it cannot be, because it runs inside a
-        // `synchronized` block and Kotlin forbids suspending there. So the dispatcher it lands on is
-        // decided entirely by its callers, and this asserts that each CALL SITE sits in a function
-        // that hops. It does not enumerate the callers — a claim an earlier version of this comment
-        // made and the code never supported.
+    fun `the keyset build hops for itself, behind a suspending lock`() {
+        // aead() is the blocking part, and since RemEx-v3bd it hops on its own account instead of
+        // inheriting whichever dispatcher its caller was on. Two properties hold that together and
+        // both are asserted here: it stays suspend, and its initialisation stays behind the
+        // coroutine Mutex rather than a monitor. Those are the same property from two sides —
+        // `synchronized` cannot contain a suspend call, so a monitor here forces the DataStore
+        // clear back into runBlocking, which is exactly the shape this bead removed.
+        //
+        // The per-call-site loop this test used to run is gone with the premise it rested on: the
+        // dispatcher is no longer decided by the caller. `every suspend function moves itself to a
+        // background dispatcher` still covers the functions that call aead(), and now covers aead()
+        // itself. No count of those callers is given here on purpose — the comment this replaced
+        // was written because an earlier one enumerated callers the code never checked, and the
+        // first draft of this one promptly said "ten", which was the store's suspend-function count
+        // BEFORE this bead — eleven now, per the assertion above — and not its aead() caller count
+        // (five, at the time of writing).
         val code = code()
 
-        val callers =
-            Regex("""(?:private )?(suspend )?fun (\w+)[^\n]*\n""").findAll(code)
-                .map { it.groupValues[2] to (it.groupValues[1].isNotBlank()) }
-                .toMap()
-
-        assertTrue("expected to find aead() declared", "aead" in callers)
-        assertFalse(
-            "aead() must stay non-suspend — it is called from inside a synchronized block, which " +
-                "cannot suspend. If this ever becomes suspend, the lock has been restructured and " +
-                "this whole file needs rereading.",
-            callers["aead"] == true,
-        )
-
-        // Every use of aead(...) must sit inside a function that hops — which means finding the
-        // ENCLOSING declaration, not merely some hopping declaration that happens to appear earlier
-        // in the file. The first version of this test did the latter and passed while a function
-        // that calls aead() had its hop removed; the mutation is what showed it up.
         val declarations = declarationsIn(code)
+        val index = declarations.indexOfFirst { it.value.endsWith(" aead") }
+        assertTrue("expected to find aead() declared", index >= 0)
 
-        // MATCHES ANY ARGUMENT NAME, and asserts there are some. Pinned to `aead(context)` this
-        // loop emptied itself the moment the parameter was renamed, and an empty loop asserts
-        // nothing while reporting success.
-        val uses = Regex("""\baead\(\w+\)""").findAll(code).toList()
         assertTrue(
-            "expected aead(...) call sites to check — an empty loop here passes without testing " +
-                "anything, which is how this guard could be neutralised by a rename.",
-            uses.size >= 5,
+            "aead() must stay suspend. The corrupted-keyset recovery inside it clears a DataStore, " +
+                "and a non-suspend aead() can only reach that by parking a thread in runBlocking " +
+                "(RemEx-v3bd).",
+            declarations[index].value.contains("suspend fun"),
         )
 
-        for (use in uses) {
-            val index = declarations.indexOfLast { it.range.first < use.range.first }
-            assertTrue("expected a declaration before the aead call", index >= 0)
+        assertTrue(
+            "aead() must hop to Dispatchers.IO in its own declaration. It is the only genuinely " +
+                "blocking work in this file — an Android Keystore round trip, and a key GENERATION " +
+                "in the TEE on first run — and where that lands must not depend on which caller " +
+                "reached it first (RemEx-7257).",
+            Regex("""withContext(<\w+>)?\(\s*Dispatchers\.IO\s*\)""")
+                .containsMatchIn(headerOf(code, declarations, index)),
+        )
 
-            val enclosing = declarations[index]
-            val header = headerOf(code, declarations, index)
-            assertTrue(
-                "the aead(context) call in `${enclosing.value}` is not inside a function that hops " +
-                    "to Dispatchers.IO. That puts an Android Keystore round trip — a key GENERATION " +
-                    "on first run — on whatever thread called in (RemEx-7257).",
-                Regex("""withContext(<\w+>)?\(\s*Dispatchers\.IO\s*\)""").containsMatchIn(header),
+        assertFalse(
+            "the AEAD initialisation must stay behind the coroutine Mutex. `synchronized` cannot " +
+                "hold a suspend call, so reintroducing one means the DataStore clear went back to " +
+                "runBlocking.",
+            "synchronized" in code,
+        )
+
+        // ANCHORED TO aead()'s OWN REGION, because the file-wide `"withLock" in code` this started
+        // as is satisfied by a Mutex guarding anything else anywhere in the file — while its message
+        // claimed something guards the KEYSET BUILD. Same bound as headerOf uses: this declaration
+        // to the next one.
+        val aeadBody =
+            code.substring(
+                declarations[index].range.first,
+                declarations.getOrNull(index + 1)?.range?.first ?: code.length,
             )
-        }
+        assertTrue(
+            "the keyset build must stay behind aeadMutex.withLock. Without it the assertion above " +
+                "only proves the monitor is gone, not that anything guards the build — and two " +
+                "coroutines racing a corrupt keyset would each wipe the DataStore.",
+            Regex("""aeadMutex\.withLock""").containsMatchIn(aeadBody),
+        )
+        assertTrue("expected the Mutex it locks to still be declared", "Mutex()" in code)
+
+        // THE TWO INVARIANTS THE BEAD'S "care needed" CLAUSE NAMED, both of which compile away
+        // silently if deleted and neither of which any assertion above reaches. Review asked for
+        // these, and it was right to: this bead rewrote the file that guards this class and
+        // introduced a new invariant in the same commit, which is exactly when a guard gets
+        // forgotten.
+        //
+        // NonCancellable first. The SharedPreferences clear is not suspending and lands at once;
+        // the DataStore clear is the first suspension point after it. Cancel between them — a
+        // viewModelScope dying on navigation will do — and the keyset is destroyed while the rows
+        // encrypted under it survive. The next call then builds a fresh keyset SUCCESSFULLY, so the
+        // recovery never runs again and those rows are undecryptable forever. Nothing throws and
+        // nothing logs: every read treats an undecryptable row as absent. Silence is the whole
+        // reason this is asserted rather than trusted.
+        assertTrue(
+            "the corrupted-keyset recovery must stay inside withContext(NonCancellable). Without " +
+                "it a cancellation landing between the two clears destroys the keyset but not the " +
+                "rows encrypted under it, and the recovery never fires again to finish the job.",
+            Regex("""withContext\(\s*NonCancellable\s*\)""").containsMatchIn(aeadBody),
+        )
+
+        // And the second half of the double-check. The @Volatile read OUTSIDE the lock is a fast
+        // path and losing it costs only speed; the read INSIDE it is a correctness property, and it
+        // is the one that keeps the recovery once-per-corruption. Delete it and three callers racing
+        // a corrupt keyset each take the lock in turn and each wipe the DataStore.
+        assertTrue(
+            "the second aeadInstance read, inside the lock, is what makes the recovery run once " +
+                "per corruption rather than once per waiter. Without it every coroutine queued on " +
+                "the mutex rebuilds — and on the recovery path, re-wipes.",
+            Regex("""withLock\s*\{\s*aeadInstance\s*\?:""").containsMatchIn(aeadBody),
+        )
     }
 
     @Test
-    fun `runBlocking stays confined to the corrupted-keyset recovery`() {
-        // There is exactly one, inside aead()'s catch: a `synchronized` block cannot suspend, so
-        // clearing the unreadable DataStore has no other shape. It is tolerable only because it is
-        // reached when Tink or the Keystore is ALREADY corrupt, and because the hop above means the
-        // thread it parks is an IO worker rather than the UI thread. A second one, somewhere
-        // ordinary, would be neither.
+    fun `no runBlocking survives anywhere in the store`() {
+        // This replaces `runBlocking stays confined to the corrupted-keyset recovery`, which guarded
+        // the single one that used to sit in aead()'s catch. A `synchronized` block cannot suspend,
+        // so clearing the unreadable DataStore had no other shape; the Mutex gave it one, and the
+        // runBlocking is gone rather than relocated (RemEx-v3bd). That left the confinement guard
+        // asserting that a thing still exists which no longer does — its own comment said to delete
+        // it in exactly that event. What is worth guarding now is stronger and simpler.
         val code = code()
 
-        val uses = Regex("""\brunBlocking\s*[({]""").findAll(code).toList()
-        assertTrue(
-            "expected the one recovery-path runBlocking to still be there — if it is gone, good, " +
-                "but delete this test rather than leaving it asserting nothing.",
-            uses.size == 1,
-        )
-
-        val recoveryLog = code.indexOf("Failed to initialize Tink AEAD")
-        assertTrue("expected the recovery path's log line", recoveryLog > 0)
-
-        // BOUNDED ON BOTH SIDES. "After the log line" is satisfied by the entire rest of the file,
-        // so it caught a runBlocking being ADDED but not one being MOVED onto an ordinary path —
-        // which is the guard's whole stated subject. aead()'s catch ends where buildAead begins.
-        val aeadEnd = code.indexOf("private fun buildAead")
-        assertTrue("expected buildAead to follow aead", aeadEnd > recoveryLog)
-        assertTrue(
-            "the only runBlocking must be the one in the corrupted-keyset recovery. A new one on an " +
-                "ordinary path parks whatever thread reaches it, for as long as the work takes.",
-            uses.single().range.first in (recoveryLog + 1) until aeadEnd,
+        val uses = Regex("""\brunBlocking\s*[({]""").findAll(code).map { it.value }.toList()
+        assertEquals(
+            "runBlocking parks whatever thread reaches it for as long as the work takes. Nothing " +
+                "here is a non-suspend context that has to invoke suspending work: every function " +
+                "that reaches a suspending call is itself suspend, and the one lock in this file " +
+                "suspends too. (Not 'every function that touches I/O' — buildAead is non-suspend " +
+                "and does a SharedPreferences read and a Keystore round trip. It needs no " +
+                "runBlocking because nothing it calls suspends, which is the distinction that " +
+                "actually carries this guard.)",
+            emptyList<String>(),
+            uses,
         )
     }
 }

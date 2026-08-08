@@ -14,7 +14,10 @@ import com.google.crypto.tink.aead.AesGcmKeyManager
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import java.util.Base64
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 // One DataStore instance per app (backed by applicationContext).
@@ -46,7 +49,8 @@ private val Context.reconnectSecretDataStore: DataStore<Preferences> by
  * is [aead] — an `AndroidKeysetManager` build, which is a SharedPreferences read plus an Android
  * Keystore round trip, and on first run a key GENERATION in the TEE. That ran on whichever thread
  * called in, and RemexClientManager calls [getPin] from a `Dispatchers.Main` scope on every Connect
- * tap, pin or no pin.
+ * tap, pin or no pin. [aead] is itself suspend and hops as well now (RemEx-v3bd), so that one piece
+ * of blocking work no longer depends on its caller having remembered.
  *
  * The hop is inside rather than at the call sites for the reason it is inside `RemexCoreClient`
  * (RemEx-66rf, RemEx-uach): a rule every caller must remember is a rule a new caller will not, and
@@ -75,40 +79,68 @@ object PinnedHostStore {
         AeadConfig.register()
     }
 
-    private fun aead(context: Context): Aead {
-        return aeadInstance ?: synchronized(this) {
+    // A coroutine [Mutex], NOT `synchronized` (RemEx-v3bd). The corrupted-keyset recovery below has
+    // to clear a DataStore, which is a suspend call, and Kotlin forbids suspending inside a
+    // `synchronized` block — a language constraint, so the monitor version had no shape available
+    // other than wrapping that edit in `runBlocking`. `withLock` suspends the coroutine instead of
+    // parking the thread, so the edit is an ordinary suspend call and the runBlocking is GONE rather
+    // than relocated somewhere it looks less alarming.
+    //
+    // NOT REENTRANT, unlike the monitor it replaces: re-entering this lock from under it deadlocks
+    // instead of passing through. Nothing it holds calls back into [aead] today — buildAead and the
+    // DataStore clear do not — and nothing may start to.
+    private val aeadMutex = Mutex()
+
+    /**
+     * The AEAD, built once and cached.
+     *
+     * Suspends rather than blocking. That costs its callers nothing: every one of them is a suspend
+     * function in this file that already hops to [Dispatchers.IO] before it gets here.
+     *
+     * The hop is repeated here anyway, for the reason the class doc gives for putting it inside the
+     * public functions rather than at their call sites. This is the only genuinely blocking work in
+     * the file — a SharedPreferences read, an Android Keystore round trip, and on first run a key
+     * GENERATION in the TEE — and which dispatcher that lands on should not depend on which caller
+     * happened to reach it first. Nesting is free: a `withContext` to the dispatcher you are already
+     * on does not re-dispatch.
+     */
+    private suspend fun aead(context: Context): Aead = withContext(Dispatchers.IO) {
+        // Double-checked exactly as before the lock changed: the @Volatile read outside the lock
+        // keeps the already-built case lock-free, and the second read inside it stops a waiter
+        // rebuilding what the holder just built. That second read is what keeps the recovery below
+        // once-per-corruption rather than once-per-waiter — three callers racing a corrupt keyset
+        // must not wipe the DataStore three times.
+        aeadInstance ?: aeadMutex.withLock {
             aeadInstance ?: try {
                 buildAead(context)
             } catch (e: Exception) {
-                // If Tink or the Android Keystore is corrupted (e.g., app data cleared but Keystore remained,
-                // or lock screen changes invalidated the key), we must clear the corrupted state and retry.
-                android.util.Log.e("PinnedHostStore", "Failed to initialize Tink AEAD. Clearing corrupted keyset and retrying.", e)
+                // NonCancellable, and it is not decoration (RemEx-v3bd, found in review). Suspending
+                // where the old code blocked introduced a cancellation point the monitor version did
+                // not have: cancel between the two clears — a viewModelScope dying on navigation is
+                // enough — and the keyset file is gone while the DataStore rows encrypted under it
+                // are not. The next call then builds a keyset successfully, so the recovery never
+                // runs again and those rows stay undecryptable forever. Nothing breaks (every read
+                // treats an undecryptable row as absent, and re-pairing overwrites them) but they
+                // are dead weight nobody ever collects. Once this recovery starts, it finishes.
+                withContext(NonCancellable) {
+                    // If Tink or the Android Keystore is corrupted (e.g., app data cleared but Keystore remained,
+                    // or lock screen changes invalidated the key), we must clear the corrupted state and retry.
+                    android.util.Log.e("PinnedHostStore", "Failed to initialize Tink AEAD. Clearing corrupted keyset and retrying.", e)
 
-                // Clear the SharedPreferences containing the Tink keyset
-                context.applicationContext.getSharedPreferences(TINK_PREFS_FILE, Context.MODE_PRIVATE)
-                    .edit()
-                    .clear()
-                    .apply()
+                    // Clear the SharedPreferences containing the Tink keyset
+                    context.applicationContext.getSharedPreferences(TINK_PREFS_FILE, Context.MODE_PRIVATE)
+                        .edit()
+                        .clear()
+                        .apply()
 
-                // Clear the DataStore since its encrypted contents are now unreadable.
-                //
-                // runBlocking because this is inside a `synchronized` block, which cannot suspend —
-                // that is a language constraint, not a preference. What makes it acceptable is that
-                // every public function now enters on Dispatchers.IO (RemEx-7257), so the thread this
-                // parks is an IO worker rather than the UI thread it could previously have been. It
-                // is also the exceptional recovery path: reached only when Tink or the Keystore is
-                // already corrupt.
-                //
-                // It is NOT unavoidable, only deferred: a Mutex instead of `synchronized` would let
-                // aead() suspend and this become an ordinary edit, removing the runBlocking rather
-                // than relocating it (RemEx-v3bd). That restructures the only auth-critical key
-                // initialisation path, which did not belong in a threading fix.
-                kotlinx.coroutines.runBlocking {
+                    // Clear the DataStore since its encrypted contents are now unreadable. An ordinary
+                    // suspend call (RemEx-v3bd): the lock above suspends, so there is nothing here that
+                    // forbids suspending and no thread to park while DataStore does the write.
                     context.applicationContext.pinnedHostDataStore.edit { it.clear() }
-                }
 
-                // Retry initialization
-                buildAead(context)
+                    // Retry initialization
+                    buildAead(context)
+                }
             }.also { aeadInstance = it }
         }
     }
