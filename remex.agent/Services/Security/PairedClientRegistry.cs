@@ -214,14 +214,17 @@ public sealed class PairedClientRegistry
                 Directory.CreateDirectory(directory);
             }
 
-            var tempPath = _storePath + ".tmp";
             var entries = _pairedClients
                 .OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.Ordinal);
             var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
 
-            File.WriteAllText(tempPath, json);
-            File.Move(tempPath, _storePath, overwrite: true);
+            // The lock above orders writers inside ONE registry; it says nothing about a second
+            // process — an installed agent, or another test host — writing the same file. Staging
+            // through a per-write temp name rather than a fixed <store>.tmp is what keeps those from
+            // truncating each other's staging file and publishing a corrupt registry, which would
+            // unpair every device (RemEx-kow1).
+            RemexDataPaths.WriteAllTextAtomic(_storePath, json);
 
             // PAIR-4: the store now holds per-client reconnect secrets, so it is sensitive key
             // material. Restrict it to the host's own account (+ LocalSystem and admins on Windows).

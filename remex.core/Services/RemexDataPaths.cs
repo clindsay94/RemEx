@@ -159,4 +159,79 @@ public static class RemexDataPaths
             return false;
         }
     }
+
+    /// <summary>
+    /// Writes <paramref name="contents"/> over <paramref name="path"/> by way of a uniquely-named
+    /// sibling temporary file, so a reader never observes a half-written store.
+    ///
+    /// <para>
+    /// THE UNIQUE NAME IS THE POINT (RemEx-kow1). Every host-state store here used to stage through
+    /// the fixed path <c>&lt;store&gt;.tmp</c>, which is shared by every writer of that store rather
+    /// than owned by one: two of them staging at once means one truncates the file the other is
+    /// mid-write, and whichever moves second publishes the loser's bytes under the winner's name.
+    /// The stores this matters for are <c>paired_clients.json</c> and
+    /// <c>file_transfer_trust.json</c> — a corrupted pairing registry unpairs every device and a
+    /// corrupted trust store loses or mis-states standing filesystem grants. Concurrent writers are
+    /// not hypothetical: a test run and the installed agent share the machine-wide directory, and
+    /// within one test assembly every host shares one redirected directory. A GUID per write gives
+    /// each writer its own staging file; the move stays the single atomic step it always was.
+    /// <see cref="Remex.Core.Services.RemexDataPaths"/> is where it lives because all four callers
+    /// resolve their directory through this class already.
+    /// </para>
+    ///
+    /// <para>
+    /// WHAT THIS DOES NOT DO, because the first draft claimed it and a test disproved it: it does not
+    /// make concurrent writers all succeed. Two renames onto one target still collide, and on Windows
+    /// the loser gets <c>UnauthorizedAccessException</c> out of <c>File.Move</c> — measured, not
+    /// assumed. That is no worse than the fixed-path code it replaces (there the losing writer failed
+    /// at the write instead) and three of the four callers already catch it. The property gained is
+    /// integrity, not availability: whatever is on disk is always exactly one writer's complete
+    /// contents.
+    /// </para>
+    ///
+    /// <para>
+    /// Callers keep their own exception handling: this throws whatever the write or the move throws,
+    /// having first removed the staging file so a failure cannot litter the store directory with
+    /// per-attempt garbage that nothing would ever collect. The pattern (leading dot, GUID, sibling
+    /// directory) matches <c>CertificateService.WriteProtectedFile</c>, the one writer of this state
+    /// that already did it correctly.
+    /// </para>
+    /// </summary>
+    public static void WriteAllTextAtomic(string path, string contents)
+    {
+        // Sibling of the target so File.Move is a same-volume rename rather than a copy.
+        var tempPath = Path.Combine(
+            Path.GetDirectoryName(path) ?? string.Empty,
+            $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+
+        try
+        {
+            File.WriteAllText(tempPath, contents);
+            File.Move(tempPath, path, overwrite: true);
+        }
+        catch
+        {
+            TryDeleteStagingFile(tempPath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Removes a staging file left by a failed <see cref="WriteAllTextAtomic"/>. Best-effort by
+    /// design: the caller is already propagating the real failure, and masking it with a cleanup
+    /// exception would report the wrong problem.
+    /// </summary>
+    private static void TryDeleteStagingFile(string tempPath)
+    {
+        try
+        {
+            File.Delete(tempPath);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
 }

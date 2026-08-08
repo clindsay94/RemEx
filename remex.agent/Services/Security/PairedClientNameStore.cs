@@ -149,9 +149,11 @@ public sealed class PairedClientNameStore
                     .OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
                     .ToDictionary(kvp => kvp.Key, kvp => kvp.Value, StringComparer.Ordinal);
 
-                var tempPath = _storePath + ".tmp";
-                File.WriteAllText(tempPath, JsonSerializer.Serialize(ordered, new JsonSerializerOptions { WriteIndented = true }));
-                File.Move(tempPath, _storePath, overwrite: true);
+                // Per-write staging name, not a fixed <store>.tmp shared with every other writer of
+                // this file — see RemexDataPaths.WriteAllTextAtomic (RemEx-kow1).
+                RemexDataPaths.WriteAllTextAtomic(
+                    _storePath,
+                    JsonSerializer.Serialize(ordered, new JsonSerializerOptions { WriteIndented = true }));
 
                 // No secrets here, but the file sits beside the ones that are, and a device name is
                 // personal enough ("Connor's Pixel") not to leave readable by every local account.

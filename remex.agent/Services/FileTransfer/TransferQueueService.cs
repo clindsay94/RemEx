@@ -280,9 +280,10 @@ public sealed class TransferQueueService
                 .ToList();
 
             var json = JsonSerializer.Serialize(ordered, JsonOptions);
-            var tempPath = _storePath + ".tmp";
-            File.WriteAllText(tempPath, json);
-            File.Move(tempPath, _storePath, overwrite: true);
+
+            // Per-write staging name, not a fixed <store>.tmp shared with every other writer of this
+            // file — see RemexDataPaths.WriteAllTextAtomic (RemEx-kow1).
+            RemexDataPaths.WriteAllTextAtomic(_storePath, json);
         }
         catch (IOException ex)
         {

@@ -462,9 +462,12 @@ public sealed class FileTrustService : IFileTrustService
                         StringComparer.Ordinal);
 
                 var json = JsonSerializer.Serialize(entries, JsonOptions);
-                var tempPath = _storePath + ".tmp";
-                File.WriteAllText(tempPath, json);
-                File.Move(tempPath, _storePath, overwrite: true);
+
+                // Per-write staging name rather than a fixed <store>.tmp: a concurrent writer of the
+                // same store must not be able to truncate this one mid-write and publish a partial
+                // grant record (RemEx-kow1). Throws on failure into the catch blocks below, exactly
+                // as the inline write it replaced did.
+                RemexDataPaths.WriteAllTextAtomic(_storePath, json);
 
                 // Live beside the sensitive paired-clients store in ProgramData; reuse its hardening so
                 // other local users cannot flip a client's grants. Best-effort (logs, never throws).
