@@ -47,6 +47,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **Every host-state file was written through a temporary path named after the file, so two writers
+  of it fought over one staging file.** The pairing registry, the paired-client name store, the
+  file-transfer trust store and the transfer queue each wrote their new contents to `<store>.tmp` and
+  then renamed it into place. The rename is the part that makes the update atomic; the staging name
+  is what was wrong. It belongs to the store rather than to the writer, so whenever two writers of
+  the same store overlapped, one truncated the file the other was about to publish — and what landed
+  under the store's name was neither writer's contents. Two writers is the ordinary case, not an
+  exotic one: a test run shares the machine-wide directory with an installed agent, and every host
+  inside a single test assembly shares one redirected directory. The two stores where this matters
+  most are the ones that are security state — a corrupt `paired_clients.json` unpairs every device,
+  and a corrupt `file_transfer_trust.json` loses or misstates standing permission to browse the PC.
+  Each write now stages through a uniquely-named sibling file and deletes it if anything fails,
+  matching what the certificate writer already did. **What this does not do is make concurrent
+  writers all succeed**, and the first draft of the change claimed it did: two renames onto one
+  target still collide, and the loser still fails, exactly as it did before. A test measured that
+  rather than reasoning about it, and the code and the test now both say so. The property gained is
+  that whatever is on disk is always exactly one writer's complete contents.
+
 - **The test suite was writing into the machine's real pairing and file-trust stores, and now it
   cannot reach them at all.** A test that did not inject a path resolved the same machine-wide
   location the running host uses, so fixtures wrote to `C:\ProgramData\RemEx` for real. This is not

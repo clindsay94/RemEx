@@ -118,6 +118,11 @@ public sealed class RemexDataPathsAtomicWriteTests : IDisposable
     /// that a loser can no longer take the winner's staging file down with it. Integrity is the
     /// property being claimed here, so integrity is what is asserted; the collisions are counted
     /// rather than ignored so the test cannot quietly become vacuous if they ever stop happening.
+    ///
+    /// It is also NOT the regression detector for the fixed staging path — measured: restoring
+    /// <c>&lt;store&gt;.tmp</c> leaves this test green, because corruption there needs an interleaving
+    /// it does not reliably produce. <see cref="WriteAllTextAtomic_DoesNotStageThroughTheFixedSiblingTempPath"/>
+    /// and the four store-level tests in <c>HostStateAtomicWriteTests</c> are what catch it.
     /// </remarks>
     [Fact]
     public async Task WriteAllTextAtomic_ConcurrentWritersNeverPublishABlendedStore()
@@ -143,10 +148,12 @@ public sealed class RemexDataPathsAtomicWriteTests : IDisposable
             }
         })));
 
-        Assert.Contains(File.ReadAllText(StorePath), payloads);
-        Assert.Empty(StagingFiles());
+        // Collisions first: if every write lost the race there is no file to read, and a
+        // FileNotFoundException out of the assertion below would bury the reason.
         Assert.True(
             collisions < payloads.Length * writesPerWriter,
             $"Every write lost the rename race ({collisions}); nothing was actually exercised.");
+        Assert.Contains(File.ReadAllText(StorePath), payloads);
+        Assert.Empty(StagingFiles());
     }
 }

@@ -192,9 +192,13 @@ public static class RemexDataPaths
     /// <para>
     /// Callers keep their own exception handling: this throws whatever the write or the move throws,
     /// having first removed the staging file so a failure cannot litter the store directory with
-    /// per-attempt garbage that nothing would ever collect. The pattern (leading dot, GUID, sibling
+    /// per-attempt garbage that nothing would ever collect. The NAMING (leading dot, GUID, sibling
     /// directory) matches <c>CertificateService.WriteProtectedFile</c>, the one writer of this state
-    /// that already did it correctly.
+    /// that already did it correctly — but only the naming. That method also applies its restrictive
+    /// ACL at creation, before any bytes exist, and this does not: the staging file here inherits the
+    /// store directory's permissions and hardening still happens after the rename, exactly as it did
+    /// when the staging path was fixed. The window is unchanged in kind and size; it is simply not
+    /// what this method set out to close.
     /// </para>
     /// </summary>
     public static void WriteAllTextAtomic(string path, string contents)
