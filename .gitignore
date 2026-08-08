@@ -141,6 +141,9 @@ review-report.md
 !/.claude/settings.json
 !/.claude/scripts/
 !/.claude/skills/
+# The project's own review-gate agents. Shared for the same reason as skills/: they encode this
+# repo's rules, and a reviewer that only exists on one machine is not a gate.
+!/.claude/agents/
 # Firebase
 remex.android/app/google-services.json
 
