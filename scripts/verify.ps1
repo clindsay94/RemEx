@@ -87,7 +87,12 @@ param(
     [switch]$SkipLocalization,
 
     [Parameter(Mandatory = $false)]
-    [switch]$Json
+    [switch]$Json,
+
+    # Check the .trx result parser against known input and exit. Needs no build, no test run and no
+    # repository - the parser is pure, which is what makes it checkable at all.
+    [Parameter(Mandatory = $false)]
+    [switch]$SelfTest
 )
 
 Set-StrictMode -Version Latest
@@ -293,6 +298,157 @@ if ($Check) {
 }
 
 # ---------------------------------------------------------------------------
+# Failing test names, read out of the .trx the counters already come from.
+# ---------------------------------------------------------------------------
+# A count with no name is indistinguishable from noise. On 2026-08-05 a run here failed 1 of 1884,
+# an immediate re-run passed, and the flake could not be filed because nothing had recorded WHICH
+# test it was (RemEx-ffxl). The name and the error sit in the same file this already opens for the
+# counters, so reading them costs no extra test run and no new tooling.
+#
+# Kept pure and given its own self-test because this is the gate's own diagnostics: if it silently
+# returns nothing, every future failure looks exactly like the one that could not be filed.
+function Get-TrxFailedTests {
+    param([xml]$Document, [int]$Limit = 20)
+
+    $failures = [System.Collections.Generic.List[string]]::new()
+
+    # GetElementsByTagName and GetAttribute rather than a dotted walk: .trx carries a default XML
+    # namespace, and under Set-StrictMode a dotted walk over a node that is absent - a run that
+    # produced no results at all, which is exactly when this matters - throws instead of yielding
+    # nothing. GetAttribute returns '' for a missing attribute, which is the behaviour needed here.
+    # Known gap, left deliberately: a data-driven test whose cases nest under <InnerResults> matches
+    # both the parent rollup and each failing case, so one logical failure can produce more than one
+    # name. There are none in this repo's current output, the extra line names the same test, and the
+    # counter is reported separately - so it reads as noisy rather than wrong. Worth fixing when the
+    # first [Theory] with non-serializable data appears, not before.
+    foreach ($node in $Document.GetElementsByTagName('UnitTestResult')) {
+        if ($node.GetAttribute('outcome') -ne 'Failed') { continue }
+
+        $name = $node.GetAttribute('testName')
+        if (-not $name) { $name = '(unnamed test)' }
+
+        # First non-blank line of the assertion message only. A full stack trace in the receipt
+        # buries the one fact worth keeping, and the receipt is what outlives the .trx directory.
+        #
+        # ErrorInfo/Message first, then any Message: the TRX schema puts TextMessages BEFORE
+        # ErrorInfo, so a test that also wrote a trace line would otherwise have that trace reported
+        # in place of the assertion that actually failed.
+        $firstLine = ''
+        $messages = $null
+        foreach ($errorInfo in $node.GetElementsByTagName('ErrorInfo')) {
+            $candidate = $errorInfo.GetElementsByTagName('Message')
+            if ($candidate.Count -gt 0) { $messages = $candidate; break }
+        }
+        if ($null -eq $messages) { $messages = $node.GetElementsByTagName('Message') }
+        if ($messages.Count -gt 0) {
+            foreach ($line in ([string]$messages[0].InnerText -split "`r?`n")) {
+                if ($line.Trim()) { $firstLine = $line.Trim(); break }
+            }
+            if ($firstLine.Length -gt 160) { $firstLine = $firstLine.Substring(0, 157) + '...' }
+        }
+
+        $failures.Add($(if ($firstLine) { "$name - $firstLine" } else { $name }))
+        # Per .trx, not per run: a caller reading several assemblies gets up to $Limit from each.
+        # Deliberate - a breakage confined to one assembly should not be truncated away because
+        # another assembly failed first - and the count is always reported separately, so a
+        # truncated list is visibly a subset rather than the whole story.
+        if ($failures.Count -ge $Limit) { break }
+    }
+
+    # No unary comma here. Wrapping to defeat PowerShell's single-element unrolling would nest the
+    # array one level deeper, and every caller already uses @(...) which handles both shapes. The
+    # first draft did wrap, and this function's own self-test is what caught it.
+    return $failures.ToArray()
+}
+
+<#
+.SYNOPSIS
+    Checks Get-TrxFailedTests against known input. Returns the number of failed checks.
+#>
+function Invoke-ResultParserSelfTest {
+    function Assert-Check {
+        param([bool]$Condition, [string]$What)
+        if (-not $Condition) {
+            Write-Host "    FAIL  $What" -ForegroundColor Red
+            $script:parserCheckFailures++
+        }
+    }
+    $script:parserCheckFailures = 0
+
+    # A real .trx, reduced: default namespace, one pass, one failure with a multi-line message.
+    [xml]$sample = @'
+<?xml version="1.0" encoding="UTF-8"?>
+<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Results>
+    <UnitTestResult testName="Remex.Sample.PassingTest" outcome="Passed" />
+    <UnitTestResult testName="Remex.Sample.FailingTest" outcome="Failed">
+      <Output><ErrorInfo><Message>Assert.True() Failure
+Expected: True
+Actual:   False</Message></ErrorInfo></Output>
+    </UnitTestResult>
+    <UnitTestResult testName="Remex.Sample.SkippedTest" outcome="NotExecuted" />
+  </Results>
+  <ResultSummary><Counters total="3" executed="2" passed="1" failed="1" /></ResultSummary>
+</TestRun>
+'@
+
+    $found = @(Get-TrxFailedTests -Document $sample)
+    Assert-Check ($found.Count -eq 1) "exactly one failure is reported (got $($found.Count))"
+    Assert-Check ($found -join '' -like '*Remex.Sample.FailingTest*') 'the failing test is named'
+    Assert-Check ($found -join '' -like '*Assert.True() Failure*') 'the first line of the error is included'
+    # The other direction, which is the one that would make this useless rather than merely noisy:
+    # a parser that reported everything would hide the failure among the passes.
+    Assert-Check (-not ($found -join '' -like '*PassingTest*')) 'a passing test is not reported'
+    Assert-Check (-not ($found -join '' -like '*SkippedTest*')) 'a skipped test is not reported'
+    Assert-Check (-not ($found -join '' -like '*Actual:   False*')) 'only the first line is kept'
+
+    # A test that wrote a trace line AND failed an assertion. The TRX schema puts TextMessages before
+    # ErrorInfo, so a parser that took the first Message it found would report the trace and hide the
+    # assertion - a name with the wrong reason attached, which is harder to argue with than no reason.
+    [xml]$noisy = @'
+<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Results>
+    <UnitTestResult testName="Remex.Sample.NoisyTest" outcome="Failed">
+      <Output>
+        <TextMessages><Message>starting the fixture</Message></TextMessages>
+        <ErrorInfo><Message>Assert.Equal() Failure: Values differ</Message></ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+</TestRun>
+'@
+    $noisyFound = @(Get-TrxFailedTests -Document $noisy) -join ''
+    Assert-Check ($noisyFound -like '*Assert.Equal() Failure*') 'the assertion is preferred over a trace line'
+    Assert-Check (-not ($noisyFound -like '*starting the fixture*')) 'a trace line is not mistaken for the failure reason'
+
+    # A run that produced no results at all. This is the StrictMode case the dotted walk could not
+    # survive, and it is precisely when a silent empty answer would be mistaken for "nothing failed".
+    [xml]$empty = '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><ResultSummary /></TestRun>'
+    $none = @(Get-TrxFailedTests -Document $empty)
+    Assert-Check ($none.Count -eq 0) 'a result-less run yields nothing instead of throwing'
+
+    # The cap exists so a suite-wide breakage cannot write thousands of lines into the receipt.
+    [xml]$many = '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010"><Results>' +
+        ((1..30 | ForEach-Object { "<UnitTestResult testName=`"T$_`" outcome=`"Failed`" />" }) -join '') +
+        '</Results></TestRun>'
+    $capped = @(Get-TrxFailedTests -Document $many -Limit 5)
+    Assert-Check ($capped.Count -eq 5) "the limit is honoured (got $($capped.Count))"
+
+    return $script:parserCheckFailures
+}
+
+if ($SelfTest) {
+    Write-Host "`nverify.ps1 result-parser self-test" -ForegroundColor Cyan
+    $selfTestFailures = Invoke-ResultParserSelfTest
+    if ($selfTestFailures -eq 0) {
+        Write-Host "  PASS - the failing-test parser reports what it should and nothing else.`n" -ForegroundColor Green
+        exit 0
+    }
+    Write-Host "  FAIL - $selfTestFailures check(s) failed.`n" -ForegroundColor Red
+    exit 1
+}
+
+# ---------------------------------------------------------------------------
 # Verification proper.
 # ---------------------------------------------------------------------------
 
@@ -363,6 +519,7 @@ if ($Scope -in @('dotnet', 'all')) {
             $problems.Add('no .NET test results produced')
             Write-Problem "The test run produced no results file." "Run: dotnet test Remex.sln -c Release"
         }
+        $failedTestNames = [System.Collections.Generic.List[string]]::new()
         foreach ($trx in $trxFiles) {
             try {
                 [xml]$doc = Get-Content -LiteralPath $trx.FullName -Raw
@@ -373,6 +530,9 @@ if ($Scope -in @('dotnet', 'all')) {
                 # 'total minus executed' is the honest skipped count; a test that never ran
                 # is not a test that passed, and rolling it into passed would inflate the number.
                 $testsSkipped += ([int]$c.total - [int]$c.executed)
+
+                # Same file, same read: the names cost nothing extra here (RemEx-ffxl).
+                foreach ($f in @(Get-TrxFailedTests -Document $doc)) { $failedTestNames.Add($f) }
             }
             catch {
                 $problems.Add("could not read test results from $($trx.Name)")
@@ -381,8 +541,33 @@ if ($Scope -in @('dotnet', 'all')) {
 
         if ($testExit -ne 0 -or $testsFailed -gt 0) {
             $problems.Add("$testsFailed .NET test(s) failed")
+            # Into problems, so the NAME survives in the receipt. The .ralph/trx directory is wiped
+            # at the start of the next run, so by the time anyone asks which test it was, the receipt
+            # is the only place the answer can still exist.
+            foreach ($f in $failedTestNames) { $problems.Add("failed: $f") }
+
             Write-Problem "$testsFailed of $testsRun tests failed." `
                 "Run: dotnet test Remex.sln -c Release --filter <name of a failing test>"
+            foreach ($f in $failedTestNames) { Write-Say "    $f" 'Red' }
+
+            if ($failedTestNames.Count -eq 0) {
+                if ($testsFailed -eq 0) {
+                    # Nonzero exit, nothing counted as failed, nothing named: the run died before or
+                    # outside the tests - a crashed host, a missing runtime. Looking for a flaky test
+                    # would be looking in the wrong place entirely.
+                    $problems.Add('no individual test was recorded as failed - the run itself failed')
+                    Write-Say "    No individual test was recorded as failed - the run itself failed." 'Yellow'
+                }
+                else {
+                    # Counters DID record failures but no name came back, which means this parser has
+                    # gone blind - a renamed or re-namespaced .trx element would do it. Reporting
+                    # "the run itself failed" here would be a confident wrong answer at exactly the
+                    # moment the diagnostics broke, which is worse than the silence this replaced.
+                    $problems.Add("$testsFailed test failure(s) recorded but no test name could be parsed - the result parser needs attention")
+                    Write-Problem "$testsFailed test(s) failed but none could be named." `
+                        "The .trx parser matched nothing. Run: ./scripts/verify.ps1 -SelfTest"
+                }
+            }
         }
         else {
             Write-Say "  $testsPassed of $testsRun tests passed."
@@ -497,6 +682,21 @@ if ($Scope -in @('android', 'all')) {
 # The guard runs on every Edit and Write, so a silent regression in it would either
 # block real work or, worse, stop catching the corruption it exists to catch. Its own
 # tests are cheap, so there is no reason not to run them here.
+
+# This gate's own diagnostics, checked by the gate. The failing-test parser is the only thing that
+# turns "1 test failed" into a name someone can act on, and if it quietly stopped reporting, every
+# failure would look exactly like the unattributable one that prompted it (RemEx-ffxl). Pure, so the
+# whole check is milliseconds; run it here rather than trusting anyone to remember -SelfTest.
+Write-Stage "Checking the result parser"
+$parserFailures = Invoke-ResultParserSelfTest
+if ($parserFailures -eq 0) {
+    Write-Say "  The failing-test parser reports what it should and nothing else."
+}
+else {
+    $problems.Add('result parser self-test failed')
+    Write-Problem "The failing-test parser is not reporting correctly." `
+        "Run: ./scripts/verify.ps1 -SelfTest"
+}
 
 Write-Stage "Checking the edit guard"
 $guardTests = Join-Path $RepoRoot '.claude' 'scripts' 'test_guard_edit.py'
