@@ -294,10 +294,21 @@ public sealed class HostStateRedirectionTests
     /// A SOURCE ASSERTION, FOR THE SAME REASON AS THE TWO ABOVE IT, AND HERE THE REASON IS SHARPEST.
     /// Observing these behaviourally means letting them run: the injection that proves the test can
     /// fail would then register a logon task pointing at the test host, or delete the developer's
-    /// real one — and nothing would put that back. There is no seam that avoids it either, because
-    /// the thing being tested is precisely that no seam is used. So this pins the condition. It
-    /// catches deletion of a guard, which is the regression that actually happens; it would not
-    /// catch one being inverted.
+    /// real one — and nothing would put that back.
+    ///
+    /// A SEAM WOULD MAKE A BEHAVIOURAL TEST POSSIBLE, and a first draft of this remark claimed
+    /// otherwise; review supplied the counter-example. An internal indirection on the schtasks
+    /// launcher (<c>internal static Func&lt;string, int&gt; SchtasksRunner = RunSchtasks;</c>) would
+    /// let a test call <c>SetEnabled(true)</c> under the redirect and assert the runner was never
+    /// invoked — safe even with the guard removed, because the fake intercepts the call before
+    /// <c>schtasks.exe</c> starts. <c>RemoveLegacyWindowsRunKey</c> would need a second, different
+    /// seam pointing at a scratch HKCU subkey. So the honest statement is not "impossible" but "not
+    /// worth it": a mutable static hook into the code that registers elevated autostart is a worse
+    /// thing to add to production than this test is a weak thing to rely on, and the sibling
+    /// assertions on <c>TryMigrateWindowsFile</c> set the precedent.
+    ///
+    /// So this pins the condition. It catches deletion of a guard, which is the regression that
+    /// actually happens; it would not catch one being inverted.
     /// </remarks>
     [Theory]
     [InlineData("RemoveLegacyWindowsRunKey")]

@@ -47,6 +47,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **Running the test suite edited your own settings: your certificate pins, your dashboard layout and
+  your activity feed.** An earlier fix stopped the tests reaching the machine-wide store the PC host
+  keeps under `C:\ProgramData\RemEx`, which is where the pairing registry and the file-transfer
+  permissions live. Four stores were knowingly left out of that fix because they are not in
+  ProgramData at all — they sit in your own profile — and being smaller made them a smaller problem,
+  not a different one. `pinned_hosts.json` is the record of which PC certificates *you* have decided
+  to trust, so a test fixture writing there was editing a trust store; `dashboard_layout.json` and
+  `recent_activity.json` are your saved card arrangement and your history, and two existing tests
+  created and overwrote the layout on every run. All four now resolve through the same per-run
+  temporary directory the host stores use. Where they live in a real install is unchanged — they stay
+  in your profile rather than moving machine-wide, because a certificate you trust and a layout you
+  arranged belong to your account and not to the PC.
+- **The same suite could have switched your PC's launch-at-login on or off.** Launch-at-login is a
+  scheduled task and a registry value on Windows, and a file under `~/.config/autostart` on Linux —
+  so a test that exercised the "Launch at login" toggle would have registered autostart pointing at
+  the test runner, or deleted the registration you were relying on, with nothing to put it back. The
+  Linux side now follows the redirect like every other file. The Windows side has no directory to
+  point elsewhere, so under a test run it refuses to read or write the registration at all, and
+  reports "don't know" rather than answering from the real machine.
 - **Every host-state file was written through a temporary path named after the file, so two writers
   of it fought over one staging file.** The pairing registry, the paired-client name store, the
   file-transfer trust store and the transfer queue each wrote their new contents to `<store>.tmp` and
