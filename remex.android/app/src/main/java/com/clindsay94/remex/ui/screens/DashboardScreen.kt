@@ -330,8 +330,8 @@ fun DashboardScreenContent(
         val wakePcSubtitle = stringResource(R.string.dashboard_wake_pc_subtitle)
         val telemetryFallback = stringResource(R.string.dashboard_telemetry_fallback)
 
-        // THE LIST WAS ALREADY REMEMBERED; THE KEY WAS THE PROBLEM (RemEx-cite item 3). parseSensors
-        // returns a FRESH list object every telemetry tick, so remember(telemetrySensors) saw a new
+        // THE LIST WAS ALREADY REMEMBERED; THE KEY WAS THE PROBLEM (RemEx-cite item 3).
+        // parseTelemetry returns a FRESH list every tick, so remember(telemetrySensors) saw a new
         // key each second and rebuilt - buildList, distinctBy, then a sort - even with the drawer
         // shut and nothing about the card list changed.
         //
