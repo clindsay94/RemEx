@@ -35,6 +35,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The same silence was in every other file-manager request, and is now gone from all of them.** The
+  previous entry describes one request that answered with nothing at all when the PC could not read
+  it. Eight more worked the same way: browsing a folder, starting a transfer, renaming or deleting,
+  checking a file, managing shared folders, searching, reading properties, and fetching a thumbnail.
+  Each now replies with an error instead of saying nothing. For most of them your phone will not show
+  that error — it matches replies to the request that asked, and a reply to a request it could not
+  read has nothing to match — so those still end in the usual timeout rather than an immediate
+  message. What changes for every one of them is that the PC now writes down what happened, which is
+  the difference between a fault somebody can find and one that leaves no trace at all.
+
 - **"Browse this PC" could hang on the spinner forever, with the PC saying nothing at all.** If the
   PC could not read the request your phone sent, it answered with silence — not an error, not a
   refusal, nothing — and the phone, which waits for an answer rather than a clock, sat on
