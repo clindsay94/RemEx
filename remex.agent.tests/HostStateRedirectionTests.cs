@@ -190,16 +190,26 @@ public sealed class HostStateRedirectionTests
     [Fact]
     public async Task FullBrowseGrant_WithNoInjectedPath_WritesIntoTheRedirectedStore()
     {
+        // TOUCHES ONLY ITS OWN KEY, RATHER THAN DELETING THE SHARED FILE (RemEx-sc23). Every test in
+        // this assembly shares one redirect directory — the module initializer in
+        // build/TestHostStateRedirect.cs creates it once — so deleting file_transfer_trust.json on
+        // entry and leaving a grant behind afterwards order-coupled every other test that reads it.
+        // That is the same class as the round-1 finding against the migration test, which asserted on
+        // paired_clients.json by name and failed when run after PairingHandlerTests. It is safe today
+        // only because DisableTestParallelization is set assembly-wide and nothing else happens to
+        // read this file.
+        //
+        // THE DEFAULT PATH IS THE POINT and cannot be swapped for a temp one: what this proves is
+        // that a service given NO path still writes into the redirect. So the isolation has to come
+        // from the KEY instead — a per-run client id nothing else can collide with, cleaned up in a
+        // finally so the file is left as it was found.
         var storePath = Path.Combine(OverrideDirectory, "file_transfer_trust.json");
-        if (File.Exists(storePath))
-        {
-            File.Delete(storePath);
-        }
+        var clientId = $"redirection-test-client-{Guid.NewGuid():N}";
 
         var registry = new PairedClientRegistry(
             NullLogger<PairedClientRegistry>.Instance,
-            Path.Combine(OverrideDirectory, "redirection-test-pairings.json"));
-        registry.RegisterClient("redirection-test-client");
+            Path.Combine(OverrideDirectory, $"redirection-test-pairings-{clientId}.json"));
+        registry.RegisterClient(clientId);
 
         var service = new FileTrustService(
             NullLogger<FileTrustService>.Instance,
@@ -208,12 +218,47 @@ public sealed class HostStateRedirectionTests
             storePath: null,
             consentTimeout: TimeSpan.FromSeconds(5));
 
-        await service.SetFullBrowseGrantedAsync("redirection-test-client", true, default);
+        try
+        {
+            await service.SetFullBrowseGrantedAsync(clientId, true, default);
 
-        Assert.True(
-            File.Exists(storePath),
-            $"The trust store was not written to '{storePath}'; the default path is not redirected.");
-        Assert.Contains("redirection-test-client", await File.ReadAllTextAsync(storePath));
+            Assert.True(
+                File.Exists(storePath),
+                $"The trust store was not written to '{storePath}'; the default path is not redirected.");
+            Assert.Contains(clientId, await File.ReadAllTextAsync(storePath));
+        }
+        finally
+        {
+            // Left as found. A grant for a client nobody paired is exactly the residue that makes a
+            // later test's "no devices are trusted" assertion fail for a reason it cannot explain.
+            await service.RevokeAsync(clientId, default);
+        }
+    }
+
+    /// <summary>
+    /// The redirect test leaves the shared trust store as it found it (RemEx-sc23).
+    /// </summary>
+    /// <remarks>
+    /// The guard on the fix rather than on the feature. Every test in this assembly shares one
+    /// redirect directory, so a test that deletes a store on entry or leaves a record behind decides
+    /// what a later test sees — and the failure surfaces as an unrelated assertion failing for a
+    /// reason it cannot explain, only when the run order changes.
+    /// </remarks>
+    [Fact]
+    public async Task TheGrantTestLeavesNoResidueInTheSharedStore()
+    {
+        var storePath = Path.Combine(OverrideDirectory, "file_transfer_trust.json");
+        var before = File.Exists(storePath) ? await File.ReadAllTextAsync(storePath) : null;
+
+        await FullBrowseGrant_WithNoInjectedPath_WritesIntoTheRedirectedStore();
+
+        var after = File.Exists(storePath) ? await File.ReadAllTextAsync(storePath) : null;
+        Assert.DoesNotContain("redirection-test-client", after ?? string.Empty);
+
+        // AND IT DID NOT DELETE THE FILE EITHER. Half the coupling was the entry-side delete: a
+        // later test reading a store this one removed sees an empty world, which is a different
+        // wrong answer from seeing a stray grant.
+        if (before is not null) Assert.NotNull(after);
     }
 
     /// <summary>
