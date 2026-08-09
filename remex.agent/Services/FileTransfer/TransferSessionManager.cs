@@ -681,7 +681,8 @@ public sealed class TransferSessionManager : IDisposable
         // REGISTERED BEFORE THE OFFER GOES OUT. The peer may answer the instant it lands, and a reply
         // that arrives before anything is waiting is dropped as unmatched - which would strand a
         // transfer the user already agreed to.
-        _pendingReady[transferId] = new PendingPush(clientId, ready);
+        var pending = new PendingPush(clientId, ready);
+        _pendingReady[transferId] = pending;
 
         FileStream? source = null;
         try
@@ -790,7 +791,16 @@ public sealed class TransferSessionManager : IDisposable
         }
         finally
         {
-            _pendingReady.TryRemove(transferId, out _);
+            // COMPARE AND REMOVE, NOT REMOVE BY KEY (RemEx-6e3mn). Removing by id alone means this
+            // finally evicts whatever is registered under it — so a SECOND push that had taken the
+            // slot would be stranded until its own 30s deadline, by the first one's cleanup. The
+            // KeyValuePair overload only removes when the value still matches, and PendingPush is a
+            // record, so equality is the owner plus the TCS reference: it removes ours or nothing.
+            //
+            // Unreachable today, because transfer ids are receiver-minted GUIDs — filed and fixed
+            // because RemEx-5dq3 turned the value into a record and made this a one-line change, not
+            // because a collision is expected.
+            _pendingReady.TryRemove(new KeyValuePair<string, PendingPush>(transferId, pending));
 
             // DISPOSED ON EVERY PATH THAT DID NOT HAND IT OFF, including the ones that throw past the
             // typed catches - a cancelled token being the ordinary one. Nulling it on hand-off is what

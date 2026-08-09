@@ -108,6 +108,35 @@ public sealed class PendingPushOwnershipTests : IDisposable
         Assert.DoesNotContain(_log.Warnings, w => w.Contains("Refusing a file_transfer_ready"));
     }
 
+    [Fact]
+    public async Task AFinishedPushDoesNotEvictTheONETHATTOOKItsSlot()
+    {
+        // COMPARE AND REMOVE (RemEx-6e3mn). The finally used to remove by transfer id alone, so it
+        // evicted whatever was registered under that id — including a SECOND push that had taken the
+        // slot, which would then be stranded until its own 30s deadline by the first one's cleanup.
+        //
+        // Driven by cancelling the first push rather than answering it: its answer would be refused
+        // as a stranger's now that the slot belongs to somebody else, and it would sit there for the
+        // full deadline. Cancelling runs the same finally in milliseconds.
+        var manager = NewManager();
+        using var firstToken = new CancellationTokenSource();
+
+        var (first, firstSocket) = StartPush(manager, Phone, firstToken.Token);
+        await firstSocket.OfferSent.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        var (second, secondSocket) = StartPush(manager, "phone-b", CancellationToken.None);
+        await secondSocket.OfferSent.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        await firstToken.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => first);
+
+        // The second push's wait must still be registered: its owner's answer resolves it promptly.
+        manager.HandleReady(new FileTransferReady { TransferId = Transfer, Accepted = false }, channelKey: "phone-b");
+
+        Assert.False(await second.WaitAsync(TimeSpan.FromSeconds(5)),
+            "the first push's cleanup evicted the second's wait, which then hangs to its own deadline");
+    }
+
     // ── Harness ────────────────────────────────────────────────────────────────
 
     private TransferSessionManager NewManager()
@@ -120,14 +149,17 @@ public sealed class PendingPushOwnershipTests : IDisposable
 
     /// <summary>Starts a push to <see cref="Phone"/> and leaves it waiting on the ready.</summary>
     private (Task<bool> Push, SilentSocket Socket) StartPush(TransferSessionManager manager)
+        => StartPush(manager, Phone, CancellationToken.None);
+
+    private (Task<bool> Push, SilentSocket Socket) StartPush(
+        TransferSessionManager manager, string clientId, CancellationToken ct)
     {
         var source = Path.Combine(_staging.FullName, "push.bin");
-        File.WriteAllBytes(source, [1, 2, 3, 4]);
+        if (!File.Exists(source)) File.WriteAllBytes(source, [1, 2, 3, 4]);
 
         var socket = new SilentSocket();
         return (manager.PushFileAsync(
-            Phone, Transfer, source, "push.bin", offeredSize: 4,
-            socket, CancellationToken.None), socket);
+            clientId, Transfer, source, "push.bin", offeredSize: 4, socket, ct), socket);
     }
 
     /// <summary>Records warning text, which is the only deterministic view of a refusal.</summary>
