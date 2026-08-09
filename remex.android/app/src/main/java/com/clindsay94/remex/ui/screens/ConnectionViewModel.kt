@@ -250,12 +250,16 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         _isCertMismatch.value = false
     }
 
-    private val _certRepair = MutableStateFlow<CertRepairPrompt?>(null)
+    /**
+     * The dialog's state, its request counter and the cancel-is-final guard all live here now
+     * (RemEx-ivkq). Extracted so a plain JVM test can drive the guard: this is an AndroidViewModel,
+     * so nothing could reach the invariant, and a future edit dropping either requestId comparison
+     * would have broken RemEx-vnps' "cancel clears NOTHING" in silence.
+     */
+    private val certRepairController = CertRepairPromptController()
 
     /** Non-null while the certificate-change dialog is up. */
-    val certRepair: StateFlow<CertRepairPrompt?> = _certRepair.asStateFlow()
-
-    private var certRepairRequests = 0L
+    val certRepair: StateFlow<CertRepairPrompt?> = certRepairController.prompt
 
     /**
      * Opens the certificate-change dialog and starts gathering what it shows.
@@ -266,37 +270,26 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
      * error had already disabled their own protection by the time they understood the message.
      */
     fun beginCertRepair(context: Context, hostId: String, port: Int) {
+        // Validation belongs to the controller, which already trims and rejects blank - duplicating
+        // it here made that check dead code and left the test covering it unable to fail (review).
         val host = hostId.trim()
-        if (host.isEmpty()) return
-
-        val requestId = ++certRepairRequests
-        _certRepair.value = CertRepairPrompt(hostId = host, requestId = requestId)
+        val requestId = certRepairController.begin(host) ?: return
 
         viewModelScope.launch {
-            val pinned = PinnedHostStore.getPin(context, host)
-            _certRepair.update {
-                if (it?.requestId == requestId) it.copy(pinnedPin = pinned) else it
-            }
+            certRepairController.applyPinnedPin(requestId, PinnedHostStore.getPin(context, host))
 
             // Not a connection: the probe rejects every certificate it is shown and only reports
             // what it saw. See HostCertificateProbe.
-            val presented = HostCertificateProbe.observedPin(host, port)
-            _certRepair.update {
-                // The requestId guard is what makes cancel final. Cancelling nulls the state, and a
-                // probe landing afterwards must not put the dialog back on screen carrying an
-                // answer to a question the user already declined.
-                if (it?.requestId == requestId) {
-                    it.copy(presentedPin = presented, probeFinished = true)
-                } else {
-                    it
-                }
-            }
+            //
+            // Carrying requestId through both calls is what makes cancel final. The guard itself now
+            // lives in CertRepairPromptController, where a test can reach it (RemEx-ivkq).
+            certRepairController.applyProbeResult(requestId, HostCertificateProbe.observedPin(host, port))
         }
     }
 
     /** Closes the dialog, changing nothing. Cancel must never cost the user their pin. */
     fun dismissCertRepair() {
-        _certRepair.value = null
+        certRepairController.dismiss()
     }
 
     /**
@@ -307,8 +300,7 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
      * on a composable's `if`.
      */
     fun confirmCertRepair(context: Context) {
-        val prompt = _certRepair.value ?: return
-        _certRepair.value = null
+        val prompt = certRepairController.takeForConfirm() ?: return
         if (!prompt.canRepair) return
 
         viewModelScope.launch {
