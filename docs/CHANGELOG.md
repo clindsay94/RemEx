@@ -35,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **"Browse this PC" could hang on the spinner forever, with the PC saying nothing at all.** If the
+  PC could not read the request your phone sent, it answered with silence — not an error, not a
+  refusal, nothing — and the phone, which waits for an answer rather than a clock, sat on
+  "Requesting volumes…" until you gave up. All you got was "Peer did not respond", which points at
+  the network and not at the thing that actually happened. The PC now replies with an error in that
+  case, so the spinner stops and the phone shows that the request failed.
+  This was found while writing a test that could not be written: the request produced no response in
+  the test host at all, and it was an open question whether that was a real fault or something about
+  the test host. It was real. Everything else about the feature — asking your permission, remembering
+  your answer, listing the drives — was working.
+
 - **Removing a program from the launcher, ending a task, or deleting a remote file did nothing —
   and then RemEx locked up.** Every one of those asks you to confirm first, and the confirmation
   window could never be built. It failed the moment it was created, before anything appeared on
