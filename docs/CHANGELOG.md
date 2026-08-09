@@ -91,6 +91,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Sending the other way, from the PC to the phone, is separate work and is not in this release.
   (RemEx-hgqs)
 
+### Fixed
+
+- **Sending your phone's clipboard to the PC no longer says it worked when it did not.** The phone
+  had no way of knowing: it reported that the message had left the phone, not that the PC had taken
+  it. So if the PC turned the request down — because the phone was not paired with it, because the
+  PC could not reach its own clipboard, or because the PC was running an older version that does not
+  understand the request at all — you were still told "Sent to the PC's clipboard" and had no reason
+  to think otherwise.
+
+  The PC now says what it actually did, and the phone waits to hear it before telling you anything.
+  An unpaired phone gets told to pair first, which is the one case that is easy to hit and was
+  previously invisible. Found by trying it on a real device rather than by a test: everything
+  passed, and the feature still lied. (RemEx-s1ay7)
+
 ### Internal
 
 - **A page of hard-won project rules was sitting in a file section that gets automatically
