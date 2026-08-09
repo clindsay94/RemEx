@@ -53,6 +53,11 @@ object FileConsentManager {
 
     // Single UI source of truth for the foreground dialog; the notification is a parallel channel. The
     // production prompter drives this flow, so the dialog reflects exactly what was raised.
+    //
+    // BACKED BY A STACK SINCE RemEx-hncl, because two prompts can be outstanding at once now that
+    // RemEx-vyhm added the routed direction. The flow still holds exactly one — the dialog can only
+    // show one — but dismissing it restores whatever is still waiting instead of clearing to null.
+    private val prompts = ConsentPromptStack()
     private val _activePrompt = MutableStateFlow<FileConsentPrompt?>(null)
     val activePrompt: StateFlow<FileConsentPrompt?> = _activePrompt.asStateFlow()
 
@@ -70,12 +75,15 @@ object FileConsentManager {
         val prompter =
             object : ConsentPrompter {
                 override fun show(prompt: FileConsentPrompt) {
-                    _activePrompt.value = prompt
+                    _activePrompt.value = prompts.push(prompt)
                     FileTransferNotificationManager.showConsentRequest(ctx, prompt)
                 }
 
                 override fun dismiss(consentId: String) {
-                    if (_activePrompt.value?.consentId == consentId) _activePrompt.value = null
+                    // The one still waiting comes BACK, rather than the dialog clearing to nothing.
+                    // Answering the prompt that interrupted you should not silently retire the
+                    // question you were already being asked.
+                    _activePrompt.value = prompts.remove(consentId)
                     FileTransferNotificationManager.cancelConsent(ctx, consentId)
                 }
             }
