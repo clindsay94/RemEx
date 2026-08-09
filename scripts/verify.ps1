@@ -34,7 +34,9 @@
 
 .PARAMETER Scope
     What to verify. 'dotnet' (default) builds and tests the .NET solution. 'android' runs the
-    Android release unit tests. 'all' does both.
+    Android release unit tests AND the fatal release lint gate (lintVitalRelease) - the tests
+    compile the release sources but do not pull lint in, and lint is the gate the release-only
+    rule exists for. 'all' does both.
 
 .PARAMETER NoClean
     Skip the clean step and reuse existing build output. Faster, but you are giving up the
@@ -413,9 +415,40 @@ function Get-JUnitFailedTests {
     return $failures.ToArray()
 }
 
+# ---------------------------------------------------------------------------
+# Violation lines out of AGP's lint console output.
+# ---------------------------------------------------------------------------
+# Same reasoning as the two test parsers: the lint report under app/build is overwritten by the next
+# run, so a receipt saying only "violations" is a count nobody can act on afterwards (RemEx-lju6).
+#
+# Pure, and self-tested below, because this is the most drift-prone parser in the file - it reads a
+# tool's console formatting rather than a schema, and AGP has already renamed lint tasks across major
+# versions. If it silently stopped matching, every receipt would say "no violation line could be
+# parsed" and nothing would notice.
+function Get-LintViolationLines {
+    param([string[]]$Output, [int]$Limit = 15)
+
+    # AGP prints the offending line as  path\File.kt:218: Error: message [RuleId]
+    # The second alternative catches a bare "Error:"/"Warning:" summary line. Anchored at the start
+    # so the MSBuild, ILC and NativeAOT noise that shares this console - and the "Wrote HTML report
+    # to file:///..." line - cannot be mistaken for a violation.
+    $pattern = '^\s*[^\s].*\.(kt|java|xml):\d+:|^\s*(Error|Warning):'
+
+    # Unique before Limit: AGP prints only the FIRST failure, and prints it three times (task output,
+    # the summary block, and inside "* What went wrong:"). Without this the receipt carries the same
+    # violation three times, which reads like three problems and like a complete list. It is neither.
+    return @(@($Output) |
+        Select-String -Pattern $pattern |
+        ForEach-Object { "$_".Trim() } |
+        Where-Object { $_ } |
+        Select-Object -Unique |
+        Select-Object -First $Limit)
+}
+
 <#
 .SYNOPSIS
-    Checks Get-TrxFailedTests and Get-JUnitFailedTests against known input. Returns the number
+    Checks Get-TrxFailedTests, Get-JUnitFailedTests and Get-LintViolationLines against known input.
+    Returns the number
     of failed checks.
 #>
 function Invoke-ResultParserSelfTest {
@@ -527,6 +560,36 @@ Actual:   False</Message></ErrorInfo></Output>
         '</testsuite>'
     $junitCapped = @(Get-JUnitFailedTests -Document $junitMany -Limit 5)
     Assert-Check ($junitCapped.Count -eq 5) "the JUnit limit is honoured (got $($junitCapped.Count))"
+
+    # --- The lint violation parser -------------------------------------------------------------
+    # Real AGP 9.2.1 console output, shortened. The noise lines are the point: this console is shared
+    # with MSBuild and the NativeAOT compiler, so the parser has to reject far more than it accepts.
+    $lintSample = @(
+        'MSBuild version 18.6.11+35b593beb for .NET',
+        '  ILC: Method ''[Mono.Android.Runtime]Android.Runtime.RuntimeNativeMethods'' will always throw because: Invalid IL',
+        'Z:\RemEx\artifacts\obj\remex.core\linked\Mono.Android.dll : warning IL3053: Assembly produced AOT analysis warnings.',
+        '> Task :app:lintVitalAnalyzeRelease',
+        'Z:\RemEx\remex.android\app\src\main\java\com\clindsay94\remex\FileTransferNotificationManager.kt:218: Error: Missing permissions required by NotificationManagerCompat.notify [MissingPermission]',
+        '        NotificationManagerCompat.from(context).notify(notificationId, builder.build())',
+        'Wrote HTML report to file:///Z:/RemEx/remex.android/app/build/reports/lint-results-release.html',
+        'Lint found 1 errors, 0 warnings'
+    )
+    $lintFound = @(Get-LintViolationLines -Output $lintSample)
+    Assert-Check ($lintFound.Count -eq 1) "exactly one lint violation line is kept (got $($lintFound.Count))"
+    Assert-Check ($lintFound -join '' -like '*FileTransferNotificationManager.kt:218*') 'the offending file and line are named'
+    Assert-Check ($lintFound -join '' -like '*MissingPermission*') 'the rule id is kept'
+    # The rejections matter more than the match: a parser that accepted these would fill the receipt
+    # with build noise and bury the one line worth keeping.
+    Assert-Check (-not ($lintFound -join '' -like '*IL3053*')) 'an AOT warning is not mistaken for a lint violation'
+    Assert-Check (-not ($lintFound -join '' -like '*Wrote HTML report*')) 'the report path is not mistaken for a violation'
+    Assert-Check (-not ($lintFound -join '' -like '*MSBuild version*')) 'MSBuild banner text is not mistaken for a violation'
+
+    # AGP prints the first failure three times over. The receipt should carry it once.
+    $lintDuped = @(Get-LintViolationLines -Output @($lintSample[4], $lintSample[4], $lintSample[4]))
+    Assert-Check ($lintDuped.Count -eq 1) "a repeated violation line is reported once (got $($lintDuped.Count))"
+
+    $lintNone = @(Get-LintViolationLines -Output @('> Task :app:lintVitalRelease', 'BUILD SUCCESSFUL in 11s'))
+    Assert-Check ($lintNone.Count -eq 0) 'clean lint output yields no violation lines'
 
     return $script:parserCheckFailures
 }
@@ -807,6 +870,90 @@ if ($Scope -in @('android', 'all')) {
         }
         else {
             Write-Say "  Android tests finished. Running totals now include them."
+        }
+
+        # --- The release lint gate ---------------------------------------------------------
+        # testReleaseUnitTest compiles the release sources but does NOT pull lint in: lint is a
+        # separate task graph. So this script could not fail on a lint-vital violation, while the
+        # standing release-only rule names that gate as the whole reason release is the variant that
+        # matters - a bead could close green against a violation that would fail a real release
+        # build (RemEx-lju6).
+        #
+        # lintVitalRelease alone, not assembleRelease. Measured 2026-08-08: 68s cold, but 11s when
+        # run straight after the tests, because the expensive part - the NativeAOT core build and the
+        # release compile - is shared with testReleaseUnitTest and is already done by then.
+        # assembleRelease was ~93s cold and would have roughly doubled this scope's wall clock for
+        # the same gate. Not an opt-in switch either: a gate you have to remember is not a gate.
+        #
+        # Its own stage and its own message, deliberately. Appending the task to the test invocation
+        # above would fold a lint violation into "Android unit tests failed" - precisely the
+        # mis-attribution the comment on that invocation exists to prevent.
+        Write-Stage "Running the Android release lint gate"
+        Push-Location $androidDir
+        try {
+            $lintOutput = & $gradlew @('lintVitalRelease', '--console=plain') 2>&1
+            $lintOk = ($LASTEXITCODE -eq 0)
+        }
+        finally {
+            Pop-Location
+        }
+
+        $lintText = ($lintOutput | Out-String)
+
+        if ($lintOk) {
+            Write-Say "  lintVitalRelease passed."
+        }
+        elseif ($lintText -match "(?m)^Task '.*' not found in root project") {
+            # "The task is gone" and "the code has violations" need completely different responses,
+            # and the second is a far more comfortable thing to read than the truth. This is the same
+            # conflation the test stage above was fixed for; found here by pointing the stage at a
+            # deliberately non-existent task and watching it report violations that did not exist.
+            # Anchored to the line start so a source line lint echoes back cannot trip it.
+            $problems.Add('Android lint task does not exist - nothing was linted')
+            Write-Problem "The release lint task does not exist, so nothing was linted." `
+                "AGP renames tasks between major versions. Check the task still exists: cd remex.android; ./gradlew tasks --all | Select-String lintVital"
+        }
+        elseif ($lintText -match 'Lint found \d+ error') {
+            # POSITIVE evidence before claiming violations. Everything else that makes this task exit
+            # nonzero - a Kotlin compile error upstream, a dead daemon, a JVM OOM, a missing
+            # JAVA_HOME - is not a lint violation, and asserting one would put a confident falsehood
+            # in the receipt and point the reader at an HTML report that was never written.
+            $problems.Add('Android lint-vital violations')
+            Write-Problem "The release lint gate found violations." `
+                "Run: cd remex.android; ./gradlew lintVitalRelease - full report at remex.android/app/build/reports/lint-results-release.html"
+
+            # The offending lines into problems, not just a verdict. Same reasoning as the test
+            # names (RemEx-ffxl): the lint report under app/build is overwritten by the next run, so
+            # a receipt saying only "violations" is a count nobody can act on afterwards. Note AGP
+            # prints only the FIRST failure, so this is that one line, not the full list.
+            $lintLines = Get-LintViolationLines -Output $lintOutput
+            foreach ($line in $lintLines) {
+                $problems.Add("lint: $line")
+                Write-Say "    $line" 'Red'
+            }
+            if ($lintLines.Count -eq 0) {
+                # Lint said it found errors but printed none this parser recognised - the same "the
+                # gate went blind" case the test parsers guard against, and worth saying rather than
+                # leaving a bare verdict in the receipt.
+                $problems.Add('lint reported errors but no violation line could be parsed - check the HTML report')
+                Write-Say "    No violation line could be parsed - open the HTML report." 'Yellow'
+            }
+        }
+        else {
+            # Nonzero, not a missing task, and no lint findings: the RUN failed rather than the code.
+            $problems.Add('the Android lint run itself failed - no violations were reported')
+            Write-Problem "The release lint run failed before it could report anything." `
+                "This is not a lint violation. Run: cd remex.android; ./gradlew lintVitalRelease"
+
+            # Show what Gradle actually said, the same way the test stage does - on this path it is
+            # the only diagnostic there is.
+            $lintReason = @($lintOutput | Select-String -Pattern '^\* What went wrong:' -Context 0, 6)
+            if ($lintReason.Count -gt 0) {
+                foreach ($line in ($lintReason[0].Context.PostContext)) {
+                    if ($line -match '^\* Try:') { break }
+                    if ($line.Trim()) { Write-Say "    $line" 'Red' }
+                }
+            }
         }
     }
 }

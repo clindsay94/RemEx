@@ -99,7 +99,7 @@ runs the suite, checks the edit guard and the translations, then writes a receip
 
 ```powershell
 ./scripts/verify.ps1              # .NET solution
-./scripts/verify.ps1 -Scope all   # .NET plus Android unit tests
+./scripts/verify.ps1 -Scope all   # .NET plus Android unit tests and the release lint gate
 ./scripts/verify.ps1 -Check       # does the last receipt still describe the code on disk?
 ```
 
