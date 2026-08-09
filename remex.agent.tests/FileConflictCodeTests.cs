@@ -578,6 +578,64 @@ public sealed class FileConflictCodeTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// A FILE where a nested folder goes: coded, not a raw IOException (RemEx-xty3).
+    /// </summary>
+    /// <remarks>
+    /// The identical hole CopyAsync and MoveAsync closed at the top level, one level down where they
+    /// do not reach. It is not a data-loss path — an absent errorCode sends the client's actionsFor
+    /// to an empty list, so no sheet opens and Replace is never offered — but that IS the failure: an
+    /// opaque error the user cannot act on, which is what FileTransferErrorCodes exists to remove.
+    /// </remarks>
+    [Fact]
+    public void AFileWhereANestedFolderGoesIsCodedRatherThanRaw()
+    {
+        var source = Path.Combine(_root, "src");
+        Directory.CreateDirectory(Path.Combine(source, "inner"));
+        File.WriteAllText(Path.Combine(source, "inner", "a.txt"), "incoming");
+
+        var dest = Path.Combine(_root, "dst");
+        Directory.CreateDirectory(dest);
+        File.WriteAllText(Path.Combine(dest, "inner"), "a file, not a folder");
+
+        var ex = Assert.Throws<FileConflictException>(
+            () => FileTransferService.CopyDirectoryRecursive(source, dest, overwrite: false, CancellationToken.None));
+
+        Assert.Equal(FileTransferErrorCodes.DestinationIsDifferentKind, ex.ErrorCode);
+        Assert.Equal("inner", ex.ConflictingName);
+        Assert.Equal("a file, not a folder", File.ReadAllText(Path.Combine(dest, "inner")));
+    }
+
+    /// <summary>
+    /// A DIRECTORY where a nested file goes — the mirror, and it holds under overwrite too.
+    /// </summary>
+    /// <remarks>
+    /// Checked even with overwrite:true, because overwrite means "replace the file that is there"
+    /// and there is no file there to replace — File.Copy cannot overwrite a directory on any
+    /// platform, so letting it through only changes WHICH uncoded exception the user cannot act on.
+    /// The overwrite row is the one that would have been missed by reasoning from the !overwrite
+    /// guard the sibling case below carries.
+    /// </remarks>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ADirectoryWhereANestedFileGoesIsCodedRatherThanRaw(bool overwrite)
+    {
+        var source = Path.Combine(_root, $"src-{overwrite}");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "a.txt"), "incoming");
+
+        var dest = Path.Combine(_root, $"dst-{overwrite}");
+        Directory.CreateDirectory(Path.Combine(dest, "a.txt"));
+
+        var ex = Assert.Throws<FileConflictException>(
+            () => FileTransferService.CopyDirectoryRecursive(source, dest, overwrite, CancellationToken.None));
+
+        Assert.Equal(FileTransferErrorCodes.DestinationIsDifferentKind, ex.ErrorCode);
+        Assert.Equal("a.txt", ex.ConflictingName);
+        Assert.True(Directory.Exists(Path.Combine(dest, "a.txt")), "the directory in the way survived");
+    }
+
     [Fact]
     public void AChildCollidingInsideACopiedTreeNEVEROffersReplace()
     {
@@ -682,7 +740,6 @@ public sealed class FileConflictCodeTests : IDisposable
                  {
                      "FileConflictException.FileExists(",
                      "FileConflictException.DirectoryExists(",
-                     "FileConflictException.DifferentKindExists(",
                      "new FileConflictException(",
                      "FileTransferErrorCodes.DestinationExists",
 
@@ -703,6 +760,19 @@ public sealed class FileConflictCodeTests : IDisposable
 
         // Present, not merely not-absent - the same backstop against the region collapsing.
         Assert.Single(Regex.Matches(body, @"FileConflictException\.ResolvedNameTaken\("));
+
+        // DifferentKindExists CAME OFF THE BAN LIST, and the reason is that this guard's premise was
+        // never true of it (RemEx-xty3). The message above says "that code offers Replace" - true of
+        // FileExists, DirectoryExists and DestinationExists, and false of this one:
+        // FileConflictPolicy.kt:109 answers DESTINATION_IS_DIFFERENT_KIND with KeepBoth + Skip and
+        // withholds Replace deliberately, because replacing across kinds means deleting a whole tree
+        // to make room for one file. So it unlocks no dangerous button, and banning it left the two
+        // NESTED different-kind collisions - a file where a folder goes, a directory where a file
+        // goes - throwing raw OS exceptions with no code at all, which sends actionsFor to an empty
+        // list and opens no sheet whatsoever.
+        //
+        // REQUIRED, not merely permitted, so this cannot rot back into a raw throw.
+        Assert.Equal(2, Regex.Matches(body, @"FileConflictException\.DifferentKindExists\(").Count);
     }
 
     /// <summary>The repo root, resolved from this file rather than the test working directory.</summary>

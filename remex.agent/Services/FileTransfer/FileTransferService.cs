@@ -1092,6 +1092,18 @@ public sealed class FileTransferService : IFileTransferService
     /// </remarks>
     internal static void CopyDirectoryRecursive(string sourceDir, string destDir, bool overwrite, CancellationToken ct)
     {
+        // A FILE SITTING WHERE THIS FOLDER GOES (RemEx-xty3). CreateDirectory raises a raw IOException
+        // there, and a raw one is worse than it sounds: an absent errorCode sends the client's
+        // FileConflictPolicy.actionsFor to an empty list, so no sheet opens, Replace is never offered
+        // and the user gets a failure with nothing to act on. That is precisely what
+        // FileTransferErrorCodes exists to remove, and it is the identical hole CopyAsync and
+        // MoveAsync already closed at the top level — this is the nested case they do not reach.
+        //
+        // THE CHILD'S NAME, NOT THE FOLDER THE USER DRAGGED, for the reason the file collision below
+        // gives at length: a code naming the top of the tree sends them looking at the wrong thing.
+        if (File.Exists(destDir))
+            throw FileConflictException.DifferentKindExists(Path.GetFileName(destDir));
+
         Directory.CreateDirectory(destDir);
 
         foreach (var file in Directory.EnumerateFiles(sourceDir))
@@ -1134,6 +1146,15 @@ public sealed class FileTransferService : IFileTransferService
                 // action set.
                 throw FileConflictException.ResolvedNameTaken(Path.GetFileName(target));
             }
+
+            // AND A DIRECTORY SITTING WHERE THIS FILE GOES — the mirror of the case above, and the
+            // one File.Copy answers with a raw UnauthorizedAccessException or IOException depending
+            // on the platform. Checked even when overwrite is true, because overwrite means "replace
+            // the file that is there" and there is no file there to replace: File.Copy cannot
+            // overwrite a directory on any platform, so letting it through only changes which
+            // uncoded exception the user cannot act on.
+            if (Directory.Exists(target))
+                throw FileConflictException.DifferentKindExists(Path.GetFileName(target));
 
             File.Copy(file, target, overwrite);
         }
