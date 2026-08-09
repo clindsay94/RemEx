@@ -155,7 +155,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **The PC app's connection light now tells you whether your phone is actually there.** It used to
+- **Every connection light in the PC app now tells you whether your phone is actually there.** It used to
   show whether the app could talk to its own background service — which is essentially always yes.
   So the light sat green, and said "Connected", whether your phone was in your hand and paired or in
   another country. The one thing the PC app exists to tell you was the one thing it did not. The
@@ -164,8 +164,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   underneath, in smaller text — it is genuinely useful when something is wrong, just not the
   headline.
 
-  Three other status lights elsewhere in the app still show the old meaning and are being changed
-  next.
+  This applies everywhere the app shows one — the sidebar, the home screen, Settings, a pinned
+  Connection card and the tray pop-up all now answer the same question the same way. The one
+  exception is the Connect screen itself, where the light sits beside the box you type your PC's
+  address into: there, the app-to-service link genuinely is what you are asking about.
 
 ### Added
 
