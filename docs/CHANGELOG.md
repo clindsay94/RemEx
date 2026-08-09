@@ -43,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A pairing request with a bad address no longer opens a screen that cannot work.** The app
+  checks the PC's address and port before opening the pairing screen. That check existed but was
+  not being used — so a malformed address still took you to a pairing screen that looked fine and
+  could only ever time out, minutes later, looking like your PC was switched off. (RemEx-ph4nw)
+
 - **The highlighted row in the command palette was hard to read on some themes.** The row you have
   selected is filled with the accent colour, but its text kept the colour it uses on the ordinary
   background — on CyberNOC that left it very nearly invisible, and the row you are pointing at is

@@ -3,6 +3,7 @@ package com.clindsay94.remex
 import com.clindsay94.remex.ui.PairingRouteArgs
 import com.clindsay94.remex.ui.PairingRouteResult
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -124,5 +125,48 @@ class PairingRouteArgsTest {
 
         assertEquals(5, reasons.size)
         assertTrue(reasons.all { it.reason.isNotBlank() })
+    }
+
+    @Test
+    fun `the app navigates to pairing through buildPath rather than around it`() {
+        // THE ASSERTION THAT WOULD HAVE CAUGHT THIS WHOLE CLASS BEING INERT (RemEx-ph4nw).
+        // Everything else in this file tests the RULE; nothing tested that anything USES it.
+        // buildPath shipped with eleven tests, mutation-verified twice, and had zero production
+        // callers - AppNavigation built the path by hand, so both failures this class exists to
+        // prevent were still reachable from the one place the app pairs. A rule with no caller is
+        // indistinguishable from a rule that works.
+        //
+        // A SOURCE SCAN, BECAUSE THE ALTERNATIVE IS A COMPOSE UI TEST over a thousand-line
+        // navigation graph - much heavier to own than the thing it would protect. This is a
+        // tripwire, not a proof: it says the call site still goes through the validated builder and
+        // does not rebuild the route itself.
+        // TWO CANDIDATES BECAUSE THE WORKING DIRECTORY DIFFERS BY RUNNER. Gradle runs unit tests
+        // from the MODULE directory; an IDE or a repo-root invocation can start a level up. Trying
+        // both, and failing with the paths when neither resolves, keeps this a test about the call
+        // site rather than about where it was launched from.
+        val relative = "src/main/java/com/clindsay94/remex/ui/navigation/AppNavigation.kt"
+        val candidates = listOf(java.io.File(relative), java.io.File("app/$relative"))
+        val source = candidates.firstOrNull { it.isFile }
+
+        assertTrue(
+            "AppNavigation.kt not found from ${java.io.File(".").absolutePath} - tried " +
+                candidates.joinToString { it.path },
+            source != null
+        )
+
+        val nav = source!!.readText()
+
+        assertTrue(
+            "AppNavigation should build the pairing route with PairingRouteArgs.buildPath",
+            nav.contains("PairingRouteArgs.buildPath(Screen.Pairing.route")
+        )
+
+        // The tell of hand-building: the route constant followed by a path separator. The composable
+        // declaration uses a template with braces around the parameter NAMES, so it does not match.
+        assertFalse(
+            "AppNavigation is composing the pairing route by hand again, which bypasses every check "
+                + "in this file",
+            nav.contains("Screen.Pairing.route}/\$")
+        )
     }
 }

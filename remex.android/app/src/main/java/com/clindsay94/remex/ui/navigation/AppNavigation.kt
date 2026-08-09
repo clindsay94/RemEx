@@ -85,6 +85,7 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.screens.AboutScreen
+import com.clindsay94.remex.ui.PairingRouteArgs
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
 import com.clindsay94.remex.ui.screens.FileTransferScreen
 import com.clindsay94.remex.ui.screens.ConnectionScreen
@@ -300,10 +301,37 @@ private fun AppNavigationContent(
                                 // replay cache is what the pre-existing guard did, and it is right:
                                 // consume only where we actually acted.
                                 if (RemexClientManager.isConnected.value) return@collect
-                                RemexClientManager.consumePairingRequest()
-                                navController.navigate("${Screen.Pairing.route}/$host/$port") {
-                                        launchSingleTop = true
+
+                                // THROUGH THE VALIDATION, NOT AROUND IT (RemEx-ph4nw). This line
+                                // used to interpolate the path by hand, which left
+                                // PairingRouteArgs - eleven tests, mutation-verified twice - with no
+                                // production caller at all. Its whole purpose is that "a caller
+                                // cannot navigate somewhere that will fail on arrival", and the two
+                                // failures it names were both still reachable from here: a blank
+                                // host sends the user to a pairing screen that looks operational and
+                                // cannot succeed, and a host containing a slash shifts every segment
+                                // after it, so the port is read out of the middle of the host and
+                                // the route stops matching at all. These values come off
+                                // pairingRequired, which the native layer emits, so they are not
+                                // ours to assume well-formed.
+                                val path = PairingRouteArgs.buildPath(Screen.Pairing.route, host, port)
+                                if (path == null) {
+                                        // DELIBERATELY NOT CONSUMED. Consuming a request we then
+                                        // refuse to act on would strand the user with nothing on
+                                        // screen and nothing to retry; leaving it in the replay cache
+                                        // is what the guard above does for the same reason. The log
+                                        // line is the only place this becomes visible, so it names
+                                        // both values.
+                                        android.util.Log.w(
+                                                "AppNavigation",
+                                                "Refusing to open pairing: the host and port are not a usable route " +
+                                                        "(host='$host', port=$port)."
+                                        )
+                                        return@collect
                                 }
+
+                                RemexClientManager.consumePairingRequest()
+                                navController.navigate(path) { launchSingleTop = true }
                         }
                 }
         }
