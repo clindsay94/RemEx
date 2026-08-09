@@ -153,6 +153,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reconnect and try again. That second one is the case worth separating, because it is the one you
   can actually do something about.
 
+### Fixed
+
+- **The PC app's connection light now tells you whether your phone is actually there.** It used to
+  show whether the app could talk to its own background service — which is essentially always yes.
+  So the light sat green, and said "Connected", whether your phone was in your hand and paired or in
+  another country. The one thing the PC app exists to tell you was the one thing it did not. The
+  light in the sidebar now follows your phone: it names the phone when one is connected, counts them
+  when several are, and says plainly when none is. The old app-to-service status is still there,
+  underneath, in smaller text — it is genuinely useful when something is wrong, just not the
+  headline.
+
+  Three other status lights elsewhere in the app still show the old meaning and are being changed
+  next.
+
 ### Added
 
 - **The About page now shows this PC's certificate fingerprint, so the warning on your phone is
