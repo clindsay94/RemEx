@@ -27,9 +27,15 @@ internal const val OFFERED_NAMES_BUDGET = 240
  * can weigh, where "…" is only an admission that something was hidden.
  *
  * Deliberately no words. This is the data half of the prompt and the localized chrome wraps it, so
- * prose here would be untranslated English in eight of the nine languages. Kept character-identical
- * to the PC's `FileTransferHandler.JoinOfferedNames` so both ends of the same protocol describe an
- * offer the same way.
+ * prose here would be untranslated English in eight of the nine languages.
+ *
+ * FREE-STANDING SINCE RemEx-e11w, and it used to say the opposite. This was written to be
+ * character-identical to a `FileTransferHandler.JoinOfferedNames` on the PC, so that both ends of one
+ * protocol described an offer the same way. That helper is gone: e11w deleted the PC's incoming-push
+ * consent path entirely, on the grounds that a push is an upload and a shared writable root IS the
+ * consent. The PC no longer describes inbound offers at all, so there is no second implementation to
+ * stay identical to. The direction this DOES serve — the PC pushing files to the phone, where the
+ * phone builds its own prompt — is untouched by that deletion.
  */
 internal fun joinOfferedNames(names: List<String>): String {
     if (names.isEmpty()) return ""

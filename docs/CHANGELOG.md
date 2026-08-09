@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Four comments in the Android code pointed at PC code that no longer exists.** Internal only.
+  They described the phone's file-offer prompt as being kept identical to a matching one on the PC;
+  that PC half was removed earlier, so the notes now say what is actually true and why. One test was
+  asserting agreement with a deleted constant, which made it a test of nothing — it still pins the
+  value, but for its own reasons. (RemEx-ersu9)
+
 - **Three more test fixtures stopped blocking a thread, and a check now keeps them that way.**
   Internal only. Same problem as the entry below, in three fixture builders that set up file-access
   permissions; they now wait properly instead of tying up a worker. A new check fails the build if

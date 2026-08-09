@@ -240,7 +240,13 @@ object AndroidFileTransferHost {
     // Consent hooks (plan §2 / WP9). The serving-side consent for full-device
     // browse is handled by the settings toggle (a SAF root pick is the OS-level
     // consent, mirrored into the per-device trust key). The live prompt below is
-    // for an incoming file push, mirroring the PC's HandleFilePushOfferAsync.
+    // for a file push arriving from the PC.
+    //
+    // It used to say "mirroring the PC's HandleFilePushOfferAsync". That handler
+    // is gone: RemEx-e11w removed the PC's incoming-push consent path, because a
+    // push is an upload and a shared writable root IS the consent. This prompt
+    // guards the OTHER direction — PC pushes TO phone — which e11w did not touch
+    // and which has no counterpart on the PC to mirror.
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
@@ -323,8 +329,13 @@ object AndroidFileTransferHost {
 
     /**
      * Human-readable summary of a push offer's files (names, elided by length, plus the total size)
-     * for the consent prompt. Mirrors the PC's FileTransferHandler.DescribePushFiles so both prompts
-     * read the same.
+     * for the consent prompt.
+     *
+     * THIS IS THE ONLY IMPLEMENTATION NOW (RemEx-e11w). It was written to mirror the PC's
+     * `FileTransferHandler.DescribePushFiles` so both prompts read the same; that helper went with
+     * the PC's incoming-push consent path, which e11w deleted on the grounds that a push is an upload
+     * and a shared writable root IS the consent. What this describes — a push arriving from the PC —
+     * is prompted for on this side only, so there is nothing left to read the same as.
      */
     private fun describePushFiles(filesArr: JSONArray): String {
         if (filesArr.length() == 0) return ""

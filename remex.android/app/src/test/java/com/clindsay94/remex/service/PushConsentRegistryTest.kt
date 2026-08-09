@@ -57,15 +57,27 @@ class PushConsentRegistryTest {
     }
 
     /**
-     * The budget itself, so a change here fails HERE with a message naming the other platform —
-     * rather than surfacing as "expected 9, actual 11" in the overflow tests, which tells the next
-     * person nothing about the C# constant they also have to move.
+     * The budget itself, so a change to it fails HERE with a message saying what it costs — rather
+     * than surfacing as "expected 9, actual 11" in the overflow tests, which tells the next person
+     * nothing about which knob they turned.
+     *
+     * IT USED TO ASSERT PARITY WITH THE PC and no longer can (RemEx-e11w, RemEx-ersu9). The message
+     * named `FileTransferHandler.OfferedNamesBudget` in remex.agent, which was deleted along with the
+     * whole incoming-push consent path — leaving this as a self-assertion pointing somewhere empty.
+     * The concrete cost of leaving it that way: somebody retunes the budget for a UI reason, this
+     * fails, they go looking for the C# constant to move in step, find nothing, and either delete the
+     * test as stale or lose an iteration to the search.
+     *
+     * It is still worth asserting. The number is load-bearing for the overflow behaviour above, and
+     * pinning it means a change is a decision rather than a side effect — it just answers to this
+     * platform now, not to a second implementation that no longer exists.
      */
     @Test
-    fun `the name budget matches the PC's`() {
+    fun `the name budget is pinned`() {
         assertEquals(
-            "OFFERED_NAMES_BUDGET must equal FileTransferHandler.OfferedNamesBudget in " +
-                "remex.agent, or the two ends of one protocol describe the same offer differently",
+            "OFFERED_NAMES_BUDGET is what decides when the offer list overflows into a +N remainder, " +
+                "so changing it changes what the consent prompt shows. Retune it deliberately, and " +
+                "update the overflow tests with it",
             240,
             OFFERED_NAMES_BUDGET,
         )
