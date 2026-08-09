@@ -91,6 +91,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The verification gate now runs Android's release lint check, which it never had.** Verifying the
+  Android side ran the tests, and the tests compile the release code, so a compile error was caught.
+  Lint is a separate step and was not being run at all — which meant work could be signed off as
+  verified while carrying a problem that would stop a real release build. It now runs, as its own
+  step with its own message, so a lint problem is never reported as a failing test. It costs about
+  eleven seconds, because the expensive part of the work has already been done by the tests that ran
+  just before it. Checked by making a real violation fatal and confirming the gate stopped the run
+  and named the file and line, rather than trusting that it would.
+
 - **The verification gate now names the test that failed, instead of only counting it.** It used to
   report "1 of 1884 tests failed" and record nothing else, which made an intermittent failure
   impossible to chase: the detailed results are deleted at the start of the next run, so by the time
