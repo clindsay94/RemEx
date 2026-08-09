@@ -164,19 +164,44 @@ public static class RemexDataPaths
             return false;
         }
 
-        try
-        {
-            var targetDir = WindowsMachineWideDirectory;
-            var targetPath = Path.Combine(targetDir, fileName);
-            if (File.Exists(targetPath))
-            {
-                return false;
-            }
-
-            var legacyPath = Path.Combine(
+        var targetDir = WindowsMachineWideDirectory;
+        return TryMigrateFile(
+            Path.Combine(targetDir, fileName),
+            Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 PerUserFolderName,
-                fileName);
+                fileName));
+    }
+
+    /// <summary>
+    /// The copy itself, taking explicit paths so it can be exercised (RemEx-9lbg).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A SEAM BECAUSE THE CALLER IS NOW UNREACHABLE FROM TESTS. RemEx-4u29 made the host-state
+    /// redirect unconditional in every test assembly, and <see cref="TryMigrateWindowsFile"/> returns
+    /// before doing anything whenever the override is set — so its copy logic could not be reached at
+    /// all. It had no coverage before that either, so nothing was lost; what changed is that it
+    /// became impossible to add.
+    /// </para>
+    /// <para>
+    /// SHAPED LIKE <c>PairedClientRegistry.TryMigrateLegacyStore(targetPath, legacyPath, logger)</c>,
+    /// which already exists and is covered by its own tests. That precedent is why this is
+    /// consistency rather than new surface on a credential-path resolver — every internal overload
+    /// added to one of those is permanent.
+    /// </para>
+    /// <para>
+    /// NEVER OVERWRITES. A target that already exists means the migration has happened, or that
+    /// something else owns the machine-wide file; copying over it would replace live state with a
+    /// stale per-user copy. The same-path check matters off Windows and on any machine where the two
+    /// resolve together — copying a file onto itself is not a migration.
+    /// </para>
+    /// </remarks>
+    internal static bool TryMigrateFile(string targetPath, string legacyPath)
+    {
+        try
+        {
+            if (File.Exists(targetPath)) return false;
 
             if (string.Equals(legacyPath, targetPath, StringComparison.OrdinalIgnoreCase)
                 || !File.Exists(legacyPath))
@@ -184,15 +209,13 @@ public static class RemexDataPaths
                 return false;
             }
 
-            Directory.CreateDirectory(targetDir);
+            var targetDir = Path.GetDirectoryName(targetPath);
+            if (!string.IsNullOrWhiteSpace(targetDir)) Directory.CreateDirectory(targetDir);
+
             File.Copy(legacyPath, targetPath, overwrite: false);
             return true;
         }
-        catch (IOException)
-        {
-            return false;
-        }
-        catch (UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return false;
         }
