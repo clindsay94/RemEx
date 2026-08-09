@@ -67,7 +67,31 @@ if (-not $StoreDirectory) {
 }
 
 if (-not $ProposalDirectory) {
-    $ProposalDirectory = Join-Path ([System.IO.Path]::GetTempPath()) 'remex-store-proposals'
+    # UNDER $HOME ON UNIX, NOT THE SHARED TEMP ROOT (RemEx-97aa). A proposal for paired_clients.json
+    # contains every genuine client's base64 reconnect secret, and the old default was fully
+    # predictable: /tmp/remex-store-proposals/... . On Linux and macOS /tmp is mode 1777, so another
+    # local user can pre-create that directory or plant a symlink there BEFORE this script runs —
+    # and chmod-ing a path somebody else already owns does not take it back. RemEx-4u29 closed the
+    # silent-failure half of this (both chmods now check $LASTEXITCODE and throw); what it could not
+    # close was the predictability.
+    #
+    # Windows is unaffected either way — %TEMP% is already per-user and owner-only — so it keeps the
+    # familiar location rather than gaining a home-directory folder for no benefit.
+    #
+    # PER-RUN RANDOM SUFFIX ON TOP, because a fixed name under $HOME is still predictable to anything
+    # that can read your home directory listing, and two runs sharing a directory means the second
+    # inherits whatever the first left behind.
+    $proposalRoot = if ($IsWindows) {
+        [System.IO.Path]::GetTempPath()
+    } else {
+        $home = [Environment]::GetFolderPath('UserProfile')
+        if ([string]::IsNullOrWhiteSpace($home)) {
+            throw 'Could not resolve a home directory to write the proposal into. Pass -ProposalDirectory explicitly.'
+        }
+        Join-Path $home '.remex'
+    }
+
+    $ProposalDirectory = Join-Path $proposalRoot ('remex-store-proposals-' + [Guid]::NewGuid().ToString('N'))
 }
 
 # A real client id is the 32-character hex the client generates. Everything else in these files was
