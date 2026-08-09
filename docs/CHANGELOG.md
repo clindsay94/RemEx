@@ -142,6 +142,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file *contents* travel over still accepts a claimed name on this machine, which is filed as
   RemEx-4u0d.
 
+### Fixed
+
+- **Asking to browse your whole PC and being turned down used to look exactly like nothing
+  happening.** On the phone, tapping to browse everything on your PC showed "Loading drives…" — and
+  if the request was refused, that message simply disappeared and nothing replaced it. You were left
+  looking at a screen that had apparently finished, with no drives and no explanation. The phone now
+  says what happened, and tells the two cases apart: if somebody declined, it says so; if your PC
+  could not reach this phone to ask the question at all, it says that instead and tells you to
+  reconnect and try again. That second one is the case worth separating, because it is the one you
+  can actually do something about.
+
 ### Added
 
 - **The About page now shows this PC's certificate fingerprint, so the warning on your phone is
