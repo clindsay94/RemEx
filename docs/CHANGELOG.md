@@ -144,6 +144,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The promise that cancelling the certificate warning costs you nothing is now checked by a test.**
+  When a PC's certificate changes, RemEx shows you both fingerprints and asks. Cancelling that dialog
+  is meant to change nothing at all — your existing trust stays exactly as it was. That guarantee
+  depended on a small piece of bookkeeping that no test could reach, so an ordinary tidy-up could have
+  removed it without anything going red. The bookkeeping now lives somewhere a test can drive it, and
+  six tests hold it in place, including the case that turned out to matter most: opening the dialog
+  for one PC, then another, and having the first PC's answer arrive late.
+
+
 - **The verification gate now runs Android's release lint check, which it never had.** Verifying the
   Android side ran the tests, and the tests compile the release code, so a compile error was caught.
   Lint is a separate step and was not being run at all — which meant work could be signed off as
