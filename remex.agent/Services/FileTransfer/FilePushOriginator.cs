@@ -31,8 +31,16 @@ public sealed class FilePushOriginator(ILogger<FilePushOriginator> logger)
     /// any less would time out while somebody was still reading the dialog — every deliberate
     /// acceptance would arrive after the host had already given up, and the file would never be sent
     /// even though the user said yes. The margin covers the round trip and nothing more.
+    /// <para>
+    /// AN <c>init</c> PROPERTY RATHER THAN A CONSTRUCTOR PARAMETER (RemEx-gfx3n), copying the seam
+    /// <c>TransferSessionManager.MaxTransferBytes</c> already uses. The default container binds
+    /// constructors only, so this is invisible to host bootstrapping and production always gets the
+    /// 70 seconds argued for above — while <c>Remex.Agent.Tests</c> can set it through
+    /// <c>InternalsVisibleTo</c> and reach the timeout branch without waiting seventy seconds for it.
+    /// A constructor parameter would have put a test-only knob into the DI surface.
+    /// </para>
     /// </remarks>
-    private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(70);
+    internal TimeSpan OfferTimeout { get; init; } = TimeSpan.FromSeconds(70);
 
     private readonly ConcurrentDictionary<string, TaskCompletionSource<FilePushResponse>> _pending = new();
 
@@ -63,7 +71,7 @@ public sealed class FilePushOriginator(ILogger<FilePushOriginator> logger)
                 ct);
 
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            deadline.CancelAfter(Timeout);
+            deadline.CancelAfter(OfferTimeout);
 
             FilePushResponse? reply = null;
             try

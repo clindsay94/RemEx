@@ -66,6 +66,28 @@ public sealed class TransferSessionManager : IDisposable
     /// </remarks>
     internal long MaxTransferBytes { get; init; } = DefaultMaxTransferBytes;
 
+    /// <summary>
+    /// How long <see cref="PushFileAsync"/> waits for the phone's <c>file_transfer_ready</c>
+    /// (RemEx-gfx3n).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// SHORTER THAN THE OFFER TIMEOUT ON PURPOSE, and the two are not interchangeable. The 70 seconds
+    /// in <see cref="FilePushOriginator"/> covers a HUMAN reading a consent prompt; this one starts
+    /// after that consent already arrived, so it is only waiting for the phone to open a channel and
+    /// say it is ready. Thirty seconds is generous for a round trip and short enough that a phone
+    /// which consented and then died does not hold the file handle for over a minute.
+    /// </para>
+    /// <para>
+    /// The same test-only seam as <see cref="MaxTransferBytes"/> above, for the same reason: the
+    /// default container binds constructors only, so this is invisible to DI and production always
+    /// gets the thirty seconds. Its purpose is that a test can reach the no-ready timeout branch —
+    /// which must return false AND release the file handle — without spending half a minute per
+    /// assertion.
+    /// </para>
+    /// </remarks>
+    internal TimeSpan ReadyTimeout { get; init; } = TimeSpan.FromSeconds(30);
+
     /// <summary>Orphaned staging partials older than this are swept at startup (plan §1.3).</summary>
     private static readonly TimeSpan OrphanMaxAge = TimeSpan.FromDays(7);
 
@@ -741,7 +763,7 @@ public sealed class TransferSessionManager : IDisposable
                 ct);
 
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            deadline.CancelAfter(TimeSpan.FromSeconds(30));
+            deadline.CancelAfter(ReadyTimeout);
 
             FileTransferReady reply;
             try

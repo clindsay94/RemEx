@@ -169,6 +169,43 @@ public sealed class PendingPushOwnershipTests : IDisposable
         Assert.DoesNotContain(realisticId, miss, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task APushNobodyEverGetsReadyForGIVESUPAndLETSGOOFTHEFILE()
+    {
+        // THE TIMEOUT BRANCH, REACHABLE FOR THE FIRST TIME (RemEx-gfx3n, an item of RemEx-hn23). It
+        // was unreachable in a test until now for a dull reason: the wait was an inline
+        // TimeSpan.FromSeconds(30), so asserting anything about it cost half a minute per assertion
+        // and nobody wrote the test. The seam is an internal init property rather than a constructor
+        // parameter, so this costs nothing in the DI surface and production still waits thirty
+        // seconds.
+        //
+        // BOTH HALVES MATTER AND THE SECOND IS THE ONE WORTH HAVING. Returning false is the visible
+        // half. Releasing the file is the half that is silent when it breaks: a push that consented
+        // and then went quiet would leave the source held open, and the user would find they could
+        // not move, rename or delete their own file with nothing on screen to explain why.
+        var manager = new TransferSessionManager(
+                _log,
+                Mock.Of<IFileTransferService>(),
+                new SharedRootReadResolver(
+                    Mock.Of<IFileTransferService>(),
+                    Mock.Of<IFileTrustService>(),
+                    new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance)),
+                _staging.FullName)
+        {
+            ReadyTimeout = TimeSpan.FromMilliseconds(150),
+        };
+
+        var (push, _) = StartPush(manager);
+
+        Assert.False(await push.WaitAsync(TimeSpan.FromSeconds(5)));
+
+        // Opening it exclusively is the assertion. A leaked handle fails here and nowhere else -
+        // File.Exists would pass either way, and so would deleting it on Linux.
+        var source = Path.Combine(_staging.FullName, "push.bin");
+        using var exclusive = new FileStream(source, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        Assert.True(exclusive.CanRead);
+    }
+
     // ── Harness ────────────────────────────────────────────────────────────────
 
     private TransferSessionManager NewManager() => NewManager(_log);
