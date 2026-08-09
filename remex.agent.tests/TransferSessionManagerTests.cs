@@ -414,4 +414,90 @@ public sealed class TransferSessionManagerTests
             Directory.Delete(baseTemp, recursive: true);
         }
     }
+
+    // --- RemEx-0719: a transferId is not a bearer capability -------------------------------------
+    // Every inbound-frame case in RunChannelAsync keyed on envelope.TransferId ALONE, with no check
+    // that the session belonged to the socket presenting the frame. RemEx-4u0d closed channel
+    // DISPLACEMENT by refusing a loopback caller that claims a paired id - but it deliberately still
+    // admits a loopback connection with a BLANK id, and such a connection needs no identity at all to
+    // reach the frame loop. Only a transferId. So it could cancel or inject into a paired phone's
+    // in-flight transfer without claiming anything at all.
+
+    [Fact]
+    public async Task AFrameOnItsOwnClientsChannel_IsNotForeign()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 1024), default);
+
+            Assert.False(mgr.IsForeignTransfer(ClientId, tid));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task AFrameOnAnotherClientsChannel_IsForeign()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 1024), default);
+
+            Assert.True(mgr.IsForeignTransfer("some-other-device", tid));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task AFrameOnAnIdentitylessLoopbackChannel_IsForeign()
+    {
+        // The attack RemEx-4u0d leaves open by design: a loopback connection with a blank clientId is
+        // still admitted, because refusing it would break the TestServer and buy nothing. This is the
+        // check that stops it touching a phone's transfer anyway.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            var tid = Guid.NewGuid().ToString("N");
+
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, 1024), default);
+
+            Assert.True(mgr.IsForeignTransfer(string.Empty, tid));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
+
+    [Fact]
+    public async Task AnUnknownTransferId_IsNotForeign()
+    {
+        // The direction that would be a behaviour change smuggled in beside a security fix. An
+        // unrecognised id is already handled downstream - WriteChunkAsync ignores it, the ack and
+        // error cases TryGet and no-op - and that is what makes late-arriving and post-completion
+        // frames harmless. Treating unknown as foreign would silently change all of that.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+            await mgr.BeginReceiveAsync(ClientId, Offer(Guid.NewGuid().ToString("N"), 1024), default);
+
+            Assert.False(mgr.IsForeignTransfer(ClientId, "a-transfer-nobody-has"));
+            Assert.False(mgr.IsForeignTransfer("some-other-device", "a-transfer-nobody-has"));
+        }
+        finally { staging.Delete(true); dest.Delete(true); }
+    }
 }

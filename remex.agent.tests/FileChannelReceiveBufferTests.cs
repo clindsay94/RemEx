@@ -134,6 +134,20 @@ public sealed class FileChannelReceiveBufferTests
             },
             chunk);
 
+    /// <summary>An Error frame: no payload, no offset, just the transferId (RemEx-0719).</summary>
+    private static byte[] ErrorFrame(string transferId, string error) =>
+        FileFrameCodec.Wrap(
+            new FileFrameEnvelope
+            {
+                Kind = FileFrameKinds.Error,
+                TransferId = transferId,
+                Offset = 0,
+                Length = 0,
+                Final = true,
+                Error = error,
+            },
+            ReadOnlySpan<byte>.Empty);
+
     private static byte[] DistinctBytes(int length, byte seed)
     {
         var bytes = new byte[length];
@@ -252,6 +266,97 @@ public sealed class FileChannelReceiveBufferTests
             var partial = Path.Combine(staging.FullName, tid + ".remexpart");
             Assert.True(File.Exists(partial));
             Assert.Equal(0, new FileInfo(partial).Length);
+        }
+        finally
+        {
+            staging.Delete(recursive: true);
+            dest.Delete(recursive: true);
+        }
+    }
+
+    // --- RemEx-0719: the frame loop must CONSULT the ownership rule, not merely have one -----------
+    // TransferSessionManagerTests covers the IsForeignTransfer predicate. That is the wrong half on
+    // its own: the security property is that RunChannelAsync checks it BEFORE dispatching, and
+    // deleting the call site leaves every predicate test green. Found in review of the fix itself.
+    // These two drive the real loop over a scripted socket, so they fail if the check is removed,
+    // bypassed, or hoisted out of the dispatch path by a later refactor.
+
+    [Fact]
+    public async Task AnIdentitylessChannelCannotWriteIntoAnotherClientsTransfer()
+    {
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+
+            // OVER 64 KB, and that is load-bearing: the partial's FileStream buffer is 64 KB, so a
+            // smaller write never reaches disk and FileInfo.Length reads 0 whether the frame was
+            // accepted or refused - a test that passes for the wrong reason. The first draft of this
+            // test used 50 KB and stayed green with the guard's call site deleted, which is how the
+            // hole was found. The same trap is documented on the buffer-reuse test above.
+            var payload = DistinctBytes(200_000, 0x22);
+            var tid = Guid.NewGuid().ToString("N");
+
+            // A paired phone's transfer, registered to ITS client id.
+            var acceptance = await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+            Assert.True(acceptance.Accepted);
+
+            // The attacker: a loopback connection with a BLANK id, which RemEx-4u0d deliberately still
+            // admits, presenting a Data frame for the victim's transferId. Before this guard the bytes
+            // were written into the victim's partial with no identity of any kind required.
+            var ws = new ScriptedWebSocket();
+            ws.EnqueueMessage(DataFrame(tid, 0, payload, final: false));
+
+            await mgr.RunChannelAsync(string.Empty, ws, default);
+
+            var partial = Path.Combine(staging.FullName, tid + ".remexpart");
+            var stagedLength = File.Exists(partial) ? new FileInfo(partial).Length : 0;
+            Assert.True(
+                stagedLength == 0,
+                $"a frame from a different client must not reach the staging partial, but {stagedLength} byte(s) were written");
+        }
+        finally
+        {
+            staging.Delete(recursive: true);
+            dest.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task AnIdentitylessChannelCannotCancelAnotherClientsTransfer()
+    {
+        // The other reachable frame kind, and the cheaper attack: an Error frame needs no payload and
+        // no offset - just the number. It reaches CancelReceive, which deletes the victim's partial.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+
+            var payload = DistinctBytes(20_000, 0x55);
+            var tid = Guid.NewGuid().ToString("N");
+
+            await mgr.BeginReceiveAsync(ClientId, Offer(tid, payload.Length), default);
+
+            // The victim writes some real bytes over its own channel first, so there is a partial to
+            // destroy - otherwise the assertion below would pass whether or not the cancel landed.
+            var victimWs = new ScriptedWebSocket();
+            victimWs.EnqueueMessage(DataFrame(tid, 0, payload, final: false));
+            await mgr.RunChannelAsync(ClientId, victimWs, default);
+
+            var partial = Path.Combine(staging.FullName, tid + ".remexpart");
+            Assert.True(File.Exists(partial), "the victim's own frame should have staged normally");
+
+            var attackerWs = new ScriptedWebSocket();
+            attackerWs.EnqueueMessage(ErrorFrame(tid, "cancelled by a process that does not own this transfer"));
+            await mgr.RunChannelAsync(string.Empty, attackerWs, default);
+
+            Assert.True(
+                File.Exists(partial),
+                "an Error frame from a different client must not cancel the transfer or delete its partial");
         }
         finally
         {

@@ -725,6 +725,40 @@ public sealed class TransferSessionManager : IDisposable
                     continue;
                 }
 
+                // OWNERSHIP, BEFORE THE SWITCH SO IT CANNOT BE FORGOTTEN BY A FUTURE FRAME KIND
+                // (RemEx-0719). Every case below keys on envelope.TransferId ALONE, so the id was a
+                // bearer capability: hold the number, control the transfer. Nothing checked that the
+                // session belonged to the socket presenting the frame.
+                //
+                // RemEx-4u0d stopped a loopback caller CLAIMING A PAIRED ID, which closed channel
+                // displacement. It deliberately still admits a loopback connection with a blank or
+                // unknown id, and such a connection needs no identity at all to get here - only a
+                // transferId. So it could send an Error frame naming a phone's in-flight transfer
+                // and cancel it, or a Data frame at the right offset and write its bytes into the
+                // victim's partial file. That is the injection half RemEx-4u0d did not close.
+                //
+                // What kept it unreachable was transferId entropy (UUID.randomUUID / Guid.NewGuid)
+                // and the fact that ids do not currently escape the connection that owns them. That
+                // is a fact about today's code, not an invariant - one future change that logs a
+                // transferId or puts it in a diagnostic export would make this live, and that change
+                // would look harmless.
+                //
+                // THIS BINDS THE BINARY CHANNEL ONLY. The /ws JSON control plane still keys on
+                // transferId alone: HandleControl takes no clientId at all, so an identity-less
+                // loopback /ws connection can still cancel a transfer with one message, and
+                // BeginReceiveAsync re-owns an existing id without checking the current holder. Found
+                // in review of this change and filed separately - do not read this comment as saying
+                // the capability is gone everywhere.
+                if (IsForeignTransfer(key, envelope.TransferId))
+                {
+                    _logger.LogWarning(
+                        "Refusing a /ws/files {Kind} frame from {ClientId}: transfer {TransferId} belongs to a different client.",
+                        envelope.Kind,
+                        Remex.Agent.Services.Security.LogRedaction.RedactClientId(key),
+                        envelope.TransferId);
+                    continue;
+                }
+
                 switch (envelope.Kind)
                 {
                     case FileFrameKinds.Data:
@@ -785,6 +819,63 @@ public sealed class TransferSessionManager : IDisposable
                     s.Cancel();
             }
         }
+    }
+
+    /// <summary>
+    /// True when <paramref name="transferId"/> is known AND belongs to a client other than
+    /// <paramref name="channelKey"/>. Used to refuse a frame presented on someone else's socket
+    /// (RemEx-0719).
+    /// </summary>
+    /// <remarks>
+    /// A live session answers first. When there is none, the STAGING MANIFEST does - and that second
+    /// lookup is not a nicety, it closes the window this guard would otherwise miss entirely.
+    /// <see cref="SuspendReceive"/> removes the session on a dropped socket but deliberately KEEPS the
+    /// partial so the transfer can resume. In that window the id looks unknown - and
+    /// <see cref="CancelReceive"/> is NOT a no-op for an unknown id, because its DeleteStaging call
+    /// runs UNCONDITIONALLY, by id, whether or not a session was found. So an Error frame from any
+    /// channel would delete a phone's resumable partial in exactly the window that matters most; a
+    /// dropped mobile socket is routine, not exotic. The manifest already records the owning ClientId
+    /// and the resume path at BeginReceiveAsync already validates it, so the answer was on disk the
+    /// whole time. This was found by the end-to-end test below, not by reasoning.
+    ///
+    /// The manifest is read ONLY when no live session exists, so an in-flight transfer costs no file
+    /// I/O per frame - the read happens on the rare-or-hostile path.
+    ///
+    /// A GENUINELY unknown id - no session and no manifest - is still not foreign, deliberately. It
+    /// already dies downstream (WriteChunkAsync throws "No active inbound transfer", which
+    /// HandleInboundDataFrameAsync catches; the ack and error cases TryGet and no-op; DeleteStaging
+    /// finds nothing), and treating it as foreign would change behaviour for late-arriving and
+    /// post-completion frames while claiming to be a security fix.
+    ///
+    /// The guarantee is "a PAIRED client's transfer is protected from every other channel key", not
+    /// "keys are isolated from each other". Two identity-less local callers both present the blank
+    /// key RemEx-4u0d deliberately still admits, so they are indistinguishable here and could reach
+    /// each other's transfers. That matters only if a second local consumer of this endpoint ever
+    /// exists; today there is none.
+    ///
+    /// Both directions are consulted: a receive session is what a Data frame writes into, and a send
+    /// session is what an Ack advances and an Error cancels.
+    /// </remarks>
+    internal bool IsForeignTransfer(string channelKey, string transferId)
+    {
+        if (_receiveSessions.TryGetValue(transferId, out var receiving))
+        {
+            return !string.Equals(receiving.ClientId, channelKey, StringComparison.Ordinal);
+        }
+
+        if (_sendSessions.TryGetValue(transferId, out var sending))
+        {
+            return !string.Equals(sending.ClientId, channelKey, StringComparison.Ordinal);
+        }
+
+        // No live session: fall back to the staging manifest, which is the owner record that survives
+        // a dropped socket. See the remarks - this is the suspended-transfer window.
+        if (TryLoadManifest(ManifestPathFor(transferId), out var manifest) && manifest is not null)
+        {
+            return !string.Equals(manifest.ClientId, channelKey, StringComparison.Ordinal);
+        }
+
+        return false;
     }
 
     /// <summary>
