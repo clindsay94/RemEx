@@ -84,6 +84,10 @@ public sealed class HostStateRedirectionTests
         => AssertRedirected(PairedClientNameStore.DefaultStorePathForTests, "The paired-client name store");
 
     [Fact]
+    public void PairedDeviceActivityStore_DefaultPath_IsRedirected()
+        => AssertRedirected(PairedDeviceActivityStore.DefaultStorePathForTests, "The paired-device activity store");
+
+    [Fact]
     public void SessionGuardFlag_DefaultPath_IsRedirected()
         => AssertRedirected(SessionGuardSettings.FlagPathForTests, "The keep-session-unlocked flag");
 

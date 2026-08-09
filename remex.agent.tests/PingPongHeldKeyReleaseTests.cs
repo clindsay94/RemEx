@@ -75,7 +75,8 @@ public class PingPongHeldKeyReleaseTests
             null!,
             null!,  // FilePushOriginator: this test never pushes
             new Remex.Agent.Services.ClientSessionRegistry(),
-            NewNameStore());
+            NewNameStore(),
+            NewActivityStore());
 
     private static InputEvent Key(string type, int keyCode) =>
         new() { EventType = type, KeyCode = keyCode };
@@ -137,5 +138,10 @@ public class PingPongHeldKeyReleaseTests
     private static PairedClientNameStore NewNameStore() =>
         new(NullLogger<PairedClientNameStore>.Instance,
             Path.Combine(Path.GetTempPath(), $"remex-names-{Guid.NewGuid():N}.json"));
+
+    /// <summary>A throwaway activity store; these tests never read a date back.</summary>
+    private static PairedDeviceActivityStore NewActivityStore() =>
+        new(NullLogger<PairedDeviceActivityStore>.Instance,
+            Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
 
 }

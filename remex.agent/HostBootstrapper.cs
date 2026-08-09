@@ -204,6 +204,16 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Desktop.Services.IClientSessionSource>(
             sp => sp.GetRequiredService<ClientSessionRegistry>());
         builder.Services.AddSingleton<PairedClientNameStore>();
+        builder.Services.AddSingleton<PairedDeviceActivityStore>();
+
+        // The composed read-only list, under the interface remex.desktop declares (RemEx-nrsv).
+        // Same arrangement as IClientSessionSource, and for the same reason: the desktop cannot
+        // name the host's types without a project-reference cycle.
+        builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceSource>(
+            sp => new PairedDeviceDirectory(
+                sp.GetRequiredService<PairedClientRegistry>(),
+                sp.GetRequiredService<PairedClientNameStore>(),
+                sp.GetRequiredService<PairedDeviceActivityStore>()));
         builder.Services.AddSingleton<TransferSessionManager>();
         builder.Services.AddSingleton<TransferQueueService>();
         builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.DesktopSessionRegistry>();
@@ -436,7 +446,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<PairedClientRegistry>(),
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.FileTransfer.FilePushOriginator>(),
                 context.RequestServices.GetRequiredService<ClientSessionRegistry>(),
-                context.RequestServices.GetRequiredService<PairedClientNameStore>());
+                context.RequestServices.GetRequiredService<PairedClientNameStore>(),
+                context.RequestServices.GetRequiredService<PairedDeviceActivityStore>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

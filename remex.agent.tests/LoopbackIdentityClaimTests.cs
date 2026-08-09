@@ -163,7 +163,8 @@ public class LoopbackIdentityClaimTests
             null!,  // PairedClientRegistry: only the reconnect challenge reads it, and !isPaired gates that
             null!,  // FilePushOriginator: this test never pushes FROM the host
             new ClientSessionRegistry(),
-            NewNameStore());
+            NewNameStore(),
+            NewActivityStore());
 
         var socket = new ScriptedWebSocket(awaitedResponseType, script);
         try
@@ -298,6 +299,11 @@ public class LoopbackIdentityClaimTests
     private static PairedClientNameStore NewNameStore() =>
         new(NullLogger<PairedClientNameStore>.Instance,
             Path.Combine(Path.GetTempPath(), $"remex-names-{Guid.NewGuid():N}.json"));
+
+    /// <summary>A throwaway activity store; these tests never read a date back.</summary>
+    private static PairedDeviceActivityStore NewActivityStore() =>
+        new(NullLogger<PairedDeviceActivityStore>.Instance,
+            Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
 
     [Fact]
     public async Task ALoopbackConnectionCannotCancelAPairedPhonesTransfer()

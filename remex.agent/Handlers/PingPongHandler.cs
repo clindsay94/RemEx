@@ -34,7 +34,8 @@ public sealed class PingPongHandler(
     PairedClientRegistry pairedClientRegistry,
     Remex.Agent.Services.FileTransfer.FilePushOriginator pushOriginator,
     ClientSessionRegistry sessionRegistry,
-    PairedClientNameStore nameStore) : IDisposable
+    PairedClientNameStore nameStore,
+    PairedDeviceActivityStore activityStore) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -478,6 +479,11 @@ public sealed class PingPongHandler(
                             if (!identityProven && !string.IsNullOrWhiteSpace(pairedClientId))
                             {
                                 nameStore.Remember(pairedClientId, reportedDeviceName);
+                                // Alongside the name, and gated by the same condition for the same
+                                // reason: the id on an unauthenticated message is whatever the sender
+                                // wrote, so recording here and nowhere earlier is what stops anything
+                                // on the network minting rows for ids it merely overheard (RemEx-nrsv).
+                                activityStore.RecordPaired(pairedClientId, DateTimeOffset.UtcNow);
                                 sessionRegistry.Identify(session, pairedClientId, reportedDeviceName);
 
                                 // FROM HERE THE IDENTITY IS FROZEN. See the assignment further up:
@@ -559,6 +565,12 @@ public sealed class PingPongHandler(
                                 identityProven = true;
                             }
                             sessionRegistry.MarkAuthenticated(session, identityProven: true);
+                            // LAST-SEEN IS RECORDED ONLY WHERE THE IDENTITY IS PROVEN. A client id
+                            // rides on ping and needs no pairing, so stamping on a claimed id would
+                            // let anything on the network keep another device's "last seen" fresh —
+                            // and a stale date is the one signal a user has that a phone they lost
+                            // stopped connecting (RemEx-nrsv).
+                            activityStore.RecordSeen(verifiedClientId, DateTimeOffset.UtcNow);
                             logger.LogInformation(
                                 "Reconnect proof verified — connection authenticated for client {ClientId}.",
                                 message.ReconnectProof?.ClientId ?? message.ClientId);

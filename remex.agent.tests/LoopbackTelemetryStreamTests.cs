@@ -129,7 +129,8 @@ public class LoopbackTelemetryStreamTests
             null!,
             null!,  // FilePushOriginator: this test never pushes
             sessionRegistry ?? new ClientSessionRegistry(),
-            NewNameStore());
+            NewNameStore(),
+            NewActivityStore());
 
         var socket = new OneShotWebSocket();
         try
@@ -204,5 +205,10 @@ public class LoopbackTelemetryStreamTests
     private static PairedClientNameStore NewNameStore() =>
         new(NullLogger<PairedClientNameStore>.Instance,
             Path.Combine(Path.GetTempPath(), $"remex-names-{Guid.NewGuid():N}.json"));
+
+    /// <summary>A throwaway activity store; these tests never read a date back.</summary>
+    private static PairedDeviceActivityStore NewActivityStore() =>
+        new(NullLogger<PairedDeviceActivityStore>.Instance,
+            Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
 
 }

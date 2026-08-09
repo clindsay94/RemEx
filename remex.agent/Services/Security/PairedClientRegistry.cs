@@ -105,6 +105,25 @@ public sealed class PairedClientRegistry
     }
 
     /// <summary>
+    /// Every paired client id, for listing devices to the user (RemEx-nrsv).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **IDS ONLY. THIS MUST NEVER RETURN, OR BE WIDENED TO RETURN, THE SECRETS.** The values in this
+    /// map are reconnect secrets and the whole registry is the only authentication path in production
+    /// (<c>docs/REGRESSION-GUARDS.md</c>). A "convenient" overload handing out the pairs, for a UI
+    /// that only ever needed the keys, is how a credential ends up in a log line or a diagnostics
+    /// export. The one caller wants a list of devices to show a person.
+    /// </para>
+    /// <para>
+    /// A SNAPSHOT, not a live view: the caller is UI code that will iterate it while connections come
+    /// and go. Ordered so a list does not reshuffle itself between reads for no visible reason.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyList<string> PairedClientIds() =>
+        [.. _pairedClients.Keys.OrderBy(id => id, StringComparer.Ordinal)];
+
+    /// <summary>
     /// Returns whether a clientId has a paired entry. This is a presence check only — it does NOT
     /// authenticate. Reconnect authentication must use the proof-of-possession challenge
     /// (<see cref="TryGetReconnectSecret"/> + HMAC verification). Retained for the desktop-stream
