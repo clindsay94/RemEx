@@ -2950,6 +2950,9 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="A11y_PhonePresenceNone" xml:space="preserve">
     <value>Стан телефона: телефон не підключено</value>
   </data>
+  <data name="Shell_PhonePresenceHostDown" xml:space="preserve">
+    <value>RemEx не працює на цьому ПК</value>
+  </data>
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>ТЕЛЕФОН</value>
   </data>

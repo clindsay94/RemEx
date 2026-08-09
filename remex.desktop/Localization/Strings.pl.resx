@@ -2950,6 +2950,9 @@ Możesz zmienić:
   <data name="A11y_PhonePresenceNone" xml:space="preserve">
     <value>Stan telefonu: brak połączonego telefonu</value>
   </data>
+  <data name="Shell_PhonePresenceHostDown" xml:space="preserve">
+    <value>RemEx nie działa na tym komputerze</value>
+  </data>
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>TELEFON</value>
   </data>

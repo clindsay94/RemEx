@@ -2953,6 +2953,9 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="A11y_PhonePresenceNone" xml:space="preserve">
     <value>Telefon durumu: bağlı telefon yok</value>
   </data>
+  <data name="Shell_PhonePresenceHostDown" xml:space="preserve">
+    <value>RemEx bu bilgisayarda çalışmıyor</value>
+  </data>
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>TELEFON</value>
   </data>

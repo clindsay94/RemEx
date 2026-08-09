@@ -2963,6 +2963,9 @@ Puedes cambiar:
   <data name="A11y_PhonePresenceNone" xml:space="preserve">
     <value>Estado del teléfono: ningún teléfono conectado</value>
   </data>
+  <data name="Shell_PhonePresenceHostDown" xml:space="preserve">
+    <value>RemEx no se está ejecutando en este PC</value>
+  </data>
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>TELÉFONO</value>
   </data>

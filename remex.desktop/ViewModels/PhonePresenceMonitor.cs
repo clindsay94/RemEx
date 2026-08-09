@@ -121,7 +121,29 @@ public sealed partial class PhonePresenceMonitor : ObservableObject
         var source = App.Services?.GetService(typeof(IClientSessionSource)) as IClientSessionSource
             ?? App.EmbeddedHostServices?.GetService(typeof(IClientSessionSource)) as IClientSessionSource;
 
-        var status = PhonePresence.Evaluate(source?.Snapshot());
+        // A MISSING SOURCE IS NOT AN ABSENT PHONE (RemEx-t6s1). The embedded host starts inside a
+        // try/catch and can fail; when it does, nothing registers IClientSessionSource and every
+        // reading below collapses to NoPhone — the same thing the shell says when the host is
+        // perfectly healthy and no phone is paired. With the drawer COLLAPSED the two text lines are
+        // hidden and the dot is the entire indicator, so the user goes and checks their phone, their
+        // Wi-Fi and their pairing while the fault is on this PC. Before RemEx-0z7w the dot carried
+        // the host-link fact, so in this one state the diagnostic was a strict downgrade.
+        //
+        // BRANCHED ON THE SOURCE ITSELF, not on the snapshot: Evaluate(null) cannot tell "no host
+        // registered it" from "a host that has no sessions", and only the first is a PC fault.
+        if (source is null)
+        {
+            IsPhoneAttached = false;
+
+            // The same words to a screen reader as on the screen. Reusing the no-phone a11y string
+            // would say "no phone" while the row said the host is down, which is the shape that
+            // makes an indicator worse than none.
+            PresenceText = LocalizationService.Instance["Shell_PhonePresenceHostDown"];
+            PresenceAccessibleName = PresenceText;
+            return;
+        }
+
+        var status = PhonePresence.Evaluate(source.Snapshot());
         var (key, argument) = PhonePresence.Describe(status);
         var template = LocalizationService.Instance[key];
 
