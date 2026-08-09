@@ -62,6 +62,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comes out in the order the lines appear rather than the order you happened to click them, with the
   exception details included. (RemEx-7xhln)
 
+### Added
+
+- **You can send your phone's clipboard to your PC.** Copy something on the phone, tap the clipboard
+  button on the Remote Control screen, and it lands on the PC's clipboard ready to paste. Text only
+  for now, up to 256 KB, which is far more than anything anyone copies deliberately.
+
+  Most of the care here went into the cases where it should NOT send. It refuses an empty clipboard,
+  because sending one would wipe whatever is on the PC's clipboard — something you put there on
+  purpose — with nothing to tell you that had happened. It refuses a clipboard holding a picture or a
+  file rather than quietly sending the internal reference to it, which would overwrite your PC's
+  clipboard with something unusable. It tells you to connect first rather than accepting a tap that
+  could not possibly work. And if anything about the check itself goes wrong, it refuses instead of
+  sending unchecked. Whitespace on its own does count as worth sending: copying an indented block of
+  code copies the indentation on purpose.
+
+  The size is checked on the phone before anything is sent, so "there is nothing to send" comes back
+  instantly rather than after a round trip to a PC that was only going to refuse it. The phone and
+  the PC use the same shared rule rather than each having their own, which matters more than it
+  sounds: the limit is counted in bytes, and a separate phone-side version counting characters would
+  have allowed three times the limit, but only for people writing in Chinese, Japanese or Korean.
+
+  **Nothing anywhere writes down what you copied.** A clipboard holds whatever was last on it — a
+  password, a login code, a private link — so the size check reports a length and a reason and never
+  the content, no log line records it, and the PC's error messages are written so there is nothing
+  sensitive available to put in them.
+
+  Sending the other way, from the PC to the phone, is separate work and is not in this release.
+  (RemEx-hgqs)
+
 ### Internal
 
 - **Fifteen branches in the Android app could never run on any phone that can install it, and they
