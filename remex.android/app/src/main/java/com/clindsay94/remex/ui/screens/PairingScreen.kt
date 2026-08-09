@@ -418,6 +418,13 @@ fun PairingScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    // HOISTED OUT OF THE catch BLOCK BELOW (RemEx-2evl3). A resource read through
+    // LocalContext.current is not configuration-aware, so it can return a stale string after a
+    // Configuration change - and this app ships nine locales, which makes a language change the one
+    // its users actually perform. stringResource is @Composable and cannot be called from a catch,
+    // so the string is read here and closed over.
+    val pairingSaveFailedMessage = stringResource(R.string.pairing_error_save_failed)
     val settingsManager = remember(context) { SettingsManager(context.applicationContext) }
     val coroutineScope = rememberCoroutineScope()
     var pin by remember { mutableStateOf("") }
@@ -496,7 +503,7 @@ fun PairingScreen(
                                 }
                             } catch (e: Exception) {
                                 viewModel.setError(
-                                        context.getString(R.string.pairing_error_save_failed)
+                                        pairingSaveFailedMessage
                                 )
                                 throw e
                             }

@@ -62,6 +62,14 @@ import org.json.JSONObject
 @Composable
 fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
+
+    // READ HERE RATHER THAN IN THE ANALYSER CALLBACKS THAT USE THEM (RemEx-2evl3). Those callbacks
+    // run off the composition and stringResource is @Composable, which is why the originals reached
+    // for LocalContext.current - but a context read is not configuration-aware and can hand back a
+    // stale string after a Configuration change. With nine locales shipped, that change is a user
+    // switching language.
+    val qrMissingHashMessage = stringResource(R.string.qr_error_missing_hash)
+    val qrSetupFailedMessage = stringResource(R.string.qr_error_setup_failed)
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val scannedOnce = remember { mutableStateOf(false) }
@@ -210,7 +218,7 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
                                                                             try {
                                                                                  if (spkiHash.isBlank()
                                                                                  ) {
-                                                                                     errorMessage = context.getString(R.string.qr_error_missing_hash)
+                                                                                     errorMessage = qrMissingHashMessage
                                                                                      scannedOnce.value = false
                                                                                      return@launch
                                                                                  }
@@ -275,7 +283,7 @@ fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, o
                                                                                                  e
                                                                                          )
                                                                                  errorMessage =
-                                                                                         context.getString(R.string.qr_error_setup_failed)
+                                                                                         qrSetupFailedMessage
                                                                                  scannedOnce
                                                                                          .value =
                                                                                          false

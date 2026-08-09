@@ -184,6 +184,18 @@ fun ConnectionScreenContent(
         // Snackbar state declared early so permission launchers below can reference it.
         val snackbarHostState = remember { SnackbarHostState() }
 
+        // READ IN COMPOSABLE SCOPE, NOT INSIDE THE LAMBDAS THAT USE THEM (RemEx-2evl3). A resource
+        // read through LocalContext.current is not configuration-aware and can hand back a stale
+        // string after a Configuration change — and with nine locales shipped, a language change is
+        // the Configuration change these users actually make. stringResource cannot be called from
+        // the callbacks below because it is @Composable, so the value is hoisted and closed over.
+        val localNetworkDeniedMessage = stringResource(R.string.error_local_network_permission_denied)
+
+        // THE FORMAT STRING RATHER THAN THE FORMATTED RESULT, because the host name is only known
+        // inside the callback. Hoisting the template still gets the locale-correct text; only the
+        // substitution happens late.
+        val hostDiscoveredFormat = stringResource(R.string.host_discovered_snackbar)
+
         // Runtime permissions required to connect, scoped to the target host. A loopback or
         // VPN/Tailscale host is not on the local network, so the LAN-scoped permissions
         // (NEARBY_WIFI_DEVICES / ACCESS_LOCAL_NETWORK) are irrelevant there and must NOT be
@@ -258,7 +270,7 @@ fun ConnectionScreenContent(
                                 if (localNetworkDenied) {
                                         scope.launch {
                                                 snackbarHostState.showSnackbar(
-                                                        context.getString(R.string.error_local_network_permission_denied)
+                                                        localNetworkDeniedMessage
                                                 )
                                         }
                                         // Do not attempt connection — it will fail silently without LAN access.
@@ -283,7 +295,7 @@ fun ConnectionScreenContent(
                                 if (localNetworkDenied) {
                                         scope.launch {
                                                 snackbarHostState.showSnackbar(
-                                                        context.getString(R.string.error_local_network_permission_denied)
+                                                        localNetworkDeniedMessage
                                                 )
                                         }
                                         return@rememberLauncherForActivityResult
@@ -341,10 +353,7 @@ fun ConnectionScreenContent(
                         onConsumeDiscoveredHost()
                         scope.launch {
                                 snackbarHostState.showSnackbar(
-                                        context.getString(
-                                                R.string.host_discovered_snackbar,
-                                                discoveredHostName
-                                        )
+                                        hostDiscoveredFormat.format(discoveredHostName)
                                 )
                         }
                 }
