@@ -43,6 +43,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Re-pairing a PC after it got a new certificate lost the name you gave it.** If a PC's
+  certificate legitimately changes — you reinstall RemEx, or reinstall Windows — accepting the
+  certificate-change prompt used to bring it back as a brand new entry in Known PCs, with the
+  nickname gone and a dead duplicate left behind. It now keeps its name. This only happens when you
+  accept that prompt, which is you telling the phone it is the same PC; pairing a genuinely
+  different PC at an address an old one used still creates a new entry, and a PC that already has a
+  name of its own keeps it. (RemEx-bye7)
+
 - **Scrolling from the phone went the wrong way on Wayland Linux desktops.** On GNOME and KDE
   running Wayland, scrolling up on the phone scrolled the PC down and vice versa — and had done
   since that path was written. Windows, X11 and the ydotool path were always correct. Sideways

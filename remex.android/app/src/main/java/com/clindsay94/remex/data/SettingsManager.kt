@@ -767,6 +767,57 @@ class SettingsManager(val context: Context) {
         }
 
         /**
+         * Moves a PC's remembered details onto the identity it has after a certificate change
+         * (RemEx-bye7).
+         *
+         * ONLY THE NICKNAME IS CARRIED, and the omissions are the point. The address, port and
+         * timestamp are all being written by the connection that triggered this, so copying the old
+         * ones would either be redundant or actively wrong — an older "last connected" would sort
+         * the PC the user is sitting on below one they have not touched in a week. The nickname is
+         * the only thing here that a person chose and that no reconnection can reproduce.
+         *
+         * A NICKNAME ALREADY ON THE DESTINATION WINS, and the case is DHCP address reuse rather than
+         * a contrived one. PC A, "Studio", was paired at 192.168.1.50; the router later gives .50 to
+         * PC B, which is separately paired under its own hostname and named "Laptop". Connecting to
+         * .50 shows a certificate change, the user believes the reinstall story and confirms — and
+         * the re-pair derives PC B's identity, which already has a live row. The recorded decision
+         * covers a NEW row inheriting a name; it does not cover silently relabelling a different PC
+         * the user is still paired to. Skipping the write also makes this idempotent under replay.
+         *
+         * A blank source nickname is not written either, so a PC that never had one does not gain an
+         * empty entry.
+         *
+         * The source's remaining keys are then dropped. NOTE WHAT THAT DOES AND DOES NOT DO: it does
+         * not make the old row disappear. Rows come from the pinned-host map via
+         * `KnownHosts.build`/`groupByIdentity`, and the old one goes because `confirmCertRepair`
+         * called `PinnedHostStore.forgetHost`, which removes every alias holding the old hash. This
+         * removal is orphan-preference hygiene — worth doing so a dead identity stops carrying a
+         * nickname and a timestamp, but not the mechanism that clears the list.
+         *
+         * This and the `recordKnownHostConnection` that follows it are two separate DataStore
+         * transactions, deliberately not merged. Cancellation between them leaves the new row named
+         * but unstamped, which the next connection repairs, and the nickname — the thing that cannot
+         * be reproduced — is the half that lands first.
+         */
+        suspend fun migrateKnownHostIdentity(oldIdentity: String, newIdentity: String) {
+                if (oldIdentity.isBlank() || newIdentity.isBlank()) return
+                if (oldIdentity == newIdentity) return
+                context.dataStore.edit { prefs ->
+                        val nickname = prefs[knownHostNicknameKey(oldIdentity)]?.trim()
+                        val destinationAlreadyNamed =
+                                !prefs[knownHostNicknameKey(newIdentity)].isNullOrBlank()
+                        if (!nickname.isNullOrEmpty() && !destinationAlreadyNamed) {
+                                prefs[knownHostNicknameKey(newIdentity)] = nickname
+                        }
+
+                        prefs.remove(knownHostNicknameKey(oldIdentity))
+                        prefs.remove(knownHostLastAddressKey(oldIdentity))
+                        prefs.remove(knownHostLastPortKey(oldIdentity))
+                        prefs.remove(knownHostLastConnectedKey(oldIdentity))
+                }
+        }
+
+        /**
          * Drops everything remembered about one PC.
          *
          * Called when the user unpairs it. Leaving the nickname behind would silently re-attach it

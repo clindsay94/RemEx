@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.EstablishedConnection
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
+import com.clindsay94.remex.data.CertRepairMigration
 import com.clindsay94.remex.data.DiscoveredHost
 import com.clindsay94.remex.data.KnownHost
 import com.clindsay94.remex.data.KnownHosts
@@ -258,6 +259,26 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
      */
     private val certRepairController = CertRepairPromptController()
 
+    /**
+     * The certificate repair the user confirmed, waiting for the re-pair to land (RemEx-bye7).
+     *
+     * Plain state rather than a StateFlow: nothing observes it and no UI shows it.
+     *
+     * WHAT THE THREADING ACTUALLY GUARANTEES, stated carefully because the first version of this
+     * comment overclaimed it. Writes and reads are all on Main (viewModelScope), and the read and
+     * the clear in [recordHostAsLastConnected] have no suspension between them, so at most one
+     * coroutine can ever see a non-null value and it cannot be migrated twice. What is NOT
+     * guaranteed is ORDER: that coroutine suspends in `PinnedHostStore.getPin` before reaching
+     * here, so two connections close together resume in IO-completion order rather than emission
+     * order. That is exactly why the clear is conditional on the host matching — an out-of-order
+     * arrival now passes through instead of consuming a repair meant for another PC.
+     *
+     * Lost on process death, which is the right failure: the migration only makes sense for a
+     * re-pair the user is in the middle of, and inheriting a nickname onto a connection made after a
+     * restart would be guessing.
+     */
+    private var pendingCertRepairMigration: CertRepairMigration? = null
+
     /** Non-null while the certificate-change dialog is up. */
     val certRepair: StateFlow<CertRepairPrompt?> = certRepairController.prompt
 
@@ -302,6 +323,17 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     fun confirmCertRepair(context: Context) {
         val prompt = certRepairController.takeForConfirm() ?: return
         if (!prompt.canRepair) return
+
+        // CAPTURED BEFORE THE PIN IS DESTROYED, because the old identity is derived FROM the pin and
+        // is unrecoverable a line later (RemEx-bye7). Accepting this dialog is the user asserting the
+        // PC is the same machine with a new certificate, and it is the only signal that says so — the
+        // address cannot, since re-pairing a different computer at an address an old one used is an
+        // ordinary new pairing. Consumed by recordHostAsLastConnected once a connection actually
+        // succeeds; abandoning the re-pair leaves it unused and migrates nothing.
+        pendingCertRepairMigration =
+                HostIdentity.keyFor(prompt.pinnedPin)?.let {
+                    CertRepairMigration(host = prompt.hostId, oldIdentity = it)
+                }
 
         viewModelScope.launch {
             // Both, not just the pin: a stale reconnect secret makes the very next connect fail the
@@ -423,6 +455,30 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
             val identity =
                     HostIdentity.keyFor(PinnedHostStore.getPin(getApplication(), host))
                             ?: return@launch
+
+            // THE CERTIFICATE-CHANGE INHERITANCE, and it happens BEFORE the record is written
+            // (RemEx-bye7). The migration ends by forgetting the source row, so running it after
+            // would delete the address, port and timestamp this connection just stored — the new row
+            // would keep only the nickname and read "Not connected yet" on the PC being used.
+            //
+            // CLEARED ONLY WHEN THIS IS THE HOST THE REPAIR WAS FOR, which review caught the first
+            // version getting wrong. It took and cleared on every successful connection and only
+            // then asked whether to migrate — so confirming a repair for one PC, backing out of the
+            // pairing flow it opens, and connecting to another PC first threw the token away, and
+            // the eventual re-pair inherited nothing. The pure predicate declined correctly and the
+            // thing it declined on was already gone.
+            //
+            // Taken rather than read once it does match: a repair is confirmed once and inherited
+            // once. Leaving it set would re-run the move on every later reconnect — harmless the
+            // second time and wrong if the user renamed the row in between.
+            val migration = pendingCertRepairMigration
+            if (KnownHosts.isAwaitingRepairOn(migration, host)) {
+                pendingCertRepairMigration = null
+                KnownHosts.identityToMigrateFrom(migration, host, identity)?.let { oldIdentity ->
+                    settingsManager.migrateKnownHostIdentity(oldIdentity, identity)
+                }
+            }
+
             settingsManager.recordKnownHostConnection(
                     identity = identity,
                     address = host,

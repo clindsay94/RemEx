@@ -1,9 +1,11 @@
 package com.clindsay94.remex
 
+import com.clindsay94.remex.data.CertRepairMigration
 import com.clindsay94.remex.data.KnownHostRecord
 import com.clindsay94.remex.data.KnownHosts
 import com.clindsay94.remex.security.HostIdentity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -203,5 +205,113 @@ class KnownHostsTest {
         )
 
         assertTrue(hosts.isEmpty())
+    }
+
+    // ── Certificate-change inheritance (RemEx-bye7) ────────────────────────────────────────────
+
+    @Test
+    fun `a confirmed repair on the connected host migrates the old row`() {
+        // The bead itself. A PC that legitimately changes certificate - a RemEx or Windows reinstall
+        // - derives a NEW identity, so it comes back as a new row and the nickname the user chose is
+        // stranded on a pin nothing will ever present again.
+        val from =
+            KnownHosts.identityToMigrateFrom(
+                CertRepairMigration(host = "studio.local", oldIdentity = "old-id"),
+                connectedHost = "studio.local",
+                newIdentity = "new-id"
+            )
+
+        assertEquals("old-id", from)
+    }
+
+    @Test
+    fun `no confirmed repair means no inheritance`() {
+        // AN ORDINARY PAIRING MUST NOT INHERIT. This is the whole safety property: without the
+        // dialog there is no assertion that the machine is the same one, and a nickname moved on a
+        // guess would put someone else's label on the wrong computer.
+        assertNull(
+            KnownHosts.identityToMigrateFrom(null, connectedHost = "studio.local", newIdentity = "new-id")
+        )
+    }
+
+    @Test
+    fun `a repair confirmed for a different host does not migrate`() {
+        // The signal is the dialog AND the host it was raised for. Confirming a repair for one PC
+        // and then connecting to another - easy, since the repair drops the user into a pairing flow
+        // they can back out of - must not hand the second PC the first one's name.
+        assertNull(
+            KnownHosts.identityToMigrateFrom(
+                CertRepairMigration(host = "studio.local", oldIdentity = "old-id"),
+                connectedHost = "laptop.local",
+                newIdentity = "new-id"
+            )
+        )
+    }
+
+    @Test
+    fun `re-pinning the same certificate is not a migration`() {
+        // REACHABLE, NOT DEFENSIVE. The dialog also opens on failures that merely mention SSL, and
+        // its Unknown state offers repair when nothing answered - so a user can confirm a repair and
+        // then re-pin the identical certificate. Migrating identity onto itself would matter: the
+        // move ends by forgetting the source, so it would delete the very row it just wrote.
+        assertNull(
+            KnownHosts.identityToMigrateFrom(
+                CertRepairMigration(host = "studio.local", oldIdentity = "same-id"),
+                connectedHost = "studio.local",
+                newIdentity = "same-id"
+            )
+        )
+    }
+
+    @Test
+    fun `blank identities and hosts are refused`() {
+        // HostIdentity.keyFor returns null for an absent pin and the host can be empty on a
+        // half-built connection event; neither should reach a store write.
+        assertNull(
+            KnownHosts.identityToMigrateFrom(
+                CertRepairMigration(host = "", oldIdentity = "old-id"),
+                connectedHost = "",
+                newIdentity = "new-id"
+            )
+        )
+        assertNull(
+            KnownHosts.identityToMigrateFrom(
+                CertRepairMigration(host = "studio.local", oldIdentity = ""),
+                connectedHost = "studio.local",
+                newIdentity = "new-id"
+            )
+        )
+        assertNull(
+            KnownHosts.identityToMigrateFrom(
+                CertRepairMigration(host = "studio.local", oldIdentity = "old-id"),
+                connectedHost = "studio.local",
+                newIdentity = ""
+            )
+        )
+    }
+
+    @Test
+    fun `a connection to another PC does not consume the pending repair`() {
+        // THE BUG REVIEW FOUND, and it made the whole feature a silent no-op under an ordinary
+        // sequence. Confirming the dialog drops the user into a pairing flow they can back out of,
+        // so connecting to a different PC before finishing the re-pair is a normal thing to do. The
+        // first version cleared the token on ANY successful connection and only then asked whether
+        // to migrate - so the pure predicate declined correctly while the thing it declined on had
+        // already been thrown away, and the eventual re-pair inherited nothing.
+        val pending = CertRepairMigration(host = "studio.local", oldIdentity = "old-id")
+
+        assertFalse(KnownHosts.isAwaitingRepairOn(pending, connectedHost = "laptop.local"))
+        assertTrue(KnownHosts.isAwaitingRepairOn(pending, connectedHost = "studio.local"))
+    }
+
+    @Test
+    fun `nothing is awaited without a confirmed repair`() {
+        assertFalse(KnownHosts.isAwaitingRepairOn(null, connectedHost = "studio.local"))
+        assertFalse(
+            KnownHosts.isAwaitingRepairOn(
+                CertRepairMigration(host = "", oldIdentity = "old-id"),
+                connectedHost = ""
+            )
+        )
     }
 }

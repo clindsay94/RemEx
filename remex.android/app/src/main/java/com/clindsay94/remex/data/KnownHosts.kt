@@ -163,4 +163,64 @@ object KnownHosts {
         if (lastAddress.isBlank() || lastAddress !in addresses) return addresses
         return listOf(lastAddress) + addresses.filterNot { it == lastAddress }
     }
+
+    /**
+     * Whether a connection that has just succeeded should inherit an earlier row (RemEx-bye7).
+     *
+     * A PC's identity is derived from its pinned certificate, so a machine that legitimately gets a
+     * new one — a RemEx or Windows reinstall — comes back as a NEW row after the user re-pairs
+     * through the certificate-change dialog. The nickname they chose is lost, and the old record
+     * stays behind pointing at a pin nothing will ever present again.
+     *
+     * **THE SIGNAL IS THE DIALOG, NOT THE ADDRESS**, which is the decision recorded on the bead.
+     * Accepting the certificate-change prompt IS the user asserting this is the same PC; nothing
+     * else here can know that. Re-pairing a DIFFERENT machine at an address a previous one used is
+     * an ordinary new pairing, and inheriting a nickname there would put someone else's label on
+     * the wrong computer. So this returns null unless a repair was actually confirmed for the host
+     * that just connected.
+     *
+     * @return the identity to migrate FROM, or null to leave the new row standing alone.
+     */
+    fun identityToMigrateFrom(
+        pending: CertRepairMigration?,
+        connectedHost: String,
+        newIdentity: String
+    ): String? {
+        if (pending == null) return null
+        if (pending.host.isBlank() || pending.oldIdentity.isBlank() || newIdentity.isBlank()) return null
+        if (pending.host != connectedHost) return null
+
+        // The certificate can be re-pinned to the value it already had — the user opens the dialog,
+        // the probe shows a difference that turns out to be a reconnect secret problem, and the same
+        // certificate comes back. Migrating then would move the row onto itself and, since the move
+        // ends by forgetting the source, delete the record it just wrote.
+        if (pending.oldIdentity == newIdentity) return null
+
+        return pending.oldIdentity
+    }
+
+    /**
+     * Whether a successful connection is the one a confirmed repair was waiting for (RemEx-bye7).
+     *
+     * **SEPARATE FROM [identityToMigrateFrom] BECAUSE CONSUMING AND MIGRATING ARE DIFFERENT
+     * QUESTIONS**, and conflating them silently disabled the feature. The first version cleared the
+     * pending repair on ANY successful connection and only then asked whether to migrate — so
+     * connecting to a second PC in between threw the token away, and the re-pair that followed
+     * inherited nothing. Confirming the dialog drops the user into a pairing flow they can back out
+     * of, so "connect to something else first" is an ordinary path, not a contrived one.
+     *
+     * A connection to a different host now passes through without touching the pending repair,
+     * which stays valid until the host it names actually connects.
+     */
+    fun isAwaitingRepairOn(pending: CertRepairMigration?, connectedHost: String): Boolean =
+        pending != null && pending.host.isNotBlank() && pending.host == connectedHost
 }
+
+/**
+ * A certificate repair the user confirmed, waiting for the re-pair to succeed (RemEx-bye7).
+ *
+ * Held rather than acted on immediately because the old identity is known at the moment the dialog
+ * is accepted and the new one does not exist until a connection has been established with a fresh
+ * pin. Nothing is migrated on a repair the user abandons: no connection, no new identity, no move.
+ */
+data class CertRepairMigration(val host: String, val oldIdentity: String)
