@@ -222,18 +222,8 @@ class FileTransferJobService : JobService() {
             .build()
     }
 
-    private fun ensureChannel() {
-        val channel =
-            NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.file_transfer_notification_channel_name),
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = getString(R.string.file_transfer_notification_channel_description)
-                setShowBadge(false)
-            }
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-    }
+    /** Asks the channel's owner rather than declaring a second copy of it (RemEx-9gbzc). */
+    private fun ensureChannel() = FileTransferNotificationManager.ensureTransferChannel(this)
 
     companion object {
         private const val CHANNEL_ID = "remex_file_transfer"

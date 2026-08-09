@@ -160,7 +160,7 @@ object FileTransferNotificationManager {
      */
     fun showDownloadComplete(context: Context, fileName: String, localUri: String) {
         if (!canPostNotifications(context)) return
-        ensureChannel(context)
+        ensureTransferChannel(context)
 
         val notificationId =
             COMPLETE_NOTIFICATION_ID_BASE + (fileName.hashCode() and 0xFFFF)
@@ -255,7 +255,7 @@ object FileTransferNotificationManager {
      */
     fun showIncomingFileReceived(context: Context, fileName: String, contentUri: String?) {
         if (!canPostNotifications(context)) return
-        ensureChannel(context)
+        ensureTransferChannel(context)
 
         val notificationId = RECEIVED_NOTIFICATION_ID_BASE + (fileName.hashCode() and 0xFFFF)
         val text = context.getString(R.string.file_received_text, fileName)
@@ -347,7 +347,7 @@ object FileTransferNotificationManager {
      */
     fun showIncomingPushFailed(context: Context, message: String) {
         if (!canPostNotifications(context)) return
-        ensureChannel(context)
+        ensureTransferChannel(context)
 
         val builder =
                 NotificationCompat.Builder(context, CHANNEL_ID)
@@ -486,7 +486,7 @@ object FileTransferNotificationManager {
     ) {
         if (!canPostNotifications(context)) return
 
-        ensureChannel(context)
+        ensureTransferChannel(context)
         val tapIntent =
                 Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -523,7 +523,17 @@ object FileTransferNotificationManager {
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
     }
 
-    private fun ensureChannel(context: Context) {
+    /**
+     * Creates the transfer channel. THE ONLY PLACE THAT DOES (RemEx-9gbzc).
+     *
+     * FileTransferJobService used to declare an identical copy of its own. Identical is what made it
+     * dangerous rather than merely untidy: createNotificationChannel cannot raise the importance of a
+     * channel that already exists, so the first declaration to run on a fresh install fixes it
+     * permanently. A later edit to only one of two copies would therefore do nothing for existing
+     * users and pick non-deterministically for new ones - and RemEx-ttum item 1 is exactly such an
+     * edit, since it proposes raising transfer alerts above IMPORTANCE_LOW.
+     */
+    internal fun ensureTransferChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 
         val channel =
