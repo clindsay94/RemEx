@@ -143,6 +143,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(FileConsentResponse))]
 [JsonSerializable(typeof(FilePushFile))]
 [JsonSerializable(typeof(ClipboardPush))]
+[JsonSerializable(typeof(ClipboardContent))]
 [JsonSerializable(typeof(FilePushOffer))]
 [JsonSerializable(typeof(FilePushResponse))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext

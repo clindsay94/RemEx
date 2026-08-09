@@ -268,6 +268,7 @@ fun RemoteControlScreen(
             onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
             onTakeScreenshot = { viewModel.takeScreenshot() },
             onSendClipboard = { viewModel.sendClipboardToPc() },
+            onFetchClipboard = { viewModel.fetchClipboardFromPc() },
             onSendKey = { virtualKey -> viewModel.sendKeyPress(virtualKey) },
             onClearCommandStatus = { viewModel.clearCommandStatus() }
     )
@@ -282,6 +283,7 @@ fun RemoteControlScreenContent(
         onSendSystemCommand: (String, Int) -> Unit,
         onTakeScreenshot: () -> Unit = {},
         onSendClipboard: () -> Unit = {},
+        onFetchClipboard: () -> Unit = {},
         onSendKey: (Int) -> Unit,
         onClearCommandStatus: () -> Unit
 ) {
@@ -476,8 +478,26 @@ fun RemoteControlScreenContent(
                 onSendClipboard()
             }) {
                 Icon(
-                        Icons.Default.ContentPaste,
+                        Icons.Default.ContentPasteGo,
                         contentDescription = stringResource(R.string.clipboard_send_button)
+                )
+            }
+            // THE PAIR IS CHOSEN TOGETHER, which is the decision RemEx-hgqs deliberately left open
+            // rather than settling one button at a time. Direction is the ONLY thing distinguishing
+            // these two actions, so the glyphs must carry it - but Upload/Download were the wrong way
+            // to carry it here: this app already uses that exact pair for FILE TRANSFER
+            // (FileManagerToolbar, FileManagerQueuePanel, FileTransferScreen), and RemEx has both
+            // features, so an up arrow beside a down arrow in this bar reads as "send a file".
+            // ContentPasteGo / ContentPaste keeps the clipboard metaphor and puts the direction on
+            // top of it. Neither has an AutoMirrored variant; this app ships no RTL locale, so the
+            // arrow in ContentPasteGo stays put.
+            IconButton(onClick = {
+                view.hapticCommandSent()
+                onFetchClipboard()
+            }) {
+                Icon(
+                        Icons.Default.ContentPaste,
+                        contentDescription = stringResource(R.string.clipboard_fetch_button)
                 )
             }
         }

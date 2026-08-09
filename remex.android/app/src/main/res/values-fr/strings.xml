@@ -884,4 +884,10 @@
     <string name="clipboard_send_failed">Impossible d’envoyer le presse-papiers</string>
     <string name="clipboard_send_not_connected">Connectez-vous d’abord à votre PC</string>
     <string name="clipboard_send_unsupported">Seul du texte copié peut être envoyé</string>
+    <string name="clipboard_fetch_button">Récupérer le presse-papiers du PC</string>
+    <string name="clipboard_fetch_ok">Copié depuis le PC</string>
+    <string name="clipboard_fetch_empty">Rien n’est copié sur le PC</string>
+    <string name="clipboard_fetch_too_large">Le presse-papiers du PC est trop volumineux pour être copié</string>
+    <string name="clipboard_fetch_failed">Impossible de récupérer le presse-papiers du PC</string>
+    <string name="clipboard_fetch_label">Presse-papiers du PC</string>
 </resources>

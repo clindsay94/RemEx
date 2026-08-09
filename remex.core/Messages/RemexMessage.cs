@@ -313,6 +313,13 @@ public sealed record RemexMessage
     /// </summary>
     [JsonPropertyName("clipboardPush")]
     public Remex.Core.Models.ClipboardPush? ClipboardPush { get; init; }
+
+    /// <summary>
+    /// The PC's clipboard, for <see cref="MessageTypes.ClipboardContent"/>. Optional addition; no
+    /// protocolVersion bump.
+    /// </summary>
+    [JsonPropertyName("clipboardContent")]
+    public Remex.Core.Models.ClipboardContent? ClipboardContent { get; init; }
 }
 
 /// <summary>
@@ -445,4 +452,10 @@ public static class MessageTypes
     // host -> client type it needs no JNI routing to arrive (RemEx-hgqs; the fetch direction, which
     // does, is RemEx-ci98m).
     public const string ClipboardPush = "clipboard_push";
+
+    // The fetch direction (RemEx-ci98m). clipboard_content is HOST -> CLIENT and therefore only
+    // reaches the Android app if AndroidNativeExports.OnNativeMessageReceived routes it - see the
+    // clipboard_ prefix forward there, and the guard that keeps it honest.
+    public const string ClipboardRequest = "clipboard_request";
+    public const string ClipboardContent = "clipboard_content";
 }

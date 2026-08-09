@@ -884,4 +884,10 @@
     <string name="clipboard_send_failed">Não foi possível enviar a área de transferência</string>
     <string name="clipboard_send_not_connected">Conecte-se ao seu PC primeiro</string>
     <string name="clipboard_send_unsupported">Só é possível enviar texto copiado</string>
+    <string name="clipboard_fetch_button">Obter área de transferência do PC</string>
+    <string name="clipboard_fetch_ok">Copiado do PC</string>
+    <string name="clipboard_fetch_empty">Nada foi copiado no PC</string>
+    <string name="clipboard_fetch_too_large">A área de transferência do PC é grande demais para copiar</string>
+    <string name="clipboard_fetch_failed">Não foi possível obter a área de transferência do PC</string>
+    <string name="clipboard_fetch_label">Área de transferência do PC</string>
 </resources>

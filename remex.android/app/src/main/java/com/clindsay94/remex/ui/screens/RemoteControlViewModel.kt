@@ -1,7 +1,10 @@
 package com.clindsay94.remex.ui.screens
 
 import android.app.Application
+import android.content.ClipData
+import android.content.ClipDescription
 import android.content.ClipboardManager
+import android.os.PersistableBundle
 import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -20,11 +23,25 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 private const val TAG = "RemoteControlVM"
+
+/**
+ * How long to wait for the PC's clipboard answer (RemEx-ci98m).
+ *
+ * Generous for a LAN round trip and still short enough that a silent host - an older build with no
+ * `clipboard_request` handler, which drops the message and answers nothing - reports a failure
+ * rather than leaving a button that never settles.
+ */
+private const val CLIPBOARD_FETCH_TIMEOUT_MS = 5_000L
 
 class RemoteControlViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -310,6 +327,181 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
                                 app.getString(R.string.clipboard_send_too_large, outcome.maxKilobytes)
                         else -> app.getString(R.string.clipboard_send_failed)
                     }
+        }
+    }
+
+    /**
+     * Fetches the PC's clipboard onto this phone (RemEx-ci98m).
+     *
+     * **THE SUBSCRIPTION IS OPENED BEFORE THE REQUEST IS SENT, AND THAT ORDER IS THE WHOLE
+     * CORRECTNESS ARGUMENT.** [RemexClientManager.clipboardMessages] is a SharedFlow with no replay,
+     * so an answer that arrives before anyone is collecting is gone. On a fast local link the PC can
+     * answer well inside the time it takes this coroutine to reach a collector, and the symptom would
+     * be a fetch that works everywhere except on the network where it is quickest.
+     *
+     * **AND IT IS BOUNDED**, because unlike the push there is a reply to wait for and nothing else
+     * will ever complete this. An older host has no `clipboard_request` handler at all, drops the
+     * message in silence, and answers nothing — which is not an error state anywhere, just a wait
+     * that never ends.
+     */
+    fun fetchClipboardFromPc() {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            if (!RemexCoreClient.isLibraryLoaded || !RemexClientManager.isConnected.value) {
+                _commandStatus.value = app.getString(R.string.clipboard_send_not_connected)
+                return@launch
+            }
+
+            val answer =
+                    coroutineScope {
+                        // UNDISPATCHED, not merely "started first". A plain `async` SCHEDULES the
+                        // coroutine; whether its body runs before the next statement then depends on
+                        // the dispatcher, and depending on that would make this correct by accident.
+                        // UNDISPATCHED runs the body inline until its first suspension point - the
+                        // flow collection - and SharedFlow allocates the subscriber slot before it
+                        // suspends, so the collector is provably registered before the request goes
+                        // out. The bug it forecloses only appears on a link fast enough for the PC to
+                        // answer first: a feature failing on exactly the network it should suit best.
+                        val waiting =
+                                async(start = CoroutineStart.UNDISPATCHED) {
+                                    withTimeoutOrNull(CLIPBOARD_FETCH_TIMEOUT_MS) {
+                                        RemexClientManager.clipboardMessages
+                                                .mapNotNull { json ->
+                                                    // PARSED OFF THE MAIN THREAD. The envelope can
+                                                    // exceed 256 KB once JSON escaping is counted,
+                                                    // and this coroutine resumes on Main after each
+                                                    // emission. Not `flowOn`: that would move slot
+                                                    // allocation off the caller's thread and undo
+                                                    // the UNDISPATCHED guarantee above.
+                                                    withContext(Dispatchers.Default) {
+                                                        runCatching { JSONObject(json) }
+                                                                .getOrNull()
+                                                                ?.takeIf {
+                                                                    it.optString("type") == "clipboard_content"
+                                                                }
+                                                                ?.optJSONObject("clipboardContent")
+                                                    }
+                                                }
+                                                .first()
+                                    }
+                                }
+
+                        // The NATIVE answer, not merely "the call returned" - the same reading the
+                        // send direction makes. A send that never left reports itself synchronously,
+                        // and waiting out the full timeout for news we already have is five seconds
+                        // of a button that looks broken.
+                        val sent =
+                                withContext(sendDispatcher) {
+                                    RemexCoreClient.SendMessage(
+                                                    JSONObject()
+                                                            .apply {
+                                                                put("type", "clipboard_request")
+                                                                put("protocolVersion", 2)
+                                                            }
+                                                            .toString()
+                                            )
+                                            .getOrNull()
+                                            ?.let {
+                                                runCatching { JSONObject(it) }
+                                                        .getOrNull()
+                                                        ?.optBoolean("success", false)
+                                            } == true
+                                }
+
+                        if (!sent) {
+                            waiting.cancel()
+                            null
+                        } else {
+                            waiting.await()
+                        }
+                    }
+
+            if (answer == null) {
+                _commandStatus.value = app.getString(R.string.clipboard_fetch_failed)
+                return@launch
+            }
+
+            when (answer.optString("reason")) {
+                "none" -> {
+                    // `isNull` BEFORE `optString`, because optString renders a JSON null as the
+                    // four-character string "null" on Android's org.json. Our own host never sends
+                    // one - the serializer omits null properties - but the wire is exactly where
+                    // values this app did not author arrive, and the C# side re-validates a pushed
+                    // payload for the same reason. Without this, a host sending {"text":null} would
+                    // overwrite the phone's clipboard with the word "null", destroying whatever the
+                    // user had copied: the precise harm this guard exists to prevent.
+                    val text =
+                            answer.takeIf { !it.isNull("text") }
+                                    ?.optString("text")
+                                    ?.takeIf { it.isNotEmpty() }
+                    if (text == null) {
+                        _commandStatus.value = app.getString(R.string.clipboard_fetch_empty)
+                        return@launch
+                    }
+
+                    val clipboard = app.getSystemService(ClipboardManager::class.java)
+                    if (clipboard == null) {
+                        _commandStatus.value = app.getString(R.string.clipboard_fetch_failed)
+                        return@launch
+                    }
+
+                    // GUARDED, because setPrimaryClip is a synchronous binder round trip and this
+                    // payload is the largest the protocol permits. A 256 KB clip parcels to roughly
+                    // half a megabyte against a ~1 MB per-process binder buffer shared with every
+                    // other transaction in flight, so TransactionTooLarge, DeadObject and Security
+                    // are all reachable - and viewModelScope has no exception handler, so an escape
+                    // kills the app rather than reporting a failure. The largest permitted payload
+                    // failing OPEN is the worst possible place for that.
+                    val copied =
+                            runCatching {
+                                        clipboard.setPrimaryClip(
+                                                ClipData.newPlainText(
+                                                                app.getString(R.string.clipboard_fetch_label),
+                                                                text
+                                                        )
+                                                        .apply {
+                                                            // MARKED SENSITIVE, ALWAYS. Android 13+
+                                                            // shows a system confirmation containing
+                                                            // a PREVIEW of what was copied. This
+                                                            // feature is otherwise scrupulous that
+                                                            // the text never appears anywhere - every
+                                                            // log line on both sides carries a byte
+                                                            // count instead - and that overlay is the
+                                                            // one place the stance was not carried
+                                                            // through. The phone cannot know whether
+                                                            // a payload is a password, so the safe
+                                                            // default is to assume every one is.
+                                                            description.extras =
+                                                                    PersistableBundle().apply {
+                                                                        putBoolean(
+                                                                                ClipDescription.EXTRA_IS_SENSITIVE,
+                                                                                true
+                                                                        )
+                                                                    }
+                                                        }
+                                        )
+                                    }
+                                    .isSuccess
+
+                    // KEPT DESPITE THE SYSTEM ALREADY CONFIRMING THE COPY on Android 13+, which
+                    // is a decision rather than an oversight. The platform guidance is to drop your
+                    // own copy toast because the system shows one - but the system's says only that
+                    // something was copied, and having just marked the clip SENSITIVE we have also
+                    // suppressed its preview. Provenance is then the only thing left that
+                    // distinguishes this from any other copy on the device, and "from the PC" is
+                    // exactly what the user tapped a button to cause.
+                    _commandStatus.value =
+                            app.getString(
+                                    if (copied) R.string.clipboard_fetch_ok
+                                    else R.string.clipboard_fetch_failed
+                            )
+                }
+                "empty" -> _commandStatus.value = app.getString(R.string.clipboard_fetch_empty)
+                "too_large" -> _commandStatus.value = app.getString(R.string.clipboard_fetch_too_large)
+                // FAIL CLOSED on "unavailable" and on anything this build does not recognise - the
+                // same rule, and the same reason, as clipboardVerdictOf on the send side.
+                else -> _commandStatus.value = app.getString(R.string.clipboard_fetch_failed)
+            }
         }
     }
 

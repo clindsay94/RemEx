@@ -28,4 +28,15 @@ public interface IHostClipboard
 {
     /// <summary>Puts <paramref name="text"/> on the PC clipboard. Returns false if it could not be written.</summary>
     Task<bool> SetTextAsync(string text, CancellationToken ct = default);
+
+    /// <summary>
+    /// Reads the PC clipboard. Null when it could not be read at all (RemEx-ci98m).
+    /// </summary>
+    /// <remarks>
+    /// **NULL AND EMPTY ARE DIFFERENT ANSWERS HERE.** Null means the clipboard could not be reached —
+    /// no window yet, no UI thread, a platform refusal. Empty means it was read and holds nothing.
+    /// The caller tells the user different things for each, and collapsing them would report a
+    /// broken PC as an empty clipboard.
+    /// </remarks>
+    Task<string?> GetTextAsync(CancellationToken ct = default);
 }

@@ -884,4 +884,10 @@
     <string name="clipboard_send_failed">No se pudo enviar el portapapeles</string>
     <string name="clipboard_send_not_connected">Conéctate primero a tu PC</string>
     <string name="clipboard_send_unsupported">Solo se puede enviar texto copiado</string>
+    <string name="clipboard_fetch_button">Obtener portapapeles del PC</string>
+    <string name="clipboard_fetch_ok">Copiado desde el PC</string>
+    <string name="clipboard_fetch_empty">No hay nada copiado en el PC</string>
+    <string name="clipboard_fetch_too_large">El portapapeles del PC es demasiado grande para copiarlo</string>
+    <string name="clipboard_fetch_failed">No se pudo obtener el portapapeles del PC</string>
+    <string name="clipboard_fetch_label">Portapapeles del PC</string>
 </resources>

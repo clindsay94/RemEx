@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input.Platform;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Services.Clipboard;
@@ -7,7 +8,7 @@ using Remex.Core.Services.Clipboard;
 namespace Remex.Desktop.Services;
 
 /// <summary>
-/// Writes the PC clipboard through Avalonia, on the UI thread (RemEx-hgqs).
+/// Reads and writes the PC clipboard through Avalonia, on the UI thread (RemEx-hgqs, RemEx-ci98m).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -45,7 +46,38 @@ public sealed class AvaloniaHostClipboard(ILogger<AvaloniaHostClipboard> logger)
     /// </remarks>
     private static readonly TimeSpan UiThreadTimeout = TimeSpan.FromSeconds(5);
 
-    public async Task<bool> SetTextAsync(string text, CancellationToken ct = default)
+    public Task<string?> GetTextAsync(CancellationToken ct = default)
+        // Shares OnUiThreadAsync with the write, which is the point: the dispatcher-binding hazard,
+        // the stopped-dispatcher hang and the timeout are identical for a read, and a second copy of
+        // that reasoning is a second place for it to rot. Null on any failure - the caller
+        // distinguishes "could not read" from "read, and it was empty".
+        => OnUiThreadAsync<string?>(
+            null,
+            // TryGetTextAsync because IClipboard.GetTextAsync is [Obsolete] in Avalonia 11.3. The
+            // two have the SAME null semantics - an earlier version of this comment claimed
+            // otherwise, and the distinction it described does not exist in either API.
+            //
+            // A null answer here means "read fine, no TEXT on the clipboard" - an image, a file
+            // list, nothing at all - which this method reports as EMPTY, not as unreadable. The
+            // unreadable answer is the null returned by the failure paths above, and the phone says
+            // different things about the two.
+            async clipboard => await clipboard.TryGetTextAsync() ?? string.Empty,
+            ct);
+
+    public Task<bool> SetTextAsync(string text, CancellationToken ct = default)
+        => OnUiThreadAsync(false, async clipboard =>
+        {
+            await clipboard.SetTextAsync(text);
+            return true;
+        }, ct);
+
+    private async Task<T> OnUiThreadAsync<T>(
+        T onFailure,
+        Func<Avalonia.Input.Platform.IClipboard, Task<T>> work,
+        CancellationToken ct,
+        // A read failure and a write failure were indistinguishable in the log once these two paths
+        // merged, in a feature whose whole point is telling outcomes apart.
+        [System.Runtime.CompilerServices.CallerMemberName] string operation = "")
     {
         // **CHECKED BEFORE THE DISPATCHER IS TOUCHED, AND THE ORDER IS THE WHOLE POINT.** The first
         // access to Dispatcher.UIThread BINDS it permanently; do that before AppBuilder has run its
@@ -59,8 +91,8 @@ public sealed class AvaloniaHostClipboard(ILogger<AvaloniaHostClipboard> logger)
         // AvaloniaLocator and initialises no dispatcher, so it is safe to ask from any thread.
         if (Application.Current is null)
         {
-            logger.LogWarning("Clipboard write skipped: the UI has not started yet.");
-            return false;
+            logger.LogWarning("Clipboard {Operation} skipped: the UI has not started yet.", operation);
+            return onFailure;
         }
 
         try
@@ -74,24 +106,30 @@ public sealed class AvaloniaHostClipboard(ILogger<AvaloniaHostClipboard> logger)
                 if (Application.Current?.ApplicationLifetime
                         is not IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
                 {
-                    logger.LogWarning("Clipboard write skipped: no desktop window is available.");
-                    return false;
+                    logger.LogWarning("Clipboard {Operation} skipped: no desktop window is available.", operation);
+                    return onFailure;
                 }
 
                 var clipboard = window.Clipboard;
                 if (clipboard is null)
                 {
-                    logger.LogWarning("Clipboard write skipped: the window exposes no clipboard.");
-                    return false;
+                    logger.LogWarning("Clipboard {Operation} skipped: the window exposes no clipboard.", operation);
+                    return onFailure;
                 }
 
-                await clipboard.SetTextAsync(text);
-                return true;
+                return await work(clipboard);
             });
 
             // Bounded, and honouring ct, for the stopped-dispatcher case above. Cancelling the token
             // alone would not help: the wait is on a job that was accepted and will never be run.
             return await write.WaitAsync(UiThreadTimeout, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // The connection is going away. Expected, not a clipboard fault - logging it as one
+            // would put a warning in the operator's log for every shutdown that happens to catch a
+            // clipboard call in flight.
+            return onFailure;
         }
         catch (Exception ex)
         {
@@ -102,8 +140,9 @@ public sealed class AvaloniaHostClipboard(ILogger<AvaloniaHostClipboard> logger)
             // about whether a third party's clipboard implementation ever echoes the string it was
             // handed into an exception or a stack frame - and the string is a password or a 2FA code
             // often enough that the assumption is not worth making for a log line.
-            logger.LogWarning("Clipboard write failed: {Type}: {Message}", ex.GetType().Name, ex.Message);
-            return false;
+            logger.LogWarning(
+                "Clipboard {Operation} failed: {Type}: {Message}", operation, ex.GetType().Name, ex.Message);
+            return onFailure;
         }
     }
 }

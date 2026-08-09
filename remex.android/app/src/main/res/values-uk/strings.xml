@@ -900,4 +900,10 @@
     <string name="clipboard_send_failed">Не вдалося надіслати буфер обміну</string>
     <string name="clipboard_send_not_connected">Спочатку підключіться до ПК</string>
     <string name="clipboard_send_unsupported">Надіслати можна лише скопійований текст</string>
+    <string name="clipboard_fetch_button">Отримати буфер обміну з ПК</string>
+    <string name="clipboard_fetch_ok">Скопійовано з ПК</string>
+    <string name="clipboard_fetch_empty">На ПК нічого не скопійовано</string>
+    <string name="clipboard_fetch_too_large">Буфер обміну ПК надто великий для копіювання</string>
+    <string name="clipboard_fetch_failed">Не вдалося отримати буфер обміну ПК</string>
+    <string name="clipboard_fetch_label">Буфер обміну з ПК</string>
 </resources>

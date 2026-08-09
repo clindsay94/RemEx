@@ -984,4 +984,10 @@
     <string name="clipboard_send_failed">Could not send the clipboard</string>
     <string name="clipboard_send_not_connected">Connect to your PC first</string>
     <string name="clipboard_send_unsupported">Only copied text can be sent</string>
+    <string name="clipboard_fetch_button">Get clipboard from PC</string>
+    <string name="clipboard_fetch_ok">Copied from the PC</string>
+    <string name="clipboard_fetch_empty">Nothing is copied on the PC</string>
+    <string name="clipboard_fetch_too_large">The PC’s clipboard is too large to copy</string>
+    <string name="clipboard_fetch_failed">Could not get the PC’s clipboard</string>
+    <string name="clipboard_fetch_label">Clipboard from PC</string>
 </resources>

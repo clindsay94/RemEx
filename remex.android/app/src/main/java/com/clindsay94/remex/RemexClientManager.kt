@@ -323,6 +323,26 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             )
     val fileTransferMessages = _fileTransferMessages.asSharedFlow()
 
+    /**
+     * Whole `clipboard_*` envelopes from the PC (RemEx-ci98m).
+     *
+     * A SharedFlow rather than a StateFlow on purpose: a fetch is an EVENT, and two identical
+     * clipboard answers in a row are two answers, so conflating them would drop the second.
+     *
+     * That fixes this hop only. The status the user finally sees still travels through
+     * `_commandStatus`, which IS a StateFlow, so two identical outcomes in a row still produce one
+     * snackbar - tap Download twice on an unchanged PC clipboard and the second tap looks like it
+     * did nothing. That is pre-existing and shared with every other action on the screen, and it is
+     * recorded here rather than fixed because the fix is a screen-wide change to how status is
+     * delivered, not a clipboard one.
+     */
+    private val _clipboardMessages =
+            MutableSharedFlow<String>(
+                    extraBufferCapacity = 4,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST
+            )
+    val clipboardMessages = _clipboardMessages.asSharedFlow()
+
     private suspend fun connect(pairingPin: String? = null, isAutoConnect: Boolean = false) {
         val settings = settingsManager ?: run {
             _isConnecting.value = false
@@ -703,6 +723,10 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onFileTransferMessage(json: String?) {
         json?.let { _fileTransferMessages.tryEmit(it) }
+    }
+
+    override fun onClipboardMessage(json: String?) {
+        json?.let { _clipboardMessages.tryEmit(it) }
     }
 
     override fun onConnectionError(reason: String?) {

@@ -886,4 +886,10 @@
     <string name="clipboard_send_failed">Pano gönderilemedi</string>
     <string name="clipboard_send_not_connected">Önce bilgisayarınıza bağlanın</string>
     <string name="clipboard_send_unsupported">Yalnızca kopyalanan metin gönderilebilir</string>
+    <string name="clipboard_fetch_button">Panoyu bilgisayardan al</string>
+    <string name="clipboard_fetch_ok">Bilgisayardan kopyalandı</string>
+    <string name="clipboard_fetch_empty">Bilgisayarda kopyalanmış bir şey yok</string>
+    <string name="clipboard_fetch_too_large">Bilgisayarın panosu kopyalanamayacak kadar büyük</string>
+    <string name="clipboard_fetch_failed">Bilgisayarın panosu alınamadı</string>
+    <string name="clipboard_fetch_label">Bilgisayar panosu</string>
 </resources>

@@ -900,4 +900,10 @@
     <string name="clipboard_send_failed">Nie udało się wysłać schowka</string>
     <string name="clipboard_send_not_connected">Najpierw połącz się z komputerem</string>
     <string name="clipboard_send_unsupported">Wysłać można tylko skopiowany tekst</string>
+    <string name="clipboard_fetch_button">Pobierz schowek z komputera</string>
+    <string name="clipboard_fetch_ok">Skopiowano z komputera</string>
+    <string name="clipboard_fetch_empty">Schowek komputera jest pusty</string>
+    <string name="clipboard_fetch_too_large">Schowek komputera jest za duży, aby go skopiować</string>
+    <string name="clipboard_fetch_failed">Nie udało się pobrać schowka komputera</string>
+    <string name="clipboard_fetch_label">Schowek z komputera</string>
 </resources>

@@ -175,6 +175,7 @@ public static class AndroidNativeExports
     private static IntPtr _onDesktopMetaMethodId;
     private static IntPtr _onDesktopWindowResultMethodId;
     private static IntPtr _onFileTransferMessageMethodId;
+    private static IntPtr _onClipboardMessageMethodId;
     private static IntPtr _onConnectionErrorMethodId;
     private static IntPtr _onDesktopStreamDescriptorMethodId;
     private static IntPtr _onDesktopDisplayCatalogMethodId;
@@ -299,6 +300,7 @@ public static class AndroidNativeExports
         _onDesktopMetaMethodId = IntPtr.Zero;
         _onDesktopWindowResultMethodId = IntPtr.Zero;
         _onFileTransferMessageMethodId = IntPtr.Zero;
+        _onClipboardMessageMethodId = IntPtr.Zero;
         _onConnectionErrorMethodId = IntPtr.Zero;
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
         _onDesktopDisplayCatalogMethodId = IntPtr.Zero;
@@ -408,6 +410,7 @@ public static class AndroidNativeExports
                 var onDesktopMetaMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopMeta", "(Ljava/lang/String;)V");
                 var onDesktopWindowResultMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopWindowResult", "(Ljava/lang/String;)V");
                 var onFileTransferMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
+                var onClipboardMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onClipboardMessage", "(Ljava/lang/String;)V");
                 var onConnectionErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
                 var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
                 var onDesktopDisplayCatalogMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopDisplayCatalog", "(Ljava/lang/String;)V");
@@ -426,6 +429,7 @@ public static class AndroidNativeExports
                     || onDesktopMetaMethodId == IntPtr.Zero
                     || onDesktopWindowResultMethodId == IntPtr.Zero
                     || onFileTransferMessageMethodId == IntPtr.Zero
+                    || onClipboardMessageMethodId == IntPtr.Zero
                     || onConnectionErrorMethodId == IntPtr.Zero
                     || onDesktopStreamDescriptorMethodId == IntPtr.Zero
                     || onDesktopDisplayCatalogMethodId == IntPtr.Zero
@@ -449,6 +453,7 @@ public static class AndroidNativeExports
                 _onDesktopMetaMethodId = onDesktopMetaMethodId;
                 _onDesktopWindowResultMethodId = onDesktopWindowResultMethodId;
                 _onFileTransferMessageMethodId = onFileTransferMessageMethodId;
+                _onClipboardMessageMethodId = onClipboardMessageMethodId;
                 _onConnectionErrorMethodId = onConnectionErrorMethodId;
                 _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
                 _onDesktopDisplayCatalogMethodId = onDesktopDisplayCatalogMethodId;
@@ -1621,6 +1626,24 @@ public static class AndroidNativeExports
                 _onFileTransferMessageMethodId,
                 RemexJson.Serialize(msg, RemexJsonSerializerContext.Default.RemexMessage));
         }
+
+        // THE WHOLE clipboard_ FAMILY, BY PREFIX, FOR THE REASON WRITTEN ABOVE (RemEx-ci98m). Without
+        // this line clipboard_content is dropped here in silence: the host sends it, the send
+        // succeeds, and the phone never hears. That is not hypothetical - it is exactly how v3 file
+        // transfer was bricked, and it is why the bead that added clipboard_push deliberately shipped
+        // no host -> client message at all.
+        //
+        // Prefix rather than a named list, so an answer type a later clipboard feature adds arrives
+        // without anyone having to remember this file exists. Same decision, same mistake avoided, as
+        // the file_ forward. Do NOT narrow it to an explicit type list.
+        if (msg.Type is { } clipboardType && clipboardType.StartsWith("clipboard_", StringComparison.Ordinal))
+        {
+            NotifyJavaData(
+                _onClipboardMessageMethodId,
+                RemexJson.Serialize(msg, RemexJsonSerializerContext.Default.RemexMessage));
+        }
+
+
     }
 
     private static (string Host, int Port, string ClientId, string SpkiHash) GetDesktopEndpoint()

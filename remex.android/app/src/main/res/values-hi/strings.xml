@@ -884,4 +884,10 @@
     <string name="clipboard_send_failed">क्लिपबोर्ड नहीं भेजा जा सका</string>
     <string name="clipboard_send_not_connected">पहले अपने PC से कनेक्ट करें</string>
     <string name="clipboard_send_unsupported">केवल कॉपी किया गया टेक्स्ट भेजा जा सकता है</string>
+    <string name="clipboard_fetch_button">PC से क्लिपबोर्ड लें</string>
+    <string name="clipboard_fetch_ok">PC से कॉपी किया गया</string>
+    <string name="clipboard_fetch_empty">PC पर कुछ भी कॉपी नहीं है</string>
+    <string name="clipboard_fetch_too_large">PC का क्लिपबोर्ड कॉपी करने के लिए बहुत बड़ा है</string>
+    <string name="clipboard_fetch_failed">PC का क्लिपबोर्ड नहीं मिल सका</string>
+    <string name="clipboard_fetch_label">PC का क्लिपबोर्ड</string>
 </resources>

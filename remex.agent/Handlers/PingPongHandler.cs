@@ -447,6 +447,21 @@ public sealed class PingPongHandler(
                         await HandleClipboardPushAsync(message.ClipboardPush, ct);
                         break;
 
+                    // UNLIKE THE PUSH, THIS ONE ANSWERS - and the answer only arrives because
+                    // AndroidNativeExports routes the clipboard_ family to a JNI callback. That
+                    // routing is the whole risk of this direction and it is not visible from here.
+                    case MessageTypes.ClipboardRequest:
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.ClipboardContent,
+                                ClipboardContent = await ReadClipboardForClientAsync(ct),
+                                CorrelationId = message.CorrelationId,
+                            },
+                            ct);
+                        break;
+
                     // ── 2.0 Pairing ──
                     case MessageTypes.PairingRequest:
                         // The ONLY message that carries a device name, so this is the only chance to
@@ -1405,4 +1420,49 @@ public sealed class PingPongHandler(
             }
         }
     }
+    /// <summary>
+    /// Reads the PC clipboard and packages it for the phone (RemEx-ci98m).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE SAME CAP APPLIES IN THIS DIRECTION, AND IT IS NOT SYMMETRY FOR ITS OWN SAKE.** A PC
+    /// clipboard can hold a whole document someone copied out of an editor; shipping that to a phone
+    /// on a slow link is the same stall the push direction refuses, pointed the other way. The rule
+    /// is <see cref="ClipboardValidation"/> either way, so there is one definition of "too large".
+    /// </para>
+    /// <para>
+    /// **A REFUSAL CARRIES NO TEXT AT ALL.** Not an empty string — null. A phone that put an empty
+    /// string on its clipboard would destroy whatever the user had copied there, which is exactly the
+    /// harm the empty-payload rule exists to prevent, arriving from the other side.
+    /// </para>
+    /// <para>
+    /// NULL FROM THE CLIPBOARD IS "COULD NOT READ", NOT "EMPTY". They are different answers and the
+    /// phone says different things about them; collapsing them would report a PC whose window has not
+    /// started as a PC with nothing copied.
+    /// </para>
+    /// <para>NEVER LOGS THE TEXT — a byte count and an outcome, as everywhere else in this feature.</para>
+    /// </remarks>
+    internal async Task<Remex.Core.Models.ClipboardContent> ReadClipboardForClientAsync(CancellationToken ct)
+    {
+        var text = await hostClipboard.GetTextAsync(ct);
+        if (text is null)
+        {
+            logger.LogInformation("Clipboard fetch from client: the PC clipboard could not be read.");
+            return new Remex.Core.Models.ClipboardContent { Reason = "unavailable" };
+        }
+
+        var reason = ClipboardValidation.Validate(text, out var bytes);
+        logger.LogInformation(
+            "Clipboard fetch from client: {Bytes} bytes, outcome {Outcome}.",
+            bytes,
+            reason == ClipboardRejectReason.None ? "sent" : reason.ToString());
+
+        return reason switch
+        {
+            ClipboardRejectReason.None => new Remex.Core.Models.ClipboardContent { Reason = "none", Text = text },
+            ClipboardRejectReason.Empty => new Remex.Core.Models.ClipboardContent { Reason = "empty" },
+            _ => new Remex.Core.Models.ClipboardContent { Reason = "too_large" },
+        };
+    }
+
 }

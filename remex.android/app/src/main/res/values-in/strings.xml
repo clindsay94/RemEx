@@ -880,4 +880,10 @@
     <string name="clipboard_send_failed">Tidak dapat mengirim papan klip</string>
     <string name="clipboard_send_not_connected">Hubungkan ke PC Anda terlebih dahulu</string>
     <string name="clipboard_send_unsupported">Hanya teks yang disalin yang dapat dikirim</string>
+    <string name="clipboard_fetch_button">Ambil papan klip dari PC</string>
+    <string name="clipboard_fetch_ok">Disalin dari PC</string>
+    <string name="clipboard_fetch_empty">Tidak ada yang disalin di PC</string>
+    <string name="clipboard_fetch_too_large">Papan klip PC terlalu besar untuk disalin</string>
+    <string name="clipboard_fetch_failed">Tidak dapat mengambil papan klip PC</string>
+    <string name="clipboard_fetch_label">Papan klip dari PC</string>
 </resources>

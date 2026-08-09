@@ -37,6 +37,15 @@ object RemexCoreClient {
         fun onDesktopCursorBinary(packet: ByteArray?)
         fun onDesktopCursorShape(shapeJson: String?)
         fun onFileTransferMessage(json: String?)
+
+        /**
+         * Any `clipboard_*` message from the PC, as a whole RemexMessage envelope (RemEx-ci98m).
+         *
+         * The native router forwards the family by PREFIX, exactly as it does for `file_*`, so a
+         * clipboard type added later arrives here without anyone having to remember the router
+         * exists. Switch on `type` and ignore what you do not handle.
+         */
+        fun onClipboardMessage(json: String?)
         fun onConnectionError(reason: String?)
 
         /**
