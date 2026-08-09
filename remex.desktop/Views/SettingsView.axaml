@@ -112,6 +112,7 @@
                                 <Button Content="{local:Localize Btn_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DisconnectTooltip}"/>
                                 <Button Content="{local:Localize Home_QrCodeButton}"
                                         Command="{Binding Connection.GenerateQrCodeCommand}"
+                                        IsVisible="{Binding Connection.CanRevealPairingPin}"
                                         Background="{DynamicResource CardBackgroundBrush}"
                                         Foreground="{DynamicResource TextSecondaryBrush}"
                                         Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"

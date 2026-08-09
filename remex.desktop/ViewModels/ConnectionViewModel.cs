@@ -334,10 +334,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         service.PinCleared += () =>
             Dispatcher.UIThread.Post(() =>
             {
-                ActivePairingPin = null;
-                ActivePairingExpiresAt = null;
-                ShowPairingPin = false;
-                StopPairingExpiryTimer();
+                ClearActivePairingPin();
             });
 
         if (service.TryGetActivePinInfo(out var activePin, out var activeExpiresAt))
@@ -349,10 +346,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         }
         else
         {
-            ActivePairingPin = null;
-            ActivePairingExpiresAt = null;
-            ShowPairingPin = false;
-            StopPairingExpiryTimer();
+            ClearActivePairingPin();
         }
     }
 
@@ -403,10 +397,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
 
                 if (HasActivePairingPin && (_pairingService is null || !_pairingService.IsPairingActive))
                 {
-                    ActivePairingPin = null;
-                    ActivePairingExpiresAt = null;
-                    ShowPairingPin = false;
-                    StopPairingExpiryTimer();
+                    ClearActivePairingPin();
                 }
             };
 
@@ -423,6 +414,34 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         {
             _logger.LogDebug(ex, "Standalone pairing PIN refresh failed.");
         }
+    }
+
+    /// <summary>
+    /// Retires the active PIN and everything that encodes it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ONE TEARDOWN, BECAUSE THERE ARE FOUR PATHS AND I ONLY FIXED ONE. RemEx-hprgb retired the QR
+    /// when the PIN EXPIRED — but the PIN is also cleared when the pairing session is CONSUMED, which
+    /// is the success path of every pairing, and that handler stops the expiry timer, so the retire
+    /// I had added became unreachable. A phone would pair successfully and the QR encoding the
+    /// now-burned PIN would stay on screen indefinitely, ready to hand the next scan a dead code
+    /// (review). Hoisting the teardown is what stops a fifth caller appearing without it.
+    /// </para>
+    /// <para>
+    /// The QR goes and the PIN string does not, on the expiry path only — see
+    /// <see cref="OnPairingExpiryTick"/>. Everywhere else the PIN is genuinely gone, so both go.
+    /// </para>
+    /// </remarks>
+    internal void ClearActivePairingPinForTests() => ClearActivePairingPin();
+
+    private void ClearActivePairingPin()
+    {
+        StopPairingExpiryTimer();
+        CloseQrCode();
+        ActivePairingPin = null;
+        ActivePairingExpiresAt = null;
+        ShowPairingPin = false;
     }
 
     /// <summary>
@@ -461,7 +480,18 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         // The countdown, not a second subtraction: one boundary rule, stated once.
         if (IsPairingPinExpired)
         {
+            // THE QR CARRIES THE SAME PIN, so it dies with it (RemEx-hprgb). The two panels are
+            // independent Borders and can both be open, so leaving the QR up meant the PC said "this
+            // PIN has expired" while offering, twelve pixels away, a code encoding that exact PIN. A
+            // phone that scanned it got a pairing failure with nothing on either screen explaining
+            // why. The PIN itself is deliberately KEPT so the panel can say it is dead and offer a
+            // replacement; the QR is not, because a QR cannot say anything — it can only be scanned.
+            // TIMER FIRST, then the work that could in principle fail. A throw out of CloseQrCode
+            // with the timer still running would re-enter this callback every second and take the
+            // dispatcher down with it; unconditional teardown should never sit downstream of
+            // anything fallible (review).
             StopPairingExpiryTimer();
+            CloseQrCode();
         }
     }
 
