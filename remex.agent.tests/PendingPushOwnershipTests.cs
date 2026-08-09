@@ -204,6 +204,17 @@ public sealed class PendingPushOwnershipTests : IDisposable
         var source = Path.Combine(_staging.FullName, "push.bin");
         using var exclusive = new FileStream(source, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         Assert.True(exclusive.CanRead);
+
+        // AND THE CHANNEL WAS NEVER LOOKED UP, which is an ordering the code depends on and nothing
+        // else states (RemEx-dwlzb). The phone opens its /ws/files channel in RESPONSE to the offer,
+        // so a lookup done before the ready handshake finds nothing and fails the push for a reason
+        // that is not the user's. No channel was ever registered here, so an implementation that
+        // looked first would have logged the miss on the way past; a correct one never gets there.
+        //
+        // The absence is the assertion, which is only safe because the sibling test above proves
+        // that warning DOES appear when the lookup genuinely happens and finds nothing. Without that
+        // pair, this would pass just as happily against a renamed log message.
+        Assert.DoesNotContain(_log.Warnings, w => w.Contains("No /ws/files channel", StringComparison.Ordinal));
     }
 
     // ── Harness ────────────────────────────────────────────────────────────────
