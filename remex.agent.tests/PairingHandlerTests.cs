@@ -14,21 +14,54 @@ using Xunit.Sdk;
 
 namespace Remex.Agent.Tests;
 
-public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>
+/// <summary>
+/// Pairing over a real socket against a shared Kestrel host.
+/// </summary>
+/// <remarks>
+/// <para>
+/// SETUP IS ASYNCHRONOUS BECAUSE IT HAS TO WAIT (RemEx-7cq0). This class needs a pause between tests
+/// to let background Kestrel cleanup from the previous one finish and release the shared singleton
+/// lock, and a constructor cannot await — so it used to spell that as
+/// <c>Task.Delay(150).Wait()</c>, which BLOCKS a thread-pool thread rather than yielding it.
+/// </para>
+/// <para>
+/// The cost is not the 150ms, which is paid either way. It is one fewer pool thread available for
+/// the whole wait, once per test in this class, in an assembly whose tests run concurrently with
+/// every other assembly in a whole-solution run. That is the shape that produces pool starvation,
+/// and pool starvation was the leading hypothesis for the RemEx-w7ei flake — which appeared ONLY in
+/// whole-solution runs and never in project-only ones. Nobody measured the link, and this refactor
+/// does not claim to have fixed that flake. Blocking on a Task in test setup is banned repo-wide
+/// regardless of whether it is the sole cause, which is the decision recorded on the bead.
+/// </para>
+/// <para>
+/// <c>IAsyncLifetime</c> is the async equivalent of the constructor here, not of a fixture: xUnit v2
+/// builds a new instance of a test class per test, so <c>InitializeAsync</c> runs at exactly the
+/// cadence the constructor did. The wait is per-test either way; only the blocking is gone.
+/// </para>
+/// <para>
+/// WHAT IS STILL WRONG WITH IT, stated rather than quietly kept: a fixed sleep is a guess about how
+/// long someone else's cleanup takes. It is preserved verbatim here because changing the duration or
+/// polling a condition instead is a behavioural change to a test that guards a flake, and it belongs
+/// in its own bead with its own evidence rather than riding along with a mechanical refactor.
+/// </para>
+/// </remarks>
+public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>, IAsyncLifetime
 {
     private readonly RemexHostFactory _factory;
 
-    public PairingHandlerTests(RemexHostFactory factory)
-    {
-        _factory = factory;
+    public PairingHandlerTests(RemexHostFactory factory) => _factory = factory;
 
+    public async Task InitializeAsync()
+    {
         // Allow any asynchronous background Kestrel cleanup thread from a previous test
         // to fully complete and release the shared singleton lock.
-        Task.Delay(150).Wait();
+        await Task.Delay(150);
 
         var pairingService = _factory.Services.GetRequiredService<PairingService>();
         pairingService.CancelPairing();
     }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task PairingRequest_CanRestartAfterDisconnect()

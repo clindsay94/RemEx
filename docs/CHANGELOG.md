@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Test setup no longer blocks a thread while it waits.** Internal only — nothing about the app
+  changes. The pairing tests paused between cases to let the previous one finish shutting down, and
+  did it in a way that ties up a worker thread for the whole pause instead of releasing it. On a busy
+  machine running the full suite that is the kind of thing that makes unrelated tests fail for no
+  reason anybody can reproduce. (RemEx-7cq0)
+
 - **The Remove button on the canvas was unreadable on the Solar Flare theme.** Selecting cards brings
   up an action bar whose Remove button sits on a translucent red wash. The label was hardcoded white,
   which is right on the three dark themes and very nearly invisible on the light one — white on a
