@@ -8,6 +8,7 @@ namespace Remex.Desktop.Services;
 /// </summary>
 /// <param name="ClientId">The opaque pairing id. Never blank; it is the fallback display name.</param>
 /// <param name="DeviceName">What the device calls itself, or null if it never said.</param>
+/// <param name="NameOverride">What the USER chose to call it, or null when they have not.</param>
 /// <param name="FirstPairedUtc">When it first paired, or null when that is not known.</param>
 /// <param name="LastSeenUtc">When it was last connected, or null when that is not known.</param>
 /// <param name="IsOnline">Whether this specific device has a live connection right now.</param>
@@ -30,6 +31,7 @@ namespace Remex.Desktop.Services;
 public readonly record struct PairedDeviceRow(
     string ClientId,
     string? DeviceName,
+    string? NameOverride,
     DateTimeOffset? FirstPairedUtc,
     DateTimeOffset? LastSeenUtc,
     bool IsOnline);

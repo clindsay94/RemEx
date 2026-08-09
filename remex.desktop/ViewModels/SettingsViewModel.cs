@@ -250,19 +250,23 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         var source = ResolvePairedDeviceSource();
 
         OnPropertyChanged(nameof(CanListPairedDevices));
+        OnPropertyChanged(nameof(CanRenamePairedDevices));
         PairedDevices.Clear();
         if (source is null) return;
 
         var unknown = LocalizationService.Instance["Settings_PairedDeviceUnknownDate"];
         var rows = source.PairedDevices();
 
-        // PairedDeviceDisplayName.Resolve takes the whole name MAP, because that is what a rename
-        // operates on (RemEx-4gbp2). Building it from the rows reuses the shipped rule — prefer a
-        // friendly name, fall back to the id, NEVER blank — rather than re-deriving it here, which is
-        // how two call sites end up disagreeing about what a nameless device is called.
+        // THE USER'S OVERRIDE OUTRANKS THE DEVICE'S REPORTED NAME, which is what
+        // PairedDeviceDisplayName.Resolve implements — it takes the override map and falls back. The
+        // two are kept apart all the way from their separate stores to here, so a re-pair can refresh
+        // one without discarding the other (review of RemEx-4gbp2).
         var names = rows
-            .Where(r => !string.IsNullOrWhiteSpace(r.DeviceName))
-            .ToDictionary(r => r.ClientId, r => r.DeviceName!, StringComparer.Ordinal);
+            .Where(r => !string.IsNullOrWhiteSpace(r.NameOverride) || !string.IsNullOrWhiteSpace(r.DeviceName))
+            .ToDictionary(
+                r => r.ClientId,
+                r => (r.NameOverride ?? r.DeviceName)!,
+                StringComparer.Ordinal);
 
         foreach (var row in rows)
         {
@@ -275,6 +279,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 LastSeenText = PairedDeviceRowText.Describe(
                     row.LastSeenUtc, unknown, System.Globalization.CultureInfo.CurrentCulture),
                 IsOnline = row.IsOnline,
+                // SEEDED FROM THE OVERRIDE, NOT LEFT EMPTY (review). An empty field beside a Rename
+                // button makes the button's RESTING state destructive: blank means clear, so a second
+                // click — or a click after the post-apply refresh — would wipe the name just set.
+                // Seeding it means clearing is "select all, delete, apply", which is the deliberate
+                // act the hint describes.
+                PendingName = row.NameOverride ?? string.Empty,
                 StatusAccessibleName = LocalizationService.Instance[
                     row.IsOnline ? "A11y_PairedDeviceOnline" : "A11y_PairedDeviceOffline"],
             });
@@ -283,6 +293,34 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void RefreshPairedDeviceList() => RefreshPairedDevices();
+
+    /// <summary>Whether this PC can rename a paired device — false when no host is in this process.</summary>
+    public bool CanRenamePairedDevices => ResolvePairedDeviceNameWriter() is not null;
+
+    private static IPairedDeviceNameWriter? ResolvePairedDeviceNameWriter()
+        => App.Services?.GetService(typeof(IPairedDeviceNameWriter)) as IPairedDeviceNameWriter
+            ?? App.EmbeddedHostServices?.GetService(typeof(IPairedDeviceNameWriter)) as IPairedDeviceNameWriter;
+
+    /// <summary>
+    /// Applies the name typed into a row, then rebuilds the list so the row shows the result.
+    /// </summary>
+    /// <remarks>
+    /// REFRESHING AFTERWARDS IS THE POINT, not tidiness. The store normalizes — it trims, caps at 48
+    /// characters, and treats blank as CLEAR — so what the user typed and what is now stored are not
+    /// always the same string. Showing the typed text would tell them a 60-character name had been
+    /// kept whole. Re-reading shows what a phone will actually be called.
+    /// </remarks>
+    [RelayCommand]
+    private void ApplyPairedDeviceRename(PairedDeviceItem? item)
+    {
+        if (item is null) return;
+
+        var writer = ResolvePairedDeviceNameWriter();
+        if (writer is null) return;
+
+        writer.Rename(item.ClientId, item.PendingName);
+        RefreshPairedDevices();
+    }
 
     /// <summary>
     /// True when the trust-management UI should be shown, i.e. an embedded host is present.

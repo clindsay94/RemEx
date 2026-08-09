@@ -2996,4 +2996,13 @@ Puedes cambiar:
   <data name="A11y_CopyPairingPin" xml:space="preserve">
     <value>Copiar PIN</value>
   </data>
+  <data name="Settings_PairedDeviceRename" xml:space="preserve">
+    <value>Cambiar nombre</value>
+  </data>
+  <data name="Settings_PairedDeviceNewName" xml:space="preserve">
+    <value>Nombre nuevo</value>
+  </data>
+  <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
+    <value>Borra el nombre para volver al ID del dispositivo.</value>
+  </data>
 </root>

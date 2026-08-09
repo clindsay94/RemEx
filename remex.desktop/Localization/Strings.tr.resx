@@ -2986,4 +2986,13 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="A11y_CopyPairingPin" xml:space="preserve">
     <value>PIN kopyala</value>
   </data>
+  <data name="Settings_PairedDeviceRename" xml:space="preserve">
+    <value>Yeniden adlandır</value>
+  </data>
+  <data name="Settings_PairedDeviceNewName" xml:space="preserve">
+    <value>Yeni ad</value>
+  </data>
+  <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
+    <value>Cihaz kimliğine dönmek için adı temizleyin.</value>
+  </data>
 </root>

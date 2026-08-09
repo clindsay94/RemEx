@@ -35,6 +35,24 @@ public sealed partial class PairedDeviceItem : ObservableObject
     private bool _isOnline;
 
     /// <summary>
+    /// What the user has typed into the rename field, before it is applied.
+    /// </summary>
+    /// <remarks>
+    /// SEPARATE FROM <see cref="DisplayName"/>, which is what the row SHOWS. Binding the field
+    /// straight to DisplayName would rewrite the visible label on every keystroke and, worse, would
+    /// leave a half-typed name on screen if the user wandered off without applying — a device
+    /// labelled "Conn" beside a button that unpairs it (RemEx-5lb90) is exactly the row you do not
+    /// want to be confident about.
+    /// <para>
+    /// It is seeded EMPTY rather than with the current name, so the field reads as "type a new name"
+    /// rather than as an edit of something already stored — and so clearing it is a deliberate act
+    /// (blank clears the override) rather than the accidental result of selecting all and typing.
+    /// </para>
+    /// </remarks>
+    [ObservableProperty]
+    private string _pendingName = string.Empty;
+
+    /// <summary>
     /// The accessible name for this row's dot: two states, naming what the control is.
     /// </summary>
     /// <remarks>

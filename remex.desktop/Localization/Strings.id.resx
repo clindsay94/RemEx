@@ -2985,4 +2985,13 @@ Anda dapat mengubah:
   <data name="A11y_CopyPairingPin" xml:space="preserve">
     <value>Salin PIN</value>
   </data>
+  <data name="Settings_PairedDeviceRename" xml:space="preserve">
+    <value>Ganti nama</value>
+  </data>
+  <data name="Settings_PairedDeviceNewName" xml:space="preserve">
+    <value>Nama baru</value>
+  </data>
+  <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
+    <value>Kosongkan nama untuk kembali ke ID perangkat.</value>
+  </data>
 </root>

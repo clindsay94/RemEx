@@ -66,8 +66,8 @@ public class PairedDeviceCardTests
         var seen = new DateTimeOffset(2026, 8, 9, 10, 11, 12, TimeSpan.Zero);
         using var _ = new ScopedPairedDeviceSource(new FakePairedDeviceSource(
         [
-            new PairedDeviceRow("phone-a", "Study Pixel", null, seen, IsOnline: true),
-            new PairedDeviceRow("phone-b", null, null, null, IsOnline: false),
+            new PairedDeviceRow("phone-a", "Study Pixel", null, null, seen, IsOnline: true),
+            new PairedDeviceRow("phone-b", null, null, null, null, IsOnline: false),
         ]));
 
         var vm = NewSettingsViewModel();
@@ -100,7 +100,7 @@ public class PairedDeviceCardTests
     public void RefreshingReplacesTheRowsRatherThanAppending()
     {
         using var _ = new ScopedPairedDeviceSource(new FakePairedDeviceSource(
-            [new PairedDeviceRow("phone-a", null, null, null, IsOnline: false)]));
+            [new PairedDeviceRow("phone-a", null, null, null, null, IsOnline: false)]));
 
         var vm = NewSettingsViewModel();
         vm.RefreshPairedDevices();

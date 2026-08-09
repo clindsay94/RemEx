@@ -42,8 +42,11 @@ public sealed class PairedDeviceDirectoryTests
         // the honest answer for a test that starts no connections. The per-device online state has
         // its own coverage in the desktop card tests (RemEx-kirdm).
         var sessions = new Remex.Agent.Services.ClientSessionRegistry();
+        var overrides = new PairedDeviceNameOverrideStore(
+            NullLogger<PairedDeviceNameOverrideStore>.Instance, Path.Combine(root, "overrides.json"));
 
-        return (new PairedDeviceDirectory(registry, names, activity, sessions), registry, names, activity);
+        return (new PairedDeviceDirectory(registry, names, activity, sessions, overrides),
+                registry, names, activity);
     }
 
     [Fact]
@@ -148,7 +151,7 @@ public sealed class PairedDeviceDirectoryTests
             .ToArray();
 
         Assert.Equal(
-            new[] { "ClientId", "DeviceName", "FirstPairedUtc", "IsOnline", "LastSeenUtc" },
+            new[] { "ClientId", "DeviceName", "FirstPairedUtc", "IsOnline", "LastSeenUtc", "NameOverride" },
             properties);
     }
 

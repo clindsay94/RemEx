@@ -348,6 +348,20 @@
                                                         <Run Text="{local:Localize Settings_PairedDeviceLastSeen}"/><Run Text=": "/><Run Text="{Binding LastSeenText}"/>
                                                     </TextBlock>
                                                 </StackPanel>
+
+                                                <!-- RENAME IS DISPLAY ONLY and never reaches the pairing
+                                                     registry (RemEx-4gbp2). The field starts EMPTY rather than
+                                                     pre-filled, so a half-typed name cannot end up labelling a
+                                                     row, and clearing it is a deliberate act — blank means
+                                                     "fall back to the device id", which the hint says. -->
+                                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}">
+                                                    <TextBox Text="{Binding PendingName}" Watermark="{local:Localize Settings_PairedDeviceNewName}" Width="220" FontSize="12" Padding="8,6" CornerRadius="6" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}"/>
+                                                    <Button Content="{local:Localize Settings_PairedDeviceRename}"
+                                                            Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="14,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                                                </StackPanel>
+                                                <TextBlock Text="{local:Localize Settings_PairedDeviceRenameHint}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}"/>
                                             </StackPanel>
                                         </Grid>
                                     </Border>

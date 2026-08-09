@@ -205,16 +205,24 @@ public static class HostBootstrapper
             sp => sp.GetRequiredService<ClientSessionRegistry>());
         builder.Services.AddSingleton<PairedClientNameStore>();
         builder.Services.AddSingleton<PairedDeviceActivityStore>();
+        builder.Services.AddSingleton<PairedDeviceNameOverrideStore>();
 
         // The composed read-only list, under the interface remex.desktop declares (RemEx-nrsv).
         // Same arrangement as IClientSessionSource, and for the same reason: the desktop cannot
         // name the host's types without a project-reference cycle.
+        // The rename seam, deliberately a SEPARATE registration from the read-only list: one is a
+        // list and one is a mutation, and the interfaces are kept apart for the same reason
+        // (RemEx-4gbp2). It resolves only the name store, so it cannot reach the pairing registry.
+        builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceNameWriter>(
+            sp => new PairedDeviceRenamer(sp.GetRequiredService<PairedDeviceNameOverrideStore>()));
+
         builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceSource>(
             sp => new PairedDeviceDirectory(
                 sp.GetRequiredService<PairedClientRegistry>(),
                 sp.GetRequiredService<PairedClientNameStore>(),
                 sp.GetRequiredService<PairedDeviceActivityStore>(),
-                sp.GetRequiredService<ClientSessionRegistry>()));
+                sp.GetRequiredService<ClientSessionRegistry>(),
+                sp.GetRequiredService<PairedDeviceNameOverrideStore>()));
         builder.Services.AddSingleton<TransferSessionManager>();
         builder.Services.AddSingleton<TransferQueueService>();
         builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.DesktopSessionRegistry>();

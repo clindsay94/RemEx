@@ -26,11 +26,13 @@ public sealed class PairedDeviceDirectory(
     PairedClientRegistry registry,
     PairedClientNameStore names,
     PairedDeviceActivityStore activity,
-    Remex.Agent.Services.ClientSessionRegistry sessions) : IPairedDeviceSource
+    Remex.Agent.Services.ClientSessionRegistry sessions,
+    PairedDeviceNameOverrideStore overrides) : IPairedDeviceSource
 {
     public IReadOnlyList<PairedDeviceRow> PairedDevices()
     {
         var ids = registry.PairedClientIds();
+        var chosen = overrides.Snapshot();
         var rows = new List<PairedDeviceRow>(ids.Count);
 
         foreach (var id in ids)
@@ -38,7 +40,11 @@ public sealed class PairedDeviceDirectory(
             var seen = activity.Resolve(id);
             rows.Add(new PairedDeviceRow(
                 ClientId: id,
+                // BOTH FACTS, KEPT APART. DeviceName is what the device reported; NameOverride is
+                // what the user chose. Collapsing them loses a re-pair's refreshed name or the
+                // user's choice, depending which wins (review).
                 DeviceName: names.Resolve(id),
+                NameOverride: chosen.TryGetValue(id, out var custom) ? custom : null,
                 FirstPairedUtc: seen?.FirstPairedUtc,
                 LastSeenUtc: seen?.LastSeenUtc,
                 // PER-DEVICE, from the session registry's own id lookup. Deliberately not derived
