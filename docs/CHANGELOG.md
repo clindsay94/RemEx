@@ -144,6 +144,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The "show pairing PIN" button was missing for almost everyone, almost all the time.** It was set
+  to appear only while the app was disconnected from its own background service — which it almost
+  never is — so for most people, on most days, the way to pair a phone simply was not on screen.
+  Nothing went wrong and nothing was reported; the button was just absent, which is a hard thing to
+  ask about. It now appears whenever this PC has a way to produce a PIN, which is the thing that
+  actually matters. If you ever tried to pair a phone and could not find where to start, this was
+  why.
+
 - **Asking to browse your whole PC and being turned down used to look exactly like nothing
   happening.** On the phone, tapping to browse everything on your PC showed "Loading drives…" — and
   if the request was refused, that message simply disappeared and nothing replaced it. You were left
