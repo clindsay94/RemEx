@@ -110,20 +110,14 @@
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <Button Content="{local:Localize Settings_SaveReconnect}" Command="{Binding SaveAndReconnectCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand" ToolTip.Tip="{local:Localize Tooltip_SaveReconnect}"/>
                                 <Button Content="{local:Localize Btn_Disconnect}" Command="{Binding Connection.DisconnectCommand}" IsVisible="{Binding Connection.IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DisconnectTooltip}"/>
-                                <Button Content="{local:Localize Home_QrCodeButton}"
+                                <!-- ONE BUTTON, NOT TWO (RemEx-7ykyn, item 3); see ConnectionView. -->
+                                <Button Content="{local:Localize Home_PairPhoneButton}"
                                         Command="{Binding Connection.GenerateQrCodeCommand}"
                                         IsVisible="{Binding Connection.CanRevealPairingPin}"
                                         Background="{DynamicResource CardBackgroundBrush}"
                                         Foreground="{DynamicResource TextSecondaryBrush}"
                                         Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"
-                                        ToolTip.Tip="{local:Localize Home_QrCodeTooltip}"/>
-                                <Button Content="{local:Localize Settings_ShowPairingPin}"
-                                        Command="{Binding Connection.RevealPairingPinCommand}"
-                                        IsVisible="{Binding Connection.CanRevealPairingPin}"
-                                        Background="{DynamicResource CardBackgroundBrush}"
-                                        Foreground="{DynamicResource TextSecondaryBrush}"
-                                        Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"
-                                        ToolTip.Tip="{local:Localize Settings_ShowPairingPinTooltip}"/>
+                                        ToolTip.Tip="{local:Localize Home_PairPhoneTooltip}"/>
                             </StackPanel>
 
                             <!-- QR Code Display Panel — contents shared with ConnectionView

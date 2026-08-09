@@ -26,7 +26,11 @@
              quiet zone and high contrast against the dark modules to stay scannable, so this one
              does not follow the theme (the same exemption the theme preview tiles carry). -->
         <Border Background="White" Padding="12" CornerRadius="8" HorizontalAlignment="Center">
-            <Image Source="{Binding QrCodeImage}" Width="180" Height="180"/>
+            <!-- 260, not the old 180 (RemEx-7ykyn, item 3): the plate is scanned from across a
+                 desk by a phone that is also holding a camera steady, and 180 device-independent
+                 pixels on a 4K panel is a small target. Square is kept explicitly — a QR stretched
+                 by one axis stops decoding, and Image would happily letterbox one. -->
+            <Image Source="{Binding QrCodeImage}" Width="260" Height="260"/>
         </Border>
 
         <TextBlock Text="{conv:Localize Home_QrCodeScanHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>

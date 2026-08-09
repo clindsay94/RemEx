@@ -127,10 +127,18 @@ public class PairingQrExpiryTests
         // ASSERTED PER BUTTON, not as a file-wide substring: the count floor is what stops this going
         // quiet if a button is renamed or a third view appears, which is the failure mode that has
         // bitten every guard I wrote this session.
+        // EXCLUDE THE RETRY PANEL BY NAME, not by allowlisting the views that happen to exist: since
+        // RemEx-7ykyn item 3 the panel's own "get a new one" button invokes this same command, and it
+        // is a retry inside a panel that cannot be open unless a PIN was produced, so gating it would
+        // be meaningless. Excluding by name keeps a pairing button added to some future view inside
+        // the scan.
+        const string RetryPanel = "PairingPinPanelView.axaml";
+
         var buttons = Directory
             .GetFiles(Path.Combine(RepoRoot(), "remex.desktop"), "*.axaml", SearchOption.AllDirectories)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
                         && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Where(file => Path.GetFileName(file) != RetryPanel)
             .SelectMany(file =>
             {
                 var flattened = Regex.Replace(File.ReadAllText(file), @"\s+", " ");

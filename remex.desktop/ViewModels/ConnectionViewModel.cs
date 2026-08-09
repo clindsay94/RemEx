@@ -1594,11 +1594,86 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         HostCapabilities = null;
     }
 
+    /// <summary>
+    /// Opens the PIN panel for the session the QR code is about to encode (RemEx-7ykyn, item 3).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE QR AND THE PIN ARE ONE ACT. <see cref="GenerateQrCodeAsync"/> has always started a pairing
+    /// session and set <see cref="ActivePairingPin"/> — the payload carries that very PIN — but it left
+    /// this panel hidden, so the two lived behind separate buttons and whichever the user pressed gave
+    /// them half the answer. A phone that cannot scan (bad light, no camera permission, a tablet
+    /// across the room) needs the digits, and the digits it needs are these, not a second session's.
+    /// </para>
+    /// <para>
+    /// CALLED WHERE THE PIN IS OBTAINED, NOT AFTER THE IMAGE IS BUILT. Everything past this point can
+    /// fail — the payload serialize, the encoder, the bitmap decode — and all of it is about drawing a
+    /// picture. Revealing the digits at the end would mean a rendering failure cost the user the PIN
+    /// as well as the code, when the PIN is the half that still works.
+    /// </para>
+    /// </remarks>
+    private void RevealPinAlongsideTheCode() => ShowPairingPin = HasActivePairingPin;
+
     [RelayCommand]
     private async Task GenerateQrCodeAsync()
     {
         try
         {
+            // THE PAIRING SESSION FIRST, THEN THE PICTURE (RemEx-7ykyn, item 3). This block used to
+            // sit below the host and certificate lookup, so anything that threw up there — and
+            // App.Services is dereferenced with no null guard — cost the user the PIN as well as the
+            // code. The PIN is the half that works without a camera, so it must not depend on the
+            // drawing succeeding. It is also what makes the join testable: every step below needs an
+            // initialised Avalonia platform and this one does not.
+            string? pairingPin = null;
+            if (_pairingService is not null)
+            {
+                try
+                {
+                    var state = await _pairingService.GetOrStartPairingAsync(default);
+                    pairingPin = state.Pin;
+                    ActivePairingPin = state.Pin;
+                    ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(state.ExpiresAtUnixMs);
+                    StartPairingExpiryTimer();
+                    RevealPinAlongsideTheCode();
+                }
+                catch (Exception ex)
+                {
+                    // AND SAY SO (review). This used to log and fall through to draw a QR carrying
+                    // pin=null — a code that scans and then pairs with nothing, with no word on
+                    // either screen. The separate PIN button reported this; collapsing the two
+                    // buttons would otherwise have deleted the only feedback the surface had.
+                    _logger.LogWarning(ex, "Failed to start embedded pairing session for QR code.");
+                    StatusText = LocalizationService.Instance["Status_FailedGeneratePin"];
+                }
+            }
+            else if (_standalonePairingPinQueryService is not null)
+            {
+                try
+                {
+                    var activePin = await _standalonePairingPinQueryService.GeneratePairingPinAsync();
+                    if (activePin is not null)
+                    {
+                        pairingPin = activePin.Pin;
+                        ActivePairingPin = activePin.Pin;
+                        ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs);
+                        StartPairingExpiryTimer();
+                        RevealPinAlongsideTheCode();
+                    }
+                    else
+                    {
+                        // The null return had no else at all (review): the host answered "no pin" and
+                        // the surface said nothing while drawing a dead code anyway.
+                        StatusText = LocalizationService.Instance["Status_FailedGeneratePinHost"];
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to start standalone pairing session for QR code.");
+                    StatusText = LocalizationService.Instance["Status_FailedGeneratePinHost"];
+                }
+            }
+
             var uri = new Uri(HostAddress);
             // GetLocalIpv4Address by method group, NOT the _cachedLocalIpv4 field. The address is
             // derived from the outbound route, so it changes on VPN up/down, Wi-Fi/Ethernet switch,
@@ -1613,41 +1688,15 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                            ?? App.EmbeddedHostServices?.GetService<ICertificateService>(); // optional service
             var spkiHash = certService?.GetSpkiSha256Base64() ?? "";
 
-            // Generate a fresh pairing PIN to embed in the QR code so the mobile client
-            // can automatically pair without requiring the user to type any PIN manually.
-            string? pairingPin = null;
-            if (_pairingService is not null)
+            // NO PIN, NO CODE (review). A QR encoding pin=null scans perfectly and then pairs with
+            // nothing, which is a worse answer than no code: the user believes they have done their
+            // part. The branches above have already said why there is no PIN.
+            if (pairingPin is null)
             {
-                try
-                {
-                    var state = await _pairingService.GetOrStartPairingAsync(default);
-                    pairingPin = state.Pin;
-                    ActivePairingPin = state.Pin;
-                    ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(state.ExpiresAtUnixMs);
-                    StartPairingExpiryTimer();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to start embedded pairing session for QR code.");
-                }
-            }
-            else if (_standalonePairingPinQueryService is not null)
-            {
-                try
-                {
-                    var activePin = await _standalonePairingPinQueryService.GeneratePairingPinAsync();
-                    if (activePin is not null)
-                    {
-                        pairingPin = activePin.Pin;
-                        ActivePairingPin = activePin.Pin;
-                        ActivePairingExpiresAt = DateTimeOffset.FromUnixTimeMilliseconds(activePin.ExpiresAtUnixMs);
-                        StartPairingExpiryTimer();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to start standalone pairing session for QR code.");
-                }
+                if (string.IsNullOrEmpty(StatusText))
+                    StatusText = LocalizationService.Instance["Status_PairingServiceUnavailable"];
+                ShowQrCode = false;
+                return;
             }
 
             var payload = JsonSerializer.Serialize(new
@@ -1669,6 +1718,18 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
             QrCodeImage = new Avalonia.Media.Imaging.Bitmap(ms);
             oldBitmap?.Dispose();
             ShowQrCode = true;
+        }
+        catch (UriFormatException ex)
+        {
+            // THE CONNECT PATH ALREADY CATCHES THIS AND THIS ONE DID NOT (review). UriFormatException
+            // derives from FormatException, so none of the three catches below saw it — and escaping
+            // an async [RelayCommand] rethrows on the dispatcher, which takes the app down. Reachable
+            // by typing an address with no scheme and pressing pair without connecting first: the
+            // validation attribute records an error but does not block the setter, and only
+            // ConnectCommand consults it.
+            _logger.LogError(ex, "Cannot build a pairing QR for an unparseable host address.");
+            StatusText = LocalizationService.Instance["Status_InvalidHostAddress"];
+            ShowQrCode = false;
         }
         catch (JsonException ex)
         {

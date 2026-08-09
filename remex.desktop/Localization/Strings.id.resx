@@ -757,17 +757,14 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Home_QrCodeButton" xml:space="preserve">
     <value>Kode QR</value>
   </data>
+  <data name="Home_PairPhoneButton" xml:space="preserve">
+    <value>Pasangkan ponsel</value>
+  </data>
+  <data name="Home_PairPhoneTooltip" xml:space="preserve">
+    <value>Tampilkan kode QR dan PIN yang dibutuhkan ponsel untuk dipasangkan dengan PC ini</value>
+  </data>
   <data name="Home_QrCodeScanHint" xml:space="preserve">
     <value>Pindai dengan aplikasi RemEx Android</value>
-  </data>
-  <data name="Home_QrCodeTooltip" xml:space="preserve">
-    <value>Buat kode QR untuk menghubungkan aplikasi RemEx Android</value>
-  </data>
-  <data name="Settings_ShowPairingPin" xml:space="preserve">
-    <value>Tampilkan PIN pairing</value>
-  </data>
-  <data name="Settings_ShowPairingPinTooltip" xml:space="preserve">
-    <value>Tampilkan kode 6 digit yang diperlukan ponsel Anda untuk berpasangan dengan PC ini</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
     <value>PIN PAIRING</value>

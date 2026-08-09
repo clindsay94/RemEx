@@ -103,8 +103,13 @@ public class PairingEntryPointTests
         // bug straight back left this test green. A guard that cannot see the bug it was written for
         // is worse than none. After normalising there are no line breaks left to hide a pair of
         // attributes from each other.
+        // ONE COMMAND NOW, NOT TWO. RemEx-7ykyn item 3 collapsed the separate QR and PIN buttons into
+        // a single pairing action, so GenerateQrCodeCommand IS the pairing entry point — it starts the
+        // session, reveals the digits and draws the code. The property this test holds is unchanged:
+        // that entry point must not be gated on the connection state.
+        //
         // ENTRY POINTS ONLY. RemEx-7ykyn added a "get a new PIN" button to PairingPinPanelView that
-        // also invokes RevealPairingPinCommand — but it is a RETRY inside a panel the user is already
+        // also invokes the same command — but it is a RETRY inside a panel the user is already
         // looking at, not a way in, so gating it on CanRevealPairingPin would be meaningless (the
         // panel cannot be open unless a PIN was produced). The count floor below caught that addition
         // immediately, which is the floor doing its job: it made somebody decide which kind of button
@@ -126,7 +131,7 @@ public class PairingEntryPointTests
             {
                 var flattened = Regex.Replace(File.ReadAllText(file), @"\s+", " ");
                 return Regex
-                    .Matches(flattened, "<Button[^>]*RevealPairingPinCommand[^>]*>")
+                    .Matches(flattened, "<Button[^>]*GenerateQrCodeCommand[^>]*>")
                     .Select(match => $"{Path.GetFileName(file)}: {match.Value}");
             })
             .ToArray();
@@ -146,7 +151,7 @@ public class PairingEntryPointTests
             File.ReadAllText(Path.Combine(
                 RepoRoot(), "remex.desktop", "Views", "PairingPinPanelView.axaml")),
             @"\s+", " ");
-        panel.Should().Contain("RevealPairingPinCommand",
+        panel.Should().Contain("GenerateQrCodeCommand",
             "an expired PIN is REPLACED by a get-a-new-one action, so the panel must offer one");
 
         // POSITIVE, not a banned-substring check. Asserting the absence of IsConnected would still

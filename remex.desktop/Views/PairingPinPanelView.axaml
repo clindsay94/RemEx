@@ -46,7 +46,10 @@
              person actually doing the task, so the digits go and an action takes their place. -->
         <StackPanel Spacing="12" IsVisible="{Binding IsPairingPinExpired}">
             <TextBlock Text="{conv:Localize Settings_PairingPinExpired}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextAlignment="Center" TextWrapping="Wrap"/>
-            <Button Content="{conv:Localize Settings_PairingPinGetNew}" Command="{Binding RevealPairingPinCommand}" HorizontalAlignment="Center" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+            <!-- GenerateQrCodeCommand, NOT RevealPairingPinCommand (RemEx-7ykyn, item 3): now that both
+                 panels open together, refreshing only the PIN would leave the QR beside it encoding the
+                 session that just expired — a code that scans and pairs with nothing. -->
+            <Button Content="{conv:Localize Settings_PairingPinGetNew}" Command="{Binding GenerateQrCodeCommand}" HorizontalAlignment="Center" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
         </StackPanel>
 
         <TextBlock Text="{conv:Localize Settings_PairingPinHint}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !IsPairingPinExpired}"/>
