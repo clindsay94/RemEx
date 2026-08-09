@@ -102,6 +102,11 @@ public class HostToClientRoutingTests
     [Theory]
     [InlineData("onClipboardMessage", "_onClipboardMessageMethodId")]
     [InlineData("onFileTransferMessage", "_onFileTransferMessageMethodId")]
+    // Added when RemEx-93n2 wired the round-trip callback and a mutation showed this theory did not
+    // cover it: dropping its assignment left the field IntPtr.Zero and every test green. A guard
+    // that only covers the callbacks that existed when it was written stops being a guard for the
+    // next one, which is the case it is most needed for.
+    [InlineData("onLinkQuality", "_onLinkQualityMethodId")]
     public void TheCallbackIsLookedUpAndAssignedDuringRegistration(string javaMethod, string field)
     {
         // **THE HOLE THE ROUTER SCAN CANNOT SEE, AND IT IS THE BIGGER ONE.** The forward can be

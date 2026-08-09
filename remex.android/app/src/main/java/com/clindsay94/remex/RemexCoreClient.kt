@@ -46,6 +46,17 @@ object RemexCoreClient {
          * exists. Switch on `type` and ignore what you do not handle.
          */
         fun onClipboardMessage(json: String?)
+        /**
+         * Link quality measured by the native layer (RemEx-93n2).
+         *
+         * A JSON OBJECT rather than a bare number, because the quality meter this feeds will want
+         * loss and bitrate beside the round trip. Adding a field to an object costs nothing; widening
+         * a JNI signature later costs a coordinated change on both sides at once.
+         *
+         * Emitted on each pong, so its cadence is the ping interval - nothing new is scheduled to
+         * produce it.
+         */
+        fun onLinkQuality(json: String?)
         fun onConnectionError(reason: String?)
 
         /**

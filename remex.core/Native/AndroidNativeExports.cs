@@ -176,6 +176,7 @@ public static class AndroidNativeExports
     private static IntPtr _onDesktopWindowResultMethodId;
     private static IntPtr _onFileTransferMessageMethodId;
     private static IntPtr _onClipboardMessageMethodId;
+    private static IntPtr _onLinkQualityMethodId;
     private static IntPtr _onConnectionErrorMethodId;
     private static IntPtr _onDesktopStreamDescriptorMethodId;
     private static IntPtr _onDesktopDisplayCatalogMethodId;
@@ -301,6 +302,7 @@ public static class AndroidNativeExports
         _onDesktopWindowResultMethodId = IntPtr.Zero;
         _onFileTransferMessageMethodId = IntPtr.Zero;
         _onClipboardMessageMethodId = IntPtr.Zero;
+        _onLinkQualityMethodId = IntPtr.Zero;
         _onConnectionErrorMethodId = IntPtr.Zero;
         _onDesktopStreamDescriptorMethodId = IntPtr.Zero;
         _onDesktopDisplayCatalogMethodId = IntPtr.Zero;
@@ -411,6 +413,7 @@ public static class AndroidNativeExports
                 var onDesktopWindowResultMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopWindowResult", "(Ljava/lang/String;)V");
                 var onFileTransferMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onFileTransferMessage", "(Ljava/lang/String;)V");
                 var onClipboardMessageMethodId = GetRequiredCallbackMethodId(env, clazz, "onClipboardMessage", "(Ljava/lang/String;)V");
+                var onLinkQualityMethodId = GetRequiredCallbackMethodId(env, clazz, "onLinkQuality", "(Ljava/lang/String;)V");
                 var onConnectionErrorMethodId = GetRequiredCallbackMethodId(env, clazz, "onConnectionError", "(Ljava/lang/String;)V");
                 var onDesktopStreamDescriptorMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopStreamDescriptor", "(Ljava/lang/String;)V");
                 var onDesktopDisplayCatalogMethodId = GetRequiredCallbackMethodId(env, clazz, "onDesktopDisplayCatalog", "(Ljava/lang/String;)V");
@@ -430,6 +433,7 @@ public static class AndroidNativeExports
                     || onDesktopWindowResultMethodId == IntPtr.Zero
                     || onFileTransferMessageMethodId == IntPtr.Zero
                     || onClipboardMessageMethodId == IntPtr.Zero
+                    || onLinkQualityMethodId == IntPtr.Zero
                     || onConnectionErrorMethodId == IntPtr.Zero
                     || onDesktopStreamDescriptorMethodId == IntPtr.Zero
                     || onDesktopDisplayCatalogMethodId == IntPtr.Zero
@@ -454,6 +458,7 @@ public static class AndroidNativeExports
                 _onDesktopWindowResultMethodId = onDesktopWindowResultMethodId;
                 _onFileTransferMessageMethodId = onFileTransferMessageMethodId;
                 _onClipboardMessageMethodId = onClipboardMessageMethodId;
+                _onLinkQualityMethodId = onLinkQualityMethodId;
                 _onConnectionErrorMethodId = onConnectionErrorMethodId;
                 _onDesktopStreamDescriptorMethodId = onDesktopStreamDescriptorMethodId;
                 _onDesktopDisplayCatalogMethodId = onDesktopDisplayCatalogMethodId;

@@ -343,6 +343,16 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             )
     val clipboardMessages = _clipboardMessages.asSharedFlow()
 
+    /**
+     * Smoothed round-trip time to the PC in milliseconds, or null before the first pong (RemEx-93n2).
+     *
+     * A StateFlow, unlike [clipboardMessages]: this is a CURRENT VALUE, not an event. A consumer
+     * joining late wants the latest reading rather than nothing, and two identical readings in a row
+     * genuinely are the same state - conflating them is correct here and would have been wrong there.
+     */
+    private val _roundTripMs = MutableStateFlow<Double?>(null)
+    val roundTripMs = _roundTripMs.asStateFlow()
+
     private suspend fun connect(pairingPin: String? = null, isAutoConnect: Boolean = false) {
         val settings = settingsManager ?: run {
             _isConnecting.value = false
@@ -727,6 +737,18 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
 
     override fun onClipboardMessage(json: String?) {
         json?.let { _clipboardMessages.tryEmit(it) }
+    }
+
+    override fun onLinkQuality(json: String?) {
+        // Parsed defensively and dropped on anything unexpected. This is a telemetry reading, not a
+        // decision input - a malformed one is worth ignoring, never worth throwing out of a JNI
+        // callback where nothing can catch it.
+        val ms =
+                json?.let { runCatching { JSONObject(it) }.getOrNull() }
+                        ?.takeIf { it.has("roundTripMs") }
+                        ?.optDouble("roundTripMs", Double.NaN)
+                        ?.takeIf { !it.isNaN() && it >= 0.0 }
+        if (ms != null) _roundTripMs.value = ms
     }
 
     override fun onConnectionError(reason: String?) {
