@@ -2973,4 +2973,13 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="A11y_PairedDeviceOffline" xml:space="preserve">
     <value>डिवाइस स्थिति: कनेक्ट नहीं है</value>
   </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>यह पिन समाप्त हो गया है।</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>नया पिन प्राप्त करें</value>
+  </data>
+  <data name="A11y_CopyPairingPin" xml:space="preserve">
+    <value>पिन कॉपी करें</value>
+  </data>
 </root>

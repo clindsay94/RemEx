@@ -2976,4 +2976,13 @@ Anda dapat mengubah:
   <data name="A11y_PairedDeviceOffline" xml:space="preserve">
     <value>Status perangkat: tidak terhubung</value>
   </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>PIN ini sudah kedaluwarsa.</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>Dapatkan PIN baru</value>
+  </data>
+  <data name="A11y_CopyPairingPin" xml:space="preserve">
+    <value>Salin PIN</value>
+  </data>
 </root>

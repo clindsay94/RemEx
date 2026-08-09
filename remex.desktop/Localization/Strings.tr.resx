@@ -2977,4 +2977,13 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="A11y_PairedDeviceOffline" xml:space="preserve">
     <value>Cihaz durumu: bağlı değil</value>
   </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>Bu PIN süresi doldu.</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>Yeni PIN al</value>
+  </data>
+  <data name="A11y_CopyPairingPin" xml:space="preserve">
+    <value>PIN kopyala</value>
+  </data>
 </root>

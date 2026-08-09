@@ -103,10 +103,25 @@ public class PairingEntryPointTests
         // bug straight back left this test green. A guard that cannot see the bug it was written for
         // is worse than none. After normalising there are no line breaks left to hide a pair of
         // attributes from each other.
+        // ENTRY POINTS ONLY. RemEx-7ykyn added a "get a new PIN" button to PairingPinPanelView that
+        // also invokes RevealPairingPinCommand — but it is a RETRY inside a panel the user is already
+        // looking at, not a way in, so gating it on CanRevealPairingPin would be meaningless (the
+        // panel cannot be open unless a PIN was produced). The count floor below caught that addition
+        // immediately, which is the floor doing its job: it made somebody decide which kind of button
+        // this was instead of quietly counting it.
+        // EXCLUDE THE ONE PANEL BY NAME — do not allowlist the views that happen to exist. My first
+        // attempt filtered TO ConnectionView and SettingsView, which silenced this guard for every
+        // view not yet written: a pairing button added to a tray flyout or an onboarding screen with
+        // IsVisible bound to IsConnected would have been filtered out and the test stayed green
+        // (review). That is me silencing my own guard while fixing it, which is worse than the count
+        // failing.
+        const string RetryPanel = "PairingPinPanelView.axaml";
+
         var buttons = Directory
             .GetFiles(Path.Combine(RepoRoot(), "remex.desktop"), "*.axaml", SearchOption.AllDirectories)
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
                         && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Where(file => Path.GetFileName(file) != RetryPanel)
             .SelectMany(file =>
             {
                 var flattened = Regex.Replace(File.ReadAllText(file), @"\s+", " ");
@@ -124,6 +139,15 @@ public class PairingEntryPointTests
         buttons.Should().HaveCount(2,
             "ConnectionView and SettingsView each offer the pairing button, and a scan that finds "
             + "neither is not a clean result — it is a guard that has stopped looking");
+
+        // And the retry inside the panel still exists, so this test cannot be satisfied by deleting
+        // the thing it just excused.
+        var panel = Regex.Replace(
+            File.ReadAllText(Path.Combine(
+                RepoRoot(), "remex.desktop", "Views", "PairingPinPanelView.axaml")),
+            @"\s+", " ");
+        panel.Should().Contain("RevealPairingPinCommand",
+            "an expired PIN is REPLACED by a get-a-new-one action, so the panel must offer one");
 
         // POSITIVE, not a banned-substring check. Asserting the absence of IsConnected would still
         // pass if IsVisible were deleted outright, or moved to an enclosing StackPanel gated on the

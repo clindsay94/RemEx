@@ -2974,4 +2974,13 @@ Możesz zmienić:
   <data name="A11y_PairedDeviceOffline" xml:space="preserve">
     <value>Stan urządzenia: niepołączone</value>
   </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>Ten kod PIN wygasł.</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>Uzyskaj nowy PIN</value>
+  </data>
+  <data name="A11y_CopyPairingPin" xml:space="preserve">
+    <value>Kopiuj PIN</value>
+  </data>
 </root>

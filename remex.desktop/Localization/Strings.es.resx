@@ -2987,4 +2987,13 @@ Puedes cambiar:
   <data name="A11y_PairedDeviceOffline" xml:space="preserve">
     <value>Estado del dispositivo: no conectado</value>
   </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>Este PIN ha caducado.</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>Obtener un PIN nuevo</value>
+  </data>
+  <data name="A11y_CopyPairingPin" xml:space="preserve">
+    <value>Copiar PIN</value>
+  </data>
 </root>

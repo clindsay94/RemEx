@@ -2974,4 +2974,13 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="A11y_PairedDeviceOffline" xml:space="preserve">
     <value>Стан пристрою: не підключено</value>
   </data>
+  <data name="Settings_PairingPinExpired" xml:space="preserve">
+    <value>Термін дії цього PIN-коду минув.</value>
+  </data>
+  <data name="Settings_PairingPinGetNew" xml:space="preserve">
+    <value>Отримати новий PIN-код</value>
+  </data>
+  <data name="A11y_CopyPairingPin" xml:space="preserve">
+    <value>Копіювати PIN-код</value>
+  </data>
 </root>

@@ -114,12 +114,21 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     /// Active pairing PIN published by the in-process host. Null when no pairing is in progress.
     /// </summary>
     [ObservableProperty]
+    // The PIN string is read by every countdown property through HasActivePairingPin, so it has to
+    // announce them too. They stayed correct only because every call site happened to assign the
+    // expiry on the adjacent line — and CommunityToolkit skips the whole setter body, hook and
+    // notifications included, when a value is assigned unchanged (review).
     [NotifyPropertyChangedFor(nameof(HasActivePairingPin))]
+    [NotifyPropertyChangedFor(nameof(IsPairingPinExpired))]
+    [NotifyPropertyChangedFor(nameof(IsPairingPinExpiringSoon))]
+    [NotifyPropertyChangedFor(nameof(PairingPinExpiresInText))]
     private string? _activePairingPin;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasActivePairingPin))]
     [NotifyPropertyChangedFor(nameof(PairingPinExpiresInText))]
+    [NotifyPropertyChangedFor(nameof(IsPairingPinExpiringSoon))]
+    [NotifyPropertyChangedFor(nameof(IsPairingPinExpired))]
     private DateTimeOffset? _activePairingExpiresAt;
 
     public bool HasActivePairingPin => !string.IsNullOrEmpty(ActivePairingPin);
@@ -133,18 +142,100 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     private bool _showPairingPin;
 
     /// <summary>
-    /// Localized "Expires in Ns" countdown string driven by <see cref="ActivePairingExpiresAt"/>.
-    /// Refreshed once per second by <see cref="_pairingExpiryTimer"/>.
+    /// Stamps the issue time whenever an expiry arrives or is cleared.
     /// </summary>
+    /// <remarks>
+    /// HOOKED TO THE PROPERTY RATHER THAN WRITTEN AT EACH CALL SITE. There are ELEVEN places that
+    /// assign ActivePairingExpiresAt — three attach paths, a poll, a reveal, and their teardowns —
+    /// and pairing them by hand would mean eleven chances to add a twelfth and forget. A missed one
+    /// would leave a stale issue time against a fresh expiry, so the countdown would measure a window
+    /// that never existed: the failure would be a wrong number on screen, not a crash.
+    /// </remarks>
+    partial void OnActivePairingExpiresAtChanged(DateTimeOffset? value)
+        => _activePairingIssuedAt = value is null ? null : PairingClock();
+
+    /// <summary>
+    /// Test-only seam (visible to <c>Remex.Desktop.Tests</c> via <c>InternalsVisibleTo</c>). The clock
+    /// the pairing countdown reads. Not used by DI — production always gets <c>UtcNow</c>.
+    /// </summary>
+    /// <remarks>
+    /// WITHOUT THIS, NO TEST CAN TELL DELEGATION FROM A HAND-ROLLED SUBTRACTION, and I found that out
+    /// the way I keep finding these things out: I replaced the <see cref="PairingPinCountdown"/> call
+    /// with a plain subtraction and every test still passed. They could not have failed — reading the
+    /// real clock means the boundary cases the component exists for (expiry INCLUSIVE at the instant,
+    /// a backwards clock unable to lend the PIN more life, a zero-length window being expired rather
+    /// than unlimited) are unreachable, because time moves between constructing the state and
+    /// asserting on it. With the clock frozen, that same injection fails two tests.
+    /// <para>
+    /// An <c>init</c> property rather than a constructor parameter: the container never sets it, and
+    /// there is no shared state for the parallel runner to race on.
+    /// </para>
+    /// </remarks>
+    internal Func<DateTimeOffset> PairingClock { get; init; } = () => DateTimeOffset.UtcNow;
+
+    /// <summary>When this PIN was learned, so the countdown has a window to measure.</summary>
+    /// <remarks>
+    /// <see cref="PairingPinCountdown.Evaluate"/> takes an issue time and a validity window rather
+    /// than an expiry instant. Which moment is called "issued" does not matter to the answer — the
+    /// window is computed as <c>expiresAt - issuedAt</c>, so remaining always reduces to
+    /// <c>expiresAt - now</c> — but it does matter that both come from the same reading, or an
+    /// attach that finds a PIN already in flight would measure a window it never saw the start of.
+    /// </remarks>
+    private DateTimeOffset? _activePairingIssuedAt;
+
+    /// <summary>
+    /// What the countdown says right now: valid, nearly gone, or dead.
+    /// </summary>
+    /// <remarks>
+    /// DELEGATED TO <see cref="PairingPinCountdown"/> RATHER THAN DECIDED HERE (RemEx-7ykyn). It has
+    /// shipped with 9 tests and mutation verification since RemEx-scwy and was consumed by nothing —
+    /// the fourth component found in that state in this repo. Its decisions are ones this property
+    /// previously got wrong or did not make at all: expiry is INCLUSIVE, because the host stops
+    /// accepting the PIN at the boundary and an off-by-one shows a countdown reading zero beside a
+    /// PIN the host has already refused; a backwards clock CANNOT lend the PIN more life than it has,
+    /// which the old subtraction would have done on an NTP correction; and a zero or negative window
+    /// is EXPIRED rather than unlimited, because it almost certainly means a field that was never
+    /// populated.
+    /// </remarks>
+    public PairingPinStatus PairingPinCountdownStatus =>
+        _activePairingIssuedAt is null || ActivePairingExpiresAt is null
+            ? new PairingPinStatus(PairingPinState.Expired, TimeSpan.Zero)
+            : PairingPinCountdown.Evaluate(
+                _activePairingIssuedAt.Value,
+                ActivePairingExpiresAt.Value - _activePairingIssuedAt.Value,
+                PairingClock());
+
+    /// <summary>Localized "Expires in Ns" countdown, refreshed once per second by the timer.</summary>
     public string PairingPinExpiresInText
     {
         get
         {
             if (ActivePairingExpiresAt is null) return string.Empty;
-            var seconds = (int)Math.Max(0, (ActivePairingExpiresAt.Value - DateTimeOffset.UtcNow).TotalSeconds);
+            var seconds = (int)Math.Max(0, PairingPinCountdownStatus.Remaining.TotalSeconds);
             return string.Format(LocalizationService.Instance["Settings_PairingPinExpiresIn"], seconds);
         }
     }
+
+    /// <summary>Whether the PIN is close enough to expiry to say so more loudly.</summary>
+    /// <remarks>
+    /// The threshold is 15 seconds and it was chosen from the TASK, not from a round number: read six
+    /// digits off one screen and type them into a phone, possibly one-handed. A warning with three
+    /// seconds left tells the user something they can no longer act on.
+    /// </remarks>
+    public bool IsPairingPinExpiringSoon =>
+        PairingPinCountdownStatus.State == PairingPinState.ExpiringSoon;
+
+    /// <summary>
+    /// Whether the digits should be REPLACED by a "get a new one" action rather than shown.
+    /// </summary>
+    /// <remarks>
+    /// REPLACE, NOT GREY OUT, and that is a decision rather than a style preference. An expired PIN
+    /// rendered faintly is still six digits on a screen, and a user looking at their phone rather
+    /// than at the PC will type them — the visual treatment carries no information to the person
+    /// actually doing the task. <see cref="PairingPinCountdown.ShouldDisplayPin"/> owns the rule.
+    /// </remarks>
+    public bool IsPairingPinExpired =>
+        HasActivePairingPin && !PairingPinCountdown.ShouldDisplayPin(PairingPinCountdownStatus.State);
 
     private DispatcherTimer? _pairingExpiryTimer;
     private DispatcherTimer? _standalonePairingPinPollingTimer;
@@ -334,20 +425,51 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         }
     }
 
+    /// <summary>
+    /// One tick of the pairing countdown. Internal so a test can drive it with a frozen clock.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// IT NO LONGER TEARS THE STATE DOWN AT THE BOUNDARY, and that was a real bug found in review.
+    /// The tick used to publish <see cref="IsPairingPinExpired"/> and then, in the SAME callback,
+    /// null the PIN and set <c>ShowPairingPin = false</c>. Both boundaries are inclusive and fire on
+    /// the same instant, and no render pass runs inside one callback — so the "this PIN has expired,
+    /// get a new one" branch was never painted. The user saw the whole card vanish, which is exactly
+    /// the outcome the bead's recorded decision rejected, and there was no route back: reopening the
+    /// panel is gated on <c>HasActivePairingPin</c>, which had just been cleared.
+    /// </para>
+    /// <para>
+    /// The PIN string is now kept so the panel can say it is dead and offer a replacement. Keeping
+    /// six expired digits in memory costs nothing — they are already on screen, and the host has
+    /// stopped accepting them, so they are no more sensitive than any other number.
+    /// </para>
+    /// <para>
+    /// NINE GREEN TESTS SAID NOTHING ABOUT THIS because every one of them drove view-model
+    /// properties and none drove the timer. Extracting the body is what makes the tick reachable.
+    /// </para>
+    /// </remarks>
+    internal void OnPairingExpiryTick()
+    {
+        // ALL THREE, not just the text. IsPairingPinExpiringSoon and IsPairingPinExpired are also
+        // functions of the current time, and the second decides whether the digits are on screen at
+        // all — a tick that refreshed only the caption would leave the digits up beside a line
+        // saying they had expired.
+        OnPropertyChanged(nameof(PairingPinExpiresInText));
+        OnPropertyChanged(nameof(IsPairingPinExpiringSoon));
+        OnPropertyChanged(nameof(IsPairingPinExpired));
+
+        // The countdown, not a second subtraction: one boundary rule, stated once.
+        if (IsPairingPinExpired)
+        {
+            StopPairingExpiryTimer();
+        }
+    }
+
     private void StartPairingExpiryTimer()
     {
         if (_pairingExpiryTimer is not null) return;
-        _pairingExpiryTimer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) =>
-        {
-            OnPropertyChanged(nameof(PairingPinExpiresInText));
-            if (ActivePairingExpiresAt is { } expires && DateTimeOffset.UtcNow >= expires)
-            {
-                ActivePairingPin = null;
-                ActivePairingExpiresAt = null;
-                ShowPairingPin = false;
-                StopPairingExpiryTimer();
-            }
-        });
+        _pairingExpiryTimer = new DispatcherTimer(
+            TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => OnPairingExpiryTick());
         _pairingExpiryTimer.Start();
     }
 
