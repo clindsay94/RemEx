@@ -157,6 +157,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **Four limits that stop a phone writing an unlimited amount onto your PC are now held in place by
+  tests.** When your phone sends a file, it says up front how big the file is, and RemEx refuses a
+  size that is nonsense or larger than the 5 GB ceiling. That check on its own is not enough: a phone
+  is allowed to say it does not know the size, which is normal for files picked from some apps, and
+  in that case the only thing stopping an unlimited write is a second limit that counts the bytes as
+  they actually arrive. All four of those limits were already in the code and working — none of them
+  had a single test. Because of how they were written, testing them would have meant sending a real
+  5 GB file, so nobody had, and any one of them could have been deleted during a tidy-up without
+  anything going red. They can't be now. Nothing about how transfers behave has changed.
+
 - **The desktop test suite runs on Linux again, so cross-platform checking covers all three suites
   rather than two.** One test asked Windows to translate an unknown account name into a security
   identifier — something only Windows can do — and it failed on Linux rather than being skipped, which
