@@ -62,6 +62,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comes out in the order the lines appear rather than the order you happened to click them, with the
   exception details included. (RemEx-7xhln)
 
+### Internal
+
+- **Fifteen branches in the Android app could never run on any phone that can install it, and they
+  have been removed.** The app requires Android 14 or newer. Scattered through it were fifteen
+  checks asking "is this phone on Android 8 / 10 / 11 / 12 / 13?" and, if not, doing something
+  different. On a phone that can install this app the answer is always yes, so the second path was
+  unreachable — but it was still there to read, and in three places the notes above it described
+  that unreachable behaviour as if it were a feature. Anyone working out why the app picked a
+  language, sent a notification, or found your PC had two implementations to consider and one that
+  actually runs. The dead ones are gone, along with two private helper functions and a lock that
+  existed only to serve them. Nothing about how the app behaves has changed; every deletion was
+  checked one at a time against what Android 14 does.
+
+- **A test now fails the build if one comes back.** Nothing catches this on its own: these are
+  ordinary number comparisons, so the compiler has no reason to complain and the branch just sits
+  there. The test reads the minimum Android version out of the build file rather than assuming it,
+  so it stays correct if that version ever moves — and a move is exactly when it matters most, since
+  raising the minimum turns a fresh batch of live checks into dead ones overnight. It ignores
+  comments and quoted text, so writing *about* an old version check cannot fail the build, and it
+  refuses to pass quietly if it ever stops finding anything to look at. (RemEx-jcl4p)
+
 ### Fixed
 
 - **Discovery will not offer you a PC it cannot actually reach.** When the phone finds a PC on the
