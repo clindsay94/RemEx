@@ -17,6 +17,7 @@ import com.clindsay94.remex.R
 import com.clindsay94.remex.data.SettingsManager
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -1857,42 +1858,74 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
      * ImageBitmap and caches it by shape serial. If the shape is the one the current cursor state is
      * waiting on, it becomes the active overlay bitmap immediately.
      */
-    private fun handleCursorShape(shapeJson: String) {
+    /**
+     * Decodes an incoming cursor shape and publishes it.
+     *
+     * **THE DECODE IS OFF THE MAIN THREAD AND THE PUBLISH IS ON IT (RemEx-z2db8).** This collector
+     * runs in `viewModelScope`, which is `Dispatchers.Main.immediate`, and the work below is a
+     * Base64 decode plus a `width * height` per-pixel repack. That is not the 1Hz hygiene the rest
+     * of RemEx-cite describes: cursor shapes change whenever the pointer crosses a UI element on the
+     * host, so it fires on ordinary mouse movement, and it scales with the cursor — a 32x32 cursor
+     * is a thousand iterations, a high-DPI 256x256 one is sixty-five thousand plus a quarter-megabyte
+     * decode. All of it on the thread composing the frame the user is watching.
+     *
+     * ONLY THE CPU WORK MOVED. The assignments stay where they were, because `collect` is sequential
+     * and a `withContext` inside it does not reorder emissions — which matters here, since the serial
+     * decides which shape is active and applying two out of order would leave the wrong cursor on
+     * screen. `cursorShapeCache` is a `ConcurrentHashMap` and the three destinations are StateFlows,
+     * so none of this needed new synchronisation; it needed the heavy part to stop running on Main.
+     */
+    private suspend fun handleCursorShape(shapeJson: String) {
         try {
-            val json = JSONObject(shapeJson)
-            val serial = json.optLong("shapeSerial", -1L)
-            val width = json.optInt("width", 0)
-            val height = json.optInt("height", 0)
-            if (width <= 0 || height <= 0) return
-            val hotspotX = json.optInt("hotspotX", 0)
-            val hotspotY = json.optInt("hotspotY", 0)
-            val b64 = json.optString("shapeBytes", "")
-            if (b64.isEmpty()) return
-            val bgra = Base64.decode(b64, Base64.DEFAULT)
-            if (bgra.size < width * height * 4) return
+            val decoded = withContext(Dispatchers.Default) { decodeCursorShape(shapeJson) } ?: return
 
-            // BGRA8888 -> ARGB int pixels (Android Bitmap.Config.ARGB_8888 expects packed ARGB ints).
-            val pixels = IntArray(width * height)
-            var src = 0
-            for (dst in pixels.indices) {
-                val b = bgra[src].toInt() and 0xFF
-                val g = bgra[src + 1].toInt() and 0xFF
-                val r = bgra[src + 2].toInt() and 0xFF
-                val a = bgra[src + 3].toInt() and 0xFF
-                pixels[dst] = (a shl 24) or (r shl 16) or (g shl 8) or b
-                src += 4
-            }
-            val bitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
-            val entry = CursorShapeEntry(bitmap.asImageBitmap(), hotspotX, hotspotY)
-            cursorShapeCache[serial] = entry
-            if (serial == activeCursorShapeSerial) {
-                _cursorShapeBitmap.value = entry.bitmap
-                _cursorHotspotX.value = entry.hotspotX
-                _cursorHotspotY.value = entry.hotspotY
+            cursorShapeCache[decoded.serial] = decoded.entry
+            if (decoded.serial == activeCursorShapeSerial) {
+                _cursorShapeBitmap.value = decoded.entry.bitmap
+                _cursorHotspotX.value = decoded.entry.hotspotX
+                _cursorHotspotY.value = decoded.entry.hotspotY
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to decode cursor shape", e)
         }
+    }
+
+    /** A decoded shape and the serial it answers to. */
+    private data class DecodedCursorShape(val serial: Long, val entry: CursorShapeEntry)
+
+    /**
+     * The pure decode half: JSON in, bitmap out, nothing touched that the UI owns.
+     *
+     * Separated so the expensive part has somewhere to run that is not Main. Returns null for every
+     * shape that cannot be used, which is what the caller's early returns used to express.
+     */
+    private fun decodeCursorShape(shapeJson: String): DecodedCursorShape? {
+        val json = JSONObject(shapeJson)
+        val serial = json.optLong("shapeSerial", -1L)
+        val width = json.optInt("width", 0)
+        val height = json.optInt("height", 0)
+        if (width <= 0 || height <= 0) return null
+        val hotspotX = json.optInt("hotspotX", 0)
+        val hotspotY = json.optInt("hotspotY", 0)
+        val b64 = json.optString("shapeBytes", "")
+        if (b64.isEmpty()) return null
+        val bgra = Base64.decode(b64, Base64.DEFAULT)
+        if (bgra.size < width * height * 4) return null
+
+        // BGRA8888 -> ARGB int pixels (Android Bitmap.Config.ARGB_8888 expects packed ARGB ints).
+        val pixels = IntArray(width * height)
+        var src = 0
+        for (dst in pixels.indices) {
+            val b = bgra[src].toInt() and 0xFF
+            val g = bgra[src + 1].toInt() and 0xFF
+            val r = bgra[src + 2].toInt() and 0xFF
+            val a = bgra[src + 3].toInt() and 0xFF
+            pixels[dst] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            src += 4
+        }
+
+        val bitmap = Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
+        return DecodedCursorShape(serial, CursorShapeEntry(bitmap.asImageBitmap(), hotspotX, hotspotY))
     }
 
     /**
