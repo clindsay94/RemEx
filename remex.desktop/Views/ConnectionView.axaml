@@ -34,7 +34,7 @@
                         <Button Content="{conv:Localize Btn_Connect}" Command="{Binding ConnectCommand}" IsVisible="{Binding !IsConnected}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
                         <Button Content="{conv:Localize Btn_Disconnect}" Command="{Binding DisconnectCommand}" IsVisible="{Binding IsConnected}" Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
                         <Button Content="{conv:Localize Home_QrCodeButton}" Command="{Binding GenerateQrCodeCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
-                        <Button Content="{conv:Localize Settings_ShowPairingPin}" Command="{Binding RevealPairingPinCommand}" IsVisible="{Binding !IsConnected}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
+                        <Button Content="{conv:Localize Settings_ShowPairingPin}" Command="{Binding RevealPairingPinCommand}" IsVisible="{Binding CanRevealPairingPin}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

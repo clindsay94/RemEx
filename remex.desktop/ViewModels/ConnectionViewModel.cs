@@ -199,6 +199,30 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     private IPairingPinQueryService? _standalonePairingPinQueryService;
 
     /// <summary>
+    /// Whether either pairing path has been wired up, which is what gates the button.
+    /// </summary>
+    /// <remarks>
+    /// **THE PAIRING BUTTON USED TO BE HIDDEN WHENEVER <c>IsConnected</c> WAS TRUE, WHICH IS ALMOST
+    /// ALWAYS (RemEx-f66j, item 4).** That flag is the desktop's own WebSocket to its embedded host —
+    /// up essentially always, per RemEx-porg — so "show the pairing PIN" vanished for most users most
+    /// of the time. It was not merely inverted, it was the wrong property: <c>RevealPairingPinAsync</c>
+    /// goes to <c>IPairingService</c> in-process, or to <c>IPairingPinQueryService</c> over IPC, and
+    /// neither one touches that socket. Worse, on the reading where the gate looked deliberate — show
+    /// it only while disconnected — the button appeared exactly when the services behind it were least
+    /// likely to be attached.
+    /// <para>
+    /// BE PRECISE ABOUT WHAT THIS PROVES, because an overclaim here is how the last gate drifted
+    /// (review). It says a service object was attached — NOT that a PIN can actually be produced. On
+    /// Windows <c>IPairingPinQueryService</c> is an unconditional DI singleton, so the attach always
+    /// runs and this is effectively always true; if no host is behind it, the command fails and says
+    /// so via <c>Status_FailedGeneratePin</c>. That is the right trade for this button: one that
+    /// explains itself beats one that is not there, which is the entire bug being fixed.
+    /// </para>
+    /// </remarks>
+    [ObservableProperty]
+    private bool _canRevealPairingPin;
+
+    /// <summary>
     /// Subscribes to pairing-pin events on the in-process host's PairingService so the
     /// desktop UI can show the user the PIN their phone is asking for.
     /// </summary>
@@ -207,6 +231,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
         Guard.NotNull(service);
         StopStandalonePairingPinPolling();
         _pairingService = service;
+        CanRevealPairingPin = true;
         service.PinDisplayed += (pin, expires) =>
             Dispatcher.UIThread.Post(() =>
             {
@@ -244,6 +269,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     {
         Guard.NotNull(service);
         _standalonePairingPinQueryService = service;
+        CanRevealPairingPin = true;
     }
 
     public void StartStandalonePairingPinPolling()

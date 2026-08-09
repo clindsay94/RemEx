@@ -118,7 +118,7 @@
                                         ToolTip.Tip="{local:Localize Home_QrCodeTooltip}"/>
                                 <Button Content="{local:Localize Settings_ShowPairingPin}"
                                         Command="{Binding Connection.RevealPairingPinCommand}"
-                                        IsVisible="{Binding !Connection.IsConnected}"
+                                        IsVisible="{Binding Connection.CanRevealPairingPin}"
                                         Background="{DynamicResource CardBackgroundBrush}"
                                         Foreground="{DynamicResource TextSecondaryBrush}"
                                         Padding="18,10" CornerRadius="8" FontSize="13" FontWeight="Bold" Cursor="Hand"
