@@ -57,7 +57,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         }
     }
 
-    private Fixture NewRevoker(string? registryPath = null, IFileTrustService? trustOverride = null)
+    private async Task<Fixture> NewRevokerAsync(string? registryPath = null, IFileTrustService? trustOverride = null)
     {
         var registry = new PairedClientRegistry(
             NullLogger<PairedClientRegistry>.Instance,
@@ -81,7 +81,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         names.Remember(Phone, "Pixel 9");
         overrides.Set(Phone, "Study Phone");
         activity.RecordPaired(Phone, DateTimeOffset.UtcNow);
-        trust.SetFullBrowseGrantedAsync(Phone, true, CancellationToken.None).GetAwaiter().GetResult();
+        await trust.SetFullBrowseGrantedAsync(Phone, true, CancellationToken.None);
 
         return new Fixture(revoker, registry, names, overrides, activity, trust, disconnector);
     }
@@ -95,7 +95,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
     [Fact]
     public async Task TheCredentialIsGone()
     {
-        var f = NewRevoker();
+        var f = await NewRevokerAsync();
 
         await f.Revoker.RevokeAsync(Phone, CancellationToken.None);
 
@@ -106,7 +106,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
     [Fact]
     public async Task TheNameTheDeviceReportedIsGone()
     {
-        var f = NewRevoker();
+        var f = await NewRevokerAsync();
 
         await f.Revoker.RevokeAsync(Phone, CancellationToken.None);
 
@@ -119,7 +119,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // The override outlives a re-pair by design (RemEx-4gbp2), which is exactly why it must NOT
         // outlive a revocation: a device that pairs again would silently arrive already wearing the
         // name from the pairing the user ended.
-        var f = NewRevoker();
+        var f = await NewRevokerAsync();
 
         await f.Revoker.RevokeAsync(Phone, CancellationToken.None);
 
@@ -131,7 +131,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
     {
         // A surviving first-paired date is the most misleading of the name-ish four: a freshly
         // re-paired device would claim a relationship going back months.
-        var f = NewRevoker();
+        var f = await NewRevokerAsync();
 
         await f.Revoker.RevokeAsync(Phone, CancellationToken.None);
 
@@ -150,7 +150,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // for an unpaired client prunes it on the way through, so the API answered with the prune's
         // null rather than the revoker's. Only what is on disk between the unpair and the next read
         // distinguishes the two — and that gap is exactly the window the re-pair closes.
-        var f = NewRevoker();
+        var f = await NewRevokerAsync();
         var trustFile = Path.Combine(_root.FullName, "trust.json");
         Assert.Contains(QuotedPhone, File.ReadAllText(trustFile));
 
@@ -166,7 +166,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // the user actually cares about: unpair, pair again, and it is a new device. The trust
         // assertion is the load-bearing one — with the row left behind, re-pairing hands the phone
         // full-device browse with no consent prompt, inherited from a pairing the user ended.
-        var f = NewRevoker();
+        var f = await NewRevokerAsync();
         await f.Revoker.RevokeAsync(Phone, CancellationToken.None);
 
         f.Registry.RegisterClient(Phone, [9, 9, 9, 9]);
@@ -186,7 +186,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // this call a phone already mirroring the desktop carried on mirroring it after being
         // unpaired. What the three channels do about it is PairedDeviceDisconnectorTests' subject;
         // what this holds is that the revocation asks at all.
-        var f = NewRevoker();
+        var f = await NewRevokerAsync();
 
         await f.Revoker.RevokeAsync(Phone, CancellationToken.None);
 
@@ -201,7 +201,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // phone connected would be worst.
         var blocked = Path.Combine(_root.FullName, "blocked-disconnect");
         Directory.CreateDirectory(blocked);
-        var f = NewRevoker(Path.Combine(blocked, "paired.json"));
+        var f = await NewRevokerAsync(Path.Combine(blocked, "paired.json"));
 
         Directory.Delete(blocked, recursive: true);
         File.WriteAllText(blocked, "not a directory");
@@ -216,7 +216,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
     public async Task RevokingAnUnknownDeviceIsHarmless()
     {
         // A double-click, or a revoke racing a refresh, must not throw or disturb another device.
-        var f = NewRevoker();
+        var f = await NewRevokerAsync();
 
         await f.Revoker.RevokeAsync("never-paired", CancellationToken.None);
 
@@ -226,7 +226,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
     [Fact]
     public async Task ABlankClientIdRevokesNothing()
     {
-        var f = NewRevoker();
+        var f = await NewRevokerAsync();
 
         await f.Revoker.RevokeAsync("   ", CancellationToken.None);
 
@@ -254,7 +254,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // continue is a different property and this is the cheapest way to hold it.
         var blocked = Path.Combine(_root.FullName, "blocked");
         Directory.CreateDirectory(blocked);
-        var f = NewRevoker(Path.Combine(blocked, "paired.json"));
+        var f = await NewRevokerAsync(Path.Combine(blocked, "paired.json"));
 
         Directory.Delete(blocked, recursive: true);
         File.WriteAllText(blocked, "not a directory");
@@ -288,7 +288,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // existing file byte-for-byte intact, which is the whole point.
         var credentials = Directory.CreateDirectory(Path.Combine(_root.FullName, "credentials"));
         var storePath = Path.Combine(credentials.FullName, "paired.json");
-        var f = NewRevoker(storePath);
+        var f = await NewRevokerAsync(storePath);
         var before = File.ReadAllText(storePath);
         Assert.Contains(QuotedPhone, before);
 
@@ -327,7 +327,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // failures and log. So with real types every observable failure is a credential failure, and
         // PairingMayReturn could be hardcoded true with nothing going red. The trust store reaches the
         // revoker through IFileTrustService, which is the seam that lets the false branch exist.
-        var f = NewRevoker(trustOverride: new ThrowingTrustService());
+        var f = await NewRevokerAsync(trustOverride: new ThrowingTrustService());
 
         var failure = await Assert.ThrowsAsync<PairedDeviceRevocationException>(
             () => f.Revoker.RevokeAsync(Phone, CancellationToken.None));

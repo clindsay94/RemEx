@@ -993,7 +993,7 @@ public sealed class FileTransferHandlerTests : IDisposable
     // HandleFileTransferStartAsync's upload branch, which is intentionally untouched.
     // ──────────────────────────────────────────────────────────────────────────
 
-    private (FileTransferHandler handler, VolumeEnumerator volumes, string baseTemp) CreateVolumeTestHandler(
+    private async Task<(FileTransferHandler handler, VolumeEnumerator volumes, string baseTemp)> CreateVolumeTestHandlerAsync(
         string clientId, bool grantFullBrowse,
         Func<string, (string rootId, string displayName, string absolutePath,
                 bool isWritable, bool canRename, bool canMove, bool canDelete, bool canRemoveRoot)[]>? seedRoots = null)
@@ -1016,7 +1016,7 @@ public sealed class FileTransferHandlerTests : IDisposable
             FileTrustServiceTests.ConnectedSession(clientId),
             Path.Combine(baseTemp, "file_transfer_trust.json"), TimeSpan.FromSeconds(5));
         if (grantFullBrowse)
-            trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None).GetAwaiter().GetResult();
+            await trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None);
 
         var volumes = new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance);
         var handler = new FileTransferHandler(
@@ -1028,7 +1028,7 @@ public sealed class FileTransferHandlerTests : IDisposable
     [Fact]
     public async Task Metadata_FromFullDeviceVolume_WithGrantedConsent_Succeeds()
     {
-        var (handler, volumes, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true);
+        var (handler, volumes, baseTemp) = await CreateVolumeTestHandlerAsync("client-a", grantFullBrowse: true);
         var volumeRoot = Path.GetPathRoot(baseTemp)!;
         Assert.Contains(volumes.Enumerate(), v => v.Id == volumeRoot); // sanity: host must expose this drive
 
@@ -1051,7 +1051,7 @@ public sealed class FileTransferHandlerTests : IDisposable
     [Fact]
     public async Task Metadata_FromFullDeviceVolume_WithoutConsent_ReturnsError()
     {
-        var (handler, _, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: false);
+        var (handler, _, baseTemp) = await CreateVolumeTestHandlerAsync("client-a", grantFullBrowse: false);
         var volumeRoot = Path.GetPathRoot(baseTemp)!;
 
         var ws = new FakeWebSocket();
@@ -1069,7 +1069,7 @@ public sealed class FileTransferHandlerTests : IDisposable
     [Fact]
     public async Task Metadata_FromUnknownVolumeId_ReturnsError()
     {
-        var (handler, _, _) = CreateVolumeTestHandler("client-a", grantFullBrowse: true);
+        var (handler, _, _) = await CreateVolumeTestHandlerAsync("client-a", grantFullBrowse: true);
 
         var ws = new FakeWebSocket();
         await handler.HandleFileMetadataRequestAsync(new RemexMessage
@@ -1091,7 +1091,7 @@ public sealed class FileTransferHandlerTests : IDisposable
     {
         // This is the exact scenario from the bug report: browsing a bare drive (not a pinned
         // shared root) works, but downloading a file found there threw "Unknown shared root".
-        var (handler, volumes, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true);
+        var (handler, volumes, baseTemp) = await CreateVolumeTestHandlerAsync("client-a", grantFullBrowse: true);
         var volumeRoot = Path.GetPathRoot(baseTemp)!;
         Assert.Contains(volumes.Enumerate(), v => v.Id == volumeRoot);
 
@@ -1134,7 +1134,7 @@ public sealed class FileTransferHandlerTests : IDisposable
         // unconfigured RootId is re-mapped when the target sits inside a pinned root — but this target
         // is genuinely un-pinned (empty roots list), so the upload must refuse, pointing the user at
         // the shared-folders list.
-        var (handler, _, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true);
+        var (handler, _, baseTemp) = await CreateVolumeTestHandlerAsync("client-a", grantFullBrowse: true);
         var volumeRoot = Path.GetPathRoot(baseTemp)!;
 
         var ws = new FakeWebSocket();
@@ -1166,7 +1166,7 @@ public sealed class FileTransferHandlerTests : IDisposable
         // RemEx-hb1t.3 write-op parity: the SAME folder must accept an upload whether addressed by its
         // pinned rootId or reached via a full-device volume browse. The volume-mode reference here
         // resolves inside the pinned root, so the handler re-maps it and the write proceeds.
-        var (handler, volumes, baseTemp) = CreateVolumeTestHandler("client-a", grantFullBrowse: true,
+        var (handler, volumes, baseTemp) = await CreateVolumeTestHandlerAsync("client-a", grantFullBrowse: true,
             temp => [("root-pinned", "Pinned", Path.Combine(temp, "pinned"), true, true, true, true, false)]);
         var volumeRoot = Path.GetPathRoot(baseTemp)!;
         Assert.Contains(volumes.Enumerate(), v => v.Id == volumeRoot); // sanity: host must expose this drive

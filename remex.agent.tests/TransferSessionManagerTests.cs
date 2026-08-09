@@ -388,7 +388,7 @@ public sealed class TransferSessionManagerTests
     /// <paramref name="pinVolumeRootAsSharedRoot"/> seeds the temp folder as a configured shared root, so the
     /// same call can be driven down the pinned branch instead of the volume branch.
     /// </summary>
-    private static (TransferSessionManager mgr, string baseTemp) NewDownloadManager(
+    private static async Task<(TransferSessionManager mgr, string baseTemp)> NewDownloadManagerAsync(
         string clientId, bool grantFullBrowse, bool pinVolumeRootAsSharedRoot = false)
     {
         var baseTemp = Directory.CreateTempSubdirectory("remex-v3dl-").FullName;
@@ -407,7 +407,7 @@ public sealed class TransferSessionManagerTests
             FileTrustServiceTests.ConnectedSession(clientId),
             Path.Combine(baseTemp, "file_transfer_trust.json"), TimeSpan.FromSeconds(5));
         if (grantFullBrowse)
-            trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None).GetAwaiter().GetResult();
+            await trust.SetFullBrowseGrantedAsync(clientId, true, CancellationToken.None);
 
         var resolver = new SharedRootReadResolver(
             files, trust, new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
@@ -430,7 +430,7 @@ public sealed class TransferSessionManagerTests
     [Fact]
     public async Task Download_FromUnpinnedFullDeviceVolume_WithGrantedConsent_OpensTheFile()
     {
-        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: true);
+        var (mgr, baseTemp) = await NewDownloadManagerAsync(ClientId, grantFullBrowse: true);
         try
         {
             using (mgr)
@@ -456,7 +456,7 @@ public sealed class TransferSessionManagerTests
     [Fact]
     public async Task Download_FromUnpinnedFullDeviceVolume_WithoutConsent_IsRefused()
     {
-        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: false);
+        var (mgr, baseTemp) = await NewDownloadManagerAsync(ClientId, grantFullBrowse: false);
         try
         {
             using (mgr)
@@ -478,7 +478,7 @@ public sealed class TransferSessionManagerTests
     [Fact]
     public async Task Download_WithUnidentifiedClient_IsRefusedEvenWhenAnotherDeviceHasConsent()
     {
-        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: true);
+        var (mgr, baseTemp) = await NewDownloadManagerAsync(ClientId, grantFullBrowse: true);
         try
         {
             using (mgr)
@@ -501,7 +501,7 @@ public sealed class TransferSessionManagerTests
     [Fact]
     public async Task Download_FromPinnedSharedRoot_StillResolvesThroughTheConfiguredRoot()
     {
-        var (mgr, baseTemp) = NewDownloadManager(ClientId, grantFullBrowse: false, pinVolumeRootAsSharedRoot: true);
+        var (mgr, baseTemp) = await NewDownloadManagerAsync(ClientId, grantFullBrowse: false, pinVolumeRootAsSharedRoot: true);
         try
         {
             using (mgr)

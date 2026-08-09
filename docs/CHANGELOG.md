@@ -43,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Three more test fixtures stopped blocking a thread, and a check now keeps them that way.**
+  Internal only. Same problem as the entry below, in three fixture builders that set up file-access
+  permissions; they now wait properly instead of tying up a worker. A new check fails the build if
+  the pattern comes back anywhere in the test suite. (RemEx-c5pvh)
+
 - **Test setup no longer blocks a thread while it waits.** Internal only — nothing about the app
   changes. The pairing tests paused between cases to let the previous one finish shutting down, and
   did it in a way that ties up a worker thread for the whole pause instead of releasing it. On a busy
