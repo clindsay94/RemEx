@@ -479,7 +479,6 @@
     <string name="widget_toast_wol_sent">Wysłano pakiet Wake-on-LAN</string>
     <string name="widget_toast_not_connected">Brak połączenia — otwórz RemEx, aby się połączyć</string>
     <string name="widget_toast_command_sent">Wysłano %1$s</string>
-    <string name="widget_toast_launching">Uruchamianie %1$s…</string>
     <string name="widget_hardware_title">Informacje o sprzęcie</string>
     <string name="sensor_cpu_usage">Użycie procesora</string>
     <string name="sensor_gpu_usage">Użycie karty graficznej</string>

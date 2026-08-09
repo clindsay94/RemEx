@@ -716,7 +716,6 @@
     <string name="widget_toast_wol_sent">Wake-on-LAN sent</string>
     <string name="widget_toast_not_connected">Not connected — open RemEx to connect</string>
     <string name="widget_toast_command_sent">%1$s sent</string>
-    <string name="widget_toast_launching">Launching %1$s…</string>
     <string name="widget_refresh">Refresh</string>
     <string name="widget_toast_refreshing">Refreshing…</string>
     <string name="widget_toast_refreshed">Telemetry refreshed</string>

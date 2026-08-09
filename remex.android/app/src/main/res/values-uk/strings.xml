@@ -499,7 +499,6 @@
     <string name="widget_toast_wol_sent">Надіслано Wake-on-LAN</string>
     <string name="widget_toast_not_connected">Не підключено — відкрийте RemEx для підключення</string>
     <string name="widget_toast_command_sent">Надіслано %1$s</string>
-    <string name="widget_toast_launching">Запуск %1$s…</string>
     <string name="widget_hardware_title">Інформація про обладнання</string>
     <string name="sensor_cpu_usage">Використання процесора</string>
     <string name="sensor_gpu_usage">Використання відеокарти</string>

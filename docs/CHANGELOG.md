@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The app-launcher widget no longer says it is launching something it might not be.** Tapping an
+  app on the widget showed "Launching Firefox…" the moment the tap was sent, before the PC had
+  answered — so if the PC refused, or the app was gone, you watched that message and nothing
+  happened. It now says what is actually known at that point: that the request was sent. Telling
+  you whether it worked needs somewhere that outlives the tap, which is still to come. (RemEx-4nxfz)
+
 - **A pairing request with a bad address no longer opens a screen that cannot work.** The app
   checks the PC's address and port before opening the pairing screen. That check existed but was
   not being used — so a malformed address still took you to a pairing screen that looked fine and

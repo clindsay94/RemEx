@@ -478,7 +478,6 @@
     <string name="widget_toast_wol_sent">Wake-on-LAN dikirim</string>
     <string name="widget_toast_not_connected">Tidak terhubung — buka RemEx untuk menghubungkan</string>
     <string name="widget_toast_command_sent">%1$s dikirim</string>
-    <string name="widget_toast_launching">Meluncurkan %1$s…</string>
     <string name="widget_hardware_title">Info Perangkat Keras</string>
     <string name="sensor_cpu_usage">Penggunaan CPU</string>
     <string name="sensor_gpu_usage">Penggunaan GPU</string>

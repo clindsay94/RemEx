@@ -485,7 +485,6 @@
     <string name="widget_toast_wol_sent">Wake-on-LAN envoyé</string>
     <string name="widget_toast_not_connected">Non connecté - ouvrez RemEx pour vous connecter</string>
     <string name="widget_toast_command_sent">%1$s envoyé</string>
-    <string name="widget_toast_launching">Lancement de %1$s…</string>
     <string name="widget_hardware_title">Info Matériel</string>
     <string name="sensor_cpu_usage">Utilisation CPU</string>
     <string name="sensor_gpu_usage">Utilisation GPU</string>

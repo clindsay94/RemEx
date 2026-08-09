@@ -485,7 +485,6 @@
     <string name="widget_toast_wol_sent">Wake-on-LAN gönderildi</string>
     <string name="widget_toast_not_connected">Bağlı değil — bağlanmak için RemEx\'i açın</string>
     <string name="widget_toast_command_sent">%1$s gönderildi</string>
-    <string name="widget_toast_launching">%1$s başlatılıyor…</string>
     <string name="widget_hardware_title">Donanım Bilgisi</string>
     <string name="sensor_cpu_usage">İşlemci Kullanımı</string>
     <string name="sensor_gpu_usage">Grafik Kartı Kullanımı</string>

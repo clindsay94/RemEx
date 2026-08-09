@@ -241,7 +241,18 @@ class LaunchAppCallback : ActionCallback {
         // Handed over rather than awaited: this runs inside a goAsync() broadcast window, and
         // SendCommand now waits for the PC's answer on a ten-second budget (RemEx-66rf).
         sendWidgetCommand("LaunchApp", JSONObject().apply { put("TargetPath", path) })
-        widgetToast(context, context.getString(R.string.widget_toast_launching, name))
+
+        // "SENT", NOT "LAUNCHING" (RemEx-4nxfz). This toast used to say "Launching Firefox..." the
+        // instant the command was handed over - a claim about what the PC is doing, made before
+        // anything is known about whether it will. The PC can refuse: a missing executable, a
+        // declined command, a round trip that runs out its budget. Those are logged and never shown,
+        // so the user read "Launching Firefox..." and then watched nothing happen.
+        //
+        // What IS known here is that the command left this phone, which is exactly what the shared
+        // string says - and it is the same thing RemoteControlWidget has always claimed. Telling the
+        // user whether it WORKED needs a surface that outlives this broadcast; that is RemEx-mug0,
+        // and this is the honest "sent" half of the distinction it asks for.
+        widgetToast(context, context.getString(R.string.widget_toast_command_sent, name))
     }
 }
 

@@ -485,7 +485,6 @@
     <string name="widget_toast_wol_sent">वेक-ऑन-लैन भेजा गया</string>
     <string name="widget_toast_not_connected">कनेक्ट नहीं है — कनेक्ट करने के लिए रेमेक्स खोलें</string>
     <string name="widget_toast_command_sent">%1$s भेजा गया</string>
-    <string name="widget_toast_launching">%1$s प्रारंभ किया जा रहा है…</string>
     <string name="widget_hardware_title">हार्डवेयर की जानकारी</string>
     <string name="sensor_cpu_usage">सीपीयू उपयोग</string>
     <string name="sensor_gpu_usage">जीपीयू उपयोग</string>
