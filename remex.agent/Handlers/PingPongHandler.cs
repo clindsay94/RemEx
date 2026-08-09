@@ -876,29 +876,29 @@ public sealed class PingPongHandler(
     {
         try
         {
+            // THE ELEVEN SHARED VERBS HAVE ONE IMPLEMENTATION NOW (RemEx-pmb4). They used to be
+            // written out here AND in RemexNetworkListener, which is exactly how the two tables
+            // drifted - RemEx-q7l0c added a guard that DETECTS that drift; this removes the second
+            // copy so it cannot start. What remains below is deliberately NOT shared: each of those
+            // acts on something the caller chose, needs per-connection state, and is withheld from
+            // the external 8338 ingress on purpose.
+            var shared = await Remex.Core.Services.Command.SharedCommandVerbs.TryExecuteAsync(
+                message.CommandAction!.ToUpperInvariant(),
+                message.CommandParameters,
+                commandService,
+                wakeOnLanService);
+
+            if (shared is { } outcome)
+            {
+                // ErrorDetails is deliberately not carried onto this channel: MakeCommandResponse
+                // has no field for it, and the only shared verb that produces one - WAKEONLAN
+                // without a MacAddress - now says the actionable thing in Message itself, which is
+                // what the phone displays. 8338 keeps the extra detail in its own envelope.
+                return MakeCommandResponse(outcome.Success, outcome.Message);
+            }
+
             switch (message.CommandAction!.ToUpperInvariant())
             {
-                case "SHUTDOWN":
-                    await commandService.Shutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Shutdown executed.");
-                case "FORCESHUTDOWN":
-                    await commandService.ForceShutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Force shutdown executed.");
-                case "RESTART":
-                    await commandService.Restart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Restart executed.");
-                case "FORCERESTART":
-                    await commandService.ForceRestart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Force restart executed.");
-                case "RESTARTTOUEFI":
-                    await commandService.RestartToUefi(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(message.CommandParameters));
-                    return MakeCommandResponse(true, "Restart to UEFI executed.");
-                case "SLEEP":
-                    await commandService.Sleep();
-                    return MakeCommandResponse(true, "Sleep executed.");
-                case "HIBERNATE":
-                    await commandService.Hibernate();
-                    return MakeCommandResponse(true, "Hibernate executed.");
                 case "SCREENSHOT":
                 {
                     // SAVES ON THIS PC FIRST, THEN OFFERS IT TO THE PHONE (below, RemEx-y7my). The
@@ -944,12 +944,6 @@ public sealed class PingPongHandler(
                     return MakeCommandResponse(
                         true, $"Screenshot saved to your Pictures folder as {name}.");
                 }
-                case "MONITOROFF":
-                    await commandService.MonitorOff();
-                    return MakeCommandResponse(true, "Monitor off executed.");
-                case "SIGNOUT":
-                    await commandService.SignOut();
-                    return MakeCommandResponse(true, "Sign out executed.");
                 case "KILLPROCESS":
                     if (message.CommandParameters?.TryGetValue("ProcessId", out var pidStr) == true
                         && int.TryParse(pidStr, out var pid))
@@ -983,9 +977,6 @@ public sealed class PingPongHandler(
                                 : killResult.Message);
                     }
                     return MakeCommandResponse(false, "Missing or invalid ProcessId parameter.");
-                case "LOCK":
-                    await commandService.Lock();
-                    return MakeCommandResponse(true, "Lock executed.");
                 case "LAUNCHAPP":
                     if (message.CommandParameters?.TryGetValue("TargetPath", out var targetPath) == true
                         && !string.IsNullOrWhiteSpace(targetPath))
@@ -994,15 +985,6 @@ public sealed class PingPongHandler(
                         return MakeCommandResponse(true, "App launched.");
                     }
                     return MakeCommandResponse(false, "Missing TargetPath parameter.");
-                case "WAKEONLAN":
-                    if (message.CommandParameters?.TryGetValue("MacAddress", out var mac) == true)
-                    {
-                        var bip = message.CommandParameters.TryGetValue("BroadcastIp", out var b) ? b : "255.255.255.255";
-                        var port = message.CommandParameters.TryGetValue("Port", out var ps) && int.TryParse(ps, out var p) ? p : 9;
-                        await wakeOnLanService.WakeAsync(mac, bip, port);
-                        return MakeCommandResponse(true, $"WoL sent to {mac}.");
-                    }
-                    return MakeCommandResponse(false, "Missing MacAddress parameter.");
                 default:
                     return MakeCommandResponse(false, $"Unknown command: {message.CommandAction}");
             }

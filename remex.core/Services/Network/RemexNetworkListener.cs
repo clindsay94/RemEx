@@ -436,53 +436,23 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     {
         try
         {
-            switch (request.Action.ToUpperInvariant())
+            // ONE IMPLEMENTATION, SHARED WITH THE PAIRED /ws CHANNEL (RemEx-pmb4). These eleven
+            // verbs used to be written out here AND in PingPongHandler, which is how the two tables
+            // drifted. This ingress adds nothing to them: 8338 is external attack surface hardened
+            // in RemEx-s032.2, and the recorded decision is default-to-minimal, so anything the
+            // shared set does not know is refused below rather than handled here.
+            var shared = await Remex.Core.Services.Command.SharedCommandVerbs.TryExecuteAsync(
+                request.Action.ToUpperInvariant(),
+                request.Parameters,
+                _commandService,
+                _wakeOnLanService);
+
+            if (shared is { } outcome)
             {
-                case "SHUTDOWN":
-                    await _commandService.Shutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Shutdown command executed successfully.", null);
-                case "FORCESHUTDOWN":
-                    await _commandService.ForceShutdown(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Force Shutdown command executed successfully.", null);
-                case "RESTART":
-                    await _commandService.Restart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Restart command executed successfully.", null);
-                case "FORCERESTART":
-                    await _commandService.ForceRestart(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Force Restart command executed successfully.", null);
-                case "RESTARTTOUEFI":
-                    await _commandService.RestartToUefi(Remex.Core.Services.Command.CommandDelayParameter.ParseDelaySeconds(request.Parameters));
-                    return new CommandResponse(true, "Restart to UEFI command executed successfully.", null);
-                case "SLEEP":
-                    await _commandService.Sleep();
-                    return new CommandResponse(true, "Sleep command executed successfully.", null);
-                case "HIBERNATE":
-                    await _commandService.Hibernate();
-                    return new CommandResponse(true, "Hibernate command executed successfully.", null);
-                case "SIGNOUT":
-                    await _commandService.SignOut();
-                    return new CommandResponse(true, "SignOut command executed successfully.", null);
-                case "LOCK":
-                    await _commandService.Lock();
-                    return new CommandResponse(true, "Lock command executed successfully.", null);
-                case "MONITOROFF":
-                    await _commandService.MonitorOff();
-                    return new CommandResponse(true, "Monitor off command executed successfully.", null);
-                case "WAKEONLAN":
-                    if (request.Parameters != null && request.Parameters.TryGetValue("MacAddress", out var mac))
-                    {
-                        var broadcastIp = request.Parameters.TryGetValue("BroadcastIp", out var bip) ? bip : "255.255.255.255";
-                        var port = request.Parameters.TryGetValue("Port", out var pStr) && int.TryParse(pStr, out var p) ? p : 9;
-                        await _wakeOnLanService.WakeAsync(mac, broadcastIp, port);
-                        return new CommandResponse(true, $"Wake-on-LAN packet sent to {mac}.", null);
-                    }
-                    else
-                    {
-                        return new CommandResponse(false, "Missing MacAddress", "Wake-on-LAN requires a MacAddress parameter.");
-                    }
-                default:
-                    return new CommandResponse(false, "Unknown Command", $"Command action '{request.Action}' is not supported.");
+                return new CommandResponse(outcome.Success, outcome.Message, outcome.ErrorDetails);
             }
+
+            return new CommandResponse(false, "Unknown Command", $"Command action '{request.Action}' is not supported.");
         }
         catch (SocketException ex)
         {
