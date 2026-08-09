@@ -1472,6 +1472,9 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Yenile</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>Seçilenleri Kopyala</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Günlükleri Temizle</value>
   </data>

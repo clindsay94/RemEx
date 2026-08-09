@@ -28,6 +28,26 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
     /// <summary>Filtered entries currently shown in the live log list.</summary>
     public ObservableCollection<LogEntry> VisibleEntries { get; } = new();
 
+    /// <summary>
+    /// Rows the user has selected in the live list.
+    /// </summary>
+    /// <remarks>
+    /// THE LIST HAS OFFERED MULTI-SELECT SINCE IT SHIPPED AND NOTHING WAS BOUND TO IT
+    /// (RemEx-7xhln), so selecting rows was a gesture the app accepted and discarded. Avalonia keeps
+    /// this in SELECTION order, which is why <see cref="FormatForClipboard"/> does not read it
+    /// directly.
+    /// </remarks>
+    public ObservableCollection<LogEntry> SelectedEntries { get; } = new();
+
+    /// <summary>
+    /// Set by the view to put text on the system clipboard.
+    /// </summary>
+    /// <remarks>
+    /// The seam <c>RemoteViewModel</c> already uses, for the same reason: a clipboard lives on the
+    /// view and a view model that reached for one could not be tested without a running Avalonia.
+    /// </remarks>
+    public Func<string, Task>? CopyToClipboardAsync { get; set; }
+
     /// <summary>Diagnostic presets that scope the live view by subsystem / severity.</summary>
     public ObservableCollection<LogPreset> Presets { get; } = new();
 
@@ -124,6 +144,47 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         _all.Clear();
         _all.AddRange(InMemoryLogSink.GetEntries());
         RebuildVisible();
+    }
+
+    /// <summary>Puts the selected rows on the clipboard, in the order they are displayed.</summary>
+    [RelayCommand]
+    public async Task CopySelectedAsync()
+    {
+        if (CopyToClipboardAsync is null) return;
+
+        var text = FormatForClipboard(VisibleEntries, SelectedEntries);
+        if (text.Length == 0) return;
+
+        await CopyToClipboardAsync(text);
+    }
+
+    /// <summary>
+    /// Renders a selection as the text to paste.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **IN DISPLAY ORDER, NOT SELECTION ORDER, AND THAT IS THE ONLY REAL DECISION HERE.** Avalonia
+    /// reports <c>SelectedItems</c> in the order the user clicked, so ctrl-clicking three lines
+    /// bottom-up would paste an incident backwards. A log read out of sequence is worse than no log:
+    /// the reader draws a causal order from it that never happened.
+    /// </para>
+    /// <para>
+    /// NOTHING IS REFORMATTED. <see cref="LogEntry.ToString"/> is what the list already renders, so
+    /// what lands on the clipboard is what the user was looking at — including the exception block,
+    /// which is the part anyone pasting a log into a bug report actually needs.
+    /// </para>
+    /// <para>
+    /// An empty selection returns empty rather than a blank line, so the command can decline to touch
+    /// the clipboard at all instead of silently replacing whatever the user had in it.
+    /// </para>
+    /// </remarks>
+    internal static string FormatForClipboard(
+        IEnumerable<LogEntry> displayed, IEnumerable<LogEntry> selected)
+    {
+        var chosen = new HashSet<LogEntry>(selected);
+        if (chosen.Count == 0) return string.Empty;
+
+        return string.Join(Environment.NewLine, displayed.Where(chosen.Contains));
     }
 
     [RelayCommand]

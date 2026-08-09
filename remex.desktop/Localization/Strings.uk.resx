@@ -1472,6 +1472,9 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Оновити</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>Копіювати вибране</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Очистити логи</value>
   </data>

@@ -1472,6 +1472,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>ताज़ा करें</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>चयनित कॉपी करें</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>लॉग साफ़ करें</value>
   </data>

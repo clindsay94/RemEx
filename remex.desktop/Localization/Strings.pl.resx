@@ -1264,6 +1264,9 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Odśwież</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>Kopiuj zaznaczone</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Wyczyść logi</value>
   </data>

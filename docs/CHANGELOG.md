@@ -43,6 +43,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+### Added
+
+- **You can copy log lines out of the Diagnostics view.** The log list has always let you select
+  rows, but there was nothing you could do with a selection — no Copy button and no shortcut, so
+  selecting did nothing at all. There is now a Copy Selected button and Ctrl+C, and what you paste
+  comes out in the order the lines appear rather than the order you happened to click them, with the
+  exception details included. (RemEx-7xhln)
+
+### Fixed
+
 - **Discovery will not offer you a PC it cannot actually reach.** When the phone finds a PC on the
   network it now checks the address AND the port before offering it. A half-announced PC — one the
   network has named but not finished describing — used to come through as a normal result, so

@@ -64,6 +64,7 @@
                             <ComboBox Grid.Column="1" ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedExportFormat}" Width="90" CornerRadius="8" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <ComboBox Grid.Column="2" ItemsSource="{Binding ExportScopes}" SelectedItem="{Binding SelectedExportScope}" Width="195" CornerRadius="8" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="3" Text="{Binding EntryCountText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <Button Grid.Column="3" Classes="log-btn" Content="{local:Localize Logs_CopySelected}" Command="{Binding CopySelectedCommand}" Margin="0,0,10,0"/>
                             <Button Grid.Column="4" Classes="log-btn" Content="{local:Localize Logs_Export}" Command="{Binding ExportLogsCommand}" Margin="0,0,10,0"/>
                             <Button Grid.Column="5" Classes="log-btn" Content="{local:Localize Logs_Refresh}" Command="{Binding RefreshLogsCommand}" Margin="0,0,10,0"/>
                             <Button Grid.Column="6" Classes="log-btn" Content="{local:Localize Logs_Clear}" Command="{Binding ClearLogsCommand}" Foreground="{DynamicResource SystemErrorBrush}"/>
@@ -71,7 +72,12 @@
 
                         <!-- Colored, virtualized log list -->
                         <Border Grid.Row="2" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="4" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" MinHeight="360" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                            <ListBox Classes="log-list" ItemsSource="{Binding VisibleEntries}" Background="Transparent" BorderThickness="0" SelectionMode="Multiple" FontFamily="Consolas" FontSize="12">
+                            <ListBox Classes="log-list" ItemsSource="{Binding VisibleEntries}" SelectedItems="{Binding SelectedEntries}" Background="Transparent" BorderThickness="0" SelectionMode="Multiple" FontFamily="Consolas" FontSize="12">
+                                <!-- Ctrl+C on the list itself, so the shortcut works wherever the
+                                     selection was made rather than only while the button has focus. -->
+                                <ListBox.KeyBindings>
+                                    <KeyBinding Gesture="Ctrl+C" Command="{Binding CopySelectedCommand}"/>
+                                </ListBox.KeyBindings>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate x:DataType="logging:LogEntry">
                                         <StackPanel Spacing="1" Margin="0,1">

@@ -1472,6 +1472,9 @@ Linux: ip addr  ou  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Atualizar</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>Copiar selecionados</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Limpar logs</value>
   </data>

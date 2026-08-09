@@ -1517,6 +1517,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Refresh</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>Copy Selected</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Clear Logs</value>
   </data>

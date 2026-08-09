@@ -1472,6 +1472,9 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Logs_Refresh" xml:space="preserve">
     <value>Segarkan</value>
   </data>
+  <data name="Logs_CopySelected" xml:space="preserve">
+    <value>Salin Pilihan</value>
+  </data>
   <data name="Logs_Clear" xml:space="preserve">
     <value>Bersihkan Log</value>
   </data>
