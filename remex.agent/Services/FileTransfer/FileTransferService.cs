@@ -42,6 +42,10 @@ public sealed class FileTransferService : IFileTransferService
         var baseFolder = RemexDataPaths.ResolveDirectory(legacyFolder);
         RemexDataPaths.TryMigrateWindowsFile("file_transfer_roots.json");
         _configPath = Path.Combine(baseFolder, "file_transfer_roots.json");
+        // Swept once at construction rather than on every read (RemEx-njzcx): the orphan is left by a
+        // killed process, so once per process is the cadence that matches, and the read path here is
+        // hot. See PairedClientRegistry for why the sweep must not sit behind an existence check.
+        RemexDataPaths.SweepStagingOrphans(_configPath);
         _thumbnailService = new ThumbnailService(logger);
     }
 
@@ -55,6 +59,10 @@ public sealed class FileTransferService : IFileTransferService
     {
         _logger = logger;
         _configPath = configFilePath;
+        // Swept once at construction rather than on every read (RemEx-njzcx): the orphan is left by a
+        // killed process, so once per process is the cadence that matches, and the read path here is
+        // hot. See PairedClientRegistry for why the sweep must not sit behind an existence check.
+        RemexDataPaths.SweepStagingOrphans(_configPath);
         _thumbnailService = new ThumbnailService(logger);
     }
 

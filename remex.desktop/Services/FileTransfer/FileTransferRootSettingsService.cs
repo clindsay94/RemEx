@@ -27,6 +27,10 @@ public sealed class FileTransferRootSettingsService
         var baseFolder = RemexDataPaths.ResolveDirectory(legacyFolder);
         RemexDataPaths.TryMigrateWindowsFile("file_transfer_roots.json");
         _configPath = Path.Combine(baseFolder, "file_transfer_roots.json");
+        // Swept once at construction rather than on every read (RemEx-njzcx): the orphan is left by a
+        // killed process, so once per process is the cadence that matches, and the read path here is
+        // hot. See PairedClientRegistry for why the sweep must not sit behind an existence check.
+        RemexDataPaths.SweepStagingOrphans(_configPath);
     }
 
     public async Task<IReadOnlyList<FileTransferRootConfiguration>> LoadAsync()

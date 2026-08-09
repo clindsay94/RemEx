@@ -412,6 +412,11 @@ public sealed class FileTrustService : IFileTrustService
 
     private void LoadFromDisk()
     {
+        // BEFORE THE EXISTENCE CHECK, for the reason PairedClientRegistry gives (RemEx-njzcx):
+        // a first write killed between staging and rename leaves an orphan and NO store, so a sweep
+        // below an early return is walked past on every startup of the machine that most needs it.
+        RemexDataPaths.SweepStagingOrphans(_storePath);
+
         try
         {
             if (!File.Exists(_storePath))
