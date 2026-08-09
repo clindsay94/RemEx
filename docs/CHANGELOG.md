@@ -201,6 +201,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **You can give your paired phones your own names.** Each row in the Paired Devices list now has a
+  field to rename it — useful when two phones report the same model name, or when the name your
+  phone gives itself is not the one you think of it by. Your name is kept separately from the name
+  the phone reports, which means two things: re-pairing the phone will not quietly overwrite what you
+  chose, and clearing the field gives you the phone's own name back rather than leaving you with a
+  meaningless ID. Names are for display only and never affect whether a phone can connect.
+
+
 - **Settings now lists the phones paired with this PC.** Each one shows its name, when it first
   paired, when it was last connected, and a light saying whether it is connected right now. Until
   now the PC knew all of this and showed you none of it — there was no way to see which phones were
