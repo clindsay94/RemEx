@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **And it could do the same with a single ordinary message, without touching the file connection at
+  all.** The previous entry covers the channel that carries file data. The channel that carries
+  commands had the same gap and was easier to reach: a program running on your PC could send one
+  message naming a transfer and cancel it, finish it early, or take it over — with no pairing, no PIN,
+  and nothing pretending to be your phone. Those instructions are now checked against the device that
+  owns the transfer, and an attempt to take over a transfer already in progress is refused outright
+  rather than quietly handed to whoever asked last.
+
 - **Another program on your PC could cancel or corrupt a file transfer just by knowing its number.**
   Each transfer has an internal reference number, and RemEx acted on any instruction that carried a
   valid one without checking that it came from the device the transfer belongs to. A program running
