@@ -715,6 +715,18 @@ public static class HostBootstrapper
         var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
         if (isLoopback)
         {
+            // Same guard, same reason as EvaluateFilesAuth (RemEx-4u0d). This endpoint had the
+            // identical hole one function over: loopback returned 200 with any ?clientId=, and the
+            // caller then cancels the prior StreamFramesAsync loop for that id (Track B), so a local
+            // process could name a paired phone and kill its screen stream. The bead was written
+            // about /ws/files; this is the same copy-pasted bypass, and fixing only the reported one
+            // would have left its sibling live - which is exactly how the shadowed
+            // InitializeComponent defect (RemEx-wdqx) reached three views.
+            if (!string.IsNullOrWhiteSpace(clientId) && registry.IsClientPaired(clientId))
+            {
+                return (StatusCodes.Status403Forbidden, "Loopback may not claim a paired client identity.");
+            }
+
             return (StatusCodes.Status200OK, null);
         }
 
@@ -770,6 +782,37 @@ public static class HostBootstrapper
         var isLoopback = remoteIp is null || System.Net.IPAddress.IsLoopback(remoteIp);
         if (isLoopback)
         {
+            // LOOPBACK IS AUTHENTICATED BY CONSTRUCTION, BUT IT IS NOT A PAIRING - so it may not ACT
+            // AS one (RemEx-4u0d, the /ws/files half of RemEx-4215). The bypass below used to return
+            // 200 for loopback with ANY ?clientId=, before the IsClientPaired check, and the caller
+            // hands that same id straight to TransferSessionManager.RunChannelAsync, which does
+            // existing.MarkSuperseded() and re-keys the channel on it. An unelevated local process
+            // could therefore name a paired phone, DISPLACE that phone's binary channel, and receive
+            // or inject the elevated agent's bulk file bytes for an in-flight transfer. The control
+            // plane was closed for exactly this in RemEx-4215; the binary channel never went through
+            // connectionClientId at all, so it was one hop away and still open.
+            //
+            // This is also what makes the loopback proof-of-possession SKIP below sound. That skip
+            // was only ever safe if loopback could not hold a paired identity, and until this guard
+            // existed it could - so the skip was resting on something that was not true.
+            //
+            // Only the Android client dials this endpoint - there is no PC-side consumer - so
+            // refusing a PAIRED id costs nothing real. A blank or unknown id is still admitted,
+            // which keeps the TestServer path working (it reports a null RemoteIpAddress and so
+            // arrives here) and leaves room for a genuine local consumer later; neither can collide
+            // with a phone's channel key.
+            //
+            // WHY THIS IS NARROWER THAN RemEx-4215, which froze loopback at NO identity outright:
+            // there the id was connectionClientId, a per-connection variable, so blanking it cost
+            // nothing. Here it is a shared dictionary key - TransferSessionManager._channels and
+            // DesktopSessionRegistry._activeSessions - so forcing every loopback caller to a blank
+            // id would collapse them onto ONE key and make two local consumers silently supersede
+            // each other. Refusing only a paired id is the narrowest rule that closes the attack.
+            if (!string.IsNullOrWhiteSpace(clientId) && registry.IsClientPaired(clientId))
+            {
+                return (StatusCodes.Status403Forbidden, "Loopback may not claim a paired client identity.");
+            }
+
             return (StatusCodes.Status200OK, null);
         }
 

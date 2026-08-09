@@ -163,4 +163,61 @@ public sealed class RemoteDesktopAuthTests
 
         Assert.Equal(StatusCodes.Status400BadRequest, status);
     }
+
+    // --- RemEx-4u0d: loopback may not ACT AS a paired phone ---------------------------------------
+    // The bead was written about /ws/files. This endpoint carried the identical copy-pasted bypass:
+    // loopback returned 200 with any ?clientId=, and the caller then cancels the prior
+    // StreamFramesAsync loop for that id, so a local process naming a paired phone could kill that
+    // phone's screen stream. Fixing only the reported endpoint would have left this one live.
+
+    [Fact]
+    public void Loopback_ClaimingAPairedClientId_IsRefused()
+    {
+        var registry = NewRegistry();
+        registry.RegisterClient("paired-android-device");
+
+        var (status, reason) = HostBootstrapper.EvaluateDesktopAuth(
+            IPAddress.Loopback,
+            clientId: "paired-android-device",
+            protocolVersion: "3",
+            registry);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, status);
+        Assert.NotNull(reason);
+    }
+
+    [Fact]
+    public void NullRemoteIp_ClaimingAPairedClientId_IsRefused()
+    {
+        // A null RemoteIpAddress is treated as loopback here - it is what the TestServer reports -
+        // so the guard has to cover it, or the bypass survives in the configuration the integration
+        // tests actually run under.
+        var registry = NewRegistry();
+        registry.RegisterClient("paired-android-device");
+
+        var (status, _) = HostBootstrapper.EvaluateDesktopAuth(
+            remoteIp: null,
+            clientId: "paired-android-device",
+            protocolVersion: "3",
+            registry);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, status);
+    }
+
+    [Fact]
+    public void Loopback_WithAnUnknownClientId_IsStillAccepted()
+    {
+        // The direction that would break things if the guard were too broad: an id nobody is paired
+        // with cannot displace anyone, so it stays allowed.
+        var registry = NewRegistry();
+        registry.RegisterClient("paired-android-device");
+
+        var (status, _) = HostBootstrapper.EvaluateDesktopAuth(
+            IPAddress.Loopback,
+            clientId: "some-local-tool",
+            protocolVersion: "3",
+            registry);
+
+        Assert.Equal(StatusCodes.Status200OK, status);
+    }
 }
