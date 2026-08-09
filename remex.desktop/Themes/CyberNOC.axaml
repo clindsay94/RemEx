@@ -56,6 +56,15 @@
     <SolidColorBrush x:Key="ErrorForegroundBrush" Color="#FF0A0A0A"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
+    <!-- A FOURTH TOKEN, because the TINT is a different surface from the FILL and inverts its answer.
+         ErrorForegroundBrush above is dark, correctly, for solid red. Over 15% red on glass it would
+         measure 1.18:1 here - dark text on a dark surface. White is right on this theme: 16.74:1 at
+         rest and 15.45:1 on hover.
+         THOSE TWO FIGURES ASSUME A BACKDROP MATCHING THE GLASS, because this theme's GlassBaseMedium
+         is itself translucent (#F2.. is 0.95 alpha). At that alpha the backdrop barely gets a vote:
+         swept from black to white the worst case is 14.89:1, so white clears AA here whatever is
+         behind it. (RemEx-1elh) -->
+    <SolidColorBrush x:Key="ErrorTintForegroundBrush" Color="#FFFFFFFF"/>
     <!-- Semi-transparent dark overlay for toolbars and floating panels -->
     <SolidColorBrush x:Key="GlassOverlayBrush" Color="#33000000"/>
     <!-- Deep overlay for modal/tutorial backdrops -->

@@ -69,6 +69,16 @@
     <SolidColorBrush x:Key="ErrorForegroundBrush" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
     <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
+    <!-- THE THEME THIS TOKEN EXISTS FOR, and the one place the numbers are a measurement rather than
+         a model. The other three composite over a GlassBaseMedium that is itself translucent, so what
+         renders there also depends on the backdrop. This theme's is OPAQUE (#F1F5F9), so 15% red over
+         it really is #EED6D9 - a near-white pink, where the White the button used to hardcode measures
+         1.38:1. Unreadable, and unambiguously so.
+         #991B1B rather than SystemError #DC2626: the red itself only reaches 3.51:1. And rather than
+         red-700 #B91C1C, which clears AA at rest by 4.70:1 and then FAILS at 4.19:1 once the surface
+         darkens to the 0.22 hover tint - a value that passes the bead's own analysis and still breaks
+         under the pointer. This one holds both: 6.04:1 rest, 5.38:1 hover. (RemEx-1elh) -->
+    <SolidColorBrush x:Key="ErrorTintForegroundBrush" Color="#FF991B1B"/>
     <!-- Semi-transparent overlay (light theme: use a light wash) -->
     <SolidColorBrush x:Key="GlassOverlayBrush" Color="#1A000000"/>
     <!-- Deep overlay for modal/tutorial backdrops (light-appropriate) -->

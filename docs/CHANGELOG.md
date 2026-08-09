@@ -43,6 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The Remove button on the canvas was unreadable on the Solar Flare theme.** Selecting cards brings
+  up an action bar whose Remove button sits on a translucent red wash. The label was hardcoded white,
+  which is right on the three dark themes and very nearly invisible on the light one — white on a
+  near-white pink, measuring 1.38:1 where the accessibility standard asks for 4.5:1. It now uses a
+  per-theme colour: still white where white is correct, and a dark red on Solar Flare that stays
+  readable both at rest and while you are hovering the button. (RemEx-1elh)
+
 - **The QR scanner used an experimental CameraX API without saying so.** Reading the underlying image
   out of a camera frame goes through a getter that CameraX marks experimental, meaning its signature
   may change in a future release. The scanner used it anyway with nothing recording that. Nothing
