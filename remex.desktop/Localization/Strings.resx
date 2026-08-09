@@ -2320,6 +2320,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_VolumesDenied" xml:space="preserve">
     <value>Full-device access was not granted.</value>
   </data>
+  <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
+    <value>That device could not be asked — it is not connected right now. Reconnect it and try again.</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Could not list the drives. Check the connected device is still paired, then try again.</value>
   </data>

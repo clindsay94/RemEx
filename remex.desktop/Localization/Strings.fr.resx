@@ -2132,6 +2132,9 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="FileTransfer_VolumesDenied" xml:space="preserve">
     <value>L'accès complet à l'appareil n'a pas été accordé.</value>
   </data>
+  <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
+    <value>Impossible d'interroger cet appareil : il n'est pas connecté actuellement. Reconnectez-le et réessayez.</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Impossible de lister les lecteurs. Vérifiez que l'appareil connecté est toujours couplé, puis réessayez.</value>
   </data>

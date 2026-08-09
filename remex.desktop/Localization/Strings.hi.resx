@@ -2132,6 +2132,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="FileTransfer_VolumesDenied" xml:space="preserve">
     <value>पूर्ण-डिवाइस एक्सेस नहीं दी गई।</value>
   </data>
+  <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
+    <value>उस डिवाइस से पूछा नहीं जा सका — यह अभी कनेक्ट नहीं है। इसे फिर से कनेक्ट करके पुनः प्रयास करें।</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>ड्राइव की सूची नहीं मिल सकी। जांचें कि कनेक्टेड डिवाइस अभी भी पेयर है, फिर दोबारा कोशिश करें।</value>
   </data>

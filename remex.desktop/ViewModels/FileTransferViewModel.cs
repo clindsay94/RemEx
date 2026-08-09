@@ -1091,15 +1091,22 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         {
             IsLoading = true;
             StatusText = LocalizationService.Instance["FileTransfer_VolumesRequesting"];
-            var (volumes, granted) = await _client.ListVolumesAsync(CancellationToken.None);
+            var (volumes, granted, denyReason) = await _client.ListVolumesAsync(CancellationToken.None);
             Volumes.Clear();
             foreach (var volume in volumes)
                 Volumes.Add(volume);
             FullBrowseGranted = granted;
             OnPropertyChanged(nameof(HasVolumes));
-            StatusText = granted
-                ? string.Format(LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], Volumes.Count)
-                : LocalizationService.Instance["FileTransfer_VolumesDenied"];
+            // A REFUSAL NOBODY WAS ASKED FOR READS DIFFERENTLY (RemEx-jc4q). "Not granted" is true of
+            // both and useful for only one: the peer being unreachable is the case with an action
+            // attached, and it used to arrive as the same flat no.
+            StatusText = VolumesResponseClassifier.Classify(granted, denyReason, errorMessage: null) switch
+            {
+                VolumesOutcome.Granted => string.Format(
+                    LocalizationService.Instance["FileTransfer_VolumesLoadedFormat"], Volumes.Count),
+                VolumesOutcome.PeerUnreachable => LocalizationService.Instance["FileTransfer_VolumesPeerUnreachable"],
+                _ => LocalizationService.Instance["FileTransfer_VolumesDenied"],
+            };
         }
         catch (FileTransferHostException ex)
         {

@@ -2132,6 +2132,9 @@ Linux: ip addr  ou  hostname -I</value>
   <data name="FileTransfer_VolumesDenied" xml:space="preserve">
     <value>O acesso completo ao dispositivo não foi concedido.</value>
   </data>
+  <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
+    <value>Não foi possível perguntar a esse dispositivo — ele não está conectado agora. Reconecte-o e tente novamente.</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>Não foi possível listar as unidades. Verifique se o dispositivo conectado continua pareado e tente novamente.</value>
   </data>

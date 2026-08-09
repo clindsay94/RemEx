@@ -2080,6 +2080,9 @@ Linux: ip addr  o  hostname -I</value>
   <data name="FileTransfer_VolumesDenied" xml:space="preserve">
     <value>No se concedió acceso completo al dispositivo.</value>
   </data>
+  <data name="FileTransfer_VolumesPeerUnreachable" xml:space="preserve">
+    <value>No se pudo preguntar a ese dispositivo: no está conectado ahora mismo. Vuelve a conectarlo e inténtalo de nuevo.</value>
+  </data>
   <data name="FileTransfer_VolumesFailedFormat" xml:space="preserve">
     <value>No se pudieron enumerar las unidades. Comprueba que el dispositivo conectado siga emparejado y vuelve a intentarlo.</value>
   </data>

@@ -489,7 +489,8 @@ public sealed class FileTransferClient : IDisposable
     }
 
     /// <summary>Enumerates the host's mounted volumes/drives once full-browse consent is granted (plan §1.2).</summary>
-    public async Task<(IReadOnlyList<FileVolumeInfo> Volumes, bool FullBrowseGranted)> ListVolumesAsync(CancellationToken ct)
+    public async Task<(IReadOnlyList<FileVolumeInfo> Volumes, bool FullBrowseGranted, string? DenyReason)>
+        ListVolumesAsync(CancellationToken ct)
     {
         var requestId = Guid.NewGuid().ToString("N");
         var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -510,7 +511,11 @@ public sealed class FileTransferClient : IDisposable
         var resp = response.FileVolumesResponse;
         if (resp?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
             throw FileTransferHostException.ForHostError(err, $"Volumes error: {err}");
-        return (resp?.Volumes ?? [], resp?.FullBrowseGranted ?? false);
+
+        // THE REASON TRAVELS WITH THE REFUSAL (RemEx-jc4q). It used to be dropped here, which left
+        // the caller unable to tell "somebody said no" from "nobody could be asked" — and only the
+        // second of those has anything the user can do about it.
+        return (resp?.Volumes ?? [], resp?.FullBrowseGranted ?? false, resp?.DenyReason);
     }
 
     public async Task<IReadOnlyList<FileSharedRoot>> AddRemoteRootAsync(string sourceRootId, string sourceRelativePath, CancellationToken ct)
