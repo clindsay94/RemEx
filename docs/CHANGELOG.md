@@ -142,6 +142,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file *contents* travel over still accepts a claimed name on this machine, which is filed as
   RemEx-4u0d.
 
+### Added
+
+- **The About page now shows this PC's certificate fingerprint, so the warning on your phone is
+  something you can actually check.** When your phone notices that a PC's security certificate has
+  changed, it shows you the old and new fingerprints and asks whether you were expecting it — which
+  is a fair question if you just reinstalled RemEx, and an important one if you didn't. Until now
+  there was nowhere on the PC showing its own fingerprint, so the only way to check was to dig the
+  certificate out of the Windows certificate store by hand. It is on the About page now, written the
+  same way the phone writes it — same length, same four-character groups — so you can hold the two
+  screens side by side and compare them without converting anything. You can select and copy it, and
+  it is safe to share: it is a fingerprint of public information, not a secret.
+
 ### Changed
 
 - **A permission prompt that never appeared has been removed rather than repaired.** RemEx had a
