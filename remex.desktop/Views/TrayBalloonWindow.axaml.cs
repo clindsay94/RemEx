@@ -119,13 +119,7 @@ public partial class TrayBalloonWindow : Window
         _dismissTimer.Stop();
         Hide();
 
-        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
-            return;
-
-        desktop.MainWindow ??= new MainWindow { DataContext = App.Services.GetRequiredService<ShellViewModel>() };
-        desktop.MainWindow.Show();
-        desktop.MainWindow.Activate();
-        desktop.MainWindow.WindowState = WindowState.Normal;
+        App.BringMainWindowToFront();
     }
 
     private void OnCloseBalloon(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

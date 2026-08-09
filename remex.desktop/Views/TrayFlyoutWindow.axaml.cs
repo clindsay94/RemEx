@@ -43,17 +43,7 @@ public partial class TrayFlyoutWindow : Window
     private void OnOpenMainApp(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Hide();
-        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            if (desktop.MainWindow == null)
-            {
-                var viewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<Remex.Desktop.ViewModels.ShellViewModel>(App.Services);
-                desktop.MainWindow = new MainWindow { DataContext = viewModel };
-            }
-            desktop.MainWindow.Show();
-            desktop.MainWindow.Activate();
-            desktop.MainWindow.WindowState = WindowState.Normal;
-        }
+        App.BringMainWindowToFront();
     }
 
     private void OnCloseFlyout(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

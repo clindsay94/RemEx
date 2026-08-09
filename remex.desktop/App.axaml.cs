@@ -405,20 +405,35 @@ public partial class App : Application
         }
     }
 
-    private void OnShowMainWindow(object? sender, EventArgs e)
-    {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            if (desktop.MainWindow == null)
-            {
-                var viewModel = Services.GetRequiredService<ShellViewModel>();
-                desktop.MainWindow = new MainWindow { DataContext = viewModel };
-            }
+    private void OnShowMainWindow(object? sender, EventArgs e) => BringMainWindowToFront();
 
-            desktop.MainWindow.Show();
-            desktop.MainWindow.Activate();
-            desktop.MainWindow.WindowState = WindowState.Normal;
-        }
+    /// <summary>
+    /// Creates the main window if it is gone, then shows, activates and un-minimizes it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ONE COPY, BECAUSE THREE AGREED UNTIL THEY DID NOT (RemEx-b3bi). The tray menu, the tray
+    /// flyout's "open" button and a pressed balloon each carried their own version of this. They
+    /// matched, which is exactly what makes the drift invisible: the failure mode is one entry point
+    /// quietly not restoring a MINIMIZED window while the other two do, and nobody notices until they
+    /// happen to use that entry point with the window in that state.
+    /// </para>
+    /// <para>
+    /// ALL THREE STEPS ARE LOAD-BEARING and none is implied by another. Show brings back a window
+    /// hidden by close-to-tray, Activate raises and focuses it above whatever the user was doing, and
+    /// WindowState resolves Minimized — a minimized window is already "shown", so Show alone leaves
+    /// it in the taskbar and the click appears to do nothing.
+    /// </para>
+    /// </remarks>
+    public static void BringMainWindowToFront()
+    {
+        if (Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop)
+            return;
+
+        desktop.MainWindow ??= new MainWindow { DataContext = Services.GetRequiredService<ShellViewModel>() };
+        desktop.MainWindow.Show();
+        desktop.MainWindow.Activate();
+        desktop.MainWindow.WindowState = WindowState.Normal;
     }
 
     private void OnExitApp(object? sender, EventArgs e) => ShutdownApplication();
