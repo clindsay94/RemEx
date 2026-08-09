@@ -559,16 +559,59 @@ public sealed class PairingHandlerTests : IClassFixture<RemexHostFactory>
 
         if (outcome.Satisfied) return;
 
-        // The headline number is the last count the WAIT saw, not a fresh one. A near miss — the
-        // session draining a moment after the budget expired — is the case this message exists to
-        // name, and re-reading the registry here would report it as "gave up at 0", which is the one
-        // thing that did not happen. What is there NOW is worth printing too, separately.
-        var now = sessions.Snapshot();
-        Assert.Fail(
-            $"The session count never reached {expected}: gave up at {counts[^1]} after "
-            + $"{outcome.Elapsed.TotalSeconds:F1}s, having seen {string.Join(" -> ", counts)}. "
-            + $"In the registry now ({now.Count}): "
-            + string.Join(", ", now.Select(s => $"[{s.RemoteAddress} / {s.DeviceName}]")) + ".");
+        Assert.Fail(DescribeSessionCountTimeout(expected, counts, outcome.Elapsed, sessions.Snapshot()));
+    }
+
+    /// <summary>
+    /// Builds the timeout message, separately from the waiting, so the NEAR MISS can be tested
+    /// (RemEx-jye7).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE HEADLINE NUMBER IS THE LAST COUNT THE WAIT SAW, NOT A FRESH ONE. A session that drains a
+    /// moment AFTER the budget expired is the case this message exists to name, and re-reading the
+    /// registry for the headline would report it as "gave up at 0" — the one thing that did not
+    /// happen. What is there NOW is worth printing too, separately, because the two differing is
+    /// itself the signal.
+    /// </para>
+    /// <para>
+    /// EXTRACTED BECAUSE THAT BRANCH COULD NOT BE COVERED IN PLACE. Standing a near miss up against
+    /// the live wait means disposing a registration slightly after the budget expires — a race, and
+    /// on the starved pool this whole area is about, the wait overshoots, the last observation is 0,
+    /// and the test fails spuriously. A flaky test for a flake bead is a bad trade, so it was left
+    /// uncovered knowingly. As a pure function of what was observed it has no timing in it at all.
+    /// </para>
+    /// </remarks>
+    private static string DescribeSessionCountTimeout(
+        int expected, IReadOnlyList<int> counts, TimeSpan elapsed, IReadOnlyList<Remex.Desktop.Services.ClientSession> now) =>
+        $"The session count never reached {expected}: gave up at {counts[^1]} after "
+        + $"{elapsed.TotalSeconds:F1}s, having seen {string.Join(" -> ", counts)}. "
+        + $"In the registry now ({now.Count}): "
+        + string.Join(", ", now.Select(s => $"[{s.RemoteAddress} / {s.DeviceName}]")) + ".";
+
+    /// <summary>
+    /// The near miss: the session drained a moment AFTER the budget expired (RemEx-jye7).
+    /// </summary>
+    /// <remarks>
+    /// This is the branch the message exists for and the one that had no coverage.
+    /// TheDrainWaitReportsWhatItGaveUpAt uses a session that never drains, so the last observed
+    /// count and the registry agree there — and a regression that re-read the registry for the
+    /// headline would still pass it. Here they disagree on purpose, which is the only arrangement
+    /// that can tell the two apart. No timing: the observations are handed in.
+    /// </remarks>
+    [Fact]
+    public void TheDrainWaitReportsWhatTheWaitSaw_NotAFreshRead()
+    {
+        var message = DescribeSessionCountTimeout(
+            expected: 0,
+            counts: [2, 1],
+            elapsed: TimeSpan.FromSeconds(3.2),
+            now: Array.Empty<Remex.Desktop.Services.ClientSession>());
+
+        Assert.Contains("gave up at 1", message);
+        Assert.DoesNotContain("gave up at 0", message);
+        Assert.Contains("In the registry now (0)", message);
+        Assert.Contains("seen 2 -> 1", message);
     }
 
     /// <summary>What one <see cref="WaitForAsync"/> call ended up doing.</summary>
