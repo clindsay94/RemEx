@@ -793,6 +793,41 @@ public class AccentForegroundContrastTests
     }
 
     [Fact]
+    public void TheSelectedCommandPaletteRowTakesTheAccentForeground()
+    {
+        // THE SCAN CANNOT SEE THIS ONE AND IS NOT BEING ASKED TO (RemEx-o9gd). ScanForWhiteOnFilled
+        // hunts a white LITERAL; this defect was a light TOKEN — TextPrimaryBrush and
+        // TextSecondaryBrush — on a descendant of a row filled with the accent. Measured against each
+        // theme's own accent that is 4.88 / 1.31 / 3.65 / 10.29 and 1.99 / 1.37 / 1.12 / 5.97, and
+        // CyberNOC's 1.31 is worse than the 1.38 headline RemEx-iegl was raised to fix. Generalising
+        // the scan to "any token that might be light on any surface that might be filled" is a much
+        // larger and much guessier rule; pinning the one place it went wrong is honest and cheap.
+        var palette = File.ReadAllText(Path.Combine(
+            AppContext.BaseDirectory, "..", "..", "..", "..",
+            "remex.desktop", "Views", "CommandPaletteWindow.axaml"));
+
+        foreach (var target in new[] { "palette-label", "palette-category" })
+        {
+            var style = Regex.Match(
+                palette,
+                $"<Style Selector=\"ListBoxItem:selected TextBlock\\.{target}\">.*?</Style>",
+                RegexOptions.Singleline);
+
+            Assert.True(style.Success, $"the selected-row style for {target} moved or was removed");
+            Assert.Matches(
+                "Property=\"Foreground\" Value=\"\\{DynamicResource AccentForegroundBrush\\}\"",
+                style.Value);
+        }
+
+        // AND THE LABELS MUST NOT SET IT INLINE, because a local value beats a style setter in
+        // Avalonia — leaving the Foreground on the TextBlock would make both rules above inert while
+        // every assertion here still passed.
+        var template = Regex.Match(palette, "<DataTemplate.*?</DataTemplate>", RegexOptions.Singleline);
+        Assert.True(template.Success, "the palette item template moved");
+        Assert.DoesNotContain("Foreground=", template.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PlainWhiteWouldFailOnExactlyOneThemesErrorTint()
     {
         // THE CONTROL, AND IT INVERTS THE SOLID FILL'S — which is the entire reason a fourth token

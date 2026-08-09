@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The highlighted row in the command palette was hard to read on some themes.** The row you have
+  selected is filled with the accent colour, but its text kept the colour it uses on the ordinary
+  background — on CyberNOC that left it very nearly invisible, and the row you are pointing at is
+  the one you most need to read. It now switches to the readable colour each theme already defines
+  for text on accent. (RemEx-o9gd)
+
 - **"Keep both" could get stuck on a network drive or USB stick attached to a Linux PC.** Sending a
   file that already existed there and choosing to keep both offered a new name the drive then
   rejected — and choosing keep-both again offered the same name, every time. The only way out was

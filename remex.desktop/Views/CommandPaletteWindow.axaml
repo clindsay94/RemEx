@@ -30,8 +30,12 @@
                     <DataTemplate DataType="{x:Type models:CommandPaletteEntry}">
                         <Grid ColumnDefinitions="*, Auto" Margin="4,2">
                             <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Label}" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                <TextBlock Text="{Binding Category}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.7" />
+                                <!-- Foreground and Opacity come from the styles below, NOT from here
+                                     (RemEx-o9gd). A local value beats a style setter in Avalonia, so
+                                     setting them inline would make the selected-state rules silently
+                                     inert - which is exactly the failure this change fixes. -->
+                                <TextBlock Classes="palette-label" Text="{Binding Label}" FontSize="13" />
+                                <TextBlock Classes="palette-category" Text="{Binding Category}" FontSize="11" />
                             </StackPanel>
                         </Grid>
                     </DataTemplate>
@@ -48,6 +52,40 @@
                     </Style>
                     <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
                         <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+                    </Style>
+
+                    <!-- ═══ Row text, and it has to follow the fill (RemEx-o9gd) ═══
+                         The selected row is filled with the accent, and both labels used to keep
+                         their normal-background colours regardless. Measured against each theme's
+                         own accent that is 4.88 / 1.31 / 3.65 / 10.29 for the label and
+                         1.99 / 1.37 / 1.12 / 5.97 for the category — CyberNOC's 1.31 is worse than
+                         the 1.38 headline RemEx-iegl was raised to fix, and the row a user is
+                         actually pointing at is the one that goes unreadable.
+
+                         AccentForegroundBrush is the per-theme token that exists for exactly this
+                         surface, and AccentForegroundContrastTests already pins it at AA or better
+                         against every theme's accent. -->
+                    <Style Selector="ListBoxItem TextBlock.palette-label">
+                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                    </Style>
+                    <Style Selector="ListBoxItem TextBlock.palette-category">
+                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                        <Setter Property="Opacity" Value="0.7" />
+                    </Style>
+
+                    <Style Selector="ListBoxItem:selected TextBlock.palette-label">
+                        <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+                    </Style>
+                    <Style Selector="ListBoxItem:selected TextBlock.palette-category">
+                        <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+
+                        <!-- FULL OPACITY ON THE SELECTED ROW, and this is measured rather than
+                             tidy-minded. The 0.7 that dims this label on a normal background
+                             composites toward the accent when the row is filled, and that costs
+                             enough to fail AA on two themes even with the correct colour. The token
+                             is only guaranteed at full strength, so the dimming is dropped exactly
+                             where the guarantee is needed. -->
+                        <Setter Property="Opacity" Value="1.0" />
                     </Style>
                 </ListBox.Styles>
 
