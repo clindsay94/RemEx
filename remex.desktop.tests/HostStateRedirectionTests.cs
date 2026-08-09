@@ -165,33 +165,44 @@ public sealed class HostStateRedirectionTests
     /// stop, reappearing one caller over.
     /// </para>
     /// <para>
-    /// AN EXACT SET, NOT A CEILING. A "no more than N" form goes quiet as soon as somebody fixes one
-    /// and adds another; requiring the set to match means a NEW hand-built path fails, and so does a
-    /// FIXED one left in this list — which is what keeps the list honest rather than decorative.
+    /// EMPTY, WITH NO ALLOWLIST LEFT — and the first version of this test is why that matters. It
+    /// flagged any mention of SpecialFolder.LocalApplicationData and carried a list of two "known
+    /// stragglers", one of which was not a straggler at all: FileTransferRootSettingsService passes
+    /// the legacy folder INTO RemexDataPaths.ResolveDirectory, which consults the override first, so
+    /// it honours the redirect exactly as intended. A guard that flags correct code is worse than no
+    /// guard, because the only way to make it pass is to add a name to a list — and once a list can
+    /// absorb a false positive it will absorb a real one (RemEx-dnn2q, filed off that false positive
+    /// and closed as not-a-bug).
+    /// </para>
+    /// <para>
+    /// So the rule is the SHAPE, not the token: naming that folder is fine, using it without handing
+    /// it to <c>RemexDataPaths</c> is not. That leaves nothing to allowlist, which is the only form
+    /// of this test that cannot rot.
     /// </para>
     /// </remarks>
     [Fact]
-    public void OnlyTheKnownStragglersResolveThePerUserDirectoryThemselves()
+    public void NothingResolvesThePerUserDirectoryWithoutRemexDataPaths()
     {
-        // One left, and its name is what makes the guard honest: FileTransferRootSettingsService is
-        // RemEx-dnn2q, filed off the back of this test. RemexSavefileService came off this list under
-        // RemEx-mz9f — the exact-set assertion is what FORCED the deletion rather than leaving a
-        // stale entry vouching for a fix nobody made.
-        string[] known = ["FileTransferRootSettingsService.cs"];
-
         var offenders = Directory
             .GetFiles(Path.Combine(RepoRoot(), "remex.desktop"), "*.cs", SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
                      && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            // ReadLines, not a split on Environment.NewLine: this repo's working copies hold a mix of
+            // CRLF and LF, and splitting on the wrong one yields ONE line containing the whole file —
+            // which starts with `using`, defeats the comment filter, and flags every file that so
+            // much as mentions the token in a doc comment. That is how this guard first went wrong.
             .Where(f => File.ReadLines(f).Any(line =>
                 !line.TrimStart().StartsWith("//", StringComparison.Ordinal)
-                && !line.TrimStart().StartsWith("///", StringComparison.Ordinal)
                 && line.Contains("SpecialFolder.LocalApplicationData", StringComparison.Ordinal)))
+            // Handing it to RemexDataPaths is the whole difference: ResolveDirectory consults the
+            // override BEFORE it looks at the legacy folder it was given, so naming that folder as
+            // the off-Windows fallback is correct rather than a bypass.
+            .Where(f => !File.ReadAllText(f).Contains("RemexDataPaths.ResolveDirectory", StringComparison.Ordinal))
             .Select(Path.GetFileName)
             .OrderBy(f => f, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Equal(known.OrderBy(f => f, StringComparer.Ordinal).ToArray(), offenders);
+        Assert.Empty(offenders);
     }
 
     private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string thisFile = "")
