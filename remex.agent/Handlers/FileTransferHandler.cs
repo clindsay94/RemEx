@@ -534,13 +534,49 @@ public sealed class FileTransferHandler(
     /// client no longer has a live session. On a grant the mounted volumes are enumerated and returned; on a deny an empty
     /// list with <c>fullBrowseGranted=false</c> is returned (a deny is not an error) — carrying a
     /// <c>denyReason</c> when nobody was asked, so the phone can tell that apart from a refusal its user made
-    /// (RemEx-l580).
+    /// (RemEx-l580). A request whose body did not bind is answered too — with an error response rather
+    /// than with nothing at all (RemEx-9i4b).
     /// </summary>
     public async Task HandleFileVolumesRequestAsync(
         RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
     {
         var req = message.FileVolumesRequest;
-        if (req is null) return;
+        if (req is null)
+        {
+            // ANSWER, RATHER THAN GO QUIET (RemEx-9i4b). This used to `return` and send nothing at
+            // all - not a response, not an error response, nothing - so a file_volumes_request whose
+            // body did not bind produced pure silence on the socket. The phone has no timeout of its
+            // own here, so it sat on "Requesting volumes..." indefinitely and the user saw "Peer did
+            // not respond" with no log line pointing at the cause: the exact shape that bricked v3
+            // file transfer (RemEx-y6x6). It is reachable from the wire - a client that spells the
+            // wrapper differently across a protocol change is all it takes - so this is an answer the
+            // host owes, not an impossible state.
+            //
+            // The id is empty because the part of the message that would carry it is the part that is
+            // missing. That still reaches the phone, which is the client this branch is for:
+            // handleVolumesResponse applies whatever arrives instead of correlating by requestId, so
+            // an uncorrelated error clears the spinner and shows the failure. The PC's own
+            // FileTransferClient DOES correlate, and would fall through to its own bounded timeout
+            // instead - which costs it nothing, because it always sends a body and so cannot reach
+            // this branch at all.
+            //
+            // ErrorMessage, not DenyReason: this is a malformed request, not a refusal. DenyReason is
+            // for a host that declined without asking anyone (RemEx-l580), and routing a protocol
+            // fault through it would tell the phone a person said no.
+            logger.LogWarning("Received a file_volumes_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileVolumesResponse,
+                FileVolumesResponse = new FileVolumesResponse
+                {
+                    RequestId = string.Empty,
+                    Volumes = [],
+                    FullBrowseGranted = false,
+                    ErrorMessage = "The file_volumes_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
 
         RemexMessage response;
         try

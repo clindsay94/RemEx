@@ -1349,4 +1349,41 @@ public sealed class FileTransferHandlerTests : IDisposable
             }
         }
     }
+
+    // ── RemEx-9i4b: a request whose body did not bind is answered, not ignored ─────────────────
+
+    [Fact]
+    public async Task VolumesRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()
+    {
+        // The branch used to be `if (req is null) return;` - no response, no error response, nothing.
+        // The phone has no timeout of its own on this call, so it sat on "Requesting volumes..."
+        // forever and the user saw "Peer did not respond" with nothing in the log pointing at the
+        // cause. That silent shape is what bricked v3 file transfer (RemEx-y6x6), which is why an
+        // unbindable body is an answer the host owes rather than an impossible state.
+        // The branch returns before touching any of these, so a bare mock is honest here - wiring a
+        // real service would suggest the test depends on it.
+        var handler = CreateHandler(new Mock<IFileTransferService>().Object);
+        var ws = new FakeWebSocket();
+
+        // A file_volumes_request with the wrapper absent: exactly what a peer that spells the body
+        // differently across a protocol change puts on the wire.
+        var message = new RemexMessage
+        {
+            Type = MessageTypes.FileVolumesRequest,
+            FileVolumesRequest = null,
+        };
+
+        await handler.HandleFileVolumesRequestAsync(message, ws, "paired-android-device", default);
+
+        var sent = Assert.Single(ws.ReceivedMessages);
+        Assert.Equal(MessageTypes.FileVolumesResponse, sent.Type);
+        Assert.NotNull(sent.FileVolumesResponse);
+        Assert.False(sent.FileVolumesResponse!.FullBrowseGranted);
+        Assert.Empty(sent.FileVolumesResponse.Volumes);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileVolumesResponse.ErrorMessage));
+
+        // ErrorMessage, not DenyReason. DenyReason means the host declined without asking a person
+        // (RemEx-l580); routing a malformed request through it would tell the phone someone said no.
+        Assert.Null(sent.FileVolumesResponse.DenyReason);
+    }
 }
