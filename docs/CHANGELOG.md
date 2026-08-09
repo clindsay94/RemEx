@@ -124,6 +124,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The app can now measure how good your connection to the PC actually is.** It has always sent a
+  timestamp with every heartbeat, and never read one back — so nothing anywhere knew the round-trip
+  time, and nothing counted how much video the PC was actually producing. Both are measured now: the
+  round trip arrives on the phone continuously, and the PC counts the frames and bytes it encodes.
+
+  Nothing displays either of them yet, and that is deliberate — the connection-quality display is a
+  separate piece of work with design decisions still to confirm. What matters here is that the
+  numbers exist and are correct, so that display becomes a matter of showing them rather than
+  building the measuring first. The measurement refuses impossible readings rather than averaging
+  them in: a clock adjustment mid-measurement can otherwise produce a negative round trip and poison
+  the average for a long time afterwards. (RemEx-93n2)
+
+### Internal
+
 - **A whole class of bug where the PC talks and the phone never hears is now caught by the build.**
   When the PC sends the phone a message the phone was never taught to receive, nothing goes wrong in
   any visible way: the PC succeeds in sending it, no error appears at either end, and the feature
