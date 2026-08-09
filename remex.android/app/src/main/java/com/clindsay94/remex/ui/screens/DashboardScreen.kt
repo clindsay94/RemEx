@@ -330,8 +330,28 @@ fun DashboardScreenContent(
         val wakePcSubtitle = stringResource(R.string.dashboard_wake_pc_subtitle)
         val telemetryFallback = stringResource(R.string.dashboard_telemetry_fallback)
 
+        // THE LIST WAS ALREADY REMEMBERED; THE KEY WAS THE PROBLEM (RemEx-cite item 3). parseSensors
+        // returns a FRESH list object every telemetry tick, so remember(telemetrySensors) saw a new
+        // key each second and rebuilt - buildList, distinctBy, then a sort - even with the drawer
+        // shut and nothing about the card list changed.
+        //
+        // Keyed on what the cards are actually BUILT FROM: id, name, category and group. The field
+        // that changes every tick is `value`, and no card here reads it. So the key now moves when
+        // the SET of sensors changes and stays put while their readings update, which is the
+        // distinction the old key could not express. A hash rather than a joined string because this
+        // still runs per tick and the point was to make that cheap.
+        val availableCardsKey =
+                remember(telemetrySensors) {
+                        telemetrySensors.fold(7) { acc, sensor ->
+                                acc * 31 + sensor.id.hashCode() +
+                                        sensor.name.hashCode() * 3 +
+                                        sensor.category.hashCode() * 5 +
+                                        sensor.group.hashCode() * 7
+                        }
+                }
+
         val availableCards =
-                remember(telemetrySensors, pcStatusTitle, wakePcTitle, telemetryFallback) {
+                remember(availableCardsKey, pcStatusTitle, wakePcTitle, telemetryFallback) {
                         buildList {
                                 add(AvailableCardItem("pc_status", pcStatusTitle, pcStatusSubtitle))
                                 add(AvailableCardItem("wake_pc", wakePcTitle, wakePcSubtitle))
