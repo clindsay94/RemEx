@@ -17,10 +17,12 @@ namespace Remex.Desktop.Services;
 /// reads like "remove from list" is a trap.
 /// </para>
 /// <para>
-/// IT DOES NOT YET END A LIVE SESSION (RemEx-6nkht). <c>IsClientPaired</c> is consulted when a
-/// connection is established, so a device already streaming keeps streaming until it disconnects on
-/// its own. The confirmation's promise is about the next connection; closing the current one means
-/// aborting a socket mid-stream, which is its own change with its own verification.
+/// IT ENDS LIVE CONNECTIONS TOO, NOT ONLY FUTURE ONES (RemEx-6nkht). <c>IsClientPaired</c> is
+/// consulted when a connection is ESTABLISHED and nowhere afterwards, so clearing the credential
+/// alone left a phone that was already mirroring the desktop mirroring it. The control channel, the
+/// screen stream and the file channel are all cut for that device, each by the class that owns its
+/// lifetime. Best effort by design: the credential is already gone, so a socket that survives lives
+/// only until its next authentication.
 /// </para>
 /// <para>
 /// Declared on the desktop side for the dependency direction the sibling interfaces already use:

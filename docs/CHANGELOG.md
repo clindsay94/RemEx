@@ -210,8 +210,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   last one matters most: without it, a phone you unpaired and later paired again would quietly come
   back still able to browse your whole PC, on a permission you granted to a pairing you had ended.
   If any part of the clean-up fails, the PC says so instead of letting the row disappear and looking
-  like it worked. One thing it does not yet do: a phone that is connected at the moment you unpair it
-  stays connected until it disconnects on its own.
+  like it worked. A phone that is connected at the moment you unpair it is disconnected there and
+  then — its remote control, its screen view and any file transfer all stop — rather than carrying on
+  until it happens to drop. That is the point of the button: you press it because you no longer trust
+  whoever is holding that phone, and waiting would be the wrong answer.
 
 - **You can give your paired phones your own names.** Each row in the Paired Devices list now has a
   field to rename it — useful when two phones report the same model name, or when the name your

@@ -220,6 +220,11 @@ public static class HostBootstrapper
         // three that touches the pairing registry (RemEx-5lb90). It takes the trust service too —
         // that store is the fifth thing keyed by client id, and it is pruned only for clients that
         // are NOT paired, so a grant that outlives a revocation becomes live again on the re-pair.
+        // Cutting the live connections is its own service, not four more constructor parameters on
+        // the revoker: the stores are persistent state and the channels are lifetimes owned by three
+        // other classes, and keeping them apart is what lets either be tested without the other
+        // (RemEx-6nkht).
+        builder.Services.AddSingleton<IPairedDeviceDisconnector, PairedDeviceDisconnector>();
         builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceRevoker>(
             sp => new PairedDeviceRevoker(
                 sp.GetRequiredService<PairedClientRegistry>(),
@@ -227,6 +232,7 @@ public static class HostBootstrapper
                 sp.GetRequiredService<PairedDeviceNameOverrideStore>(),
                 sp.GetRequiredService<PairedDeviceActivityStore>(),
                 sp.GetRequiredService<IFileTrustService>(),
+                sp.GetRequiredService<IPairedDeviceDisconnector>(),
                 sp.GetRequiredService<ILogger<PairedDeviceRevoker>>()));
 
         builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceSource>(

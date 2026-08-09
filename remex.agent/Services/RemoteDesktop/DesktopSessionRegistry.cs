@@ -92,6 +92,58 @@ public sealed class DesktopSessionRegistry
     }
 
     /// <summary>
+    /// Cancels the streaming loop for a client whose pairing has been revoked (RemEx-6nkht).
+    /// Returns true when there was one to cancel.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// CANCEL, NOT ABORT, and that difference is the whole reason this lives here rather than being
+    /// done to the socket from outside. <see cref="TakeOverAsync"/>'s contract is that a loop ends by
+    /// its token and then calls <see cref="MarkDrained"/> in a <c>finally</c>; killing the socket
+    /// underneath it would end the loop through an exception path instead, leaving the capture
+    /// session to be torn down by whatever unwinding happened to run. Cancelling uses the drain the
+    /// handler already implements.
+    /// </para>
+    /// <para>
+    /// NOT REMOVED FROM <c>_activeSessions</c> HERE. The loop's own <see cref="MarkDrained"/> does
+    /// that, and only when it is still the registered CTS — removing it here would let a reconnect
+    /// racing the revocation register a fresh session that the draining old one then evicts.
+    /// </para>
+    /// <para>
+    /// A revoked client cannot reconnect: <c>/ws/desktop</c> checks <c>IsClientPaired</c> before it
+    /// reaches <see cref="TakeOverAsync"/>. This closes the window where it is already inside.
+    /// </para>
+    /// <para>
+    /// <c>CancelAsync</c>, NOT <c>Cancel</c>, AND IT IS LOAD-BEARING RATHER THAN STYLISTIC. <c>Cancel</c>
+    /// runs every token registration INLINE and does not return until they have all finished — so this
+    /// method would not yield a Task until the streaming teardown was already complete, and
+    /// <c>PairedDeviceDisconnector</c>'s drain budget would be applied to something that had by then
+    /// finished. Swapping it back would silently un-bound that wait while leaving the code that bounds
+    /// it in place and looking correct: a wedged capture teardown would hang the confirmation with a
+    /// timeout sitting right there (review). It also matches <see cref="TakeOverAsync"/> sixty lines
+    /// above, which uses it for the inline-callback reason.
+    /// </para>
+    /// </remarks>
+    public async Task<bool> CancelSessionsForAsync(string clientId)
+    {
+        // A blank id is loopback, which is keyed synthetically and has no pairing to revoke.
+        if (string.IsNullOrWhiteSpace(clientId)) return false;
+        if (!_activeSessions.TryGetValue(clientId, out var cts)) return false;
+
+        _logger.LogInformation(
+            "Cancelling desktop session for clientId={ClientIdPrefix}: pairing revoked.",
+            RedactKey(clientId));
+
+        // A handler that has finished can dispose its CTS between the lookup and here — the `using
+        // var sessionCts` in the /ws/desktop delegate disposes AFTER its finally calls MarkDrained,
+        // so there is a real window where the entry is gone but this reference is not.
+        try { await cts.CancelAsync(); }
+        catch (ObjectDisposedException) { return false; }
+
+        return true;
+    }
+
+    /// <summary>
     /// Signals that the session associated with <paramref name="ownedCts"/> has finished
     /// draining, and removes it from the active session registry.
     ///

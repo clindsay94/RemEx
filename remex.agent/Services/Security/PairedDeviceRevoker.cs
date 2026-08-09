@@ -12,7 +12,7 @@ namespace Remex.Agent.Services.Security;
 /// **THIS IS THE FIRST PRODUCTION CALLER OF <see cref="PairedClientRegistry.UnregisterClient"/>.**
 /// That registry is the only authentication path in production; a break in it silently bricks every
 /// device pairing. Nothing else in this type does anything clever, deliberately — the whole job is
-/// to call five teardowns in one place so that none of them can be forgotten.
+/// to call five teardowns and one disconnect in one place so that none of them can be forgotten.
 /// </para>
 /// <para>
 /// FIVE STORES, AND MISSING ONE IS INVISIBLE UNTIL THE DEVICE PAIRS AGAIN. The registry holds the
@@ -43,6 +43,7 @@ public sealed class PairedDeviceRevoker(
     PairedDeviceNameOverrideStore overrides,
     PairedDeviceActivityStore activity,
     IFileTrustService fileTrust,
+    IPairedDeviceDisconnector disconnector,
     ILogger<PairedDeviceRevoker> logger) : IPairedDeviceRevoker
 {
     public async Task RevokeAsync(string clientId, CancellationToken ct)
@@ -76,6 +77,14 @@ public sealed class PairedDeviceRevoker(
         {
             (failures ??= []).Add(ex);
         }
+
+        // AFTER THE STORES, NOT BEFORE THEM, AND OUTSIDE THE FAILURE LIST. The credential is what
+        // decides whether the device may come back, so it goes first and this closes the door behind
+        // it; cutting the sockets first would leave a window in which the phone reconnects, is still
+        // paired, and is simply back. It is deliberately not part of `failures`: the disconnect is
+        // best effort by construction, and a revocation that reported itself incomplete because a
+        // socket was already closing would train the user to ignore the message that matters.
+        await disconnector.DisconnectAsync(clientId);
 
         if (failures is { Count: > 0 })
         {

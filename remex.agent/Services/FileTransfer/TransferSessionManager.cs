@@ -771,6 +771,29 @@ public sealed class TransferSessionManager : IDisposable
     // ─────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
+    /// Cuts the file channel of a client whose pairing has been revoked (RemEx-6nkht). Returns true
+    /// when there was one to cut.
+    /// </summary>
+    /// <remarks>
+    /// ONLY THE SOCKET. The receive and send sessions are NOT torn down here, because
+    /// <see cref="RunChannelAsync"/>'s <c>finally</c> already does exactly that when the loop exits —
+    /// suspending receives so partials survive, cancelling sends — and doing it twice from two
+    /// threads is how a partial gets deleted out from under a suspend. Aborting the socket is what
+    /// makes that <c>finally</c> run.
+    /// </remarks>
+    public bool DisconnectClient(string? clientId)
+    {
+        if (string.IsNullOrWhiteSpace(clientId)) return false;
+        if (!_channels.TryGetValue(clientId, out var channel)) return false;
+
+        _logger.LogInformation(
+            "Cutting the file channel for {ClientId}: pairing revoked.",
+            Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId));
+        channel.Abort();
+        return true;
+    }
+
+    /// <summary>
     /// Runs the bidirectional binary channel for a paired client until the socket closes. Inbound
     /// <c>data</c> frames are written to the matching receive session (with periodic acks); inbound
     /// <c>ack</c> frames advance the matching send session's backpressure window. On exit, live receive
@@ -1383,6 +1406,18 @@ public sealed class TransferSessionManager : IDisposable
         public FileChannel(WebSocket ws) => _ws = ws;
 
         public void MarkSuperseded() => _superseded = true;
+
+        /// <summary>Kills the socket, for a client whose pairing has been revoked (RemEx-6nkht).</summary>
+        /// <remarks>
+        /// Superseded FIRST so that a send already past its own state check cannot put another frame
+        /// of somebody else's file on a socket the user has just cut. Abort rather than a close
+        /// handshake, for the reason <c>ClientSessionRegistry.DisconnectClient</c> gives.
+        /// </remarks>
+        public void Abort()
+        {
+            _superseded = true;
+            try { _ws.Abort(); } catch (ObjectDisposedException) { /* the loop got there first */ }
+        }
 
         /// <summary>
         /// Writes one framed message to the channel.

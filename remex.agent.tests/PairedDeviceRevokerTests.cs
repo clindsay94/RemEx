@@ -39,7 +39,20 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         PairedClientNameStore Names,
         PairedDeviceNameOverrideStore Overrides,
         PairedDeviceActivityStore Activity,
-        FileTrustService Trust);
+        FileTrustService Trust,
+        RecordingDisconnector Disconnector);
+
+    /// <summary>Records who was cut, so the revoker's own tests need no sockets.</summary>
+    private sealed class RecordingDisconnector : IPairedDeviceDisconnector
+    {
+        public List<string> Disconnected { get; } = [];
+
+        public Task DisconnectAsync(string clientId)
+        {
+            Disconnected.Add(clientId);
+            return Task.CompletedTask;
+        }
+    }
 
     private Fixture NewRevoker(string? registryPath = null)
     {
@@ -56,8 +69,10 @@ public sealed class PairedDeviceRevokerTests : IDisposable
             NullLogger<FileTrustService>.Instance, registry, new ClientSessionRegistry(),
             Path.Combine(_root.FullName, "trust.json"), TimeSpan.FromSeconds(1));
 
+        var disconnector = new RecordingDisconnector();
         var revoker = new PairedDeviceRevoker(
-            registry, names, overrides, activity, trust, NullLogger<PairedDeviceRevoker>.Instance);
+            registry, names, overrides, activity, trust, disconnector,
+            NullLogger<PairedDeviceRevoker>.Instance);
 
         registry.RegisterClient(Phone, [1, 2, 3, 4]);
         names.Remember(Phone, "Pixel 9");
@@ -65,7 +80,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         activity.RecordPaired(Phone, DateTimeOffset.UtcNow);
         trust.SetFullBrowseGrantedAsync(Phone, true, CancellationToken.None).GetAwaiter().GetResult();
 
-        return new Fixture(revoker, registry, names, overrides, activity, trust);
+        return new Fixture(revoker, registry, names, overrides, activity, trust, disconnector);
     }
 
     public void Dispose()
@@ -158,6 +173,40 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         Assert.False(f.Overrides.Snapshot().ContainsKey(Phone));
         Assert.Null(f.Activity.Resolve(Phone));
         Assert.False(await f.Trust.IsFullBrowseGrantedAsync(Phone, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task RevokingAlsoCutsTheDeviceOffRIGHTNOW()
+    {
+        // THE JOIN to RemEx-6nkht. Clearing the credential only decides the NEXT connection —
+        // IsClientPaired is consulted when one is established and nowhere afterwards — so without
+        // this call a phone already mirroring the desktop carried on mirroring it after being
+        // unpaired. What the three channels do about it is PairedDeviceDisconnectorTests' subject;
+        // what this holds is that the revocation asks at all.
+        var f = NewRevoker();
+
+        await f.Revoker.RevokeAsync(Phone, CancellationToken.None);
+
+        Assert.Equal([Phone], f.Disconnector.Disconnected);
+    }
+
+    [Fact]
+    public async Task AFailedTeardownStillCutsTheDeviceOff()
+    {
+        // The disconnect sits OUTSIDE the failure list on purpose, and this is the reason: a
+        // revocation that could not finish clearing its records is exactly the one where leaving the
+        // phone connected would be worst.
+        var blocked = Path.Combine(_root.FullName, "blocked-disconnect");
+        Directory.CreateDirectory(blocked);
+        var f = NewRevoker(Path.Combine(blocked, "paired.json"));
+
+        Directory.Delete(blocked, recursive: true);
+        File.WriteAllText(blocked, "not a directory");
+
+        await Assert.ThrowsAsync<AggregateException>(
+            () => f.Revoker.RevokeAsync(Phone, CancellationToken.None));
+
+        Assert.Equal([Phone], f.Disconnector.Disconnected);
     }
 
     [Fact]

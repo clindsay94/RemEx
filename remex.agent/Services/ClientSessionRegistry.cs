@@ -242,6 +242,53 @@ public sealed class ClientSessionRegistry : Remex.Desktop.Services.IClientSessio
     }
 
     /// <summary>
+    /// Cuts every control connection belonging to a client, for when its pairing is revoked
+    /// (RemEx-6nkht). Returns how many sockets were aborted.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ABORT, NOT CloseAsync. A polite close is a handshake, and the peer this is aimed at is one the
+    /// user has just decided they do not trust — waiting for it to agree to leave is the wrong
+    /// posture, and a phone that simply stops answering would hold the close open to its timeout.
+    /// <c>Abort</c> also unblocks the reader loop's in-flight <c>ReceiveAsync</c>, which is what
+    /// actually ends the session: the handler unwinds and its registration disposes itself.
+    /// </para>
+    /// <para>
+    /// EVERY MATCH, NOT <see cref="Find"/>'s NEWEST ONE. A phone that dropped and redialled has two
+    /// entries and the stale one is usually still <see cref="WebSocketState.Open"/> — that is what
+    /// "the disconnect has not been noticed yet" means. Cutting only the newest would leave a live
+    /// socket belonging to a device that is no longer paired, which is the entire failure being
+    /// fixed.
+    /// </para>
+    /// <para>
+    /// PROVEN, on the same rule as <see cref="Find"/> and for a mirror of the same reason. Loopback
+    /// clears the gate without ever proving an identity and can claim any client id it likes, so a
+    /// local process could otherwise name a paired phone and have the PC's own in-process connection
+    /// cut every time that phone was unpaired.
+    /// </para>
+    /// </remarks>
+    public int DisconnectClient(string? clientId)
+    {
+        if (string.IsNullOrWhiteSpace(clientId)) return 0;
+
+        var aborted = 0;
+        foreach (var (_, entry) in _sessions)
+        {
+            if (!entry.IdentityProven) continue;
+            if (!string.Equals(entry.ClientId, clientId, StringComparison.Ordinal)) continue;
+
+            // NARROWED from a bare catch (review). Abort on a live socket does not fail; the one
+            // thing it can raise is a race with the handler disposing the socket as it unwinds, and
+            // that case is already the outcome this method wanted. Anything else is a real fault and
+            // should not be swallowed here.
+            try { entry.Socket.Abort(); } catch (ObjectDisposedException) { /* already gone */ }
+            aborted++;
+        }
+
+        return aborted;
+    }
+
+    /// <summary>
     /// The newest live session for a client id, preferring one whose socket is still open.
     /// </summary>
     /// <remarks>
