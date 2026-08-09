@@ -678,7 +678,7 @@ public sealed class PingPongHandler(
                         pushOriginator.Complete(message.FilePushResponse);
                         break;
                     case MessageTypes.FileTransferReady when message.FileTransferReady is not null:
-                        transferSessionManager.HandleReady(message.FileTransferReady);
+                        transferSessionManager.HandleReady(message.FileTransferReady, connectionClientId ?? string.Empty);
                         break;
 
                     // connectionClientId ?? string.Empty on all three: a connection that has proved

@@ -605,18 +605,51 @@ public sealed class TransferSessionManager : IDisposable
     /// longer unexpected. It remains unexpected for any id nobody is waiting on, which is what an
     /// out-of-band or late reply looks like.
     /// </remarks>
-    private readonly ConcurrentDictionary<string, TaskCompletionSource<FileTransferReady>> _pendingReady = new(StringComparer.Ordinal);
+    /// <summary>A push awaiting its peer's <c>file_transfer_ready</c>, and WHO it is waiting on.</summary>
+    /// <remarks>
+    /// THE OWNER IS THE POINT (RemEx-5dq3). This map used to hold a bare
+    /// <see cref="TaskCompletionSource{T}"/>, so the ready that satisfied a pending push was never
+    /// checked against anyone — <see cref="PushFileAsync"/> had the client id in hand at the moment it
+    /// registered and simply discarded it. RemEx-juas bound the four other control-plane entry points
+    /// that key on a transfer id and left this one, on the reasoning that no owner was available; that
+    /// was half right. What is true is that <c>IsForeignTransfer</c> cannot answer here — a pending
+    /// push has no receive session, no send session and no staging manifest yet, because the ready IS
+    /// the handshake that precedes all three, so a guard written that way would have been a no-op. The
+    /// owner had to be recorded rather than derived.
+    /// </remarks>
+    private readonly ConcurrentDictionary<string, PendingPush> _pendingReady = new(StringComparer.Ordinal);
+
+    private sealed record PendingPush(string ClientId, TaskCompletionSource<FileTransferReady> Ready);
 
     /// <summary>Handles an inbound <c>file_transfer_ready</c> answering an offer the host made.</summary>
-    public void HandleReady(FileTransferReady ready)
+    public void HandleReady(FileTransferReady ready, string channelKey)
     {
         if (ready is null)
             return;
 
-        if (_pendingReady.TryGetValue(ready.TransferId, out var waiting))
-            waiting.TrySetResult(ready);
-        else
+        if (!_pendingReady.TryGetValue(ready.TransferId, out var waiting))
+        {
             _logger.LogWarning("Received unexpected file_transfer_ready for {TransferId}; nothing is waiting on it.", ready.TransferId);
+            return;
+        }
+
+        // THE PEER WE OFFERED IT TO, NOT WHOEVER ANSWERS FIRST (RemEx-5dq3). Without this an unbound
+        // connection — loopback is the reachable one, frozen to the empty key since RemEx-4215 — could
+        // send file_transfer_ready { accepted: false } for a transfer id it merely knows and win the
+        // race against the phone that already consented. PushFileAsync returns false, and the user
+        // watches a transfer they agreed to simply not arrive: the "they accepted, and nothing came"
+        // failure the comments on that path already warn about. accepted:true early lands in the same
+        // place by a different route, through the channel lookup that follows.
+        if (!string.Equals(waiting.ClientId, channelKey, StringComparison.Ordinal))
+        {
+            _logger.LogWarning(
+                "Refusing a file_transfer_ready from {ClientId}: push {TransferId} is waiting on a different client.",
+                Remex.Agent.Services.Security.LogRedaction.RedactClientId(channelKey),
+                ready.TransferId);
+            return;
+        }
+
+        waiting.Ready.TrySetResult(ready);
     }
 
     /// <summary>
@@ -648,7 +681,7 @@ public sealed class TransferSessionManager : IDisposable
         // REGISTERED BEFORE THE OFFER GOES OUT. The peer may answer the instant it lands, and a reply
         // that arrives before anything is waiting is dropped as unmatched - which would strand a
         // transfer the user already agreed to.
-        _pendingReady[transferId] = ready;
+        _pendingReady[transferId] = new PendingPush(clientId, ready);
 
         FileStream? source = null;
         try
