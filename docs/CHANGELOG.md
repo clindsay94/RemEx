@@ -107,6 +107,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **A whole class of bug where the PC talks and the phone never hears is now caught by the build.**
+  When the PC sends the phone a message the phone was never taught to receive, nothing goes wrong in
+  any visible way: the PC succeeds in sending it, no error appears at either end, and the feature
+  simply does nothing. That is not hypothetical — it is what silently broke the entire new file
+  transfer system in an earlier release, and it took a long time to find because everything looked
+  healthy. A test now checks that every message the PC can send has something on the other side
+  listening for it.
+
+  It is written without an exceptions list, deliberately. An earlier version needed twenty-five
+  exceptions and would have quietly grown more; describing where each message is actually received
+  brought that to zero, so there is nothing left that can absorb a real problem by mistake. What it
+  still cannot check is written down in the test itself rather than left to be discovered.
+  (RemEx-dd8dp)
+
+### Internal
+
 - **A page of hard-won project rules was sitting in a file section that gets automatically
   regenerated, and would have been deleted without warning.** The rules describe how to split a task
   in two without leaving half of it unreachable, and they exist because that mistake was made four
