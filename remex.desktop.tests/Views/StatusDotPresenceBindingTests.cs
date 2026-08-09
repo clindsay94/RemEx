@@ -83,9 +83,9 @@ public class StatusDotPresenceBindingTests
             // reads as a standing claim about a file that no longer makes it.
             //
             // THIS COULD NOT BE MADE TO WORK BEFORE, AND THE REASON WAS NOT SUBTLE ONCE FOUND. The
-            // matcher's pattern was written as @"IsConnected" and the file on disk held two
+            // matcher's pattern was written with word-boundary escapes and the file on disk held two
             // literal BACKSPACE bytes (0x08) where those escapes were meant to be — so the pattern
-            // was IsConnected and could never match anything. That is why an assertion
+            // became a literal backspace, IsConnected, another backspace - which matches nothing. That is why an assertion
             // failed on a string that provably contained what it was looking for, and why reproducing
             // the logic elsewhere passed: the bug was in the bytes, not the logic.
             //
