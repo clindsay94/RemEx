@@ -212,12 +212,19 @@ public class AccentForegroundContrastTests
     /// <c>CanvasView</c> binds <c>{DynamicResource SystemError}</c>, the Color key, directly.
     /// </para>
     /// <para>
-    /// **WHAT THIS STILL CANNOT SEE, STATED RATHER THAN IMPLIED (RemEx-o9gd).** A glyph whose
-    /// <c>Fill</c> is inline on a child element while its container is filled by a CLASS is invisible
-    /// here: the two live on different elements, and neither the split nor the style pass brings them
-    /// together. <c>ShellView</c>'s gear button was exactly that shape and is fixed in this change,
-    /// but by hand — reverting it leaves this scan green, which was measured, not assumed. Closing it
-    /// needs the class-to-ancestor resolution a real XAML parse would give.
+    /// **THE GAP THIS ONCE HAD, AND HOW IT CLOSED (RemEx-o9gd, then RemEx-ugvcr).** A glyph whose
+    /// <c>Fill</c> is inline on a child element while its container is filled by a CLASS used to be
+    /// invisible: the two live on different elements, and neither the split nor the style pass brings
+    /// them together. <c>ShellView</c>'s gear button was exactly that shape, was fixed by hand, and
+    /// reverting that fix left this scan green — measured at the time, not assumed. It is covered now
+    /// by <c>ScanAncestry</c>, which tracks open elements on a stack rather than parsing XAML, and the
+    /// same revert is the injection that proves it.
+    /// <para>
+    /// WHAT IS STILL OUT OF REACH, so this paragraph does not go stale the way the last one did: a
+    /// class applied from another file, a literal inside a <c>ControlTemplate</c> whose target resolves
+    /// at runtime, and a background that arrives through a theme's implicit styles rather than a class
+    /// this file can see. Those genuinely need what a real parse and a live visual tree give.
+    /// </para>
     /// </para>
     /// <para>
     /// ERROR RED IS NOW LISTED TOO, and the history is worth keeping. RemEx-tq2e tried to sweep red
@@ -238,8 +245,14 @@ public class AccentForegroundContrastTests
     /// token would be catastrophic on it at 1.18–1.67:1. That surface is RemEx-1elh.
     /// </para>
     /// </remarks>
-    private static List<string> ScanForWhiteOnFilled(string axaml, string label)
+    private static List<string> ScanForWhiteOnFilled(string rawAxaml, string label)
     {
+        // COMMENTS COME OUT ONCE, FOR EVERY PASS. The ancestry walk needs it — a commented-out opening
+        // tag pushes a frame that never pops and leaks its class over everything below it — but the
+        // other three wanted it all along and nobody had noticed: a commented-out offender used to be
+        // reported by three passes and correctly ignored by the fourth.
+        var axaml = Regex.Replace(rawAxaml, "<!--.*?-->", string.Empty, RegexOptions.Singleline);
+
         // LEFT-ANCHORED so an attribute merely ENDING in Foreground - SelectionForeground, say -
         // is not reported. None exist today; the guard should not create a false positive for the
         // first one that does.
@@ -286,13 +299,10 @@ public class AccentForegroundContrastTests
             // so the attributes live on different elements and neither pass can pair them. Putting the
             // literal back scored zero offences against the finished fix.
             //
-            // WHAT THIS CLOSES AND WHAT IT DOES NOT. It closes the SAME-ELEMENT class case: the literal
-            // and the Classes attribute on one element, the background on a style block elsewhere. The
-            // remarks at the top still describe a second shape and it is still open — a child glyph,
-            // <Path Fill="White"/> nested inside a class-filled container, where the two live on
-            // different elements and only a real XAML parse would connect them. Do not read this pass
-            // as making that caveat stale; it is the one gap left. Same file only, which is where this
-            // repo declares its view-local classes.
+            // THIS PASS COVERS THE SAME-ELEMENT CASE: the literal and the Classes attribute on one
+            // element, the background on a style block elsewhere. The child-glyph case — a literal on a
+            // DESCENDANT of the class-filled element — needs the tree, and ScanAncestry below handles
+            // it. Same file only, which is where this repo declares its view-local classes.
             // A COMPOUND SELECTOR IS AND, NOT OR, and reading it as OR is a false-positive generator
             // rather than a theoretical one: TrayBalloonWindow declares Border.accent-stripe.problem
             // over a SystemError background, so flattening it would mark BOTH names dangerous and then
@@ -326,27 +336,120 @@ public class AccentForegroundContrastTests
                     // is the conditional one, and it is not exotic — twenty-seven elements across
                     // eleven view files use it. A pass that saw only the first would be blind to every
                     // class applied by a binding, which is the same shape of miss it exists to close.
-                    var worn = new List<string>();
-                    var plain = Regex.Match(element, "(?<![\\w.])Classes=\"([^\"]*)\"");
-                    if (plain.Success)
-                    {
-                        worn.AddRange(plain.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries));
-                    }
-
-                    worn.AddRange(Regex.Matches(element, "(?<![\\w.])Classes\\.([A-Za-z0-9_-]+)=")
-                        .Select(m => m.Groups[1].Value));
-
-                    if (worn.Count == 0) continue;
+                    // ONE COPY OF THE RULES, shared with the ancestry walk. Two copies of a
+                    // class-spelling regex is how one of them goes stale and its pass quietly stops
+                    // seeing classes — exactly the drift this file's remarks warn about elsewhere.
+                    var worn = ClassesOn(element);
+                    if (worn.Length == 0) continue;
 
                     foreach (var set in dangerousSets.Where(set => set.All(worn.Contains)))
                     {
                         offences.Add($"{label}: class-filled on {brush} via {string.Join(".", set)}");
                     }
                 }
+
+                // AND THE CHILD-GLYPH SHAPE (RemEx-ugvcr), which is the last one that was invisible.
+                // A Path inside a class-filled Button carries its own Fill, and Foreground never
+                // reaches it — so the literal and the class sit on DIFFERENT elements and none of the
+                // passes above can pair them. ShellView's gear FAB is exactly this, fixed by hand in
+                // RemEx-o9gd, and reverting that fix used to leave this file green.
+                foreach (var offence in ScanAncestry(axaml, dangerousSets, white))
+                {
+                    offences.Add($"{label}: child glyph on {brush} inside {offence}");
+                }
             }
         }
 
         return offences;
+    }
+
+    /// <summary>
+    /// Finds a white literal on an element whose FILLED ancestor is filled by a class (RemEx-ugvcr).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A BOUNDED WALK RATHER THAN A XAML PARSE, and the bound is the point. The three passes beside
+    /// this one deliberately compare attributes that sit together, which is why they are regexes and
+    /// why they are trustworthy. This one needs the tree, so it tracks open elements on a stack and
+    /// nothing more: no resource resolution, no templates, no cross-file classes. That covers the
+    /// shape this repo actually writes — a glyph directly inside a styled container — without
+    /// pretending to understand markup it does not.
+    /// </para>
+    /// <para>
+    /// STRICT ANCESTORS ONLY. An element carrying both the class and the literal is the same-element
+    /// case and is already reported by the pass above; including self here would double-count it.
+    /// </para>
+    /// <para>
+    /// COMMENTS ARE STRIPPED FIRST because a commented-out element would push a frame that never pops
+    /// and would then attribute its class to everything below it — the failure mode of a hand-rolled
+    /// walk, and silent, since it produces MORE findings rather than fewer.
+    /// </para>
+    /// </remarks>
+    private static List<string> ScanAncestry(string markup, List<string[]> dangerousSets, string white)
+    {
+        var offences = new List<string>();
+
+        // Attribute values are matched as quoted runs, in BOTH quote styles, so a '>' inside one — a
+        // binding, a selector, a StringFormat — does not end the tag early. Single quotes are legal
+        // and five attributes in Views already use them; without the alternative, everything written
+        // after such a value in the same tag would be invisible, which is the silent direction.
+        var tags = Regex.Matches(markup, "<(/?)([A-Za-z_][\\w:.\\-]*)((?:\"[^\"]*\"|'[^']*'|[^>\"'])*?)(/?)>");
+        var stack = new List<string[]>();
+
+        foreach (Match tag in tags)
+        {
+            var closing = tag.Groups[1].Value == "/";
+            var attributes = tag.Groups[3].Value;
+            var selfClosing = tag.Groups[4].Value == "/";
+
+            if (closing)
+            {
+                if (stack.Count > 0) stack.RemoveAt(stack.Count - 1);
+                continue;
+            }
+
+            if (Regex.IsMatch(attributes, $"(?<![\\w.])(?:Foreground|Fill)={white}"))
+            {
+                // ONE FRAME MUST CARRY THE WHOLE SET, not the ancestor chain between them. Flattening
+                // the stack would re-admit the exact OR-for-AND bug the same-element pass takes care
+                // to avoid: Border.accent-stripe.problem is a live compound selector here, and a
+                // .accent-stripe wrapping a .problem fills NEITHER element, because the style needs
+                // both names on one.
+                foreach (var set in dangerousSets.Where(set => stack.Any(frame => set.All(frame.Contains))))
+                {
+                    offences.Add($"<{tag.Groups[2].Value}> under {string.Join(".", set)}");
+                }
+            }
+
+            if (selfClosing) continue;
+
+            // AN INLINE Background ON AN ANCESTOR STOPS ITS CLASS MATTERING TO DESCENDANTS, for the
+            // same reason it stops mattering to the element itself one pass above: the inline value
+            // beats the style setter, so nothing below is on the class's surface. It pushes an empty
+            // frame rather than being skipped, because it still has to be popped by its closing tag.
+            stack.Add(Regex.IsMatch(attributes, "(?<![\\w.])Background=\"")
+                ? Array.Empty<string>()
+                : ClassesOn(attributes));
+        }
+
+        return offences;
+    }
+
+    /// <summary>Both spellings of a class attribute, on one element.</summary>
+    private static string[] ClassesOn(string attributes)
+    {
+        var worn = new List<string>();
+
+        var plain = Regex.Match(attributes, "(?<![\\w.])Classes=\"([^\"]*)\"");
+        if (plain.Success)
+        {
+            worn.AddRange(plain.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        worn.AddRange(Regex.Matches(attributes, "(?<![\\w.])Classes\\.([A-Za-z0-9_-]+)=")
+            .Select(m => m.Groups[1].Value));
+
+        return worn.ToArray();
     }
 
     [Fact]
@@ -453,6 +556,65 @@ public class AccentForegroundContrastTests
             "<Style Selector=\"Border.accent-stripe.problem\">"
             + "<Setter Property=\"Background\" Value=\"{DynamicResource SystemErrorBackgroundBrush}\"/></Style>"
             + "<Border Classes=\"accent-stripe problem\" Foreground=\"White\"/>", "both"));
+
+        // THE CHILD-GLYPH SHAPE (RemEx-ugvcr). Foreground does not reach a Path, so it carries its own
+        // Fill — on a different element from the class that fills it. ShellView's gear FAB is this
+        // shape, and reverting its hand fix used to leave every test here green.
+        Assert.Single(ScanForWhiteOnFilled(
+            "<Style Selector=\"Button.fab\">"
+            + "<Setter Property=\"Background\" Value=\"{DynamicResource AccentPrimaryBrush}\"/></Style>"
+            + "<Button Classes=\"fab\"><Path Fill=\"White\"/></Button>", "glyphchild"));
+
+        // IT IS A WALK, NOT A PARENT CHECK, AND THIS IS THE ONLY THING THAT SAYS SO. Review caught
+        // that every other probe here — and ShellView's gear FAB, the injection that supposedly proves
+        // this pass — nests the glyph exactly ONE level deep. Replacing the ancestor walk with "look at
+        // the immediate parent" left the entire suite and the injection green while silently losing
+        // <Button Classes="fab"><StackPanel><Path Fill="White"/></StackPanel></Button>, which is the
+        // ordinary icon-and-label button and commoner than the depth-1 shape that was covered.
+        Assert.Single(ScanForWhiteOnFilled(
+            "<Style Selector=\"Button.fab\">"
+            + "<Setter Property=\"Background\" Value=\"{DynamicResource AccentPrimaryBrush}\"/></Style>"
+            + "<Button Classes=\"fab\"><Grid><StackPanel><Path Fill=\"White\"/></StackPanel></Grid></Button>",
+            "deep"));
+
+        // A COMPOUND SET MUST SIT ON ONE ANCESTOR, not be assembled from several. Neither Border below
+        // is filled - the style needs both names on the same element - so reporting this would send
+        // someone to "fix" correct markup.
+        Assert.Empty(ScanForWhiteOnFilled(
+            "<Style Selector=\"Border.accent-stripe.problem\">"
+            + "<Setter Property=\"Background\" Value=\"{DynamicResource SystemErrorBackgroundBrush}\"/></Style>"
+            + "<Border Classes=\"accent-stripe\"><Border Classes=\"problem\"><Path Fill=\"White\"/></Border></Border>",
+            "split"));
+
+        // AN ANCESTOR THAT SETS Background INLINE IS NOT ON THE CLASS'S SURFACE, and neither is
+        // anything inside it. Five live elements already wear a dangerous class and override their
+        // background this way.
+        Assert.Empty(ScanForWhiteOnFilled(
+            "<Style Selector=\"Button.fab\">"
+            + "<Setter Property=\"Background\" Value=\"{DynamicResource AccentPrimaryBrush}\"/></Style>"
+            + "<Button Classes=\"fab\" Background=\"{DynamicResource CardBackgroundBrush}\">"
+            + "<Path Fill=\"White\"/></Button>", "overriddenparent"));
+
+        // ONCE THE CONTAINER IS CLOSED, ITS CLASS STOPS APPLYING. Without popping the stack this would
+        // report every white literal in the rest of the file, which is the failure mode of a
+        // hand-rolled walk: it produces MORE findings, so it looks like a working guard.
+        Assert.Empty(ScanForWhiteOnFilled(
+            "<Style Selector=\"Button.fab\">"
+            + "<Setter Property=\"Background\" Value=\"{DynamicResource AccentPrimaryBrush}\"/></Style>"
+            + "<Button Classes=\"fab\"><Path Data=\"x\"/></Button><Path Fill=\"White\"/>", "sibling"));
+
+        // A SELF-CLOSING CONTAINER OPENS NOTHING. If it pushed a frame, the frame would never pop and
+        // its class would leak onto everything after it.
+        Assert.Empty(ScanForWhiteOnFilled(
+            "<Style Selector=\"Button.fab\">"
+            + "<Setter Property=\"Background\" Value=\"{DynamicResource AccentPrimaryBrush}\"/></Style>"
+            + "<Button Classes=\"fab\"/><Path Fill=\"White\"/>", "selfclosing"));
+
+        // A COMMENTED-OUT CONTAINER IS NOT A CONTAINER. Its opening tag has no closing tag to pop it.
+        Assert.Empty(ScanForWhiteOnFilled(
+            "<Style Selector=\"Button.fab\">"
+            + "<Setter Property=\"Background\" Value=\"{DynamicResource AccentPrimaryBrush}\"/></Style>"
+            + "<!-- <Button Classes=\"fab\"> --><Path Fill=\"White\"/>", "commented"));
 
         // AN INLINE Background WINS OVER THE STYLE, so the element is not on the class's surface.
         Assert.Empty(ScanForWhiteOnFilled(
