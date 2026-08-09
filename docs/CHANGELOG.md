@@ -196,6 +196,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The PC now keeps track of when each phone paired and when it last connected, ready for the
+  Paired Devices list.** Nothing shows this yet — the list itself is next — but the PC has never
+  recorded either fact, so without collecting it now the list would launch with nothing to show. The
+  dates are kept in their own small file, deliberately separate from the one that actually
+  authenticates your phones: that file is the only thing standing between your PC and an unpaired
+  device, and it is not worth touching to store a date. Phones you paired before this update have no
+  recorded pairing date and will honestly say so rather than claiming they were paired today.
+
+
 - **Four limits that stop a phone writing an unlimited amount onto your PC are now held in place by
   tests.** When your phone sends a file, it says up front how big the file is, and RemEx refuses a
   size that is nonsense or larger than the 5 GB ceiling. That check on its own is not enough: a phone
