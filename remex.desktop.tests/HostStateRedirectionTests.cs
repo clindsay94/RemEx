@@ -152,6 +152,40 @@ public sealed class HostStateRedirectionTests
     }
 
     /// <summary>
+    /// The two stores with no path seam still collect their abandoned staging copies (RemEx-azh2u).
+    /// </summary>
+    /// <remarks>
+    /// RemEx-njzcx wired the sweep into all eight remaining stores and guarded six; these two take no
+    /// store path a test can point at a temp directory. They did not need one in the end: both
+    /// resolve through <c>RemexDataPaths.ResolveDirectory</c>, which returns the override verbatim
+    /// when it is set — and this assembly's redirect is active at build level, which the tests above
+    /// prove rather than assume. So the orphan goes in the redirected directory and the real
+    /// constructor finds it.
+    /// </remarks>
+    [Theory]
+    [InlineData("host_dashboard_layout.json")]
+    [InlineData("file_transfer_roots.json")]
+    public void TheSeamlessStoresCollectTheirAbandonedStagingCopies(string storeFileName)
+    {
+        var directory = RemexDataPaths.HostStateDirectoryOverride;
+        Assert.False(string.IsNullOrWhiteSpace(directory),
+            "this test relies on the build-level redirect; without it the orphan would go in real state");
+
+        Directory.CreateDirectory(directory!);
+        var orphan = Path.Combine(directory!, $".{storeFileName}.deadbeef.tmp");
+        File.WriteAllText(orphan, "{\"left\":\"by a killed process\"}");
+
+        // Backdated, because the sweep spares anything younger than its threshold — a file that age
+        // is an in-flight write, and deleting one breaks that writer on Linux.
+        File.SetLastWriteTimeUtc(orphan, DateTime.UtcNow.AddHours(-1));
+
+        if (storeFileName == "host_dashboard_layout.json") _ = new DashboardProfileStorageService();
+        else _ = new FileTransferRootSettingsService();
+
+        Assert.False(File.Exists(orphan), $"{storeFileName}'s store walked past an abandoned copy of itself");
+    }
+
+    /// <summary>
     /// Exactly which production files still resolve the per-user directory for themselves
     /// (RemEx-mzbn).
     /// </summary>
