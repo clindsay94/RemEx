@@ -78,19 +78,23 @@ public class StatusDotPresenceBindingTests
             dots.Should().NotBeEmpty(
                 $"{name} is exempted as a host-link dot but no longer has one — drop it from the list");
 
-            // AN ASSERTION THAT THE EXEMPTED DOT STILL BINDS THE HOST LINK IS MISSING, and I could
-            // not make it work. It fails on a string that provably contains what it is looking for:
-            // dumped from inside the failing assertion, the single matched element is 191 characters
-            // ending `Classes.connected="{Binding IsConnected}">` and `dots[0].Contains("IsConnected",
-            // StringComparison.Ordinal)` evaluates True in the very same expression that reports the
-            // failure. It fails with a method group, a lambda and an explicit loop. Review reproduced
-            // the logic in Python and got a pass, which only confirms the intent, not the runtime.
+            // AND IT STILL BINDS WHAT IT IS EXEMPTED FOR (RemEx-wm4rt). Without this an entry
+            // survives somebody correctly rebinding the dot to presence, and the exemption then
+            // reads as a standing claim about a file that no longer makes it.
             //
-            // LEFT OUT RATHER THAN SHIPPED, because a guard whose behaviour nobody can explain is
-            // worse than none: the next person reads green as evidence. RemEx-wm4rt redoes these
-            // checks against a real XML parse, where this stops being a text-matching puzzle.
-            // TheAllowListHasNotGrown below covers what actually mattered — the list being grown
-            // quietly to silence a failure.
+            // THIS COULD NOT BE MADE TO WORK BEFORE, AND THE REASON WAS NOT SUBTLE ONCE FOUND. The
+            // matcher's pattern was written as @"IsConnected" and the file on disk held two
+            // literal BACKSPACE bytes (0x08) where those escapes were meant to be — so the pattern
+            // was IsConnected and could never match anything. That is why an assertion
+            // failed on a string that provably contained what it was looking for, and why reproducing
+            // the logic elsewhere passed: the bug was in the bytes, not the logic.
+            //
+            // It also means the offender scan above was INERT for as long as those bytes were there:
+            // a pattern that matches nothing finds no offenders, and "no offenders" is what that test
+            // asserts. It passes now on the merits — the scan finds none with a working pattern.
+            dots.Any(BindsTheHostLink).Should().BeTrue(
+                $"{name} is exempted as a host-link dot but no longer binds the host link — either "
+                + "the exemption is stale and should be dropped, or the dot lost its binding");
         }
     }
 
@@ -129,7 +133,7 @@ public class StatusDotPresenceBindingTests
     /// future offender whose DataContext happened to be the connection view model.
     /// </remarks>
     private static bool BindsTheHostLink(string line)
-        => Regex.IsMatch(line, @"IsConnected");
+        => Regex.IsMatch(line, @"IsConnected");
 
     /// <summary>
     /// Whole elements declaring a status indicator, whatever they are bound to.
