@@ -772,6 +772,7 @@ public sealed class TransferSessionManager : IDisposable
                 _logger.LogWarning(
                     "Cannot push {TransferId}: the peer acknowledged but its binary channel is not connected.",
                     transferId);
+                LogChannelMiss(clientId, "push");
                 return false;
             }
 
@@ -1086,6 +1087,40 @@ public sealed class TransferSessionManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Says which key was looked up and which are actually registered, when a file channel is missing
+    /// (RemEx-3ipz3).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// ONE LINE SEPARATES THE TWO SUSPECTS BEHIND RemEx-6bfyt, which both transfer directions reach
+    /// through this same lookup and which are indistinguishable from the phone. A registered set that
+    /// is NON-EMPTY and does not contain the key is client-id SKEW — /ws/files keys the channel on
+    /// the query-string clientId while the control path looks up connectionClientId, compared
+    /// Ordinal. A registered set that is EMPTY means the phone never opened /ws/files at all, most
+    /// likely refused by its protocolVersion &gt;= 3 gate, and that rejection is already logged at
+    /// the endpoint with its reason.
+    /// </para>
+    /// <para>
+    /// REDACTED, like every other client id in this file. A diagnostic is exportable — the whole
+    /// point of it is that a user sends it somewhere — so printing paired-device identifiers raw
+    /// would put them in a file that leaves the machine.
+    /// </para>
+    /// </remarks>
+    private void LogChannelMiss(string? clientId, string direction)
+    {
+        var registered = _channels.Keys
+            .Select(Remex.Agent.Services.Security.LogRedaction.RedactClientId)
+            .ToArray();
+
+        _logger.LogWarning(
+            "No /ws/files channel for {ClientId} on the {Direction} path. Registered: {Registered} ({Count}).",
+            Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId ?? string.Empty),
+            direction,
+            registered.Length == 0 ? "(none)" : string.Join(", ", registered),
+            registered.Length);
+    }
+
     private long GetLastAcked(string transferId)
         => _receiveSessions.TryGetValue(transferId, out var s) ? Interlocked.Read(ref s.LastAckedOffset) : 0;
 
@@ -1126,6 +1161,7 @@ public sealed class TransferSessionManager : IDisposable
 
         if (!_channels.TryGetValue(clientId, out var channel))
         {
+            LogChannelMiss(clientId, "download");
             await SendReadyAsync(controlWs, offer.TransferId, false, 0, "The binary file channel is not connected.", ct);
             return;
         }

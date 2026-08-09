@@ -137,14 +137,48 @@ public sealed class PendingPushOwnershipTests : IDisposable
             "the first push's cleanup evicted the second's wait, which then hangs to its own deadline");
     }
 
+    [Fact]
+    public async Task AMissingFileChannelSaysWhatWasLookedUpAndWhatIsThere()
+    {
+        // SERVES RemEx-6bfyt (RemEx-3ipz3). Both transfer directions fail at this one lookup and the
+        // message said neither which key was sought nor which are registered — so client-id SKEW and
+        // "the phone never opened /ws/files at all" are indistinguishable from the phone, and the
+        // reported symptom is identical either way. An EMPTY registered set means the second; a
+        // non-empty one that lacks the key means the first.
+        // A REALISTIC ID, NOT THE SHORT FIXTURE ONE. RedactClientId elides a prefix, so on "phone-a"
+        // it is a no-op and the redaction assertion below would be measuring the fixture's length
+        // rather than the code. Production ids are UUIDs.
+        const string realisticId = "3f2b9c14-77ad-4e01-9a6c-8d5512ee0b73";
+
+        var log = new CapturingLogger();
+        var manager = NewManager(log);
+        var (push, socket) = StartPush(manager, realisticId, CancellationToken.None);
+        await socket.OfferSent.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        // The peer accepts, and there is no file channel for it — the reported failure exactly.
+        manager.HandleReady(new FileTransferReady { TransferId = Transfer, Accepted = true }, channelKey: realisticId);
+
+        Assert.False(await push.WaitAsync(TimeSpan.FromSeconds(5)));
+
+        var miss = Assert.Single(log.Warnings, w => w.Contains("No /ws/files channel", StringComparison.Ordinal));
+        Assert.Contains("(none)", miss);
+        Assert.Contains("(0)", miss);
+
+        // REDACTED, like every other client id in this file. A diagnostic is exportable by design, so
+        // a raw paired-device identifier here would leave the machine in a support bundle.
+        Assert.DoesNotContain(realisticId, miss, StringComparison.Ordinal);
+    }
+
     // ── Harness ────────────────────────────────────────────────────────────────
 
-    private TransferSessionManager NewManager()
+    private TransferSessionManager NewManager() => NewManager(_log);
+
+    private TransferSessionManager NewManager(CapturingLogger log)
     {
         var files = Mock.Of<IFileTransferService>();
         var resolver = new SharedRootReadResolver(
             files, Mock.Of<IFileTrustService>(), new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
-        return new TransferSessionManager(_log, files, resolver, _staging.FullName);
+        return new TransferSessionManager(log, files, resolver, _staging.FullName);
     }
 
     /// <summary>Starts a push to <see cref="Phone"/> and leaves it waiting on the ready.</summary>
