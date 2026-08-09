@@ -168,6 +168,26 @@ data class RemoteDesktopUiState(
         val streamRequested: Boolean = false
 )
 
+/**
+ * Whether the idle screen offers its start action (RemEx-5k4dd).
+ *
+ * **AN ERROR IS A DIFFERENT STATE FROM AN UNSUPPORTED HOST**, and conflating them is what made this
+ * screen a dead end. Hiding the action on a host that genuinely cannot stream is right. Hiding it
+ * when a stream FAILED left the user with an error message under a monitor icon and nothing to
+ * press, because several failure paths also clear the capability flag - so the one thing they would
+ * naturally try was the one thing not offered.
+ *
+ * Extracted rather than left inline because the interesting part is the truth table, and the case
+ * that must NOT regress - an unsupported host with no error, still hidden - is invisible in a
+ * composable and provable here.
+ */
+internal fun shouldOfferStartAction(
+    isStreaming: Boolean,
+    supportsRemoteDesktop: Boolean,
+    hasError: Boolean
+): Boolean = !isStreaming && (supportsRemoteDesktop || hasError)
+
+
 // Workaround: calling AnimatedVisibility inside a Box that lives inside a Column
 // causes Kotlin overload resolution to bind to ColumnScope.AnimatedVisibility, which
 // @LayoutScopeMarker then rejects. A plain composable body resolves to the top-level overload.
@@ -2424,9 +2444,29 @@ fun RemoteDesktopScreenContent(
                                                                         .onSurfaceVariant,
                                                         style = MaterialTheme.typography.bodyLarge
                                                 )
-                                                if (!uiState.isStreaming &&
-                                                                uiState.capabilityState
-                                                                        .supportsRemoteDesktop
+                                                // AN ERROR IS A DIFFERENT STATE FROM AN UNSUPPORTED
+                                                // HOST (RemEx-5k4dd). Hiding this on a host that
+                                                // genuinely cannot stream is right; hiding it when a
+                                                // stream FAILED left the user with an error message
+                                                // under a monitor icon and nothing to press, because
+                                                // several failure paths also clear the capability
+                                                // flag. The screen became a dead end reachable by
+                                                // ordinary failure, with backing out to reconnect the
+                                                // only way forward.
+                                                //
+                                                // The label still reads "start streaming" and that is
+                                                // accurate - it does. Turning it into a cause-aware
+                                                // "Retry" belongs with the guidance work on
+                                                // RemEx-9wyu, where it would sit beside a message
+                                                // explaining what failed rather than under a raw
+                                                // native error string.
+                                                if (shouldOfferStartAction(
+                                                                isStreaming = uiState.isStreaming,
+                                                                supportsRemoteDesktop =
+                                                                        uiState.capabilityState
+                                                                                .supportsRemoteDesktop,
+                                                                hasError = uiState.desktopError != null
+                                                        )
                                                 ) {
                                                         Spacer(modifier = Modifier.height(16.dp))
                                                         FilledTonalButton(

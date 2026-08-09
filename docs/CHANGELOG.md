@@ -45,6 +45,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A failed remote-desktop stream left you with nothing to press.** When streaming failed, the
+  phone showed the error and hid the start button — because several failure paths also clear the
+  "this PC can stream" flag the button was gated on. The one thing you would naturally try was the
+  one thing not offered, and backing out to reconnect was the only way forward. The action is now
+  offered whenever there is an error. A PC that genuinely cannot stream still hides it. (RemEx-5k4dd)
+
 - **Escape now closes every dialog.** Pairing, file consent, confirmations, the restore prompt and
   the two chart dialogs all ignored Escape, so backing out meant reaching for the mouse — after
   typing a six-digit PIN, in the pairing case. Escape always takes the safe option: on a file-consent
