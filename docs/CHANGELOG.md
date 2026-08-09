@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Another program on your PC could pretend to be your phone and take over its file transfer.** RemEx
+  treats connections that come from the PC itself as already trusted, because normally that is just
+  RemEx talking to itself. But it also let such a connection say which phone it was — and it was
+  believed. Any program running on your PC, including one without administrator rights, could name
+  your paired phone and take over that phone's file-transfer connection, receiving or altering the
+  file data of a transfer already in progress. It could do the same to the screen-sharing connection
+  and cut your phone off. A connection from the PC itself is now refused if it claims to be a phone
+  you have paired. The same fault was fixed for the ordinary command connection in the previous
+  release; this closes the two data channels it did not cover. Nothing you would normally run is
+  affected — RemEx's own window never claimed to be a phone.
+
 ### Fixed
 
 - **Removing a program from the launcher, ending a task, or deleting a remote file did nothing —
