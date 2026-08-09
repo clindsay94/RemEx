@@ -7,7 +7,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -462,7 +461,6 @@ object FileTransferNotificationManager {
         CONSENT_NOTIFICATION_ID_BASE + (consentId.hashCode() and 0xFFFF)
 
     private fun ensureConsentChannel(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel =
             NotificationChannel(
                     CONSENT_CHANNEL_ID,
@@ -534,7 +532,6 @@ object FileTransferNotificationManager {
      * edit, since it proposes raising transfer alerts above IMPORTANCE_LOW.
      */
     internal fun ensureTransferChannel(context: Context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
 
         val channel =
                 NotificationChannel(
@@ -555,10 +552,11 @@ object FileTransferNotificationManager {
     }
 
     private fun canPostNotifications(context: Context): Boolean {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.POST_NOTIFICATIONS,
-                ) == PackageManager.PERMISSION_GRANTED
+        // POST_NOTIFICATIONS has been required since TIRAMISU and minSdk is 34, so there is no
+        // longer a platform where posting is unconditionally allowed (RemEx-jcl4p).
+        return ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
     }
 }

@@ -1,13 +1,9 @@
 package com.clindsay94.remex.ui.screens
 
-import android.app.Activity
 import android.app.LocaleManager
 import android.content.Context
-import android.content.ContextWrapper
-import android.os.Build
 import android.os.LocaleList
 import android.view.HapticFeedbackConstants
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -46,7 +42,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.clindsay94.remex.ui.theme.RemExTheme
 import androidx.core.graphics.toColorInt
-import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.R
@@ -61,12 +56,6 @@ import com.clindsay94.remex.ui.theme.materialShapesList
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.TonalPalette
 import kotlin.math.roundToInt
-
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
-}
 
 @OptIn(
         ExperimentalMaterial3Api::class,
@@ -303,7 +292,7 @@ fun PersonalizationScreenContent(
                             style = MaterialTheme.typography.labelMedium
                     )
 
-                    val currentLangTag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val currentLangTag = run {
                         val localeManager = view.context.getSystemService(LocaleManager::class.java)
                         val appLocales = localeManager?.applicationLocales
                         if (appLocales == null || appLocales.isEmpty) {
@@ -311,16 +300,6 @@ fun PersonalizationScreenContent(
                         } else {
                             val tag = appLocales.get(0).toLanguageTag()
                             if (tag == "in" || tag == "id") "id" else tag
-                        }
-                    } else {
-                        val currentLocales = AppCompatDelegate.getApplicationLocales()
-                        if (currentLocales.isEmpty) {
-                            "system"
-                        } else {
-                            when (currentLocales[0]?.toLanguageTag()) {
-                                "in", "id" -> "id"
-                                else -> currentLocales[0]?.toLanguageTag() ?: "system"
-                            }
                         }
                     }
 
@@ -411,18 +390,11 @@ fun PersonalizationScreenContent(
                                             )
                                             expanded = false
                                             val tags = if (tag == "system") "" else tag
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                                val lm = view.context.getSystemService(LocaleManager::class.java)
-                                                if (lm != null) {
-                                                    lm.applicationLocales =
-                                                        if (tags.isEmpty()) LocaleList.getEmptyLocaleList()
-                                                        else LocaleList.forLanguageTags(tags)
-                                                }
-                                            } else {
-                                                val locales = if (tags.isEmpty()) LocaleListCompat.getEmptyLocaleList()
-                                                              else LocaleListCompat.forLanguageTags(tags)
-                                                AppCompatDelegate.setApplicationLocales(locales)
-                                                view.context.findActivity()?.recreate()
+                                            val lm = view.context.getSystemService(LocaleManager::class.java)
+                                            if (lm != null) {
+                                                lm.applicationLocales =
+                                                    if (tags.isEmpty()) LocaleList.getEmptyLocaleList()
+                                                    else LocaleList.forLanguageTags(tags)
                                             }
                                         }
                                 )
@@ -577,36 +549,35 @@ fun PersonalizationScreenContent(
                             Icons.Default.Palette
                     )
 
-                    // Material You wallpaper color — only exists on API 31+, and the custom
-                    // palette branch in RemExTheme overrides it, so disable it there (RemEx-9429).
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                        stringResource(R.string.personalization_dynamic_color),
-                                        style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                        stringResource(
-                                                R.string.personalization_dynamic_color_desc
-                                        ),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                    checked = dynamicColor,
-                                    onCheckedChange = {
-                                        dynamicColor = it
-                                        onDynamicColorChange(it)
-                                    },
-                                    enabled = palette == "default"
+                    // Material You wallpaper colour. The custom-palette branch in RemExTheme
+                    // overrides it, so it is disabled there — that override, not an API level, is
+                    // why this is conditional at all (RemEx-9429, RemEx-jcl4p).
+                    Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                    stringResource(R.string.personalization_dynamic_color),
+                                    style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                    stringResource(
+                                            R.string.personalization_dynamic_color_desc
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Switch(
+                                checked = dynamicColor,
+                                onCheckedChange = {
+                                    dynamicColor = it
+                                    onDynamicColorChange(it)
+                                },
+                                enabled = palette == "default"
+                        )
                     }
 
                     Text(

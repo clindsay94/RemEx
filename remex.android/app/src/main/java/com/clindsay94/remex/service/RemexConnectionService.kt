@@ -8,7 +8,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.clindsay94.remex.MainActivity
@@ -57,11 +56,8 @@ class RemexConnectionService : Service() {
         val notification = buildNotification(isConnected = RemexClientManager.isConnected.value)
 
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
-            } else {
-                startForeground(NOTIFICATION_ID, notification)
-            }
+            startForeground(
+                NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
         } catch (e: SecurityException) {
             android.util.Log.w("RemexService", "Cannot start foreground service (missing permissions), connection will work without background persistence", e)
             stopSelf()

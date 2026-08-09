@@ -1,6 +1,5 @@
 package com.clindsay94.remex.ui.screens
 
-import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -626,11 +625,7 @@ private fun ProcessCard(
                 confirmButton = {
                     Button(
                             onClick = {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                    view.performHapticFeedback(HapticFeedbackConstants.REJECT)
-                                } else {
-                                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                                }
+                                view.performHapticFeedback(HapticFeedbackConstants.REJECT)
                                 onKill()
                                 showConfirm = false
                             },

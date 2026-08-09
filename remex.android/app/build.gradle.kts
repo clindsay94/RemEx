@@ -181,6 +181,23 @@ android {
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                         .optional(true)
 
+                // Same reasoning for the source-scanning guards, which read Kotlin main sources
+                // off disk (DeadSdkGuardTest, SendCommandThreadingTest and friends).
+                it.inputs
+                        .files(fileTree("src/main/java") { include("**/*.kt") })
+                        .withPropertyName("scannedKotlinMainSources")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+
+                // And this build script, because DeadSdkGuardTest parses minSdk out of it rather
+                // than hardcoding 34. A minSdk bump is the change that guard has the most to say
+                // about — every `>= VANILLA_ICE_CREAM` in the tree becomes dead the moment minSdk
+                // reaches 35 — and it is also a change that need not alter a single .class byte,
+                // so without this it is precisely the run Gradle would skip. (RemEx-jcl4p.)
+                it.inputs
+                        .file(File(projectDir, "build.gradle.kts"))
+                        .withPropertyName("appBuildScriptForMinSdk")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+
                 // And for the pairing PHASE tokens, which live in a third C# file. PairingPhaseTest
                 // reads AndroidNativeExports.cs to prove every token the native side emits is mapped
                 // to a localized sentence here, and that every token it declares is actually emitted.

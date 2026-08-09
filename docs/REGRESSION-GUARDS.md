@@ -495,9 +495,15 @@ WebSocket close.
 
 ### `NsdDiscoveryManager` — API-level strategy
 
-API 34+ uses concurrent, cancellable `registerServiceInfoCallback`. Pre-34 serialises resolves
-process-wide via a `Mutex`, because `NsdManager` pre-34 allows only one in-flight resolve. Always
-acquires a `WifiManager.MulticastLock` for mDNS reliability.
+Resolves via the concurrent, cancellable `registerServiceInfoCallback` — unconditionally, because
+minSdk is 34. **Always acquires a `WifiManager.MulticastLock` for mDNS reliability**; that is the
+half of this guard that still bites, and dropping it makes discovery fail silently on some networks.
+
+The pre-34 half expired rather than being violated: this used to fall back to `resolveService()`
+serialised behind a process-wide `Mutex`, because pre-34 allows only one in-flight resolve and a
+second returns `FAILURE_ALREADY_ACTIVE`. At minSdk 34 that branch could not be selected on any
+device the app installs on, so it was deleted with the mutex in RemEx-jcl4p. **If minSdk ever moves
+DOWN, the mutex must come back** — the constraint is real, it is just unreachable.
 
 ### `isMulticastReachableHost` — mDNS self-heal gate
 

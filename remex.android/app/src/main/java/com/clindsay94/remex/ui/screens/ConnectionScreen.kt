@@ -206,10 +206,8 @@ fun ConnectionScreenContent(
                 val needsLan =
                         com.clindsay94.remex.security.TransportTrust.requiresLocalNetworkAccess(host)
                 return buildList {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                        add(Manifest.permission.POST_NOTIFICATIONS)
-                                        if (needsLan) add(Manifest.permission.NEARBY_WIFI_DEVICES)
-                                }
+                                add(Manifest.permission.POST_NOTIFICATIONS)
+                                if (needsLan) add(Manifest.permission.NEARBY_WIFI_DEVICES)
                                 // SDK 37 (Android 17) requires ACCESS_LOCAL_NETWORK for LAN access.
                                 if (needsLan && Build.VERSION.SDK_INT >= 36) {
                                         add("android.permission.ACCESS_LOCAL_NETWORK")
@@ -219,7 +217,6 @@ fun ConnectionScreenContent(
         }
 
         fun hasNearbyWifiPermission(): Boolean {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
                 val hasNearby = ContextCompat.checkSelfPermission(
                         context,
                         Manifest.permission.NEARBY_WIFI_DEVICES

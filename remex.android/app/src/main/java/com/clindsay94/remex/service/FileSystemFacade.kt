@@ -2,9 +2,7 @@ package com.clindsay94.remex.service
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.util.Size
 import androidx.documentfile.provider.DocumentFile
 import java.io.ByteArrayOutputStream
@@ -159,16 +157,7 @@ class SafFileSystemFacade(
         val dim = maxDim.coerceIn(16, 512)
         val bmp: Bitmap? =
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    context.contentResolver.loadThumbnail(doc.uri, Size(dim, dim), null)
-                } else {
-                    // Pre-Q: decode the image directly (best-effort; videos are unsupported here).
-                    if (type.startsWith("image/")) {
-                        context.contentResolver.openInputStream(doc.uri)?.use {
-                            decodeScaled(it, dim)
-                        }
-                    } else null
-                }
+                context.contentResolver.loadThumbnail(doc.uri, Size(dim, dim), null)
             } catch (e: Exception) {
                 null
             }
@@ -187,17 +176,6 @@ class SafFileSystemFacade(
         }
         bmp.recycle()
         return null
-    }
-
-    private fun decodeScaled(input: InputStream, maxDim: Int): Bitmap? {
-        val bytes = input.readBytes()
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-        var sample = 1
-        val largest = maxOf(bounds.outWidth, bounds.outHeight)
-        while (largest / sample > maxDim) sample *= 2
-        val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
     }
 }
 
