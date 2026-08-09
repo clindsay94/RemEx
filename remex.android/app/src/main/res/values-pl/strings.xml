@@ -898,6 +898,7 @@
     <string name="clipboard_send_empty">W schowku nie ma nic do wysłania</string>
     <string name="clipboard_send_too_large">To za duże, aby wysłać. Limit to %1$d KB.</string>
     <string name="clipboard_send_failed">Nie udało się wysłać schowka</string>
+    <string name="clipboard_send_refused">Komputer odrzucił — najpierw sparuj telefon z komputerem</string>
     <string name="clipboard_send_not_connected">Najpierw połącz się z komputerem</string>
     <string name="clipboard_send_unsupported">Wysłać można tylko skopiowany tekst</string>
     <string name="clipboard_fetch_button">Pobierz schowek z komputera</string>

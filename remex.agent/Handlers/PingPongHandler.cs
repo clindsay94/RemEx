@@ -313,6 +313,34 @@ public sealed class PingPongHandler(
                         CorrelationId = message.CorrelationId,
                     };
                     await MessageSerializer.SendAsync(webSocket, unauthorized, ct);
+
+                    // AND AGAIN IN A FORM THE PHONE WILL ACTUALLY RECEIVE. The command_response
+                    // above is correlated by the native client against a pending command, and a
+                    // clipboard push is sent fire-and-forget, so it registers nothing to correlate
+                    // against and this refusal reached nobody. That is not a hypothesis: a real
+                    // emulator push was refused here and the phone told the user "Sent to the PC's
+                    // clipboard" (RemEx-s1ay7). clipboard_push_result is carried by the clipboard_
+                    // prefix forward, which is the whole point of routing the family rather than
+                    // the type.
+                    if (message.Type == MessageTypes.ClipboardPush)
+                    {
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.ClipboardPushResult,
+                                ClipboardPushResult = new Remex.Core.Models.ClipboardPushResult { Reason = "refused" },
+                                // Echoed here TOO. An earlier version of this omitted it and said
+                                // the gate lacked the context - which was simply untrue, the id is
+                                // in scope and the command_response above already uses it. With
+                                // only one of the two answer paths carrying an id the phone cannot
+                                // key on it at all, which is why it matches the first answer it
+                                // sees and two pushes in flight can be told each other's outcome.
+                                CorrelationId = message.CorrelationId,
+                            },
+                            ct);
+                    }
+
                     continue;
                 }
 
@@ -444,7 +472,33 @@ public sealed class PingPongHandler(
                     // reports those itself. What is left here is a defence against a client that
                     // did not check, and its audience is the log.
                     case MessageTypes.ClipboardPush when message.ClipboardPush is not null:
-                        await HandleClipboardPushAsync(message.ClipboardPush, ct);
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.ClipboardPushResult,
+                                ClipboardPushResult = new Remex.Core.Models.ClipboardPushResult
+                                {
+                                    Reason = await HandleClipboardPushAsync(message.ClipboardPush, ct),
+                                },
+                                CorrelationId = message.CorrelationId,
+                            },
+                            ct);
+                        break;
+
+                    // A clipboard_push whose payload did not survive deserialization. Answered
+                    // rather than dropped: falling through to default: leaves the phone waiting out
+                    // its full timeout for news the host already has.
+                    case MessageTypes.ClipboardPush:
+                        await MessageSerializer.SendAsync(
+                            webSocket,
+                            new RemexMessage
+                            {
+                                Type = MessageTypes.ClipboardPushResult,
+                                ClipboardPushResult = new Remex.Core.Models.ClipboardPushResult { Reason = "empty" },
+                                CorrelationId = message.CorrelationId,
+                            },
+                            ct);
                         break;
 
                     // UNLIKE THE PUSH, THIS ONE ANSWERS - and the answer only arrives because
@@ -1161,7 +1215,7 @@ public sealed class PingPongHandler(
     /// copied, and a log line is the easiest place in the system for it to escape to.
     /// </para>
     /// </remarks>
-    internal async Task<bool> HandleClipboardPushAsync(
+    internal async Task<string> HandleClipboardPushAsync(
         Remex.Core.Models.ClipboardPush push, CancellationToken ct)
     {
         var reason = ClipboardValidation.Validate(push.Text, out var bytes);
@@ -1169,14 +1223,28 @@ public sealed class PingPongHandler(
         var written = reason == ClipboardRejectReason.None
             && await hostClipboard.SetTextAsync(push.Text, ct);
 
-        logger.LogInformation(
-            "Clipboard push from client: {Bytes} bytes, outcome {Outcome}.",
-            bytes,
-            reason == ClipboardRejectReason.None
-                ? (written ? "written" : "clipboard-unavailable")
-                : reason.ToString());
+        // The SAME TOKEN VOCABULARY the rest of the feature uses, so the phone maps clipboard
+        // outcomes in one place rather than two that drift. This value was already being computed
+        // for the log line below and thrown away, which is precisely why the phone had nothing to
+        // report (RemEx-s1ay7).
+        // EXHAUSTIVE ON PURPOSE. The obvious `_ => written ? ...` catch-all quietly relabels any
+        // reason added to the enum later as "unavailable", telling the user the PC could not be
+        // reached when in fact their payload was refused - and the log line would repeat the same
+        // wrong story, leaving nothing pointing at the real cause. The code this replaced logged
+        // reason.ToString(), which named an unknown reason accurately; losing that is not a trade
+        // worth making for a shorter switch.
+        var outcome = reason switch
+        {
+            ClipboardRejectReason.None => written ? "none" : "unavailable",
+            ClipboardRejectReason.Empty => "empty",
+            ClipboardRejectReason.TooLarge => "too_large",
+            _ => reason.ToString().ToLowerInvariant(),
+        };
 
-        return written;
+        logger.LogInformation(
+            "Clipboard push from client: {Bytes} bytes, outcome {Outcome}.", bytes, outcome);
+
+        return outcome;
     }
 
     internal static bool RequiresPairing(string type) => type switch

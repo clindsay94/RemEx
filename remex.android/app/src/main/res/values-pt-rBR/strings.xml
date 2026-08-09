@@ -882,6 +882,7 @@
     <string name="clipboard_send_empty">Não há nada na área de transferência para enviar</string>
     <string name="clipboard_send_too_large">Isso é grande demais para enviar. O limite é %1$d KB.</string>
     <string name="clipboard_send_failed">Não foi possível enviar a área de transferência</string>
+    <string name="clipboard_send_refused">O PC recusou — pareie o telefone com seu PC primeiro</string>
     <string name="clipboard_send_not_connected">Conecte-se ao seu PC primeiro</string>
     <string name="clipboard_send_unsupported">Só é possível enviar texto copiado</string>
     <string name="clipboard_fetch_button">Obter área de transferência do PC</string>

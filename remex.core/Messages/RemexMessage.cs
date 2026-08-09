@@ -320,6 +320,10 @@ public sealed record RemexMessage
     /// </summary>
     [JsonPropertyName("clipboardContent")]
     public Remex.Core.Models.ClipboardContent? ClipboardContent { get; init; }
+
+    /// <summary>What the PC did with a pushed clipboard, for <see cref="MessageTypes.ClipboardPushResult"/>.</summary>
+    [JsonPropertyName("clipboardPushResult")]
+    public Remex.Core.Models.ClipboardPushResult? ClipboardPushResult { get; init; }
 }
 
 /// <summary>
@@ -458,4 +462,8 @@ public static class MessageTypes
     // clipboard_ prefix forward there, and the guard that keeps it honest.
     public const string ClipboardRequest = "clipboard_request";
     public const string ClipboardContent = "clipboard_content";
+
+    // The push's answer (RemEx-s1ay7). clipboard_ prefixed, so the router carries it with no new
+    // wiring at all - which is the payoff of forwarding the family by prefix rather than by name.
+    public const string ClipboardPushResult = "clipboard_push_result";
 }

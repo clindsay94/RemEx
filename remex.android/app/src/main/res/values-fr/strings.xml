@@ -882,6 +882,7 @@
     <string name="clipboard_send_empty">Le presse-papiers est vide</string>
     <string name="clipboard_send_too_large">C’est trop volumineux pour être envoyé. La limite est de %1$d Ko.</string>
     <string name="clipboard_send_failed">Impossible d’envoyer le presse-papiers</string>
+    <string name="clipboard_send_refused">Le PC l’a refusé : associez d’abord le téléphone à votre PC</string>
     <string name="clipboard_send_not_connected">Connectez-vous d’abord à votre PC</string>
     <string name="clipboard_send_unsupported">Seul du texte copié peut être envoyé</string>
     <string name="clipboard_fetch_button">Récupérer le presse-papiers du PC</string>

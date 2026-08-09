@@ -4,6 +4,7 @@ using Remex.Agent.Handlers;
 using Remex.Core.Messages;
 using Remex.Core.Models;
 using Remex.Core.Services;
+using System.Text.RegularExpressions;
 using Remex.Core.Validation;
 
 namespace Remex.Agent.Tests;
@@ -62,10 +63,10 @@ public class ClipboardPushHandlerTests
     {
         var clipboard = new FakeHostClipboard();
 
-        var written = await NewHandler(clipboard)
+        var outcome = await NewHandler(clipboard)
             .HandleClipboardPushAsync(new ClipboardPush { Text = "https://example.invalid/x?y=1" }, default);
 
-        Assert.True(written);
+        Assert.Equal("none", outcome);
         Assert.Equal(1, clipboard.WriteCount);
         Assert.Equal("https://example.invalid/x?y=1", clipboard.LastText);
     }
@@ -78,10 +79,10 @@ public class ClipboardPushHandlerTests
         // matters is not the return value but that the write never happened at all.
         var clipboard = new FakeHostClipboard();
 
-        var written = await NewHandler(clipboard)
+        var outcome = await NewHandler(clipboard)
             .HandleClipboardPushAsync(new ClipboardPush { Text = "" }, default);
 
-        Assert.False(written);
+        Assert.Equal("empty", outcome);
         Assert.Equal(0, clipboard.WriteCount);
     }
 
@@ -92,7 +93,7 @@ public class ClipboardPushHandlerTests
         // with the empty case above is the whole point: "looks like nothing" is not "is nothing".
         var clipboard = new FakeHostClipboard();
 
-        Assert.True(await NewHandler(clipboard)
+        Assert.Equal("none", await NewHandler(clipboard)
             .HandleClipboardPushAsync(new ClipboardPush { Text = "    \n\t" }, default));
         Assert.Equal(1, clipboard.WriteCount);
     }
@@ -103,10 +104,10 @@ public class ClipboardPushHandlerTests
         var clipboard = new FakeHostClipboard();
         var tooBig = new string('a', ClipboardValidation.MaxPayloadBytes + 1);
 
-        var written = await NewHandler(clipboard)
+        var outcome = await NewHandler(clipboard)
             .HandleClipboardPushAsync(new ClipboardPush { Text = tooBig }, default);
 
-        Assert.False(written);
+        Assert.Equal("too_large", outcome);
         Assert.Equal(0, clipboard.WriteCount);
     }
 
@@ -123,7 +124,7 @@ public class ClipboardPushHandlerTests
 
         Assert.True(cjk.Length < ClipboardValidation.MaxPayloadBytes, "the point is it passes a char-count check");
 
-        Assert.False(await NewHandler(clipboard).HandleClipboardPushAsync(new ClipboardPush { Text = cjk }, default));
+        Assert.Equal("too_large", await NewHandler(clipboard).HandleClipboardPushAsync(new ClipboardPush { Text = cjk }, default));
         Assert.Equal(0, clipboard.WriteCount);
     }
 
@@ -135,7 +136,7 @@ public class ClipboardPushHandlerTests
         var clipboard = new FakeHostClipboard();
         var exact = new string('a', ClipboardValidation.MaxPayloadBytes);
 
-        Assert.True(await NewHandler(clipboard).HandleClipboardPushAsync(new ClipboardPush { Text = exact }, default));
+        Assert.Equal("none", await NewHandler(clipboard).HandleClipboardPushAsync(new ClipboardPush { Text = exact }, default));
         Assert.Equal(ClipboardValidation.MaxPayloadBytes, clipboard.LastByteCount);
     }
 
@@ -146,7 +147,10 @@ public class ClipboardPushHandlerTests
         // report, not an exception to unwind a socket loop with.
         var clipboard = new FakeHostClipboard { Succeeds = false };
 
-        Assert.False(await NewHandler(clipboard)
+        // "unavailable", NOT "none". Until RemEx-s1ay7 this returned a bool the caller discarded,
+        // so a PC that could not take the clipboard was indistinguishable from one that did - and
+        // the phone said "Sent to the PC's clipboard" either way.
+        Assert.Equal("unavailable", await NewHandler(clipboard)
             .HandleClipboardPushAsync(new ClipboardPush { Text = "x" }, default));
         Assert.Equal(1, clipboard.WriteCount);
     }
@@ -176,4 +180,54 @@ public class ClipboardPushHandlerTests
         // NOT be on that list - asserting it keeps a future tightening from silently disabling this.
         Assert.False(PingPongHandler.RequiresLoopback(MessageTypes.ClipboardPush));
     }
+
+    [Fact]
+    public void EveryOutcomeTokenTheHostEmitsIsOneThePhoneRecognises()
+    {
+        // THE CONTRACT THAT MAKES THE ANSWER USEFUL, and the reason it is scanned rather than
+        // restated: the phone maps these tokens to sentences and fails CLOSED on anything else, so a
+        // token misspelled on this side does not produce a wrong message - it produces "could not
+        // send", silently turning a successful push into a reported failure. The literal that is
+        // easiest to get wrong is "refused", which is written in the pairing gate far away from the
+        // handler and is exercised by no unit test at all.
+        //
+        // (An earlier version of this test compared a list to itself and could not fail. It was
+        // caught by reading it, not by running it - a green assertion proves nothing about whether
+        // it can go red.)
+        var source = File.ReadAllText(Path.Combine(
+            Path.GetFullPath(Path.Combine(Path.GetDirectoryName(ThisFile())!, "..")),
+            "remex.agent", "Handlers", "PingPongHandler.cs"));
+
+        // ANCHORED ON THE TYPE BEING CONSTRUCTED, not on the property name. Two earlier versions
+        // of this scan were too wide and failed on correct code: one matched every `=> "..."` in the
+        // file, the other matched `Reason = "closed"`, which is a DISCONNECT reason and nothing to
+        // do with clipboards. A scan wide enough to catch everything is wide enough to catch the
+        // wrong thing, and a guard that cries wolf gets an allowlist bolted on, which is how it
+        // stops catching the real thing.
+        //
+        // The four tokens the handler RETURNS are pinned exactly by the behavioural tests above;
+        // this covers the one written elsewhere and exercised by none of them.
+        //
+        // HONEST ABOUT WHAT IT PROVES: `known` is this side's copy of the phone's `when`, so it
+        // checks the host against a list in the host's own test project, not against Kotlin. A
+        // reviewer found it had ALREADY drifted at authoring time - the phone had no "unavailable"
+        // arm and reached the right string only by falling through - so the arm was added rather
+        // than the claim softened. Real cross-language enforcement would need the Kotlin source in
+        // the scan; this is the cheap half, and its limit is stated so nobody reads it as the whole.
+        var emitted = Regex.Matches(source, @"ClipboardPushResult\s*\{\s*Reason = ""([a-z_]+)""")
+            .Select(m => m.Groups[1].Value)
+            .ToHashSet(StringComparer.Ordinal);
+
+        Assert.NotEmpty(emitted);
+
+        var known = new HashSet<string>(["none", "empty", "too_large", "unavailable", "refused"], StringComparer.Ordinal);
+        Assert.True(
+            emitted.IsSubsetOf(known),
+            $"the host emits clipboard outcome tokens the phone does not map: {string.Join(", ", emitted.Except(known))}");
+
+        // And the one no unit test reaches is definitely there.
+        Assert.Contains("refused", emitted);
+    }
+
+    private static string ThisFile([System.Runtime.CompilerServices.CallerFilePath] string p = "") => p;
 }

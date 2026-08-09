@@ -74,3 +74,30 @@ public sealed record ClipboardContent
     public override string ToString() =>
         $"ClipboardContent {{ Reason = {Reason}, Bytes = {(Text is null ? 0 : System.Text.Encoding.UTF8.GetByteCount(Text))} }}";
 }
+
+/// <summary>
+/// Host → client: what the PC actually did with a pushed clipboard (RemEx-s1ay7).
+/// </summary>
+/// <remarks>
+/// <para>
+/// **THIS EXISTS BECAUSE THE PHONE WAS TELLING PEOPLE A PUSH HAD WORKED WHEN THE PC HAD REFUSED
+/// IT.** The push is sent fire-and-forget, so the phone learned only that the message reached the
+/// socket, and every host-side refusal — an unpaired connection, a clipboard it could not reach, an
+/// older host with no handler at all — rendered as "Sent to the PC's clipboard". That was observed,
+/// not theorised: a real emulator push was refused by the pairing gate and reported as success.
+/// </para>
+/// <para>
+/// Deciding refusals on the phone first was the right call and stays — an empty clipboard should not
+/// need a network round trip to say so. It simply cannot cover the outcomes only the PC knows.
+/// </para>
+/// <para>
+/// **THE SAME REASON VOCABULARY AS EVERY OTHER PART OF THIS FEATURE**, plus <c>refused</c> for the
+/// case the phone cannot predict at all. One set of tokens means the phone maps them in one place
+/// instead of two that drift, and an unrecognised token fails closed on arrival.
+/// </para>
+/// </remarks>
+public sealed record ClipboardPushResult
+{
+    /// <summary>One of <c>none</c> (written), <c>empty</c>, <c>too_large</c>, <c>unavailable</c>, <c>refused</c>.</summary>
+    [JsonPropertyName("reason")] public required string Reason { get; init; }
+}

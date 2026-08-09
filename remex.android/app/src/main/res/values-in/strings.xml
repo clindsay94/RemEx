@@ -878,6 +878,7 @@
     <string name="clipboard_send_empty">Tidak ada apa pun di papan klip untuk dikirim</string>
     <string name="clipboard_send_too_large">Terlalu besar untuk dikirim. Batasnya %1$d KB.</string>
     <string name="clipboard_send_failed">Tidak dapat mengirim papan klip</string>
+    <string name="clipboard_send_refused">PC menolaknya — sambungkan dulu ponsel dengan PC Anda</string>
     <string name="clipboard_send_not_connected">Hubungkan ke PC Anda terlebih dahulu</string>
     <string name="clipboard_send_unsupported">Hanya teks yang disalin yang dapat dikirim</string>
     <string name="clipboard_fetch_button">Ambil papan klip dari PC</string>

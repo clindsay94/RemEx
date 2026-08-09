@@ -43,6 +43,15 @@ private const val TAG = "RemoteControlVM"
  */
 private const val CLIPBOARD_FETCH_TIMEOUT_MS = 5_000L
 
+/**
+ * The cap in KB, for the one message that names it.
+ *
+ * The host decides "too large" and answers with a token, not a number, so this is the phone's copy
+ * of a limit the PC owns. It is only ever used to phrase a sentence - the actual enforcement is the
+ * shared native validation - and the host refuses independently regardless of what this says.
+ */
+private const val ClipboardValidation_MAX_KB = 256
+
 class RemoteControlViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsManager = SettingsManager(application)
@@ -286,45 +295,81 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
 
             // NOTHING BELOW LOGS `text`. It is whatever the user last copied.
             val outcome =
-                    withContext(sendDispatcher) {
-                        when (val verdict =
-                                clipboardVerdictOf(RemexCoreClient.ValidateClipboard(text).getOrNull())
-                        ) {
-                            is ClipboardVerdict.Sendable -> {
-                                val message =
-                                        JSONObject().apply {
-                                            put("type", "clipboard_push")
-                                            put("protocolVersion", 2)
-                                            put(
-                                                    "clipboardPush",
-                                                    JSONObject().apply { put("text", text) }
-                                            )
-                                        }
+                    coroutineScope {
+                        // Same UNDISPATCHED subscribe-before-send as the fetch, and for the same
+                        // reason: the answer is a SharedFlow event with no replay, so a collector
+                        // registered after the PC replies has missed it.
+                        val waiting =
+                                async(start = CoroutineStart.UNDISPATCHED) {
+                                    withTimeoutOrNull(CLIPBOARD_FETCH_TIMEOUT_MS) {
+                                        RemexClientManager.clipboardMessages
+                                                .mapNotNull { json ->
+                                                    withContext(Dispatchers.Default) {
+                                                        runCatching { JSONObject(json) }
+                                                                .getOrNull()
+                                                                ?.takeIf {
+                                                                    it.optString("type") ==
+                                                                            "clipboard_push_result"
+                                                                }
+                                                                ?.optJSONObject("clipboardPushResult")
+                                                                ?.optString("reason")
+                                                    }
+                                                }
+                                                .first()
+                                    }
+                                }
 
-                                // The native answer, not merely "the call returned". isSuccess is
-                                // true whenever JNI handed back a string at all, which it does even
-                                // for a failure - the same trap takeScreenshot avoids by reading
-                                // the response's own success field.
-                                val accepted =
-                                        RemexCoreClient.SendMessage(message.toString())
-                                                .getOrNull()
-                                                ?.let {
-                                                    runCatching { JSONObject(it) }
-                                                            .getOrNull()
-                                                            ?.optBoolean("success", false)
-                                                } == true
-                                if (accepted) null else ClipboardVerdict.Unavailable
-                            }
-                            else -> verdict
+                        val sent =
+                                withContext(sendDispatcher) {
+                                    val message =
+                                            JSONObject().apply {
+                                                put("type", "clipboard_push")
+                                                put("protocolVersion", 2)
+                                                put(
+                                                        "clipboardPush",
+                                                        JSONObject().apply { put("text", text) }
+                                                )
+                                            }
+                                    RemexCoreClient.SendMessage(message.toString())
+                                            .getOrNull()
+                                            ?.let {
+                                                runCatching { JSONObject(it) }
+                                                        .getOrNull()
+                                                        ?.optBoolean("success", false)
+                                            } == true
+                                }
+
+                        if (!sent) {
+                            waiting.cancel()
+                            null
+                        } else {
+                            waiting.await()
                         }
                     }
 
+            // **"SENT" NOW MEANS THE PC TOOK IT, NOT THAT THE MESSAGE LEFT.** Those were the same
+            // sentence until a real emulator push was refused by the pairing gate and the phone
+            // reported success anyway (RemEx-s1ay7). Deciding the predictable refusals here still
+            // happens above and still saves a round trip; this covers only the outcomes the phone
+            // cannot know. A null answer is a host too old to send one, or one that never replied -
+            // both are "we cannot say it worked", which is not the same as saying it did.
             _commandStatus.value =
                     when (outcome) {
-                        null -> app.getString(R.string.clipboard_send_ok)
-                        is ClipboardVerdict.Empty -> app.getString(R.string.clipboard_send_empty)
-                        is ClipboardVerdict.TooLarge ->
-                                app.getString(R.string.clipboard_send_too_large, outcome.maxKilobytes)
+                        "none" -> app.getString(R.string.clipboard_send_ok)
+                        "empty" -> app.getString(R.string.clipboard_send_empty)
+                        "too_large" ->
+                                app.getString(
+                                        R.string.clipboard_send_too_large,
+                                        ClipboardValidation_MAX_KB
+                                )
+                        "refused" -> app.getString(R.string.clipboard_send_refused)
+                        // MAPPED EXPLICITLY rather than left to the else. It reaches the same
+                        // string today, but the host's guard asserts "every token the host emits is
+                        // one the phone recognises" and an arm that only exists by falling through
+                        // does not make that true - the guard would have kept passing while the
+                        // claim quietly stopped holding.
+                        "unavailable" -> app.getString(R.string.clipboard_send_failed)
+                        // FAIL CLOSED, including on no answer at all.
                         else -> app.getString(R.string.clipboard_send_failed)
                     }
         }

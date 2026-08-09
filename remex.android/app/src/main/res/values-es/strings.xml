@@ -882,6 +882,7 @@
     <string name="clipboard_send_empty">No hay nada en el portapapeles para enviar</string>
     <string name="clipboard_send_too_large">Es demasiado grande para enviarlo. El límite es %1$d KB.</string>
     <string name="clipboard_send_failed">No se pudo enviar el portapapeles</string>
+    <string name="clipboard_send_refused">El PC lo rechazó: primero empareja el teléfono con tu PC</string>
     <string name="clipboard_send_not_connected">Conéctate primero a tu PC</string>
     <string name="clipboard_send_unsupported">Solo se puede enviar texto copiado</string>
     <string name="clipboard_fetch_button">Obtener portapapeles del PC</string>

@@ -882,6 +882,7 @@
     <string name="clipboard_send_empty">भेजने के लिए क्लिपबोर्ड में कुछ नहीं है</string>
     <string name="clipboard_send_too_large">यह भेजने के लिए बहुत बड़ा है। सीमा %1$d KB है।</string>
     <string name="clipboard_send_failed">क्लिपबोर्ड नहीं भेजा जा सका</string>
+    <string name="clipboard_send_refused">PC ने इसे अस्वीकार कर दिया — पहले फ़ोन को अपने PC से पेयर करें</string>
     <string name="clipboard_send_not_connected">पहले अपने PC से कनेक्ट करें</string>
     <string name="clipboard_send_unsupported">केवल कॉपी किया गया टेक्स्ट भेजा जा सकता है</string>
     <string name="clipboard_fetch_button">PC से क्लिपबोर्ड लें</string>

@@ -144,6 +144,7 @@ namespace Remex.Core.Serialization;
 [JsonSerializable(typeof(FilePushFile))]
 [JsonSerializable(typeof(ClipboardPush))]
 [JsonSerializable(typeof(ClipboardContent))]
+[JsonSerializable(typeof(ClipboardPushResult))]
 [JsonSerializable(typeof(FilePushOffer))]
 [JsonSerializable(typeof(FilePushResponse))]
 public partial class RemexJsonSerializerContext : JsonSerializerContext

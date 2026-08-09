@@ -982,6 +982,7 @@
     <string name="clipboard_send_empty">There is nothing on the clipboard to send</string>
     <string name="clipboard_send_too_large">That is too large to send. The limit is %1$d KB.</string>
     <string name="clipboard_send_failed">Could not send the clipboard</string>
+    <string name="clipboard_send_refused">The PC refused it — pair the phone with your PC first</string>
     <string name="clipboard_send_not_connected">Connect to your PC first</string>
     <string name="clipboard_send_unsupported">Only copied text can be sent</string>
     <string name="clipboard_fetch_button">Get clipboard from PC</string>

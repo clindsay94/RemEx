@@ -884,6 +884,7 @@
     <string name="clipboard_send_empty">Panoda gönderilecek bir şey yok</string>
     <string name="clipboard_send_too_large">Bu, gönderilemeyecek kadar büyük. Sınır %1$d KB.</string>
     <string name="clipboard_send_failed">Pano gönderilemedi</string>
+    <string name="clipboard_send_refused">Bilgisayar reddetti — önce telefonu bilgisayarınızla eşleştirin</string>
     <string name="clipboard_send_not_connected">Önce bilgisayarınıza bağlanın</string>
     <string name="clipboard_send_unsupported">Yalnızca kopyalanan metin gönderilebilir</string>
     <string name="clipboard_fetch_button">Panoyu bilgisayardan al</string>
