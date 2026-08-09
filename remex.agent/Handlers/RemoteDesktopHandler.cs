@@ -400,6 +400,13 @@ public sealed class RemoteDesktopHandler : IDisposable
         // Timing metrics
         double totalCaptureMs = 0;
         double totalSendMs = 0;
+        // Encoded throughput, for the quality meter that does not exist yet (RemEx-93n2). It COUNTS
+        // and nothing more: desktop_meta is sent from two EVENT-DRIVEN places - stream bootstrap and
+        // geometry change - so "per second in desktop_meta" would mean adding a timed emitter beside
+        // the frame pacer, and how often anyone samples this is RemEx-grc5's property, not this
+        // loop's. Sampling from the metrics block below would need the counter's threading contract
+        // read first: Add runs here, that block runs on the send loop.
+        var throughput = new StreamThroughputCounter(DateTime.UtcNow);
         int totalFramesCaptured = 0;
         int totalFramesSent = 0;
         int totalFramesDropped = 0;
@@ -700,6 +707,12 @@ public sealed class RemoteDesktopHandler : IDisposable
                         var captureDuration = captureStopwatch.Elapsed.TotalMilliseconds;
                         totalCaptureMs += captureDuration;
                         totalFramesCaptured++;
+
+                        // Counted where the ENCODED size is known - after the encoder, before the
+                        // pacer decides whether this frame is the one that ships. Counting at the
+                        // send site instead would silently exclude every frame the latest-frame
+                        // buffer overwrites, which is exactly the loss a quality meter is for.
+                        throughput.Add(frameBytes.Length);
 
                         // Store the latest frame with thread-safe overwrite (latest-frame semantics)
                         var capturedFrame = new CapturedFrame
