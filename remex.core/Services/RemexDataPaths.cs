@@ -242,9 +242,7 @@ public static class RemexDataPaths
     public static void WriteAllTextAtomic(string path, string contents)
     {
         // Sibling of the target so File.Move is a same-volume rename rather than a copy.
-        var tempPath = Path.Combine(
-            Path.GetDirectoryName(path) ?? string.Empty,
-            $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
+        var tempPath = StagingPathFor(path);
 
         try
         {
@@ -257,6 +255,47 @@ public static class RemexDataPaths
             throw;
         }
     }
+
+    /// <summary>
+    /// The async sibling of <see cref="WriteAllTextAtomic"/>, with identical staging semantics.
+    /// </summary>
+    /// <remarks>
+    /// A SIBLING RATHER THAN A BLOCKING CALL AT THE CALL SITE (RemEx-fqzp). Two of the four stores
+    /// adopting this are async, and dropping a synchronous write into them would either block their
+    /// caller or leave an async method with no await at all — which this repo compiles as an error.
+    /// Duplicating the four lines here beats duplicating the staging RULE at each call site, which is
+    /// how a per-write temp name becomes a fixed one again (RemEx-kow1).
+    /// </remarks>
+    public static async Task WriteAllTextAtomicAsync(string path, string contents)
+    {
+        var tempPath = StagingPathFor(path);
+
+        try
+        {
+            await File.WriteAllTextAsync(tempPath, contents);
+            File.Move(tempPath, path, overwrite: true);
+        }
+        catch
+        {
+            TryDeleteStagingFile(tempPath);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// The staging name both atomic writers use: a hidden sibling with a per-write GUID.
+    /// </summary>
+    /// <remarks>
+    /// ONE DEFINITION, BECAUSE THE NAME IS THE PART THAT MUST NOT DIVERGE (review of RemEx-fqzp).
+    /// The two four-line bodies are duplicated on purpose — sharing them would mean either blocking
+    /// on a task or a delegate indirection on a NativeAOT-constrained path — but a temp name that
+    /// drifted in one and not the other is precisely how RemEx-kow1's fixed sibling path came back.
+    /// SIBLING, so the rename is a same-volume move rather than a copy; PER-WRITE, so two writers
+    /// cannot truncate each other's staging file.
+    /// </remarks>
+    private static string StagingPathFor(string path) => Path.Combine(
+        Path.GetDirectoryName(path) ?? string.Empty,
+        $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
 
     /// <summary>
     /// Removes a staging file left by a failed <see cref="WriteAllTextAtomic"/>. Best-effort by

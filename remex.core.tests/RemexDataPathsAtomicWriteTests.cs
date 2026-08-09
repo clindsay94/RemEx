@@ -39,8 +39,18 @@ public sealed class RemexDataPathsAtomicWriteTests : IDisposable
 
     private string StorePath => Path.Combine(_directory, "store.json");
 
+    /// <summary>Everything in the store directory that is not the store itself.</summary>
+    /// <remarks>
+    /// NOT A "*.tmp" GLOB (review). Matching the extension coupled every "no debris" assertion in
+    /// this file to the very naming convention the two atomic writers duplicate — so a temp name that
+    /// drifted to ".staging", or lost its extension, would leave an orphan beside the store with all
+    /// of these still green. Enumerating everything is name-independent, and catches a leftover
+    /// DIRECTORY too, which a file glob never would.
+    /// </remarks>
     private string[] StagingFiles() => Directory
-        .GetFiles(_directory, "*.tmp")
+        .GetFileSystemEntries(_directory)
+        .Where(entry => !string.Equals(entry, StorePath, StringComparison.Ordinal))
+        .OrderBy(entry => entry, StringComparer.Ordinal)
         .ToArray();
 
     [Fact]
@@ -68,6 +78,81 @@ public sealed class RemexDataPathsAtomicWriteTests : IDisposable
 
         Assert.Empty(StagingFiles());
     }
+
+    /// <summary>
+    /// The async sibling stages the same way, because a sibling that is only nearly the same is how
+    /// the staging rule ends up written twice and diverging (RemEx-fqzp).
+    /// </summary>
+    /// <remarks>
+    /// It exists because two of the four stores adopting the atomic write are async: dropping the
+    /// synchronous call into them would block their caller, and removing their only await leaves an
+    /// async method this repo compiles as an error. These assertions are deliberately the same three
+    /// the synchronous one carries — contents, no debris, and cleanup on failure — so that a change
+    /// to one that is not made to the other shows up here rather than in a truncated store.
+    /// </remarks>
+    [Fact]
+    public async Task WriteAllTextAtomicAsync_WritesTheContents_AndLeavesNoStagingFileBehind()
+    {
+        await RemexDataPaths.WriteAllTextAtomicAsync(StorePath, "{\"written\":true}");
+
+        Assert.Equal("{\"written\":true}", File.ReadAllText(StorePath));
+        Assert.Empty(StagingFiles());
+    }
+
+    [Fact]
+    public async Task WriteAllTextAtomicAsync_ReplacesAnExistingFile()
+    {
+        File.WriteAllText(StorePath, "old");
+
+        await RemexDataPaths.WriteAllTextAtomicAsync(StorePath, "new");
+
+        Assert.Equal("new", File.ReadAllText(StorePath));
+    }
+
+    [Fact]
+    public async Task WriteAllTextAtomicAsync_RemovesTheStagingFile_WhenTheRenameFails()
+    {
+        Directory.CreateDirectory(StorePath);
+
+        var thrown = await Record.ExceptionAsync(
+            () => RemexDataPaths.WriteAllTextAtomicAsync(StorePath, "{}"));
+
+        Assert.NotNull(thrown);
+        Assert.Empty(StagingFiles());
+    }
+
+    /// <summary>
+    /// The four stores this bead named write through the helper rather than over the live file.
+    /// </summary>
+    /// <remarks>
+    /// NAMED FILES, NOT A REPO-WIDE BAN ON File.WriteAllText (RemEx-fqzp). Plenty of writes are
+    /// legitimately direct — exports the user chose a path for, diagnostics dumps — so a blanket rule
+    /// would be a false-positive machine, and one of those cost an iteration two commits ago
+    /// (RemEx-dnn2q). This is a regression guard on four specific stores, which is what the bead is.
+    /// </remarks>
+    [Theory]
+    [InlineData("remex.core/Services/DashboardProfileStorageService.cs", "_filePath", "WriteAllTextAtomicAsync")]
+    [InlineData("remex.desktop/Services/FileTransfer/FileTransferRootSettingsService.cs", "_configPath", "WriteAllTextAtomicAsync")]
+    [InlineData("remex.agent/Services/FileTransfer/FileTransferService.cs", "_configPath", "WriteAllTextAtomic")]
+    [InlineData("remex.agent/Services/Session/SessionGuardSettings.cs", "FlagPath", "WriteAllTextAtomic")]
+    public void TheHostStateStoresDoNotWriteOverTheirLiveFile(string relativePath, string target, string helper)
+    {
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar)));
+
+        // THE TARGET, NOT THE API (review). A blanket ban on File.WriteAllText inside a file whose
+        // job is writing files would fail on the next correct write somebody adds — a resume
+        // manifest, a diagnostics sidecar — which is the false-positive shape that cost an iteration
+        // under RemEx-dnn2q. Naming the store's own path variable says what the bead actually says.
+        Assert.DoesNotContain($"File.WriteAllText({target}", source, StringComparison.Ordinal);
+        Assert.DoesNotContain($"File.WriteAllTextAsync({target}", source, StringComparison.Ordinal);
+
+        // And the RIGHT sibling: "WriteAllTextAtomic" alone is satisfied by a doc comment, a dead
+        // branch, or the sync helper standing in for the async one.
+        Assert.Contains($"{helper}({target}", source, StringComparison.Ordinal);
+    }
+
+    private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string thisFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, ".."));
 
     /// <summary>
     /// The regression itself, made deterministic: something else already owns

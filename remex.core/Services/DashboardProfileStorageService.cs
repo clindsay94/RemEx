@@ -46,6 +46,7 @@ public class DashboardProfileStorageService : IDashboardProfileStorageService
     public async Task SaveProfileAsync(DashboardProfile profile)
     {
         var json = RemexJson.SerializeIndented(profile, RemexJsonSerializerContext.Default.DashboardProfile);
-        await File.WriteAllTextAsync(_filePath, json);
+        // Staged, not written over the live file (RemEx-fqzp): a crash mid-write truncated it.
+        await RemexDataPaths.WriteAllTextAtomicAsync(_filePath, json);
     }
 }

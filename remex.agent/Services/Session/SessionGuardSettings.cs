@@ -57,7 +57,11 @@ public static class SessionGuardSettings
             {
                 Directory.CreateDirectory(dir);
             }
-            File.WriteAllText(FlagPath, enabled ? "1" : "0");
+            // Staged like its siblings (RemEx-fqzp), and UNIFORMITY is the honest reason rather than
+            // risk: a torn one-byte flag reads as not-"1", so IsKeepUnlockedEnabled returns false,
+            // which is the safe direction anyway (review). What staging buys here is that the replace
+            // is atomic, so a concurrent File.Exists never observes the truncate window.
+            RemexDataPaths.WriteAllTextAtomic(FlagPath, enabled ? "1" : "0");
             return true;
         }
         catch

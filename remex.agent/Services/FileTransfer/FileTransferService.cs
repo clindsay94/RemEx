@@ -1247,7 +1247,8 @@ public sealed class FileTransferService : IFileTransferService
     private void SaveConfiguredRoots(IReadOnlyList<ConfiguredRoot> roots)
     {
         var json = JsonSerializer.Serialize(roots, JsonOptions);
-        File.WriteAllText(_configPath, json);
+        // Staged, not written over the live file (RemEx-fqzp).
+        RemexDataPaths.WriteAllTextAtomic(_configPath, json);
     }
 
     /// <summary>

@@ -59,7 +59,8 @@ public sealed class FileTransferRootSettingsService
     {
         var normalizedRoots = NormalizeRoots(roots);
         var json = JsonSerializer.Serialize(normalizedRoots, JsonOptions);
-        await File.WriteAllTextAsync(_configPath, json);
+        // Staged, not written over the live file (RemEx-fqzp).
+        await RemexDataPaths.WriteAllTextAtomicAsync(_configPath, json);
     }
 
     public async Task<IReadOnlyList<FileTransferRootConfiguration>> ResetToDefaultsAsync()
