@@ -13,7 +13,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|Bash|PowerShell",
         "hooks": [
           {
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/scripts/guard_edit.py\"",

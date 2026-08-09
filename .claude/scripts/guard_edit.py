@@ -29,6 +29,7 @@ Exit codes:
 
 import json
 import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 from collections import Counter
@@ -38,6 +39,21 @@ EXIT_BLOCK = 2
 
 # Files whose internal structure we check. Everything else only gets the phantom-edit check.
 STRUCTURAL_SUFFIXES = (".resx", ".xml")
+
+# Shell tools also get the structural check. This is not belt-and-braces: the NUL-byte
+# corruption in reason 2 above came from PowerShell, which never fires a PostToolUse on
+# Edit or Write, so for years the guard was watching the one door the bug did not use.
+# There is no phantom-edit check here - a shell command has no declared "expected text"
+# to compare against - only the physical-integrity check on resource files it named.
+SHELL_TOOLS = ("Bash", "PowerShell")
+
+# Any token in a command line that looks like a path to a resource file. Deliberately
+# greedy about path punctuation (drive letters, both slash directions, $vars) and
+# deliberately dumb about context: a false positive costs one file read of a file that
+# was already going to be fine, while a false negative is the corruption shipping.
+RESOURCE_PATH_IN_COMMAND = re.compile(
+    r"[A-Za-z0-9_.:$(){}/\\-]+\.(?:resx|xml)\b", re.IGNORECASE
+)
 
 # Elements whose 'name' attribute must be unique within a resource file.
 # .resx uses <data name="...">, Android strings.xml uses <string name="...">.
@@ -183,6 +199,64 @@ def check_structure(path, raw_bytes, text):
         )
 
 
+def check_shell_command(payload):
+    """Structurally check any resource file a shell command named.
+
+    A shell write cannot be checked for phantom edits - there is no declared expected
+    content - but it can be checked for the damage it actually caused: NUL bytes, broken
+    XML, duplicate keys. That is the whole of reason 2 in the module docstring.
+
+    Only files that exist and sit inside the project are checked, so a command that merely
+    mentions a path (a grep pattern, a log line) costs at most one read of a healthy file.
+    """
+    command = (payload.get("tool_input") or {}).get("command")
+    if not command:
+        return EXIT_OK
+
+    response = payload.get("tool_response")
+    if isinstance(response, dict) and response.get("error"):
+        return EXIT_OK
+
+    project_dir = os.path.abspath(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+
+    seen = set()
+    for match in RESOURCE_PATH_IN_COMMAND.findall(command):
+        candidate = os.path.abspath(
+            match if os.path.isabs(match) else os.path.join(project_dir, match)
+        )
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+
+        # Stay inside the project. A shell command may reference SDK or NuGet XML that is
+        # none of this guard's business and may legitimately be huge.
+        #
+        # commonpath raises on Windows when the two paths are on different drives, which
+        # is the normal case here: the repo is on Z: and most absolute paths a command
+        # mentions are on C:. A different drive is definitively outside the project, so
+        # treat the raise as the "skip it" answer rather than letting it crash the hook.
+        try:
+            inside = os.path.commonpath([candidate, project_dir]) == project_dir
+        except ValueError:
+            inside = False
+        if not inside:
+            continue
+        if not os.path.isfile(candidate):
+            continue
+
+        try:
+            with open(candidate, "rb") as handle:
+                raw_bytes = handle.read()
+            text = raw_bytes.decode("utf-8")
+        except (OSError, UnicodeDecodeError):
+            # Unreadable or not UTF-8. The text-level checks do not apply.
+            continue
+
+        check_structure(candidate, raw_bytes, text)
+
+    return EXIT_OK
+
+
 def main():
     try:
         # Read the raw bytes and decode UTF-8 explicitly. Do NOT use json.load(sys.stdin):
@@ -199,6 +273,10 @@ def main():
         return EXIT_OK
 
     tool_name = payload.get("tool_name") or ""
+
+    if tool_name in SHELL_TOOLS:
+        return check_shell_command(payload)
+
     if tool_name not in ("Edit", "Write"):
         return EXIT_OK
 

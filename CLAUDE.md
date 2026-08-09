@@ -1,15 +1,18 @@
 # CLAUDE.md
 
-This file covers **Claude-specific tooling only** — MCP routing, the bulk-write workflow, and issue
-tracking.
+This file covers **Claude-harness wiring only** — precedence over the tool-managed blocks, MCP
+routing, memory ownership, and issue tracking.
 
 ## 📖 Read `AGENTS.md` first
 
-**[`AGENTS.md`](AGENTS.md) holds the project rules that apply to every agent** — architecture
-invariants, the Hard Rules, build commands, the `scripts/verify.ps1` verification gate, coding
-conventions, cross-platform parity, and UI verification axes. It is the cross-vendor file (Codex,
-Gemini CLI, Cursor and Antigravity read it; none of them read this one), so it is the authority on
-anything that is not Claude-harness-specific.
+**[`AGENTS.md`](AGENTS.md) holds the project rules** — architecture invariants, the Hard Rules,
+build commands, the `scripts/verify.ps1` verification gate, coding conventions, cross-platform
+parity, and UI verification axes. It is the authority on anything that is not Claude-harness-specific.
+
+RemEx is developed with Claude Code only, as of 2026-08-09. The two-file split is no longer about
+serving other vendors' agents — it is now just separation of concerns: **rules** in `AGENTS.md`,
+**harness wiring** here. Do not reintroduce Codex/Gemini/Cursor/Antigravity workflows or
+compatibility caveats; there is nothing left to be compatible with.
 
 Those rules used to be duplicated here. They are not any more — **if a rule is missing from this
 file, it is in `AGENTS.md`, not absent.** Do not copy them back: two copies drift, and the last time
@@ -70,20 +73,6 @@ code. They are not a substitute for reading a file you are about to change.
 * **Write Code, Don't Process Data:** Treat yourself as a code generator, not a data parser. If you need to count, filter, or analyze large numbers of files, write a short script via `ctx_execute` to do it locally instead of loading all the files into context.
 * **Indexed Storage for Heavy Data:** For massive test failures, access logs, or browser snapshots, use `ctx_index` or `fetch_and_index`. Store the data in the local SQLite FTS5 database and use `ctx_search` (BM25) to retrieve only the relevant lines you need.
 
-### 4. Bulk Code Generation Workflow (`antigravity` & `agy-splitter`)
-When generating large scaffolds, boilerplates, or multi-file modules, DO NOT write the files directly using local LLM output tokens. Instead, delegate the heavy lifting to the Antigravity CLI (`agy`) powered by Gemini. (`agy`/`agy-splitter` are external global tools, not part of this repo — verify they are on PATH before relying on this workflow; if absent, fall back to writing files directly.)
-
-- **Command Shorthand:** `/bulk-write [generation requirements]` (Maps to `~/.claude/commands/bulk-write.md`)
-- **Execution Sequence:** When `/bulk-write` is invoked, you must execute the following via `ctx_execute`:
-  1. Trigger generation and pipe to a temporary file: `agy [parameters] > .bulk_raw.txt`
-  2. Split the output into valid files: `agy-splitter .bulk_raw.txt`
-  3. Automatically delete `.bulk_raw.txt` once file extraction is verified.
-
-### Rules for Bulk Code Generation
-- **Strict Delimiters:** You must explicitly instruct Gemini/Antigravity to prefix every new file block with the EXACT string format: `// FILE: path/to/file.ext`. Do not allow markdown headers, backticks, or alternative comment syntax for file paths, or the `agy-splitter` regex will fail.
-- **Verify via Diffs:** Do NOT read the generated files back into the primary context window. Use `git diff` to evaluate the generated code.
-- **Edit by Exception:** Act purely as a reviewer. Only intervene or edit the resulting files directly if the diff reveals structural hallucinations or logic flaws.
-
 ### MCP Tool Decision Matrix
 
 Use this table before reaching for `grep`, `Read`, or raw `Bash`:
@@ -102,15 +91,25 @@ Use this table before reaching for `grep`, `Read`, or raw `Bash`:
 | Count / filter / aggregate data | `context-mode: ctx_execute` | Load all data into context |
 | **Builds, `verify.ps1`, git, installs** | **plain `Bash`/`PowerShell`** | `ctx_execute` (sandbox FS is discarded) |
 
-**`agy` quick usage for large multi-file changes:**
-```bash
-agy -p "Generate X. Prefix every file block with // FILE: path/to/file.ext" > .bulk_raw.txt
-agy-splitter .bulk_raw.txt   # split into real files on disk
-rm .bulk_raw.txt             # clean up
-git diff                     # grade — do NOT Read generated files back into context
-```
-Only intervene via `Edit`/`Write` if the diff reveals hallucinations or logic flaws.
+## Memory ownership
 
+Five stores have accumulated. Two are authoritative; the rest are convenience or history. When they
+disagree, read down this table and stop at the first hit.
+
+| Store | Owns | Write to it when |
+|---|---|---|
+| `bd` (beads + `bd remember`) | **Authoritative** for issues, decisions, and project/technical knowledge | Always, for anything a future session must act on |
+| `AGENTS.md` + `docs/REGRESSION-GUARDS.md` | **Authoritative** for rules and invariants | A rule changed; guards only ever by hand |
+| Harness auto-memory (`~/.claude/projects/Z--RemEx/memory/`) | User preferences and environment facts *about Connor's machine* | A preference or env fact, never a project rule |
+| `.remember/` | Session-continuity narrative, append-only | Automatic; do not hand-curate |
+| `token-savior` / `context-mode` indexes | Derived caches | Never directly — they are rebuilt |
+
+The managed beads block says "do NOT use MEMORY.md files". Read that as: **do not invent new
+markdown task or knowledge files.** It is not a prohibition on the harness-injected auto-memory,
+which is a different mechanism and is correctly scoped to prefs and environment facts.
+
+`memory-store` (MCP + plugin) was retired on 2026-08-09: the server could not connect, while its
+skills and its SessionStart banner still claimed it was live. Do not reinstate it without a reason.
 
 ## Regression Guards
 

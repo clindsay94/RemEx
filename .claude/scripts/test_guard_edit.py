@@ -261,12 +261,109 @@ results.append(run_case(
     suffix=".txt",
 ))
 
-# --- other tools are ignored ----------------------------------------------------------
+# --- a shell tool with no command payload is ignored ----------------------------------
 results.append(run_case(
-    "a non-Edit tool is ignored",
+    "a shell payload with no command is ignored",
     "Bash",
     {"content": "irrelevant"},
     b"irrelevant",
+    expect=0,
+))
+
+
+def run_shell_case(name, command, expect, disk=None, suffix=".xml", filename="subject"):
+    """Exercise the shell branch: a command names a resource file the guard must inspect.
+
+    The shell branch exists because the NUL-byte corruption came from PowerShell, which
+    never fires a PostToolUse on Edit or Write. These cases are the proof it now bites,
+    and the false-positive cases below are what keep it from becoming noise.
+
+    CLAUDE_PROJECT_DIR is pointed at the temp dir because the guard deliberately ignores
+    resource files outside the project - so without this the guard would correctly skip
+    every subject and the suite would go green while checking nothing.
+    """
+    tmpdir = tempfile.mkdtemp()
+    path = os.path.join(tmpdir, filename + suffix)
+    if disk is not None:
+        with open(path, "wb") as handle:
+            handle.write(disk)
+
+    env = dict(os.environ, PYTHONIOENCODING="cp1252", CLAUDE_PROJECT_DIR=tmpdir)
+    proc = subprocess.run(
+        [sys.executable, GUARD],
+        input=json.dumps(
+            {
+                "tool_name": "Bash",
+                "tool_input": {"command": command.replace("{path}", path)},
+            },
+            ensure_ascii=False,
+        ).encode("utf-8"),
+        capture_output=True,
+        env=env,
+    )
+    stderr = proc.stderr.decode("utf-8", errors="replace")
+    ok = proc.returncode == expect
+    print(f"[{'pass' if ok else 'FAIL'}] {name}  (expected {expect}, got {proc.returncode})")
+    if not ok:
+        print("        stderr:", stderr.strip().replace("\n", "\n        ")[:400])
+    elif expect == 2:
+        print(f"        blocked with: {stderr.strip().splitlines()[0]}")
+    return ok
+
+
+# --- the shell branch: PowerShell-class corruption is now caught ----------------------
+results.append(run_shell_case(
+    "shell write leaving NUL bytes is blocked",
+    'pwsh -c "Set-Content {path} $value"',
+    expect=2,
+    disk=b'<root>\x00 broken</root>',
+))
+
+results.append(run_shell_case(
+    "shell write leaving duplicate keys is blocked",
+    'pwsh -c "Set-Content {path} $value"',
+    expect=2,
+    disk=DUPLICATE_RESX.encode("utf-8"),
+    suffix=".resx",
+))
+
+results.append(run_shell_case(
+    "shell write leaving malformed XML is blocked",
+    'pwsh -c "Set-Content {path} $value"',
+    expect=2,
+    disk=MALFORMED_RESX.encode("utf-8"),
+    suffix=".resx",
+))
+
+# --- false positives: the guard must stay quiet on healthy or irrelevant files --------
+results.append(run_shell_case(
+    "shell command naming a healthy resource file is allowed",
+    "cat {path}",
+    expect=0,
+    disk=VALID_RESX.encode("utf-8"),
+    suffix=".resx",
+))
+
+results.append(run_shell_case(
+    "shell command naming a file that does not exist is allowed",
+    "cat {path}",
+    expect=0,
+    disk=None,
+))
+
+results.append(run_shell_case(
+    "shell command touching no resource file is allowed",
+    "git status --short",
+    expect=0,
+))
+
+# A different drive letter is the normal case on this machine: the repo is on Z: and most
+# absolute paths a command mentions are on C:. os.path.commonpath raises ValueError there,
+# which crashed the hook (exit 1) until it was handled. Exit 1 is not exit 2, so this
+# would never have blocked anything - it would just have failed silently forever.
+results.append(run_shell_case(
+    "resource file on another drive does not crash the guard",
+    "cat C:/Windows/definitely-not-ours.xml",
     expect=0,
 ))
 
