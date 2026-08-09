@@ -1380,10 +1380,167 @@ public sealed class FileTransferHandlerTests : IDisposable
         Assert.NotNull(sent.FileVolumesResponse);
         Assert.False(sent.FileVolumesResponse!.FullBrowseGranted);
         Assert.Empty(sent.FileVolumesResponse.Volumes);
+        Assert.Equal(string.Empty, sent.FileVolumesResponse.RequestId);
         Assert.False(string.IsNullOrWhiteSpace(sent.FileVolumesResponse.ErrorMessage));
 
         // ErrorMessage, not DenyReason. DenyReason means the host declined without asking a person
         // (RemEx-l580); routing a malformed request through it would tell the phone someone said no.
         Assert.Null(sent.FileVolumesResponse.DenyReason);
+    }
+
+    // ── RemEx-rie6: every sibling handler answers a bodyless request too ──────────────────────
+    // RemEx-9i4b fixed file_volumes_request; these are the eight siblings that had the identical
+    // `if (req is null) return;`. Each asserts the SHAPE of the answer, not just that something was
+    // sent: the right response type, an errorMessage the peer can show, and the empty/false payload
+    // that says nothing was done. A test that only counted messages would pass on a handler that
+    // answered with somebody else's response type.
+    //
+    // HandleFileTransferCancelAsync and HandleFileConsentResponse are deliberately NOT here: they are
+    // notifications, not requests, and answering them would invent traffic the protocol does not have.
+    // HandleFilePushOfferAsync is also absent - RemEx-e11w decided the PC's inbound push-consent path
+    // is deleted rather than fixed, so wiring it here would be work aimed at code on its way out.
+
+    [Fact]
+    public async Task BrowseRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()
+    {
+        var handler = CreateHandler(new Mock<IFileTransferService>().Object);
+        var ws = new FakeWebSocket();
+
+        var message = new RemexMessage { Type = MessageTypes.FileBrowseRequest, FileBrowseRequest = null };
+
+        await handler.HandleFileBrowseRequestAsync(message, ws, "paired-android-device", default);
+
+        var sent = Assert.Single(ws.ReceivedMessages);
+        Assert.Equal(MessageTypes.FileBrowseResponse, sent.Type);
+        Assert.NotNull(sent.FileBrowseResponse);
+        Assert.Empty(sent.FileBrowseResponse!.Entries);
+        Assert.Equal(string.Empty, sent.FileBrowseResponse!.RequestId);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileBrowseResponse!.ErrorMessage));
+    }
+
+    [Fact]
+    public async Task TransferStartRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()
+    {
+        var handler = CreateHandler(new Mock<IFileTransferService>().Object);
+        var ws = new FakeWebSocket();
+
+        var message = new RemexMessage { Type = MessageTypes.FileTransferStart, FileTransferStart = null };
+
+        await handler.HandleFileTransferStartAsync(message, ws, "paired-android-device", default);
+
+        var sent = Assert.Single(ws.ReceivedMessages);
+        Assert.Equal(MessageTypes.FileTransferEnd, sent.Type);
+        Assert.NotNull(sent.FileTransferEnd);
+        Assert.False(sent.FileTransferEnd!.Success);
+        Assert.Equal(string.Empty, sent.FileTransferEnd!.TransferId);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileTransferEnd!.ErrorMessage));
+    }
+
+    [Fact]
+    public async Task ManageRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()
+    {
+        var handler = CreateHandler(new Mock<IFileTransferService>().Object);
+        var ws = new FakeWebSocket();
+
+        var message = new RemexMessage { Type = MessageTypes.FileManageRequest, FileManageRequest = null };
+
+        await handler.HandleFileManageRequestAsync(message, ws, default);
+
+        var sent = Assert.Single(ws.ReceivedMessages);
+        Assert.Equal(MessageTypes.FileManageResponse, sent.Type);
+        Assert.NotNull(sent.FileManageResponse);
+        Assert.False(sent.FileManageResponse!.Success);
+        Assert.Equal(string.Empty, sent.FileManageResponse!.RequestId);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileManageResponse!.ErrorMessage));
+    }
+
+    [Fact]
+    public async Task HashRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()
+    {
+        var handler = CreateHandler(new Mock<IFileTransferService>().Object);
+        var ws = new FakeWebSocket();
+
+        var message = new RemexMessage { Type = MessageTypes.FileHashRequest, FileHashRequest = null };
+
+        await handler.HandleFileHashRequestAsync(message, ws, "paired-android-device", default);
+
+        var sent = Assert.Single(ws.ReceivedMessages);
+        Assert.Equal(MessageTypes.FileHashResponse, sent.Type);
+        Assert.NotNull(sent.FileHashResponse);
+        Assert.Null(sent.FileHashResponse!.Sha256Base64);
+        Assert.Equal(string.Empty, sent.FileHashResponse!.RequestId);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileHashResponse!.ErrorMessage));
+    }
+
+    [Fact]
+    public async Task RootManageRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()
+    {
+        var handler = CreateHandler(new Mock<IFileTransferService>().Object);
+        var ws = new FakeWebSocket();
+
+        var message = new RemexMessage { Type = MessageTypes.FileRootManageRequest, FileRootManageRequest = null };
+
+        await handler.HandleFileRootManageRequestAsync(message, ws, default);
+
+        var sent = Assert.Single(ws.ReceivedMessages);
+        Assert.Equal(MessageTypes.FileRootManageResponse, sent.Type);
+        Assert.NotNull(sent.FileRootManageResponse);
+        Assert.Empty(sent.FileRootManageResponse!.Roots);
+        Assert.Equal(string.Empty, sent.FileRootManageResponse!.RequestId);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileRootManageResponse!.ErrorMessage));
+    }
+
+    [Fact]
+    public async Task SearchRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()
+    {
+        var handler = CreateHandler(new Mock<IFileTransferService>().Object);
+        var ws = new FakeWebSocket();
+
+        var message = new RemexMessage { Type = MessageTypes.FileSearchRequest, FileSearchRequest = null };
+
+        await handler.HandleFileSearchRequestAsync(message, ws, "paired-android-device", default);
+
+        var sent = Assert.Single(ws.ReceivedMessages);
+        Assert.Equal(MessageTypes.FileSearchResponse, sent.Type);
+        Assert.NotNull(sent.FileSearchResponse);
+        Assert.Empty(sent.FileSearchResponse!.Entries);
+        Assert.Equal(string.Empty, sent.FileSearchResponse!.RequestId);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileSearchResponse!.ErrorMessage));
+    }
+
+    [Fact]
+    public async Task MetadataRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()
+    {
+        var handler = CreateHandler(new Mock<IFileTransferService>().Object);
+        var ws = new FakeWebSocket();
+
+        var message = new RemexMessage { Type = MessageTypes.FileMetadataRequest, FileMetadataRequest = null };
+
+        await handler.HandleFileMetadataRequestAsync(message, ws, "paired-android-device", default);
+
+        var sent = Assert.Single(ws.ReceivedMessages);
+        Assert.Equal(MessageTypes.FileMetadataResponse, sent.Type);
+        Assert.NotNull(sent.FileMetadataResponse);
+        Assert.Equal(0, sent.FileMetadataResponse!.Size);
+        Assert.Equal(string.Empty, sent.FileMetadataResponse!.RequestId);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileMetadataResponse!.ErrorMessage));
+    }
+
+    [Fact]
+    public async Task ThumbnailRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()
+    {
+        var handler = CreateHandler(new Mock<IFileTransferService>().Object);
+        var ws = new FakeWebSocket();
+
+        var message = new RemexMessage { Type = MessageTypes.FileThumbnailRequest, FileThumbnailRequest = null };
+
+        await handler.HandleFileThumbnailRequestAsync(message, ws, "paired-android-device", default);
+
+        var sent = Assert.Single(ws.ReceivedMessages);
+        Assert.Equal(MessageTypes.FileThumbnailResponse, sent.Type);
+        Assert.NotNull(sent.FileThumbnailResponse);
+        Assert.Null(sent.FileThumbnailResponse!.JpegBase64);
+        Assert.Equal(string.Empty, sent.FileThumbnailResponse!.RequestId);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileThumbnailResponse!.ErrorMessage));
     }
 }
