@@ -45,6 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Escape now closes every dialog.** Pairing, file consent, confirmations, the restore prompt and
+  the two chart dialogs all ignored Escape, so backing out meant reaching for the mouse — after
+  typing a six-digit PIN, in the pairing case. Escape always takes the safe option: on a file-consent
+  prompt it declines, never accepts. (RemEx-xxifk)
+
 - **You can copy log lines out of the Diagnostics view.** The log list has always let you select
   rows, but there was nothing you could do with a selection — no Copy button and no shortcut, so
   selecting did nothing at all. There is now a Copy Selected button and Ctrl+C, and what you paste

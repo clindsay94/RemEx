@@ -87,4 +87,11 @@
         </Grid>
 
     </Grid>
+    <!-- ESCAPE DISMISSES, AND IT IS ROUTED TO THE ACTION ALREADY WRITTEN AS THIS DIALOG'S CANCEL
+         (RemEx-xxifk). Enter is deliberately NOT bound here: whether a default action is safe is a
+         per-dialog question and stays on RemEx-df08. Escape carries none of that, because cancelling
+         is never the destructive option. -->
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}"/>
+    </Window.KeyBindings>
 </Window>

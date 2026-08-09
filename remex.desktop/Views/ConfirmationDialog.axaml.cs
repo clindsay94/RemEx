@@ -20,6 +20,28 @@ public partial class ConfirmationDialog : Window
         CancelBtn.Content = LocalizationService.Instance["Btn_Cancel"];
     }
 
+    /// <summary>
+    /// Escape dismisses, routed to the same handler the Cancel button uses (RemEx-xxifk).
+    /// </summary>
+    /// <remarks>
+    /// An override rather than a KeyBinding because this dialog's cancel is a code-behind handler
+    /// and a KeyBinding can only reach a command. Enter is deliberately not handled: whether a
+    /// default action is safe to bind is a per-dialog question that stays on RemEx-df08, while
+    /// Escape carries none of that risk - cancelling is never the destructive option.
+    /// </remarks>
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key == Avalonia.Input.Key.Escape)
+        {
+            e.Handled = true;
+            Close(false);
+            return;
+        }
+
+        base.OnKeyDown(e);
+    }
+
+
     // No hand-written InitializeComponent here, deliberately. Avalonia's name generator emits
     // `public void InitializeComponent(bool loadXaml = true)`, which loads the XAML AND assigns the
     // x:Name fields below it. A parameterless `private void InitializeComponent()` does not collide

@@ -52,6 +52,28 @@ public partial class SecondMetricDialog : Window
         Close();
     }
 
+    /// <summary>
+    /// Escape dismisses, routed to the same handler the Cancel button uses (RemEx-xxifk).
+    /// </summary>
+    /// <remarks>
+    /// An override rather than a KeyBinding because this dialog's cancel is a code-behind handler
+    /// and a KeyBinding can only reach a command. Enter is deliberately not handled: whether a
+    /// default action is safe to bind is a per-dialog question that stays on RemEx-df08, while
+    /// Escape carries none of that risk - cancelling is never the destructive option.
+    /// </remarks>
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key == Avalonia.Input.Key.Escape)
+        {
+            e.Handled = true;
+            Close();
+            return;
+        }
+
+        base.OnKeyDown(e);
+    }
+
+
     private void OnSet(object? sender, RoutedEventArgs e) => Apply(SensorList.SelectedItem as string);
     private void OnClear(object? sender, RoutedEventArgs e) => Apply(null);
     private void OnCancel(object? sender, RoutedEventArgs e) => Close();
