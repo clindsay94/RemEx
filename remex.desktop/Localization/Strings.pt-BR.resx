@@ -2922,4 +2922,10 @@ Você pode mudar:
   <data name="Notification_ConsentFailed_Message" xml:space="preserve">
     <value>O RemEx não conseguiu mostrar o pedido de permissão, então recusou a transferência por você.</value>
   </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Impressão digital do certificado</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>Se o seu celular avisar que o certificado deste PC mudou, compare o que ele mostra com isto.</value>
+  </data>
 </root>

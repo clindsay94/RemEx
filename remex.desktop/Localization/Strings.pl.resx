@@ -2923,4 +2923,10 @@ Możesz zmienić:
   <data name="Notification_ConsentFailed_Message" xml:space="preserve">
     <value>RemEx nie mógł pokazać prośby o zgodę, więc odrzucił transfer za Ciebie.</value>
   </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Odcisk palca certyfikatu</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>Jeśli telefon ostrzega, że certyfikat tego komputera się zmienił, porównaj pokazaną tam wartość z tą.</value>
+  </data>
 </root>

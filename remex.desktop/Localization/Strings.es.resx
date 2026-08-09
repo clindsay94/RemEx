@@ -2936,4 +2936,10 @@ Puedes cambiar:
   <data name="Notification_ConsentFailed_Message" xml:space="preserve">
     <value>RemEx no pudo mostrar la solicitud de permiso, así que rechazó la transferencia por ti.</value>
   </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Huella del certificado</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>Si tu teléfono te avisa de que el certificado de este PC ha cambiado, compara lo que muestra con esto.</value>
+  </data>
 </root>

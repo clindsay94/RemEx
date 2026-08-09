@@ -2928,4 +2928,10 @@ You can change:
   <data name="Notification_ConsentFailed_Message" xml:space="preserve">
     <value>RemEx could not show the permission prompt, so the file request was refused for you.</value>
   </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Certificate fingerprint</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>If your phone warns you that this PC's certificate changed, compare what it shows against this.</value>
+  </data>
 </root>

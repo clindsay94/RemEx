@@ -2922,4 +2922,10 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Notification_ConsentFailed_Message" xml:space="preserve">
     <value>RemEx अनुमति का संकेत नहीं दिखा सका, इसलिए उसने आपकी ओर से यह अनुरोध अस्वीकार कर दिया।</value>
   </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>प्रमाणपत्र फ़िंगरप्रिंट</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>अगर आपका फ़ोन चेतावनी दे कि इस PC का प्रमाणपत्र बदल गया है, तो वहाँ दिख रहे मान की तुलना इससे करें।</value>
+  </data>
 </root>

@@ -2923,4 +2923,10 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Notification_ConsentFailed_Message" xml:space="preserve">
     <value>RemEx не зміг показати запит дозволу, тому відхилив передавання файлу за вас.</value>
   </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Відбиток сертифіката</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>Якщо телефон попереджає, що сертифікат цього ПК змінився, порівняйте показане там значення з цим.</value>
+  </data>
 </root>

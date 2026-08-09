@@ -118,6 +118,23 @@
                             <!-- Divider -->
                             <Border Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
 
+                            <!-- This PC's certificate fingerprint (RemEx-n8xk).
+                                 The phone shows the same value in the same grouping when it warns that this
+                                 PC's certificate changed, and tells the user to check it here — so this is
+                                 monospaced (the groups must line up against a phone screen) and selectable
+                                 (so it can be pasted into a support thread). -->
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <Path Data="{StaticResource IconConnection}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{local:Localize About_HostFingerprint}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                </StackPanel>
+                                <SelectableTextBlock Text="{Binding HostFingerprint}" FontFamily="{StaticResource JetBrainsMono}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
+                                <TextBlock Text="{local:Localize About_HostFingerprint_Hint}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="30,0,0,0"/>
+                            </StackPanel>
+
+                            <!-- Divider -->
+                            <Border Height="1" Background="{DynamicResource CardBorderBrush}" Opacity="0.5"/>
+
                             <!-- Software Update -->
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">

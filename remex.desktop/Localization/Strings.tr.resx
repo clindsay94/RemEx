@@ -2926,4 +2926,10 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Notification_ConsentFailed_Message" xml:space="preserve">
     <value>RemEx izin istemini gösteremedi, bu yüzden dosya isteğini sizin adınıza reddetti.</value>
   </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Sertifika parmak izi</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>Telefonunuz bu bilgisayarın sertifikasının değiştiği konusunda uyarırsa, orada görüneni bununla karşılaştırın.</value>
+  </data>
 </root>

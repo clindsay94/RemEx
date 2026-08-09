@@ -2925,4 +2925,10 @@ Anda dapat mengubah:
   <data name="Notification_ConsentFailed_Message" xml:space="preserve">
     <value>RemEx tidak dapat menampilkan permintaan izin, jadi permintaan berkas itu ditolak untuk Anda.</value>
   </data>
+  <data name="About_HostFingerprint" xml:space="preserve">
+    <value>Sidik jari sertifikat</value>
+  </data>
+  <data name="About_HostFingerprint_Hint" xml:space="preserve">
+    <value>Jika ponsel Anda memperingatkan bahwa sertifikat PC ini berubah, bandingkan yang ditampilkannya dengan ini.</value>
+  </data>
 </root>

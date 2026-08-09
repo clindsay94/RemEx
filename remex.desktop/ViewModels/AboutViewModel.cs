@@ -8,7 +8,9 @@ using System.Diagnostics;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Remex.Core.Services.Security;
 using Remex.Desktop.Services;
+using Remex.Desktop.Services.Security;
 
 namespace Remex.Desktop.ViewModels;
 
@@ -20,12 +22,26 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     private readonly ConnectionViewModel _connection;
     private readonly ShellViewModel _shell;
 
+    /// <summary>
+    /// An explicitly supplied certificate service (tests only). When null, the service is looked up
+    /// from the containers on every read — see <see cref="ResolveCertificateService"/>.
+    /// </summary>
+    private readonly ICertificateService? _injectedCertificateService;
+
     [ObservableProperty]
     private string _clientVersion = "unknown";
 
     [ObservableProperty]
     private string _hostVersion = "Disconnected";
-    
+
+    /// <summary>
+    /// This PC's own certificate fingerprint, in the grouped short form the Android client shows
+    /// (RemEx-n8xk). Not localized: it is base64 plus the <c>(none)</c> marker, and the whole point
+    /// is that it reads the same here as it does on the phone.
+    /// </summary>
+    [ObservableProperty]
+    private string _hostFingerprint = SpkiFingerprintDisplay.Unavailable;
+
     [ObservableProperty]
     private bool _isShowShortcutsOpen;
 
@@ -57,10 +73,20 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     /// <summary>The shared connection view-model (used for the host-version display).</summary>
     public ConnectionViewModel Connection => _connection;
 
-    public AboutViewModel(ConnectionViewModel connection, ShellViewModel shell)
+    /// <param name="certificateService">
+    /// Injected by tests. Left null in the app, where it is resolved the same way
+    /// <c>ConnectionViewModel</c> resolves it for the pairing QR code: from the app container first,
+    /// then from the embedded host's, because the host registers it and the two containers are
+    /// separate.
+    /// </param>
+    public AboutViewModel(
+        ConnectionViewModel connection,
+        ShellViewModel shell,
+        ICertificateService? certificateService = null)
     {
         _connection = connection;
         _shell = shell;
+        _injectedCertificateService = certificateService;
         _connection.PropertyChanged += OnConnectionPropertyChanged;
         // Live language switching: the What's New / FAQ lists are built from localized strings
         // once, so rebuild them when the culture changes.
@@ -83,9 +109,28 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         }
 
         UpdateHostVersion();
+        UpdateHostFingerprint();
         LoadWhatsNew();
         LoadFaq();
     }
+
+    /// <summary>
+    /// Finds the certificate service, app container first, then the embedded host's.
+    /// </summary>
+    /// <remarks>
+    /// RESOLVED ON EVERY READ, NOT CACHED IN THE CONSTRUCTOR (review of RemEx-n8xk). The two
+    /// containers are separate and the host registers the service in its own, so a view model built
+    /// before the host publishes its container would cache null — and because
+    /// <c>ShellViewModel</c> keeps one About instance for the session, that null would never be
+    /// revisited. Re-resolving costs a dictionary lookup on a page the user opens by hand.
+    /// </remarks>
+    private ICertificateService? ResolveCertificateService()
+        => _injectedCertificateService
+            ?? FromContainer(App.Services)
+            ?? FromContainer(App.EmbeddedHostServices);
+
+    private static ICertificateService? FromContainer(IServiceProvider? provider)
+        => provider?.GetService(typeof(ICertificateService)) as ICertificateService;
 
     private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -219,6 +264,56 @@ public partial class AboutViewModel : ObservableObject, IDisposable
             e.PropertyName == nameof(ConnectionViewModel.IsConnected))
         {
             UpdateHostVersion();
+            // Also re-read the fingerprint, because the SERVICE can arrive late even though the
+            // certificate cannot. HostBootstrapper awaits GetOrCreateCertificateAsync BEFORE it
+            // registers ICertificateService, so the service and a loaded certificate become visible
+            // together — a resolvable service holding an unloaded certificate is not a state the
+            // desktop can observe. What is observable is no service at all: the embedded host is
+            // started inside a try/catch, and About is cached for the session by ShellViewModel, so
+            // without this re-read a host that published its container late would leave "(none)" on
+            // screen permanently — on the one page a user opens precisely because their phone told
+            // them to check this value.
+            UpdateHostFingerprint();
+        }
+    }
+
+    /// <summary>
+    /// Reads this PC's certificate fingerprint into <see cref="HostFingerprint"/>, in the same
+    /// grouped short form the Android client shows for the pin it holds (RemEx-n8xk).
+    /// </summary>
+    private void UpdateHostFingerprint()
+    {
+        var certificateService = ResolveCertificateService();
+        if (certificateService is null)
+        {
+            HostFingerprint = SpkiFingerprintDisplay.Unavailable;
+
+            // LOGGED, THOUGH IT IS AN EARLY RETURN RATHER THAN A CATCH (review of RemEx-n8xk). This
+            // is the REACHABLE cause of an empty row — the embedded host is started inside a
+            // try/catch, and a host that never came up registers no container — while the throw
+            // below is not observable from the desktop at all. Leaving the reachable branch silent
+            // put the only "(none)" a real user can hit nowhere in the diagnostics export, which is
+            // the exact shape SwallowedErrorLoggingTests exists to prevent. Information, not Debug,
+            // so it survives the export's level filter.
+            InMemoryLogSink.Append(LogLevel.Information, "About",
+                "No certificate service in this process, so this PC's fingerprint cannot be shown.", null);
+            return;
+        }
+
+        try
+        {
+            HostFingerprint = SpkiFingerprintDisplay.ForDisplay(certificateService.GetSpkiSha256Base64());
+        }
+        catch (Exception ex)
+        {
+            // DEFENSIVE, not expected. GetSpkiSha256Base64 throws until the certificate is loaded,
+            // but HostBootstrapper awaits that load before it registers the service, so a resolvable
+            // service with an unloaded certificate is not a state this process can reach. Kept
+            // because the alternative is an unhandled exception taking down the page the user was
+            // told to visit, and because a certificate the host cannot READ would land here too.
+            HostFingerprint = SpkiFingerprintDisplay.Unavailable;
+            InMemoryLogSink.Append(LogLevel.Warning, "About",
+                "The host certificate fingerprint could not be read", ex);
         }
     }
 
