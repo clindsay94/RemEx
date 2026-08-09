@@ -1145,9 +1145,6 @@ public sealed class FileTransferHandlerTests : IDisposable
         return (handler, trust);
     }
 
-    private static FilePushResponse LastPushResponse(FakeWebSocket ws)
-        => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FilePushResponse).FilePushResponse!;
-
     [Fact]
     public async Task ConsentResponse_ResolvesPendingConsent()
     {
@@ -1197,97 +1194,6 @@ public sealed class FileTransferHandlerTests : IDisposable
 
         Assert.Empty(ws.ReceivedMessages);
         await Task.CompletedTask;
-    }
-
-    [Fact]
-    public async Task PushOffer_Accepted_AssignsUniqueTransferIdPerFile()
-    {
-        var (handler, trust) = CreateTrustHandler("client-a");
-        // Approve the incoming-push consent the host raises for this offer.
-        trust.ConsentRequested += prompt =>
-            trust.ResolveConsent(prompt.Request.ConsentId, granted: true, remember: false);
-
-        var ws = new FakeWebSocket();
-        await handler.HandleFilePushOfferAsync(new RemexMessage
-        {
-            Type = MessageTypes.FilePushOffer,
-            FilePushOffer = new FilePushOffer
-            {
-                PushId = "push-1",
-                Files =
-                [
-                    new FilePushFile { Name = "a.txt", Size = 10 },
-                    new FilePushFile { Name = "b.bin", Size = 2048 },
-                ]
-            }
-        }, ws, "client-a", CancellationToken.None);
-
-        var resp = LastPushResponse(ws);
-        Assert.Equal("push-1", resp.PushId);
-        Assert.True(resp.Accepted);
-        Assert.NotNull(resp.TransferIds);
-        Assert.Equal(2, resp.TransferIds!.Length);                 // one id per offered file
-        Assert.All(resp.TransferIds, id => Assert.False(string.IsNullOrWhiteSpace(id)));
-        Assert.Equal(2, resp.TransferIds.Distinct().Count());      // ids are unique
-    }
-
-    [Fact]
-    public async Task PushOffer_Denied_ReturnsNotAcceptedWithoutTransferIds()
-    {
-        var (handler, trust) = CreateTrustHandler("client-a");
-        // Decline the incoming-push consent.
-        trust.ConsentRequested += prompt =>
-            trust.ResolveConsent(prompt.Request.ConsentId, granted: false, remember: false);
-
-        var ws = new FakeWebSocket();
-        await handler.HandleFilePushOfferAsync(new RemexMessage
-        {
-            Type = MessageTypes.FilePushOffer,
-            FilePushOffer = new FilePushOffer
-            {
-                PushId = "push-2",
-                Files = [new FilePushFile { Name = "secret.txt", Size = 5 }]
-            }
-        }, ws, "client-a", CancellationToken.None);
-
-        var resp = LastPushResponse(ws);
-        Assert.Equal("push-2", resp.PushId);
-        Assert.False(resp.Accepted);
-        Assert.Null(resp.TransferIds);
-
-        // A DENY SOMEBODY MADE CARRIES NO CODE (RemEx-l580) — that is what makes the code below mean
-        // something. If this one were tagged too, the phone could not tell the two apart and would be
-        // no better off than with the flat no it has now.
-        Assert.Null(resp.DenyReason);
-    }
-
-    [Fact]
-    public async Task PushOffer_DeniedBecauseTheAskerIsGone_SaysSoOnTheWire()
-    {
-        // RemEx-l580. The refusal used to be byte-identical to "the PC user tapped Deny": accepted
-        // false, nothing else. The phone user made this request seconds ago, so a bare no with no next
-        // step is the case CLAUDE.md's UX standard names outright.
-        var (handler, trust) = CreateTrustHandler("client-a", askerConnected: false);
-        var raised = false;
-        trust.ConsentRequested += _ => raised = true;
-
-        var ws = new FakeWebSocket();
-        await handler.HandleFilePushOfferAsync(new RemexMessage
-        {
-            Type = MessageTypes.FilePushOffer,
-            FilePushOffer = new FilePushOffer
-            {
-                PushId = "push-3",
-                Files = [new FilePushFile { Name = "holiday.jpg", Size = 5 }]
-            }
-        }, ws, "client-a", CancellationToken.None);
-
-        var resp = LastPushResponse(ws);
-        Assert.False(resp.Accepted);
-        Assert.Equal(FileConsentDenyReasons.ClientUnreachable, resp.DenyReason);
-
-        // Nobody was asked, which is the premise: a reason on a question somebody answered would be a lie.
-        Assert.False(raised);
     }
 
     [Fact]
@@ -1397,8 +1303,10 @@ public sealed class FileTransferHandlerTests : IDisposable
     //
     // HandleFileTransferCancelAsync and HandleFileConsentResponse are deliberately NOT here: they are
     // notifications, not requests, and answering them would invent traffic the protocol does not have.
-    // HandleFilePushOfferAsync is also absent - RemEx-e11w decided the PC's inbound push-consent path
-    // is deleted rather than fixed, so wiring it here would be work aimed at code on its way out.
+    // HandleFilePushOfferAsync is also absent because it no longer exists - RemEx-e11w deleted the
+    // PC's inbound push-consent path rather than fixing it, so there is no bodyless case to answer.
+    // An inbound file_push_offer is now not answered at all, deliberately; the guard for that lives
+    // in LoopbackIdentityClaimTests, not here.
 
     [Fact]
     public async Task BrowseRequest_WithNoBody_IsAnsweredWithAnErrorRatherThanSilence()

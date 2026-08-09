@@ -362,10 +362,15 @@ public sealed class FileTrustService : IFileTrustService
         if (rec is null)
             return false;
 
+        // FULL-BROWSE ONLY, since RemEx-e11w. incoming_push used to short-circuit a prompt here via
+        // AutoAcceptIncoming; that prompt no longer exists on this side, because a phone-initiated
+        // push is an upload and a shared writable root IS the consent. A kind nobody raises must not
+        // keep a remembered-grant lookup alive — that is how a control that does nothing keeps
+        // reading like one. AutoAcceptIncoming itself is still written by the Settings toggle and is
+        // now inert; RemEx-bezf tracks retiring it and the strings that go with it.
         return kind switch
         {
             FileConsentKinds.FullBrowse => rec.FullBrowseGranted,
-            FileConsentKinds.IncomingPush => rec.AutoAcceptIncoming,
             _ => false,
         };
     }
@@ -376,9 +381,6 @@ public sealed class FileTrustService : IFileTrustService
         {
             case FileConsentKinds.FullBrowse:
                 Upsert(clientId, rec => rec with { FullBrowseGranted = true, UpdatedUtc = DateTimeOffset.UtcNow });
-                break;
-            case FileConsentKinds.IncomingPush:
-                Upsert(clientId, rec => rec with { AutoAcceptIncoming = true, UpdatedUtc = DateTimeOffset.UtcNow });
                 break;
         }
     }

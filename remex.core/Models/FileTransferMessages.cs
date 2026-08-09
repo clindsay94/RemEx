@@ -529,6 +529,27 @@ public enum TransferState
 }
 
 /// <summary><see cref="FileTransferOffer.Mode"/> string values.</summary>
+/// <remarks>
+/// **A DISPLAY HINT, NOT AN AUTHORIZATION INPUT (RemEx-e11w).** <see cref="Upload"/> and
+/// <see cref="Push"/> describe the same operation from two points of view — the phone sending a file
+/// to a shared writable root — and the write authorization deliberately does not read this field:
+/// <c>ResolveForWrite</c> decides on the resolved path alone (size cap, IsWritable, path-escape).
+/// <para>
+/// **DO NOT AUTHORIZE ON THIS VALUE, AND NEVER SPLIT <see cref="Upload"/> FROM <see cref="Push"/>.**
+/// It is client-chosen text off the wire, so a permission gate here refuses every real share-sheet
+/// send while an attacker changes one word and walks past it. That was tried in RemEx-9xs1 and
+/// reverted; RemEx-e11w then settled it by deleting the separate push consent path rather than
+/// repairing it.
+/// </para>
+/// <para>
+/// **<see cref="Download"/> IS DIFFERENT, and reading it is correct.** It names the DIRECTION the
+/// bytes travel, not a permission level, and two live call sites route on it —
+/// <c>TransferSessionManager.HandleOfferAsync</c> (send vs receive) and
+/// <c>TransferQueueService.DirectionOf</c> (Outbound vs Inbound). Neither is a gate and neither is
+/// the thing the paragraph above forbids; removing them would make the PC try to receive a file the
+/// phone asked to download.
+/// </para>
+/// </remarks>
 public static class FileTransferModes
 {
     public const string Download = "download";

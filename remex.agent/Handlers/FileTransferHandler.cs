@@ -58,6 +58,14 @@ public sealed class FileTransferHandler(
             FileManageOperations.Move, FileManageOperations.Mkdir, "search",
         ],
         FullBrowse = true,
+
+        // STILL TRUE, BUT NOT VIA THE file_push_offer HANDSHAKE (RemEx-e11w). This host accepts
+        // client-initiated incoming files — that is what the flag claims — but it accepts them the
+        // ordinary way, as file_transfer_offer(mode="push") onto a shared writable root. The two-step
+        // offer/response consent handshake is DELIBERATELY UNIMPLEMENTED on this side: a phone-initiated
+        // push is an upload, so the writable root is the consent and the extra prompt was protecting
+        // nothing while reading as though it were. An inbound file_push_offer is therefore not answered
+        // at all. Do not "fix" that silence by reviving the handler without re-reading RemEx-e11w.
         Push = true,
     };
 
@@ -779,187 +787,6 @@ public sealed class FileTransferHandler(
         logger.LogInformation(
             "Resolved file consent {ConsentId}: granted={Granted}, remember={Remember}.",
             response.ConsentId, response.Granted, response.Remember);
-    }
-
-    /// <summary>
-    /// Handles an inbound <c>file_push_offer</c> (plan §1.2 / §2): a paired client offering to push one or
-    /// more files to this PC. Incoming pushes are consent-gated per device — if <paramref name="clientId"/>
-    /// does not already hold an auto-accept-incoming grant, a consent prompt is raised — on the phone
-    /// that asked when it can render one, otherwise on this host (RemEx-220r) — and held
-    /// until the user decides or the 60-second timeout auto-denies. On acceptance the host assigns a fresh
-    /// transfer id per offered file (index-aligned to <see cref="FilePushOffer.Files"/>) and returns them in
-    /// the <c>file_push_response</c>; the client then negotiates each file with a
-    /// <c>file_transfer_offer(mode="push")</c> carrying its assigned id. On denial (or timeout) the response
-    /// is <c>accepted=false</c> with no ids (a deny is not an error), plus a <c>denyReason</c> when the refusal
-    /// was the host's rather than a person's (RemEx-l580).
-    /// </summary>
-    public async Task HandleFilePushOfferAsync(
-        RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
-    {
-        var offer = message.FilePushOffer;
-        if (offer is null) return;
-
-        RemexMessage response;
-        try
-        {
-            var consent = new FileConsentRequest
-            {
-                ConsentId = Guid.NewGuid().ToString("N"),
-                Kind = FileConsentKinds.IncomingPush,
-                Detail = DescribePushFiles(offer.Files),
-            };
-
-            var decision = await fileTrustService.RequestConsentAsync(clientId ?? string.Empty, consent, ct);
-
-            string[]? transferIds = null;
-            if (decision.Granted)
-            {
-                // Receiver-assigned ids, index-aligned to the offered files. The client echoes each id back
-                // on its follow-up file_transfer_offer(mode="push") so the receive session lines up 1:1.
-                transferIds = new string[offer.Files.Length];
-                for (var i = 0; i < transferIds.Length; i++)
-                    transferIds[i] = Guid.NewGuid().ToString("N");
-            }
-
-            response = new RemexMessage
-            {
-                Type = MessageTypes.FilePushResponse,
-                ProtocolVersion = ProtocolVersionPolicy.Current,
-                FilePushResponse = new FilePushResponse
-                {
-                    PushId = offer.PushId,
-                    Accepted = decision.Granted,
-                    TransferIds = transferIds,
-                    // Null whenever a person decided; set only when nobody was asked (RemEx-l580).
-                    DenyReason = decision.DenyReason,
-                }
-            };
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "File push offer {PushId} failed.", offer.PushId);
-            response = new RemexMessage
-            {
-                Type = MessageTypes.FilePushResponse,
-                ProtocolVersion = ProtocolVersionPolicy.Current,
-                FilePushResponse = new FilePushResponse
-                {
-                    PushId = offer.PushId,
-                    Accepted = false,
-                }
-            };
-        }
-
-        await MessageSerializer.SendAsync(ws, response, ct);
-    }
-
-    /// <summary>
-    /// Builds the human-readable <see cref="FileConsentRequest.Detail"/> for an incoming-push prompt: the
-    /// offered file names (elided by length, with the remainder counted) plus the total size. Kept
-    /// data-forward (names + a locale-neutral size) so the localized chrome lives in the consent
-    /// dialog, not in this wire summary.
-    /// </summary>
-    private static string DescribePushFiles(FilePushFile[] files)
-    {
-        if (files is null || files.Length == 0)
-            return string.Empty;
-
-        var totalBytes = files.Sum(f => f.Size);
-        return $"{JoinOfferedNames(files.Select(f => f.Name))} ({FormatBytes(totalBytes)})";
-    }
-
-    /// <summary>Roughly how many characters of file names a consent prompt should carry.</summary>
-    /// <remarks>
-    /// A soft budget, not a hard truncation: the name that crosses it is still shown whole, because a
-    /// half-written file name is worse than a long one. Sized so a share of eight or ten CAMERA
-    /// photos lists every name (those run 12–23 characters); longer names — screenshots at ~37 —
-    /// still overflow, which is why the remainder is counted rather than elided.
-    /// <para>
-    /// **MUST MATCH <c>OFFERED_NAMES_BUDGET</c> in the Kotlin <c>PushConsentRegistry.kt</c>**, or the
-    /// two ends of one protocol start describing the same offer differently.
-    /// </para>
-    /// </remarks>
-    private const int OfferedNamesBudget = 240;
-
-    /// <summary>
-    /// Joins the offered names for a consent prompt, saying how many are not shown (RemEx-7iub).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// **THE PROMPT USED TO NAME FIVE AND AUTHORISE ALL OF THEM.** Beyond the fifth it appended a bare
-    /// "…", so a ten-file offer asked the user to approve five files they could read and five they
-    /// could not — and the grant covers every one. That mattered more once each id was bound to the
-    /// name it was minted for (RemEx-tutz), because the binding is only as meaningful as what the
-    /// person was shown.
-    /// </para>
-    /// <para>
-    /// Budgeting by LENGTH rather than by count is what closes it for real offers: five was arbitrary
-    /// and a share of eight photos is ordinary, so this lists them all. When a genuinely huge offer
-    /// still overflows, the remainder is stated as a NUMBER rather than an ellipsis — "+37" is a fact
-    /// the user can weigh, where "…" is only an admission that something was hidden.
-    /// </para>
-    /// <para>
-    /// Deliberately no words. This string is the data half of the prompt; the localized chrome around
-    /// it lives in the consent dialog, so prose here would be untranslated English on every platform
-    /// that renders it.
-    /// </para>
-    /// <para>
-    /// **HAS A TWIN: the Kotlin <c>joinOfferedNames</c> in <c>PushConsentRegistry.kt</c>**, which must
-    /// produce byte-identical text — the two describe one protocol to two people, and a prompt that
-    /// reads differently at each end is one nobody can reason about. Both suites pin the same literal,
-    /// but that is a convention rather than a mechanism: editing this and its expected string together
-    /// leaves both green while the platforms diverge.
-    /// </para>
-    /// <para>
-    /// A blank name is emitted as an empty entry ("a, , b") rather than dropped. Odd to read, but the
-    /// alternative hides a file from a prompt whose whole purpose is to say what is being authorised —
-    /// and the Kotlin side would have to hide it identically or the two texts part company.
-    /// </para>
-    /// </remarks>
-    internal static string JoinOfferedNames(IEnumerable<string?> names)
-    {
-        var all = names?.ToArray() ?? [];
-        if (all.Length == 0)
-            return string.Empty;
-
-        var builder = new StringBuilder();
-        var shown = 0;
-        foreach (var name in all)
-        {
-            if (shown > 0 && builder.Length >= OfferedNamesBudget)
-                break;
-
-            if (shown > 0)
-                builder.Append(", ");
-
-            builder.Append(name);
-            shown++;
-        }
-
-        if (shown < all.Length)
-            builder.Append(", +").Append(all.Length - shown);
-
-        return builder.ToString();
-    }
-
-    /// <summary>Formats a byte count into a compact, locale-neutral size string (e.g. "12.4 MB").</summary>
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes < 1024)
-            return $"{bytes} B";
-
-        string[] units = ["KB", "MB", "GB", "TB"];
-        double size = bytes;
-        var unit = -1;
-        do
-        {
-            size /= 1024;
-            unit++;
-        }
-        while (size >= 1024 && unit < units.Length - 1);
-
-        return string.Create(
-            System.Globalization.CultureInfo.InvariantCulture, $"{size:0.#} {units[unit]}");
     }
 
     /// <summary>

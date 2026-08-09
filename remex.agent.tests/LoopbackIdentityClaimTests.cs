@@ -213,15 +213,30 @@ public class LoopbackIdentityClaimTests
     }
 
     [Fact]
-    public async Task ALoopbackConnectionCannotPushFilesAsAPairedPhone()
+    public async Task ALoopbackFilePushOfferIsNotAnsweredAtAll_TheDoorIsGone()
     {
-        // The second door onto the same persisted trust: auto-accept-incoming skips the prompt
-        // entirely, so a claimed id here means files land on the PC with nobody asked.
+        // THIS TEST CHANGED SHAPE AT RemEx-e11w, and the reason matters more than the assertion.
+        //
+        // It used to prove that a loopback connection claiming PhoneClientId could not push files by
+        // riding that phone's auto-accept-incoming grant — a guarded door. RemEx-e11w removed the door:
+        // a phone-initiated push IS an upload, so the file_push_offer consent handshake is gone from
+        // this side entirely and nothing dispatches the message any more.
+        //
+        // A deleted attack surface still deserves a test, because the way it comes back is somebody
+        // re-adding a handler without re-reading the decision. Asserting SILENCE pins that: if this
+        // ever fails, an inbound file_push_offer is being answered again, and whoever did it owes
+        // RemEx-e11w a fresh look — including RemEx-j63q (a blank clientId reaching RequestConsentAsync)
+        // and RemEx-u64l (a host-side exception reported to the phone as a user deny), both of which
+        // lived in the deleted handler and would come back with it.
+        //
+        // The real upload path is unaffected and is where this scenario's protection now lives:
+        // file_transfer_offer on /ws/files, gated by pairing and by ResolveForWrite (IsWritable,
+        // path-escape, size cap). RemEx-4215 and RemEx-4u0d hold the loopback-identity line there.
         var trust = NewGenerousTrustService();
 
         var sent = await RunLoopbackConnectionAsync(
             trust.Object,
-            MessageTypes.FilePushResponse,
+            MessageTypes.Pong,
             new RemexMessage
             {
                 Type = MessageTypes.FilePushOffer,
@@ -232,26 +247,29 @@ public class LoopbackIdentityClaimTests
                     PushId = "push-1",
                     Files = [new FilePushFile { Name = "payload.txt", Size = 12 }],
                 },
-            });
+            },
+            // Ping second, so the connection has a reason to answer something. If a push response
+            // were still being produced it would be in `sent` alongside the pong, and an assertion
+            // on an empty list could not tell "refused" from "the harness never ran".
+            new RemexMessage { Type = MessageTypes.Ping, ProtocolVersion = ProtocolVersionPolicy.Current });
 
-        var response = Assert.Single(sent, m => m.Type == MessageTypes.FilePushResponse);
-        Assert.False(response.FilePushResponse!.Accepted);
-        Assert.Null(response.FilePushResponse.TransferIds);
+        Assert.Contains(sent, m => m.Type == MessageTypes.Pong);
+        Assert.DoesNotContain(sent, m => m.Type == MessageTypes.FilePushResponse);
 
+        // HONEST LIMIT, measured rather than assumed (review). This catches a SYNCHRONOUS re-add,
+        // which is the realistic regression — the arm that was deleted dispatched inline, and
+        // RunDetachedAsync is a bare `await handler()`. It would NOT reliably catch a re-add that
+        // genuinely suspends (a real prompt, a real FileTrustService instead of this mock): the
+        // socket stops waiting once it has seen the Pong, so a slow response could land after the
+        // snapshot and the guard would go green with the door open. Passing
+        // MessageTypes.FilePushResponse as awaitedResponseType above closes that hole completely —
+        // the socket then waits its full timeout for a reply that never comes — at a cost of ~10s
+        // on every run of a 51s suite. Not paid, on purpose; change it here if the balance shifts.
+
+        // Nothing was asked of the trust store either — there is no consent kind left to ask about.
         trust.Verify(
-            t => t.RequestConsentAsync(PhoneClientId, It.IsAny<FileConsentRequest>(), It.IsAny<CancellationToken>()),
+            t => t.RequestConsentAsync(It.IsAny<string>(), It.IsAny<FileConsentRequest>(), It.IsAny<CancellationToken>()),
             Times.Never);
-
-        // BE PRECISE ABOUT WHERE THE REFUSAL COMES FROM. Unlike the volumes handler, this one does not
-        // bail on a blank id — it asks anyway, with string.Empty — so the assertion above would hold
-        // even if the ask were the granting kind. What makes the deny real in production is
-        // FileTrustService.RequestConsentAsync refusing a blank clientId outright, before any prompt
-        // and before any remembered grant is consulted (FileTrustService.cs, first line of the consent
-        // flow). Pinning the id it asks WITH is what ties this test to that behaviour rather than to a
-        // Moq default.
-        trust.Verify(
-            t => t.RequestConsentAsync(string.Empty, It.IsAny<FileConsentRequest>(), It.IsAny<CancellationToken>()),
-            Times.Once);
     }
 
     [Fact]
