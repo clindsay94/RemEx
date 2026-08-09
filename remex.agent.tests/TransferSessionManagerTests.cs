@@ -55,6 +55,112 @@ public sealed class TransferSessionManagerTests
         return b;
     }
 
+    // ── The offered-size range check (RemEx-9xs1) ──────────────────────────────
+    // TransferSessionManager.BeginReceiveAsync refuses `Size < 0 || Size > MaxTransferBytes` before it
+    // stages anything. That guard had no test, so deleting the line would have left every other test in
+    // this file green — they all offer honest sizes. The over-tightening direction needs no test of its
+    // own here: every other test in this class calls BeginReceiveAsync with an ordinary size and asserts
+    // it was accepted, so a guard that refused too much would take the whole file down with it.
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(long.MinValue)]
+    public async Task ANegativeOfferedSizeIsRefusedAndStagesNothing(long size)
+    {
+        // A negative offered size is not a size a real client can produce; it is a value that exists to
+        // see what arithmetic downstream of it does. Refusing at the door is why nothing downstream has
+        // to be careful about it.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+
+            var acceptance = await mgr.BeginReceiveAsync(ClientId, Offer(Guid.NewGuid().ToString("N"), size), default);
+
+            Assert.False(acceptance.Accepted);
+            Assert.False(string.IsNullOrWhiteSpace(acceptance.DeclineReason));
+
+            // A refusal that had already created the staging file would be a way to write into the
+            // staging directory without ever sending a byte.
+            Assert.Empty(Directory.GetFileSystemEntries(staging.FullName));
+        }
+        finally
+        {
+            staging.Delete(recursive: true);
+            dest.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task AnOfferedSizeAboveTheHardCeilingIsRefused()
+    {
+        // The ceiling is 5 GB, matching FileTransferService.MaxUploadBytes. Offering more is refused up
+        // front rather than discovered 5 GB into a transfer.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            using var mgr = NewManager(staging.FullName, files);
+
+            var acceptance = await mgr.BeginReceiveAsync(
+                ClientId, Offer(Guid.NewGuid().ToString("N"), 5_000_000_001L), default);
+
+            Assert.False(acceptance.Accepted);
+            Assert.False(string.IsNullOrWhiteSpace(acceptance.DeclineReason));
+            Assert.Empty(Directory.GetFileSystemEntries(staging.FullName));
+        }
+        finally
+        {
+            staging.Delete(recursive: true);
+            dest.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task DeclaringZeroBytesThenStreamingPastTheCap_IsRefusedMidTransfer()
+    {
+        // THE CASE THE OFFER-TIME CHECK CANNOT CATCH, and the reason the running cap exists (review of
+        // RemEx-9xs1). Size 0 is legitimate — a phone reports it for a content URI whose length it cannot
+        // read — and it is neither negative nor over the ceiling, so BeginReceiveAsync accepts. Zero then
+        // disables the declared-size bound (`ExpectedSize > 0 && ...`) AND the completion check in
+        // CompleteReceiveAsync, so the running cap is the only thing left. This is the exact twin of
+        // Upload_DeclaringZeroBytesThenStreamingPastTheCap_IsAbortedAndSaysSo on the legacy v2 path.
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            var resolver = new SharedRootReadResolver(
+                files, new Mock<IFileTrustService>().Object, new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance));
+            using var mgr = new TransferSessionManager(
+                NullLogger<TransferSessionManager>.Instance, files, resolver, staging.FullName)
+            {
+                MaxTransferBytes = 1024,
+            };
+
+            var tid = Guid.NewGuid().ToString("N");
+            var acceptance = await mgr.BeginReceiveAsync(ClientId, Offer(tid, 0), default);
+            Assert.True(acceptance.Accepted, "size 0 is a legitimate offer and must still be accepted");
+
+            // Under the cap: accepted, because a guard that refused everything would pass the assertion
+            // below while breaking every unknown-length send.
+            var after = await mgr.WriteChunkAsync(tid, 0, new byte[512], default);
+            Assert.Equal(512, after);
+
+            // Over the cap: refused, even though the peer never declared a size to overshoot.
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => mgr.WriteChunkAsync(tid, 512, new byte[1024], default));
+        }
+        finally
+        {
+            staging.Delete(recursive: true);
+            dest.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public async Task HappyPath_ReceivesVerifiesAndPromotesToDestinationRoot()
     {

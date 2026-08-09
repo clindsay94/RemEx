@@ -23,7 +23,26 @@ public sealed class FileTransferHandler(
     // start.TotalBytes, but mobile clients send 0 for unknown content URIs, so
     // a malicious / buggy peer could otherwise stream unbounded bytes past the
     // initial check. Kept identical to FileTransferService.MaxUploadBytes.
-    private const long MaxUploadBytes = 5_000_000_000L;
+    private const long DefaultMaxUploadBytes = 5_000_000_000L;
+
+    /// <summary>
+    /// Test-only seam (visible to <c>Remex.Agent.Tests</c> via <c>InternalsVisibleTo</c>). The running
+    /// upload cap, overridable so a test can reach the branch without streaming 5 GB. Not used by DI —
+    /// the default container only binds constructors, so an <c>init</c> property is invisible to host
+    /// bootstrapping and production always gets <see cref="DefaultMaxUploadBytes"/>.
+    /// </summary>
+    /// <remarks>
+    /// IT WAS A <c>const</c> (RemEx-9xs1), and the consequence was that the one guard standing between a
+    /// peer that declares <c>totalBytes: 0</c> and an unbounded write had NO coverage at all — proving it
+    /// would have meant streaming 5 GB through a unit test, so nobody did, and deleting the branch broke
+    /// nothing visible.
+    /// <para>
+    /// An <c>init</c> property rather than a constructor parameter or a mutable static: the container
+    /// cannot pick it up by accident, and there is no shared state for xUnit's parallel runner to race
+    /// on — the handler is registered <c>AddTransient</c> and resolved per WebSocket connection.
+    /// </para>
+    /// </remarks>
+    internal long MaxUploadBytes { get; init; } = DefaultMaxUploadBytes;
 
     private sealed class FileTransferState
     {

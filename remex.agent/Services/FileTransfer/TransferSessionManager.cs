@@ -46,7 +46,25 @@ namespace Remex.Agent.Services.FileTransfer;
 public sealed class TransferSessionManager : IDisposable
 {
     /// <summary>Hard ceiling on a single transfer, matching <c>FileTransferService.MaxUploadBytes</c>.</summary>
-    private const long MaxTransferBytes = 5_000_000_000L;
+    private const long DefaultMaxTransferBytes = 5_000_000_000L;
+
+    /// <summary>
+    /// Test-only seam (visible to <c>Remex.Agent.Tests</c> via <c>InternalsVisibleTo</c>). The running
+    /// transfer cap, overridable so a test can reach the branch without streaming 5 GB. Not used by DI —
+    /// the default container only binds constructors, so an <c>init</c> property is invisible to host
+    /// bootstrapping and production always gets <see cref="DefaultMaxTransferBytes"/>.
+    /// </summary>
+    /// <remarks>
+    /// WHY THIS IS THE CAP THAT MATTERS, and not a duplicate of the offer-time check (RemEx-9xs1).
+    /// <see cref="BeginReceiveAsync"/> refuses a declared size outside the range, but a declared size of
+    /// ZERO is legitimate — a phone reports it for a content URI whose length it cannot read — and zero
+    /// disables the declared-size bound below it (<c>ExpectedSize &gt; 0 &amp;&amp; …</c>) as well as the
+    /// completion check in <c>CompleteReceiveAsync</c>. So for a zero-size offer this line is the ONLY
+    /// thing standing between a peer and an unbounded write into the staging directory. It had no
+    /// coverage while it was a <c>const</c>, which is exactly how a guard like this gets deleted by a
+    /// tidy-up: nothing goes red.
+    /// </remarks>
+    internal long MaxTransferBytes { get; init; } = DefaultMaxTransferBytes;
 
     /// <summary>Orphaned staging partials older than this are swept at startup (plan §1.3).</summary>
     private static readonly TimeSpan OrphanMaxAge = TimeSpan.FromDays(7);

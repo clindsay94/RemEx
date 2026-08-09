@@ -57,6 +57,108 @@ public sealed class FileTransferHandlerTests : IDisposable
             new SharedRootReadResolver(svc, trust, volumes));
     }
 
+    // ── The running upload cap (RemEx-9xs1) ────────────────────────────────────
+    // THE GUARD THESE PIN HAD NO COVERAGE AT ALL. FileTransferService checks the DECLARED size at open
+    // time, but the comment on FileTransferHandler.MaxUploadBytes says exactly why that is not enough:
+    // "mobile clients send 0 for unknown content URIs". A declared 0 sails past the open-time check, so
+    // the running cap in HandleFileTransferChunkAsync is the only thing between a peer and an unbounded
+    // write to a shared root — and it was a const, so proving it meant streaming 5 GB and nobody did.
+    //
+    // This is the legacy v2 path (file_transfer_start), which bypasses TransferSessionManager entirely.
+    // The v3 path has the same two-guard shape — an offer-time range check and a running cap — and both
+    // are pinned in TransferSessionManagerTests, including the twin of the declare-zero case below.
+
+    [Fact]
+    public async Task Upload_DeclaringZeroBytesThenStreamingPastTheCap_IsAbortedAndSaysSo()
+    {
+        var (handler, ws, written) = CreateCappedUploadHandler(cap: 1024);
+
+        await StartZeroByteUploadAsync(handler, ws);
+        await SendChunkAsync(handler, ws, new byte[2048]);
+
+        var end = ws.ReceivedMessages.LastOrDefault(m => m.Type == MessageTypes.FileTransferEnd);
+        Assert.NotNull(end?.FileTransferEnd);
+        Assert.False(end!.FileTransferEnd!.Success);
+        Assert.Contains("cap", end.FileTransferEnd.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+
+        // THE ASSERTION THAT MATTERS. A refusal that still wrote the bytes would be no refusal at all,
+        // and the error message alone cannot tell the difference.
+        Assert.Empty(written.ToArray());
+    }
+
+    [Fact]
+    public async Task Upload_DeclaringZeroBytesAndStayingUnderTheCap_StillWrites()
+    {
+        // THE OVER-TIGHTENING CONTROL, and not hypothetical: totalBytes=0 is what a phone legitimately
+        // sends for a content URI whose length it cannot read. A cap that refused every unknown-length
+        // upload would break the ordinary share-sheet send while passing the test above.
+        var (handler, ws, written) = CreateCappedUploadHandler(cap: 1024);
+
+        await StartZeroByteUploadAsync(handler, ws);
+        await SendChunkAsync(handler, ws, new byte[512]);
+
+        Assert.DoesNotContain(
+            ws.ReceivedMessages,
+            m => m.Type == MessageTypes.FileTransferEnd && m.FileTransferEnd?.Success == false);
+        Assert.Equal(512, written.ToArray().Length);
+    }
+
+    private static (FileTransferHandler Handler, FakeWebSocket Socket, MemoryStream Written)
+        CreateCappedUploadHandler(long cap)
+    {
+        var written = new MemoryStream();
+        var files = new Mock<IFileTransferService>();
+        files.Setup(s => s.ListRootsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<FileSharedRoot>
+            {
+                new() { RootId = "root-1", DisplayName = "Root 1", IsWritable = true },
+            });
+        // Declared size 0, so the open-time cap in FileTransferService cannot object — which is the
+        // whole premise. The running cap is on its own from here.
+        files.Setup(s => s.OpenForWriteAsync("root-1", "in/file.bin", 0L, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(written);
+
+        var trust = new Mock<IFileTrustService>().Object;
+        var volumes = new VolumeEnumerator(NullLogger<VolumeEnumerator>.Instance);
+        var handler = new FileTransferHandler(
+            NullLogger<FileTransferHandler>.Instance, files.Object, trust, volumes,
+            new SharedRootReadResolver(files.Object, trust, volumes))
+        {
+            MaxUploadBytes = cap,
+        };
+
+        return (handler, new FakeWebSocket(), written);
+    }
+
+    private static Task StartZeroByteUploadAsync(FileTransferHandler handler, FakeWebSocket ws)
+        => handler.HandleFileTransferStartAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferStart,
+            FileTransferStart = new FileTransferStart
+            {
+                TransferId = "tx-cap",
+                Direction = "upload",
+                RemotePath = "in/file.bin",
+                RemoteRootId = "root-1",
+                RemoteRelativePath = "in/file.bin",
+                FileName = "file.bin",
+                TotalBytes = 0,
+                Sha256Base64 = string.Empty,
+            }
+        }, ws, "client-a", CancellationToken.None);
+
+    private static Task SendChunkAsync(FileTransferHandler handler, FakeWebSocket ws, byte[] payload)
+        => handler.HandleFileTransferChunkAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileTransferChunk,
+            FileTransferChunk = new FileTransferChunk
+            {
+                TransferId = "tx-cap",
+                Offset = 0,
+                DataBase64 = Convert.ToBase64String(payload),
+            }
+        }, ws, CancellationToken.None);
+
     // ── Upload happy path ──────────────────────────────────────────────────────
 
     [Fact]
