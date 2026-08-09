@@ -30,10 +30,13 @@ public partial class TrayFlyoutWindow : Window
         var screen = Screens.Primary;
         if (screen != null)
         {
-            // Position above the taskbar in the corner
-            double x = screen.WorkingArea.Right - Width - 12;
-            double y = screen.WorkingArea.Bottom - Height - 12;
-            Position = new PixelPoint((int)(x * screen.Scaling), (int)(y * screen.Scaling));
+            // ONE COPY OF THE ARITHMETIC (RemEx-q7ak). This subtracted a LOGICAL window size from a
+            // PHYSICAL screen edge and scaled the result, which lands correctly at 100% and drifts
+            // further off the corner the higher the scaling goes. The balloon, written later against
+            // the same corner, already did it the right way round — so there were two copies and one
+            // of them was wrong.
+            Position = Remex.Desktop.Services.TrayPlacement.BottomRight(
+                screen.WorkingArea, Width, Height, screen.Scaling, marginLogical: 12);
         }
         
         // Show without taking focus

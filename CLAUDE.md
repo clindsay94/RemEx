@@ -16,9 +16,42 @@ file, it is in `AGENTS.md`, not absent.** Do not copy them back: two copies drif
 they did, this repo shipped an instruction telling agents to do the exact opposite of what the code
 does.
 
-## 🛑 STRICT MCP SERVER ROUTING FOR TOKEN CONSERVATION
+## ⚖️ Precedence — this section outranks the managed blocks below
 
-To strictly conserve context window tokens and prevent context compaction loops, you MUST utilize the following three MCP servers for all codebase analysis, command execution, and architectural exploration. NEVER read full files, raw logs, or execute un-sandboxed shell commands when these tools are available.
+Roughly half of this file (everything from `<!-- gitnexus:start -->` onward) is **generated and
+overwritten by `bd` and `gitnexus`**. Those blocks cannot be corrected in place; the tools rewrite
+them on their next sync, and the beads block is content-hashed. So the corrections live here.
+
+**Where this section and a managed block disagree, this section wins.** Specifically:
+
+| Managed block says | Actually |
+|---|---|
+| "Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files" | Scoped, not absolute. See *Memory ownership* below. The harness-injected `MEMORY.md` is legitimate and is not what that rule is aimed at. |
+| "NEVER edit a function, class, or method without first running `gitnexus_impact`" | Applies to **cross-cutting edits** — a symbol with callers outside its own file, anything named in `docs/REGRESSION-GUARDS.md`, or a signature/contract change. Not to test files, new symbols, localization, comments, or single-call-site private helpers. |
+| "MUST warn the user if impact analysis returns HIGH or CRITICAL" | In a headless `/ralph` or `/drain` iteration there is no user. Record the risk in the bead and the journal instead. |
+| "NEVER commit changes without running `gitnexus_detect_changes()`" | `scripts/verify.ps1 -Check` is the commit gate (`AGENTS.md`). `detect_changes` is advisory on top of it, not a second gate. |
+
+A rule nobody can follow is worse than no rule: it teaches agents that this file's MUSTs are
+decorative, which discounts the ones that are load-bearing. If you find another unfollowable
+instruction, fix it here rather than obeying it or silently ignoring it.
+
+## 🛑 MCP server routing — read structurally, edit literally
+
+The three MCP servers below exist to keep bulk bytes out of context. They are for **understanding**
+code. They are not a substitute for reading a file you are about to change.
+
+**The rule, stated so it can actually be followed:**
+
+- **Understanding** what code does, what calls it, where a concept lives → symbol and graph tools.
+  Never a whole-file `Read`, never a repo-wide `grep`.
+- **Editing** a file → `Read` it first. `Edit` matches against exact bytes held in context, so an
+  unread file cannot be edited. This is not an exception to the rule, it is the rule: `Read` is an
+  edit-time tool here, not a discovery tool.
+- **Observing** a short, fixed output (`git status`, `command -v x`) → plain `Bash`. Routing a
+  three-line result through a sandbox costs more than it saves.
+- **Processing** output you intend to filter, count, or aggregate → `ctx_execute`.
+- **Mutating** state (`git`, `mv`, `rm`, installs, `scripts/verify.ps1`) → plain `Bash`/`PowerShell`.
+  `ctx_execute` discards its sandbox filesystem, so writes and builds performed there do not exist.
 
 ### 1. `token-savior` (Structural Codebase Indexing)
 **Do not read raw files to understand codebase logic.** `token-savior` indexes the codebase structurally, cutting token usage by ~97%.
@@ -61,12 +94,13 @@ Use this table before reaching for `grep`, `Read`, or raw `Bash`:
 | Read a function's body only | `token-savior: get_function_source` | Read the whole file |
 | What calls this function? | `token-savior: get_dependents` | Manual import tracing |
 | What does this function call? | `token-savior: get_dependencies` | Sequential file reads |
-| Before editing ANY symbol | `gitnexus: impact` (upstream) | Edit without checking |
+| Before a **cross-cutting** symbol edit | `gitnexus: impact` (upstream) | Edit without checking |
 | Explore a concept / execution flow | `gitnexus: query` | Keyword grep across repo |
 | Full 360° context on one symbol | `gitnexus: context` | Multiple sequential Reads |
-| Run command with potentially large output | `context-mode: ctx_execute` | Raw Bash into context |
+| **About to `Edit` a specific file** | **`Read` it — required** | Editing bytes you have not seen |
+| Command with potentially large output | `context-mode: ctx_execute` | Raw Bash into context |
 | Count / filter / aggregate data | `context-mode: ctx_execute` | Load all data into context |
-| Generate / rewrite >3 files at once | `agy -p "..."` (see §4 above) | Write each file directly |
+| **Builds, `verify.ps1`, git, installs** | **plain `Bash`/`PowerShell`** | `ctx_execute` (sandbox FS is discarded) |
 
 **`agy` quick usage for large multi-file changes:**
 ```bash

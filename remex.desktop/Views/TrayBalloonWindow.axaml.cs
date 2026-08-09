@@ -101,11 +101,11 @@ public partial class TrayBalloonWindow : Window
         if (Screens.Primary is not { } screen)
             return;
 
-        const double MarginLogical = 8;
-        var scaling = screen.Scaling;
-        var x = screen.WorkingArea.Right - (Width + MarginLogical) * scaling;
-        var y = screen.WorkingArea.Bottom - (Height + MarginLogical) * scaling;
-        Position = new PixelPoint((int)x, (int)y);
+        // Through the shared placement since RemEx-q7ak. This copy was already correct — the
+        // flyout's was not — and two copies of the same arithmetic with one of them wrong is the
+        // whole argument for there being one.
+        Position = Remex.Desktop.Services.TrayPlacement.BottomRight(
+            screen.WorkingArea, Width, Height, screen.Scaling, marginLogical: 8);
     }
 
     private void OnDismissTick(object? sender, EventArgs e)
