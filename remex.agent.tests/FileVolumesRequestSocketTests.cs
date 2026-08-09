@@ -111,6 +111,78 @@ public sealed class FileVolumesRequestSocketTests
     /// and the reason RemEx-4u29 exists. That redirect now covers this at build level too, so this
     /// override is belt and braces rather than the only defence.
     /// </remarks>
+    /// <summary>
+    /// The identity freeze RemEx-220r closed with no coverage for, now that the request it needed
+    /// answers.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A paired phone asks while claiming a DIFFERENT paired phone's id, one that already holds a
+    /// full-browse grant. The grant must not be inherited: the asker is asked about itself, and told
+    /// no.
+    /// </para>
+    /// <para>
+    /// **NOT A DUPLICATE OF RemEx-4215's LoopbackIdentityClaimTests, AND THAT WAS GOT WRONG ONCE
+    /// ALREADY (RemEx-xywl).** Those drive the LOOPBACK gate, where identity is never proven and the
+    /// fix was to freeze at NO identity. This is the PAIRED non-loopback path, which reaches a
+    /// different freeze point entirely — the pairing handshake, and again on reconnect. Reading the
+    /// two as the same is why this test was dropped when RemEx-9i4b was finished, leaving the
+    /// property believed rather than held.
+    /// </para>
+    /// <para>
+    /// ITS ORIGINAL BLOCKER IS GONE, verified rather than assumed: round 1 of the earlier attempt
+    /// failed review for writing a real full-browse grant into the machine-wide trust store. NewHost
+    /// above overrides that store with a throwaway path, and RemEx-4u29 landed the host-state
+    /// redirect at build level, so this writes nothing outside its own temp directory.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task AClaimedClientIdDoesNotInheritAnotherDevicesFullBrowseGrant()
+    {
+        using var factory = NewHost();
+        var pairingService = factory.Services.GetRequiredService<PairingService>();
+        pairingService.CancelPairing();
+
+        var trust = factory.Services.GetRequiredService<IFileTrustService>();
+        var prompts = new List<string>();
+        trust.ConsentRequested += prompt =>
+        {
+            prompts.Add(prompt.ClientId);
+            trust.ResolveConsent(prompt.Request.ConsentId, granted: false, remember: false);
+        };
+
+        const string victim = "victim-phone";
+        const string attacker = "attacker-phone";
+
+        using (var victimWs = await ConnectAsync(factory))
+        {
+            await PairAsync(victimWs, pairingService, victim);
+        }
+
+        await trust.SetFullBrowseGrantedAsync(victim, granted: true, CancellationToken.None);
+
+        using var ws = await ConnectAsync(factory);
+        await PairAsync(ws, pairingService, attacker);
+
+        await MessageSerializer.SendAsync(ws, new RemexMessage
+        {
+            Type = MessageTypes.FileVolumesRequest,
+            ClientId = victim,
+            FileVolumesRequest = new FileVolumesRequest { RequestId = "vol-1" },
+        }, CancellationToken.None);
+
+        var (volumes, seen) = await AwaitVolumesResponseAsync(ws);
+
+        Assert.True(volumes is not null, $"no file_volumes_response arrived; saw: {Summarize(seen)}");
+        Assert.False(volumes!.FileVolumesResponse!.FullBrowseGranted);
+        Assert.Empty(volumes.FileVolumesResponse.Volumes);
+
+        // The connection is asked about ITSELF. A prompt naming the victim would mean the claimed id
+        // reached the consent flow, and an empty list would then be one "allow" away from the victim's
+        // drives.
+        Assert.Equal([attacker], prompts);
+    }
+
     private static RemexHostFactory NewHost() =>
         new RemexHostFactory().WithServices(services =>
         {
