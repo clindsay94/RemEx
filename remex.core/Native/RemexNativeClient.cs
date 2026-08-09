@@ -21,6 +21,20 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
     public static RemexNativeClient Current => Instance.Value;
 
     private ClientWebSocket? _webSocket;
+
+    /// <summary>
+    /// Latency, measured from the ping/pong round trip (RemEx-s2ksi).
+    /// </summary>
+    /// <remarks>
+    /// Not yet surfaced to callers beyond this type. RemEx-93n2 owns exposing it to Kotlin, and
+    /// warns that a new callback has to be wired fully through AndroidNativeExports and
+    /// RemexCoreClient "or it silently drops" — so it is measured here and left for that work rather
+    /// than half-plumbed.
+    /// </remarks>
+    private readonly Remex.Core.Services.RoundTripTracker _roundTrip = new();
+
+    /// <summary>The smoothed round-trip time in milliseconds, or null before the first pong.</summary>
+    public double? RoundTripMilliseconds => _roundTrip.RoundTripMilliseconds;
     private CancellationTokenSource? _connectionCts;
     private Task? _receiveLoopTask;
     private readonly ConcurrentDictionary<string, TaskCompletionSource<CommandResponse>> _pendingCommands = new();
@@ -457,6 +471,18 @@ public sealed class RemexNativeClient : IDisposable, IAsyncDisposable
         {
             case MessageTypes.Telemetry when msg.Telemetry != null:
                 TelemetryReceived?.Invoke(msg.Telemetry);
+                break;
+
+            case MessageTypes.Pong when msg.Timestamp is { } sentTicks:
+                // THE CASE THAT DID NOT EXIST (RemEx-s2ksi). The ping stamps DateTime.UtcNow.Ticks
+                // and the host echoes it back with a comment saying it is echoing for a consumer -
+                // and there was no consumer, so the round trip the stamp was put there for was never
+                // computed. Nothing else on the wire measures latency.
+                //
+                // Both ends of this subtraction come from the SAME machine's wall clock, so an NTP
+                // correction landing between send and receive corrupts exactly this sample and can
+                // make it negative. RoundTripTracker refuses those rather than averaging them in.
+                _roundTrip.Observe((DateTime.UtcNow.Ticks - sentTicks) / (double)TimeSpan.TicksPerMillisecond);
                 break;
 
             case MessageTypes.LauncherSync when msg.LauncherEntries != null:
