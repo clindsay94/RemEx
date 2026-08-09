@@ -114,8 +114,12 @@ public partial class App : Application
     {
         try
         {
-            var baseFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            var filePath = Path.Combine(baseFolder, "Remex", "dashboard_layout.json");
+            // THE SERVICE'S OWN PATH, NOT A SECOND HAND-BUILT ONE (RemEx-mzbn). This read happens
+            // before the window is shown, so it predates the service — but building the path here
+            // meant it did not honour RemexDataPaths' test redirect, and a file with two resolvers
+            // where only one is redirected is what RemEx-ln0k existed to remove.
+            // Fully qualified: `Services` binds to App.Services, the IServiceProvider, not the namespace.
+            var filePath = Remex.Desktop.Services.DashboardLayoutService.DefaultFilePath;
 
             if (!File.Exists(filePath)) return;
 

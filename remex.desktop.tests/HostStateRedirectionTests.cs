@@ -90,7 +90,7 @@ public sealed class HostStateRedirectionTests
 
     [Fact]
     public void DashboardLayout_DefaultPath_IsRedirected()
-        => AssertRedirected(DashboardLayoutService.DefaultFilePathForTests, "The dashboard layout");
+        => AssertRedirected(DashboardLayoutService.DefaultFilePath, "The dashboard layout");
 
     /// <summary>
     /// Two tests in this assembly already construct this service with the real constructor, so
@@ -127,6 +127,52 @@ public sealed class HostStateRedirectionTests
         AssertRedirected(paths.DashboardProfilesDirectory, "The dashboard-profiles directory");
         AssertRedirected(paths.LogsDirectory, "The logs directory");
     }
+
+    /// <summary>
+    /// Exactly which production files still resolve the per-user directory for themselves
+    /// (RemEx-mzbn).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE DEFECT IS A SECOND RESOLVER, NOT A WRONG PATH. App read the dashboard layout before the
+    /// window is shown and hand-built the path from SpecialFolder.LocalApplicationData, so that one
+    /// read did not honour the redirect while the service's did. Both pointed at the same file in
+    /// production, which is why it was invisible: a test that redirected one still had the other
+    /// reading, and writing, the developer's own saved dashboard. That is what RemEx-ln0k existed to
+    /// stop, reappearing one caller over.
+    /// </para>
+    /// <para>
+    /// AN EXACT SET, NOT A CEILING. A "no more than N" form goes quiet as soon as somebody fixes one
+    /// and adds another; requiring the set to match means a NEW hand-built path fails, and so does a
+    /// FIXED one left in this list — which is what keeps the list honest rather than decorative.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void OnlyTheKnownStragglersResolveThePerUserDirectoryThemselves()
+    {
+        // Both have their own beads: RemexSavefileService is RemEx-mz9f, whose backups directory is
+        // not covered by the redirect, and FileTransferRootSettingsService is RemEx-dnn2q, filed off
+        // the back of this guard. Fixing either means deleting its name here, which the exact-set
+        // assertion enforces rather than merely permits.
+        string[] known = ["RemexSavefileService.cs", "FileTransferRootSettingsService.cs"];
+
+        var offenders = Directory
+            .GetFiles(Path.Combine(RepoRoot(), "remex.desktop"), "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .Where(f => File.ReadLines(f).Any(line =>
+                !line.TrimStart().StartsWith("//", StringComparison.Ordinal)
+                && !line.TrimStart().StartsWith("///", StringComparison.Ordinal)
+                && line.Contains("SpecialFolder.LocalApplicationData", StringComparison.Ordinal)))
+            .Select(Path.GetFileName)
+            .OrderBy(f => f, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(known.OrderBy(f => f, StringComparer.Ordinal).ToArray(), offenders);
+    }
+
+    private static string RepoRoot([System.Runtime.CompilerServices.CallerFilePath] string thisFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisFile)!, ".."));
 
     /// <summary>
     /// The three <see cref="PathSettings"/> defaults must stay distinct directories. Redirecting

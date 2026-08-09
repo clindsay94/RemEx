@@ -51,11 +51,16 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// that constructs this service used to create and overwrite the developer's own saved dashboard
     /// (RemEx-ln0k) — this is that user's arrangement of their cards, not scratch state.
     /// </summary>
-    private static string DefaultFilePath =>
+    /// <remarks>
+    /// INTERNAL RATHER THAN PRIVATE, AND WITHOUT A ForTests ALIAS (RemEx-mzbn). App reads this file
+    /// before the window is shown, to apply the saved theme, and used to hand-build the path from
+    /// SpecialFolder.LocalApplicationData — bypassing the redirect entirely. Two resolvers for one
+    /// file, only one honouring the redirect, is the exact shape that made RemEx-ln0k necessary. The
+    /// alias is gone with it: an alias can be asserted while production reads something else, so the
+    /// redirection test now pins the member the app actually uses.
+    /// </remarks>
+    internal static string DefaultFilePath =>
         Path.Combine(RemexDataPaths.PerUserDirectory, "dashboard_layout.json");
-
-    /// <summary>Exposes the resolved default path so tests can assert the redirect covers it.</summary>
-    internal static string DefaultFilePathForTests => DefaultFilePath;
 
     /// <summary>The file this instance actually resolved, so a test can pin the constructor.</summary>
     internal string FilePathForTests => _filePath;
