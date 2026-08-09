@@ -105,6 +105,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previously invisible. Found by trying it on a real device rather than by a test: everything
   passed, and the feature still lied. (RemEx-s1ay7)
 
+### Changed
+
+- **The two ways your PC can be asked to shut down, restart or sleep now run the same code.** RemEx
+  accepts power commands from two places — your paired phone, and a local script port — and each had
+  its own copy of what those eleven commands do. Two copies had already drifted apart once. They are
+  now one, so a change to how shutdown behaves cannot apply to one and not the other, and a new
+  command cannot half-exist.
+
+  The split between the two is unchanged and still deliberate: the script port gets whole-machine
+  power actions only, and the four commands that act on something you picked — kill this process,
+  launch this program, take a screenshot — remain available exclusively to a paired phone. The
+  script port gained nothing.
+
+  One user-visible detail: the confirmation the phone shows after a power command is now the shorter
+  wording it already used, rather than the script port's longer one, because the phone displays that
+  text inside "Success: …" and the longer version read awkwardly there. (RemEx-pmb4)
+
 ### Internal
 
 - **A whole class of bug where the PC talks and the phone never hears is now caught by the build.**
