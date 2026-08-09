@@ -3004,4 +3004,7 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Settings_DeviceUnpaired" xml:space="preserve">
     <value>Пов’язання пристрою скасовано</value>
   </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>Не вдалося завершити скасування пов’язання: {0}. Цей пристрій може повернутися під час наступного запуску RemEx — скасуйте пов’язання ще раз тоді.</value>
+  </data>
 </root>

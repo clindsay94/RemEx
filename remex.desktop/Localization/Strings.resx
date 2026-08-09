@@ -3009,4 +3009,7 @@ You can change:
   <data name="Settings_DeviceUnpaired" xml:space="preserve">
     <value>Device unpaired</value>
   </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>Couldn't finish unpairing: {0}. This device may come back the next time RemEx starts — unpair it again then.</value>
+  </data>
 </root>

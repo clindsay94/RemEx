@@ -52,6 +52,13 @@ public sealed class PairedDeviceRevoker(
 
         List<Exception>? failures = null;
 
+        // TRACKED SEPARATELY FROM THE REST, because it is the only failure the user can act on
+        // (RemEx-pynli). The registry removes from memory and then persists, so a failed write here
+        // means the device is unpaired for this run and still on disk — it comes back on the next
+        // start. Every other store failing leaves a stale name or date, which is invisible and
+        // nothing anyone can do anything about.
+        var pairingMayReturn = false;
+
         void Attempt(Action teardown)
         {
             try
@@ -65,6 +72,7 @@ public sealed class PairedDeviceRevoker(
         }
 
         Attempt(() => registry.UnregisterClient(clientId));
+        pairingMayReturn = failures is { Count: > 0 };
         Attempt(() => names.Forget(clientId));
         Attempt(() => overrides.Forget(clientId));
         Attempt(() => activity.Forget(clientId));
@@ -92,11 +100,13 @@ public sealed class PairedDeviceRevoker(
             // answer is "did the file-access grant actually go?" — the one with privilege attached —
             // and a count cannot answer it. The UI shows the same text for three seconds and then it
             // is gone, so if it is not here it is nowhere.
-            var failure = new AggregateException(
-                "One or more paired-device teardowns failed; the revocation is incomplete.", failures);
+            var failure = new PairedDeviceRevocationException(
+                "One or more paired-device teardowns failed; the revocation is incomplete.",
+                pairingMayReturn, failures);
             logger.LogError(
-                failure, "Revoking {ClientId} left {FailureCount} teardown(s) unfinished.",
-                LogRedaction.RedactClientId(clientId), failures.Count);
+                failure,
+                "Revoking {ClientId} left {FailureCount} teardown(s) unfinished (pairingMayReturn={MayReturn}).",
+                LogRedaction.RedactClientId(clientId), failures.Count, pairingMayReturn);
             throw failure;
         }
 

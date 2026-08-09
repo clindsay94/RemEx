@@ -156,6 +156,57 @@ public class PairedDeviceUnpairTests
             Remex.Desktop.Services.LocalizationService.Instance["Settings_DeviceUnpaired"]);
     }
 
+    [Fact]
+    public async Task AFailureThatLEAVESTHEPAIRINGSaysSomethingDifferent()
+    {
+        // TWO FAILURES, TWO ACTIONS (RemEx-pynli). A record store that could not be written leaves a
+        // stale name behind: invisible, nothing to do. The credential store failing removes the client
+        // from memory and then fails to persist, so the device is unpaired now and still on disk — it
+        // is back the next time RemEx starts, and the user needs to know to unpair it again. Reporting
+        // both as "something went wrong" tells the second user nothing they can act on.
+        var statuses = new List<string>();
+
+        foreach (var mayReturn in new[] { false, true })
+        {
+            // CONSTRUCTED EXACTLY AS PairedDeviceRevoker DOES, which is the whole difference between
+            // this guard and the inert one it replaces (review). The first version passed the IO
+            // reason as the OUTER message too — something production never does — so the
+            // "reason survives" assertion below was checking the test's own fixture. Production's
+            // outer message is a fixed summary; the reason exists only in Failures.
+            var revoker = new RecordingRevoker(new PairedDeviceRevocationException(
+                "One or more paired-device teardowns failed; the revocation is incomplete.",
+                mayReturn, [new IOException("the store is locked")]));
+            using var scope = new ScopedServices(new FakeSource([Row("phone-a")]), revoker);
+
+            var vm = NewSettingsViewModel();
+            vm.OnConfirmationRequested = (_, _, _) => Task.FromResult(true);
+            vm.RefreshPairedDevices();
+
+            await vm.UnpairDeviceCommand.ExecuteAsync(vm.PairedDevices[0]);
+            statuses.Add(vm.SavedStatus);
+        }
+
+        // DIRECTIONAL, because every earlier version of these assertions was symmetric (review).
+        // "They differ" and "both carry the reason" are satisfied just as happily by the two messages
+        // SWAPPED — which is the single most plausible mutation of a resource key chosen inline in a
+        // ternary, and the outcome it produces is the exact one this bead exists to prevent: the user
+        // whose phone will authenticate again after a restart is told nothing to do, and the user
+        // whose pairing is gone is sent to unpair a device that no longer exists.
+        var reason = "the store is locked";
+        statuses[1].Should().Be(
+            string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                Remex.Desktop.Services.LocalizationService.Instance["Settings_UnpairFailedPairingReturns"],
+                reason),
+            "the pairing survives a restart, so the message must say so and say what to do");
+        statuses[0].Should().Be(
+            string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                Remex.Desktop.Services.LocalizationService.Instance["Status_ErrorFormat"],
+                reason),
+            "the pairing is gone; sending this user to unpair again would be a wild goose chase");
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -46,9 +46,10 @@ public interface IPairedDeviceRevoker
     /// reported nothing is the failure the user cannot see: the app looks like it worked, and what
     /// survived is whatever the failing store had not yet written. The credential store removes from
     /// memory before it persists, so a failure there can leave the pairing gone for this run and still
-    /// present on disk — meaning the device can come back on the next restart. That specific outcome
-    /// is NOT held by a test (the failure injection reaches an absent store file, not a stale one) and
-    /// the error text does not yet say it; RemEx-pynli covers making the message that useful.
+    /// present on disk — meaning the device comes back on the next restart. That case throws a
+    /// <see cref="PairedDeviceRevocationException"/> with <c>PairingMayReturn</c> set, and the caller
+    /// must say so in different words from an ordinary failure: it is the only one the user can act
+    /// on, and the action is to unpair the device again after restarting (RemEx-pynli).
     /// </para>
     /// </remarks>
     Task RevokeAsync(string clientId, CancellationToken ct);

@@ -3003,4 +3003,7 @@ Vous pouvez modifier :
   <data name="Settings_DeviceUnpaired" xml:space="preserve">
     <value>Appareil dissocié</value>
   </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>Impossible de terminer la dissociation : {0}. Cet appareil peut réapparaître au prochain démarrage de RemEx ; dissociez-le à nouveau à ce moment-là.</value>
+  </data>
 </root>

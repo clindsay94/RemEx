@@ -3,6 +3,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Agent.Services;
 using Remex.Agent.Services.FileTransfer;
 using Remex.Agent.Services.Security;
+using Remex.Core.Services.FileTransfer;
+using Remex.Core.Models;
+using Remex.Desktop.Services;
 using Xunit;
 
 namespace Remex.Agent.Tests;
@@ -54,7 +57,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         }
     }
 
-    private Fixture NewRevoker(string? registryPath = null)
+    private Fixture NewRevoker(string? registryPath = null, IFileTrustService? trustOverride = null)
     {
         var registry = new PairedClientRegistry(
             NullLogger<PairedClientRegistry>.Instance,
@@ -71,7 +74,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
 
         var disconnector = new RecordingDisconnector();
         var revoker = new PairedDeviceRevoker(
-            registry, names, overrides, activity, trust, disconnector,
+            registry, names, overrides, activity, trustOverride ?? trust, disconnector,
             NullLogger<PairedDeviceRevoker>.Instance);
 
         registry.RegisterClient(Phone, [1, 2, 3, 4]);
@@ -203,7 +206,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         Directory.Delete(blocked, recursive: true);
         File.WriteAllText(blocked, "not a directory");
 
-        await Assert.ThrowsAsync<AggregateException>(
+        await Assert.ThrowsAsync<PairedDeviceRevocationException>(
             () => f.Revoker.RevokeAsync(Phone, CancellationToken.None));
 
         Assert.Equal([Phone], f.Disconnector.Disconnected);
@@ -245,10 +248,10 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // removes from memory and then persists, so a real persist failure leaves the pairing gone
         // here and still on disk, and the device returns on the next start. This injection takes the
         // store file with the directory, so the disk state is ABSENT rather than STALE — not a state
-        // production can reach, so asserting against it would prove nothing. RemEx-pynli carries both
-        // that assertion and the error message that should go with it; an injection that fails the
-        // WRITE has a parity trap, because an exclusive handle blocks the atomic replace on Windows
-        // and a rename over an open file succeeds on Linux.
+        // production can reach, so asserting against it would prove nothing. That assertion now lives
+        // in AFailedCredentialWriteLEAVESThePairingOnDiskAndSaysSo, which pays the price of a
+        // per-OS injection to reach the stale state; this one stays as it is because collect-and-
+        // continue is a different property and this is the cheapest way to hold it.
         var blocked = Path.Combine(_root.FullName, "blocked");
         Directory.CreateDirectory(blocked);
         var f = NewRevoker(Path.Combine(blocked, "paired.json"));
@@ -256,7 +259,7 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         Directory.Delete(blocked, recursive: true);
         File.WriteAllText(blocked, "not a directory");
 
-        await Assert.ThrowsAsync<AggregateException>(
+        await Assert.ThrowsAsync<PairedDeviceRevocationException>(
             () => f.Revoker.RevokeAsync(Phone, CancellationToken.None));
 
         Assert.False(f.Registry.IsClientPaired(Phone));
@@ -266,6 +269,166 @@ public sealed class PairedDeviceRevokerTests : IDisposable
         // The file again, for the reason TheFileAccessGrantIsGone gives: the service's own lazy prune
         // would answer this for an unpaired client whether or not the revoker did anything.
         Assert.DoesNotContain(QuotedPhone, File.ReadAllText(Path.Combine(_root.FullName, "trust.json")));
+    }
+
+    [Fact]
+    public async Task AFailedCredentialWriteLEAVESThePairingOnDiskAndSaysSo()
+    {
+        // THE DIVERGENCE, held at last (RemEx-pynli). UnregisterClient removes from the in-memory
+        // dictionary and THEN persists, so a failed write leaves the device unpaired for this run and
+        // untouched on disk — it is paired again the next time the host loads the store. The previous
+        // failure test could not hold this: its injection took the store FILE away with the directory,
+        // so the disk state was absent rather than stale, which production cannot reach.
+        //
+        // TWO INJECTIONS BECAUSE ONE WILL NOT DO IT ON BOTH (the parity trap the bead named). On
+        // Windows a read-only destination makes the atomic replace fail. On Unix it would not: rename
+        // consults the DIRECTORY's write permission, not the target's, so the same setup would
+        // silently succeed and this test would prove nothing. There the write permission comes off the
+        // containing directory instead, which fails the staging write a step earlier. Both leave the
+        // existing file byte-for-byte intact, which is the whole point.
+        var credentials = Directory.CreateDirectory(Path.Combine(_root.FullName, "credentials"));
+        var storePath = Path.Combine(credentials.FullName, "paired.json");
+        var f = NewRevoker(storePath);
+        var before = File.ReadAllText(storePath);
+        Assert.Contains(QuotedPhone, before);
+
+        MakeWritesFail(credentials, storePath);
+        try
+        {
+            AssertTheInjectionActuallyTook(credentials, storePath);
+
+            var failure = await Assert.ThrowsAsync<PairedDeviceRevocationException>(
+                () => f.Revoker.RevokeAsync(Phone, CancellationToken.None));
+
+            Assert.True(failure.PairingMayReturn,
+                "a credential write that failed is the one failure the user can act on");
+            Assert.False(f.Registry.IsClientPaired(Phone), "in memory the device is unpaired");
+            Assert.Equal(before, File.ReadAllText(storePath));
+        }
+        finally
+        {
+            AllowWritesAgain(credentials, storePath);
+        }
+
+        // THE RESTART, which is what the user actually experiences: a fresh registry over the same
+        // file finds the device paired again.
+        var afterRestart = new PairedClientRegistry(
+            NullLogger<PairedClientRegistry>.Instance, storePath);
+        Assert.True(afterRestart.IsClientPaired(Phone),
+            "the pairing survived on disk, which is exactly what the message must warn about");
+    }
+
+    [Fact]
+    public async Task AFailureTHATSPAREDTheCredentialDoesNotClaimThePairingIsComingBack()
+    {
+        // THE OTHER SIDE OF THE FLAG, and it needs a seam rather than a filesystem trick for a reason
+        // worth writing down: of the five teardowns, the REGISTRY is currently the only one that can
+        // propagate at all — the three record stores and the trust store each swallow their own IO
+        // failures and log. So with real types every observable failure is a credential failure, and
+        // PairingMayReturn could be hardcoded true with nothing going red. The trust store reaches the
+        // revoker through IFileTrustService, which is the seam that lets the false branch exist.
+        var f = NewRevoker(trustOverride: new ThrowingTrustService());
+
+        var failure = await Assert.ThrowsAsync<PairedDeviceRevocationException>(
+            () => f.Revoker.RevokeAsync(Phone, CancellationToken.None));
+
+        Assert.False(failure.PairingMayReturn,
+            "the credential went, so this pairing is not coming back — whatever else failed");
+        Assert.False(f.Registry.IsClientPaired(Phone));
+        Assert.Equal([Phone], f.Disconnector.Disconnected);
+    }
+
+    /// <summary>Fails the one teardown that reaches the revoker through an interface.</summary>
+    private sealed class ThrowingTrustService : IFileTrustService
+    {
+        public Task RevokeAsync(string clientId, CancellationToken ct)
+            => Task.FromException(new IOException("the trust store is locked"));
+
+        public Task<FileTrustRecord?> GetTrustAsync(string clientId, CancellationToken ct)
+            => Task.FromResult<FileTrustRecord?>(null);
+        public Task<IReadOnlyList<FileTrustRecord>> GetAllAsync(CancellationToken ct)
+            => Task.FromResult<IReadOnlyList<FileTrustRecord>>([]);
+        public Task<bool> IsFullBrowseGrantedAsync(string clientId, CancellationToken ct) => Task.FromResult(false);
+        public Task<bool> IsAutoAcceptIncomingAsync(string clientId, CancellationToken ct) => Task.FromResult(false);
+        public Task SetFullBrowseGrantedAsync(string clientId, bool granted, CancellationToken ct) => Task.CompletedTask;
+        public Task SetAutoAcceptIncomingAsync(string clientId, bool autoAccept, CancellationToken ct) => Task.CompletedTask;
+        public Task<FileConsentDecision> RequestConsentAsync(
+            string clientId, FileConsentRequest request, CancellationToken ct)
+            => throw new NotSupportedException("nothing here prompts for consent");
+        public bool TryResolveRemoteConsent(string? clientId, string? consentId, bool granted, bool remember) => false;
+        public void ResolveConsent(string consentId, bool granted, bool remember)
+            => throw new NotSupportedException("nothing here prompts for consent");
+        public event Action<FileConsentPrompt>? ConsentRequested { add { } remove { } }
+    }
+
+    /// <summary>
+    /// Fails loudly, and for the right reason, when the sandbox can write anyway.
+    /// </summary>
+    /// <remarks>
+    /// ROOT IGNORES THE MODE BITS (CAP_DAC_OVERRIDE), and Docker CI containers default to root
+    /// (review). Without this the persist would simply succeed and the test would die at
+    /// <c>Assert.ThrowsAsync</c> pointing at the revoker instead of at the sandbox. NOT skipped:
+    /// turning a loud failure into a silent pass is the exact thing this suite keeps being burnt by.
+    /// </remarks>
+    private static void AssertTheInjectionActuallyTook(DirectoryInfo directory, string storePath)
+    {
+        // PROBED THE SAME WAY THE INJECTION BITES, per platform: on Windows the read-only attribute
+        // is on the FILE and blocks the atomic replace, so the probe opens it for writing (and never
+        // writes, so the content this test compares against is untouched). On Unix the mode bits are
+        // on the DIRECTORY and block the staging write, so the probe creates a file there.
+        var probe = Path.Combine(directory.FullName, "probe.tmp");
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                using var _ = new FileStream(storePath, FileMode.Open, FileAccess.Write, FileShare.None);
+            }
+            else
+            {
+                File.WriteAllText(probe, "x");
+                File.Delete(probe);
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // NARROWED TO THE ONE THIS INJECTION PRODUCES (review). Both permission mechanisms surface
+            // as UnauthorizedAccessException; treating any IOException as "the injection took" would
+            // let a sharing violation or a missing file read as a successful setup, which is a pass
+            // path answering a question nobody asked.
+            return;
+        }
+
+        Assert.Fail(
+            "This test injects a write failure with permission bits, which an elevated or root "
+            + "process can ignore. Run the suite as an ordinary user; the revoker is not what is "
+            + "broken here.");
+    }
+
+    private static void MakeWritesFail(DirectoryInfo directory, string storePath)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            File.SetAttributes(storePath, File.GetAttributes(storePath) | FileAttributes.ReadOnly);
+        }
+        else
+        {
+            File.SetUnixFileMode(
+                directory.FullName, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        }
+    }
+
+    private static void AllowWritesAgain(DirectoryInfo directory, string storePath)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            File.SetAttributes(storePath, File.GetAttributes(storePath) & ~FileAttributes.ReadOnly);
+        }
+        else
+        {
+            File.SetUnixFileMode(
+                directory.FullName,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
     }
 
     [Fact]

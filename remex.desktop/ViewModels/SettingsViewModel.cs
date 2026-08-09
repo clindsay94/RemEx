@@ -362,14 +362,33 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             return;
         }
 
-        string? error = null;
+        string? failureStatus = null;
         try
         {
             await revoker.RevokeAsync(item.ClientId, CancellationToken.None);
         }
+        catch (PairedDeviceRevocationException ex)
+        {
+            // THE ONE FAILURE WITH SOMETHING TO DO ABOUT IT (RemEx-pynli). The credential store
+            // removes from memory and then persists, so a failed write leaves this device unpaired
+            // now and still on disk — it is back the next time the host starts. "Something went
+            // wrong" would leave the user believing a pairing they ended is over.
+            //
+            // ex.Reason, NOT ex.Message: the message is a fixed summary for the log, and putting it
+            // where the reason belongs would show every non-English user one untranslated English
+            // sentence and tell nobody what actually failed (review).
+            failureStatus = string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                LocalizationService.Instance[ex.PairingMayReturn
+                    ? "Settings_UnpairFailedPairingReturns"
+                    : "Status_ErrorFormat"],
+                ex.Reason);
+        }
         catch (Exception ex)
         {
-            error = ex.Message;
+            failureStatus = string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                LocalizationService.Instance["Status_ErrorFormat"], ex.Message);
         }
 
         // BOTH CARDS, AND ON THE FAILURE PATH TOO. The device appears twice on this page — once as a
@@ -381,12 +400,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         RefreshPairedDevices();
         await LoadTrustedDevicesAsync();
 
-        ShowTransientStatus(error is null
-            ? LocalizationService.Instance["Settings_DeviceUnpaired"]
-            : string.Format(
-                System.Globalization.CultureInfo.CurrentCulture,
-                LocalizationService.Instance["Status_ErrorFormat"],
-                error));
+        ShowTransientStatus(failureStatus ?? LocalizationService.Instance["Settings_DeviceUnpaired"]);
     }
 
     /// <summary>

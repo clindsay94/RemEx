@@ -3003,4 +3003,7 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Settings_DeviceUnpaired" xml:space="preserve">
     <value>डिवाइस अनपेयर हो गया</value>
   </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>अनपेयर पूरा नहीं हो सका: {0}। RemEx के अगली बार शुरू होने पर यह डिवाइस वापस आ सकता है — तब इसे फिर से अनपेयर करें।</value>
+  </data>
 </root>

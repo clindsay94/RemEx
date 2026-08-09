@@ -3006,4 +3006,7 @@ Anda dapat mengubah:
   <data name="Settings_DeviceUnpaired" xml:space="preserve">
     <value>Perangkat diputuskan</value>
   </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>Tidak dapat menyelesaikan pemutusan: {0}. Perangkat ini mungkin muncul lagi saat RemEx berikutnya dijalankan — putuskan lagi saat itu.</value>
+  </data>
 </root>

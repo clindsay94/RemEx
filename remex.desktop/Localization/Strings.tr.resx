@@ -3007,4 +3007,7 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Settings_DeviceUnpaired" xml:space="preserve">
     <value>Cihazın eşleştirmesi kaldırıldı</value>
   </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>Eşleştirme kaldırma tamamlanamadı: {0}. Bu cihaz RemEx bir sonraki başlatıldığında geri gelebilir; o zaman eşleştirmeyi yeniden kaldırın.</value>
+  </data>
 </root>

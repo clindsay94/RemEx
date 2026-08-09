@@ -3004,4 +3004,7 @@ Możesz zmienić:
   <data name="Settings_DeviceUnpaired" xml:space="preserve">
     <value>Urządzenie rozparowane</value>
   </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>Nie udało się dokończyć rozparowania: {0}. To urządzenie może wrócić przy następnym uruchomieniu RemEx — rozparuj je wtedy ponownie.</value>
+  </data>
 </root>

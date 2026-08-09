@@ -3017,4 +3017,7 @@ Puedes cambiar:
   <data name="Settings_DeviceUnpaired" xml:space="preserve">
     <value>Dispositivo desvinculado</value>
   </data>
+  <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
+    <value>No se pudo completar la desvinculación: {0}. Este dispositivo puede volver la próxima vez que se inicie RemEx; desvincúlalo de nuevo entonces.</value>
+  </data>
 </root>
