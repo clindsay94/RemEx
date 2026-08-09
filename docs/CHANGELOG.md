@@ -179,6 +179,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Settings now lists the phones paired with this PC.** Each one shows its name, when it first
+  paired, when it was last connected, and a light saying whether it is connected right now. Until
+  now the PC knew all of this and showed you none of it — there was no way to see which phones were
+  paired, let alone one you had forgotten about. The light is per phone, so it tells you about that
+  device rather than about the app in general. Phones paired before the previous update have no
+  recorded pairing date and say so honestly instead of inventing one. Renaming a device and removing
+  a pairing are coming next; for now the list is read-only.
+
+
 - **The About page now shows this PC's certificate fingerprint, so the warning on your phone is
   something you can actually check.** When your phone notices that a PC's security certificate has
   changed, it shows you the old and new fingerprints and asks whether you were expecting it — which
