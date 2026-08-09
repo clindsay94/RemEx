@@ -413,13 +413,19 @@ public sealed class FileTransferService : IFileTransferService
         // The resolver RE-CHECKS containment rather than inheriting it, and review proved that is not
         // redundant: ResolveWithinRoot maps "/" and "." to the root ITSELF, whose parent is outside
         // the share, so a sibling rename there escaped entirely.
-        var plan = ConflictResolver.Resolve(
+        // A CASE-BLIND MOUNT UNDER A LINUX HOST GETS ONE SECOND CHANCE (RemEx-2knx). Ordinal is the
+        // right comparison for ext4 and the wrong one for SMB, exFAT or ntfs-3g, and nothing can tell
+        // them apart in advance without probing. This does not probe: it re-resolves only once the
+        // mount has contradicted the listing, which is the same deterministic condition that used to
+        // hand the user the identical taken name on every retry.
+        var plan = ConflictResolver.ResolveAllowingForACaseBlindMount(
             conflictResolution,
             destination,
             root.AbsolutePath,
             overwrite,
             ListDirectoryNames,
-            ConflictResolver.HostFileSystemIsCaseSensitive);
+            ConflictResolver.HostFileSystemIsCaseSensitive,
+            IsOccupied);
 
         destination = plan.DestinationPath;
         overwrite = plan.Overwrite;
@@ -479,13 +485,19 @@ public sealed class FileTransferService : IFileTransferService
         // The resolver RE-CHECKS containment rather than inheriting it, and review proved that is not
         // redundant: ResolveWithinRoot maps "/" and "." to the root ITSELF, whose parent is outside
         // the share, so a sibling rename there escaped entirely.
-        var plan = ConflictResolver.Resolve(
+        // A CASE-BLIND MOUNT UNDER A LINUX HOST GETS ONE SECOND CHANCE (RemEx-2knx). Ordinal is the
+        // right comparison for ext4 and the wrong one for SMB, exFAT or ntfs-3g, and nothing can tell
+        // them apart in advance without probing. This does not probe: it re-resolves only once the
+        // mount has contradicted the listing, which is the same deterministic condition that used to
+        // hand the user the identical taken name on every retry.
+        var plan = ConflictResolver.ResolveAllowingForACaseBlindMount(
             conflictResolution,
             destination,
             root.AbsolutePath,
             overwrite,
             ListDirectoryNames,
-            ConflictResolver.HostFileSystemIsCaseSensitive);
+            ConflictResolver.HostFileSystemIsCaseSensitive,
+            IsOccupied);
 
         destination = plan.DestinationPath;
         overwrite = plan.Overwrite;
@@ -602,11 +614,18 @@ public sealed class FileTransferService : IFileTransferService
     /// never replace. Asking again re-lists the directory and takes the next free name.
     /// </para>
     /// <para>
-    /// ONE MOUNT WHERE THAT RETRY DOES NOT CONVERGE, recorded rather than claimed away: on a
+    /// THE MOUNT WHERE THAT RETRY USED NOT TO CONVERGE IS HANDLED NOW (RemEx-2knx). On a
     /// case-INSENSITIVE volume under a Linux host — SMB, exFAT, ntfs-3g — <c>NextAvailableName</c>
-    /// compares Ordinal, so it can pick "b (2).txt" while "B (2).txt" is sitting there, and the
-    /// pre-check below then rejects it every time. Skip still ends it, so this is a livelock the
-    /// user can leave rather than data loss, and it predates this change (RemEx-2knx).
+    /// compares Ordinal, so it could pick "b (2).txt" while "B (2).txt" was sitting there and the
+    /// pre-check rejected it every single time. <c>ResolveAllowingForACaseBlindMount</c> now sees
+    /// that contradiction and re-resolves case-insensitively, and where even that cannot find a name
+    /// it returns a plain refusal so the user is offered Replace and Skip rather than the same
+    /// rejected name again.
+    /// </para>
+    /// <para>
+    /// STILL TRUE FOR THE RECURSIVE CHILD PATH, which that fix does not reach — see the remarks on
+    /// <c>CopyDirectoryRecursive</c>, where the non-convergence note is left standing because it is
+    /// still accurate there.
     /// </para>
     /// <para>
     /// The kind distinction is dropped for an invented name on purpose. "A folder is where your file
@@ -614,6 +633,16 @@ public sealed class FileTransferService : IFileTransferService
     /// noise, and the answer — pick another name — is the same either way.
     /// </para>
     /// </remarks>
+    /// <summary>Whether anything at all sits at that path.</summary>
+    /// <remarks>
+    /// ONE COPY, USED BY THE RESOLVER'S FALLBACK AND BY THE PROBE (RemEx-2knx). The resolver's notion
+    /// of "taken" and <c>RunRenamedCreate</c>'s have to agree: if they drift, the resolver clears a
+    /// name the probe then refuses, which is the livelock again with the two halves disagreeing
+    /// instead of the mount. No overwrite exemption, because keep-both never overwrites — a plan
+    /// carrying a ResolvedName always has Overwrite false, so an invented name is blocked by anything.
+    /// </remarks>
+    internal static bool IsOccupied(string path) => File.Exists(path) || Directory.Exists(path);
+
     internal static FileConflictException Occupied(
         ConflictResolutionPlan plan, Func<string, FileConflictException> ifTheUserChoseTheName) =>
         plan.ResolvedName is null
@@ -690,7 +719,9 @@ public sealed class FileTransferService : IFileTransferService
             // O_EXCL fails before the kind is ever considered (measured; an earlier version of this
             // comment claimed EISDIR, which is what you get WITHOUT O_EXCL, a call this never
             // makes). No type test can span that. Asking what is actually there can.
-            var occupied = File.Exists(plan.DestinationPath) || Directory.Exists(plan.DestinationPath);
+            // The same predicate the resolver's fallback consulted, deliberately shared: if these two
+            // ever disagree, the resolver clears a name this probe then refuses (RemEx-2knx).
+            var occupied = IsOccupied(plan.DestinationPath);
 
             if (occupied)
             {

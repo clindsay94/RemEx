@@ -43,6 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **"Keep both" could get stuck on a network drive or USB stick attached to a Linux PC.** Sending a
+  file that already existed there and choosing to keep both offered a new name the drive then
+  rejected — and choosing keep-both again offered the same name, every time. The only way out was
+  Skip. It now picks a name the drive accepts, and where it cannot, it asks the ordinary question so
+  Replace and Skip are both available. Linux PCs on ordinary internal drives, and Windows PCs, are
+  unaffected. (RemEx-2knx)
+
 - **Re-pairing a PC after it got a new certificate lost the name you gave it.** If a PC's
   certificate legitimately changes — you reinstall RemEx, or reinstall Windows — accepting the
   certificate-change prompt used to bring it back as a brand new entry in Known PCs, with the

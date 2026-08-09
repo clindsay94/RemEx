@@ -136,6 +136,121 @@ public static class ConflictResolver
     }
 
     /// <summary>
+    /// Resolves, and re-resolves case-insensitively if the filesystem contradicts the first answer
+    /// (RemEx-2knx).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE LIVELOCK THIS ENDS WAS DETERMINISTIC, NOT A RACE.** <c>HostFileSystemIsCaseSensitive</c>
+    /// is <c>!IsWindows()</c>, so on Linux the name search compares Ordinal. On a case-INSENSITIVE
+    /// mount under a Linux host — SMB, exFAT, ntfs-3g, ciopfs — a directory holding <c>b.txt</c> and
+    /// <c>B (2).txt</c> resolves keep-both to <c>b (2).txt</c>, because that is genuinely absent
+    /// Ordinal-wise. The mount then reports it as existing, the caller throws, the user retries, and
+    /// the same name is chosen again. Every time. Only "skip" ended it.
+    /// </para>
+    /// <para>
+    /// **THE FIX BELONGS HERE AND NOT IN THE NAME SEARCH, WHICH IS WHERE IT WAS TRIED FIRST AND
+    /// REVERTED.** Making the search judge its generated candidates under both comparisons converges
+    /// too, and is wrong: <c>FileConflictNamingTests.CaseSensitivityAppliesToTheSuffixedCandidatesToo</c>
+    /// pins the opposite deliberately, mutation-proven, because on ext4 <c>REPORT (2).PDF</c> is a
+    /// different file and <c>report (2).pdf</c> is a name the user is entitled to. That change would
+    /// have taken it from every Linux user to protect the minority on an odd mount.
+    /// </para>
+    /// <para>
+    /// WHAT IT GUARANTEES IS TERMINATION, NOT A NEW NAME. The second pass finds one whenever the
+    /// mount folds the way <c>OrdinalIgnoreCase</c> does, which covers every ASCII case and the
+    /// reported reproduction. Where it does not — exFAT's dotless i, a KELVIN SIGN, a ciopfs mount
+    /// under a Turkish locale — the retry is detected and turned into a plain refusal instead, so
+    /// the user gets Replace and Skip rather than the same rejected name a second time.
+    /// </para>
+    /// <para>
+    /// THE SIGNAL IS CHEAP AND NEEDS NO CASE-SENSITIVITY PROBE, which is the distinction that
+    /// matters — not that it is free, which an earlier draft of this claimed and which review
+    /// corrected. It costs one existence check per keep-both rename, and the caller was about to
+    /// make that same check anyway. What it does NOT do is the thing the remarks below argue
+    /// against: creating a file to interrogate the mount. It waits for the mount to contradict the
+    /// snapshot, which is proof rather than inference, and only then re-resolves. On ext4 the
+    /// contradiction never happens and this is exactly the old behaviour.
+    /// </para>
+    /// <para>
+    /// ONLY AN INVENTED NAME IS RECONSIDERED. When <see cref="ConflictResolutionPlan.ResolvedName"/>
+    /// is null the destination is the one the user asked for, and quietly moving their file somewhere
+    /// else because a name they chose is taken would be a different and worse behaviour than the
+    /// error they get today.
+    /// </para>
+    /// </remarks>
+    /// <param name="isTaken">
+    /// Asks the real filesystem. Passed in rather than called here so this stays testable off-disk —
+    /// the interesting case is a Linux host on a case-blind mount, which no Windows dev box can
+    /// reproduce and which a hardcoded <c>File.Exists</c> would put out of reach.
+    /// <para>
+    /// A FILE OR A DIRECTORY, WITHOUT THE OVERWRITE EXEMPTION the call sites apply to a name the user
+    /// chose. That is not an oversight: keep-both never overwrites, so a plan carrying a
+    /// <c>ResolvedName</c> always has <c>Overwrite: false</c>, and an invented name is blocked by
+    /// anything sitting on it. Both call sites can therefore pass the same predicate.
+    /// </para>
+    /// </param>
+    public static ConflictResolutionPlan ResolveAllowingForACaseBlindMount(
+        string? conflictResolution,
+        string requestedDestination,
+        string rootPath,
+        bool overwriteRequested,
+        Func<string, IReadOnlyList<string>> listDirectory,
+        bool caseSensitive,
+        Func<string, bool> isTaken)
+    {
+        ArgumentNullException.ThrowIfNull(isTaken);
+
+        var plan = Resolve(
+            conflictResolution, requestedDestination, rootPath, overwriteRequested, listDirectory, caseSensitive);
+
+        // Nothing to reconsider: the search already compared insensitively, or it did not invent a
+        // name, or the filesystem agrees with it.
+        if (!caseSensitive || plan.ResolvedName is null || !isTaken(plan.DestinationPath))
+        {
+            return plan;
+        }
+
+        // The mount disagreed with the listing, so the listing's comparison was the wrong one for it.
+        var relaxed = Resolve(
+            conflictResolution, requestedDestination, rootPath, overwriteRequested, listDirectory, caseSensitive: false);
+
+        // AND IF THE SECOND PASS COULD NOT IMPROVE ON THE FIRST, STOP RATHER THAN INSIST. Two ways
+        // that happens, and review found both:
+        //
+        // It returns the SAME name when the mount's own fold is not the one OrdinalIgnoreCase
+        // implements. exFAT folds U+0131 (dotless i) onto 'I' and .NET does not, so a directory
+        // holding "i.txt" and "I (2).txt" gets "i (2).txt" from BOTH passes - and handing that back
+        // is the original livelock with an extra step. U+212A KELVIN and a ciopfs mount under a
+        // Turkish locale are the same shape. (Also the benign case: the name was taken by a racer
+        // rather than by a case-variant, so it is not in the listing either pass read.)
+        //
+        // It returns NO name when the insensitive pass exhausts the suffix range that the sensitive
+        // one did not, because folding collapses more siblings into "taken". That plan carries the
+        // caller's own overwrite flag at the caller's own destination - so a client sending keep_both
+        // AND the legacy overwrite:true would have the file it asked to keep destroyed. Keep-both's
+        // one promise is that nothing is destroyed, and it has to survive this path failing.
+        //
+        // Either way the answer is a refusal at the requested name with overwrite OFF. That is a
+        // terminating outcome rather than a converging one: the caller raises the ordinary
+        // file-exists conflict, which offers Replace and Skip, instead of offering an invented name
+        // the mount has already rejected once.
+        // THE SECOND ANSWER IS CHECKED TOO, and leaving it unchecked was a third way to loop that the
+        // tests caught. If the mount rejects the relaxed name as well, handing it back just moves the
+        // livelock along by one name: the caller throws, the user retries, and both passes produce
+        // the same pair again. One extra existence check, paid only on a mount that has already
+        // contradicted us once, buys termination outright.
+        if (relaxed.ResolvedName is null
+            || string.Equals(relaxed.DestinationPath, plan.DestinationPath, StringComparison.Ordinal)
+            || isTaken(relaxed.DestinationPath))
+        {
+            return new ConflictResolutionPlan(Overwrite: false, DestinationPath: requestedDestination, ResolvedName: null);
+        }
+
+        return relaxed;
+    }
+
+    /// <summary>
     /// Whether <paramref name="candidate"/> is the root or lives beneath it.
     /// </summary>
     /// <remarks>
