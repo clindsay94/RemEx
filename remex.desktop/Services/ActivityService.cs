@@ -34,6 +34,17 @@ public enum ActivityKind
 
     /// <summary>The connected phone completed its pairing/reconnect handshake with this PC.</summary>
     DeviceConnected,
+
+    /// <summary>
+    /// A phone's connection ended. The detail carries the device and, where the host knows it, WHY.
+    /// </summary>
+    /// <remarks>
+    /// A FEED THAT RECORDS ARRIVALS AND NOT DEPARTURES READS AS THOUGH EVERY PHONE THAT EVER
+    /// CONNECTED IS STILL ATTACHED (RemEx-2xjv). And the reason is not decoration: a phone that
+    /// closed cleanly and one whose socket died are different facts, and this feed is where somebody
+    /// would look to tell a flapping network from a device somebody walked away with.
+    /// </remarks>
+    DeviceDisconnected,
 }
 
 /// <summary>
@@ -62,6 +73,7 @@ public sealed class ActivityEntry
         ActivityKind.AppLaunched => "\U0001F680",    // 🚀
         ActivityKind.CommandRun => "⚡",         // ⚡
         ActivityKind.DeviceConnected => "\U0001F4F1", // 📱
+        ActivityKind.DeviceDisconnected => "📴", // 📴
         _ => "•",                               // •
     };
 

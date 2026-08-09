@@ -88,6 +88,10 @@ public sealed class PingPongHandler(
         // connection is already authenticated via pairing / reconnect proof before any gated handler runs.
         string? connectionClientId = null;
 
+        // WHY it ended, defaulting to the clean case: falling out of the receive loop without an
+        // exception IS the peer closing. Each catch below overwrites it with what it knows.
+        var disconnectReason = "closed";
+
         // Whether this connection has PROVED which client it is. Until it has, connectionClientId is
         // just the last thing the sender wrote — and every file-transfer handler below is given it.
         // Freezing it at the proof points is what stops one paired device claiming another's id and
@@ -514,7 +518,7 @@ public sealed class PingPongHandler(
 
                             sessionRegistry.MarkAuthenticated(session, identityProven: !string.IsNullOrWhiteSpace(connectionClientId));
                             logger.LogInformation("Pairing verified — connection authenticated.");
-                            RecordDeviceConnectedActivity();
+                            RecordDeviceConnectedActivity(message.PairingRequest?.ClientName, connectionClientId);
                         }
                         break;
 
@@ -574,7 +578,7 @@ public sealed class PingPongHandler(
                             logger.LogInformation(
                                 "Reconnect proof verified — connection authenticated for client {ClientId}.",
                                 message.ReconnectProof?.ClientId ?? message.ClientId);
-                            RecordDeviceConnectedActivity();
+                            RecordDeviceConnectedActivity(nameStore.Resolve(connectionClientId), connectionClientId);
                         }
                         else
                         {
@@ -707,10 +711,12 @@ public sealed class PingPongHandler(
         catch (OperationCanceledException)
         {
             // Graceful shutdown.
+            disconnectReason = "shutting down";
         }
         catch (WebSocketException ex)
         {
             logger.LogWarning(ex, "WebSocket error.");
+            disconnectReason = "connection lost";
         }
         catch (InvalidOperationException ex)
         {
@@ -719,9 +725,24 @@ public sealed class PingPongHandler(
             // WebSocketException. Catch it here so it can never escape the receive loop and skip
             // the cleanup in the finally block below.
             logger.LogWarning(ex, "WebSocket session ended with an invalid-state error.");
+            disconnectReason = "connection lost";
         }
         finally
         {
+            // THE DEPARTURE, recorded from the one place every exit path passes through (RemEx-2xjv).
+            // Anywhere else and a feed that shows arrivals but not departures reads as though every
+            // phone that ever connected is still attached — and the reason is what tells a flapping
+            // network from a device somebody walked away with.
+            //
+            // ONLY FOR A CONNECTION THAT AUTHENTICATED. An unpaired probe that was refused never
+            // produced an arrival row, so a departure row for it would be a disconnection from
+            // nothing.
+            if (!string.IsNullOrWhiteSpace(connectionClientId))
+            {
+                RecordDeviceDisconnectedActivity(
+                    nameStore.Resolve(connectionClientId), connectionClientId, disconnectReason);
+            }
+
             // Cleanup MUST run for every exit path — graceful close, cancellation, socket abort, or
             // an unexpected exception type. Previously this lived after the catch blocks (outside a
             // finally), so an exception that didn't match the catch clauses would leak the file
@@ -1010,7 +1031,7 @@ public sealed class PingPongHandler(
     /// process-wide: with the connect-time kickoff ping (RemEx-moqo) every reconnect authenticates,
     /// and a flapping network must not flood the 60-entry feed.
     /// </summary>
-    private static void RecordDeviceConnectedActivity()
+    private static void RecordDeviceConnectedActivity(string? deviceName, string? clientId)
     {
         var now = DateTime.UtcNow.Ticks;
         var last = Interlocked.Read(ref _lastDeviceConnectedTicks);
@@ -1018,7 +1039,40 @@ public sealed class PingPongHandler(
         if (Interlocked.CompareExchange(ref _lastDeviceConnectedTicks, now, last) != last) return;
 
         Remex.Desktop.Services.ActivityService.Instance.Record(
-            Remex.Desktop.Services.ActivityKind.DeviceConnected, string.Empty);
+            Remex.Desktop.Services.ActivityKind.DeviceConnected, DescribeDevice(deviceName, clientId));
+    }
+
+    /// <summary>
+    /// Records that a phone's connection ended, and why where the host knows (RemEx-2xjv).
+    /// </summary>
+    /// <remarks>
+    /// NOT THROTTLED, unlike its arrival counterpart. The throttle there exists because the
+    /// connect-time kickoff ping means every reconnect authenticates, so a flapping network would
+    /// flood the feed with arrivals. A departure is the OTHER half of that pair — dropping them on a
+    /// timer is what would produce the very reading this bead exists to remove, a feed showing three
+    /// arrivals and one departure and implying two phones are still attached.
+    /// </remarks>
+    private static void RecordDeviceDisconnectedActivity(string? deviceName, string? clientId, string reason) =>
+        Remex.Desktop.Services.ActivityService.Instance.Record(
+            Remex.Desktop.Services.ActivityKind.DeviceDisconnected,
+            $"{DescribeDevice(deviceName, clientId)} ({reason})");
+
+    /// <summary>
+    /// The device as a person would recognise it, and NEVER BLANK (RemEx-2xjv).
+    /// </summary>
+    /// <remarks>
+    /// The connected row used to record an empty detail, so the feed said something connected without
+    /// saying what. The name is available now — ClientSessionRegistry carries it (RemEx-xuyu) and it
+    /// was not there when this was written. Falling back to the client id and then to a generic
+    /// phrase is the same rule PairedDeviceDisplayName follows and for the same reason (RemEx-nrsv):
+    /// a row showing nothing is worse than a row showing a raw id, because a raw id at least tells
+    /// you WHICH device and can be matched against the paired list.
+    /// </remarks>
+    private static string DescribeDevice(string? deviceName, string? clientId)
+    {
+        if (!string.IsNullOrWhiteSpace(deviceName)) return deviceName.Trim();
+        if (!string.IsNullOrWhiteSpace(clientId)) return clientId.Trim();
+        return "a device";
     }
 
     /// <summary>
