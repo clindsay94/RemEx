@@ -173,6 +173,15 @@ public sealed class PairedClientRegistry
 
     private void LoadFromDisk()
     {
+        // BEFORE THE EXISTENCE CHECK, NOT AFTER IT (RemEx-jegp). A killed process leaves a staging
+        // sibling holding every reconnect secret in this store, carrying the inherited ProgramData
+        // ACL rather than the one RestrictStorePermissions applies — and it applies that only to the
+        // final path, after the rename an orphan never reached. The case where the store itself is
+        // ABSENT is exactly the one where an orphan is most likely: a first write that died between
+        // staging and rename leaves the copy and no store at all, and returning early would walk past
+        // it every startup for the life of the machine.
+        RemexDataPaths.SweepStagingOrphans(_storePath);
+
         try
         {
             if (!File.Exists(_storePath))

@@ -122,6 +122,83 @@ public sealed class RemexDataPathsAtomicWriteTests : IDisposable
     }
 
     /// <summary>
+    /// A staging sibling left by a killed process is collected on the next sweep (RemEx-jegp).
+    /// </summary>
+    /// <remarks>
+    /// Nothing catches a kill -9 between the write and the rename, so the staging file survives —
+    /// and for the pairing registry it is a complete copy of every reconnect secret carrying the
+    /// INHERITED directory ACL, because the hardening only ever runs on the final path. Under the old
+    /// fixed name this was self-limiting: one orphan at most, reused by the next write. Per-write
+    /// names removed the collision that limited it.
+    /// </remarks>
+    [Fact]
+    public void SweepStagingOrphans_CollectsAnAbandonedStagingSibling()
+    {
+        File.WriteAllText(StorePath, "{}");
+        var orphan = Path.Combine(_directory, $".{Path.GetFileName(StorePath)}.deadbeef.tmp");
+        File.WriteAllText(orphan, "{\"secrets\":true}");
+
+        RemexDataPaths.SweepStagingOrphans(StorePath, TimeSpan.Zero);
+
+        Assert.False(File.Exists(orphan), "an abandoned copy of the store must not outlive a load");
+        Assert.Equal("{}", File.ReadAllText(StorePath));
+    }
+
+    /// <summary>
+    /// A sweep must never be able to break a write that is still in flight.
+    /// </summary>
+    /// <remarks>
+    /// THE AGE THRESHOLD IS THE WHOLE PROTECTION. On Windows deleting a file another writer holds
+    /// open fails and is swallowed; on Linux it SUCCEEDS, and that writer's rename then fails on a
+    /// path that no longer exists — so an unbounded sweep would turn housekeeping into a broken
+    /// write, on the platform where it is hardest to notice.
+    /// </remarks>
+    [Fact]
+    public void SweepStagingOrphans_LeavesAFreshStagingFileAlone()
+    {
+        var live = Path.Combine(_directory, $".{Path.GetFileName(StorePath)}.inflight.tmp");
+        File.WriteAllText(live, "half-written");
+
+        // THE ONE-ARG OVERLOAD, so the PRODUCTION constant is on the path (review). Passing the
+        // threshold in restated it as a literal here, leaving StagingOrphanAge referenced by nothing
+        // a test reaches — set it to zero and the whole suite stayed green, with the only protection
+        // against deleting an in-flight write on Linux gone.
+        RemexDataPaths.SweepStagingOrphans(StorePath);
+
+        Assert.True(File.Exists(live), "a staging file younger than the threshold belongs to a live write");
+    }
+
+    [Fact]
+    public void SweepStagingOrphans_LeavesAnotherStoresStagingFileAlone()
+    {
+        // The glob is anchored on THIS store's name: sweeping paired_clients.json must not collect
+        // the staging file of a neighbour mid-write. This test used to claim it also proved the store
+        // itself is spared — it did not (review). "store.json" cannot match ".store.json.*.tmp" under
+        // any anchored glob, so that assertion passed by name construction rather than by a rule.
+        File.WriteAllText(StorePath, "{}");
+        var neighbour = Path.Combine(_directory, ".other.json.deadbeef.tmp");
+        File.WriteAllText(neighbour, "not mine");
+
+        RemexDataPaths.SweepStagingOrphans(StorePath, TimeSpan.Zero);
+
+        Assert.True(File.Exists(neighbour), "another store's staging file is not this sweep's business");
+        Assert.True(File.Exists(StorePath), "kept only to catch a rewrite to an unfiltered enumerate-and-delete");
+    }
+
+    [Fact]
+    public void SweepStagingOrphans_OnAStoreThatDoesNotExistIsHarmless()
+    {
+        // The case where an orphan is MOST likely: a first write that died before any store existed.
+        var orphan = Path.Combine(_directory, $".{Path.GetFileName(StorePath)}.deadbeef.tmp");
+        File.WriteAllText(orphan, "{}");
+
+        RemexDataPaths.SweepStagingOrphans(StorePath, TimeSpan.Zero);
+
+        Assert.False(File.Exists(orphan));
+        RemexDataPaths.SweepStagingOrphans(Path.Combine(_directory, "never-written.json"), TimeSpan.Zero);
+    }
+
+    /// <summary>
     /// The four stores this bead named write through the helper rather than over the live file.
     /// </summary>
     /// <remarks>

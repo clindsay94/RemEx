@@ -432,6 +432,33 @@ public sealed class PairedDeviceRevokerTests : IDisposable
     }
 
     [Fact]
+    public void LoadingTheRegistryCollectsAnAbandonedCopyOfTheSecrets()
+    {
+        // THE JOIN to RemEx-jegp, which the sweep's own unit tests cannot make: they prove the sweep
+        // works, not that anything calls it. A killed process leaves a staging sibling holding every
+        // reconnect secret in this store, carrying the inherited ProgramData ACL rather than the one
+        // RestrictStorePermissions applies to the final path — so it must not survive a startup.
+        //
+        // Backdated, because the sweep deliberately spares anything younger than its threshold: a
+        // file that age IS an in-flight write, and deleting one would break it on Linux.
+        // AND NO STORE ON DISK, which is what pins the PLACEMENT rather than merely the call
+        // (review). The first version created the store, so File.Exists was true and moving the sweep
+        // below LoadFromDisk's early return left this green — while the store-absent case, the one
+        // the comment calls most likely, would be walked past every startup for the life of the
+        // machine. A first write that died between staging and rename leaves exactly this: an orphan
+        // and nothing else.
+        var storePath = Path.Combine(_root.FullName, "abandoned.json");
+        var orphan = Path.Combine(_root.FullName, ".abandoned.json.deadbeef.tmp");
+        File.WriteAllText(orphan, "{\"phone-a\":\"AQIDBA==\"}");
+        File.SetLastWriteTimeUtc(orphan, DateTime.UtcNow.AddHours(-1));
+
+        _ = new PairedClientRegistry(NullLogger<PairedClientRegistry>.Instance, storePath);
+
+        Assert.False(File.Exists(orphan), "a startup must not walk past a stray copy of the secrets");
+        Assert.False(File.Exists(storePath), "nothing here should have created a store");
+    }
+
+    [Fact]
     public void TheRenamerAndTheListCannotReachTheRegistryCredentials()
     {
         // The three seams are deliberately narrow, and only this one may end a pairing. Asserted

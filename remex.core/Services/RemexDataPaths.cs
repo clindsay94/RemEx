@@ -282,6 +282,73 @@ public static class RemexDataPaths
         }
     }
 
+    /// <summary>How old a staging sibling must be before a sweep will treat it as abandoned.</summary>
+    /// <remarks>
+    /// A live staging file exists for microseconds — write, rename, gone — so a minute is several
+    /// orders of magnitude of headroom. The threshold is what keeps a sweep from deleting a file a
+    /// CONCURRENT writer is still filling: on Windows that delete would fail and be swallowed, but on
+    /// Linux it would succeed and the other writer's rename would then fail on a path that no longer
+    /// exists. Sweeping is housekeeping and must never be able to break a write in flight.
+    ///
+    /// The age is measured from the last write, which is the closest thing to "still being used"
+    /// available cheaply — with the caveat that it means different things per platform: Linux
+    /// advances it as bytes land, while Windows does not update the directory entry until the handle
+    /// closes, so there it reads as time since the file appeared (review). The exposure either way is
+    /// a stall of over a minute between the write closing and the rename.
+    /// </remarks>
+    private static readonly TimeSpan StagingOrphanAge = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// Deletes staging siblings of <paramref name="path"/> left behind by a killed process
+    /// (RemEx-jegp).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE ORPHAN IS A COMPLETE COPY OF THE STORE WITH THE WRONG PERMISSIONS.** Nothing catches a
+    /// kill -9 or a power loss between the write and the rename, so the staging file survives — and
+    /// for <c>paired_clients.json</c> that file holds every per-client reconnect secret while
+    /// carrying the INHERITED ProgramData ACL, because <c>RestrictStorePermissions</c> only ever runs
+    /// on the final path. The hardening is applied after the rename, so an orphan never receives it.
+    /// </para>
+    /// <para>
+    /// A NEW PROPERTY OF UNIQUE NAMES, and worth being precise about: under the fixed
+    /// <c>&lt;store&gt;.tmp</c> this was self-limiting, because at most one orphan could exist and the
+    /// next write reused it. Per-write names removed the collision that made it self-limiting, so
+    /// every such event now leaves another copy and nothing collects them (RemEx-kow1's review).
+    /// </para>
+    /// <para>
+    /// BEST EFFORT THROUGHOUT. A sweep that threw would turn a housekeeping failure into a failure to
+    /// load the store, which is the pairing registry refusing to start over a leftover file.
+    /// </para>
+    /// </remarks>
+    public static void SweepStagingOrphans(string path) => SweepStagingOrphans(path, StagingOrphanAge);
+
+    /// <summary>Test seam: sweeps with an explicit age so a test need not wait a minute.</summary>
+    internal static void SweepStagingOrphans(string path, TimeSpan olderThan)
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory)) return;
+
+            var cutoff = DateTime.UtcNow - olderThan;
+            foreach (var candidate in Directory.EnumerateFiles(directory, $".{Path.GetFileName(path)}.*.tmp"))
+            {
+                try
+                {
+                    if (File.GetLastWriteTimeUtc(candidate) <= cutoff)
+                        File.Delete(candidate);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
     /// <summary>
     /// The staging name both atomic writers use: a hidden sibling with a per-write GUID.
     /// </summary>
