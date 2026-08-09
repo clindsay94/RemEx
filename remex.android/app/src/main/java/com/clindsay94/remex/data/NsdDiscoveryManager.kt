@@ -49,9 +49,19 @@ class NsdDiscoveryManager(private val context: Context) {
         }
 
         try {
+            // FILTERED THROUGH THE SHIPPED RULE RATHER THAN TRUSTED (RemEx-7gk69). Both resolve
+            // paths below guard the HOST and neither validates the port, and NsdServiceInfo.port is
+            // zero until the SRV record resolves — so a partially-resolved announcement reaches here
+            // looking like a usable PC. Handing that to the connect form offers the user a
+            // connection that cannot succeed, with nothing saying why.
+            //
+            // DiscoveredHostList already decided what "usable" means, with tests, for the list this
+            // feeds; until RemEx-8ih5 wires that list up, this was the rule's only would-be caller
+            // and it was not calling it. Returning null is the same answer discoverHost already
+            // gives for a failed resolve, so nothing downstream needs to learn a new case.
             return withTimeoutOrNull(timeoutMs) {
                 discoverAndResolve(nsdManager)
-            }
+            }?.takeIf(DiscoveredHostList::isUsable)
         } finally {
             try {
                 if (multicastLock?.isHeld == true) multicastLock.release()

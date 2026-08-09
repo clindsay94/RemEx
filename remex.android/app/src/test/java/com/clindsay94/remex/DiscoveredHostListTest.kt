@@ -127,4 +127,54 @@ class DiscoveredHostListTest {
         assertEquals(listOf("desktop"), original.map { it.serviceName })
         assertEquals("192.168.1.50", original.single().host)
     }
+
+    @Test
+    fun `isUsable and usableOnly are the same rule, not two copies of it`() {
+        // ONE DEFINITION, TWO CALLERS (RemEx-7gk69). usableOnly serves the list this object builds;
+        // isUsable serves NsdDiscoveryManager's single-result path, which had no port check at all.
+        // If these ever disagree, the discovered LIST and the autofill start offering different sets
+        // of PCs for reasons nobody can see - so the property worth pinning is that they agree,
+        // rather than each one's answers separately.
+        val candidates = listOf(
+            DiscoveredHost("ok", "192.168.1.50", 8338),
+            DiscoveredHost("blank-host", "", 8338),
+            DiscoveredHost("zero-port", "192.168.1.51", 0),
+            DiscoveredHost("high-port", "192.168.1.52", 65536),
+            DiscoveredHost("low-boundary", "192.168.1.53", 1),
+            DiscoveredHost("high-boundary", "192.168.1.54", 65535),
+        )
+
+        assertEquals(candidates.filter { DiscoveredHostList.isUsable(it) },
+            DiscoveredHostList.usableOnly(candidates))
+
+        // And the answers themselves, so agreeing on the WRONG rule still fails.
+        assertEquals(
+            listOf("ok", "low-boundary", "high-boundary"),
+            DiscoveredHostList.usableOnly(candidates).map { it.serviceName })
+    }
+
+    @Test
+    fun `the discovery path applies the rule rather than returning anything it resolved`() {
+        // THE ASSERTION THAT WOULD HAVE CAUGHT THE RULE BEING UNREACHABLE. Every other test here
+        // exercises the rule; none checked that anything USED it, and nothing did - the only
+        // reference to this object outside these tests was a mention in a KDoc comment. Meanwhile
+        // NsdDiscoveryManager built its result at two sites, guarding the host at both and the port
+        // at neither.
+        //
+        // A source tripwire, because the alternative is an instrumented test against the platform's
+        // mDNS daemon. It says the live path still filters through the shared predicate.
+        val relative = "src/main/java/com/clindsay94/remex/data/NsdDiscoveryManager.kt"
+        val candidates = listOf(java.io.File(relative), java.io.File("app/$relative"))
+        val source = candidates.firstOrNull { it.isFile }
+
+        assertTrue(
+            "NsdDiscoveryManager.kt not found - tried " + candidates.joinToString { it.path },
+            source != null
+        )
+
+        assertTrue(
+            "discoverHost should filter its resolved host through DiscoveredHostList.isUsable",
+            source!!.readText().contains("DiscoveredHostList::isUsable")
+        )
+    }
 }

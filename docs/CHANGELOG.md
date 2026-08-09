@@ -43,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Discovery will not offer you a PC it cannot actually reach.** When the phone finds a PC on the
+  network it now checks the address AND the port before offering it. A half-announced PC — one the
+  network has named but not finished describing — used to come through as a normal result, so
+  tapping Connect could only fail with nothing explaining why. (RemEx-7gk69)
+
 - **The app-launcher widget no longer says it is launching something it might not be.** Tapping an
   app on the widget showed "Launching Firefox…" the moment the tap was sent, before the PC had
   answered — so if the PC refused, or the app was gone, you watched that message and nothing

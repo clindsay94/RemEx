@@ -73,6 +73,22 @@ object DiscoveredHostList {
      * row is a tap that does nothing, which reads as the app being broken rather than as discovery
      * still being in progress.
      */
-    fun usableOnly(current: List<DiscoveredHost>): List<DiscoveredHost> =
-        current.filter { it.host.isNotBlank() && it.port in 1..65535 }
+    fun usableOnly(current: List<DiscoveredHost>): List<DiscoveredHost> = current.filter(::isUsable)
+
+    /**
+     * The same rule for one host, so the single-result path can apply it too (RemEx-7gk69).
+     *
+     * EXTRACTED BECAUSE THE RULE HAD NO PRODUCTION CALLER AT ALL. `usableOnly` was written for the
+     * list this object exists to build, and that list is not wired up yet — while the live path,
+     * `NsdDiscoveryManager.discoverHost`, returns a single resolved service straight to the connect
+     * form. Both of its construction sites guard the HOST and neither validates the port, and this
+     * predicate was the only port range check anywhere in the app's main source. A rule that nothing
+     * calls is indistinguishable from a rule that works.
+     *
+     * One definition with two callers rather than a copy at the call site: if these two ever
+     * disagree about what "usable" means, the list and the autofill start offering different sets of
+     * PCs for reasons no one can see.
+     */
+    fun isUsable(host: DiscoveredHost): Boolean =
+        host.host.isNotBlank() && host.port in 1..65535
 }
