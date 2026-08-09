@@ -2,6 +2,9 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Core.Services;
 using Remex.Desktop.Configuration;
 using Remex.Desktop.Services;
+using Moq;
+using Remex.Desktop.Services.Backup;
+using Remex.Desktop.Services.FileTransfer;
 using Remex.Desktop.Services.Security;
 
 namespace Remex.Desktop.Tests;
@@ -105,6 +108,26 @@ public sealed class HostStateRedirectionTests
         AssertRedirected(service.FilePathForTests, "A constructed dashboard layout service");
     }
 
+    /// <summary>
+    /// The fifth per-user store, missed by RemEx-ln0k's list of four (RemEx-mz9f).
+    /// </summary>
+    /// <remarks>
+    /// Constructed with the real constructor, because the defect was IN the constructor: it resolved
+    /// the backups directory from SpecialFolder before any test could redirect it. Asserting a static
+    /// default would not have covered the thing that was wrong.
+    /// </remarks>
+    [Fact]
+    public void Backups_ConstructedService_IsRedirected()
+    {
+        var service = new RemexSavefileService(
+            new DashboardLayoutService(new ThemeService()),
+            Mock.Of<ILauncherStorageService>(),
+            new FileTransferRootSettingsService(),
+            Mock.Of<IDashboardProfileStorageService>());
+
+        AssertRedirected(service.BackupsDirectory, "The savefile backups directory");
+    }
+
     [Fact]
     public void RecentActivity_DefaultPath_IsRedirected()
         => AssertRedirected(ActivityService.DefaultFilePathForTests, "The recent-activity feed");
@@ -150,11 +173,11 @@ public sealed class HostStateRedirectionTests
     [Fact]
     public void OnlyTheKnownStragglersResolveThePerUserDirectoryThemselves()
     {
-        // Both have their own beads: RemexSavefileService is RemEx-mz9f, whose backups directory is
-        // not covered by the redirect, and FileTransferRootSettingsService is RemEx-dnn2q, filed off
-        // the back of this guard. Fixing either means deleting its name here, which the exact-set
-        // assertion enforces rather than merely permits.
-        string[] known = ["RemexSavefileService.cs", "FileTransferRootSettingsService.cs"];
+        // One left, and its name is what makes the guard honest: FileTransferRootSettingsService is
+        // RemEx-dnn2q, filed off the back of this test. RemexSavefileService came off this list under
+        // RemEx-mz9f — the exact-set assertion is what FORCED the deletion rather than leaving a
+        // stale entry vouching for a fix nobody made.
+        string[] known = ["FileTransferRootSettingsService.cs"];
 
         var offenders = Directory
             .GetFiles(Path.Combine(RepoRoot(), "remex.desktop"), "*.cs", SearchOption.AllDirectories)

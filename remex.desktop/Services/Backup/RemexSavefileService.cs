@@ -76,10 +76,13 @@ public sealed class RemexSavefileService : IDisposable
         _fileTransferRootSettings = Guard.NotNull(fileTransferRootSettings);
         _hostProfileStorage = Guard.NotNull(hostProfileStorage);
 
-        BackupsDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Remex",
-            "backups");
+        // THROUGH RemexDataPaths, NOT SpecialFolder DIRECTLY (RemEx-mz9f). This was the fifth
+        // per-user store, missed by RemEx-ln0k's list of four, and the auto-snapshot path writes
+        // here. Nothing reached it from a test — RemexSavefileServiceTests uses temp directories for
+        // its pruning tests and never calls the snapshot path — so it was one test away from writing
+        // real snapshots into the developer's own backups folder, which is the failure ln0k and
+        // RemEx-4u29 were both filed over.
+        BackupsDirectory = Path.Combine(RemexDataPaths.PerUserDirectory, "backups");
     }
 
     /// <summary>Reads all four sections from their live storage services and assembles a savefile envelope.</summary>
