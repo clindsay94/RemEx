@@ -805,6 +805,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Home_PairPhoneButton" xml:space="preserve">
     <value>Pair a phone</value>
   </data>
+  <data name="Notify_PairingFailedTitle" xml:space="preserve">
+    <value>Pairing failed</value>
+  </data>
   <data name="Home_PairPhoneTooltip" xml:space="preserve">
     <value>Show the QR code and PIN a phone needs to pair with this PC</value>
   </data>

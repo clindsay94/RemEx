@@ -760,6 +760,9 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Home_PairPhoneButton" xml:space="preserve">
     <value>फ़ोन पेयर करें</value>
   </data>
+  <data name="Notify_PairingFailedTitle" xml:space="preserve">
+    <value>पेयरिंग विफल</value>
+  </data>
   <data name="Home_PairPhoneTooltip" xml:space="preserve">
     <value>इस PC से पेयर करने के लिए फ़ोन को जो QR कोड और PIN चाहिए, वह दिखाएँ</value>
   </data>

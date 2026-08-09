@@ -760,6 +760,9 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Home_PairPhoneButton" xml:space="preserve">
     <value>Associer un téléphone</value>
   </data>
+  <data name="Notify_PairingFailedTitle" xml:space="preserve">
+    <value>Échec de l'association</value>
+  </data>
   <data name="Home_PairPhoneTooltip" xml:space="preserve">
     <value>Affiche le QR code et le code PIN dont un téléphone a besoin pour s'associer à ce PC</value>
   </data>

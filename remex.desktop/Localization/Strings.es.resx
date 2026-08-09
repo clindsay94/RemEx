@@ -766,6 +766,9 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Home_PairPhoneButton" xml:space="preserve">
     <value>Vincular un teléfono</value>
   </data>
+  <data name="Notify_PairingFailedTitle" xml:space="preserve">
+    <value>Error de vinculación</value>
+  </data>
   <data name="Home_PairPhoneTooltip" xml:space="preserve">
     <value>Muestra el código QR y el PIN que un teléfono necesita para vincularse con este PC</value>
   </data>

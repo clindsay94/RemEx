@@ -720,6 +720,9 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Home_PairPhoneButton" xml:space="preserve">
     <value>Sparuj telefon</value>
   </data>
+  <data name="Notify_PairingFailedTitle" xml:space="preserve">
+    <value>Parowanie nie powiodło się</value>
+  </data>
   <data name="Home_PairPhoneTooltip" xml:space="preserve">
     <value>Pokaż kod QR i PIN, których telefon potrzebuje do sparowania z tym komputerem</value>
   </data>

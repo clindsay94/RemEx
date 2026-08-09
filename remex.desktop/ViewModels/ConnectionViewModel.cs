@@ -535,7 +535,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to start embedded pairing session.");
-                StatusText = LocalizationService.Instance["Status_FailedGeneratePin"];
+                AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePin"]);
             }
         }
         // 2. If standalone host query service is active, request it over IPC
@@ -553,18 +553,18 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                 }
                 else
                 {
-                    StatusText = LocalizationService.Instance["Status_FailedGeneratePinHost"];
+                    AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePinHost"]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to start standalone pairing session.");
-                StatusText = LocalizationService.Instance["Status_FailedGeneratePinHost"];
+                AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePinHost"]);
             }
         }
         else
         {
-            StatusText = LocalizationService.Instance["Status_PairingServiceUnavailable"];
+            AnnouncePairingProblem(LocalizationService.Instance["Status_PairingServiceUnavailable"]);
         }
     }
 
@@ -1595,6 +1595,42 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
     }
 
     /// <summary>
+    /// Reports a pairing failure where the user actually is (RemEx-7ykyn, item 4).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **<see cref="StatusText"/> ALONE WAS NOT FEEDBACK.** It is a line inside a window that RemEx
+    /// closes to the tray by default, so for most of this app's running life it announced pairing
+    /// failures to a surface nobody was looking at. A user who pressed "Pair a phone", switched to
+    /// their phone, and found nothing happening had no way to learn why. Routing it through
+    /// <see cref="NotificationService"/> lets <see cref="NotificationRouter"/> make that call:
+    /// <see cref="NotificationImportance.Problem"/> is the one importance that may interrupt, so it
+    /// becomes a toast when the window is up and a tray balloon when it is not.
+    /// </para>
+    /// <para>
+    /// THE STATUS LINE STAYS, AND IS NOT A DUPLICATE. It is the RECORD — the thing still on screen
+    /// after a balloon has faded, and the thing the diagnostics export reads. Suppressing an
+    /// announcement is a UI decision; suppressing the record is the RemEx-43ha defect.
+    /// </para>
+    /// <para>
+    /// **THE PIN NEVER GOES IN A NOTIFICATION.** Only failures are announced here. A balloon or a
+    /// toast carrying six digits would put the pairing secret on a lock screen, in a notification
+    /// centre and in whatever history the OS keeps — the PIN is screen-only, in front of whoever is
+    /// sitting at the PC, and that is the whole basis on which it is safe to show at all.
+    /// </para>
+    /// </remarks>
+    /// <returns>Always true, so a caller can record that the user WAS told without a second flag.</returns>
+    private bool AnnouncePairingProblem(string message)
+    {
+        StatusText = message;
+        NotificationService.Instance.Notify(
+            NotificationImportance.Problem,
+            LocalizationService.Instance["Notify_PairingFailedTitle"],
+            message);
+        return true;
+    }
+
+    /// <summary>
     /// Opens the PIN panel for the session the QR code is about to encode (RemEx-7ykyn, item 3).
     /// </summary>
     /// <remarks>
@@ -1626,6 +1662,14 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
             // drawing succeeding. It is also what makes the join testable: every step below needs an
             // initialised Avalonia platform and this one does not.
             string? pairingPin = null;
+
+            // A REAL FLAG, NOT A StatusText EMPTINESS PROBE (review). The first version gated the
+            // fallback message on string.IsNullOrEmpty(StatusText) — and StatusText is initialised to
+            // "Disconnected" and never set to empty by any of its 38 assignments, so that branch could
+            // not run. With no pairing service attached at all, pressing the button produced silence:
+            // no PIN, no code, no message. That is the exact defect this bead exists to remove,
+            // reintroduced by the guard meant to prevent it.
+            var announced = false;
             if (_pairingService is not null)
             {
                 try
@@ -1644,7 +1688,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     // either screen. The separate PIN button reported this; collapsing the two
                     // buttons would otherwise have deleted the only feedback the surface had.
                     _logger.LogWarning(ex, "Failed to start embedded pairing session for QR code.");
-                    StatusText = LocalizationService.Instance["Status_FailedGeneratePin"];
+                    announced |= AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePin"]);
                 }
             }
             else if (_standalonePairingPinQueryService is not null)
@@ -1664,14 +1708,33 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     {
                         // The null return had no else at all (review): the host answered "no pin" and
                         // the surface said nothing while drawing a dead code anyway.
-                        StatusText = LocalizationService.Instance["Status_FailedGeneratePinHost"];
+                        announced |= AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePinHost"]);
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Failed to start standalone pairing session for QR code.");
-                    StatusText = LocalizationService.Instance["Status_FailedGeneratePinHost"];
+                    announced |= AnnouncePairingProblem(LocalizationService.Instance["Status_FailedGeneratePinHost"]);
                 }
+            }
+
+            // NO PIN, NO CODE — AND CHECKED HERE, BEFORE ANYTHING ELSE CAN FAIL (review). Sitting
+            // lower down it was still correct about not drawing a dead code, but the address and
+            // certificate lookups ran first and their own catch blocks overwrote StatusText: the user
+            // was told the QR had failed when what actually happened was that the host produced no
+            // PIN. Found by an exact-string assertion; the NotBeEmpty form it replaced was blind to it.
+            // NO PIN, NO CODE (review). A QR encoding pin=null scans perfectly and then pairs with
+            // nothing, which is a worse answer than no code: the user believes they have done their
+            // part. The branches above have already said why there is no PIN.
+            if (pairingPin is null)
+            {
+                // Covers the branch nothing else does: neither service attached, or one attached and
+                // returning a null pin. Whatever the reason, the user pressed a button and must not
+                // be met with silence.
+                if (!announced)
+                    AnnouncePairingProblem(LocalizationService.Instance["Status_PairingServiceUnavailable"]);
+                ShowQrCode = false;
+                return;
             }
 
             var uri = new Uri(HostAddress);
@@ -1687,17 +1750,6 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
             var certService = App.Services.GetService<ICertificateService>() // optional service
                            ?? App.EmbeddedHostServices?.GetService<ICertificateService>(); // optional service
             var spkiHash = certService?.GetSpkiSha256Base64() ?? "";
-
-            // NO PIN, NO CODE (review). A QR encoding pin=null scans perfectly and then pairs with
-            // nothing, which is a worse answer than no code: the user believes they have done their
-            // part. The branches above have already said why there is no PIN.
-            if (pairingPin is null)
-            {
-                if (string.IsNullOrEmpty(StatusText))
-                    StatusText = LocalizationService.Instance["Status_PairingServiceUnavailable"];
-                ShowQrCode = false;
-                return;
-            }
 
             var payload = JsonSerializer.Serialize(new
             {
@@ -1728,7 +1780,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
             // validation attribute records an error but does not block the setter, and only
             // ConnectCommand consults it.
             _logger.LogError(ex, "Cannot build a pairing QR for an unparseable host address.");
-            StatusText = LocalizationService.Instance["Status_InvalidHostAddress"];
+            AnnouncePairingProblem(LocalizationService.Instance["Status_InvalidHostAddress"]);
             ShowQrCode = false;
         }
         catch (JsonException ex)
