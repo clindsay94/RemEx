@@ -323,4 +323,37 @@ object FileManagerLogic {
      * sent a code. Case is NOT folded — these are fixed protocol tokens, not prose.
      */
     private fun denyReasonOf(raw: String?): String? = raw?.trim()?.takeIf { it.isNotEmpty() }
+
+    /**
+     * What one item of a batch contributed to the summary counters.
+     *
+     * @property errors 1 when the item ended failed, 0 otherwise.
+     * @property renamed the name the host actually used, when the item succeeded under a rename.
+     */
+    data class ItemTally(val errors: Int, val renamed: String?)
+
+    /**
+     * Decides one batch item's contribution to the tally (RemEx-dtbd).
+     *
+     * **FIVE EXITS REACH THIS AND THE ACCOUNTING WAS VERIFIED ONLY BY INSPECTION.** The conflict loop
+     * can leave by: the first attempt succeeding, a not-a-collision break, the user choosing Skip,
+     * the round bound being exhausted, or success after N rounds. The guards in
+     * `FileConflictWiringTest` are source-shape assertions — they pin that the keyword is `while`,
+     * that `conflict` derives from `outcome`, and that the retry result is assigned back — so they
+     * would pass unchanged on a loop that double-counted skipped, dropped renamed, or lost the
+     * already-counted guard, while a semantically identical rewrite (`do/while`, or
+     * `repeat(MAX_CONFLICT_ROUNDS)`) would fail all three while being correct.
+     *
+     * Nothing here needs a socket, so the five paths are testable directly.
+     *
+     * **SKIPS ARE ALREADY COUNTED WHEN THEY GET HERE**, which is what [alreadyCounted] means — it is
+     * named for what it GUARDS rather than for what happened, because "the user resolved it" reads
+     * backwards: Skip is arguably the most decisive answer available. Adding a skipped item to
+     * `errors` would report a deliberate choice as a failure.
+     */
+    fun tallyItem(alreadyCounted: Boolean, failed: Boolean, resolvedName: String?): ItemTally = when {
+        alreadyCounted -> ItemTally(errors = 0, renamed = null)
+        failed -> ItemTally(errors = 1, renamed = null)
+        else -> ItemTally(errors = 0, renamed = resolvedName)
+    }
 }

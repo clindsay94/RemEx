@@ -652,13 +652,14 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                     rounds++
                 }
 
-                if (alreadyCounted) continue
-
-                if (outcome.failed) {
-                    errors++
-                } else {
-                    lastResolvedName?.let { renamed += it }
-                }
+                // THE TAIL IS A PURE FUNCTION NOW (RemEx-dtbd). Five exits reach this point and the
+                // accounting across them was verified only by inspection: the source-shape guards in
+                // FileConflictWiringTest would pass unchanged on a loop that double-counted skipped
+                // or dropped renamed. It depends on nothing but these three locals, so it is tested
+                // directly instead.
+                val tally = FileManagerLogic.tallyItem(alreadyCounted, outcome.failed, lastResolvedName)
+                errors += tally.errors
+                tally.renamed?.let { renamed += it }
             }
 
             // ASSEMBLED ONCE, AT THE END. Review caught the per-item versions being written to a
