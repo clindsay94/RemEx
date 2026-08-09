@@ -133,10 +133,20 @@ object PinnedHostStore {
                         .clear()
                         .apply()
 
-                    // Clear the DataStore since its encrypted contents are now unreadable. An ordinary
-                    // suspend call (RemEx-v3bd): the lock above suspends, so there is nothing here that
-                    // forbids suspending and no thread to park while DataStore does the write.
+                    // BOTH stores, because both are encrypted under the keyset just destroyed
+                    // (RemEx-oxcu). Only the pinned-host one was cleared here; the reconnect secrets
+                    // were left behind holding PAIR-1 material no surviving key can decrypt. That was
+                    // survivable, but only by accident of encryption rather than by design: the
+                    // values read back as null and force a re-pair, so nothing broke and nothing said
+                    // why. Leaving unreadable ciphertext in a store is also the state a later reader
+                    // has to reason about, and REGRESSION-GUARDS.md already described the intended
+                    // behaviour — the code was what had drifted.
+                    //
+                    // An ordinary suspend call (RemEx-v3bd): the lock above suspends, so there is
+                    // nothing here that forbids suspending and no thread to park while DataStore
+                    // does the write.
                     context.applicationContext.pinnedHostDataStore.edit { it.clear() }
+                    context.applicationContext.reconnectSecretDataStore.edit { it.clear() }
 
                     // Retry initialization
                     buildAead(context)

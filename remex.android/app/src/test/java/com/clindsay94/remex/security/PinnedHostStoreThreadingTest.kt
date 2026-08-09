@@ -223,4 +223,36 @@ class PinnedHostStoreThreadingTest {
             uses,
         )
     }
+
+    /**
+     * The corrupted-keyset recovery clears BOTH encrypted stores (RemEx-oxcu).
+     *
+     * It cleared only `pinnedHostDataStore`, leaving the reconnect secrets behind holding PAIR-1
+     * material encrypted under the keyset just destroyed. That was survivable, but only by accident
+     * of encryption: no surviving key can decrypt them, so they read back as null and force a
+     * re-pair. Nothing broke and nothing said why — and `REGRESSION-GUARDS.md` already described the
+     * intended behaviour, so the code was what had drifted.
+     *
+     * A source-text check for the same reason as the guards above: every function here takes a
+     * `Context` and reaches the Android Keystore, and this project has no Robolectric. Anchored on
+     * the two store names rather than on a line number, which the bead noted had already moved once.
+     */
+    @Test
+    fun `the corrupted keyset recovery clears both encrypted stores`() {
+        val code = storeSource()
+        val recovery =
+            code.substringAfter("Clearing corrupted keyset and retrying", "")
+                .substringBefore("// Retry initialization", "")
+
+        assertTrue("the recovery block moved; re-anchor this guard", recovery.isNotBlank())
+        assertTrue(
+            "the recovery must clear the pinned-host store",
+            recovery.contains("pinnedHostDataStore.edit { it.clear() }"),
+        )
+        assertTrue(
+            "the recovery must clear the reconnect secrets too — they are encrypted under the " +
+                "keyset it just destroyed, and leaving them is unreadable residue (RemEx-oxcu)",
+            recovery.contains("reconnectSecretDataStore.edit { it.clear() }"),
+        )
+    }
 }
