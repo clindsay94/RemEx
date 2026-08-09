@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -371,24 +373,39 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         viewModelScope.launch {
             RemexClientManager.telemetry.collect { telemetryData ->
-                try {
-                    val json = JSONObject(telemetryData)
-                    val sensors = json.optJSONArray("sensors")
-
-                    _telemetryState.update {
-                        it.copy(
-                            cpuUsage = sensors.extractPercent("CPU", listOf("cpu", "usage")),
-                            gpuUsage = sensors.extractPercent("GPU", listOf("gpu", "usage")),
-                            ramUsage = sensors.extractPercent("Memory", listOf("memory", "load"))
-                        )
+                // PARSED OFF THE MAIN THREAD (RemEx-cite). Every tick this deserialises the whole
+                // sensor payload, scans the array three more times for CPU/GPU/RAM, and then walks it
+                // again in parseSensors - all of it previously on Main, at 1 Hz, for as many sensors
+                // as the PC reports. Sub-millisecond per tick today, which is why the bead calls it
+                // hygiene rather than jank; it is also work with no reason to be on the UI thread.
+                //
+                // ONLY THE DERIVATION MOVES. The three state applications below stay exactly where
+                // they were: _telemetryState and _telemetrySensors are StateFlows and safe from any
+                // thread, but updateTelemetryHistory and ensureDefaultCardsExist mutate view-model
+                // state whose threading this change is not in a position to re-reason about. Moving
+                // the pure part is the whole of the win here.
+                val derived =
+                    withContext(Dispatchers.Default) {
+                        runCatching {
+                            val sensors = JSONObject(telemetryData).optJSONArray("sensors")
+                            DerivedTelemetry(
+                                cpu = sensors.extractPercent("CPU", listOf("cpu", "usage")),
+                                gpu = sensors.extractPercent("GPU", listOf("gpu", "usage")),
+                                ram = sensors.extractPercent("Memory", listOf("memory", "load")),
+                                sensors = parseSensors(sensors),
+                            )
+                        }
+                            .onFailure { Log.w("DashboardVM", "Failed to parse telemetry", it) }
+                            .getOrNull()
                     }
 
-                    val parsed = parseSensors(sensors)
-                    _telemetrySensors.value = parsed
-                    updateTelemetryHistory(parsed)
-                    ensureDefaultCardsExist(parsed)
-                } catch (e: Exception) {
-                    Log.w("DashboardVM", "Failed to parse telemetry", e)
+                if (derived != null) {
+                    _telemetryState.update {
+                        it.copy(cpuUsage = derived.cpu, gpuUsage = derived.gpu, ramUsage = derived.ram)
+                    }
+                    _telemetrySensors.value = derived.sensors
+                    updateTelemetryHistory(derived.sensors)
+                    ensureDefaultCardsExist(derived.sensors)
                 }
             }
         }
@@ -599,6 +616,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
         _homeCards.update { it + card }
     }
+
+    /**
+     * Everything one telemetry tick yields, computed before any of it is applied (RemEx-cite).
+     *
+     * Grouped into one value so the whole derivation crosses the dispatcher boundary once. Returning
+     * four separate results would mean four hops, which costs more than the parse it was meant to
+     * move.
+     */
+    private data class DerivedTelemetry(
+        val cpu: Int,
+        val gpu: Int,
+        val ram: Int,
+        val sensors: List<TelemetrySensor>,
+    )
 
     private fun parseSensors(sensors: JSONArray?): List<TelemetrySensor> {
         if (sensors == null) {
