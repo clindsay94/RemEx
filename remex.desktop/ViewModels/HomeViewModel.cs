@@ -23,6 +23,14 @@ public partial class HomeViewModel : ObservableObject, IDisposable
     /// <summary>Shared connection ViewModel — drives the status hero card.</summary>
     public ConnectionViewModel Connection { get; }
 
+    /// <summary>Whether a phone is attached, shared with every other indicator (RemEx-7zzw).</summary>
+    /// <remarks>
+    /// The same singleton the shell reads. Bound by this screen's status dot so it cannot disagree
+    /// with the sidebar about whether a phone is there — which is what happened when RemEx-0z7w
+    /// rebound only the shell.
+    /// </remarks>
+    public PhonePresenceMonitor Presence => PhonePresenceMonitor.Instance;
+
     /// <summary>Exposes ShellViewModel so AXAML can bind to shell-level preferences.</summary>
     public ShellViewModel Shell => _shell;
 

@@ -11,6 +11,14 @@ namespace Remex.Desktop.ViewModels;
 /// </summary>
 public partial class CanvasCardViewModel : ObservableObject
 {
+    /// <summary>Whether a phone is attached, shared with every other indicator (RemEx-7zzw).</summary>
+    /// <remarks>
+    /// The Connection card's dot lives in a card-scoped DataTemplate, so it resolves against THIS
+    /// type rather than the dashboard. Same singleton as everywhere else, so the card cannot
+    /// disagree with the sidebar about whether a phone is there.
+    /// </remarks>
+    public PhonePresenceMonitor Presence => PhonePresenceMonitor.Instance;
+
     // ═══════════════ Identity ═══════════════
 
     /// <summary>Unique identifier for this card instance.</summary>

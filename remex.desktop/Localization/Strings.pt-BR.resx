@@ -2940,4 +2940,13 @@ Você pode mudar:
   <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
     <value>{0} telefones conectados</value>
   </data>
+  <data name="A11y_PhonePresenceAttached" xml:space="preserve">
+    <value>Status do telefone: conectado</value>
+  </data>
+  <data name="A11y_PhonePresenceNone" xml:space="preserve">
+    <value>Status do telefone: nenhum telefone conectado</value>
+  </data>
+  <data name="Home_PhoneStatus" xml:space="preserve">
+    <value>TELEFONE</value>
+  </data>
 </root>

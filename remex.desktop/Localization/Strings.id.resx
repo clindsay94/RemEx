@@ -2943,4 +2943,13 @@ Anda dapat mengubah:
   <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
     <value>{0} ponsel terhubung</value>
   </data>
+  <data name="A11y_PhonePresenceAttached" xml:space="preserve">
+    <value>Status ponsel: terhubung</value>
+  </data>
+  <data name="A11y_PhonePresenceNone" xml:space="preserve">
+    <value>Status ponsel: tidak ada ponsel terhubung</value>
+  </data>
+  <data name="Home_PhoneStatus" xml:space="preserve">
+    <value>PONSEL</value>
+  </data>
 </root>

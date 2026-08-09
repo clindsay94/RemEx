@@ -41,9 +41,15 @@
             <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="4">
                     <TextBlock Text="{local:Localize Tray_LiveHeader}" FontFamily="{StaticResource Bungee_Shade}" FontSize="18" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="4"/>
-                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="14" Foreground="{DynamicResource TextMutedBrush}" FontWeight="SemiBold"/>
+                    <!-- Phone presence is the headline here too (RemEx-7zzw). This dot was parked as RemEx-3s4v's
+                         scope in review of the first pass and it is not: 3s4v is the tray TOOLTIP and menu
+                         header, new surfaces with new strings. This Ellipse is just another indicator,
+                         and leaving it green while the shell showed red is the contradiction this bead
+                         exists to remove. -->
+                    <TextBlock Text="{Binding Presence.PresenceText}" FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
                 </StackPanel>
-                <Ellipse AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Grid.Column="1" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,0,0" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
+                <Ellipse AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Grid.Column="1" Width="10" Height="10" VerticalAlignment="Top" Margin="0,4,0,0" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
                 </Ellipse>
             </Grid>
 

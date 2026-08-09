@@ -428,14 +428,25 @@
         <StackPanel Orientation="Horizontal" Spacing="24">
             <Grid>
                 <!-- Radar Sweep Animation -->
-                <Ellipse Width="48" Height="48" Classes="status-ring" Classes.connected="{Binding Connection.IsConnected}" StrokeThickness="1" Opacity="0.2"/>
-                <Ellipse Width="48" Height="48" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}" Opacity="0.1"/>
-                <Ellipse AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
+                <!-- All three of these (ring, halo, dot) follow PHONE presence, not the loopback link
+                     (RemEx-7zzw). Binding only some of them would make the halo disagree with the
+                     dot inside it. -->
+                <Ellipse Width="48" Height="48" Classes="status-ring" Classes.connected="{Binding Presence.IsPhoneAttached}" StrokeThickness="1" Opacity="0.2"/>
+                <Ellipse Width="48" Height="48" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}" Opacity="0.1"/>
+                <Ellipse AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
                 </Ellipse>
             </Grid>
             <StackPanel HorizontalAlignment="Center" MinWidth="140">
-                <TextBlock Text="{local:Localize Home_LinkStatus}" FontSize="9" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-                <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                <!-- The label had to move with the line it labels (review). "LINK_STATUS" now sits over the
+                     host-link detail; the phone line gets its own heading, because a label reading
+                     LINK_STATUS above "No phone connected" is the same contradiction one level down. -->
+                <TextBlock Text="{local:Localize Home_PhoneStatus}" FontSize="9" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
+                <!-- The dot beside this follows PHONE presence, so this line must too (RemEx-7zzw). Binding
+                     the dot alone put a red radar next to the word "Connected" — the contradiction moved
+                     from between screens into one StackPanel, which is the more confusing of the two. -->
+                <TextBlock Text="{Binding Presence.PresenceText}" FontSize="16" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="{local:Localize Home_LinkStatus}" FontSize="8" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2" Margin="0,4,0,0"/>
+                <TextBlock Text="{Binding Connection.StatusText}" FontSize="10" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Text="{Binding Connection.LatencyText}" FontSize="12" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource AccentPrimaryBrush}" IsVisible="{Binding Connection.IsConnected}" Margin="0,2,0,0"/>
             </StackPanel>
             <StackPanel Spacing="8">

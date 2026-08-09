@@ -80,10 +80,20 @@
                             <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                 <StackPanel Spacing="10">
                                     <StackPanel Orientation="Horizontal" Spacing="12">
-                                        <Ellipse AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
+                                        <!-- Phone presence, not the loopback link (RemEx-7zzw). Connection.IsConnected is this app's
+                                             socket to its own background service and is up essentially always, so a dot
+                                             bound to it was green whether or not a phone was there. The host link
+                                             is still shown, demoted beneath it — this card is about both, and only one of
+                                             them is a fact about the phone. -->
+                                        <Ellipse AutomationProperties.Name="{Binding Presence.PresenceAccessibleName}" Width="12" Height="12" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Presence.IsPhoneAttached}">
                                         </Ellipse>
-                                        <TextBlock Text="{Binding Connection.StatusText}" FontSize="16" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Presence.PresenceText}" FontSize="16" FontWeight="Black" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
+                                    <!-- UNGATED on purpose (review). HostRuntimeText and HostCapabilityText below are
+                                         both IsVisible-bound to Connection.IsConnected, so replacing this line rather
+                                         than demoting it left the card saying nothing at all about the host in exactly
+                                         the state a user opens it to diagnose. -->
+                                    <TextBlock Text="{Binding Connection.StatusText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
                                     <TextBlock Text="{Binding HostRuntimeText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
                                     <TextBlock Text="{Binding HostCapabilityText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding Connection.IsConnected}"/>
                                 </StackPanel>

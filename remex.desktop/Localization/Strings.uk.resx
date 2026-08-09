@@ -2941,4 +2941,13 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
     <value>Підключено телефонів: {0}</value>
   </data>
+  <data name="A11y_PhonePresenceAttached" xml:space="preserve">
+    <value>Стан телефона: підключено</value>
+  </data>
+  <data name="A11y_PhonePresenceNone" xml:space="preserve">
+    <value>Стан телефона: телефон не підключено</value>
+  </data>
+  <data name="Home_PhoneStatus" xml:space="preserve">
+    <value>ТЕЛЕФОН</value>
+  </data>
 </root>

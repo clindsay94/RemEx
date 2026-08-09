@@ -2940,4 +2940,13 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
     <value>{0} फ़ोन कनेक्ट हैं</value>
   </data>
+  <data name="A11y_PhonePresenceAttached" xml:space="preserve">
+    <value>फ़ोन स्थिति: कनेक्ट है</value>
+  </data>
+  <data name="A11y_PhonePresenceNone" xml:space="preserve">
+    <value>फ़ोन स्थिति: कोई फ़ोन कनेक्ट नहीं है</value>
+  </data>
+  <data name="Home_PhoneStatus" xml:space="preserve">
+    <value>फ़ोन</value>
+  </data>
 </root>
