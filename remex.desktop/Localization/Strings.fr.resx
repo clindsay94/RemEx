@@ -2991,4 +2991,16 @@ Vous pouvez modifier :
   <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
     <value>Videz le champ pour revenir à l’identifiant de l’appareil.</value>
   </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Dissocier ce téléphone ?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} ne pourra plus se connecter à ce PC. Pour le réutiliser, vous devrez l’associer de nouveau avec un nouveau code PIN. Cette action est irréversible.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Dissocier</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Appareil dissocié</value>
+  </data>
 </root>

@@ -2991,4 +2991,16 @@ Você pode mudar:
   <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
     <value>Limpe o nome para voltar ao ID do dispositivo.</value>
   </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Desemparelhar este telefone?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} não poderá mais se conectar a este PC. Para usá-lo de novo, será preciso pareá-lo do zero com um novo PIN. Isso não pode ser desfeito.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Desemparelhar</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Dispositivo desemparelhado</value>
+  </data>
 </root>

@@ -2995,4 +2995,16 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
     <value>Cihaz kimliğine dönmek için adı temizleyin.</value>
   </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Bu telefonun eşleştirmesi kaldırılsın mı?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} artık bu bilgisayara bağlanamayacak. Yeniden kullanmak için yeni bir PIN ile baştan eşleştirmeniz gerekir. Bu işlem geri alınamaz.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Eşleştirmeyi kaldır</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Cihazın eşleştirmesi kaldırıldı</value>
+  </data>
 </root>

@@ -2994,4 +2994,16 @@ Anda dapat mengubah:
   <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
     <value>Kosongkan nama untuk kembali ke ID perangkat.</value>
   </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Putuskan pasangan ponsel ini?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} tidak akan bisa terhubung ke PC ini lagi. Untuk memakainya lagi Anda harus memasangkannya dari awal dengan PIN baru. Tindakan ini tidak dapat dibatalkan.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Putuskan</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Perangkat diputuskan</value>
+  </data>
 </root>

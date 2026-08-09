@@ -2997,4 +2997,16 @@ You can change:
   <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
     <value>Clear the name to fall back to the device ID.</value>
   </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Unpair this phone?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} will no longer be able to connect to this PC. To use it again you will have to pair it from scratch with a new PIN. This cannot be undone.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Unpair</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Device unpaired</value>
+  </data>
 </root>

@@ -2991,4 +2991,16 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
     <value>डिवाइस आईडी पर लौटने के लिए नाम खाली छोड़ें।</value>
   </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>इस फ़ोन को अनपेयर करें?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} अब इस पीसी से कनेक्ट नहीं हो पाएगा। दोबारा इस्तेमाल करने के लिए आपको इसे नए पिन के साथ फिर से पेयर करना होगा। इसे पूर्ववत नहीं किया जा सकता।</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>अनपेयर करें</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>डिवाइस अनपेयर हो गया</value>
+  </data>
 </root>

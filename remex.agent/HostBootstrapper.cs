@@ -216,6 +216,19 @@ public static class HostBootstrapper
         builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceNameWriter>(
             sp => new PairedDeviceRenamer(sp.GetRequiredService<PairedDeviceNameOverrideStore>()));
 
+        // The revoker: its own registration, its own interface, because it is the only one of the
+        // three that touches the pairing registry (RemEx-5lb90). It takes the trust service too —
+        // that store is the fifth thing keyed by client id, and it is pruned only for clients that
+        // are NOT paired, so a grant that outlives a revocation becomes live again on the re-pair.
+        builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceRevoker>(
+            sp => new PairedDeviceRevoker(
+                sp.GetRequiredService<PairedClientRegistry>(),
+                sp.GetRequiredService<PairedClientNameStore>(),
+                sp.GetRequiredService<PairedDeviceNameOverrideStore>(),
+                sp.GetRequiredService<PairedDeviceActivityStore>(),
+                sp.GetRequiredService<IFileTrustService>(),
+                sp.GetRequiredService<ILogger<PairedDeviceRevoker>>()));
+
         builder.Services.AddSingleton<Remex.Desktop.Services.IPairedDeviceSource>(
             sp => new PairedDeviceDirectory(
                 sp.GetRequiredService<PairedClientRegistry>(),

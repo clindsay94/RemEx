@@ -3005,4 +3005,16 @@ Puedes cambiar:
   <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
     <value>Borra el nombre para volver al ID del dispositivo.</value>
   </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>¿Desvincular este teléfono?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} ya no podrá conectarse a este PC. Para volver a usarlo tendrás que vincularlo de nuevo con un PIN nuevo. Esto no se puede deshacer.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Desvincular</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Dispositivo desvinculado</value>
+  </data>
 </root>

@@ -2992,4 +2992,16 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
     <value>Очистіть назву, щоб повернутися до ідентифікатора пристрою.</value>
   </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Скасувати пов’язання з цим телефоном?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} більше не зможе підключатися до цього ПК. Щоб скористатися ним знову, доведеться пов’язати його заново з новим PIN-кодом. Цю дію не можна скасувати.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Скасувати пов’язання</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Пов’язання пристрою скасовано</value>
+  </data>
 </root>

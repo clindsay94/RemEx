@@ -228,9 +228,25 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     /// starts and this view model can be built first, so a cached null would stick for the session
     /// (the mistake found in review of RemEx-n8xk, on the same two-container arrangement).
     /// </remarks>
-    private static IPairedDeviceSource? ResolvePairedDeviceSource()
-        => App.Services?.GetService(typeof(IPairedDeviceSource)) as IPairedDeviceSource
-            ?? App.EmbeddedHostServices?.GetService(typeof(IPairedDeviceSource)) as IPairedDeviceSource;
+    private static IPairedDeviceSource? ResolvePairedDeviceSource() => ResolveHostService<IPairedDeviceSource>();
+
+    /// <summary>
+    /// Finds a service the embedded host registered, or null when no host is in this process.
+    /// </summary>
+    /// <remarks>
+    /// ONE RESOLVER, BECAUSE THE THIRD COPY WAS ABOUT TO LAND. The paired-device surface now has a
+    /// list, a renamer and a revoker, and each had its own verbatim copy of this two-container
+    /// fallback (review of RemEx-4gbp2 called it before the third arrived).
+    /// <para>
+    /// RESOLVED ON EVERY CALL, never cached: the host publishes its container after it starts and
+    /// this view model can be built first, so a cached null would stick for the session — the mistake
+    /// found in review of RemEx-n8xk. The app container is tried first and is expected to miss; it is
+    /// there so a desktop-side test double would win.
+    /// </para>
+    /// </remarks>
+    private static T? ResolveHostService<T>() where T : class
+        => App.Services?.GetService(typeof(T)) as T
+            ?? App.EmbeddedHostServices?.GetService(typeof(T)) as T;
 
     /// <summary>
     /// Re-reads the paired devices and their live state.
@@ -251,6 +267,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         OnPropertyChanged(nameof(CanListPairedDevices));
         OnPropertyChanged(nameof(CanRenamePairedDevices));
+        OnPropertyChanged(nameof(CanUnpairDevices));
         PairedDevices.Clear();
         if (source is null) return;
 
@@ -298,8 +315,79 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public bool CanRenamePairedDevices => ResolvePairedDeviceNameWriter() is not null;
 
     private static IPairedDeviceNameWriter? ResolvePairedDeviceNameWriter()
-        => App.Services?.GetService(typeof(IPairedDeviceNameWriter)) as IPairedDeviceNameWriter
-            ?? App.EmbeddedHostServices?.GetService(typeof(IPairedDeviceNameWriter)) as IPairedDeviceNameWriter;
+        => ResolveHostService<IPairedDeviceNameWriter>();
+
+    /// <summary>Whether this PC can end a pairing — false when no host is in this process.</summary>
+    public bool CanUnpairDevices => ResolveHostService<IPairedDeviceRevoker>() is not null;
+
+    /// <summary>
+    /// Ends a device's pairing, after a confirmation that says what it costs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// FAILS CLOSED, matching every other confirmed action in this class: an unwired view model, or a
+    /// view with no visible parent window, DECLINES rather than revoking unconfirmed. This is the one
+    /// action here that cannot be undone — the phone must pair again with a new PIN, because the
+    /// credential is gone — so an unconfirmed revocation is the worst possible failure mode.
+    /// </para>
+    /// <para>
+    /// The confirmation names the device and says what happens next. "Remove" on its own reads like
+    /// tidying a list, and a user who reads it that way will be surprised when their phone stops
+    /// connecting.
+    /// </para>
+    /// <para>
+    /// AND IT REPORTS, like the two sibling confirmed actions twelve lines apart from it. The revoker
+    /// throws when a teardown failed; letting that escape an <c>AsyncRelayCommand</c> kills the app
+    /// on the dispatcher, and swallowing it would be worse — the row vanishes from a rebuilt list, the
+    /// user reads that as success, and the pairing is still on disk after a restart.
+    /// </para>
+    /// </remarks>
+    [RelayCommand]
+    private async Task UnpairDeviceAsync(PairedDeviceItem? item)
+    {
+        if (item is null) return;
+
+        var revoker = ResolveHostService<IPairedDeviceRevoker>();
+        if (revoker is null) return;
+
+        if (OnConfirmationRequested is null
+            || !await OnConfirmationRequested(
+                LocalizationService.Instance["Confirm_Unpair_Title"],
+                string.Format(
+                    System.Globalization.CultureInfo.CurrentCulture,
+                    LocalizationService.Instance["Confirm_Unpair_Message"],
+                    item.DisplayName),
+                LocalizationService.Instance["Confirm_Unpair_Btn"]))
+        {
+            return;
+        }
+
+        string? error = null;
+        try
+        {
+            await revoker.RevokeAsync(item.ClientId, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+
+        // BOTH CARDS, AND ON THE FAILURE PATH TOO. The device appears twice on this page — once as a
+        // pairing and once, if it has file-access grants, under Trusted Devices — and revoking clears
+        // both stores. Rebuilding only the first would leave the same phone listed below with a
+        // "revoke trust" button for a pairing that no longer exists. Rebuilding after a FAILED
+        // revocation matters more: a partial teardown is exactly when the two lists can disagree, and
+        // the screen should show what is actually stored rather than what was meant to happen.
+        RefreshPairedDevices();
+        await LoadTrustedDevicesAsync();
+
+        ShowTransientStatus(error is null
+            ? LocalizationService.Instance["Settings_DeviceUnpaired"]
+            : string.Format(
+                System.Globalization.CultureInfo.CurrentCulture,
+                LocalizationService.Instance["Status_ErrorFormat"],
+                error));
+    }
 
     /// <summary>
     /// Applies the name typed into a row, then rebuilds the list so the row shows the result.

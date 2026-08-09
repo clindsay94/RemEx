@@ -2992,4 +2992,16 @@ Możesz zmienić:
   <data name="Settings_PairedDeviceRenameHint" xml:space="preserve">
     <value>Wyczyść nazwę, aby wrócić do identyfikatora urządzenia.</value>
   </data>
+  <data name="Confirm_Unpair_Title" xml:space="preserve">
+    <value>Rozparować ten telefon?</value>
+  </data>
+  <data name="Confirm_Unpair_Message" xml:space="preserve">
+    <value>{0} nie będzie już mógł łączyć się z tym komputerem. Aby użyć go ponownie, trzeba go sparować od nowa z nowym kodem PIN. Tej operacji nie można cofnąć.</value>
+  </data>
+  <data name="Confirm_Unpair_Btn" xml:space="preserve">
+    <value>Rozparuj</value>
+  </data>
+  <data name="Settings_DeviceUnpaired" xml:space="preserve">
+    <value>Urządzenie rozparowane</value>
+  </data>
 </root>

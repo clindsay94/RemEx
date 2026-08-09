@@ -201,6 +201,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **You can now end a pairing from the PC.** Each row in the Paired Devices list has an Unpair
+  button. It asks first, names the device it is about to unpair, and says what unpairing costs:
+  that phone can no longer connect, and getting it back means pairing again with a new PIN. There is
+  no undo, which is why the question is asked in those words rather than as "remove from list".
+  Unpairing forgets everything the PC recorded about that phone — the name it reported, the name you
+  gave it, when it paired and was last seen, and any file-access permission you had granted it. That
+  last one matters most: without it, a phone you unpaired and later paired again would quietly come
+  back still able to browse your whole PC, on a permission you granted to a pairing you had ended.
+  If any part of the clean-up fails, the PC says so instead of letting the row disappear and looking
+  like it worked. One thing it does not yet do: a phone that is connected at the moment you unpair it
+  stays connected until it disconnects on its own.
+
 - **You can give your paired phones your own names.** Each row in the Paired Devices list now has a
   field to rename it — useful when two phones report the same model name, or when the name your
   phone gives itself is not the one you think of it by. Your name is kept separately from the name
@@ -214,8 +226,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now the PC knew all of this and showed you none of it — there was no way to see which phones were
   paired, let alone one you had forgotten about. The light is per phone, so it tells you about that
   device rather than about the app in general. Phones paired before the previous update have no
-  recorded pairing date and say so honestly instead of inventing one. Renaming a device and removing
-  a pairing are coming next; for now the list is read-only.
+  recorded pairing date and say so honestly instead of inventing one.
 
 
 - **The About page now shows this PC's certificate fingerprint, so the warning on your phone is

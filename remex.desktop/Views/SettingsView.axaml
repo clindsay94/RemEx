@@ -360,6 +360,18 @@
                                                             Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}"
                                                             CommandParameter="{Binding}"
                                                             Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Padding="14,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+
+                                                    <!-- UNPAIR IS THE ONE ACTION HERE THAT CANNOT BE UNDONE, so it
+                                                         is visually separated from the rename beside it and drawn
+                                                         in the error colour — and it confirms before doing anything
+                                                         (RemEx-5lb90). Its own gate, because revoking needs a
+                                                         different service from renaming. -->
+                                                    <Button Content="{local:Localize Confirm_Unpair_Btn}"
+                                                            Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).UnpairDeviceCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanUnpairDevices}"
+                                                            Margin="12,0,0,0"
+                                                            Background="Transparent" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="14,6" CornerRadius="6" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
                                                 </StackPanel>
                                                 <TextBlock Text="{local:Localize Settings_PairedDeviceRenameHint}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}"/>
                                             </StackPanel>
