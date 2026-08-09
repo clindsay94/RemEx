@@ -154,6 +154,25 @@ public sealed class TransferSessionManager : IDisposable
         // partial below. Otherwise the resume re-hash (read) or the FileShare.None open throws
         // IOException "used by another process" and the old handle leaks. (The replace at the tail of
         // this method was too late — the file access above it fails first.)
+        // ...but only for the client that owns it (RemEx-juas). Superseding took whatever id the
+        // offer named, so a caller could re-own another client's live transfer simply by offering
+        // the same id: the victim's stream handle was disposed and the id re-keyed to the attacker's
+        // destination. RemEx-0719 then stops the victim's own data frames from landing, because the
+        // session no longer belongs to it - so without this check that fix turned a hijack into a
+        // reliable way to break the transfer instead.
+        //
+        // Refused rather than superseded, and the offer is declined: a re-offer from a different
+        // client is not a retry, and there is no reading of it where continuing is right.
+        if (_receiveSessions.TryGetValue(offer.TransferId, out var live)
+            && !string.Equals(live.ClientId, clientId, StringComparison.Ordinal))
+        {
+            _logger.LogWarning(
+                "Refusing a file_transfer_offer from {ClientId}: transfer {TransferId} is already live for a different client.",
+                Remex.Agent.Services.Security.LogRedaction.RedactClientId(clientId),
+                offer.TransferId);
+            return new ReceiveAcceptance(false, 0, "That transfer id is in use by another client.");
+        }
+
         if (_receiveSessions.TryRemove(offer.TransferId, out var superseded))
             superseded.DisposeStreamOnly();
 
@@ -425,10 +444,24 @@ public sealed class TransferSessionManager : IDisposable
     /// <summary>Handles an inbound <c>file_transfer_complete</c> and replies with <c>file_transfer_result</c>.
     /// <paramref name="isLoopback"/> distinguishes a real remote device from the PC UI's own self-connection,
     /// so only genuine phone pushes are surfaced in the Home activity feed.</summary>
-    public async Task HandleCompleteAsync(FileTransferComplete complete, WebSocket controlWs, bool isLoopback, CancellationToken ct)
+    public async Task HandleCompleteAsync(
+        FileTransferComplete complete, WebSocket controlWs, bool isLoopback, string channelKey, CancellationToken ct)
     {
         if (complete is null)
             return;
+
+        // Same ownership rule as HandleControl (RemEx-juas). Completing someone else's transfer runs
+        // the hash verification and the promotion out of staging into the destination root - so an
+        // unbound caller could force a half-received file to be promoted, or fail its verification
+        // and have the partial deleted, on a transfer it has nothing to do with.
+        if (IsForeignTransfer(channelKey, complete.TransferId))
+        {
+            _logger.LogWarning(
+                "Refusing a file_transfer_complete from {ClientId}: transfer {TransferId} belongs to a different client.",
+                Remex.Agent.Services.Security.LogRedaction.RedactClientId(channelKey),
+                complete.TransferId);
+            return;
+        }
 
         // Capture the destination file name now — CompleteReceiveAsync removes the session below.
         string? receivedName = _receiveSessions.TryGetValue(complete.TransferId, out var pendingSession)
@@ -463,10 +496,38 @@ public sealed class TransferSessionManager : IDisposable
     }
 
     /// <summary>Handles a <c>file_transfer_control</c> action (pause / resume / cancel).</summary>
-    public void HandleControl(FileTransferControl control)
+    /// <param name="channelKey">
+    /// The identity of the connection that sent this. Empty for a connection that has proved none.
+    /// A loopback /ws connection is one such - RemEx-4215 freezes it at no identity - but it is NOT
+    /// the only one: a remote device that paired with its clientId field omitted also settles at null
+    /// and shares the same blank key. Both are covered here for the same reason, and neither owns any
+    /// paired client's transfer.
+    /// </param>
+    public void HandleControl(FileTransferControl control, string channelKey)
     {
         if (control is null)
             return;
+
+        // OWNERSHIP (RemEx-juas). RemEx-0719 bound the BINARY channel so a frame could not act on a
+        // transfer belonging to another client. This is the same capability on the JSON control
+        // plane, and it was the cheaper attack of the two: HandleControl took no identity at all, and
+        // PingPongHandler seeds `isPaired = isLoopback`, so an unelevated local process could open
+        // ws://127.0.0.1/ws and cancel a phone's in-flight transfer with ONE message - no pairing, no
+        // PIN, no binary channel, nothing claimed.
+        //
+        // IsForeignTransfer is the rule RemEx-0719 established, reused rather than re-derived. It
+        // also covers the case that made that bead's fix incomplete on the first pass: a transfer
+        // suspended by a dropped socket has no live session but keeps its resumable partial, and its
+        // owner is recorded in the staging manifest.
+        if (IsForeignTransfer(channelKey, control.TransferId))
+        {
+            _logger.LogWarning(
+                "Refusing a file_transfer_control {Action} from {ClientId}: transfer {TransferId} belongs to a different client.",
+                control.Action,
+                Remex.Agent.Services.Security.LogRedaction.RedactClientId(channelKey),
+                control.TransferId);
+            return;
+        }
 
         switch (control.Action)
         {
@@ -492,10 +553,22 @@ public sealed class TransferSessionManager : IDisposable
     }
 
     /// <summary>Handles an inbound <c>file_transfer_result</c> — the peer's verification of a host-sent download.</summary>
-    public void HandleResult(FileTransferResult result)
+    /// <param name="channelKey">The identity of the connection that sent this; see <see cref="HandleControl"/>.</param>
+    public void HandleResult(FileTransferResult result, string channelKey)
     {
         if (result is null)
             return;
+
+        // Same ownership rule as HandleControl (RemEx-juas). This one cancels a send session, so an
+        // unbound caller could end another client's download by declaring it verified - or failed.
+        if (IsForeignTransfer(channelKey, result.TransferId))
+        {
+            _logger.LogWarning(
+                "Refusing a file_transfer_result from {ClientId}: transfer {TransferId} belongs to a different client.",
+                Remex.Agent.Services.Security.LogRedaction.RedactClientId(channelKey),
+                result.TransferId);
+            return;
+        }
 
         if (_sendSessions.TryRemove(result.TransferId, out var send))
             send.Cancel();

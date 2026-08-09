@@ -125,6 +125,17 @@ public class LoopbackIdentityClaimTests
     /// <summary>Runs one whole connection through the real handler and returns everything it sent.</summary>
     private static async Task<List<RemexMessage>> RunLoopbackConnectionAsync(
         IFileTrustService trust, string awaitedResponseType, params RemexMessage[] script)
+        => await RunLoopbackConnectionAsync(trust, awaitedResponseType, sessions: null, script);
+
+    /// <summary>
+    /// As above, but with a real <c>TransferSessionManager</c> wired in so the control-plane
+    /// messages can be driven through the dispatch rather than called directly (RemEx-juas).
+    /// </summary>
+    private static async Task<List<RemexMessage>> RunLoopbackConnectionAsync(
+        IFileTrustService trust,
+        string awaitedResponseType,
+        Remex.Agent.Services.FileTransfer.TransferSessionManager? sessions,
+        params RemexMessage[] script)
     {
         var volumes = new Remex.Agent.Services.FileTransfer.VolumeEnumerator(
             NullLogger<Remex.Agent.Services.FileTransfer.VolumeEnumerator>.Instance);
@@ -148,7 +159,7 @@ public class LoopbackIdentityClaimTests
             null!,  // ScreenshotService: this test never takes one
             null!,  // PairingHandler: loopback never pairs
             fileTransferHandler,
-            null!,  // TransferSessionManager: no transfer is ever negotiated
+            sessions!,  // TransferSessionManager: null unless a test drives the control plane
             null!,  // PairedClientRegistry: only the reconnect challenge reads it, and !isPaired gates that
             null!,  // FilePushOriginator: this test never pushes FROM the host
             new ClientSessionRegistry(),
@@ -269,4 +280,125 @@ public class LoopbackIdentityClaimTests
     private static PairedClientNameStore NewNameStore() =>
         new(NullLogger<PairedClientNameStore>.Instance,
             Path.Combine(Path.GetTempPath(), $"remex-names-{Guid.NewGuid():N}.json"));
+
+    [Fact]
+    public async Task ALoopbackConnectionCannotCancelAPairedPhonesTransfer()
+    {
+        // THE CALL SITE, not the guard. TransferSessionManagerTests proves HandleControl refuses a
+        // foreign key; this proves PingPongHandler actually HANDS it the connection's identity. Change
+        // the dispatch to pass a constant, or the wrong variable, and the guard is still perfectly
+        // correct and completely useless - which is the failure RemEx-0719's review caught one bead
+        // earlier, where four predicate tests stayed green with the call site deleted (RemEx-juas).
+        var staging = Directory.CreateTempSubdirectory();
+        var dest = Directory.CreateTempSubdirectory();
+        try
+        {
+            var files = new FakeFileTransferService(dest.FullName);
+            var transferService = Mock.Of<IFileTransferService>();
+            var volumes = new Remex.Agent.Services.FileTransfer.VolumeEnumerator(
+                NullLogger<Remex.Agent.Services.FileTransfer.VolumeEnumerator>.Instance);
+            var trust = NewGenerousTrustService();
+            using var sessions = new Remex.Agent.Services.FileTransfer.TransferSessionManager(
+                NullLogger<Remex.Agent.Services.FileTransfer.TransferSessionManager>.Instance,
+                files,
+                new Remex.Agent.Services.FileTransfer.SharedRootReadResolver(transferService, trust.Object, volumes),
+                staging.FullName);
+
+            // The victim: a real, live inbound transfer owned by the paired phone.
+            var tid = Guid.NewGuid().ToString("N");
+            await sessions.BeginReceiveAsync(
+                PhoneClientId,
+                new FileTransferOffer
+                {
+                    TransferId = tid,
+                    Mode = "upload",
+                    SourcePath = "/phone/DCIM/photo.bin",
+                    DestRoot = "root-a",
+                    DestRelativePath = null,
+                    FileName = "photo.bin",
+                    Size = 4096,
+                    ResumeRequested = false,
+                },
+                default);
+            await sessions.WriteChunkAsync(tid, 0, new byte[128], default);
+
+            var partial = Path.Combine(staging.FullName, tid + ".remexpart");
+            Assert.True(File.Exists(partial), "the victim's transfer should have staged normally");
+
+            // The attacker: a loopback connection, which RemEx-4215 freezes at NO identity, naming the
+            // phone's id on the message and cancelling by transfer id. One message, no pairing.
+            // HostInfo, not FileTransferResult: a file_transfer_control produces NO reply, so awaiting a
+            // response type that never arrives burned the harness's full 10s timeout on every run.
+            // HostInfo is sent on connect, so the wait ends as soon as the script has been consumed.
+            await RunLoopbackConnectionAsync(
+                trust.Object,
+                MessageTypes.HostInfo,
+                sessions,
+                new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferControl,
+                    ProtocolVersion = ProtocolVersionPolicy.Current,
+                    ClientId = PhoneClientId,
+                    FileTransferControl = new FileTransferControl
+                    {
+                        TransferId = tid,
+                        Action = FileTransferControlActions.Cancel,
+                    },
+                });
+
+            Assert.True(
+                File.Exists(partial),
+                "a loopback connection must not be able to cancel a paired phone's transfer by naming its id");
+
+            // POSITIVE CONTROL, and it is not optional. File.Exists surviving is equally satisfied by
+            // "the guard refused it" and by "the message never reached HandleControl at all" - so
+            // without this, deleting `case MessageTypes.FileTransferControl` from the dispatch would
+            // leave this test green while cancel silently stopped working for real phones. Found in
+            // review; it is the same class of gap as the one RemEx-0719 was failed for.
+            var ownTid = Guid.NewGuid().ToString("N");
+            await sessions.BeginReceiveAsync(
+                string.Empty,
+                new FileTransferOffer
+                {
+                    TransferId = ownTid,
+                    Mode = "upload",
+                    SourcePath = "/local/tool/scratch.bin",
+                    DestRoot = "root-a",
+                    DestRelativePath = null,
+                    FileName = "scratch.bin",
+                    Size = 4096,
+                    ResumeRequested = false,
+                },
+                default);
+            await sessions.WriteChunkAsync(ownTid, 0, new byte[128], default);
+
+            var ownPartial = Path.Combine(staging.FullName, ownTid + ".remexpart");
+            Assert.True(File.Exists(ownPartial));
+
+            await RunLoopbackConnectionAsync(
+                trust.Object,
+                MessageTypes.HostInfo,
+                sessions,
+                new RemexMessage
+                {
+                    Type = MessageTypes.FileTransferControl,
+                    ProtocolVersion = ProtocolVersionPolicy.Current,
+                    FileTransferControl = new FileTransferControl
+                    {
+                        TransferId = ownTid,
+                        Action = FileTransferControlActions.Cancel,
+                    },
+                });
+
+            Assert.False(
+                File.Exists(ownPartial),
+                "the loopback connection's cancel of its OWN transfer must still land - otherwise the "
+                + "assertion above proves only that nothing was delivered");
+        }
+        finally
+        {
+            staging.Delete(recursive: true);
+            dest.Delete(recursive: true);
+        }
+    }
 }

@@ -682,16 +682,21 @@ public sealed class PingPongHandler(
                         transferSessionManager.HandleReady(message.FileTransferReady);
                         break;
 
+                    // connectionClientId ?? string.Empty on all three: a connection that has proved
+                    // no identity gets the empty key, which is exactly what a loopback /ws connection
+                    // is since RemEx-4215 froze it there. That key owns no paired client's transfer,
+                    // so these refuse for anyone else's and permit for its own (RemEx-juas).
                     case MessageTypes.FileTransferComplete when message.FileTransferComplete is not null:
-                        await transferSessionManager.HandleCompleteAsync(message.FileTransferComplete, webSocket, isLoopback, ct);
+                        await transferSessionManager.HandleCompleteAsync(
+                            message.FileTransferComplete, webSocket, isLoopback, connectionClientId ?? string.Empty, ct);
                         break;
 
                     case MessageTypes.FileTransferResult when message.FileTransferResult is not null:
-                        transferSessionManager.HandleResult(message.FileTransferResult);
+                        transferSessionManager.HandleResult(message.FileTransferResult, connectionClientId ?? string.Empty);
                         break;
 
                     case MessageTypes.FileTransferControl when message.FileTransferControl is not null:
-                        transferSessionManager.HandleControl(message.FileTransferControl);
+                        transferSessionManager.HandleControl(message.FileTransferControl, connectionClientId ?? string.Empty);
                         break;
 
                     default:
