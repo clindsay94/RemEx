@@ -93,6 +93,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **A page of hard-won project rules was sitting in a file section that gets automatically
+  regenerated, and would have been deleted without warning.** The rules describe how to split a task
+  in two without leaving half of it unreachable, and they exist because that mistake was made four
+  times in one week, every time hiding a defect at the join. They had been written into a part of
+  the project's agent instructions that a tool rewrites from scratch each time it runs, so the next
+  run would have quietly erased them. Nothing would have failed; the file would just have been
+  shorter, and the next person to hit that mistake would not have been warned. They have been moved
+  out, and a test now fails the build if they drift back in — checked six different ways, including
+  the one that was easiest to get wrong, where somebody appends to the bottom of the section instead
+  of the top.
+
+  While moving them, the companion rule they were missing was written down too: unwired code with no
+  caller is usually deliberate here rather than a bug, and the way to tell the difference is whether
+  something already live is doing the same job worse. Without that, anyone reading only the first
+  rule would go hunting for perfectly correct code to "fix". One claim in the old text turned out to
+  be wrong and was corrected rather than left. (RemEx-thwlr)
+
+### Internal
+
 - **Fifteen branches in the Android app could never run on any phone that can install it, and they
   have been removed.** The app requires Android 14 or newer. Scattered through it were fifteen
   checks asking "is this phone on Android 8 / 10 / 11 / 12 / 13?" and, if not, doing something
