@@ -43,6 +43,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The pairing QR code used to stay on screen after the PIN inside it had stopped working.** The QR
+  carries the PIN, so once the PIN expires — or once a phone has used it to pair — the code is dead.
+  It stayed up anyway, including right next to the message telling you the PIN had expired. A phone
+  scanning it would just fail to pair, with nothing on either screen saying why. The QR now
+  disappears the moment the PIN it carries stops being valid. The PIN panel still stays, because it
+  can tell you what happened and offer you a new one; a QR code can only be scanned.
+
+- **The QR button no longer appears on machines that cannot produce a pairing code.** It would
+  previously generate a QR with no PIN in it, which scans fine and then cannot pair.
+
+
 - **An expired pairing PIN used to make the whole panel disappear; now it tells you and offers a new
   one.** The PIN is only good for about three minutes. When it ran out, the card simply vanished
   from the screen — and if you were looking at your phone at the time, you came back to nothing,
