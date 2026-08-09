@@ -1607,6 +1607,9 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Tray_TooltipDefault" xml:space="preserve">
     <value>RemEx Masaüstü - Uzaktan Çalıştırma</value>
   </data>
+  <data name="Tray_TooltipFormat" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Komut Paleti</value>
   </data>

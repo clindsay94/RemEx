@@ -1613,6 +1613,9 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Tray_TooltipDefault" xml:space="preserve">
     <value>RemEx Escritorio - Ejecución Remota</value>
   </data>
+  <data name="Tray_TooltipFormat" xml:space="preserve">
+    <value>{0} — {1}</value>
+  </data>
   <data name="CommandPalette_Title" xml:space="preserve">
     <value>Paleta de Comandos</value>
   </data>

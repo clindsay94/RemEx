@@ -105,6 +105,8 @@ public partial class App : Application
             ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime
             && lifetime.MainWindow is { IsVisible: true, WindowState: not WindowState.Minimized };
 
+        WireTrayTooltipToPhonePresence();
+
         _ = InitializeAppAsync();
 
         base.OnFrameworkInitializationCompleted();
@@ -403,6 +405,34 @@ public partial class App : Application
         {
             _flyout.ShowAtTray();
         }
+    }
+
+    /// <summary>
+    /// Keeps the tray tooltip saying what the shell's dot says (RemEx-3s4v).
+    /// </summary>
+    /// <remarks>
+    /// THE TRAY IS THE STATUS SURFACE FOR MOST OF THIS APP'S LIFE, because it closes to the tray by
+    /// default — so a tooltip that read "RemEx Desktop - Remote Execution" whether or not a phone was
+    /// attached was answering the one question it is well placed to answer with a constant.
+    /// Subscribed rather than bound: TrayIcon is a NativeMenu-adjacent object declared in App.axaml,
+    /// not a control in a visual tree, so there is no data context to bind through.
+    /// </remarks>
+    private void WireTrayTooltipToPhonePresence()
+    {
+        if (TrayIcon.GetIcons(this) is not { Count: > 0 } icons) return;
+
+        var icon = icons[0];
+        var product = LocalizationService.Instance["Tray_TooltipDefault"];
+
+        void Apply() => icon.ToolTipText =
+            TrayTooltip.Compose(product, PhonePresenceMonitor.Instance.PresenceText);
+
+        PhonePresenceMonitor.Instance.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(PhonePresenceMonitor.PresenceText)) Apply();
+        };
+
+        Apply();
     }
 
     private void OnShowMainWindow(object? sender, EventArgs e) => BringMainWindowToFront();
