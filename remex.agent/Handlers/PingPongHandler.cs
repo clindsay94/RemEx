@@ -35,7 +35,8 @@ public sealed class PingPongHandler(
     Remex.Agent.Services.FileTransfer.FilePushOriginator pushOriginator,
     ClientSessionRegistry sessionRegistry,
     PairedClientNameStore nameStore,
-    PairedDeviceActivityStore activityStore) : IDisposable
+    PairedDeviceActivityStore activityStore,
+    Remex.Core.Services.Clipboard.IHostClipboard hostClipboard) : IDisposable
 {
     /// <summary>
     /// Keys this client pressed and did not release, so disconnecting can release them (RemEx-73dc).
@@ -423,6 +424,27 @@ public sealed class PingPongHandler(
 
                     case MessageTypes.DesktopInput when message.InputEvent is not null:
                         DispatchInput(message.InputEvent);
+                        break;
+
+                    // ── 2.5 Clipboard ──
+                    // Pairing-gated for free: RequiresPairing defaults unknown types to true, and
+                    // writing the PC's clipboard is exactly the kind of thing that default exists
+                    // for. Nothing extra is needed here, but it is worth stating, because a reader
+                    // scanning this switch for a gate will not find one.
+                    //
+                    // NOTHING IS SENT BACK, AND THAT IS A FINDING RATHER THAN AN OMISSION. The
+                    // obvious reply is a command_response, which is already routed to the phone -
+                    // but only for a message sent via SendCommand, whose native export BLOCKS
+                    // waiting to correlate one (RemexCoreClient.kt:172-193). The phone sends this
+                    // through SendMessage, which is fire-and-forget and never waits, so a reply
+                    // would reach the correlation layer with no pending command to match and be
+                    // dropped exactly as silently as an unrouted type. Every outcome the user can
+                    // act on - nothing copied, too large - is decidable on the phone BEFORE the
+                    // send, using this same shared rule through the native export, so the phone
+                    // reports those itself. What is left here is a defence against a client that
+                    // did not check, and its audience is the log.
+                    case MessageTypes.ClipboardPush when message.ClipboardPush is not null:
+                        await HandleClipboardPushAsync(message.ClipboardPush, ct);
                         break;
 
                     // ── 2.0 Pairing ──
@@ -1100,7 +1122,49 @@ public sealed class PingPongHandler(
              or MessageTypes.LauncherRemove
              or MessageTypes.LauncherSync;
 
-    private static bool RequiresPairing(string type) => type switch
+    /// <summary>
+    /// Validates a pushed clipboard payload and writes it to the PC (RemEx-hgqs).
+    /// </summary>
+    /// <returns>True when the PC clipboard now holds <paramref name="push"/>'s text.</returns>
+    /// <remarks>
+    /// <para>
+    /// **THE HOST RE-VALIDATES WHAT THE PHONE ALREADY CHECKED, ON PURPOSE.** The Android sender calls
+    /// the same rule through the native export before sending, so in normal use this never refuses
+    /// anything. That is not a reason to drop it: the cap exists to bound what a peer can make this
+    /// machine hold, and a bound enforced only by the peer is not a bound. An older, modified or
+    /// simply buggy client is exactly the case it is here for.
+    /// </para>
+    /// <para>
+    /// **INTERNAL SO A TEST CAN DRIVE IT WITHOUT A SOCKET**, the same seam and the same reason as
+    /// <see cref="DispatchInput"/>. The residual gap is honest and worth stating: this being correct
+    /// does not prove the <c>switch</c> still routes <c>clipboard_push</c> here, and deleting that
+    /// one case would leave every test green. That is the RemEx-y6x6 shape, and the check that
+    /// actually closes it is a round trip from a real phone.
+    /// </para>
+    /// <para>
+    /// NEVER LOGS THE TEXT — a byte count and an outcome. A clipboard holds whatever the user last
+    /// copied, and a log line is the easiest place in the system for it to escape to.
+    /// </para>
+    /// </remarks>
+    internal async Task<bool> HandleClipboardPushAsync(
+        Remex.Core.Models.ClipboardPush push, CancellationToken ct)
+    {
+        var reason = ClipboardValidation.Validate(push.Text, out var bytes);
+
+        var written = reason == ClipboardRejectReason.None
+            && await hostClipboard.SetTextAsync(push.Text, ct);
+
+        logger.LogInformation(
+            "Clipboard push from client: {Bytes} bytes, outcome {Outcome}.",
+            bytes,
+            reason == ClipboardRejectReason.None
+                ? (written ? "written" : "clipboard-unavailable")
+                : reason.ToString());
+
+        return written;
+    }
+
+    internal static bool RequiresPairing(string type) => type switch
     {
         MessageTypes.Ping => false,
         MessageTypes.PairingRequest => false,

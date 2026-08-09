@@ -306,6 +306,13 @@ public sealed record RemexMessage
     /// </summary>
     [JsonPropertyName("pairingPin")]
     public PairingPinInfo? PairingPin { get; init; }
+
+    /// <summary>
+    /// Text destined for the PC clipboard, for <see cref="MessageTypes.ClipboardPush"/>. Optional
+    /// addition; no protocolVersion bump.
+    /// </summary>
+    [JsonPropertyName("clipboardPush")]
+    public Remex.Core.Models.ClipboardPush? ClipboardPush { get; init; }
 }
 
 /// <summary>
@@ -431,4 +438,11 @@ public static class MessageTypes
     public const string FileConsentResponse = "file_consent_response";
     public const string FilePushOffer = "file_push_offer";
     public const string FilePushResponse = "file_push_response";
+
+    // ── 2.5 Clipboard ──
+    // Additive and optional: a peer that does not know these ignores them, so no ProtocolVersion
+    // bump. clipboard_push is CLIENT -> HOST and lands in the host's own dispatcher, so unlike a
+    // host -> client type it needs no JNI routing to arrive (RemEx-hgqs; the fetch direction, which
+    // does, is RemEx-ci98m).
+    public const string ClipboardPush = "clipboard_push";
 }

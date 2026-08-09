@@ -1,3 +1,4 @@
+using Remex.Core.Validation;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
@@ -516,6 +517,40 @@ public static class AndroidNativeExports
     [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_SendMessageNative")]
     public static IntPtr SendMessage(IntPtr env, IntPtr thiz, IntPtr messageJsonUtf8)
         => Export(env, () => HandleDispatchMessage(JniHelper.ReadJString(env, messageJsonUtf8)));
+
+    /// <summary>Judges a clipboard payload with the SAME rule the host applies (RemEx-hgqs).</summary>
+    /// <param name="textUtf8">The candidate clipboard text.</param>
+    /// <returns>
+    /// JSON <c>{"reason":"none|empty|too_large","byteCount":N,"maxBytes":N}</c>.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// **THE POINT IS THAT ANDROID DOES NOT GET ITS OWN COPY OF THE RULE.**
+    /// <see cref="ClipboardValidation"/>'s own doc says both sides validate with the same rule rather
+    /// than each inventing one, and without this export the phone would have to reimplement the cap
+    /// in Kotlin — where "256 KB" would quietly become 256 K *characters*, admitting three times the
+    /// limit for anyone writing in Chinese, Japanese or Korean. That is the exact mistake the shipped
+    /// validation was written to prevent, and a second implementation is how it would come back.
+    /// </para>
+    /// <para>
+    /// **THE ANSWER NEVER ECHOES THE TEXT** — a reason, a length, and the limit, nothing else. A
+    /// clipboard holds whatever the user last copied.
+    /// </para>
+    /// <para>
+    /// The JSON is built by hand rather than serialized: three fields of known shape, no reflection,
+    /// and nothing for a source generator to have to be told about.
+    /// </para>
+    /// </remarks>
+    [UnmanagedCallersOnly(EntryPoint = "Java_com_clindsay94_remex_RemexCoreClient_ValidateClipboardNative")]
+    public static IntPtr ValidateClipboard(IntPtr env, IntPtr thiz, IntPtr textUtf8)
+        => Export(
+            env,
+            () => ClipboardValidation.ToNativeJson(JniHelper.ReadJString(env, textUtf8)),
+            // SAME SHAPE ON FAILURE. Export's default fallback is an operation-failure object with no
+            // "reason" field at all, and Kotlin wraps that in a SUCCESSFUL Result - so the phone would
+            // parse an answer whose reason is missing and fall back to whatever its parser defaults
+            // to. One of those defaults sends an unbounded payload. (RemEx-hgqs.)
+            ClipboardValidation.UnavailableNativeJson());
 
     /// <summary>Sends a command (power actions and similar) to the host.</summary>
     /// <param name="commandJsonUtf8">JSON command payload.</param>
@@ -1673,7 +1708,17 @@ public static class AndroidNativeExports
     private static readonly string ExportFallbackJson =
         "{\"success\":false,\"message\":\"Native export failed and the error could not be serialized.\"}";
 
-    private static IntPtr Export(IntPtr env, Func<string> action)
+    /// <param name="failureJson">
+    /// What to return instead of an operation-failure object when <paramref name="action"/> throws.
+    /// <para>
+    /// **ONLY FOR EXPORTS WHOSE ANSWER IS NOT AN <c>AndroidNativeOperationResponse</c>.** The default
+    /// failure shape has no field in common with, say, a validation verdict, and Kotlin wraps a
+    /// failure in a SUCCESSFUL <c>Result</c> — so an export with its own answer shape must supply a
+    /// failure in that same shape, or the phone silently parses an object missing every field it
+    /// looks for and falls back to its parser's defaults (RemEx-hgqs).
+    /// </para>
+    /// </param>
+    private static IntPtr Export(IntPtr env, Func<string> action, string? failureJson = null)
     {
         // No JNI call may run while a Java exception is pending or the runtime aborts the
         // process (SIGABRT). Clear any exception left over before entering the export body.
@@ -1690,7 +1735,8 @@ public static class AndroidNativeExports
             try
             {
                 return JniHelper.CreateJString(env,
-                    SerializeOperationFailure("Unhandled native export failure.", ex.Message));
+                    failureJson
+                        ?? SerializeOperationFailure("Unhandled native export failure.", ex.Message));
             }
             catch
             {

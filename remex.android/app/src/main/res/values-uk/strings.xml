@@ -891,4 +891,13 @@
     <string name="share_diagnostics_send">Поділитися звітом</string>
     <string name="share_diagnostics_chooser">Поділитися діагностикою</string>
     <string name="share_diagnostics_failed">Не вдалося підготувати звіт до надсилання.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Надіслати буфер обміну на ПК</string>
+    <string name="clipboard_send_ok">Надіслано до буфера обміну ПК</string>
+    <string name="clipboard_send_empty">У буфері обміну немає нічого для надсилання</string>
+    <string name="clipboard_send_too_large">Це завелике, щоб надіслати. Обмеження — %1$d КБ.</string>
+    <string name="clipboard_send_failed">Не вдалося надіслати буфер обміну</string>
+    <string name="clipboard_send_not_connected">Спочатку підключіться до ПК</string>
+    <string name="clipboard_send_unsupported">Надіслати можна лише скопійований текст</string>
 </resources>

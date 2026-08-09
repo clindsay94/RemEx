@@ -877,4 +877,13 @@
     <string name="share_diagnostics_send">Raporu paylaş</string>
     <string name="share_diagnostics_chooser">Tanılamayı paylaş</string>
     <string name="share_diagnostics_failed">Rapor paylaşıma hazırlanamadı.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Panoyu bilgisayara gönder</string>
+    <string name="clipboard_send_ok">Bilgisayarın panosuna gönderildi</string>
+    <string name="clipboard_send_empty">Panoda gönderilecek bir şey yok</string>
+    <string name="clipboard_send_too_large">Bu, gönderilemeyecek kadar büyük. Sınır %1$d KB.</string>
+    <string name="clipboard_send_failed">Pano gönderilemedi</string>
+    <string name="clipboard_send_not_connected">Önce bilgisayarınıza bağlanın</string>
+    <string name="clipboard_send_unsupported">Yalnızca kopyalanan metin gönderilebilir</string>
 </resources>

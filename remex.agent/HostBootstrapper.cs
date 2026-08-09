@@ -91,6 +91,11 @@ public static class HostBootstrapper
         // registry. Without this registration the listener fails closed (rejects every command).
         builder.Services.AddSingleton<Remex.Core.Services.Network.ICommandChannelAuthenticator, Remex.Agent.Services.Network.PairedClientChannelAuthenticator>();
         builder.Services.AddSingleton<IHostCapabilitiesProvider, HostCapabilitiesProvider>();
+        // The PC clipboard, for clipboard_push (RemEx-hgqs). Lives in remex.desktop because that is
+        // where Avalonia is; the implementation hops to the UI thread, which nothing in this project
+        // can do - remex.agent has no Dispatcher reference of its own.
+        builder.Services.AddSingleton<Remex.Core.Services.Clipboard.IHostClipboard,
+            Remex.Desktop.Services.AvaloniaHostClipboard>();
         builder.Services.AddSingleton<IDesktopWindowControlService, UnsupportedDesktopWindowControlService>();
         // No LocalIpcServerService: the desktop UI runs in THIS process and resolves command/WoL/pairing
         // services straight from DI (see EmbeddedHostServiceLocator), so the RemExLocalIPC named pipe and
@@ -475,7 +480,8 @@ public static class HostBootstrapper
                 context.RequestServices.GetRequiredService<Remex.Agent.Services.FileTransfer.FilePushOriginator>(),
                 context.RequestServices.GetRequiredService<ClientSessionRegistry>(),
                 context.RequestServices.GetRequiredService<PairedClientNameStore>(),
-                context.RequestServices.GetRequiredService<PairedDeviceActivityStore>());
+                context.RequestServices.GetRequiredService<PairedDeviceActivityStore>(),
+                context.RequestServices.GetRequiredService<Remex.Core.Services.Clipboard.IHostClipboard>());
 
             // Loopback / in-process connections come from the embedded host on the same machine
             // (or in-process test servers). Pairing adds no security here — it would prompt for

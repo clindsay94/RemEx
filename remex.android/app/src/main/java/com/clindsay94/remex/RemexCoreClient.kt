@@ -170,6 +170,40 @@ object RemexCoreClient {
     private external fun SendMessageNative(messageJson: String): String
 
     /**
+     * Judges a clipboard payload with the SAME rule the PC applies (RemEx-hgqs).
+     *
+     * **DO NOT REIMPLEMENT THIS IN KOTLIN, WHICH IS THE ONLY REASON IT CROSSES JNI FOR A LENGTH
+     * CHECK.** The cap is 256 KB of UTF-8 BYTES, and the obvious Kotlin version — `text.length` —
+     * measures characters. CJK text is three bytes per character, so that version would admit 768 KB,
+     * and only for people writing in Chinese, Japanese or Korean. The shared implementation exists
+     * precisely so the two sides cannot drift on that, and calling it is cheap: no network, no
+     * suspension, pure string math on the caller's thread.
+     *
+     * @return `{"reason":"none|empty|too_large","byteCount":N,"maxBytes":N}`, or a failure when the
+     * native library is missing. **Never contains the text.**
+     */
+    @JvmStatic
+    fun ValidateClipboard(text: String): Result<String> {
+        return if (isLibraryLoaded) {
+            try {
+                Result.success(ValidateClipboardNative(text))
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "ValidateClipboardNative not linked", e)
+                Result.failure(e)
+            } catch (e: RuntimeException) {
+                Log.e(TAG, "ValidateClipboardNative crashed", e)
+                Result.failure(e)
+            }
+        } else {
+            Result.failure(IllegalStateException("Library not loaded."))
+        }
+    }
+
+    @JvmStatic
+    @JvmName("ValidateClipboardNative")
+    private external fun ValidateClipboardNative(text: String): String
+
+    /**
      * Sends a command to the PC and returns what the PC said about it.
      *
      * **THIS BLOCKS FOR A NETWORK ROUND TRIP, WHICH IS WHY IT OWNS ITS OWN THREAD (RemEx-66rf).**

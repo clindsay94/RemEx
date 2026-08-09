@@ -975,4 +975,13 @@
     <string name="share_diagnostics_send">Share report</string>
     <string name="share_diagnostics_chooser">Share diagnostics</string>
     <string name="share_diagnostics_failed">The report could not be prepared for sharing.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Send clipboard to PC</string>
+    <string name="clipboard_send_ok">Sent to the PC’s clipboard</string>
+    <string name="clipboard_send_empty">There is nothing on the clipboard to send</string>
+    <string name="clipboard_send_too_large">That is too large to send. The limit is %1$d KB.</string>
+    <string name="clipboard_send_failed">Could not send the clipboard</string>
+    <string name="clipboard_send_not_connected">Connect to your PC first</string>
+    <string name="clipboard_send_unsupported">Only copied text can be sent</string>
 </resources>

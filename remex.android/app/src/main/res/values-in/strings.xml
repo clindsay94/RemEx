@@ -871,4 +871,13 @@
     <string name="share_diagnostics_send">Bagikan laporan</string>
     <string name="share_diagnostics_chooser">Bagikan diagnostik</string>
     <string name="share_diagnostics_failed">Laporan tidak dapat disiapkan untuk dibagikan.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Kirim papan klip ke PC</string>
+    <string name="clipboard_send_ok">Terkirim ke papan klip PC</string>
+    <string name="clipboard_send_empty">Tidak ada apa pun di papan klip untuk dikirim</string>
+    <string name="clipboard_send_too_large">Terlalu besar untuk dikirim. Batasnya %1$d KB.</string>
+    <string name="clipboard_send_failed">Tidak dapat mengirim papan klip</string>
+    <string name="clipboard_send_not_connected">Hubungkan ke PC Anda terlebih dahulu</string>
+    <string name="clipboard_send_unsupported">Hanya teks yang disalin yang dapat dikirim</string>
 </resources>

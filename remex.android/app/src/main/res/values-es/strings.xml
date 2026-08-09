@@ -875,4 +875,13 @@
     <string name="share_diagnostics_send">Compartir informe</string>
     <string name="share_diagnostics_chooser">Compartir diagnóstico</string>
     <string name="share_diagnostics_failed">No se pudo preparar el informe para compartirlo.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Enviar portapapeles al PC</string>
+    <string name="clipboard_send_ok">Enviado al portapapeles del PC</string>
+    <string name="clipboard_send_empty">No hay nada en el portapapeles para enviar</string>
+    <string name="clipboard_send_too_large">Es demasiado grande para enviarlo. El límite es %1$d KB.</string>
+    <string name="clipboard_send_failed">No se pudo enviar el portapapeles</string>
+    <string name="clipboard_send_not_connected">Conéctate primero a tu PC</string>
+    <string name="clipboard_send_unsupported">Solo se puede enviar texto copiado</string>
 </resources>

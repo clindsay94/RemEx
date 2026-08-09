@@ -1,6 +1,7 @@
 package com.clindsay94.remex.ui.screens
 
 import android.app.Application
+import android.content.ClipboardManager
 import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -8,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.RemexCoreClient
 import com.clindsay94.remex.data.SettingsManager
+import com.clindsay94.remex.service.ClipboardVerdict
+import com.clindsay94.remex.service.clipboardVerdictOf
 import com.clindsay94.remex.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +21,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 private const val TAG = "RemoteControlVM"
@@ -184,6 +188,129 @@ class RemoteControlViewModel(application: Application) : AndroidViewModel(applic
 
     fun clearCommandStatus() {
         _commandStatus.value = null
+    }
+
+    /**
+     * Sends whatever is on THIS phone's clipboard to the PC's clipboard (RemEx-hgqs).
+     *
+     * **THE OUTCOME IS DECIDED HERE, NOT BY THE PC, AND THAT IS DELIBERATE.** The obvious design has
+     * the host validate and answer, but the answer would never arrive: this goes out through
+     * [RemexCoreClient.SendMessage], which is fire-and-forget, and only [RemexCoreClient.SendCommand]
+     * blocks to correlate a `command_response`. A reply to a message sent this way reaches the
+     * correlation layer with no pending command to match and is dropped as silently as an unrouted
+     * type. Both refusals a person can act on — nothing copied, too large — are knowable before the
+     * send anyway, so checking first is also the better interaction: an empty clipboard should not
+     * need a round trip to the PC to say so.
+     *
+     * The rule itself is the PC's, reached through [RemexCoreClient.ValidateClipboard] and turned
+     * into a verdict by [clipboardVerdictOf], which fails CLOSED. The host re-checks on arrival,
+     * because a client is not a thing to trust about its own payload size.
+     *
+     * **THE CLIPBOARD READ STAYS ON THE MAIN THREAD AND EVERYTHING ELSE LEAVES IT.** Those are two
+     * separate requirements pulling opposite ways, which is why the split is where it is.
+     * `getPrimaryClip` is refused to an app without window focus since API 29, and this body runs
+     * inline in the click handler on `Main.immediate`, so focus holds — but only until the first
+     * suspension point, after which it is a race. Everything downstream is the opposite: a JNI
+     * marshal and a JSON serialise of up to 256 KB, which [sendDispatcher] exists to keep off the
+     * main thread. That rule is stated for pointer events further down this file, and this payload
+     * is three orders of magnitude larger than one of those.
+     */
+    fun sendClipboardToPc() {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            if (!RemexCoreClient.isLibraryLoaded) {
+                // NOT status_native_lib_not_loaded, which names an internal component the user has
+                // no way to act on - the same call takeScreenshot makes a few lines below, and the
+                // newer of the two competing precedents in this file.
+                _commandStatus.value = app.getString(R.string.clipboard_send_failed)
+                return@launch
+            }
+
+            // NOT GATED ON isConnected AS A STYLE CHOICE - the quick-actions bar deliberately hosts
+            // Wake PC, which only makes sense while disconnected. But this one cannot work then, and
+            // the send below CANNOT tell you so: the native queue is unbounded, so handing it a
+            // message always succeeds and the real failure happens later, off in a native log the
+            // phone never shows. Claiming "sent" on that would be the exact false-confirmation this
+            // file already calls out for the launcher widget.
+            if (!RemexClientManager.isConnected.value) {
+                _commandStatus.value = app.getString(R.string.clipboard_send_not_connected)
+                return@launch
+            }
+
+            // READING THE CLIPBOARD IS ITSELF VISIBLE TO THE USER on Android 12+ (API 31): the system
+            // shows a "pasted from" toast when an app reads it, though it suppresses that when the
+            // app is reading its own copy. That is left alone rather than worked around - the user
+            // pressed a button that says it sends the clipboard, so a system confirmation that it
+            // was read agrees with what they asked for.
+            val clipboard = app.getSystemService(ClipboardManager::class.java)
+            val clip = clipboard?.primaryClip
+            if (clip == null || clip.itemCount == 0) {
+                // DISTINCT FROM "empty", because these are different stories and only one of them is
+                // about the clipboard's contents. A null manager or a refused read is a failure; an
+                // empty clip is the user having nothing copied. Reporting the first as the second
+                // sends someone off to copy something again when that was never the problem.
+                _commandStatus.value = app.getString(R.string.clipboard_send_failed)
+                return@launch
+            }
+
+            // `.text`, NOT `coerceToText`. v1 is text only, and coerceToText does not refuse a
+            // non-text clip - it stringifies it. Copy an image and it yields
+            // "content://media/external/images/media/1234"; an intent yields "intent:#Intent;...";
+            // a stream that fails mid-read yields the EXCEPTION's toString. Each of those would
+            // overwrite the PC's clipboard with something useless while reporting success, which is
+            // the same harm the empty-clipboard rule exists to prevent, arriving by another door.
+            // coerceToText would also open a ContentResolver stream - arbitrary-latency IPC to
+            // whatever app owns the clip - which is not something to do on the main thread.
+            val text = clip.getItemAt(0).text?.toString()
+            if (text == null) {
+                _commandStatus.value = app.getString(R.string.clipboard_send_unsupported)
+                return@launch
+            }
+
+            // NOTHING BELOW LOGS `text`. It is whatever the user last copied.
+            val outcome =
+                    withContext(sendDispatcher) {
+                        when (val verdict =
+                                clipboardVerdictOf(RemexCoreClient.ValidateClipboard(text).getOrNull())
+                        ) {
+                            is ClipboardVerdict.Sendable -> {
+                                val message =
+                                        JSONObject().apply {
+                                            put("type", "clipboard_push")
+                                            put("protocolVersion", 2)
+                                            put(
+                                                    "clipboardPush",
+                                                    JSONObject().apply { put("text", text) }
+                                            )
+                                        }
+
+                                // The native answer, not merely "the call returned". isSuccess is
+                                // true whenever JNI handed back a string at all, which it does even
+                                // for a failure - the same trap takeScreenshot avoids by reading
+                                // the response's own success field.
+                                val accepted =
+                                        RemexCoreClient.SendMessage(message.toString())
+                                                .getOrNull()
+                                                ?.let {
+                                                    runCatching { JSONObject(it) }
+                                                            .getOrNull()
+                                                            ?.optBoolean("success", false)
+                                                } == true
+                                if (accepted) null else ClipboardVerdict.Unavailable
+                            }
+                            else -> verdict
+                        }
+                    }
+
+            _commandStatus.value =
+                    when (outcome) {
+                        null -> app.getString(R.string.clipboard_send_ok)
+                        is ClipboardVerdict.Empty -> app.getString(R.string.clipboard_send_empty)
+                        is ClipboardVerdict.TooLarge ->
+                                app.getString(R.string.clipboard_send_too_large, outcome.maxKilobytes)
+                        else -> app.getString(R.string.clipboard_send_failed)
+                    }
+        }
     }
 
     fun saveMouseFabPosition(x: Float, y: Float) {

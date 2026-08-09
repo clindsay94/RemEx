@@ -875,4 +875,13 @@
     <string name="share_diagnostics_send">Compartilhar relatório</string>
     <string name="share_diagnostics_chooser">Compartilhar diagnóstico</string>
     <string name="share_diagnostics_failed">Não foi possível preparar o relatório para compartilhamento.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Enviar área de transferência para o PC</string>
+    <string name="clipboard_send_ok">Enviado para a área de transferência do PC</string>
+    <string name="clipboard_send_empty">Não há nada na área de transferência para enviar</string>
+    <string name="clipboard_send_too_large">Isso é grande demais para enviar. O limite é %1$d KB.</string>
+    <string name="clipboard_send_failed">Não foi possível enviar a área de transferência</string>
+    <string name="clipboard_send_not_connected">Conecte-se ao seu PC primeiro</string>
+    <string name="clipboard_send_unsupported">Só é possível enviar texto copiado</string>
 </resources>

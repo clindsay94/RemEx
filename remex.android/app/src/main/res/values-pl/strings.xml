@@ -891,4 +891,13 @@
     <string name="share_diagnostics_send">Udostępnij raport</string>
     <string name="share_diagnostics_chooser">Udostępnij diagnostykę</string>
     <string name="share_diagnostics_failed">Nie udało się przygotować raportu do udostępnienia.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Wyślij schowek do komputera</string>
+    <string name="clipboard_send_ok">Wysłano do schowka komputera</string>
+    <string name="clipboard_send_empty">W schowku nie ma nic do wysłania</string>
+    <string name="clipboard_send_too_large">To za duże, aby wysłać. Limit to %1$d KB.</string>
+    <string name="clipboard_send_failed">Nie udało się wysłać schowka</string>
+    <string name="clipboard_send_not_connected">Najpierw połącz się z komputerem</string>
+    <string name="clipboard_send_unsupported">Wysłać można tylko skopiowany tekst</string>
 </resources>

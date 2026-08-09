@@ -76,7 +76,8 @@ public class PingPongHeldKeyReleaseTests
             null!,  // FilePushOriginator: this test never pushes
             new Remex.Agent.Services.ClientSessionRegistry(),
             NewNameStore(),
-            NewActivityStore());
+            NewActivityStore(),
+            new FakeHostClipboard());
 
     private static InputEvent Key(string type, int keyCode) =>
         new() { EventType = type, KeyCode = keyCode };

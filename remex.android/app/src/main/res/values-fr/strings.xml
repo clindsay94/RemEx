@@ -875,4 +875,13 @@
     <string name="share_diagnostics_send">Partager le rapport</string>
     <string name="share_diagnostics_chooser">Partager le diagnostic</string>
     <string name="share_diagnostics_failed">Le rapport n’a pas pu être préparé pour le partage.</string>
+
+    <!-- Clipboard push to the PC (RemEx-hgqs) -->
+    <string name="clipboard_send_button">Envoyer le presse-papiers au PC</string>
+    <string name="clipboard_send_ok">Envoyé au presse-papiers du PC</string>
+    <string name="clipboard_send_empty">Le presse-papiers est vide</string>
+    <string name="clipboard_send_too_large">C’est trop volumineux pour être envoyé. La limite est de %1$d Ko.</string>
+    <string name="clipboard_send_failed">Impossible d’envoyer le presse-papiers</string>
+    <string name="clipboard_send_not_connected">Connectez-vous d’abord à votre PC</string>
+    <string name="clipboard_send_unsupported">Seul du texte copié peut être envoyé</string>
 </resources>

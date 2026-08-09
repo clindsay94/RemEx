@@ -267,6 +267,7 @@ fun RemoteControlScreen(
             onWakePc = { viewModel.wakePc() },
             onSendSystemCommand = { action, delay -> viewModel.sendSystemCommand(action, delay) },
             onTakeScreenshot = { viewModel.takeScreenshot() },
+            onSendClipboard = { viewModel.sendClipboardToPc() },
             onSendKey = { virtualKey -> viewModel.sendKeyPress(virtualKey) },
             onClearCommandStatus = { viewModel.clearCommandStatus() }
     )
@@ -280,6 +281,7 @@ fun RemoteControlScreenContent(
         onWakePc: () -> Unit,
         onSendSystemCommand: (String, Int) -> Unit,
         onTakeScreenshot: () -> Unit = {},
+        onSendClipboard: () -> Unit = {},
         onSendKey: (Int) -> Unit,
         onClearCommandStatus: () -> Unit
 ) {
@@ -463,6 +465,19 @@ fun RemoteControlScreenContent(
                 Icon(
                         Icons.Default.ScreenshotMonitor,
                         contentDescription = stringResource(R.string.action_take_screenshot)
+                )
+            }
+            // Safe like its neighbours: it writes the PC's clipboard, which is the one thing on the
+            // PC a person can restore by copying again. The refusals it can produce - nothing copied,
+            // too large - are decided on the phone before anything is sent, so this never dispatches
+            // a request the PC would only reject. (RemEx-hgqs.)
+            IconButton(onClick = {
+                view.hapticCommandSent()
+                onSendClipboard()
+            }) {
+                Icon(
+                        Icons.Default.ContentPaste,
+                        contentDescription = stringResource(R.string.clipboard_send_button)
                 )
             }
         }

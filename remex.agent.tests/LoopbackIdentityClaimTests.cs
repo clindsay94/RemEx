@@ -164,7 +164,8 @@ public class LoopbackIdentityClaimTests
             null!,  // FilePushOriginator: this test never pushes FROM the host
             new ClientSessionRegistry(),
             NewNameStore(),
-            NewActivityStore());
+            NewActivityStore(),
+            new FakeHostClipboard());
 
         var socket = new ScriptedWebSocket(awaitedResponseType, script);
         try

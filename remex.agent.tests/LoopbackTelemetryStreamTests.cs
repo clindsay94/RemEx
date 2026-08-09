@@ -130,7 +130,8 @@ public class LoopbackTelemetryStreamTests
             null!,  // FilePushOriginator: this test never pushes
             sessionRegistry ?? new ClientSessionRegistry(),
             NewNameStore(),
-            NewActivityStore());
+            NewActivityStore(),
+            new FakeHostClipboard());
 
         var socket = new OneShotWebSocket();
         try
