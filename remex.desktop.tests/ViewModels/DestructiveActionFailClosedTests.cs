@@ -463,10 +463,14 @@ public class DestructiveActionFailClosedTests
     // SettingsViewModel guards THREE destructive actions. Only this one is reachable from a test;
     // see the recorded reason on the other two at the bottom of this file.
     //
-    // WHY _fileTransferRootSettings IS DELIBERATELY null!, and why that is the safe choice rather
-    // than the lazy one: the real FileTransferRootSettingsService writes the MACHINE-WIDE shared
-    // roots store under ProgramData — the same file the host reads. A positive control built on the
-    // real service would reset the developer's actual shared folders every time the suite ran. With
+    // WHY _fileTransferRootSettings IS DELIBERATELY null!, and the reason has CHANGED (RemEx-rj0a).
+    // It used to be that the real FileTransferRootSettingsService wrote the machine-wide shared roots
+    // store under ProgramData, so a positive control built on it would reset the developer's actual
+    // shared folders every run. RemEx-4u29 made the host-state redirect unconditional in every test
+    // assembly, and that service resolves through RemexDataPaths, so under test it now writes into
+    // the per-run directory and touches nothing real. What null! still buys is that the confirmed
+    // path throws PAST the guard rather than succeeding quietly, which is what makes "did we get past
+    // the guard" observable at all — the isolation was a second benefit, not the point. With
     // it null, the confirmed path throws past the guard and the ViewModel's own catch reports it via
     // SavedStatus, which makes "did we get past the guard" observable while performing no real
     // write. That is the same shape as the Kill Process site above, where the observable is the

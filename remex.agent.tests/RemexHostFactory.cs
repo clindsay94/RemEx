@@ -72,12 +72,19 @@ public sealed class RemexHostFactory : WebApplicationFactory<Program>
                 services.AddSingleton<Remex.Agent.Services.Session.IInteractiveSessionGuard, NoOpInteractiveSessionGuard>();
                 services.AddSingleton<Remex.Core.Services.Command.ISystemCommandService, NoOpSystemCommandService>();
 
-                //  * Paired client names: PairedClientNameStore's production path is the MACHINE-WIDE
-                //    C:\ProgramData\RemEx store, beside the pairing secrets and the certificate. The
-                //    pairing integration tests drive a real pairing_request + pairing_complete to
-                //    success, so the host writes the test's device name into the developer's own
-                //    machine file and re-applies an ACL to it. Caught in review after it had already
-                //    happened. A per-factory temp file keeps the fixture hermetic. (RemEx-yzqs.)
+                //  * Paired client names: kept, but NOT for the reason it was added (RemEx-rj0a).
+                //    RemEx-yzqs added this because PairedClientNameStore's production path is the
+                //    machine-wide C:\ProgramData\RemEx store, and the pairing integration tests drive
+                //    a real pairing_request + pairing_complete to success — so the host wrote the
+                //    test's device name into the developer's own machine file and re-applied an ACL
+                //    to it. RemEx-4u29 has since made the host-state redirect unconditional in every
+                //    test assembly, so that store already lands in a temp directory and this no
+                //    longer prevents it.
+                //
+                //    WHAT IT STILL BUYS is PER-FACTORY isolation, which the redirect does not: that
+                //    is one directory for the whole assembly, so two factories in one run would
+                //    otherwise share a names file and one test's pairing would be visible to another.
+                //    Removing it is a test-isolation change, not a cleanup.
                 services.AddSingleton(sp => new Remex.Agent.Services.Security.PairedClientNameStore(
                     sp.GetRequiredService<ILogger<Remex.Agent.Services.Security.PairedClientNameStore>>(),
                     Path.Combine(Path.GetTempPath(), $"remex-test-names-{Guid.NewGuid():N}.json")));
