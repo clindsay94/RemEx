@@ -101,6 +101,10 @@ public class LocalizedPropertyRefreshTests
     [InlineData("SettingsViewModel.cs", "UpdateHostCapabilitySummary")]
     // AboutViewModel was already correct and is the reference implementation for the pattern.
     [InlineData("AboutViewModel.cs", "UpdateHostVersion")]
+    // ShellViewModel's phone-presence line snapshots a localized string too (RemEx-0z7w). It is
+    // ALSO refreshed by a 3-second poll, which is why this needs pinning: the staleness would be
+    // invisible today and permanent the moment that poll becomes an event (review).
+    [InlineData("ShellViewModel.cs", "RefreshPhonePresence")]
     public void LocaleHandler_RecomputesSnapshottedText(string viewModel, string recomputeMethod)
     {
         var path = Path.Combine(ViewModelDirectory(), viewModel);

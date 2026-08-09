@@ -2929,4 +2929,16 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="About_HostFingerprint_Hint" xml:space="preserve">
     <value>Якщо телефон попереджає, що сертифікат цього ПК змінився, порівняйте показане там значення з цим.</value>
   </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>Телефон не підключено</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 телефон підключено</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} підключено</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>Підключено телефонів: {0}</value>
+  </data>
 </root>

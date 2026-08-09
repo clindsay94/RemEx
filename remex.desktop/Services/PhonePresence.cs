@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 
 namespace Remex.Desktop.Services;
@@ -118,4 +119,31 @@ public static class PhonePresence
 
         return IPAddress.TryParse(address, out var parsed) && !IPAddress.IsLoopback(parsed);
     }
+
+    /// <summary>
+    /// The localization key the shell should show for <paramref name="status"/>, and the argument to
+    /// format it with, or null when the string takes none.
+    /// </summary>
+    /// <remarks>
+    /// KEPT SEPARATE FROM THE LOOKUP so the choice can be tested without a resource system, which is
+    /// the same split RemEx-ivkq settled on for the Android side: the decision is pure, only the
+    /// lookup is not. The caller does <c>LocalizationService.Instance[key]</c> and, when an argument
+    /// comes back, formats it in.
+    /// <para>
+    /// THE ONE-PHONE CASE SPLITS ON WHETHER THE DEVICE NAMED ITSELF. A phone reaches the registry
+    /// authenticated but not necessarily named — a client id rides on <c>ping</c> and a device name
+    /// need never arrive — so "Galaxy S26 connected" and "1 phone connected" are both real states and
+    /// the second is not an error. Formatting a null name into the first would render "  connected"
+    /// with a hole in it, on the row whose entire job is to say what is attached.
+    /// </para>
+    /// </remarks>
+    public static (string Key, string? Argument) Describe(PhonePresenceStatus status) => status.State switch
+    {
+        PhonePresenceState.OnePhone when !string.IsNullOrWhiteSpace(status.FirstDeviceName)
+            => ("Shell_PhoneConnectedNamed", status.FirstDeviceName),
+        PhonePresenceState.OnePhone => ("Shell_PhoneConnectedUnnamed", null),
+        PhonePresenceState.SeveralPhones
+            => ("Shell_PhonesConnectedSeveral", status.PhoneCount.ToString(CultureInfo.CurrentCulture)),
+        _ => ("Shell_NoPhoneConnected", null),
+    };
 }

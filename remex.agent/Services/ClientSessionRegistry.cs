@@ -31,7 +31,7 @@ namespace Remex.Agent.Services;
 /// property and not tidiness.
 /// </para>
 /// </remarks>
-public sealed class ClientSessionRegistry
+public sealed class ClientSessionRegistry : Remex.Desktop.Services.IClientSessionSource
 {
     /// <summary>Hands out the arrival order that <see cref="Find"/> resolves duplicates by.</summary>
     private static long _sequence;

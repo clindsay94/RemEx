@@ -237,10 +237,17 @@
                                 <!-- ═══ Bottom: Connection Status ═══ -->
                                 <Border Grid.Row="2" Margin="12,4,12,16" Padding="4" CornerRadius="{DynamicResource CornerRadiusMedium}" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
                                     <Grid ColumnDefinitions="64,*">
-                                        <Ellipse AutomationProperties.Name="{Binding Connection.ConnectionStatusAccessibleName}" Grid.Column="0" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding Connection.IsConnected}">
+                                        <Ellipse AutomationProperties.Name="{Binding PhonePresenceText}" Grid.Column="0" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center" Classes="status-dot" Classes.connected="{Binding IsPhoneAttached}">
                                         </Ellipse>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,12,0" IsVisible="{Binding IsDrawerOpen}">
-                                            <TextBlock Text="{Binding Connection.StatusText}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                            <!-- PHONE PRESENCE IS THE HEADLINE, the loopback link is the detail
+                                                 below it (RemEx-0z7w / RemEx-porg). Connection.IsConnected is the
+                                                 UI's own socket to its embedded host and is up essentially always,
+                                                 so leading with it told a user with no phone paired that they were
+                                                 "Connected" — the one fact this panel exists to convey, absent.
+                                                 The dot to the left is bound to phone presence for the same reason. -->
+                                            <TextBlock Text="{Binding PhonePresenceText}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Connection.StatusText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
                                             <TextBlock Text="{Binding Connection.LatencyText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" IsVisible="{Binding Connection.IsConnected}"/>
                                         </StackPanel>
                                     </Grid>

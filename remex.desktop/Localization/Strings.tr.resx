@@ -2932,4 +2932,16 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="About_HostFingerprint_Hint" xml:space="preserve">
     <value>Telefonunuz bu bilgisayarın sertifikasının değiştiği konusunda uyarırsa, orada görüneni bununla karşılaştırın.</value>
   </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>Bağlı telefon yok</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 telefon bağlı</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} bağlı</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>{0} telefon bağlı</value>
+  </data>
 </root>

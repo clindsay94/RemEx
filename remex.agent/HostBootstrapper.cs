@@ -196,6 +196,13 @@ public static class HostBootstrapper
         // plane, and TransferQueueService owns the process-death-surviving transfer_queue.json.
         // Singleton: it IS the live-session list, so a per-request instance would be empty.
         builder.Services.AddSingleton<ClientSessionRegistry>();
+
+        // The same instance under the interface the DESKTOP can name (RemEx-0z7w). A second
+        // AddSingleton<IClientSessionSource, ClientSessionRegistry>() would construct a SECOND
+        // registry holding no sessions, and the UI would confidently report zero phones forever —
+        // the failure this feature exists to fix, arriving by way of its own wiring.
+        builder.Services.AddSingleton<Remex.Desktop.Services.IClientSessionSource>(
+            sp => sp.GetRequiredService<ClientSessionRegistry>());
         builder.Services.AddSingleton<PairedClientNameStore>();
         builder.Services.AddSingleton<TransferSessionManager>();
         builder.Services.AddSingleton<TransferQueueService>();

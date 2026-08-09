@@ -2931,4 +2931,16 @@ Anda dapat mengubah:
   <data name="About_HostFingerprint_Hint" xml:space="preserve">
     <value>Jika ponsel Anda memperingatkan bahwa sertifikat PC ini berubah, bandingkan yang ditampilkannya dengan ini.</value>
   </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>Tidak ada ponsel terhubung</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 ponsel terhubung</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} terhubung</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>{0} ponsel terhubung</value>
+  </data>
 </root>

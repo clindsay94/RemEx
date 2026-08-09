@@ -2934,4 +2934,16 @@ You can change:
   <data name="About_HostFingerprint_Hint" xml:space="preserve">
     <value>If your phone warns you that this PC's certificate changed, compare what it shows against this.</value>
   </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>No phone connected</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 phone connected</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} connected</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>{0} phones connected</value>
+  </data>
 </root>

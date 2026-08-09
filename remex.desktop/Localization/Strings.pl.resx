@@ -2929,4 +2929,16 @@ Możesz zmienić:
   <data name="About_HostFingerprint_Hint" xml:space="preserve">
     <value>Jeśli telefon ostrzega, że certyfikat tego komputera się zmienił, porównaj pokazaną tam wartość z tą.</value>
   </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>Brak połączonego telefonu</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 telefon połączony</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} połączony</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>Połączone telefony: {0}</value>
+  </data>
 </root>

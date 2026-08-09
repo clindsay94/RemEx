@@ -2928,4 +2928,16 @@ Você pode mudar:
   <data name="About_HostFingerprint_Hint" xml:space="preserve">
     <value>Se o seu celular avisar que o certificado deste PC mudou, compare o que ele mostra com isto.</value>
   </data>
+  <data name="Shell_NoPhoneConnected" xml:space="preserve">
+    <value>Nenhum telefone conectado</value>
+  </data>
+  <data name="Shell_PhoneConnectedUnnamed" xml:space="preserve">
+    <value>1 telefone conectado</value>
+  </data>
+  <data name="Shell_PhoneConnectedNamed" xml:space="preserve">
+    <value>{0} conectado</value>
+  </data>
+  <data name="Shell_PhonesConnectedSeveral" xml:space="preserve">
+    <value>{0} telefones conectados</value>
+  </data>
 </root>

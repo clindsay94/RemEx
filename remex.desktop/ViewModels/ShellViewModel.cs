@@ -266,6 +266,16 @@ public partial class ShellViewModel : ObservableObject, IDisposable
             _hardwareThemeService.SetEnabled(Customization.SyncWithHardware);
         }
 
+        // PhonePresenceText holds an ALREADY-LOCALIZED snapshot, so a language switch has to
+        // recompute it or the shell's headline line keeps the previous language (RemEx-q3h0's
+        // pattern; AboutViewModel is the reference). Without this the only thing that refreshed it
+        // was the 3-second poll — which would look fine today and become a permanent staleness the
+        // moment that poll is replaced by an event (review).
+        LocalizationService.Instance.PropertyChanged += OnLocalizationChangedForPresence;
+
+        RefreshPhonePresence();
+        StartPhonePresencePolling();
+
         // Load reduced-motion preference
         if (_layoutService.CurrentProfile is { } profile)
             _isReducedMotion = profile.IsReducedMotion;
@@ -291,8 +301,89 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         _canvasViewModel.SensorAlertFired += OnSensorAlertFired;
     }
 
+    // ── Phone presence (RemEx-0z7w) ────────────────────────────────────────────
+
+    /// <summary>Whether at least one PHONE is attached — not whether the loopback link is up.</summary>
+    [ObservableProperty]
+    private bool _isPhoneAttached;
+
+    /// <summary>What the shell says about attached phones, already localized.</summary>
+    [ObservableProperty]
+    private string _phonePresenceText = string.Empty;
+
+    private DispatcherTimer? _phonePresenceTimer;
+
+    /// <summary>
+    /// Re-reads the host's live sessions and republishes what the shell should say.
+    /// </summary>
+    /// <remarks>
+    /// THE SESSION SOURCE IS RESOLVED ON EVERY CALL, not cached in the constructor. The embedded host
+    /// publishes its container after it starts and the shell can be built first, so a cached null
+    /// would stick for the session — the mistake found in review of RemEx-n8xk, on the same
+    /// two-container arrangement.
+    /// <para>
+    /// POLLED RATHER THAN PUSHED, AND A PUSH IS THE BETTER END STATE (review). An earlier version of
+    /// this note claimed there was no channel from the host to this process, which is simply wrong —
+    /// the host IS this process, and <c>PingPongHandler</c> already reaches straight into
+    /// <c>ActivityService.Instance</c> across that boundary. The real reasons a poll is right TODAY,
+    /// all three of which expire:
+    /// <list type="number">
+    /// <item>There is no disconnect signal yet — that is RemEx-2xjv's scope — so an event-driven
+    /// version would catch a phone attaching and miss it dropping, which is the worse half.</item>
+    /// <item><c>RecordDeviceConnectedActivity</c> is throttled through a CompareExchange, so it is
+    /// not a one-to-one presence edge and cannot be borrowed as one.</item>
+    /// <item>A registry event fires on a host thread and would need marshalling to the UI thread.</item>
+    /// </list>
+    /// <see cref="IClientSessionSource.Snapshot"/> is a walk over a small concurrent dictionary, so
+    /// the cost is not worth measuring against a stale dot.
+    /// </para>
+    /// </remarks>
+    internal void RefreshPhonePresence()
+    {
+        // The app container is tried first and is EXPECTED TO MISS: only the host registers this,
+        // so in practice the second probe answers (review). Kept for parity with how
+        // ConnectionViewModel resolves ICertificateService, and so a desktop-side test double would
+        // win if one were ever registered.
+        var source = App.Services?.GetService(typeof(IClientSessionSource)) as IClientSessionSource
+            ?? App.EmbeddedHostServices?.GetService(typeof(IClientSessionSource)) as IClientSessionSource;
+
+        var status = PhonePresence.Evaluate(source?.Snapshot());
+        var (key, argument) = PhonePresence.Describe(status);
+        var template = LocalizationService.Instance[key];
+
+        IsPhoneAttached = status.State != PhonePresenceState.NoPhone;
+        PhonePresenceText = argument is null
+            ? template
+            : string.Format(System.Globalization.CultureInfo.CurrentCulture, template, argument);
+    }
+
+    private void StartPhonePresencePolling()
+    {
+        // Skipped when there is no dispatcher — unit tests construct this view model directly, and a
+        // timer that never ticks there is better than one that throws in a constructor.
+        if (Avalonia.Application.Current is null) return;
+
+        _phonePresenceTimer = new DispatcherTimer { Interval = System.TimeSpan.FromSeconds(3) };
+        _phonePresenceTimer.Tick += OnPhonePresenceTick;
+        _phonePresenceTimer.Start();
+    }
+
+    private void OnPhonePresenceTick(object? sender, System.EventArgs e) => RefreshPhonePresence();
+
+    private void OnLocalizationChangedForPresence(object? sender, PropertyChangedEventArgs e)
+        => RefreshPhonePresence();
+
     public void Dispose()
     {
+        if (_phonePresenceTimer is not null)
+        {
+            _phonePresenceTimer.Stop();
+            _phonePresenceTimer.Tick -= OnPhonePresenceTick;
+            _phonePresenceTimer = null;
+        }
+
+        LocalizationService.Instance.PropertyChanged -= OnLocalizationChangedForPresence;
+
         _themeService.CustomizationApplied -= _onCustomizationApplied;
         Connection.PropertyChanged -= _onConnectionChanged;
 
