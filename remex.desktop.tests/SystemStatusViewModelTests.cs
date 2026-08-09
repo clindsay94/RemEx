@@ -327,7 +327,6 @@ public class SystemStatusViewModelTests
 
     [Theory]
     [InlineData("unauthorized")]
-    [InlineData("identity-not-mapped")]
     [InlineData("security")]
     public async Task ANYRepairFailureIsContained_NotJustTheOnesSomebodyListed(string kind)
     {
@@ -337,16 +336,45 @@ public class SystemStatusViewModelTests
         // the domain controller unreachable that throws IdentityNotMappedException, which matched
         // none of them: it would escape Task.Run, be rethrown at the await, and AsyncRelayCommand
         // would repost it to the UI context as unhandled. RemEx would die on a button press.
-        //
-        // These are thrown through a REAL Task.Run so the wrapped-and-rethrown path is the one under
-        // test, rather than a synchronous throw that never crosses a task boundary.
         Exception thrown = kind switch
         {
             "unauthorized" => new UnauthorizedAccessException("denied"),
-            "identity-not-mapped" => new System.Security.Principal.IdentityNotMappedException("no DC"),
             _ => new System.Security.SecurityException("no temp path"),
         };
 
+        await AssertRepairFailureIsContainedAsync(thrown);
+    }
+
+    /// <summary>
+    /// The identity-not-mapped row, split out of the theory above (RemEx-vh62).
+    /// </summary>
+    /// <remarks>
+    /// THIS ROW IS THE WHOLE POINT OF THAT TEST — it is the exception the old catch list missed — so it
+    /// is emphatically not dropped, only moved somewhere it can be skipped honestly on Linux.
+    ///
+    /// Constructing <c>IdentityNotMappedException</c> touches Windows Principal APIs, which throw
+    /// PlatformNotSupportedException on Linux. Only the test DATA is Windows-bound; the product code is
+    /// not implicated at all, which is why the assertion is unchanged rather than relaxed.
+    ///
+    /// SPLIT RATHER THAN MARKING THE WHOLE THEORY, and that is not a style choice: xUnit v2's
+    /// TheoryDiscoverer short-circuits on a non-null Skip and emits ONE test case instead of one per
+    /// [InlineData] row, so a "WindowsOnlyTheory" would have silently taken the two rows that DO work
+    /// on Linux down with it. See the note in WindowsOnlyAttributes.cs.
+    /// </remarks>
+    [WindowsOnlyFact("constructing IdentityNotMappedException touches Windows Principal APIs")]
+    public async Task ARepairFailureFromAnUnreachableDomainControllerIsContained()
+    {
+        await AssertRepairFailureIsContainedAsync(
+            new System.Security.Principal.IdentityNotMappedException("no DC"));
+    }
+
+    /// <summary>
+    /// Shared body, so the split above cannot let the two paths drift into asserting different things.
+    /// </summary>
+    private static async Task AssertRepairFailureIsContainedAsync(Exception thrown)
+    {
+        // Thrown through a REAL Task.Run so the wrapped-and-rethrown path is the one under test,
+        // rather than a synchronous throw that never crosses a task boundary.
         var startup = new FakeStartup(throws: thrown);
         var readiness = new FakeReadiness(Report(Check(ReadinessCheckId.Autostart, ReadinessState.Warning)));
         var vm = new SystemStatusViewModel(

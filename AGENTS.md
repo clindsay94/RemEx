@@ -207,13 +207,31 @@ wsl -- bash -lc "cd /mnt/z/RemEx && dotnet test remex.agent.tests/remex.agent.te
   -c Release -p:RuntimeIdentifier=linux-x64 -p:SelfContained=true"
 ```
 
-The same flags work for `remex.core.tests` and `remex.desktop.tests` (both already Linux-clean; the
-desktop suite needs no display). This shares the `artifacts/` directory with the Windows build, so
-**rebuild on Windows afterwards** before trusting a Windows test run.
+The same flags work for `remex.core.tests` and `remex.desktop.tests` (the desktop suite needs no
+display). All three were run on Linux for RemEx-vh62 and are Linux-clean in the sense that matters:
+**green, with skips rather than failures.** The skips are tests asserting Windows-only primitives, marked `[WindowsOnlyFact]` so a
+Linux run stays readable — without that, permanent noise makes a real regression indistinguishable
+from the usual failures, nobody runs it, and the parity rule quietly stops being enforced.
+
+So on Linux, expect a *higher skip count* than Windows and **zero failures**. A failure is worth
+looking at; a skip is the marking working. Do not hardcode the expected counts anywhere, and note
+that this paragraph does not state them: it used to, and they were wrong within days, because the
+suites grow.
+
+`remex.agent.tests` will not run on Linux without `-p:RuntimeIdentifier=linux-x64
+-p:SelfContained=true`, and `remex.core.tests` was measured aborting the same way without them: the
+host exits with "You must install or update .NET" when
+`Microsoft.AspNetCore.App` is absent, which looks like a broken machine and is not.
+`scripts/verify.ps1` detects this and adds the flags for you, so this only bites a bare
+`dotnet test`.
+
+This shares the `artifacts/` directory with the Windows build, so **rebuild on Windows afterwards**
+before trusting a Windows test run.
 
 #### Windows-only tests are marked, not deleted
 
-`WindowsOnlyFactAttribute` (in `remex.agent.tests`) takes a mandatory reason and skips on non-Windows,
+`WindowsOnlyFactAttribute` (in `remex.agent.tests` AND `remex.desktop.tests` — two deliberate copies,
+reasoned out in the remarks on each) takes a mandatory reason and skips on non-Windows,
 so a Linux run is green and a real regression stays visible instead of drowning in permanent noise.
 Use it when a test asserts a genuinely Windows-only primitive — named memory-mapped files, UNC path
 semantics. **Never weaken a test so it passes on both**; that trades away coverage on the platform the

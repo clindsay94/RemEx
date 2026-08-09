@@ -144,6 +144,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The desktop test suite runs on Linux again, so cross-platform checking covers all three suites
+  rather than two.** One test asked Windows to translate an unknown account name into a security
+  identifier — something only Windows can do — and it failed on Linux rather than being skipped, which
+  is the failure mode that quietly kills a check: a suite that is always red on one platform stops
+  being run there, and then nothing is watching it. The test was a table of three cases, and the fix
+  was to split it: the two that work anywhere stay a table, and the Windows-only one is now marked as
+  Windows-only with the reason written on it. That split matters more than it looks — the test
+  framework collapses a whole marked-off table into a single case, so marking the table would have
+  hidden two real checks while still reporting a tidy-looking result. Both platforms now run the same
+  540 desktop tests, which is the evidence nothing was lost.
+
+- **A note in `AGENTS.md` telling agents how to run the tests on Linux was wrong in three ways.** It
+  named the wrong file for a claim, gave test counts that had gone stale, and said only one suite
+  needed the extra build flags when two do. All three are corrected against a measured run, and the
+  counts are gone rather than updated, because writing them down is what made them wrong.
+
 - **The promise that cancelling the certificate warning costs you nothing is now checked by a test.**
   When a PC's certificate changes, RemEx shows you both fingerprints and asks. Cancelling that dialog
   is meant to change nothing at all — your existing trust stays exactly as it was. That guarantee
