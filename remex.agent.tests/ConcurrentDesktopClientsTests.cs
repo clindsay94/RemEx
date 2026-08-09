@@ -126,16 +126,34 @@ public sealed class ConcurrentDesktopClientsTests
     /// nothing fails if a future change quietly serialises the sessions, and "concurrent" becomes a
     /// claim in a test name rather than a property under test.
     /// </summary>
-    private readonly record struct ClientRun(byte[][] Frames, long FirstFrameMs, long LastFrameMs);
+    /// <param name="FramesAfterJoin">
+    /// How many frames arrived AFTER <c>joinSignal</c> completed. Zero when no signal was supplied.
+    /// This is the ordering fact the staggered test needs, and it replaces comparing wall-clock
+    /// stamps taken on the same loaded machine (RemEx-4vdm).
+    /// </param>
+    private readonly record struct ClientRun(
+        byte[][] Frames, long FirstFrameMs, long LastFrameMs, int FramesAfterJoin);
 
+    /// <param name="announceFirstFrame">
+    /// Completed when this client's first binary frame lands, so another client can be held open
+    /// until this one has genuinely joined.
+    /// </param>
+    /// <param name="joinSignal">
+    /// When supplied, this client keeps reading past <paramref name="frameCount"/> until the signal
+    /// has completed AND at least one further frame has arrived — which is what makes "the late
+    /// client joined an IN-PROGRESS stream" a guarantee of the arrangement rather than something the
+    /// assertion hopes to observe (RemEx-4vdm).
+    /// </param>
     private static async Task<ClientRun> RunClientAsync(
-        RemexHostFactory factory, int frameCount, Stopwatch clock, CancellationToken ct)
+        RemexHostFactory factory, int frameCount, Stopwatch clock, CancellationToken ct,
+        TaskCompletionSource? announceFirstFrame = null, Task? joinSignal = null)
     {
         var ws = await factory.Server.CreateWebSocketClient()
             .ConnectAsync(new Uri("ws://localhost/ws/desktop"), ct);
 
         long firstFrameMs = -1;
         long lastFrameMs = -1;
+        var framesAfterJoin = 0;
 
         try
         {
@@ -151,7 +169,10 @@ public sealed class ConcurrentDesktopClientsTests
             var frames = new List<byte[]>();
             var buffer = new byte[64 * 1024];
 
-            while (frames.Count < frameCount)
+            // The second clause is the whole fix: with a joinSignal this client refuses to stop
+            // until the other one has actually joined and it has streamed on past that point. The
+            // 30-second token is the bound.
+            while (frames.Count < frameCount || (joinSignal is not null && framesAfterJoin < 1))
             {
                 using var ms = new MemoryStream();
                 WebSocketReceiveResult result;
@@ -159,7 +180,7 @@ public sealed class ConcurrentDesktopClientsTests
                 {
                     result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), ct);
                     if (result.MessageType == WebSocketMessageType.Close)
-                        return new ClientRun(frames.ToArray(), firstFrameMs, lastFrameMs);
+                        return new ClientRun(frames.ToArray(), firstFrameMs, lastFrameMs, framesAfterJoin);
                     ms.Write(buffer, 0, result.Count);
                 }
                 while (!result.EndOfMessage);
@@ -170,12 +191,18 @@ public sealed class ConcurrentDesktopClientsTests
                 {
                     frames.Add(ms.ToArray());
                     lastFrameMs = clock.ElapsedMilliseconds;
-                    if (firstFrameMs < 0) firstFrameMs = lastFrameMs;
+                    if (firstFrameMs < 0)
+                    {
+                        firstFrameMs = lastFrameMs;
+                        announceFirstFrame?.TrySetResult();
+                    }
+
+                    if (joinSignal is { IsCompleted: true }) framesAfterJoin++;
                 }
             }
 
             await MessageSerializer.SendAsync(ws, new RemexMessage { Type = MessageTypes.DesktopStop }, ct);
-            return new ClientRun(frames.ToArray(), firstFrameMs, lastFrameMs);
+            return new ClientRun(frames.ToArray(), firstFrameMs, lastFrameMs, framesAfterJoin);
         }
         finally
         {
@@ -277,23 +304,43 @@ public sealed class ConcurrentDesktopClientsTests
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var clock = Stopwatch.StartNew();
 
-        var first = RunClientAsync(factory, FramesPerClient * 2, clock, cts.Token);
+        // THE OVERLAP IS ARRANGED, NOT MEASURED (RemEx-4vdm). This used to run both clients to a
+        // frame quota and then compare wall-clock stamps to see whether they happened to overlap —
+        // so on a loaded machine the first client simply FINISHED before the second connected, and
+        // the test failed for a scenario that never set itself up. That teaches people to re-run
+        // rather than to read, which is how a real failure eventually gets waved through.
+        var secondJoined = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var first = RunClientAsync(
+            factory, FramesPerClient * 2, clock, cts.Token, joinSignal: secondJoined.Task);
 
         // Let the first client get going before the second one starts. `first` is already running on
         // the thread pool, so awaiting the second client below does not stall it.
         while (capture.CaptureCount < 2 && !cts.IsCancellationRequested) await Task.Delay(20, cts.Token);
 
-        var second = await RunClientAsync(factory, FramesPerClient, clock, cts.Token);
+        var second = await RunClientAsync(
+            factory, FramesPerClient, clock, cts.Token, announceFirstFrame: secondJoined);
         var firstRun = await first;
 
         Assert.True(firstRun.Frames.Length >= FramesPerClient * 2, "The first client stopped early.");
         Assert.True(second.Frames.Length >= FramesPerClient, "The late-joining client received too few frames.");
 
+        // ORDERING, NOT CLOCK TIME — AND MEASURED, NOT ASSUMED, INCLUDING WHAT IT CANNOT DO. The
+        // loop above will not exit until a frame has arrived after the join, so this assertion reads
+        // the very counter that gated the exit: inverting that counter leaves this test green, which
+        // was checked rather than reasoned about. It is a backstop, not an independent check.
+        //
+        // The VALUE is in the arrangement, not here. The old form compared two elapsed-millisecond
+        // stamps taken on the same busy machine, so a scheduling stall moved the goalposts and
+        // reported a defect that was not there — the first client had simply finished before the
+        // second connected. Now the first client is held open until the second has genuinely joined,
+        // so the scenario cannot fail to set itself up; if it truly cannot overlap, the 30-second
+        // token ends the test with a cancellation, which is a real fault or a dead host rather than
+        // a busy CI box.
         Assert.True(
-            second.FirstFrameMs >= firstRun.FirstFrameMs && second.FirstFrameMs <= firstRun.LastFrameMs,
-            $"The late client's first frame ({second.FirstFrameMs}ms) did not land inside the first " +
-            $"client's streaming window ({firstRun.FirstFrameMs}-{firstRun.LastFrameMs}ms), so it did " +
-            "not actually join an in-progress stream.");
+            firstRun.FramesAfterJoin > 0,
+            "The first client received no frames after the late client's first one, so the late " +
+            "client did not actually join an in-progress stream.");
 
         foreach (var frame in firstRun.Frames.Concat(second.Frames))
         {
