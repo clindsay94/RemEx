@@ -332,6 +332,39 @@ Every code change must also update `CHANGELOG.md` (Keep a Changelog format). Upd
 
 
 <!-- gitnexus:start -->
+## Splitting a bead: put the join in the FIRST half
+
+**Observed four times in one drain session, every time with a defect hiding at the join**
+(RemEx-hev1g). `PhonePresence`, `PairedDeviceDisplayName`, `PairingPinCountdown` and the
+paired-device host facts were each shipped fully tested, mutation-verified — and consumed by nothing
+in production. `ClipboardValidation` is a fifth and is still stranded (RemEx-hgqs).
+
+The mechanism is the same every time. A bead is split into "the logic" and "the surface". The logic
+half is the pleasant one — pure, testable, mutation-verifiable — so it lands first with a good test
+count and a signed-off decision record. The surface half is the awkward one: axaml, view models, nine
+resx files, four themes. It goes back on the board and sits there.
+
+**That reads as progress while the user gets nothing**, and the tests give a false impression of
+coverage because the code they cover is unreachable. Worse, every one of those four had something
+wrong AT THE JOIN that no amount of testing the pure half could catch: a flag only a hidden button
+could set, a countdown the timer destroyed before it rendered, a list driven from the wrong side.
+
+So:
+
+1. **Put the join in the first half.** Landing `PhonePresence` with one binding in one view would
+   have been a smaller change than landing it with 17 tests and no caller.
+2. **If a split really must strand the logic, say so on BOTH beads and make the surface bead a
+   BLOCKER rather than a sibling**, so the board shows one incomplete feature rather than one done
+   and one open.
+3. **Do not automate this with a reference count.** It was tried: a scan for public static classes in
+   `remex.desktop/Services` and `remex.core/Services` with test references and no production ones
+   returns six hits, and at least one — `FireAndForgetExtensions` — is a false positive with three
+   production call sites, because extension methods are invoked by MEMBER name and never by the class
+   name. A check that flags correct code is worse than no check: the only way to make it pass is to
+   add a name to an allowlist, and a list that can absorb a false positive will absorb a real one
+   (that exact sequence cost an iteration under RemEx-dnn2q). The reliable signal is a human noticing
+   a bead whose acceptance never mentions a user.
+
 # GitNexus — Code Intelligence
 
 This project is indexed by GitNexus as **RemEx** (19950 symbols, 44146 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
