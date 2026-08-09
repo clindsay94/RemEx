@@ -331,13 +331,12 @@ No lazy code. Use the most correct, robust, maintainable approach. No stub metho
 Every code change must also update `CHANGELOG.md` (Keep a Changelog format). Update affected XML doc comments, `docs/` files, and version numbers when warranted. A task is not complete until docs are updated.
 
 
-<!-- gitnexus:start -->
 ## Splitting a bead: put the join in the FIRST half
 
 **Observed four times in one drain session, every time with a defect hiding at the join**
 (RemEx-hev1g). `PhonePresence`, `PairedDeviceDisplayName`, `PairingPinCountdown` and the
 paired-device host facts were each shipped fully tested, mutation-verified — and consumed by nothing
-in production. `ClipboardValidation` is a fifth and is still stranded (RemEx-hgqs).
+in production. `ClipboardValidation` was a fifth; RemEx-hgqs wired it and it is no longer stranded.
 
 The mechanism is the same every time. A bead is split into "the logic" and "the surface". The logic
 half is the pleasant one — pure, testable, mutation-verifiable — so it lands first with a good test
@@ -365,6 +364,63 @@ So:
    (that exact sequence cost an iteration under RemEx-dnn2q). The reliable signal is a human noticing
    a bead whose acceptance never mentions a user.
 
+### The other half of the rule: unwired logic is NOT automatically a defect
+
+The section above is about what to do when you SPLIT a bead. This is about what to do when you FIND
+the result of one, and it points the opposite way — because an agent who reads only the section above
+will go looking for unwired helpers to flag, and most of them are fine.
+
+A sweep across both languages found eight pieces of shipped, tested logic with no production caller
+(RemEx-thwlr). **Two were defects and six were deliberate.** The distinguishing test is not "does it
+have a caller":
+
+> **It is a defect when a LIVE PATH ALREADY DOES THE SAME JOB — worse, or not at all.**
+> It is deliberate when the feature that will consume it does not exist yet.
+
+Both real findings had that shape and none of the others did:
+
+- `PairingRouteArgs.buildPath` had no caller while `AppNavigation` interpolated the same route by
+  hand (fixed, RemEx-ph4nw).
+- `DiscoveredHostList.usableOnly` had no caller while `discoverHost` validated the host and not the
+  port. RemEx-7gk69 fixed the DEFECT by extracting `isUsable` and wiring that into `discoverHost` —
+  and `usableOnly` itself is still uncalled, which by the rule above is fine: the list it filters has
+  not landed (RemEx-8ih5). Worth reading twice, because the two halves of that sentence are the whole
+  distinction. The duplicated *rule* was the bug; the uncalled *helper* never was.
+
+The six that were fine each mapped to an open feature bead that had not landed yet. Shipping the
+provable arithmetic first, so the cases that break can be proven without a device, is a deliberate
+practice here.
+
+**A sweep produces candidates, not findings.** Two of the eight hits were flaws in the search itself,
+and both were caught only by opening the code: `ScreenshotEncoder` is called from the same file it is
+declared in (the heuristic skipped the declaring file to avoid self-references), and
+`FireAndForgetExtensions` is an extension method, invoked as `task.FireAndForget(...)` and never
+through the class name that was being grepped for.
+
+### Sweeping for inert GUARDS: ask what it asserts, not where it looks
+
+A second sweep asked whether any source-scanning test points at a file that has moved — a scan whose
+target is gone passes by finding nothing. Across 54 .NET and 5 Kotlin scanning tests, **none was
+stale**; all 25 non-resolving names were the sweep being wrong (runtime-created temp files, a
+synthetic label, one `endsWith` suffix).
+
+That is the useful result, because it says the sweep was aimed at the wrong question. Every inert
+guard found in that session failed on **what it asserted**, not on where it looked: a regex
+containing literal backspace bytes, a scan blind to class-filled containers, a predicate re-checked
+by a second layer, a count that scored `createNotificationChannel(` as a construction because the
+string contains `NotificationChannel(`, an assertion forbidding a command name no view model has,
+probes all placed at depth 1 so a parent-only collapse passed.
+
+So there is no sweep for this. **"Can this assertion fail?" is asked one guard at a time, by mutating
+the thing it guards and watching it go red.** What generalises instead is the cheap structural
+defence: an anti-vacuity assertion — `NotEmpty` on the scan's own output before comparing it — so a
+scan that has stopped finding anything fails loudly instead of passing on an empty set.
+
+
+<!-- The GitNexus block below is GENERATED. Anything hand-written between its markers is
+     lost on the next `npx gitnexus analyze`. The bead-splitting rules above used to live inside it
+     (found and moved in RemEx-thwlr) — keep hand-written guidance above this line. -->
+<!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
 This project is indexed by GitNexus as **RemEx** (19950 symbols, 44146 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
