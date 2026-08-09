@@ -142,6 +142,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file *contents* travel over still accepts a claimed name on this machine, which is filed as
   RemEx-4u0d.
 
+### Changed
+
+- **A permission prompt that never appeared has been removed rather than repaired.** RemEx had a
+  second, separate way for your phone to send files to the PC — a "push" — and it was built to ask
+  your permission first. That question was never actually asked, because the phone's share sheet has
+  always sent files the ordinary way instead. What was left was a prompt that existed in the code,
+  looked like protection to anyone reading it, and protected nothing. It is now gone, and sending a
+  file from your phone is one operation with one rule: RemEx will write it into a folder you shared
+  for writing, and nowhere else. Nothing changes about what you can send or where it lands.
+
+  The reverse direction — the PC offering files to your phone — is untouched and still asks. So is
+  every other file permission.
+
 ### Internal
 
 - **The desktop test suite runs on Linux again, so cross-platform checking covers all three suites
