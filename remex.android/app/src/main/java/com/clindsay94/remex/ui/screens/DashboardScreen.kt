@@ -340,6 +340,13 @@ fun DashboardScreenContent(
         // the SET of sensors changes and stays put while their readings update, which is the
         // distinction the old key could not express. A hash rather than a joined string because this
         // still runs per tick and the point was to make that cheap.
+        // ONE INDEX PER TICK, INSTEAD OF TWO SCANS PER VISIBLE CARD (RemEx-cite item 4). Keyed on
+        // telemetrySensors itself, NOT on the stable card key below - this holds the sensors and
+        // therefore their values, which change every tick, so memoising it any harder would serve
+        // stale readings. That is the opposite of what availableCards wants, and the two keys
+        // differ deliberately.
+        val sensorIndex = remember(telemetrySensors) { SensorIndex(telemetrySensors) }
+
         val availableCardsKey =
                 remember(telemetrySensors) {
                         telemetrySensors.fold(7) { acc, sensor ->
@@ -826,7 +833,7 @@ fun DashboardScreenContent(
                                                                         }
                                                                         "TELEMETRY" -> {
                                                                                 val sensor =
-                                                                                        selectSensor(card.sensorId, telemetrySensors)
+                                                                                        sensorIndex.select(card.sensorId)
                                                                                 // Keyed by the RESOLVED sensor's own id, not the card's declared
                                                                                 // sensorId - curated ids without a stable cardSlug (e.g.
                                                                                 // sensor:cputemp) resolve to a different real host id, and
@@ -836,7 +843,7 @@ fun DashboardScreenContent(
                                                                                                         sensor?.id]
                                                                                                 .orEmpty()
                                                                                 val secondarySensor =
-                                                                                        selectSensor(card.secondarySensorId, telemetrySensors)
+                                                                                        sensorIndex.select(card.secondarySensorId)
                                                                                 val secondaryHistory =
                                                                                         telemetryHistory[
                                                                                                         secondarySensor?.id]
@@ -1418,7 +1425,7 @@ fun DashboardScreenContent(
                                 pickerCardId?.let { cardId ->
                                         val pickedCard = cards.firstOrNull { it.id == cardId }
                                         if (pickedCard != null) {
-                                                val pickedSensor = selectSensor(pickedCard.sensorId, telemetrySensors)
+                                                val pickedSensor = sensorIndex.select(pickedCard.sensorId)
                                                 val pickedHistory = telemetryHistory[pickedSensor?.id].orEmpty()
                                                 DisplayModePickerSheet(
                                                         cardId = cardId,

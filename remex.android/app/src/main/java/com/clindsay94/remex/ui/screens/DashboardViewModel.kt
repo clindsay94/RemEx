@@ -83,29 +83,77 @@ data class HomeCardState(
  * replacing the two divergent lookups (associateBy last-wins in the view, firstOrNull first-wins in
  * the VM) that used to disagree.
  */
-fun selectSensor(cardId: String?, sensors: List<TelemetrySensor>): TelemetrySensor? {
-    if (cardId == null) return null
-    val acceptable: List<MetricKind> = when (cardId) {
-        "sensor:cpu" -> listOf(MetricKind.CPU_LOAD)
-        "sensor:gpu" -> listOf(MetricKind.GPU_LOAD)
-        "sensor:ram" -> listOf(MetricKind.RAM_USED_GB, MetricKind.RAM_LOAD)
-        "sensor:ramtotal" -> listOf(MetricKind.RAM_TOTAL_GB)
-        "sensor:cputemp" -> listOf(MetricKind.CPU_TEMP_C, MetricKind.TEMP_C)
-        "sensor:gputemp" -> listOf(MetricKind.GPU_TEMP_C, MetricKind.TEMP_C)
-        "sensor:nettotal" -> listOf(MetricKind.NET_THROUGHPUT_MBPS)
-        else -> emptyList()
-    }
-    if (acceptable.isNotEmpty()) {
-        for (k in acceptable) {
-            sensors.firstOrNull { it.kind == k }?.let { return it }
-        }
-        // Curated card, but a new host sent no kind-matched sensor: prefer a same-id sensor that
-        // isn't the Unknown sink; only an old host with no kinds at all falls through to a raw id match.
-        return sensors.firstOrNull { it.id == cardId && it.kind != MetricKind.UNKNOWN }
-            ?: sensors.firstOrNull { it.id == cardId }
-    }
-    return sensors.firstOrNull { it.id == cardId }
+/**
+ * The kinds a curated card will accept, in the order it prefers them.
+ *
+ * Extracted so the list has ONE definition shared by the direct lookup and the indexed one - two
+ * copies of a priority order is how they come to disagree, and a disagreement here binds a card to a
+ * plausible-looking wrong reading rather than failing.
+ */
+private fun acceptableKinds(cardId: String): List<MetricKind> = when (cardId) {
+    "sensor:cpu" -> listOf(MetricKind.CPU_LOAD)
+    "sensor:gpu" -> listOf(MetricKind.GPU_LOAD)
+    "sensor:ram" -> listOf(MetricKind.RAM_USED_GB, MetricKind.RAM_LOAD)
+    "sensor:ramtotal" -> listOf(MetricKind.RAM_TOTAL_GB)
+    "sensor:cputemp" -> listOf(MetricKind.CPU_TEMP_C, MetricKind.TEMP_C)
+    "sensor:gputemp" -> listOf(MetricKind.GPU_TEMP_C, MetricKind.TEMP_C)
+    "sensor:nettotal" -> listOf(MetricKind.NET_THROUGHPUT_MBPS)
+    else -> emptyList()
 }
+
+/**
+ * One tick's sensors, indexed so a card lookup is O(1) instead of a scan (RemEx-cite item 4).
+ *
+ * **EVERY MAP KEEPS THE FIRST ENTRY, NOT THE LAST, AND THAT IS THE WHOLE CORRECTNESS ARGUMENT.**
+ * [selectSensor] encodes three first-match preferences, and `associateBy` - the obvious way to build
+ * these - keeps the LAST value per key. Building them that way inverts all three at once and
+ * produces a dashboard that looks entirely plausible while bound to the wrong readings. `putIfAbsent`
+ * is what preserves the order the scans had. SelectSensorTest pins all three.
+ *
+ * Rebuilt every tick on purpose: the sensors it holds carry the values that change every tick, so a
+ * memoised index would serve stale readings. The win is one O(n) pass instead of two scans per
+ * visible card.
+ */
+class SensorIndex(sensors: List<TelemetrySensor>) {
+    private val byKind = HashMap<MetricKind, TelemetrySensor>(sensors.size)
+    private val byId = HashMap<String, TelemetrySensor>(sensors.size)
+    private val byIdTyped = HashMap<String, TelemetrySensor>(sensors.size)
+
+    init {
+        for (sensor in sensors) {
+            byKind.putIfAbsent(sensor.kind, sensor)
+            byId.putIfAbsent(sensor.id, sensor)
+            if (sensor.kind != MetricKind.UNKNOWN) byIdTyped.putIfAbsent(sensor.id, sensor)
+        }
+    }
+
+    fun select(cardId: String?): TelemetrySensor? {
+        if (cardId == null) return null
+
+        val acceptable = acceptableKinds(cardId)
+        if (acceptable.isNotEmpty()) {
+            for (kind in acceptable) {
+                byKind[kind]?.let { return it }
+            }
+            // Curated card, but a new host sent no kind-matched sensor: prefer a same-id sensor that
+            // isn't the Unknown sink; only an old host with no kinds at all falls through to a raw
+            // id match.
+            return byIdTyped[cardId] ?: byId[cardId]
+        }
+        return byId[cardId]
+    }
+}
+
+/**
+ * Which sensor a card binds to.
+ *
+ * Delegates to [SensorIndex] so there is ONE implementation of the rule. A caller resolving many
+ * cards against the same tick should build the index once and call [SensorIndex.select] directly -
+ * this overload builds one per call and exists for the occasional single lookup.
+ */
+fun selectSensor(cardId: String?, sensors: List<TelemetrySensor>): TelemetrySensor? =
+    SensorIndex(sensors).select(cardId)
+
 
 /**
  * Number of sequential Home Base coach-mark hints (RemEx-km0i.10). Single source of truth shared by
