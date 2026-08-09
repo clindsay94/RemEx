@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Another program on your PC could cancel or corrupt a file transfer just by knowing its number.**
+  Each transfer has an internal reference number, and RemEx acted on any instruction that carried a
+  valid one without checking that it came from the device the transfer belongs to. A program running
+  on your PC could use one to stop your phone's transfer partway through, or write its own data into
+  the partly-received file. The number is randomly generated and does not currently leave the
+  connection that owns it, so this was difficult to reach in practice — but that was luck rather
+  than a rule, and one future change that wrote a transfer number into a log would have made it easy.
+  Instructions are now checked against the device that actually owns the transfer. That includes
+  transfers paused by a dropped connection, which was the worst case: those keep their partly-received
+  file so they can resume, and were the easiest to destroy.
+
 - **Another program on your PC could pretend to be your phone and take over its file transfer.** RemEx
   treats connections that come from the PC itself as already trusted, because normally that is just
   RemEx talking to itself. But it also let such a connection say which phone it was — and it was
