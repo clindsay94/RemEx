@@ -43,6 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The QR scanner used an experimental CameraX API without saying so.** Reading the underlying image
+  out of a camera frame goes through a getter that CameraX marks experimental, meaning its signature
+  may change in a future release. The scanner used it anyway with nothing recording that. Nothing
+  misbehaved for anyone, and nothing about scanning changes — but the opt-in is now written down at
+  the one place that takes the risk, so a future CameraX upgrade breaks loudly at that line instead of
+  quietly. (RemEx-28wng)
+
 - **The pairing QR code used to stay on screen after the PIN inside it had stopped working.** The QR
   carries the PIN, so once the PIN expires — or once a phone has used it to pair — the code is dead.
   It stayed up anyway, including right next to the message telling you the PIN had expired. A phone

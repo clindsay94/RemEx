@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -47,6 +48,17 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class)
+// A SECOND ANNOTATION RATHER THAN A SECOND ARGUMENT ABOVE, AND NOT BY PREFERENCE (RemEx-28wng).
+// ExperimentalGetImage is declared in Java against androidx.annotation.RequiresOptIn, and Kotlin's
+// built-in @OptIn accepts only Kotlin-declared markers, so the two cannot share a line. Fully
+// qualified because importing androidx.annotation.OptIn would collide with the kotlin.OptIn that is
+// imported by default and in use directly above.
+//
+// It covers imageProxy.image in the ImageAnalysis analyzer below. CameraX marks that getter to warn
+// callers the signature may move under them; naming the marker here records that the risk was seen
+// and accepted at the one call site that takes it, rather than leaving a lint error standing that
+// would bury the next genuinely unsafe opt-in in a list that already has one in it.
+@androidx.annotation.OptIn(markerClass = [ExperimentalGetImage::class])
 @Composable
 fun QrScannerScreen(onScanned: (host: String, port: Int, pin: String) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
