@@ -690,6 +690,8 @@
     <string name="file_manager_prop_yes">हाँ</string>
     <string name="file_manager_prop_no">नहीं</string>
     <string name="file_manager_requesting_volumes">ड्राइव लोड हो रहे हैं…</string>
+    <string name="file_manager_full_browse_unreachable">आपका पीसी पूछने के लिए इस फ़ोन तक नहीं पहुँच सका। फिर से कनेक्ट करें और दोबारा कोशिश करें।</string>
+    <string name="file_manager_full_browse_refused">पूरे डिवाइस को ब्राउज़ करने की अनुमति नहीं दी गई।</string>
     <string name="file_manager_queued_upload">अपलोड कतार में: %1$s</string>
     <string name="file_manager_queued_download">डाउनलोड कतार में: %1$s</string>
     <string name="file_manager_transfers_title">स्थानांतरण (%1$d)</string>

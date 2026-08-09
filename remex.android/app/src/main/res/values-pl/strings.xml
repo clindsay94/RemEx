@@ -683,6 +683,8 @@
     <string name="file_manager_prop_yes">Tak</string>
     <string name="file_manager_prop_no">Nie</string>
     <string name="file_manager_requesting_volumes">Ładowanie dysków…</string>
+    <string name="file_manager_full_browse_unreachable">Komputer nie mógł skontaktować się z tym telefonem, aby zapytać. Połącz ponownie i spróbuj jeszcze raz.</string>
+    <string name="file_manager_full_browse_refused">Odmówiono przeglądania całego urządzenia.</string>
     <string name="file_manager_queued_upload">Wysyłanie w kolejce: %1$s</string>
     <string name="file_manager_queued_download">Pobieranie w kolejce: %1$s</string>
     <string name="file_manager_transfers_title">Transfery (%1$d)</string>

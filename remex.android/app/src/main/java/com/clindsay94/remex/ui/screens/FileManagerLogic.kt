@@ -257,4 +257,70 @@ object FileManagerLogic {
             bytes >= 1_024L -> "%.1f KB".format(bytes / 1_024.0)
             else -> "$bytes B"
         }
+
+    /**
+     * Machine-readable reason the host refused without anyone being asked. Mirrors
+     * `remex.core` `FileConsentDenyReasons.ClientUnreachable` (RemEx-l580).
+     *
+     * ONE CODE FOR BOTH UNREACHABLE PATHS on the host — no live session when the prompt was routed,
+     * and a send that failed after it was routed. Both mean the same thing here, so this end does not
+     * need to tell them apart.
+     */
+    const val DENY_REASON_CLIENT_UNREACHABLE = "client_unreachable"
+
+    /**
+     * What a `file_volumes_response` means for the person who tapped "browse everything".
+     *
+     * The distinction that matters is [PHONE_UNREACHABLE] versus [REFUSED]: one is a situation the
+     * person can fix and the other is an answer they have to accept, and before RemEx-3qmd this end
+     * could not tell them apart because the wire carried no reason.
+     */
+    enum class VolumesOutcome {
+        /** The grant is held; [RemoteVolume]s follow. */
+        GRANTED,
+
+        /** Somebody was asked and said no. Nothing for the user to do but ask again. */
+        REFUSED,
+
+        /** The host could not put the question to this phone at all. Reconnecting fixes it. */
+        PHONE_UNREACHABLE,
+
+        /** The request itself failed — malformed, or the host threw. Not a refusal. */
+        FAILED,
+    }
+
+    /**
+     * Classifies a `file_volumes_response` so the screen can say something followable.
+     *
+     * WHAT THIS REPLACED WAS NOT A "FLAT NO" — IT WAS SILENCE. The old path set
+     * `fullBrowseGranted = false`, found no volumes, and then cleared the "Loading drives…" status to
+     * an empty string, so a person who tapped the button watched the message disappear and nothing
+     * take its place. A refusal that looks identical to a screen that simply finished is the worst of
+     * the three outcomes to render, because there is nothing to react to.
+     *
+     * ORDER MATTERS AND IS NOT ARBITRARY. `errorMessage` wins because the host sets it when the
+     * request never got as far as asking anybody (see `HandleFileVolumesRequestAsync`'s catch), and
+     * calling that a refusal would blame the user's PC for a fault. `fullBrowseGranted` is next
+     * because a grant already held never denies anything and carries no reason. Only then does
+     * [denyReasonOf] matter, and a null there genuinely means a person decided — that is the contract
+     * RemEx-l580 established, and reading an absent reason as "unreachable" would tell people to
+     * reconnect a phone that is working fine.
+     */
+    fun classifyVolumesResponse(
+        fullBrowseGranted: Boolean,
+        denyReason: String?,
+        errorMessage: String?,
+    ): VolumesOutcome = when {
+        !errorMessage.isNullOrBlank() -> VolumesOutcome.FAILED
+        fullBrowseGranted -> VolumesOutcome.GRANTED
+        denyReasonOf(denyReason) == DENY_REASON_CLIENT_UNREACHABLE -> VolumesOutcome.PHONE_UNREACHABLE
+        else -> VolumesOutcome.REFUSED
+    }
+
+    /**
+     * Normalizes a deny reason off the wire: blank and whitespace-only become null, so a host that
+     * spells "no reason" as `""` rather than by omitting the field cannot be mistaken for one that
+     * sent a code. Case is NOT folded — these are fixed protocol tokens, not prose.
+     */
+    private fun denyReasonOf(raw: String?): String? = raw?.trim()?.takeIf { it.isNotEmpty() }
 }

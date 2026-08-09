@@ -704,6 +704,8 @@
     <string name="file_manager_prop_yes">Так</string>
     <string name="file_manager_prop_no">Ні</string>
     <string name="file_manager_requesting_volumes">Завантаження дисків…</string>
+    <string name="file_manager_full_browse_unreachable">Ваш ПК не зміг зв’язатися з цим телефоном, щоб запитати. Підключіться знову й спробуйте ще раз.</string>
+    <string name="file_manager_full_browse_refused">Перегляд усього пристрою відхилено.</string>
     <string name="file_manager_queued_upload">Вивантаження в черзі: %1$s</string>
     <string name="file_manager_queued_download">Завантаження в черзі: %1$s</string>
     <string name="file_manager_transfers_title">Передавання (%1$d)</string>

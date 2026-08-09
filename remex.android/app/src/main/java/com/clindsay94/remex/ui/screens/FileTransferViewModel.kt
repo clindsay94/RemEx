@@ -1395,12 +1395,38 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
 
     private fun handleVolumesResponse(obj: JSONObject) {
         val response = obj.optJSONObject("fileVolumesResponse") ?: return
-        _fullBrowseGranted.value = response.optBoolean("fullBrowseGranted", false)
+        // Classified from the value just PARSED, not from the flow it was written to (review): the
+        // outcome must describe the message in hand, not whatever shared state happens to hold when
+        // the next line runs.
+        val granted = response.optBoolean("fullBrowseGranted", false)
+        _fullBrowseGranted.value = granted
         val error = response.optMeaningfulString("errorMessage")
-        if (error != null) {
-            Log.w(TAG, "Browse failed: $error")
-            _statusText.value = app().getString(R.string.file_transfer_browse_error)
+
+        // SAY WHICH OF THE THREE THIS IS (RemEx-3qmd). Until RemEx-l580 the wire could not tell a
+        // refusal somebody made from one the host had to make because it could not reach this phone,
+        // so this end said nothing at all — it cleared "Loading drives…" and left the screen blank.
+        // The unreachable case is the one worth distinguishing: it is the only one the person holding
+        // the phone can actually fix.
+        val outcome = FileManagerLogic.classifyVolumesResponse(
+            fullBrowseGranted = granted,
+            denyReason = response.optMeaningfulString("denyReason"),
+            errorMessage = error,
+        )
+        if (error != null) Log.w(TAG, "Browse failed: $error")
+        when (outcome) {
+            FileManagerLogic.VolumesOutcome.FAILED ->
+                _statusText.value = app().getString(R.string.file_transfer_browse_error)
+            // Only overwrite the status while it is still OUR spinner, the same rule the tail of this
+            // method already follows (review). The host holds this response for up to 60 seconds
+            // waiting on consent, and a user who gave up waiting and renamed a file should not have
+            // the rename result replaced by an answer to a question they stopped caring about.
+            FileManagerLogic.VolumesOutcome.PHONE_UNREACHABLE ->
+                replaceRequestingVolumesStatus(R.string.file_manager_full_browse_unreachable)
+            FileManagerLogic.VolumesOutcome.REFUSED ->
+                replaceRequestingVolumesStatus(R.string.file_manager_full_browse_refused)
+            FileManagerLogic.VolumesOutcome.GRANTED -> Unit
         }
+
         val arr = response.optJSONArray("volumes") ?: JSONArray()
         val list = mutableListOf<RemoteVolume>()
         for (i in 0 until arr.length()) {
@@ -1418,6 +1444,21 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
         _volumes.value = list
         if (_statusText.value == app().getString(R.string.file_manager_requesting_volumes)) _statusText.value = ""
+    }
+
+    /**
+     * Swaps the "Loading drives…" spinner for [messageRes], and leaves anything else alone.
+     *
+     * The full-browse answer can arrive up to a minute after the tap, because the host holds it while
+     * a consent prompt is open. By then the user may well have done something else on this screen, and
+     * clobbering that operation's result to answer a question they abandoned is a worse outcome than
+     * saying nothing (review of RemEx-3qmd). Same rule the end of [handleVolumesResponse] already
+     * applies when it clears the spinner on success.
+     */
+    private fun replaceRequestingVolumesStatus(messageRes: Int) {
+        if (_statusText.value == app().getString(R.string.file_manager_requesting_volumes)) {
+            _statusText.value = app().getString(messageRes)
+        }
     }
 
     private fun handleSearchResponse(obj: JSONObject) {

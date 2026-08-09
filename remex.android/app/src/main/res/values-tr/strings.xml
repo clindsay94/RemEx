@@ -690,6 +690,8 @@
     <string name="file_manager_prop_yes">Evet</string>
     <string name="file_manager_prop_no">Hayır</string>
     <string name="file_manager_requesting_volumes">Sürücüler yükleniyor…</string>
+    <string name="file_manager_full_browse_unreachable">Bilgisayarınız sormak için bu telefona ulaşamadı. Yeniden bağlanıp tekrar deneyin.</string>
+    <string name="file_manager_full_browse_refused">Tüm cihazda gezinme reddedildi.</string>
     <string name="file_manager_queued_upload">Sıraya alınan yükleme: %1$s</string>
     <string name="file_manager_queued_download">Sıraya alınan indirme: %1$s</string>
     <string name="file_manager_transfers_title">Aktarımlar (%1$d)</string>

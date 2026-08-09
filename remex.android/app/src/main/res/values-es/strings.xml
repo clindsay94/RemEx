@@ -690,6 +690,8 @@
     <string name="file_manager_prop_yes">Sí</string>
     <string name="file_manager_prop_no">No</string>
     <string name="file_manager_requesting_volumes">Cargando unidades…</string>
+    <string name="file_manager_full_browse_unreachable">Tu PC no pudo contactar con este teléfono para preguntar. Vuelve a conectar e inténtalo de nuevo.</string>
+    <string name="file_manager_full_browse_refused">Se rechazó la exploración de todo el dispositivo.</string>
     <string name="file_manager_queued_upload">Subida en cola: %1$s</string>
     <string name="file_manager_queued_download">Descarga en cola: %1$s</string>
     <string name="file_manager_transfers_title">Transferencias (%1$d)</string>

@@ -863,6 +863,8 @@
     <string name="file_manager_prop_yes">Yes</string>
     <string name="file_manager_prop_no">No</string>
     <string name="file_manager_requesting_volumes">Loading drives…</string>
+    <string name="file_manager_full_browse_unreachable">Your PC could not reach this phone to ask. Reconnect and try again.</string>
+    <string name="file_manager_full_browse_refused">Full-device browsing was declined.</string>
     <string name="file_manager_queued_upload">Queued upload: %1$s</string>
     <string name="file_manager_queued_download">Queued download: %1$s</string>
     <string name="file_manager_transfers_title">Transfers (%1$d)</string>

@@ -201,6 +201,16 @@ android {
                         .withPathSensitivity(PathSensitivity.RELATIVE)
                         .optional(true)
 
+                // And for the file-consent DENY reasons. VolumesOutcomeTest reads
+                // FileConsentDenyReasons out of this file to prove the phone still matches the token
+                // the PC sends, and that no code has been added on the host that this screen would
+                // silently render as a plain "declined". (RemEx-3qmd, review.)
+                it.inputs
+                        .file(File(repoRoot, "remex.core/Models/FileTransferMessages.cs"))
+                        .withPropertyName("fileConsentDenyReasonsSource")
+                        .withPathSensitivity(PathSensitivity.RELATIVE)
+                        .optional(true)
+
                 // ScreenNameSubstitutionTests reads these three by text to prove a body that
                 // declares %1$s also supplies the argument. strings.xml is the one that NEEDS the
                 // declaration: editing a value does not change the R class, so without this a
