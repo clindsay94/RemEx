@@ -25,7 +25,8 @@ namespace Remex.Agent.Services.Security;
 public sealed class PairedDeviceDirectory(
     PairedClientRegistry registry,
     PairedClientNameStore names,
-    PairedDeviceActivityStore activity) : IPairedDeviceSource
+    PairedDeviceActivityStore activity,
+    Remex.Agent.Services.ClientSessionRegistry sessions) : IPairedDeviceSource
 {
     public IReadOnlyList<PairedDeviceRow> PairedDevices()
     {
@@ -39,7 +40,11 @@ public sealed class PairedDeviceDirectory(
                 ClientId: id,
                 DeviceName: names.Resolve(id),
                 FirstPairedUtc: seen?.FirstPairedUtc,
-                LastSeenUtc: seen?.LastSeenUtc));
+                LastSeenUtc: seen?.LastSeenUtc,
+                // PER-DEVICE, from the session registry's own id lookup. Deliberately not derived
+                // from PhonePresence, which answers "is ANY phone attached" — using it here would
+                // light every row in the list whenever a single device connected.
+                IsOnline: sessions.IsConnected(id)));
         }
 
         return rows;

@@ -2953,4 +2953,28 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>TELEFON</value>
   </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>Eşleştirilmiş cihazlar</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>Bu bilgisayarla henüz eşleştirilmiş telefon yok.</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>Bilinmiyor</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>İlk eşleştirme</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>Son görülme</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>Yenile</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>Cihaz durumu: bağlı</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>Cihaz durumu: bağlı değil</value>
+  </data>
 </root>

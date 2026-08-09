@@ -201,6 +201,90 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public ObservableCollection<FileTrustDeviceItem> TrustedDevices { get; } = new();
 
     /// <summary>
+    /// The phones paired to this PC (RemEx-kirdm).
+    /// </summary>
+    /// <remarks>
+    /// A DIFFERENT LIST FROM <see cref="TrustedDevices"/>, AND THEY MUST NOT BE MERGED. That one is
+    /// the File-Sharing Trust list — per-device file grants, revocable without touching pairing. This
+    /// one is the pairing itself. Showing them as a single list would let a user revoke the wrong
+    /// thing, which on the pairing side means a phone that has to pair again with a new PIN.
+    /// </remarks>
+    public ObservableCollection<PairedDeviceItem> PairedDevices { get; } = new();
+
+    /// <summary>Whether this PC can list its pairings at all — false when no host is in this process.</summary>
+    /// <remarks>
+    /// COMPUTED, NOT A FLAG SET BY THE REFRESH (review). It was an [ObservableProperty] defaulting to
+    /// false, assigned true only inside RefreshPairedDevices — whose only caller was the Refresh
+    /// button INSIDE the card this gates. A closed loop: the card was never visible, so the button
+    /// was never reachable, so the flag was never set. The whole feature was dead in the shipped
+    /// binary and nothing failed, logged or looked wrong. SupportsTrustManagement, six lines up, is
+    /// computed for exactly this reason and is why the Trust card renders before anything loads.
+    /// </remarks>
+    public bool CanListPairedDevices => ResolvePairedDeviceSource() is not null;
+
+    /// <summary>Finds the host's paired-device list, or null when no host is in this process.</summary>
+    /// <remarks>
+    /// Resolved on every call rather than cached: the embedded host publishes its container after it
+    /// starts and this view model can be built first, so a cached null would stick for the session
+    /// (the mistake found in review of RemEx-n8xk, on the same two-container arrangement).
+    /// </remarks>
+    private static IPairedDeviceSource? ResolvePairedDeviceSource()
+        => App.Services?.GetService(typeof(IPairedDeviceSource)) as IPairedDeviceSource
+            ?? App.EmbeddedHostServices?.GetService(typeof(IPairedDeviceSource)) as IPairedDeviceSource;
+
+    /// <summary>
+    /// Re-reads the paired devices and their live state.
+    /// </summary>
+    /// <remarks>
+    /// THE SOURCE IS RESOLVED ON EVERY CALL, not cached — the embedded host publishes its container
+    /// after it starts and this view model can be built first, so a cached null would stick for the
+    /// session (the mistake found in review of RemEx-n8xk, on the same two-container arrangement).
+    /// <para>
+    /// The rows are REPLACED rather than diffed. The list is a handful of items a person reads, the
+    /// refresh is user-initiated or on-navigate, and a diff would buy nothing but a way to leave a
+    /// stale row on screen.
+    /// </para>
+    /// </remarks>
+    public void RefreshPairedDevices()
+    {
+        var source = ResolvePairedDeviceSource();
+
+        OnPropertyChanged(nameof(CanListPairedDevices));
+        PairedDevices.Clear();
+        if (source is null) return;
+
+        var unknown = LocalizationService.Instance["Settings_PairedDeviceUnknownDate"];
+        var rows = source.PairedDevices();
+
+        // PairedDeviceDisplayName.Resolve takes the whole name MAP, because that is what a rename
+        // operates on (RemEx-4gbp2). Building it from the rows reuses the shipped rule — prefer a
+        // friendly name, fall back to the id, NEVER blank — rather than re-deriving it here, which is
+        // how two call sites end up disagreeing about what a nameless device is called.
+        var names = rows
+            .Where(r => !string.IsNullOrWhiteSpace(r.DeviceName))
+            .ToDictionary(r => r.ClientId, r => r.DeviceName!, StringComparer.Ordinal);
+
+        foreach (var row in rows)
+        {
+            PairedDevices.Add(new PairedDeviceItem
+            {
+                ClientId = row.ClientId,
+                DisplayName = PairedDeviceDisplayName.Resolve(row.ClientId, names),
+                FirstPairedText = PairedDeviceRowText.Describe(
+                    row.FirstPairedUtc, unknown, System.Globalization.CultureInfo.CurrentCulture),
+                LastSeenText = PairedDeviceRowText.Describe(
+                    row.LastSeenUtc, unknown, System.Globalization.CultureInfo.CurrentCulture),
+                IsOnline = row.IsOnline,
+                StatusAccessibleName = LocalizationService.Instance[
+                    row.IsOnline ? "A11y_PairedDeviceOnline" : "A11y_PairedDeviceOffline"],
+            });
+        }
+    }
+
+    [RelayCommand]
+    private void RefreshPairedDeviceList() => RefreshPairedDevices();
+
+    /// <summary>
     /// True when the trust-management UI should be shown, i.e. an embedded host is present.
     /// </summary>
     /// <remarks>
@@ -305,6 +389,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (!string.IsNullOrEmpty(e.PropertyName))
             return;
 
+        // The paired-device rows hold ALREADY-FORMATTED strings, including the localized "unknown"
+        // date marker, so nothing in the binding layer can re-translate them on a language switch —
+        // they have to be rebuilt (review; RemEx-q3h0's pattern).
+        RefreshPairedDevices();
+
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             if (_connection.HostCapabilities == null)
@@ -390,6 +479,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         await LoadSharedRootsAsync();
         await LoadTrustedDevicesAsync();
+
+        // MARSHALLED, because this mutates an ObservableCollection bound to an ItemsControl and we
+        // are on a continuation after two awaits, not necessarily on the UI thread (review).
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(RefreshPairedDevices);
     }
 
     /// <summary>

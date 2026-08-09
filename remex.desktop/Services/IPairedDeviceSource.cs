@@ -10,11 +10,17 @@ namespace Remex.Desktop.Services;
 /// <param name="DeviceName">What the device calls itself, or null if it never said.</param>
 /// <param name="FirstPairedUtc">When it first paired, or null when that is not known.</param>
 /// <param name="LastSeenUtc">When it was last connected, or null when that is not known.</param>
+/// <param name="IsOnline">Whether this specific device has a live connection right now.</param>
 /// <remarks>
 /// NO SECRET, AND NO ROOM FOR ONE. The registry this is composed from stores a reconnect secret per
 /// client and is the only authentication path in production; this record deliberately has nowhere to
 /// put one, so a later "just add the field" cannot quietly carry a credential into a view model, a
 /// log line or a diagnostics export.
+/// <para>
+/// <c>IsOnline</c> IS PER-DEVICE, not "is any phone attached". <see cref="PhonePresence"/> answers
+/// the latter for the shell's single dot; a list of devices needs to know WHICH one is connected, and
+/// answering it from the whole-app presence would light every row whenever any phone was on.
+/// </para>
 /// <para>
 /// THE TIMESTAMPS ARE NULLABLE AND THAT IS LOAD-BEARING. They come from a file a user can edit, and
 /// devices paired before that file existed have no row at all. A UI renders null as "unknown"; it
@@ -25,7 +31,8 @@ public readonly record struct PairedDeviceRow(
     string ClientId,
     string? DeviceName,
     DateTimeOffset? FirstPairedUtc,
-    DateTimeOffset? LastSeenUtc);
+    DateTimeOffset? LastSeenUtc,
+    bool IsOnline);
 
 /// <summary>
 /// The devices the embedded host has paired, as the desktop UI can see them.

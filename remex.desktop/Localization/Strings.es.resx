@@ -2963,4 +2963,28 @@ Puedes cambiar:
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>TELÉFONO</value>
   </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>Dispositivos vinculados</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>Todavía no hay teléfonos vinculados a este PC.</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>Desconocido</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>Primera vinculación</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>Última conexión</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>Actualizar</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>Estado del dispositivo: conectado</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>Estado del dispositivo: no conectado</value>
+  </data>
 </root>

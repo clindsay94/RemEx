@@ -2955,4 +2955,28 @@ You can change:
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>PHONE</value>
   </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>Paired devices</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>No phones are paired with this PC yet.</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>First paired</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>Last seen</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>Device status: connected</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>Device status: not connected</value>
+  </data>
 </root>

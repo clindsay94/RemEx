@@ -313,6 +313,49 @@
                     </StackPanel>
                 </Border>
 
+                <!-- ═══ Paired Devices (RemEx-kirdm) ═══
+                     DELIBERATELY ITS OWN CARD, directly above File-Sharing Trust and never merged
+                     with it. That list is per-device FILE grants, revocable without touching the
+                     pairing; this one IS the pairing. One list would let a user revoke the wrong
+                     thing, and on this side that costs them a phone that has to pair again with a
+                     new PIN. Read-only for now — rename and unpair are RemEx-4gbp2. -->
+                <Border Classes="glass-card" Padding="24" IsVisible="{Binding CanListPairedDevices}">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{local:Localize Settings_PairedDevices}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="{local:Localize Settings_PairedDevicesRefresh}" Command="{Binding RefreshPairedDeviceListCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,8" CornerRadius="8" FontSize="12" FontWeight="SemiBold" Cursor="Hand"/>
+                        </Grid>
+
+                        <TextBlock Text="{local:Localize Settings_PairedDevicesEmpty}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" IsVisible="{Binding !PairedDevices.Count}"/>
+
+                        <ItemsControl ItemsSource="{Binding PairedDevices}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PairedDeviceItem">
+                                    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
+                                        <Grid ColumnDefinitions="Auto,*">
+                                            <!-- PER-DEVICE, from this row's own session lookup — not the shell's
+                                                 "is any phone attached" (RemEx-porg / RemEx-7zzw). Binding the
+                                                 whole-app presence here would light every row at once. -->
+                                            <Ellipse AutomationProperties.Name="{Binding StatusAccessibleName}" Grid.Column="0" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,14,0" Classes="status-dot" Classes.connected="{Binding IsOnline}"/>
+                                            <StackPanel Grid.Column="1" Spacing="4">
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="16">
+                                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextMutedBrush}">
+                                                        <Run Text="{local:Localize Settings_PairedDeviceFirstPaired}"/><Run Text=": "/><Run Text="{Binding FirstPairedText}"/>
+                                                    </TextBlock>
+                                                    <TextBlock FontSize="12" Foreground="{DynamicResource TextMutedBrush}">
+                                                        <Run Text="{local:Localize Settings_PairedDeviceLastSeen}"/><Run Text=": "/><Run Text="{Binding LastSeenText}"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
                 <!-- ═══ File-Sharing Trust Section ═══ -->
                 <Border Classes="glass-card" Padding="24" IsVisible="{Binding SupportsTrustManagement}">
                     <StackPanel Spacing="16">

@@ -2949,4 +2949,28 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>फ़ोन</value>
   </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>युग्मित डिवाइस</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>इस पीसी से अभी तक कोई फ़ोन युग्मित नहीं है।</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>अज्ञात</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>पहली बार युग्मित</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>अंतिम बार देखा गया</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>रीफ़्रेश करें</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>डिवाइस स्थिति: कनेक्ट है</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>डिवाइस स्थिति: कनेक्ट नहीं है</value>
+  </data>
 </root>

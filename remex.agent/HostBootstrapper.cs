@@ -213,7 +213,8 @@ public static class HostBootstrapper
             sp => new PairedDeviceDirectory(
                 sp.GetRequiredService<PairedClientRegistry>(),
                 sp.GetRequiredService<PairedClientNameStore>(),
-                sp.GetRequiredService<PairedDeviceActivityStore>()));
+                sp.GetRequiredService<PairedDeviceActivityStore>(),
+                sp.GetRequiredService<ClientSessionRegistry>()));
         builder.Services.AddSingleton<TransferSessionManager>();
         builder.Services.AddSingleton<TransferQueueService>();
         builder.Services.AddSingleton<Remex.Agent.Services.RemoteDesktop.DesktopSessionRegistry>();

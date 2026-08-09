@@ -2952,4 +2952,28 @@ Anda dapat mengubah:
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>PONSEL</value>
   </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>Perangkat terhubung</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>Belum ada ponsel yang dipasangkan dengan PC ini.</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>Tidak diketahui</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>Pertama dipasangkan</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>Terakhir terlihat</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>Segarkan</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>Status perangkat: terhubung</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>Status perangkat: tidak terhubung</value>
+  </data>
 </root>

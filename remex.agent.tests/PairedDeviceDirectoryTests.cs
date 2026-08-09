@@ -38,7 +38,12 @@ public sealed class PairedDeviceDirectoryTests
         var activity = new PairedDeviceActivityStore(
             NullLogger<PairedDeviceActivityStore>.Instance, Path.Combine(root, "activity.json"));
 
-        return (new PairedDeviceDirectory(registry, names, activity), registry, names, activity);
+        // A real ClientSessionRegistry with nothing registered: every device reads offline, which is
+        // the honest answer for a test that starts no connections. The per-device online state has
+        // its own coverage in the desktop card tests (RemEx-kirdm).
+        var sessions = new Remex.Agent.Services.ClientSessionRegistry();
+
+        return (new PairedDeviceDirectory(registry, names, activity, sessions), registry, names, activity);
     }
 
     [Fact]
@@ -128,6 +133,10 @@ public sealed class PairedDeviceDirectoryTests
     [Fact]
     public void NoSecretCanReachTheRowType()
     {
+        // IsOnline joined the row for the Paired Devices card (RemEx-kirdm) — a bool derived from the
+        // session registry, carrying nothing from the secret map. Updating this list is the point: it
+        // forces anyone widening the row to say so here.
+        //
         // A SHAPE LOCK, not the compile-time guarantee an earlier version of this comment claimed
         // (review). It is a runtime reflection check over the row's PROPERTIES, so it is blind to
         // fields — what it does do is fail the moment anyone widens the row, which is the realistic
@@ -139,7 +148,7 @@ public sealed class PairedDeviceDirectoryTests
             .ToArray();
 
         Assert.Equal(
-            new[] { "ClientId", "DeviceName", "FirstPairedUtc", "LastSeenUtc" },
+            new[] { "ClientId", "DeviceName", "FirstPairedUtc", "IsOnline", "LastSeenUtc" },
             properties);
     }
 

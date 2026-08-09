@@ -2949,4 +2949,28 @@ Você pode mudar:
   <data name="Home_PhoneStatus" xml:space="preserve">
     <value>TELEFONE</value>
   </data>
+  <data name="Settings_PairedDevices" xml:space="preserve">
+    <value>Dispositivos pareados</value>
+  </data>
+  <data name="Settings_PairedDevicesEmpty" xml:space="preserve">
+    <value>Nenhum telefone foi pareado com este PC ainda.</value>
+  </data>
+  <data name="Settings_PairedDeviceUnknownDate" xml:space="preserve">
+    <value>Desconhecido</value>
+  </data>
+  <data name="Settings_PairedDeviceFirstPaired" xml:space="preserve">
+    <value>Primeiro pareamento</value>
+  </data>
+  <data name="Settings_PairedDeviceLastSeen" xml:space="preserve">
+    <value>Visto pela última vez</value>
+  </data>
+  <data name="Settings_PairedDevicesRefresh" xml:space="preserve">
+    <value>Atualizar</value>
+  </data>
+  <data name="A11y_PairedDeviceOnline" xml:space="preserve">
+    <value>Status do dispositivo: conectado</value>
+  </data>
+  <data name="A11y_PairedDeviceOffline" xml:space="preserve">
+    <value>Status do dispositivo: não conectado</value>
+  </data>
 </root>
