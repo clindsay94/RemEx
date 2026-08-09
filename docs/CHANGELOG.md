@@ -43,6 +43,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **An expired pairing PIN used to make the whole panel disappear; now it tells you and offers a new
+  one.** The PIN is only good for about three minutes. When it ran out, the card simply vanished
+  from the screen — and if you were looking at your phone at the time, you came back to nothing,
+  with no way to reopen it. It now stays put, says the PIN has expired, and gives you a button to
+  get a fresh one. The countdown also turns amber for the last fifteen seconds, which is roughly how
+  long it takes to type six digits into a phone.
+
+- **You can select and copy the pairing PIN.** It was plain text you could only read off the screen,
+  which is awkward if the person holding the phone is in another room.
+
+
 - **The same silence was in every other file-manager request, and is now gone from all of them.** The
   previous entry describes one request that answered with nothing at all when the PC could not read
   it. Eight more worked the same way: browsing a folder, starting a transfer, renaming or deleting,
