@@ -43,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Scrolling from the phone went the wrong way on Wayland Linux desktops.** On GNOME and KDE
+  running Wayland, scrolling up on the phone scrolled the PC down and vice versa — and had done
+  since that path was written. Windows, X11 and the ydotool path were always correct. Sideways
+  scrolling was correct everywhere and is unchanged. (RemEx-e0b2)
+
 - **Four comments in the Android code pointed at PC code that no longer exists.** Internal only.
   They described the phone's file-offer prompt as being kept identical to a matching one on the PC;
   that PC half was removed earlier, so the notes now say what is actually true and why. One test was

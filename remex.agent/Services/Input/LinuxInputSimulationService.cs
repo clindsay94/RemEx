@@ -401,7 +401,58 @@ public class LinuxInputSimulationService : IInputSimulationService
             // in the stream's logical pixels. That is the wrong one here: this delta arrives quantised
             // to notches from a wheel, not as a touchpad gesture, and the discrete call is what the
             // other two backends emit.
-            _portalInjector.NotifyPointerScrollDiscrete(WheelDetents(deltaX), WheelDetents(deltaY));
+            //
+            // AND IT HAS NO PORTABLE SIGN, which is the stronger reason and was only found while
+            // settling this one (RemEx-e0b2 review). The two compositors DISAGREE on the smooth call:
+            // xdg-desktop-portal-kde's requestPointerAxis negates y — wl_fixed_from_double(-y) — while
+            // mutter passes dy straight into notify_scroll_continuous. So no single sign is correct
+            // across desktops for NotifyPointerAxis, where the discrete call agrees on both axes.
+            // Anyone "upgrading" this branch for finer granularity would get GNOME right and KDE
+            // backwards, with every test in PortalScrollUnitTests still green.
+            // THE VERTICAL SIGN IS INVERTED AND THE HORIZONTAL ONE IS NOT (RemEx-e0b2). This is the
+            // one place in this file where the portal disagrees with the wire, and RemEx-y45x left it
+            // open on purpose: it fixed the MAGNITUDE after checking the spec, and would not touch the
+            // sign because the spec does not state one. The portal documents `steps` only as "the
+            // number of steps scrolled" and never says which way a positive count goes.
+            //
+            // SETTLED FROM THE COMPOSITORS RATHER THAN FROM THE CONVENTION, because guessing from
+            // "Wayland is usually positive-down" is exactly the assumption RemEx-nb7c exists to stop,
+            // and a wrong inversion turns a working direction into a broken one. Both implementations
+            // that actually receive this call agree:
+            //
+            //   GNOME — mutter, src/backends/meta-remote-desktop-session.c,
+            //   discrete_steps_to_scroll_direction(): axis 0 with steps < 0 returns CLUTTER_SCROLL_UP
+            //   and steps > 0 returns CLUTTER_SCROLL_DOWN. Explicit, in a dedicated function.
+            //
+            //   KDE — xdg-desktop-portal-kde passes `steps` through unchanged to
+            //   WaylandIntegration::requestPointerAxisDiscrete, which hands it to
+            //   fakeInput->axis(WL_POINTER_AXIS_VERTICAL_SCROLL, ...).
+            //
+            // THE KDE HALF RESTS ON libinput, NOT ON THE WAYLAND SPEC, and the difference matters
+            // because the obvious place to check says nothing. wayland.xml's wl_pointer::axis defines
+            // the value only as "the length of a vector along the specified axis in a coordinate space
+            // identical to those of motion events" — no direction at all. The rule is stated in
+            // libinput's own header ("the positive direction being down or right, respectively"), and
+            // that is the convention compositors feed into wl_pointer. Anyone re-deriving this from
+            // wayland.xml alone will find no support for it and may conclude the inversion is
+            // unfounded; it is founded, just one layer further down.
+            //
+            // The GNOME chain has two more hops than the ones named above and both are pure
+            // pass-throughs, checked rather than assumed: xdg-desktop-portal's own frontend does the
+            // session lookup and option filtering with no arithmetic, and xdg-desktop-portal-gnome
+            // forwards (axis, steps) verbatim to the Mutter D-Bus interface.
+            //
+            // So POSITIVE steps on axis 0 means DOWN, and the wire means UP: WindowsInputSimulation-
+            // Service hands deltaY to MOUSEEVENTF_WHEEL unchanged, and positive there is away from
+            // the user. The two shell backends already agree with the wire — xdotool maps deltaY > 0
+            // to button 4, ydotool's REL_WHEEL is positive up — so this branch was the only one
+            // scrolling backwards, on every Wayland desktop, since it was written.
+            //
+            // AXIS 1 IS NOT INVERTED, and that asymmetry is the reason this is not a one-token fix.
+            // mutter maps axis 1 with steps > 0 to CLUTTER_SCROLL_RIGHT, and the wire's positive
+            // deltaX is also right (MOUSEEVENTF_HWHEEL, and xdotool's button 7). Negating both would
+            // have fixed one axis and broken the other.
+            _portalInjector.NotifyPointerScrollDiscrete(WheelDetents(deltaX), -WheelDetents(deltaY));
             return;
         }
 

@@ -81,7 +81,10 @@ public sealed class PortalScrollUnitTests
 
         service.MouseScroll(0, 120);
 
-        Assert.Equal((0, 1), Assert.Single(sink.Scrolls));
+        // NEGATIVE FOR AN UPWARD NOTCH, and that is the fix rather than a typo (RemEx-e0b2). The
+        // wire's positive is up; the portal's positive on axis 0 is DOWN, per mutter's
+        // discrete_steps_to_scroll_direction and KDE's pass-through to wl_pointer.
+        Assert.Equal((0, -1), Assert.Single(sink.Scrolls));
     }
 
     [Fact]
@@ -93,7 +96,7 @@ public sealed class PortalScrollUnitTests
 
         service.MouseScroll(0, 240);
 
-        Assert.Equal((0, 2), Assert.Single(sink.Scrolls));
+        Assert.Equal((0, -2), Assert.Single(sink.Scrolls));
     }
 
     [Fact]
@@ -105,7 +108,7 @@ public sealed class PortalScrollUnitTests
 
         service.MouseScroll(0, -240);
 
-        Assert.Equal((0, -2), Assert.Single(sink.Scrolls));
+        Assert.Equal((0, 2), Assert.Single(sink.Scrolls));
     }
 
     [Fact]
@@ -117,7 +120,11 @@ public sealed class PortalScrollUnitTests
 
         service.MouseScroll(-360, 120);
 
-        Assert.Equal((-3, 1), Assert.Single(sink.Scrolls));
+        // THE ASYMMETRY, AND IT IS THE POINT OF THIS TEST NOW. dx is carried through unchanged and
+        // dy is negated, because the portal agrees with the wire on horizontal (axis 1 positive is
+        // RIGHT, same as MOUSEEVENTF_HWHEEL) and disagrees on vertical. Negating both would have
+        // fixed one axis and broken the other, and only this assertion would have noticed.
+        Assert.Equal((-3, -1), Assert.Single(sink.Scrolls));
     }
 
     [Fact]
@@ -129,7 +136,7 @@ public sealed class PortalScrollUnitTests
 
         service.MouseScroll(0, 40);
 
-        Assert.Equal((0, 1), Assert.Single(sink.Scrolls));
+        Assert.Equal((0, -1), Assert.Single(sink.Scrolls));
     }
 
     [Fact]
@@ -142,7 +149,50 @@ public sealed class PortalScrollUnitTests
 
         service.MouseScroll(0, 120 * 50);
 
-        Assert.Equal((0, 10), Assert.Single(sink.Scrolls));
+        Assert.Equal((0, -10), Assert.Single(sink.Scrolls));
+    }
+
+    [Theory]
+    [InlineData(120, -1)]   // wire says UP   -> portal needs a NEGATIVE step count
+    [InlineData(-120, 1)]   // wire says DOWN -> portal needs a POSITIVE step count
+    public void TheVerticalSignIsInvertedBecauseTheCompositorsSayPositiveIsDown(int wireDeltaY, int expectedSteps)
+    {
+        // THE ASSERTION RemEx-y45x DELIBERATELY DID NOT WRITE, and it could not have: it fixed the
+        // magnitude against the spec and refused to touch the sign, because the portal documents
+        // `steps` as "the number of steps scrolled" and never says which way positive goes. Guessing
+        // from "Wayland is usually positive-down" is the assumption RemEx-nb7c exists to stop.
+        //
+        // Settled from the two implementations that actually receive the call:
+        //
+        //   GNOME — mutter, discrete_steps_to_scroll_direction() in meta-remote-desktop-session.c:
+        //   axis 0 with steps < 0 is CLUTTER_SCROLL_UP, steps > 0 is CLUTTER_SCROLL_DOWN.
+        //
+        //   KDE — xdg-desktop-portal-kde forwards `steps` unchanged to
+        //   fakeInput->axis(WL_POINTER_AXIS_VERTICAL_SCROLL, ...), where positive vertical is down.
+        //
+        // The wire is the Windows convention — MOUSEEVENTF_WHEEL positive is away from the user — so
+        // the two disagree and this branch had scrolled backwards on every Wayland desktop since it
+        // was written. Both rows matter: a fix that dropped the sign entirely, or applied Math.Abs,
+        // would satisfy one of them.
+        var (service, sink) = Build();
+
+        service.MouseScroll(0, wireDeltaY);
+
+        Assert.Equal((0, expectedSteps), Assert.Single(sink.Scrolls));
+    }
+
+    [Fact]
+    public void TheHorizontalSignIsNotInverted()
+    {
+        // THE HALF THAT MUST NOT MOVE. mutter maps axis 1 with steps > 0 to CLUTTER_SCROLL_RIGHT, and
+        // the wire's positive dx is also right (MOUSEEVENTF_HWHEEL; xdotool's button 7). Without this,
+        // "invert the portal scroll" reads as a whole-call instruction and the next person negates
+        // both arguments — fixing vertical and breaking horizontal, with every other test still green.
+        var (service, sink) = Build();
+
+        service.MouseScroll(240, 0);
+
+        Assert.Equal((2, 0), Assert.Single(sink.Scrolls));
     }
 
     [Fact]
