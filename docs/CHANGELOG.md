@@ -124,6 +124,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The phone reads each second of PC readings once instead of four times.** Every second the PC
+  sends the phone a list of everything it is measuring — every temperature, fan, clock and load it
+  can see. The phone used to walk that whole list four separate times: once to find the CPU
+  percentage, once for the GPU, once for memory, and once more to build the cards you actually see.
+  It now does all four in a single pass, off the main thread with the rest of the Home screen work.
+
+  This was never slow enough to notice and is not a fix for anything you have seen. What it does
+  change is that the rule deciding which reading becomes the big CPU number is now written down once
+  and tested, where before it existed three times and was tested nowhere. The two passes turned out
+  to disagree in a way nobody had noticed: a PC that files its sensors under the right category but
+  gives them no name at all still contributed to the CPU, GPU and memory percentages, while
+  producing no card. The obvious way to merge the loops would have silently dropped those readings
+  to zero, so the new version keeps that behaviour deliberately and has a test named after it.
+  (RemEx-cite)
+
 - **The app can now measure how good your connection to the PC actually is.** It has always sent a
   timestamp with every heartbeat, and never read one back — so nothing anywhere knew the round-trip
   time, and nothing counted how much video the PC was actually producing. Both are measured now: the
