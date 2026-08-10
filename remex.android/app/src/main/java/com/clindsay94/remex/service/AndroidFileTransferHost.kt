@@ -236,7 +236,6 @@ object AndroidFileTransferHost {
      * address, look at the host log), so they are worth a line each.
      */
     private suspend fun ensureBinaryChannel(): Boolean {
-        if (FileTransferChannelClient.isOpen) return true
         val host = settingsManager.hostFlow.first()
         val port = settingsManager.portFlow.first()
         if (host.isBlank()) {
@@ -244,6 +243,14 @@ object AndroidFileTransferHost {
             return false
         }
         val clientId = settingsManager.getOrCreateClientId()
+
+        // **ASKED OF THIS HOST, NOT OF THE WORLD (RemEx-5t4k9).** This used to shortcut on a bare
+        // isOpen before reading any of the settings above, so a channel still open to a PC the user
+        // has since stopped using answered yes - and ensureConnected, which DOES compare the host,
+        // was never reached. The transfer was then negotiated over a connection to the wrong machine.
+        // The shortcut itself is worth keeping: it is what stops an offer paying for a pin lookup
+        // when the channel is already up and already correct.
+        if (FileTransferChannelClient.isOpenTo(host, port, clientId)) return true
         val spki = PinnedHostStore.getPin(context, host)?.takeIf { it.isNotBlank() }
         if (spki == null) {
             // Not a transient failure - this device has no pinned key for that host, so it cannot

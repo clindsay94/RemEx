@@ -624,11 +624,19 @@ object FileTransferEngine {
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private suspend fun ensureChannel(): Boolean {
-        if (FileTransferChannelClient.isOpen) return true
         val host = settings.hostFlow.first()
         val port = settings.portFlow.first()
         if (host.isBlank()) return false
         val clientId = settings.getOrCreateClientId()
+
+        // **ASKED OF THIS HOST, NOT OF THE WORLD (RemEx-5t4k9).** This shortcut used to be a bare
+        // isOpen taken before any of the settings above were read, so a channel still open to a PC
+        // the user had stopped using answered yes and ensureConnected - which does compare the host -
+        // was never reached. This is the upload path, so the effect was that the offer was negotiated
+        // with the PC the control plane had reconnected to while the bytes went down a socket to the
+        // previous one. Found by review of the identical defect in AndroidFileTransferHost, which is
+        // what the bead was actually filed for.
+        if (FileTransferChannelClient.isOpenTo(host, port, clientId)) return true
         val spki = PinnedHostStore.getPin(appContext, host)?.takeIf { it.isNotBlank() } ?: return false
         return FileTransferChannelClient.ensureConnected(appContext, host, port, clientId, spki)
     }
