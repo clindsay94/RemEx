@@ -57,6 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **An idle PC was packing up its sensor readings for delivery every second even with no phone
+  connected.** RemEx bundles each set of readings into the exact form it sends over the network, and
+  it was doing that on every reading whether or not anything was listening. On a PC with a lot of
+  sensors that bundle is around 74 KB, so a machine sitting idle was preparing roughly 4.4 MB a minute
+  for nobody — the PC's own dashboard never uses it. The bundle is now made only if something actually
+  asks for it, and it is still made once and shared between phones rather than once per phone.
+  (RemEx-jyuem)
+
 - **Tapping a different PC could send the wake-up signal to the previous one.** If you had typed a
   MAC address in yourself and then switched to another PC from your list of Known PCs, everything else
   pointed at the new machine but the Wake-on-LAN tile still used the address you typed for the old

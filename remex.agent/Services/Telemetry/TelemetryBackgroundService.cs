@@ -16,18 +16,67 @@ public sealed class TelemetryBackgroundService(
     /// <summary>
     /// One sample and the exact bytes that carry it, published together.
     /// </summary>
-    /// <param name="Payload">The sample, for in-process consumers.</param>
-    /// <param name="Frame">
-    /// The fully serialized <see cref="MessageTypes.Telemetry"/> envelope for that sample. Exposed
-    /// as read-only memory on purpose: this exact buffer goes to every connected socket, so handing
-    /// out a mutable array would let one in-process consumer corrupt every live stream.
-    /// </param>
     /// <remarks>
     /// The two travel as one object so a reader cannot observe a payload with the previous tick's
     /// bytes. Publishing them as separate fields would be a torn read waiting to happen, since the
-    /// sampler writes on its own thread while every client stream reads on theirs.
+    /// sampler writes on its own thread while every client stream reads on theirs. That still holds
+    /// now the bytes are built on demand: the builder closes over THIS tick's payload and timestamp,
+    /// so a late reader gets this sample's envelope, never a later one's.
     /// </remarks>
-    public sealed record TelemetrySnapshot(TelemetryPayload Payload, ReadOnlyMemory<byte> Frame);
+    public sealed class TelemetrySnapshot
+    {
+        private readonly Func<ReadOnlyMemory<byte>> _buildFrame;
+        private readonly object _frameLock = new();
+        private ReadOnlyMemory<byte>? _frame;
+
+        internal TelemetrySnapshot(TelemetryPayload payload, Func<ReadOnlyMemory<byte>> buildFrame)
+        {
+            Payload = payload;
+            _buildFrame = buildFrame;
+        }
+
+        /// <summary>The sample itself. Always present; costs nothing.</summary>
+        public TelemetryPayload Payload { get; }
+
+        /// <summary>
+        /// The serialized envelope, built on first access and cached (RemEx-jyuem).
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// **BUILT LAZILY BECAUSE AN IDLE PC WAS PAYING FOR IT EVERY SECOND AND NOBODY WAS READING
+        /// IT.** Measured on a 453-sensor machine this envelope is 74 KB, and it used to be built on
+        /// every tick whether or not a client existed - roughly 4.4 MB a minute allocated for nothing
+        /// on a PC with no phone connected. The desktop's own dashboard never touches it; it reads
+        /// <see cref="Payload"/>. The bytes exist purely for remote streams, so they are now built
+        /// only if a remote stream asks.
+        /// </para>
+        /// <para>
+        /// **NOT `Lazy&lt;T&gt;`, DELIBERATELY.** Its default ExecutionAndPublication mode CACHES AN
+        /// EXCEPTION and rethrows it for the life of the object, so one transient serialization
+        /// failure would leave this snapshot permanently unsendable while every later snapshot worked
+        /// - a per-tick glitch turned into a permanent hole. Check-then-build under a lock stores
+        /// nothing on the failing path, so the next reader simply tries again. Same hazard recorded on
+        /// ExecutableMetadataCache (RemEx-qz5z3).
+        /// </para>
+        /// <para>
+        /// Locked rather than raced because the build is expensive enough that two streams arriving
+        /// together should not both do it, and because the field must not be published half-written.
+        /// Read-only memory on purpose: this exact buffer goes to every connected socket, so handing
+        /// out a mutable array would let one consumer corrupt every live stream.
+        /// </para>
+        /// </remarks>
+        public ReadOnlyMemory<byte> Frame
+        {
+            get
+            {
+                lock (_frameLock)
+                {
+                    _frame ??= _buildFrame();
+                    return _frame.Value;
+                }
+            }
+        }
+    }
 
     private readonly TelemetrySnapshotGate<TelemetrySnapshot> _gate = new();
 
@@ -106,24 +155,29 @@ public sealed class TelemetryBackgroundService(
             {
                 var payload = await telemetryService.GetTelemetryAsync(stoppingToken);
 
-                // Serialized ONCE here rather than once per connected client per second. With
-                // HWiNFO running this envelope is 60-100 KB, so every extra client was another
-                // Large Object Heap allocation every tick — and the PC's own dashboard is a client
-                // too, so even a single phone means two.
+                // Serialized ONCE per tick rather than once per connected client, and now only if a
+                // client actually asks (RemEx-jyuem). Measured at 74 KB on a 453-sensor machine, so
+                // building it per client was an allocation per stream per second - and building it
+                // eagerly meant an idle PC with no phone connected paid ~4.4 MB a minute for bytes
+                // nobody read. The desktop's own dashboard reads Payload, never Frame.
                 //
-                // Sharing the bytes means sharing the envelope's Timestamp, which changes it from
+                // THE TIMESTAMP IS CAPTURED HERE, NOT INSIDE THE BUILDER, so the envelope still says
+                // when the sample was TAKEN rather than when some later stream happened to ask for
+                // it. Sharing the bytes means sharing that timestamp, which changes its meaning from
                 // "when this was sent" to "when this was sampled". Nothing reads it: the only
                 // consumer of RemexMessage.Timestamp anywhere is the Pong round-trip measurement,
                 // which echoes the SENDER's value on a different message type entirely. Sample time
                 // is also the more truthful thing for a telemetry frame to carry. (RemEx-0zbj)
-                var frame = MessageSerializer.Serialize(new RemexMessage
-                {
-                    Type = MessageTypes.Telemetry,
-                    Telemetry = payload,
-                    Timestamp = System.Diagnostics.Stopwatch.GetTimestamp(),
-                });
+                var sampledAt = System.Diagnostics.Stopwatch.GetTimestamp();
 
-                var snapshot = new TelemetrySnapshot(payload, frame);
+                var snapshot = new TelemetrySnapshot(
+                    payload,
+                    () => MessageSerializer.Serialize(new RemexMessage
+                    {
+                        Type = MessageTypes.Telemetry,
+                        Telemetry = payload,
+                        Timestamp = sampledAt,
+                    }));
                 _gate.Publish(snapshot);
 
                 try
