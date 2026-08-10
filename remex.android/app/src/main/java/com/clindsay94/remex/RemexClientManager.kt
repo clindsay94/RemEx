@@ -61,10 +61,32 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     private val _isConnecting = MutableStateFlow(false)
     val isConnecting = _isConnecting.asStateFlow()
 
-    private val _telemetry = MutableSharedFlow<String>(replay = 1)
+    /**
+     * Newest full snapshot from the PC. Latest-wins (RemEx-e7npu).
+     *
+     * **`DROP_OLDEST` IS DECLARED, NOT INHERITED, AND THAT IS THE POINT OF THIS AND THE FLOWS BELOW
+     * IT.** `MutableSharedFlow(replay = 1)` alone means `extraBufferCapacity = 0` and
+     * `onBufferOverflow = SUSPEND`, so total capacity is one slot shared with the replay cache. Every
+     * emitter here is `tryEmit`, which on a SUSPEND flow with no room RETURNS FALSE AND DISCARDS THE
+     * VALUE — no exception, no log, and a Boolean nobody reads. The collectors are view models parsing
+     * JSON on the main thread, so being busy is the ordinary case, not a rare one.
+     *
+     * Precisely: a collector that has taken a value and is still in its lambda leaves room for the
+     * NEXT emit, which displaces the replayed one; it is the one after that which is refused. So the
+     * cost of a busy collector was every second value, not every value.
+     *
+     * For a full snapshot, dropping the older value is CORRECT: the newer one supersedes it entirely.
+     * The bug was never that a value was dropped, it was that the behaviour depended on buffer
+     * occupancy rather than on anything anyone chose. Saying `DROP_OLDEST` makes `tryEmit` always
+     * succeed and the newest reading always win.
+     */
+    private val _telemetry =
+            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val telemetry = _telemetry.asSharedFlow()
 
-    private val _launcherEntries = MutableSharedFlow<String>(replay = 1)
+    /** The full launcher list; a newer one replaces the last. Latest-wins (RemEx-e7npu). */
+    private val _launcherEntries =
+            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val launcherEntries = _launcherEntries.asSharedFlow()
 
     /**
@@ -96,7 +118,9 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
         _pairingProgress.tryEmit(null)
     }
 
-    private val _processList = MutableSharedFlow<String>(replay = 1)
+    /** The full process table; a newer scan replaces the last. Latest-wins (RemEx-e7npu). */
+    private val _processList =
+            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val processList = _processList.asSharedFlow()
 
     private val _frames =
@@ -107,29 +131,99 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
             )
     val frames = _frames.asSharedFlow()
 
-    private val _hostCapabilities = MutableSharedFlow<String>(replay = 1)
+    /** The full capability set; a newer one replaces the last. Latest-wins (RemEx-e7npu). */
+    private val _hostCapabilities =
+            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val hostCapabilities = _hostCapabilities.asSharedFlow()
 
-    private val _desktopErrors = MutableSharedFlow<String>(replay = 1)
+    /**
+     * Why the desktop stream failed. **MUST-DELIVER, and the most consequential flow here
+     * (RemEx-e7npu).**
+     *
+     * Every other flow on this object carries a snapshot, where losing an older value is harmless
+     * because a newer one says everything it said. These are DISTINCT EVENTS: each one is the only
+     * account of a separate failure, so a dropped value is not a stale reading, it is the explanation
+     * never arriving. RemEx-iaxc put the "the PC is discarding your input" advisory on this flow
+     * precisely to break a silence — dropping it would restore the silence that bead removed.
+     *
+     * Buffered rather than latest-wins for that reason. `DROP_OLDEST` remains as a bounded backstop
+     * so `tryEmit` still cannot fail silently, but it now takes nine unread errors to lose one rather
+     * than a collector being briefly busy.
+     */
+    private val _desktopErrors =
+            MutableSharedFlow<String>(
+                    replay = 1,
+                    extraBufferCapacity = 8,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST,
+            )
     val desktopErrors = _desktopErrors.asSharedFlow()
 
-    private val _desktopMeta = MutableSharedFlow<String>(replay = 1)
+    /**
+     * Stream geometry and codec details. **MUST-DELIVER (RemEx-e7npu).**
+     *
+     * Not a snapshot that supersedes: each one describes a stream the client then has to decode
+     * against — its collector sets the active codec and the stream pixel size, which key the decoder
+     * view. Losing one leaves the decoder configured for the previous stream, which presents as a
+     * corrupt or frozen picture rather than as an error.
+     *
+     * **BUFFERED ONLY BECAUSE THIS CLIENT KEEPS desktop_meta OFF THE HIGH-RATE PATH.** The host has a
+     * second send site for it: a legacy cursor-position path taken when the client advertises neither
+     * `supportsCursorState` nor `supportsBinaryCursor`, which fires on the ~10 Hz cursor tick. We
+     * advertise both unconditionally, so that path is never taken. Make either capability conditional
+     * — as `supportsDisplaySelection` already is — and this becomes a 10 Hz feed whose buffer means up
+     * to five stale JSON parses per busy window instead of one. Revisit the size if that changes.
+     */
+    private val _desktopMeta =
+            MutableSharedFlow<String>(
+                    replay = 1,
+                    extraBufferCapacity = 4,
+                    onBufferOverflow = BufferOverflow.DROP_OLDEST,
+            )
     val desktopMeta = _desktopMeta.asSharedFlow()
 
-    private val _desktopStreamDescriptor = MutableSharedFlow<String>(replay = 1)
+    /**
+     * Stream descriptor from the host. **NOTHING COLLECTS THIS TODAY**, so it is latest-wins.
+     *
+     * An earlier draft of this comment called it must-deliver and said the decoder is built from it.
+     * Neither is true: the only references anywhere in the app are this declaration, its `tryEmit`,
+     * and the callback interface. With no subscriber `tryEmit` cannot fail at all, so this flow never
+     * had the bug the rest of this change fixes, and buffering it would have been provisioning for a
+     * consumer that does not exist. `DROP_OLDEST` is declared anyway so it behaves like its
+     * neighbours if one ever appears; add a buffer at that point, with a reason.
+     */
+    private val _desktopStreamDescriptor =
+            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val desktopStreamDescriptor = _desktopStreamDescriptor.asSharedFlow()
 
-    private val _desktopDisplayCatalog = MutableSharedFlow<String>(replay = 1)
+    /** The full display catalog; a newer one replaces the last. Latest-wins (RemEx-e7npu). */
+    private val _desktopDisplayCatalog =
+            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val desktopDisplayCatalog = _desktopDisplayCatalog.asSharedFlow()
 
-    private val _desktopCursorState = MutableSharedFlow<String>(replay = 1)
+    /** Latest cursor state. High-rate and latest-wins (RemEx-e7npu). */
+    private val _desktopCursorState =
+            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val desktopCursorState = _desktopCursorState.asSharedFlow()
 
-    // RD-E: raw binary "RDXC" cursor-position packets. replay=1 so a late collector gets the last position.
-    private val _desktopCursorBinary = MutableSharedFlow<ByteArray>(replay = 1)
+    // RD-E: raw binary "RDXC" cursor-position packets. replay=1 so a late collector gets the last
+    // position; DROP_OLDEST because only the newest position is worth drawing (RemEx-e7npu), and
+    // these arrive faster than anything else on this object.
+    private val _desktopCursorBinary =
+            MutableSharedFlow<ByteArray>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val desktopCursorBinary = _desktopCursorBinary.asSharedFlow()
 
-    private val _desktopCursorShape = MutableSharedFlow<String>(replay = 1)
+    /**
+     * Latest cursor bitmap. Latest-wins (RemEx-e7npu).
+     *
+     * Shapes are cached by serial, but the cache is only ever read at the serial named by the newest
+     * cursor packet — so an intermediate shape that is dropped is never referenced again. Note the
+     * direction of the fix here: under the old SUSPEND default the value refused was the NEWEST, the
+     * one about to become active. `DROP_OLDEST` drops an intermediate instead and the newest always
+     * lands. This collector also suspends across an off-main decode, so it holds its slot longer than
+     * any other on this object, which made it one of the worst affected.
+     */
+    private val _desktopCursorShape =
+            MutableSharedFlow<String>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val desktopCursorShape = _desktopCursorShape.asSharedFlow()
 
     private val _desktopWindowResults = MutableSharedFlow<String>(replay = 0, extraBufferCapacity = 8)
@@ -307,6 +401,26 @@ object RemexClientManager : RemexCoreClient.RemexCallback {
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun consumePairingRequest() {
         _pairingRequired.resetReplayCache()
+    }
+
+    /**
+     * Clears the replay caches of the flows the overflow tests emit into (RemEx-e7npu).
+     *
+     * **A TEST SEAM, AND `internal` SO IT CANNOT BE MISTAKEN FOR PRODUCTION RECOVERY.** This object is
+     * a process-wide singleton and `replay = 1` means a value emitted by one test is delivered to the
+     * next collector in the same JVM run. Without this, a test that pushes a fake stream error leaves
+     * it in `desktopErrors` for every later test — and the first thing a RemoteDesktopViewModel test
+     * would see is an error it never sent, clearing `isStreaming` with nothing pointing back at the
+     * cause. Same technique as the internal input seam on the host side (RemEx-73dc).
+     *
+     * Placed AFTER consumePairingRequest deliberately: an earlier draft sat between that function and
+     * its KDoc, which silently rebound the pairing rationale to this seam and left the function it
+     * belongs to undocumented.
+     */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    internal fun resetStreamReplayCachesForTests() {
+        _desktopErrors.resetReplayCache()
+        _telemetry.resetReplayCache()
     }
 
     private val _connectionError =

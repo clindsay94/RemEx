@@ -57,6 +57,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Updates from your PC could be thrown away while the phone was still busy with the previous one.**
+  Eleven of the channels the app receives on — readings, the process list, cursor updates, stream
+  setup, and the messages that explain why a remote session failed — were left with room for exactly
+  one pending update, a default nobody chose. On the ones a screen was actually watching, that meant
+  the following happened while it was busy: the next update could still be squeezed in, but the one
+  after that was discarded on the spot, with no error, no log and nothing to notice. Since the screens
+  do their work on the same thread that receives, "still busy" was the ordinary case rather than a
+  rare one.
+
+  Each channel now says what should happen when it falls behind. For readings and cursor positions the
+  newest replaces the older one — always the intent, and now what actually happens rather than
+  something that depended on timing. For the channels carrying one-off events, above all the one that
+  explains a failed remote session, there is now room to queue several, so an error has to be nine
+  deep before anything is lost. The clearest effect is on the cursor, which updates many times a
+  second and so suffered most, and on error messages, which now arrive instead of occasionally
+  vanishing. (RemEx-e7npu)
+
 - **The home screen widget was writing to your phone's storage every second, all day, to refresh
   itself twice a minute.** The widget keeps a copy of the latest readings so it has something to draw
   when Android asks it to redraw. That copy was being saved every time a new reading arrived — about
