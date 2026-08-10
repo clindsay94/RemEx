@@ -44,28 +44,30 @@ public class ValidationPatternTests
     public void AMalformedMacIsRejected(string mac) => Assert.False(Accepts(new ValidMacAddressAttribute(), mac));
 
     [Fact]
-    public void ATrailingNewlineIsACCEPTEDToday_WhichIsPreExistingAndNotWhatYouWouldExpect()
+    public void ATrailingNewlineIsRejected()
     {
-        // **PINNED AS IT IS, NOT AS IT OUGHT TO BE.** In .NET, `$` matches before a final newline, so
-        // an anchored pattern still admits one trailing \n. I wrote this case expecting a rejection,
-        // it failed, and I checked the ORIGINAL `new Regex(..., Compiled)` form before assuming my
-        // conversion had caused it - the old one accepts it too. So this documents behaviour that
-        // predates RemEx-ygapg and confirms the conversion changed nothing, which is the only claim
-        // that bead makes.
+        // **INVERTED RATHER THAN DELETED, BECAUSE ITS FAILURE WAS THE SIGNAL THE FIX HAD LANDED
+        // (RemEx-gnkdr).** This pinned the opposite: in .NET `$` matches before a final newline, so an
+        // anchored pattern still admitted one trailing \n. RemEx-ygapg left that alone deliberately -
+        // it was a behaviour-preserving port - and recorded here that whoever tightened the anchor
+        // should expect this test to fail and invert it rather than assume a break. `\z` is that
+        // tightening, and this is that inversion.
         //
-        // Whether it SHOULD be accepted is a different question and is filed as RemEx-gnkdr rather
-        // than fixed here: `\z` would tighten it, but that is a behaviour change and this change is
-        // supposed to have none. If somebody tightens it, this test is the one that will fail, and
-        // its failure means the fix landed rather than that something broke.
-        Assert.True(Accepts(new ValidMacAddressAttribute(), "00:11:22:33:44:55\n"));
-        Assert.True(Accepts(new ValidHostnameAttribute(), "example.com\n"));
+        // The validator is the layer whose job is to say no. Accepting a malformed value so that
+        // PhysicalAddress parsing or URI construction refuses it one layer later does not prevent the
+        // failure, it relocates it somewhere with a worse message.
+        Assert.False(Accepts(new ValidMacAddressAttribute(), "00:11:22:33:44:55\n"));
+        Assert.False(Accepts(new ValidHostnameAttribute(), "example.com\n"));
 
-        // **AND CRLF IS REJECTED, WHICH IS THE SHARPER HALF.** `$` admits ONE final \n and the \r is
-        // left over, so the same value authored on Windows is refused while the Linux one sails
-        // through - a platform-dependent split inside a validator. Review found this; my pinned test
-        // only had the \n case. Both collapse to "rejected" once RemEx-gnkdr tightens the anchor,
-        // which is what makes that fix a simplification rather than a new special case.
+        // **THE PLATFORM SPLIT IS WHAT MADE THIS MORE THAN A TIDY-UP.** Under `$` the \n was admitted
+        // and the leftover \r was not, so the same value authored on Windows was refused while the
+        // Linux one sailed through - a platform-dependent answer from a validator. Both are now simply
+        // rejected, which is what makes this a simplification rather than a new special case.
         Assert.False(Accepts(new ValidHostnameAttribute(), "example.com\r\n"));
+
+        // ANTI-VACUITY: a pattern that rejected everything would satisfy all of the above.
+        Assert.True(Accepts(new ValidMacAddressAttribute(), "00:11:22:33:44:55"));
+        Assert.True(Accepts(new ValidHostnameAttribute(), "example.com"));
     }
 
     [Theory]

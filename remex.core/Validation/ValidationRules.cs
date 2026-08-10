@@ -32,7 +32,7 @@ public partial class ValidMacAddressAttribute : ValidationAttribute
     /// call instead. <c>[GeneratedRegex]</c> is the only form that actually compiles under AOT, and
     /// it does the work at build time rather than first use.
     /// </summary>
-    [GeneratedRegex(@"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$")]
+    [GeneratedRegex(@"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})\z")]
     private static partial Regex MacAddressPattern();
 
     private static readonly Regex MacAddressRegex = MacAddressPattern();
@@ -85,7 +85,7 @@ public class ValidPortAttribute : ValidationAttribute
 public partial class ValidHostnameAttribute : ValidationAttribute
 {
     /// <summary>Source-generated for the same reason as the MAC pattern above (RemEx-ygapg).</summary>
-    [GeneratedRegex(@"^(?=.{1,253}$)(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)*(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")]
+    [GeneratedRegex(@"^(?=.{1,253}\z)(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)*(?!-)[A-Za-z0-9-]{1,63}(?<!-)\z")]
     private static partial Regex DnsNamePattern();
 
     private static readonly Regex DnsNameRegex = DnsNamePattern();

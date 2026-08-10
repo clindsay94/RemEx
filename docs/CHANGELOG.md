@@ -57,6 +57,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A MAC address or PC name with a stray line break at the end was accepted as valid.** The checks
+  that decide whether an address or hostname is well-formed let a trailing newline through, so a value
+  copied out of a text file or piped in from a script was waved past as correct and then failed
+  further in, where the message is about something else entirely. Windows line endings behaved
+  differently from Linux ones, so the same value could be accepted on one and refused on the other.
+  Both are now rejected where they should be, by the check whose job is to say so. If you have a
+  script sending values with a trailing newline, it will now be told plainly instead of failing later.
+  (RemEx-gnkdr)
+
 - **Listing running programs opened and read every one of their .exe files, over and over.** The
   process list shows each program's version and publisher, which have to be read out of the program's
   own file on disk. RemEx was reading that file once for every running copy of the program rather than
