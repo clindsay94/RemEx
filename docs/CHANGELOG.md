@@ -43,6 +43,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A file the PC sent could be accepted by your phone and then never arrive, with nothing said
+  anywhere.** Receiving a file needs a second connection that your phone opens while the transfer is
+  being agreed. If opening it failed — no PC address stored, a missing security key after a re-pair,
+  or a PC that refused the connection — your phone agreed to the transfer anyway. The PC then went
+  looking for a connection that was not there, gave up without telling anyone, and left your phone
+  holding a half-made file it would not clear away for a week. You tapped Allow and watched nothing
+  happen.
+
+  Your phone now checks that connection before agreeing, and refuses with a reason the PC can see if
+  it is not there. When it was a file you had approved, your phone tells you rather than going quiet,
+  and suggests re-pairing if it keeps happening. The three ways that connection can fail to open are
+  now logged separately too — they need different fixes and used to look identical. (RemEx-iq484)
+
 ### Added
 
 - **A failed remote-desktop stream left you with nothing to press.** When streaming failed, the
