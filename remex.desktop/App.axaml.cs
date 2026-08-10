@@ -345,7 +345,30 @@ public partial class App : Application
 
             Remex.Core.Services.FileTransfer.FileConsentDecision decision;
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is { } owner)
+            {
+                // SURFACE THE OWNER FIRST, OR THERE IS NO DIALOG (RemEx-6bfyt). Avalonia's ShowDialog
+                // throws "Cannot show window with non-visible parent", and not-visible is RemEx's
+                // NORMAL state rather than an edge case: the logon task starts it '--minimized'
+                // (scripts/autostart-remex.ps1) so MainWindow is constructed and never shown, and
+                // hide-to-tray returns it there. The throw lands in the catch below, which denies
+                // fail-closed with no reason code - byte-identical to the user tapping Deny. So the
+                // prompt nobody could see becomes a refusal nobody can explain.
+                //
+                // This was latent while the desktop route only served phones too old to render the
+                // prompt. Routing full browse here by kind made it the ONLY path for that grant, so
+                // the guard stops being optional.
+                //
+                // THROUGH THE HELPER, NOT A LOCAL Show()/Activate() PAIR (RemEx-b3bi). All three of
+                // its steps are load-bearing and none implies another - in particular a MINIMIZED
+                // window reports IsVisible true, so an `if (!owner.IsVisible) Show()` guard skips it
+                // and Activate alone leaves it in the taskbar. That is a reachable state (open from
+                // the tray, then minimize) and it lands in exactly the same silent-deny as the one
+                // above. This was written as a local two-step first; the helper is the whole reason
+                // that class of bug has one place to be fixed.
+                BringMainWindowToFront();
+
                 decision = await dialog.ShowDialog<Remex.Core.Services.FileTransfer.FileConsentDecision>(owner);
+            }
             else
             {
                 dialog.Show();

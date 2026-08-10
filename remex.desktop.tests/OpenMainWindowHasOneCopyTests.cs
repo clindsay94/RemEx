@@ -39,6 +39,37 @@ public class OpenMainWindowHasOneCopyTests
     }
 
     [Fact]
+    public void NobodyHandRollsAPartialCopyByActivatingAWindowThemselves()
+    {
+        // THE ABOVE TEST CANNOT SEE A TWO-STEP COPY, and one was written (RemEx-6bfyt). A consent
+        // dialog needed a surfaced owner, so it grew a local `if (!owner.IsVisible) Show();` plus
+        // `owner.Activate();` - no WindowState line at all, in App.axaml.cs, which is the file the
+        // scan above EXPECTS to match. Both of its assertions passed on a live violation of the
+        // invariant they exist to protect.
+        //
+        // A partial copy is the dangerous shape, not a whole one: it works in every window state the
+        // author happened to try. The one it misses is Minimized, which reports IsVisible true, so
+        // Show is skipped and Activate leaves the window in the taskbar.
+        //
+        // Activate is the load-bearing step that a copy cannot omit and still appear to work, so it
+        // is the honest thing to count. Exactly one, and it is the helper's own line.
+        var activations = File
+            .ReadAllLines(Path.Combine(RepoRoot(), "remex.desktop", "App.axaml.cs"))
+            .Select(line => line.Trim())
+            .Where(line => !line.StartsWith("//", System.StringComparison.Ordinal)
+                        && !line.StartsWith("///", System.StringComparison.Ordinal)
+                        && line.Contains(".Activate()", System.StringComparison.Ordinal))
+            .ToArray();
+
+        // An exact set, like the test above: a second call site fails whatever it is named, and
+        // renaming or moving the helper's line fails too rather than silently emptying the check.
+        activations.Should().Equal(["desktop.MainWindow.Activate();"],
+            "every entry point must surface the main window through BringMainWindowToFront(), which "
+            + "does all three load-bearing steps - a local Show()/Activate() pair silently skips a "
+            + "MINIMIZED window");
+    }
+
+    [Fact]
     public void TheTwoTrayEntryPointsGoThroughTheHelper()
     {
         // The floor. "No copy in TrayFlyoutWindow" passes just as happily if somebody deletes the

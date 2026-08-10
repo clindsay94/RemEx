@@ -57,6 +57,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Letting a phone browse your whole PC is now approved on the PC, not on the phone.** Two different
+  questions were being asked the same way. When your phone sends you a file, the "accept this?"
+  prompt belongs on the phone — you are holding it, and putting that question on a monitor in another
+  room meant it sat there unanswered until it gave up. But "let this phone browse everything on this
+  PC" is a different kind of question: it is a standing permission over the whole machine, and it
+  should be granted at the machine.
+
+  So the two have been separated. Per-file prompts still appear on the phone, exactly as before.
+  The full-browse request now raises its dialog on the PC. Phones too old to show prompts are
+  unaffected — they were already being asked on the PC. (RemEx-6bfyt)
+
 - **Every file transfer failed with "The binary file channel is not connected", on a phone that was
   plainly connected.** Browsing the PC's folders from the phone worked, the dashboard kept showing
   live readings, and then every download and every upload failed with a message about a connection

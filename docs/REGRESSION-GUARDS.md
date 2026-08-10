@@ -444,6 +444,43 @@ fresh secret. A phone that is visibly connected cannot move a byte, and nothing 
 "wrong credential". Keep the address alias as the fallback: pairings predating RemEx-060g have no SPKI
 record, and requiring one would brick them rather than cost them a re-pair.
 
+### `ConsentRoutePolicy.Route` — the branch ORDER is the rule
+
+`remex.agent/Services/FileTransfer/ConsentRoutePolicy.cs`. Three checks, and each one must stay where
+it is: **asker-gone → deny**, then **kind** (`full_browse` → Desktop), then **capability**.
+
+- **Deny first.** A kind check placed ahead of the connected check turns a deny into a PC dialog for
+  exactly the request where durable trust is at stake — a user answering "allow" would be granting
+  whole-filesystem access to a device that is not there.
+- **Kind before capability.** Full browse is a standing grant over the whole machine and is authorised
+  at the machine, whether or not the phone could render the prompt (Connor's decision, 2026-08-10,
+  RemEx-6bfyt). Per-file consent stays on the phone, because that is the case where a PC prompt waits
+  in front of nobody (RemEx-mneb, the failure that produced the phone route).
+- **Ordinal.** Only the exact `full_browse` token diverts; an unknown kind keeps the old capability
+  behaviour rather than falling into the PC branch by accident.
+
+Reversing kind and capability **compiles cleanly and passes most of the suite**, and the resulting
+failure presents as a transfer refused with nothing saying why.
+
+**The Desktop route requires a SURFACED owner window, and it must go through
+`BringMainWindowToFront()`.** `App.axaml.cs` `ShowFileConsentDialogAsync` calls that helper before
+`ShowDialog`. Avalonia's `ShowDialog` throws on a non-visible parent, and RemEx normally runs with
+`MainWindow` constructed but not surfaced, in three distinct states:
+
+- **never shown** — the logon task starts it `--minimized` (`scripts/autostart-remex.ps1`);
+- **hidden to tray** — close-to-tray;
+- **minimized** — which reports `IsVisible == true`, so a `Show()`-only guard skips it entirely and
+  `Activate()` alone leaves it in the taskbar.
+
+That third one is why a local `Show()`/`Activate()` pair is not good enough and the helper is
+mandatory: all three of its steps are load-bearing and none implies another (see its own XML doc, and
+RemEx-b3bi). The catch denies fail-closed with no reason code, byte-identical to the user tapping
+Deny — so the prompt nobody could see becomes a refusal nobody can explain, in whichever window state
+was missed. This was harmless while the Desktop route only served pre-capability phones; routing full
+browse here made it the only path for that grant. `OpenMainWindowHasOneCopyTests` does **not** catch a
+partial copy: it scans only files that already set `MainWindow.WindowState`, so a two-step copy is
+invisible to it.
+
 ### Proof-of-possession reconnect auth
 
 `PairedClientRegistry` stores a 32-byte ECDH/HKDF session key per client. Reconnect auth is an

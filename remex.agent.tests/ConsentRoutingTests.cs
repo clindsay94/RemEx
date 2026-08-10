@@ -77,8 +77,13 @@ public sealed class ConsentRoutingTests : IDisposable
             timeout ?? TimeSpan.FromMilliseconds(200));
     }
 
+    // INCOMING PUSH, AND THE KIND IS NO LONGER ARBITRARY (RemEx-6bfyt). Every test in this class is
+    // about the mechanics of the PHONE prompt - that one is raised at all, that it carries the
+    // deadline, that only its own client can answer it. Since full browse now routes to the PC by
+    // kind, using it here would send all of them to a surface they are not testing and every
+    // assertion would fail on an empty collection. Push is the kind the phone route exists for.
     private static FileConsentRequest Request() =>
-        new() { ConsentId = Guid.NewGuid().ToString("N"), Kind = FileConsentKinds.FullBrowse };
+        new() { ConsentId = Guid.NewGuid().ToString("N"), Kind = FileConsentKinds.IncomingPush };
 
     [Fact]
     public async Task APhoneThatCanRenderThePromptIsSentOne()
@@ -108,6 +113,47 @@ public sealed class ConsentRoutingTests : IDisposable
 
         // Nobody answered, so it still times out into a clean deny — the prompt being delivered does
         // not change what silence means.
+        Assert.False(decision.Granted);
+    }
+
+    [Fact]
+    public async Task AFullBrowseGrantGoesToThePcEvenFromAPhoneThatCouldRenderThePrompt()
+    {
+        // THE ONLY TEST THAT PROVES THE WIRING, and the exact mirror of the one above (RemEx-6bfyt).
+        // ConsentRoutePolicyTests covers the RULE by calling Route directly, so it is blind to
+        // whether RequestConsentAsync actually passes request.Kind in. Replace that argument with a
+        // hardcoded FileConsentKinds.IncomingPush and every other test in the repo still passes
+        // while production reverts to the reported bug - this is the one that goes red.
+        //
+        // Identical setup to APhoneThatCanRenderThePromptIsSentOne, one field different: the kind.
+        // So the phone's capability cannot be what explains the outcome.
+        var socket = new RecordingSocket();
+        var sessions = new ClientSessionRegistry();
+        var handle = sessions.Register("192.168.1.50", socket);
+        sessions.Identify(handle, "phone-1", deviceName: null);
+        sessions.MarkAuthenticated(handle, identityProven: true);
+        sessions.SetSupportsPhonePrompt(handle, true);
+
+        var service = NewService(sessions);
+        FileConsentPrompt? raised = null;
+        service.ConsentRequested += p => raised = p;
+        var request = new FileConsentRequest
+        {
+            ConsentId = Guid.NewGuid().ToString("N"),
+            Kind = FileConsentKinds.FullBrowse,
+        };
+
+        var decision = await service.RequestConsentAsync("phone-1", request, CancellationToken.None);
+
+        // The PC is asked...
+        Assert.NotNull(raised);
+        Assert.Equal(request.ConsentId, raised!.Request.ConsentId);
+
+        // ...and the phone is NOT, even though it advertised that it could show the sheet. Handing
+        // out the whole filesystem is authorised at the machine being handed out.
+        Assert.Empty(socket.Sent);
+
+        // Nobody answered the PC dialog, so it still times out into a clean deny.
         Assert.False(decision.Granted);
     }
 

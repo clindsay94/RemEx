@@ -197,7 +197,8 @@ public sealed class FileTrustService : IFileTrustService
             // out. The rule itself lives in ConsentRoutePolicy with its own tests; this is the wiring.
             var route = ConsentRoutePolicy.Route(
                 _sessions.IsConnected(clientId),
-                _sessions.SupportsPhonePrompt(clientId));
+                _sessions.SupportsPhonePrompt(clientId),
+                request.Kind);
 
             switch (route)
             {
