@@ -116,10 +116,48 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _trayStatusSummary = "Remex";
 
+    /// <summary>How often the tray tooltip is rebuilt, however often telemetry arrives.</summary>
+    /// <remarks>
+    /// Five seconds because the tooltip is only ever READ ON HOVER, and reaching it takes longer than
+    /// that. A tooltip cannot be stale to someone who is not looking at it.
+    /// </remarks>
+    internal static readonly TimeSpan TrayTooltipInterval = TimeSpan.FromSeconds(5);
+
+    private DateTime _lastTrayUpdateUtc = DateTime.MinValue;
+    private bool _lastTrayConnected;
+
+    /// <summary>
+    /// Whether the tray tooltip is due a rebuild (RemEx-zcos item 3).
+    /// </summary>
+    /// <remarks>
+    /// **CONNECTION CHANGES BYPASS THE THROTTLE, AND THAT IS THE WHOLE CARE IN THIS CHANGE.** The
+    /// readings in the tooltip are worth five seconds of staleness; "Disconnected" is not. Without the
+    /// second clause a user who just lost their PC could hover and be told everything is fine.
+    /// </remarks>
+    internal static bool ShouldRebuildTray(
+        DateTime nowUtc, DateTime lastUtc, bool connected, bool lastConnected, TimeSpan interval) =>
+        connected != lastConnected || nowUtc - lastUtc >= interval;
+
     /// <summary>Recomputes <see cref="TrayStatusSummary"/> from the latest telemetry snapshot.</summary>
+    /// <remarks>
+    /// Throttled: this ran on every telemetry tick, once a second, forever, rebuilding a string for a
+    /// tooltip nobody was looking at - and it kept doing it while the window was minimised to the
+    /// tray, which is exactly when the UI thread should be idlest. The assignment itself was already
+    /// cheap when the text was unchanged, because the generated <c>[ObservableProperty]</c> setter
+    /// skips equal values; the waste was building the string to discover that.
+    /// </remarks>
     public void UpdateTrayStatus(Remex.Core.Messages.TelemetryPayload? telemetry)
     {
-        var connectionLabel = Connection.IsConnected ? LocalizationService.Instance["Status_Connected"] : LocalizationService.Instance["Status_Disconnected"];
+        var connected = Connection.IsConnected;
+        if (!ShouldRebuildTray(DateTime.UtcNow, _lastTrayUpdateUtc, connected, _lastTrayConnected, TrayTooltipInterval))
+        {
+            return;
+        }
+
+        _lastTrayUpdateUtc = DateTime.UtcNow;
+        _lastTrayConnected = connected;
+
+        var connectionLabel = connected ? LocalizationService.Instance["Status_Connected"] : LocalizationService.Instance["Status_Disconnected"];
 
         if (telemetry?.Sensors is not { Count: > 0 })
         {
