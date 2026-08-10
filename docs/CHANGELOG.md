@@ -188,6 +188,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **Three small efficiencies in file transfer and address checking.** Sending a file the older way
+  made a fresh copy of every chunk in memory purely to hand its length along — the two things that
+  needed it already accepted a length, so the copy told them nothing they were not being told anyway.
+  Files being read or written in bulk now tell the operating system they are being read start to
+  finish, which lets it read ahead and stop holding on to the parts already dealt with, so a large
+  transfer does not push everything else out of the machine's cache. And the two patterns that check
+  a MAC address and a hostname are now built when RemEx is built rather than assembled each time it
+  starts — on the phone they were being re-interpreted on every check, because the setting that was
+  meant to speed them up cannot work in the form the phone's core is compiled.
+
+  None of this changes what the app does. The address patterns in particular were checked against
+  474,866 inputs by the reviewer to confirm they accept and reject exactly what they used to.
+  (RemEx-ygapg)
+
 - **262 Android code-quality warnings that nothing was checking have been read, and now nothing can
   add a 263rd.** Android's own code checker has two modes: a short list the build actually enforces,
   and a much longer one nobody was running. The long one had 262 complaints sitting unread, and the
