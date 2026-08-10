@@ -22,12 +22,45 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
 class SettingsManager(val context: Context) {
 
         companion object {
+                /**
+                 * Which MAC Wake-on-LAN should use for the PC currently selected (RemEx-263f).
+                 *
+                 * **A MANUAL MAC IS ONLY PREFERRED FOR THE PC IT WAS ENTERED FOR.** The MAC,
+                 * broadcast address and subnet are stored once, globally, while tap-to-connect on a
+                 * Known PC changes only the host - so a MAC typed for PC A was still broadcast after
+                 * switching to PC B. That wakes the wrong machine, and it does so silently: nothing on
+                 * the phone looks wrong, and the machine that woke is not the one being looked at. The
+                 * typed-address path at least showed a MAC field to notice; tap-to-connect shows none.
+                 *
+                 * **A BLANK [manualHost] STILL PREFERS THE MANUAL MAC, DELIBERATELY.** That is the
+                 * pre-RemEx-263f data of anyone upgrading, and the alternative - treating unknown as
+                 * mismatched - would silently discard a MAC someone set on purpose for a different NIC
+                 * or a router quirk, which the manual slot exists to respect. Those installs heal the
+                 * next time settings are saved, since the host is recorded in the same edit.
+                 */
+                internal fun resolveMacAddress(
+                        manual: String,
+                        manualHost: String,
+                        hostReported: String,
+                        currentHost: String,
+                ): String {
+                        val manualAppliesHere =
+                                manual.isNotBlank() &&
+                                        (manualHost.isBlank() || manualHost == currentHost)
+                        return if (manualAppliesHere) manual else hostReported
+                }
+
                 val HOST_KEY = stringPreferencesKey("host")
                 val PORT_KEY = intPreferencesKey("port")
                 val MAC_KEY = stringPreferencesKey("mac_address")
                 // The MAC the HOST reported in host_info, kept apart from the one the user typed
                 // so auto-discovery can never overwrite a manual entry (RemEx-izuj).
                 val HOST_MAC_KEY = stringPreferencesKey("host_mac_address")
+                // The host the MANUAL mac was entered for (RemEx-263f). MAC, broadcast and subnet
+                // are stored globally, but tap-to-connect on a Known PC changes only the host - so a
+                // manual MAC entered for PC A was still being broadcast after switching to PC B,
+                // silently waking the wrong machine with nothing on screen to notice.
+                val MAC_MANUAL_HOST_KEY = stringPreferencesKey("mac_manual_host")
                 val BROADCAST_IP_KEY = stringPreferencesKey("broadcast_ip")
                 val SUBNET_MASK_KEY = stringPreferencesKey("subnet_mask")
 
@@ -242,8 +275,12 @@ class SettingsManager(val context: Context) {
          */
         val macAddressFlow: Flow<String> =
                 context.dataStore.data.map { preferences ->
-                        val manual = preferences[MAC_KEY] ?: ""
-                        if (manual.isNotBlank()) manual else preferences[HOST_MAC_KEY] ?: ""
+                        resolveMacAddress(
+                                manual = preferences[MAC_KEY] ?: "",
+                                manualHost = preferences[MAC_MANUAL_HOST_KEY] ?: "",
+                                hostReported = preferences[HOST_MAC_KEY] ?: "",
+                                currentHost = preferences[HOST_KEY] ?: "",
+                        )
                 }
 
         val broadcastIpFlow: Flow<String> =
@@ -403,6 +440,8 @@ class SettingsManager(val context: Context) {
                         preferences[HOST_KEY] = host
                         preferences[PORT_KEY] = port
                         preferences[MAC_KEY] = mac
+                        // Recorded in the same edit as the host it belongs to (RemEx-263f).
+                        preferences[MAC_MANUAL_HOST_KEY] = host
                         preferences[BROADCAST_IP_KEY] = broadcast
                         preferences[SUBNET_MASK_KEY] = subnetMask
                 }

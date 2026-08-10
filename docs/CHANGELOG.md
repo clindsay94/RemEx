@@ -57,6 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Tapping a different PC could send the wake-up signal to the previous one.** If you had typed a
+  MAC address in yourself and then switched to another PC from your list of Known PCs, everything else
+  pointed at the new machine but the Wake-on-LAN tile still used the address you typed for the old
+  one. It woke the wrong computer, and nothing on your phone looked wrong. A typed address is now
+  remembered against the PC you typed it for, and is only used for that PC; for any other, RemEx uses
+  the address that PC reports itself. (RemEx-263f)
+
 - **The System status card on the PC told you something was wrong but not what to do about it.** Only
   the autostart row had a button; the rest reported a problem and left you there. Each of the other
   rows now has a "What this means" button that opens a short explanation and the next step - how to
