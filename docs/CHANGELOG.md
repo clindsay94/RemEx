@@ -57,6 +57,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Listing running programs opened and read every one of their .exe files, over and over.** The
+  process list shows each program's version and publisher, which have to be read out of the program's
+  own file on disk. RemEx was reading that file once for every running copy of the program rather than
+  once for the program — so a PC with a dozen background service processes, or a browser with twenty
+  tabs, was opening and parsing the same handful of files dozens of times, and then doing it all again
+  the next time the list refreshed.
+
+  Each file is now opened and parsed once, and remembered while the program keeps running. If the
+  program's file is rewritten, RemEx sees the new timestamp and reads it again, so the version shown
+  stays correct without needing a restart. (RemEx-qz5z3)
+
 - **Updates from your PC could be thrown away while the phone was still busy with the previous one.**
   Eleven of the channels the app receives on — readings, the process list, cursor updates, stream
   setup, and the messages that explain why a remote session failed — were left with room for exactly

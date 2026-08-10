@@ -12,6 +12,33 @@ public class WindowsProcessMonitorService : IProcessMonitorService
     private readonly object _lock = new();
     private DateTime _lastScanTime = DateTime.UtcNow;
 
+    /// <summary>Version/publisher per executable, so the scan reads each file once (RemEx-qz5z3).</summary>
+    /// <remarks>Guarded by <see cref="_lock"/> along with everything else in a scan.</remarks>
+    private readonly ExecutableMetadataCache _metadataCache = new();
+
+    /// <summary>Reads the version resource. The expensive call the cache exists to avoid.</summary>
+    internal static ExecutableMetadata LoadExecutableMetadata(string path)
+    {
+        var fvi = FileVersionInfo.GetVersionInfo(path);
+        return new ExecutableMetadata(fvi.FileVersion ?? "", fvi.CompanyName ?? "");
+    }
+
+    /// <summary>
+    /// Picks the cache key for one executable, or bypasses the cache when it has no usable stat.
+    /// </summary>
+    /// <remarks>
+    /// **EXTRACTED SO THE KEY CHOICE IS TESTABLE, BECAUSE IT IS THE ONE LINE THE BEAD FORBIDS GETTING
+    /// WRONG.** Keying on creation time instead of write time looks equivalent and is not: NTFS
+    /// tunnelling preserves a creation time across an in-place replace, so an updated program would
+    /// report its old version for the life of the agent. Inline, that swap changed no test.
+    /// </remarks>
+    internal static ExecutableMetadata ResolveMetadata(
+        string path,
+        FileInfo? stat,
+        ExecutableMetadataCache cache,
+        Func<string, ExecutableMetadata> load) =>
+        stat is null ? load(path) : cache.GetOrAdd(path, stat.LastWriteTimeUtc, load);
+
     public WindowsProcessMonitorService(ILogger<WindowsProcessMonitorService> logger)
     {
         _logger = logger;
@@ -25,6 +52,13 @@ public class WindowsProcessMonitorService : IProcessMonitorService
             {
             var results = new List<ProcessInfo>();
             var activePids = new HashSet<int>();
+
+            // Executables seen this scan, used to trim the metadata cache below. Ordinal because a
+            // differently-cased path (MainModule preserves the casing a process was launched with,
+            // so a service started from a registry ImagePath can differ from one started via
+            // Explorer) costs one extra parse and never a wrong answer, where an ignore-case fold
+            // costs a comparison on every lookup to save that.
+            var livePaths = new HashSet<string>(StringComparer.Ordinal);
             var now = DateTime.UtcNow;
             var timeDiff = (now - _lastScanTime).TotalMilliseconds;
             _lastScanTime = now;
@@ -93,22 +127,48 @@ public class WindowsProcessMonitorService : IProcessMonitorService
                     if (!string.IsNullOrEmpty(path))
                     {
                         info = info with { FilePath = path };
-                        var fvi = FileVersionInfo.GetVersionInfo(path);
-                        info = info with
-                        {
-                            Version = fvi.FileVersion ?? "",
-                            Publisher = fvi.CompanyName ?? ""
-                        };
+                        livePaths.Add(path);
+
+                        // **ONE STAT SERVES BOTH THE INSTALL DATE AND THE CACHE KEY (RemEx-qz5z3).**
+                        // Version and publisher are properties of the FILE, not of the process, and
+                        // reading them opens and parses the executable's version resource - which used
+                        // to happen once per process rather than once per file, so a dozen svchost
+                        // instances meant a dozen identical parses, repeated on every poll. Keying on
+                        // the write time as well as the path means a rewritten file is re-read on the
+                        // next scan, which matters because this agent runs for weeks and nobody would
+                        // think to restart it to correct a version string. Detection is by TIMESTAMP,
+                        // not content: a replacement preserving the write time (robocopy's default)
+                        // keeps the old entry while a process still holds the path. Narrow, because
+                        // Windows locks a mapped image, so overwriting a running exe needs a swap.
+                        //
+                        // The stat is inside its own try because it was already: an executable whose
+                        // creation time is unreadable (permissions, a reparse point) must still get a
+                        // row. When it fails, the cache is bypassed entirely rather than keyed on a
+                        // guessed timestamp - a wrong key is worse than no cache, because it would
+                        // pin whatever it stored under a value the next scan may not reproduce.
+                        FileInfo? fileInfo = null;
                         try
                         {
-                            var fi = new FileInfo(path);
-                            info = info with { InstallDate = fi.CreationTime };
+                            fileInfo = new FileInfo(path);
+                            info = info with { InstallDate = fileInfo.CreationTime };
                         }
                         catch
                         {
                             // The executable exists but its creation time is unreadable - a permissions or
                             // reparse-point case. The install date is cosmetic; the row is not.
+                            fileInfo = null;
                         }
+
+                        // Method group, not a lambda: LoadExecutableMetadata captures nothing, so the
+                        // compiler caches one delegate instead of allocating a closure per process
+                        // per scan - including on the hits this change exists to produce.
+                        var metadata = ResolveMetadata(path, fileInfo, _metadataCache, LoadExecutableMetadata);
+
+                        info = info with
+                        {
+                            Version = metadata.Version,
+                            Publisher = metadata.Publisher
+                        };
                     }
                 }
                 catch (System.ComponentModel.Win32Exception)
@@ -132,6 +192,12 @@ public class WindowsProcessMonitorService : IProcessMonitorService
             // Cleanup old trackers
             var toRemove = _cpuTrackers.Keys.Where(k => !activePids.Contains(k)).ToList();
             foreach (var k in toRemove) _cpuTrackers.Remove(k);
+
+            // Trimmed alongside the CPU trackers and for the same reason: this service lives as long
+            // as the agent does, so a cache that only ever grows is a leak with a slow fuse. Bounding
+            // it to executables currently running keeps it at a few hundred entries instead of every
+            // binary — and every VERSION of every binary — launched since the machine booted.
+            _metadataCache.RetainOnly(livePaths);
 
             return results;
             }
