@@ -57,6 +57,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The home screen widget was writing to your phone's storage every second, all day, to refresh
+  itself twice a minute.** The widget keeps a copy of the latest readings so it has something to draw
+  when Android asks it to redraw. That copy was being saved every time a new reading arrived — about
+  once a second, for as long as RemEx was running — while the widget itself only redraws on the
+  interval you choose, thirty seconds by default. It was also re-reading that interval setting from
+  storage every second, purely to decide it wasn't time to redraw yet.
+
+  Both now happen only when the widget actually redraws, so at the default setting that is two saves
+  a minute instead of sixty. The one visible difference: a redraw RemEx didn't trigger — Android
+  redrawing your home screen, or resizing the widget — now paints readings up to one refresh interval
+  old, and that frame stays up until the next refresh, so what you are looking at can be up to two
+  intervals old before it catches up. Previously it was never more than a second behind. That is the
+  cost of not writing to storage sixty times a minute, and it stays inside the refresh rate you chose.
+  (RemEx-o02rf)
+
 - **On Linux, declining the PC's permission prompt left the remote screen looking fine and doing
   nothing.** On newer Linux desktops, RemEx has to ask the system for permission before it can move
   your mouse or type for you, and it only asks at the moment you first try — so the prompt appears on
