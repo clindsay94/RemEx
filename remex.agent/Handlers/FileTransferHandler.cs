@@ -1081,8 +1081,11 @@ public sealed class FileTransferHandler(
         {
             while ((read = await state.FileStream.ReadAsync(buffer.AsMemory(0, chunkSize), ct)) > 0)
             {
-                var slice = buffer[..read];
-                state.Hasher.TransformBlock(slice, 0, read, null, 0);
+                // NO SLICE. buffer[..read] allocated a fresh array every chunk purely to carry a
+                // length that both consumers below already accept as an offset and count - so the
+                // copy existed to tell them something they were being told anyway. On the v2 base64
+                // path that is one array per chunk for the whole of a large file (RemEx-ygapg).
+                state.Hasher.TransformBlock(buffer, 0, read, null, 0);
                 state.BytesTransferred += read;
                 chunkCount++;
 
@@ -1093,7 +1096,7 @@ public sealed class FileTransferHandler(
                     {
                         TransferId = state.TransferId,
                         Offset = state.BytesTransferred - read,
-                        DataBase64 = Convert.ToBase64String(slice)
+                        DataBase64 = Convert.ToBase64String(buffer, 0, read)
                     }
                 }, ct);
 

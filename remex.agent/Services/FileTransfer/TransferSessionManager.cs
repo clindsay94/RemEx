@@ -264,7 +264,16 @@ public sealed class TransferSessionManager : IDisposable
         }
 
         var mode = startOffset == 0 ? FileMode.Create : FileMode.Open;
-        var stream = new FileStream(partialPath, mode, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+        // SEQUENTIALSCAN ALONGSIDE ASYNCHRONOUS, NOT INSTEAD OF IT. A transfer walks the file once
+        // start to end and never seeks back. The documented effect of the hint is read-ahead, which
+        // this WRITE handle gets nothing from - what it gets is the other half, the cache manager not
+        // retaining pages behind the cursor, so receiving a large file does not evict what else the
+        // machine had cached. Stated narrowly because the read sites get both and this one does not.
+        // Asynchronous is what the useAsync overload was setting and is still required: dropping it
+        // turns every await here into a blocking call on a thread-pool thread (RemEx-ygapg).
+        var stream = new FileStream(
+            partialPath, mode, FileAccess.Write, FileShare.None, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
         if (startOffset > 0)
             stream.Seek(startOffset, SeekOrigin.Begin);
 
@@ -1410,7 +1419,9 @@ public sealed class TransferSessionManager : IDisposable
 
     private static async Task ReHashPartialAsync(string partialPath, IncrementalHash hasher, CancellationToken ct)
     {
-        await using var stream = new FileStream(partialPath, FileMode.Open, FileAccess.Read, FileShare.None, 65536, useAsync: true);
+        await using var stream = new FileStream(
+            partialPath, FileMode.Open, FileAccess.Read, FileShare.None, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
         var buffer = ArrayPool<byte>.Shared.Rent(65536);
         try
         {

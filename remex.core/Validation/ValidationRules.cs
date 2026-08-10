@@ -23,11 +23,19 @@ public class ValidWebSocketUriAttribute : ValidationAttribute
     }
 }
 
-public class ValidMacAddressAttribute : ValidationAttribute
+public partial class ValidMacAddressAttribute : ValidationAttribute
 {
-    private static readonly Regex MacAddressRegex = new(
-        @"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$",
-        RegexOptions.Compiled);
+    /// <summary>
+    /// **SOURCE-GENERATED, BECAUSE <c>RegexOptions.Compiled</c> IS A NO-OP HERE (RemEx-ygapg).**
+    /// That flag emits IL at runtime, which NativeAOT cannot do - and this assembly is compiled AOT
+    /// into the Android core - so the pattern it was meant to speed up was being interpreted on every
+    /// call instead. <c>[GeneratedRegex]</c> is the only form that actually compiles under AOT, and
+    /// it does the work at build time rather than first use.
+    /// </summary>
+    [GeneratedRegex(@"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$")]
+    private static partial Regex MacAddressPattern();
+
+    private static readonly Regex MacAddressRegex = MacAddressPattern();
 
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
@@ -74,11 +82,13 @@ public class ValidPortAttribute : ValidationAttribute
 /// <summary>
 /// Validates that a network hostname is valid (DNS name or IP address).
 /// </summary>
-public class ValidHostnameAttribute : ValidationAttribute
+public partial class ValidHostnameAttribute : ValidationAttribute
 {
-    private static readonly Regex DnsNameRegex = new(
-        @"^(?=.{1,253}$)(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)*(?!-)[A-Za-z0-9-]{1,63}(?<!-)$",
-        RegexOptions.Compiled);
+    /// <summary>Source-generated for the same reason as the MAC pattern above (RemEx-ygapg).</summary>
+    [GeneratedRegex(@"^(?=.{1,253}$)(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)*(?!-)[A-Za-z0-9-]{1,63}(?<!-)$")]
+    private static partial Regex DnsNamePattern();
+
+    private static readonly Regex DnsNameRegex = DnsNamePattern();
 
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {

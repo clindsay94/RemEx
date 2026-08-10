@@ -192,13 +192,24 @@ public sealed class FileTransferService : IFileTransferService
     {
         if (!File.Exists(resolved))
             throw new FileNotFoundException($"File not found in shared root '{rootDisplay}': {relativePath}");
-        return Task.FromResult<Stream>(new FileStream(resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true));
+        // SEQUENTIALSCAN ON EVERY BULK STREAM IN THIS FILE, AND FOUR OF THEM WERE NEARLY MISSED
+        // (RemEx-ygapg). The re-measurement that split this work looked for them under
+        // remex.core and found none, because this file lives under remex.agent - so the split
+        // recorded that these sites no longer existed, which would have discharged half of the
+        // item while arguing against anyone looking again. A transfer walks a file once, start to
+        // end, and never seeks back; the hint asks the cache manager to read ahead and to stop
+        // retaining pages behind the cursor, so a large transfer does not evict what else the
+        // machine had cached. Asynchronous is what useAsync was setting and is still required.
+        return Task.FromResult<Stream>(new FileStream(
+            resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan));
     }
 
     public Task<Stream> OpenForWriteAsync(string rootId, string relativePath, long expectedBytes, CancellationToken ct)
         => Task.FromResult<Stream>(new FileStream(
             ResolveForWrite(rootId, relativePath, expectedBytes),
-            FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true));
+            FileMode.Create, FileAccess.Write, FileShare.None, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan));
 
     /// <summary>
     /// Applies every write-side check and returns the absolute destination path, creating the parent
@@ -255,8 +266,12 @@ public sealed class FileTransferService : IFileTransferService
         // but that copy is synchronous, uncancellable and NOT atomic — this keeps the await points and
         // honours ct on a transfer that can legitimately run for minutes. A file created here inherits
         // the destination's ACL normally, so no fixup is needed on this path.
-        await using var src = new FileStream(stagingPath, FileMode.Open, FileAccess.Read, FileShare.None, 65536, useAsync: true);
-        await using var dst = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, 65536, useAsync: true);
+        await using var src = new FileStream(
+            stagingPath, FileMode.Open, FileAccess.Read, FileShare.None, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        await using var dst = new FileStream(
+            destination, FileMode.Create, FileAccess.Write, FileShare.None, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
         await src.CopyToAsync(dst, 65536, ct);
         await dst.FlushAsync(ct);
     }
@@ -319,7 +334,9 @@ public sealed class FileTransferService : IFileTransferService
             throw new FileNotFoundException($"File not found in shared root '{rootDisplay}': {relativePath}");
 
         using var sha = System.Security.Cryptography.SHA256.Create();
-        await using var stream = new FileStream(resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, useAsync: true);
+        await using var stream = new FileStream(
+            resolved, FileMode.Open, FileAccess.Read, FileShare.Read, 65536,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
         var hash = await sha.ComputeHashAsync(stream, ct);
         return Convert.ToBase64String(hash);
     }
