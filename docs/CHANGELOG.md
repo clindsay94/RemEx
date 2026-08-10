@@ -43,6 +43,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **When a file the PC was sending died at the last moment, your phone kept a half-finished copy of
+  it for a week.** Receiving a file has two steps: your phone agrees to it, then the contents arrive
+  over a second connection. If that connection turned out to be missing between those two steps, the
+  PC gave up and said nothing at all — so your phone was still holding a reserved slot and a
+  part-written file, and only a weekly tidy-up would ever clear them. The PC now tells your phone to
+  let go, which it already knew how to do; the partial file is removed straight away.
+
+  You are still not told it happened, and that is deliberately left rather than half-done: the person
+  who asked for the file is at the phone, not the PC, and the message the PC sends has nowhere to put
+  a reason. That needs a small protocol addition and is filed on its own. (RemEx-cc30z)
+
 - **After you switched your phone to a different PC, a file transfer could still be sent to the old
   one.** Transfers use a second connection, separate from the one that carries everything else. Before
   starting a transfer the phone checked whether that connection was open — but not whether it was open
