@@ -150,6 +150,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The app now writes down which screen each kind of message from your PC is meant for, and checks
+  it.** Your PC talks to four different things: the phone's main connection, the pairing screen, the
+  remote-desktop stream, and the PC's own window. A check already existed for messages that nothing
+  anywhere was listening to. It could not tell whether the *right* one was listening — so if the phone
+  quietly stopped handling a message the PC window also handles, the check stayed happy while the
+  phone's screen stopped updating, with nothing said.
+
+  Each kind of message now states who it is for, and that statement is verified against the code. It
+  cannot be left out: a message with no stated audience fails the check. Writing this down turned up
+  two things already wrong — the remote-desktop stream was recorded as not needing the security
+  challenge it actually depends on, and the PC's own remote-desktop window was recorded as not
+  existing at all. Neither was causing a problem yet; both would have been certified as correct the
+  first time somebody broke them. (RemEx-y94aa)
+
 - **Groundwork for showing every PC on your network instead of whichever one answers first.** When
   the phone looks for PCs it stops at the first reply, so with two machines running RemEx on one
   network you get one of them and no sign the other exists. The rule that keeps listening — finding
