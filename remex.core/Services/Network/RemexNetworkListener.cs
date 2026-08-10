@@ -24,7 +24,40 @@ public class RemexNetworkListener : INetworkListener, IDisposable
     private readonly IWakeOnLanService _wakeOnLanService;
     private readonly ICertificateService? _certificateService;
     private readonly ICommandChannelAuthenticator? _authenticator;
-    private const int MaxPayloadSize = 10 * 1024 * 1024; // 10MB limit for JSON commands
+    /// <summary>
+    /// The largest command payload this ingress will allocate for (RemEx-ga503).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **SIZED BY WHAT A COMMAND IS, NOT BY WHAT A BUFFER COULD BE.** This was 10MB, and the
+    /// allocation it authorises happens roughly twenty lines before <see cref="IsRequestAuthenticated"/>
+    /// is reached — the length prefix is read from the wire, checked against this, and turned into a
+    /// <c>new byte[length]</c> by a peer that has proved nothing beyond completing a TLS handshake
+    /// against the host's own certificate. Declare ten megabytes, send nothing, and the host holds a
+    /// large-object allocation until the read timeout expires; the DEFAULT concurrency cap of 16
+    /// (overridable via <c>Remex:CommandMaxConcurrent</c>) made the ceiling about 160MB. 8338 is
+    /// external attack surface hardened in RemEx-s032.2, and this was the one allocation on it that a
+    /// stranger got to size.
+    /// </para>
+    /// <para>
+    /// **64KB IS ENORMOUS FOR WHAT THIS CHANNEL CAN DISPATCH, AND AN EARLIER VERSION OF THIS COMMENT
+    /// GOT THAT WRONG IN A DANGEROUS DIRECTION.** It said the widest payload was a launch path. This
+    /// ingress dispatches ONLY the eleven shared whole-machine power verbs — <c>LAUNCHAPP</c>,
+    /// <c>KILLPROCESS</c>, <c>KILLPROCESSELEVATED</c> and <c>SCREENSHOT</c> are deliberately withheld
+    /// from it (RemEx-pmb4; see <c>CommandVerbs.ScriptIngress</c>, enforced by
+    /// <c>CommandVerbDriftTests</c>). The widest thing that legitimately arrives is
+    /// <c>WAKEONLAN</c>'s MAC, broadcast address, port and delay: under about 200 bytes. Writing
+    /// "launch path" here would have told the next reader that 8338 accepts a verb it exists to
+    /// refuse, which is licence to reverse a narrowing decision rather than merely a wrong number.
+    /// </para>
+    /// <para>
+    /// **WHAT THIS REMOVED IS THE AMPLIFICATION, NOT PRE-AUTH ALLOCATION.** A peer that actually
+    /// transmits 64KB still causes a string of roughly 131KB at the <c>GetString</c> below, which is
+    /// itself above the large-object threshold — but it has to send every byte to get it, and the
+    /// read timeout bounds that. What is gone is declaring a size and paying nothing for it.
+    /// </para>
+    /// </remarks>
+    internal const int MaxPayloadSize = 64 * 1024;
 
     // Bound the number of concurrent TCP command sessions so a flood of half-open
     // connections cannot exhaust threads/sockets. Configurable via Remex:CommandMaxConcurrent.
