@@ -43,6 +43,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The dashboard's sensor drawer filled up with readings your PC had stopped sending, and never
+  tidied itself.** Every sensor your PC has mentioned since the app started gets a card in the drawer
+  you drag from, and nothing ever took one out. Because the PC swaps between two sources of readings
+  depending on what it can see, the drawer ended up holding several overlapping sets at once —
+  including sensors that stopped reporting long ago — and you had to scroll past all of them.
+
+  Sensors your PC is still reporting now sort to the top, and ones that have gone quiet dim and sink
+  below them. Nothing is deleted: a sensor that comes back simply rises again, and a card you have
+  already placed on the dashboard keeps working throughout. Deleting them was the obvious fix and
+  would have been wrong — the two sources take turns, so entries would have flickered in and out
+  while you were reaching for one. The drawer is also left completely alone when nothing has changed,
+  so it does not reshuffle under your pointer once a second. (RemEx-yqpa)
+
 - **When a file the PC was sending died at the last moment, your phone kept a half-finished copy of
   it for a week.** Receiving a file has two steps: your phone agrees to it, then the contents arrive
   over a second connection. If that connection turned out to be missing between those two steps, the
