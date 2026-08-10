@@ -150,6 +150,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **262 Android code-quality warnings that nothing was checking have been read, and now nothing can
+  add a 263rd.** Android's own code checker has two modes: a short list the build actually enforces,
+  and a much longer one nobody was running. The long one had 262 complaints sitting unread, and the
+  honest position was that nobody knew whether they were real problems or rules this project simply
+  does not follow — which are opposite situations.
+
+  They turned out to be four things, and none of them was a bug. 255 were the app using Google's own
+  colour maths to build the themes, which it marks as internal while offering no public replacement;
+  5 were the checker not being able to see a permission check that is right there at the top of
+  each function; 1 was in preview-only code and was fixed properly; 1 was in a file that only exists
+  on a developer's own machine. Each is now marked as understood, individually rather than by
+  switching the rule off, so the same complaint about genuinely new code still stops the build.
+
+  The count is zero, and the full check now runs as part of verification so it stays that way — a
+  number nothing looks at goes back to 262 one change at a time, which is how it got there. Turning
+  it on immediately found a bug in the verification script itself: when the check failed, the script
+  named the problem correctly and then crashed instead of printing its summary. That path had never
+  run before. (RemEx-cljx)
+
 - **The app now writes down which screen each kind of message from your PC is meant for, and checks
   it.** Your PC talks to four different things: the phone's main connection, the pairing screen, the
   remote-desktop stream, and the PC's own window. A check already existed for messages that nothing
