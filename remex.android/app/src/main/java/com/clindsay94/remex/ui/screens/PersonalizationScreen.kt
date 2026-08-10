@@ -1,5 +1,6 @@
 package com.clindsay94.remex.ui.screens
 
+import android.annotation.SuppressLint
 import android.app.LocaleManager
 import android.content.Context
 import android.os.LocaleList
@@ -138,6 +139,7 @@ private fun PersonalizationLoading(showHeader: Boolean) {
         ExperimentalLayoutApi::class
 )
 @Composable
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 fun PersonalizationScreenContent(
     settings: SettingsManager.PersonalizationPreferences,
     showHeader: Boolean,
@@ -1318,6 +1320,7 @@ private fun HueSlider(value: Float, onValueChange: (Float) -> Unit) {
 }
 
 @Composable
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 private fun TonalRow(hct: Hct) {
     val tones = listOf(10, 30, 50, 70, 90, 95)
     val palette = remember(hct) { TonalPalette.fromHueAndChroma(hct.hue, hct.chroma) }

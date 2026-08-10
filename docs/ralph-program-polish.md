@@ -62,7 +62,7 @@ disk: git history on this branch, and the beads tracker. Trust those, not your i
 
 7. Verify — build whatever platform you touched:
    - Kotlin/Android → `cd remex.android && ./gradlew assembleRelease` (RELEASE, never debug —
-     only release runs the `lintVitalRelease` gate).
+     only release runs the `lintRelease` gate).
    - C#/PC (`remex.agent`, `remex.desktop`, `remex.core`) → `dotnet build Remex.sln`, and run
      `dotnet test Remex.sln` if the touched area has tests.
    - Touched both → run both.

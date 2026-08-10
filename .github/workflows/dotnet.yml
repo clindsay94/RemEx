@@ -90,4 +90,6 @@ jobs:
 # NDK, the .NET Android workload, and the JDK — none of which was verified to be available on a
 # hosted runner before this workflow was written. Adding a job expected to fail is how CI gets
 # ignored. Tracked as RemEx-t4zr. When it is added it must use assembleRelease and never
-# assembleDebug: only the release variant runs the fatal lintVitalRelease gate.
+# assembleDebug: only the release variant runs the lint gate - and it must run lintRelease (or
+#   scripts/verify.ps1 -Scope android), because assembleRelease pulls only the fatal subset,
+#   which is the half that reported zero while 262 errors sat unread (RemEx-cljx).

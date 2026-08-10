@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  What Android lint is allowed to fail the build on, and what it is not (RemEx-cljx).
+
+  BEFORE THIS FILE, `lintRelease` REPORTED 262 ERRORS AND NOTHING RAN IT. `lintVitalRelease` - the
+  one the build does run - covers only the fatal-severity subset, so the rest sat unread. They were
+  triaged rather than estimated, and the result inverted the expectation that "at least some are
+  genuine": of 262, none were a defect.
+
+    255  RestrictedApi             Material's own colour-science APIs; suppressed at the four
+                                declarations that use them, NOT here - see below.
+      5  MissingPermission         Every one guarded already; suppressed at the call site instead.
+      1  PropertyEscape            local.properties - a developer's machine, not this project.
+      1  UnrememberedMutableState  Real, in a @Preview, and fixed rather than ignored.
+
+  Nothing here is a blanket disable. The point of paying this down was to make the count mean
+  something so `lintRelease` could join the verification gate; a rule turned off everywhere would
+  hand back exactly the silence the exercise removed.
+-->
+<lint>
+
+    <!--
+      local.properties IS NOT THIS PROJECT'S FILE.
+
+      It is generated per machine, gitignored, and holds the SDK path - so on Windows it necessarily
+      contains `Z:/android/sdk`, and the rule wants the drive separator escaped. Nobody can fix it
+      because nobody checks it in; the report is about the developer's own workstation.
+    -->
+    <issue id="PropertyEscape">
+        <ignore path="local.properties" />
+        <ignore path="../local.properties" />
+    </issue>
+
+</lint>

@@ -105,6 +105,7 @@ val LocalCustomColors = staticCompositionLocalOf {
  * A function rather than top-level vals: Theme.kt top-level property init order is fragile
  * (see the DarkColorScheme lazy note above) and callers cache via remember anyway.
  */
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 internal fun customColorsForScheme(darkTheme: Boolean, contrast: Double): CustomColors {
     val successSeed = Hct.fromInt(0xFF386A20.toInt())
     val scheme = SchemeTonalSpot(successSeed, darkTheme, contrast)
@@ -132,6 +133,7 @@ val remexShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp)
 )
 
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 private val MaterialDynamicColorsInstance = MaterialDynamicColors()
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -315,6 +317,7 @@ fun calculateAdaptivePadding(shapePreset: Float): androidx.compose.ui.unit.Dp {
     return androidx.compose.ui.unit.lerp(24.dp, 8.dp, safety) * fontScale
 }
 
+@SuppressLint("RestrictedApi") // Material colour science, no public equivalent - see lint.xml (RemEx-cljx)
 fun colorSchemeFromSeed(
     seedColor: Color,
     darkTheme: Boolean,

@@ -2,6 +2,7 @@ package com.clindsay94.remex.service
 
 import android.Manifest
 import android.app.NotificationChannel
+import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -214,6 +215,12 @@ object FileTransferNotificationManager {
             )
         }
 
+        // SUPPRESSED BECAUSE THE GUARD IS ALREADY ABOVE, AND LINT CANNOT SEE IT (RemEx-cljx).
+        // Every function here opens with canPostNotifications(context), which is an ordinary
+        // call rather than an inline checkSelfPermission - and lint's permission analysis does
+        // not follow one. Suppressed at the five call sites rather than by disabling the rule,
+        // so a notify() added WITHOUT a guard still fails the build.
+        @SuppressLint("MissingPermission")
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
     }
 
@@ -332,6 +339,12 @@ object FileTransferNotificationManager {
             )
         }
 
+        // SUPPRESSED BECAUSE THE GUARD IS ALREADY ABOVE, AND LINT CANNOT SEE IT (RemEx-cljx).
+        // Every function here opens with canPostNotifications(context), which is an ordinary
+        // call rather than an inline checkSelfPermission - and lint's permission analysis does
+        // not follow one. Suppressed at the five call sites rather than by disabling the rule,
+        // so a notify() added WITHOUT a guard still fails the build.
+        @SuppressLint("MissingPermission")
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
     }
 
@@ -360,6 +373,12 @@ object FileTransferNotificationManager {
                         .setSilent(true)
                         .setPriority(NotificationCompat.PRIORITY_LOW)
 
+        // SUPPRESSED BECAUSE THE GUARD IS ALREADY ABOVE, AND LINT CANNOT SEE IT (RemEx-cljx).
+        // Every function here opens with canPostNotifications(context), which is an ordinary
+        // call rather than an inline checkSelfPermission - and lint's permission analysis does
+        // not follow one. Suppressed at the five call sites rather than by disabling the rule,
+        // so a notify() added WITHOUT a guard still fails the build.
+        @SuppressLint("MissingPermission")
         NotificationManagerCompat.from(context).notify(PUSH_FAILED_NOTIFICATION_ID, builder.build())
     }
 
@@ -426,6 +445,12 @@ object FileTransferNotificationManager {
                 .addAction(0, context.getString(R.string.file_consent_deny), denyPending)
                 .addAction(0, context.getString(R.string.file_consent_allow), allowPending)
 
+        // SUPPRESSED BECAUSE THE GUARD IS ALREADY ABOVE, AND LINT CANNOT SEE IT (RemEx-cljx).
+        // Every function here opens with canPostNotifications(context), which is an ordinary
+        // call rather than an inline checkSelfPermission - and lint's permission analysis does
+        // not follow one. Suppressed at the five call sites rather than by disabling the rule,
+        // so a notify() added WITHOUT a guard still fails the build.
+        @SuppressLint("MissingPermission")
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
     }
 
@@ -518,6 +543,12 @@ object FileTransferNotificationManager {
             builder.setProgress(0, 0, false)
         }
 
+        // SUPPRESSED BECAUSE THE GUARD IS ALREADY ABOVE, AND LINT CANNOT SEE IT (RemEx-cljx).
+        // Every function here opens with canPostNotifications(context), which is an ordinary
+        // call rather than an inline checkSelfPermission - and lint's permission analysis does
+        // not follow one. Suppressed at the five call sites rather than by disabling the rule,
+        // so a notify() added WITHOUT a guard still fails the build.
+        @SuppressLint("MissingPermission")
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
     }
 

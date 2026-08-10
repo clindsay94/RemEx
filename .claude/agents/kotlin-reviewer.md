@@ -56,7 +56,7 @@ output only if it is nonzero.
 
 - **Release variant only.** Verification is `compileReleaseKotlin` / `assembleRelease`. Debug is never
   built here: the operator installs release on-device, and **only release runs the fatal
-  `lintVitalRelease` gate**. A change verified only against debug is a HIGH finding.
+  `lintRelease` gate**. A change verified only against debug is a HIGH finding.
 - **Never change `versionCode` or `versionName`** in `remex.android/app/version.properties`. That is
   the operator's call. A version change in a diff is CRITICAL regardless of intent.
 - **Every new user-facing string is a 9-file change.** `res/values/strings.xml` plus all 8 locale

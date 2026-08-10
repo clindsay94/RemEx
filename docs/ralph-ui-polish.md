@@ -115,7 +115,7 @@ disk: git history on this branch, and the beads tracker. Trust those, not your i
   `versionName`/`versionCode` in `remex.android/app/version.properties`.
 - **Never push, never merge to main, never force-push, never rewrite history.**
 - **Release variant only** for Android verification (`assembleRelease`, never `assembleDebug`) —
-  only the release build runs the `lintVitalRelease` gate this project depends on.
+  only the release build runs the `lintRelease` gate this project depends on.
 - **Every new user-facing string is a 9-file change.** Android: `res/values/strings.xml` plus all 8
   locale variants (es, fr, hi, in, pl, pt-rBR, tr, uk). PC: `Localization/Strings.resx` plus its 8
   variants. A string hardcoded inline in Kotlin or XAML is a regression. If you cannot produce a

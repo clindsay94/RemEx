@@ -34,7 +34,7 @@
 
 .PARAMETER Scope
     What to verify. 'dotnet' (default) builds and tests the .NET solution. 'android' runs the
-    Android release unit tests AND the fatal release lint gate (lintVitalRelease) - the tests
+    Android release unit tests AND the full release lint gate (lintRelease) - the tests
     compile the release sources but do not pull lint in, and lint is the gate the release-only
     rule exists for. 'all' does both.
 
@@ -568,7 +568,7 @@ Actual:   False</Message></ErrorInfo></Output>
         'MSBuild version 18.6.11+35b593beb for .NET',
         '  ILC: Method ''[Mono.Android.Runtime]Android.Runtime.RuntimeNativeMethods'' will always throw because: Invalid IL',
         'Z:\RemEx\artifacts\obj\remex.core\linked\Mono.Android.dll : warning IL3053: Assembly produced AOT analysis warnings.',
-        '> Task :app:lintVitalAnalyzeRelease',
+        '> Task :app:lintAnalyzeRelease',
         'Z:\RemEx\remex.android\app\src\main\java\com\clindsay94\remex\FileTransferNotificationManager.kt:218: Error: Missing permissions required by NotificationManagerCompat.notify [MissingPermission]',
         '        NotificationManagerCompat.from(context).notify(notificationId, builder.build())',
         'Wrote HTML report to file:///Z:/RemEx/remex.android/app/build/reports/lint-results-release.html',
@@ -588,7 +588,7 @@ Actual:   False</Message></ErrorInfo></Output>
     $lintDuped = @(Get-LintViolationLines -Output @($lintSample[4], $lintSample[4], $lintSample[4]))
     Assert-Check ($lintDuped.Count -eq 1) "a repeated violation line is reported once (got $($lintDuped.Count))"
 
-    $lintNone = @(Get-LintViolationLines -Output @('> Task :app:lintVitalRelease', 'BUILD SUCCESSFUL in 11s'))
+    $lintNone = @(Get-LintViolationLines -Output @('> Task :app:lintRelease', 'BUILD SUCCESSFUL in 11s'))
     Assert-Check ($lintNone.Count -eq 0) 'clean lint output yields no violation lines'
 
     return $script:parserCheckFailures
@@ -748,7 +748,7 @@ if ($Scope -in @('android', 'all')) {
         Push-Location $androidDir
         try {
             # Release variant only. Debug is never installed on device here, and only the
-            # release variant runs the lintVitalRelease gate.
+            # release variant runs the lintRelease gate.
             # This task only exists because app/build.gradle.kts sets testBuildType =
             # "release"; AGP 9 builds a unit-test component for that variant and no other.
             $gradleArgs = @('testReleaseUnitTest', '--console=plain')
@@ -879,11 +879,22 @@ if ($Scope -in @('android', 'all')) {
         # matters - a bead could close green against a violation that would fail a real release
         # build (RemEx-lju6).
         #
-        # lintVitalRelease alone, not assembleRelease. Measured 2026-08-08: 68s cold, but 11s when
-        # run straight after the tests, because the expensive part - the NativeAOT core build and the
-        # release compile - is shared with testReleaseUnitTest and is already done by then.
-        # assembleRelease was ~93s cold and would have roughly doubled this scope's wall clock for
-        # the same gate. Not an opt-in switch either: a gate you have to remember is not a gate.
+        # lintRelease alone, not assembleRelease. MEASURED FOR THE TASK THIS ACTUALLY RUNS: the
+        # android scope went 57s -> 81-83s when it switched from lintVitalRelease to lintRelease, so
+        # this stage costs about 25s warm. The 11s that used to sit here was lintVitalRelease's, and
+        # in a file whose whole idiom is "measured, not estimated" a re-labelled measurement is worse
+        # than none. assembleRelease was ~93s cold, which is still why this is a lint task and not a
+        # build - though the margin is nearer 3x than the 8x the old pair of numbers implied. Not an
+        # opt-in switch either: a gate you have to remember is not a gate.
+        #
+        # **THE FULL RUN, NOT lintVitalRelease, SINCE RemEx-cljx.** lintVital covers only the
+        # fatal-severity subset; the rest reported 262 errors that nothing ran and nobody had read.
+        # Triaging them found no defects - 255 were Material's own colour-science APIs that M3 dynamic
+        # theming has no public alternative to, 5 were notify() calls whose guard lint cannot follow,
+        # 1 was a @Preview, and 1 was a developer's local.properties. They are suppressed at the
+        # declarations that earn it and in app/lint.xml, and the count is zero. Gating on the full run
+        # is what keeps it there: a number nothing checks goes back to 262 one commit at a time,
+        # which is how it got there.
         #
         # Its own stage and its own message, deliberately. Appending the task to the test invocation
         # above would fold a lint violation into "Android unit tests failed" - precisely the
@@ -891,7 +902,7 @@ if ($Scope -in @('android', 'all')) {
         Write-Stage "Running the Android release lint gate"
         Push-Location $androidDir
         try {
-            $lintOutput = & $gradlew @('lintVitalRelease', '--console=plain') 2>&1
+            $lintOutput = & $gradlew @('lintRelease', '--console=plain') 2>&1
             $lintOk = ($LASTEXITCODE -eq 0)
         }
         finally {
@@ -901,7 +912,7 @@ if ($Scope -in @('android', 'all')) {
         $lintText = ($lintOutput | Out-String)
 
         if ($lintOk) {
-            Write-Say "  lintVitalRelease passed."
+            Write-Say "  lintRelease passed."
         }
         elseif ($lintText -match "(?m)^Task '.*' not found in root project") {
             # "The task is gone" and "the code has violations" need completely different responses,
@@ -911,22 +922,31 @@ if ($Scope -in @('android', 'all')) {
             # Anchored to the line start so a source line lint echoes back cannot trip it.
             $problems.Add('Android lint task does not exist - nothing was linted')
             Write-Problem "The release lint task does not exist, so nothing was linted." `
-                "AGP renames tasks between major versions. Check the task still exists: cd remex.android; ./gradlew tasks --all | Select-String lintVital"
+                "AGP renames tasks between major versions. Check the task still exists: cd remex.android; ./gradlew tasks --all | Select-String lintRelease"
         }
         elseif ($lintText -match 'Lint found \d+ error') {
             # POSITIVE evidence before claiming violations. Everything else that makes this task exit
             # nonzero - a Kotlin compile error upstream, a dead daemon, a JVM OOM, a missing
             # JAVA_HOME - is not a lint violation, and asserting one would put a confident falsehood
             # in the receipt and point the reader at an HTML report that was never written.
-            $problems.Add('Android lint-vital violations')
+            $problems.Add('Android lint violations')
             Write-Problem "The release lint gate found violations." `
-                "Run: cd remex.android; ./gradlew lintVitalRelease - full report at remex.android/app/build/reports/lint-results-release.html"
+                "Run: cd remex.android; ./gradlew lintRelease - full report at remex.android/app/build/reports/lint-results-release.html"
 
             # The offending lines into problems, not just a verdict. Same reasoning as the test
             # names (RemEx-ffxl): the lint report under app/build is overwritten by the next run, so
             # a receipt saying only "violations" is a count nobody can act on afterwards. Note AGP
             # prints only the FIRST failure, so this is that one line, not the full list.
-            $lintLines = Get-LintViolationLines -Output $lintOutput
+            # **@() BECAUSE ONE VIOLATION IS THE COMMON CASE AND WAS THE BROKEN ONE.** AGP prints
+            # only the first failure, so this usually returns exactly one line - and under
+            # Set-StrictMode an unwrapped single result is a scalar whose .Count throws "The property
+            # 'Count' cannot be found on this object", three lines below. The gate named the file,
+            # rule and line correctly and then the script died instead of printing its FAIL summary.
+            # Never seen because lintVitalRelease never failed; enabling the full run reached this on
+            # its first try. Strict mode throws on zero results too, so the "gate went blind" branch
+            # below was equally unreachable. This parser's own self-test already wraps with @() - the
+            # production call site was the one that did not.
+            $lintLines = @(Get-LintViolationLines -Output $lintOutput)
             foreach ($line in $lintLines) {
                 $problems.Add("lint: $line")
                 Write-Say "    $line" 'Red'
@@ -943,7 +963,7 @@ if ($Scope -in @('android', 'all')) {
             # Nonzero, not a missing task, and no lint findings: the RUN failed rather than the code.
             $problems.Add('the Android lint run itself failed - no violations were reported')
             Write-Problem "The release lint run failed before it could report anything." `
-                "This is not a lint violation. Run: cd remex.android; ./gradlew lintVitalRelease"
+                "This is not a lint violation. Run: cd remex.android; ./gradlew lintRelease"
 
             # Show what Gradle actually said, the same way the test stage does - on this path it is
             # the only diagnostic there is.

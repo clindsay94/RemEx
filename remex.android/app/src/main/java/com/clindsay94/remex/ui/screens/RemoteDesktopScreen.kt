@@ -4040,7 +4040,12 @@ private fun RemoteDesktopScreenPreview() {
             onResizeWindow = { _, _, _ -> },
             onMoveWindowToDesktop = { _, _ -> },
             getHostScreenSize = { Pair(1920, 1080) },
-            frameTick = androidx.compose.runtime.mutableLongStateOf(0L),
+            // REMEMBERED, WHICH IT WAS NOT (RemEx-cljx). Creating the state during composition
+            // makes a fresh object on every recomposition, so nothing that reads it can ever see
+            // a change. Harmless here - it is a @Preview and never runs on a device - but it is
+            // the one report of the 262 that was a real defect rather than a rule this project
+            // disagrees with, and it is the shape that is not harmless anywhere else.
+            frameTick = remember { androidx.compose.runtime.mutableLongStateOf(0L) },
             fps = 60f,
             showFpsOverlay = true,
             onToggleFpsOverlay = {}

@@ -251,7 +251,7 @@ reaps a branch whose bead is not closed.
      the counts, and a figure carried across a review round is a false claim even when it was true
      when first measured.
    - Android changes: `cd remex.android && ./gradlew assembleRelease` — RELEASE ONLY, never
-     assembleDebug; only release runs the `lintVitalRelease` gate.
+     assembleDebug; only release runs the `lintRelease` gate.
    - **One Android build is not a measurement. Re-run a surprising result before writing it down.**
      (RemEx-3p35.) The same A/B — does removing a `WarningsNotAsErrors` entry break
      `assembleRelease`? — answered "no" three consecutive times and then "yes", reliably, on the
