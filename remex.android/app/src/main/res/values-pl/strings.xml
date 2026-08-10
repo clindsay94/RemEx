@@ -590,11 +590,11 @@
     <string name="task_manager_host_unresponsive">PC nie odpowiada na żądania listy procesów. Upewnij się, że parowanie zostało ukończone oraz że PC ma uprawnienia do odczytu informacji o procesach.</string>
     <string name="task_manager_kill_failed_format">Nie udało się zamknąć procesu %1$d</string>
     <string name="task_manager_retry">Ponów</string>
-    <string name="rd_err_capture_unavailable">Przechwytywanie ekranu nie działa na Twoim komputerze.</string>
-    <string name="rd_err_capture_stopped">Przechwytywanie ekranu zatrzymało się po %1$d klatkach. Twój komputer mógł zostać zablokowany lub wylogowany.</string>
-    <string name="rd_err_target_unavailable">Wybrany ekran nie jest już dostępny.</string>
-    <string name="rd_err_target_switch_unsupported">Ta sesja nie może przełączać ekranów podczas przesyłania.</string>
-    <string name="rd_err_runtime_unavailable">Pulpit zdalny nie jest teraz dostępny na Twoim komputerze.</string>
+    <string name="rd_err_capture_unavailable">Przechwytywanie ekranu nie działa na Twoim komputerze. Spróbuj uruchomić transmisję ponownie — jeśli nadal się nie udaje, uruchom ponownie RemEx na komputerze.</string>
+    <string name="rd_err_capture_stopped">Przechwytywanie ekranu zatrzymało się po %1$d klatkach. Komputer mógł zostać zablokowany lub wylogowany. Odblokuj go i uruchom transmisję ponownie.</string>
+    <string name="rd_err_target_unavailable">Wybrany ekran nie jest już dostępny. Wybierz inny i uruchom transmisję ponownie.</string>
+    <string name="rd_err_target_switch_unsupported">Ta sesja nie może przełączać ekranów podczas transmisji. Zatrzymaj transmisję i uruchom ją ponownie na wybranym ekranie.</string>
+    <string name="rd_err_runtime_unavailable">Pulpit zdalny nie jest teraz dostępny na Twoim komputerze. Zwykle oznacza to, że RemEx na komputerze wymaga aktualizacji albo brakuje mu potrzebnych składników.</string>
     <string name="rd_err_input_unavailable">Twój komputer nie przyjmuje sygnałów z klawiatury ani myszy. Monit o uprawnienia na komputerze mógł zostać odrzucony — uruchom tam RemEx ponownie, aby pojawił się znowu. Nadal widzisz ekran.</string>
     <string name="rd_err_connect_timeout">Komputer pod adresem %1$s nie odpowiedział. Upewnij się, że jest włączony i połączony z tą samą siecią Wi‑Fi co ten telefon, a potem spróbuj ponownie.</string>
     <string name="rd_err_handshake_timeout">Komputer pod adresem %1$s odpowiedział, ale przestał reagować podczas sprawdzania tego urządzenia. Mógł przejść w stan uśpienia. Spróbuj połączyć się ponownie.</string>

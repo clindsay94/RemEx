@@ -597,11 +597,11 @@
     <string name="task_manager_host_unresponsive">PC işlem listesi isteklerine yanıt vermiyor. Eşleştirmenin tamamlandığını ve PC\'nin işlem bilgilerini okuma iznine sahip olduğunu kontrol edin.</string>
     <string name="task_manager_kill_failed_format">%1$d işlemi sonlandırılamadı</string>
     <string name="task_manager_retry">Yeniden Dene</string>
-    <string name="rd_err_capture_unavailable">Bilgisayarınızda ekran yakalama çalışmıyor.</string>
-    <string name="rd_err_capture_stopped">Ekran yakalama %1$d kareden sonra durdu. Bilgisayarınız kilitlenmiş veya oturumu kapatılmış olabilir.</string>
-    <string name="rd_err_target_unavailable">Seçilen ekran artık kullanılamıyor.</string>
-    <string name="rd_err_target_switch_unsupported">Bu oturum yayın sırasında ekran değiştiremez.</string>
-    <string name="rd_err_runtime_unavailable">Uzak masaüstü şu anda bilgisayarınızda kullanılamıyor.</string>
+    <string name="rd_err_capture_unavailable">Bilgisayarınızda ekran yakalama çalışmıyor. Yayını yeniden başlatmayı deneyin — sürekli başarısız olursa bilgisayarda RemEx’i yeniden başlatın.</string>
+    <string name="rd_err_capture_stopped">Ekran yakalama %1$d kareden sonra durdu. Bilgisayarınız kilitlenmiş veya oturum kapatılmış olabilir. Kilidini açıp yayını yeniden başlatın.</string>
+    <string name="rd_err_target_unavailable">Seçilen ekran artık kullanılamıyor. Başka bir ekran seçip yayını yeniden başlatın.</string>
+    <string name="rd_err_target_switch_unsupported">Bu oturum yayın sırasında ekran değiştiremez. Yayını durdurup istediğiniz ekranda yeniden başlatın.</string>
+    <string name="rd_err_runtime_unavailable">Uzak masaüstü şu anda bilgisayarınızda kullanılamıyor. Bu genellikle bilgisayardaki RemEx’in güncellenmesi gerektiği ya da gerekli bileşenlerin bulunmadığı anlamına gelir.</string>
     <string name="rd_err_input_unavailable">Bilgisayarınız klavye veya fare girişini kabul etmiyor. Bilgisayardaki izin istemi reddedilmiş olabilir — tekrar sorulması için RemEx’i orada yeniden başlatın. Ekranı hâlâ görebilirsiniz.</string>
     <string name="rd_err_connect_timeout">%1$s adresindeki bilgisayarınız yanıt vermedi. Açık olduğundan ve bu telefonla aynı Wi‑Fi ağına bağlı olduğundan emin olun, sonra tekrar deneyin.</string>
     <string name="rd_err_handshake_timeout">%1$s adresindeki bilgisayarınız yanıt verdi ama bu cihazı doğrularken durdu. Uyku moduna geçmiş olabilir. Yeniden bağlanmayı deneyin.</string>

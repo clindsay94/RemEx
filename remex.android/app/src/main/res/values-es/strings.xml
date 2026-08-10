@@ -597,11 +597,11 @@
     <string name="task_manager_host_unresponsive">El PC no responde a las solicitudes de la lista de procesos. Verifique que se haya completado el emparejamiento y que el PC tenga permiso para leer la información del proceso.</string>
     <string name="task_manager_kill_failed_format">No se pudo finalizar el proceso %1$d</string>
     <string name="task_manager_retry">Reintentar</string>
-    <string name="rd_err_capture_unavailable">La captura de pantalla no funciona en tu PC.</string>
-    <string name="rd_err_capture_stopped">La captura de pantalla se detuvo tras %1$d fotogramas. Es posible que tu PC se haya bloqueado o se haya cerrado la sesión.</string>
-    <string name="rd_err_target_unavailable">La pantalla seleccionada ya no está disponible.</string>
-    <string name="rd_err_target_switch_unsupported">Esta sesión no puede cambiar de pantalla durante la transmisión.</string>
-    <string name="rd_err_runtime_unavailable">El escritorio remoto no está disponible en tu PC en este momento.</string>
+    <string name="rd_err_capture_unavailable">La captura de pantalla no funciona en tu PC. Intenta iniciar la transmisión de nuevo; si sigue fallando, reinicia RemEx en el PC.</string>
+    <string name="rd_err_capture_stopped">La captura de pantalla se detuvo tras %1$d fotogramas. Puede que el PC se haya bloqueado o cerrado sesión. Desbloquéalo e inicia la transmisión de nuevo.</string>
+    <string name="rd_err_target_unavailable">La pantalla seleccionada ya no está disponible. Elige otra e inicia la transmisión de nuevo.</string>
+    <string name="rd_err_target_switch_unsupported">Esta sesión no puede cambiar de pantalla mientras transmite. Detén la transmisión y vuelve a iniciarla en la pantalla que quieras.</string>
+    <string name="rd_err_runtime_unavailable">El escritorio remoto no está disponible en tu PC ahora mismo. Suele significar que RemEx del PC necesita actualizarse o le faltan los componentes necesarios.</string>
     <string name="rd_err_input_unavailable">Tu PC no acepta entradas de teclado ni ratón. Puede que se haya rechazado un aviso de permiso en el PC: reinicia RemEx allí para que vuelva a preguntar. Todavía puedes ver la pantalla.</string>
     <string name="rd_err_connect_timeout">Tu PC en %1$s no respondió. Asegúrate de que esté encendido y conectado a la misma red Wi‑Fi que este teléfono, y vuelve a intentarlo.</string>
     <string name="rd_err_handshake_timeout">Tu PC en %1$s respondió, pero dejó de hacerlo mientras verificaba este dispositivo. Puede que se haya suspendido. Intenta conectarte de nuevo.</string>

@@ -597,11 +597,11 @@
     <string name="task_manager_host_unresponsive">Le PC ne répond pas aux requêtes de la liste des processus. Vérifiez que l\'appairage est terminé et que le PC a la permission de lire les informations sur les processus.</string>
     <string name="task_manager_kill_failed_format">Échec de l\'arrêt du processus %1$d</string>
     <string name="task_manager_retry">Réessayer</string>
-    <string name="rd_err_capture_unavailable">La capture d’écran ne fonctionne pas sur votre PC.</string>
-    <string name="rd_err_capture_stopped">La capture d’écran s’est arrêtée après %1$d images. Votre PC a peut-être été verrouillé ou déconnecté.</string>
-    <string name="rd_err_target_unavailable">L’écran sélectionné n’est plus disponible.</string>
-    <string name="rd_err_target_switch_unsupported">Cette session ne peut pas changer d’écran pendant la diffusion.</string>
-    <string name="rd_err_runtime_unavailable">Le bureau à distance n’est pas disponible sur votre PC pour le moment.</string>
+    <string name="rd_err_capture_unavailable">La capture d’écran ne fonctionne pas sur votre PC. Relancez le flux — si l’échec persiste, redémarrez RemEx sur le PC.</string>
+    <string name="rd_err_capture_stopped">La capture d’écran s’est arrêtée après %1$d images. Le PC a peut-être été verrouillé ou déconnecté. Déverrouillez-le, puis relancez le flux.</string>
+    <string name="rd_err_target_unavailable">L’écran sélectionné n’est plus disponible. Choisissez-en un autre et relancez le flux.</string>
+    <string name="rd_err_target_switch_unsupported">Cette session ne peut pas changer d’écran pendant la diffusion. Arrêtez le flux, puis relancez-le sur l’écran voulu.</string>
+    <string name="rd_err_runtime_unavailable">Le bureau à distance n’est pas disponible sur votre PC pour le moment. Cela signifie généralement que RemEx doit être mis à jour sur le PC, ou qu’il lui manque les composants nécessaires.</string>
     <string name="rd_err_input_unavailable">Votre PC n’accepte pas les entrées clavier ou souris. Une invite d’autorisation a peut-être été refusée sur le PC — redémarrez RemEx sur celui-ci pour qu’elle réapparaisse. Vous pouvez toujours voir l’écran.</string>
     <string name="rd_err_connect_timeout">Votre PC à l’adresse %1$s n’a pas répondu. Vérifiez qu’il est allumé et connecté au même réseau Wi‑Fi que ce téléphone, puis réessayez.</string>
     <string name="rd_err_handshake_timeout">Votre PC à l’adresse %1$s a répondu, puis s’est arrêté pendant la vérification de cet appareil. Il s’est peut-être mis en veille. Réessayez de vous connecter.</string>

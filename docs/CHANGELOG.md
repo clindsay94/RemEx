@@ -57,6 +57,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Remote desktop errors on your phone said what went wrong but not what to do about it.** Five of
+  them - screen capture not working, capture stopping partway, a display that has gone away, a session
+  that cannot switch displays, and remote desktop being unavailable on the PC - described the problem
+  and stopped there. Each now ends with the next step: unlock the PC and start again, pick another
+  display, stop and restart the stream on the one you want, and so on. (RemEx-9wyu)
+
 - **A MAC address or PC name with a stray line break at the end was accepted as valid.** The checks
   that decide whether an address or hostname is well-formed let a trailing newline through, so a value
   copied out of a text file or piped in from a script was waved past as correct and then failed

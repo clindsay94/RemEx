@@ -597,11 +597,11 @@
     <string name="task_manager_host_unresponsive">पीसी प्रक्रिया सूची अनुरोधों का उत्तर नहीं दे रहा है। जांचें कि पेयरिंग पूर्ण है और पीसी को प्रक्रिया जानकारी पढ़ने की अनुमति है।</string>
     <string name="task_manager_kill_failed_format">प्रक्रिया %1$d को समाप्त करने में विफल</string>
     <string name="task_manager_retry">पुनः प्रयास करें</string>
-    <string name="rd_err_capture_unavailable">आपके पीसी पर स्क्रीन कैप्चर काम नहीं कर रहा है।</string>
-    <string name="rd_err_capture_stopped">%1$d फ़्रेम के बाद स्क्रीन कैप्चर रुक गया। हो सकता है कि आपका पीसी लॉक हो गया हो या साइन आउट हो गया हो।</string>
-    <string name="rd_err_target_unavailable">चयनित डिस्प्ले अब उपलब्ध नहीं है।</string>
-    <string name="rd_err_target_switch_unsupported">यह सत्र स्ट्रीमिंग के दौरान डिस्प्ले नहीं बदल सकता।</string>
-    <string name="rd_err_runtime_unavailable">इस समय आपके पीसी पर रिमोट डेस्कटॉप उपलब्ध नहीं है।</string>
+    <string name="rd_err_capture_unavailable">आपके पीसी पर स्क्रीन कैप्चर काम नहीं कर रहा। स्ट्रीम फिर से शुरू करें — बार-बार विफल हो तो पीसी पर RemEx पुनः आरंभ करें।</string>
+    <string name="rd_err_capture_stopped">%1$d फ्रेम के बाद स्क्रीन कैप्चर रुक गया। हो सकता है पीसी लॉक या साइन आउट हो गया हो। उसे अनलॉक करके स्ट्रीम फिर से शुरू करें।</string>
+    <string name="rd_err_target_unavailable">चुना गया डिस्प्ले अब उपलब्ध नहीं है। दूसरा डिस्प्ले चुनकर स्ट्रीम फिर से शुरू करें।</string>
+    <string name="rd_err_target_switch_unsupported">यह सत्र स्ट्रीमिंग के दौरान डिस्प्ले नहीं बदल सकता। स्ट्रीम रोकें और मनचाहे डिस्प्ले पर फिर से शुरू करें।</string>
+    <string name="rd_err_runtime_unavailable">इस समय आपके पीसी पर रिमोट डेस्कटॉप उपलब्ध नहीं है। आमतौर पर इसका मतलब है कि पीसी पर RemEx को अपडेट करना होगा या आवश्यक घटक मौजूद नहीं हैं।</string>
     <string name="rd_err_input_unavailable">आपका पीसी कीबोर्ड या माउस इनपुट स्वीकार नहीं कर रहा। पीसी पर अनुमति संकेत अस्वीकार हुआ हो सकता है — फिर से पूछे जाने के लिए वहाँ RemEx पुनः आरंभ करें। आप स्क्रीन अब भी देख सकते हैं।</string>
     <string name="rd_err_connect_timeout">%1$s पर आपके पीसी ने जवाब नहीं दिया। पक्का करें कि वह चालू है और इस फ़ोन वाले Wi‑Fi नेटवर्क से जुड़ा है, फिर दोबारा कोशिश करें।</string>
     <string name="rd_err_handshake_timeout">%1$s पर आपके पीसी ने जवाब दिया, लेकिन इस डिवाइस की जाँच के दौरान रुक गया। हो सकता है वह स्लीप मोड में चला गया हो। दोबारा कनेक्ट करके देखें।</string>

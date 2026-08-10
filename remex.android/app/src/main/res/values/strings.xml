@@ -805,11 +805,11 @@
     <string name="remote_desktop_display_numbered">Display %1$d</string>
     <string name="remote_desktop_display_both">Both screens</string>
     
-    <string name="rd_err_capture_unavailable">Screen capture isn’t working on your PC.</string>
-    <string name="rd_err_capture_stopped">Screen capture stopped after %1$d frames. Your PC may have been locked or signed out.</string>
-    <string name="rd_err_target_unavailable">The selected display is no longer available.</string>
-    <string name="rd_err_target_switch_unsupported">This session can’t switch displays while streaming.</string>
-    <string name="rd_err_runtime_unavailable">Remote desktop isn’t available on your PC right now.</string>
+    <string name="rd_err_capture_unavailable">Screen capture isn’t working on your PC. Try starting the stream again — if it keeps failing, restart RemEx on the PC.</string>
+    <string name="rd_err_capture_stopped">Screen capture stopped after %1$d frames. Your PC may have been locked or signed out. Unlock it, then start the stream again.</string>
+    <string name="rd_err_target_unavailable">The selected display is no longer available. Pick another display and start the stream again.</string>
+    <string name="rd_err_target_switch_unsupported">This session can’t switch displays while streaming. Stop the stream, then start it again on the display you want.</string>
+    <string name="rd_err_runtime_unavailable">Remote desktop isn’t available on your PC right now. This usually means RemEx on the PC needs updating, or it’s running without the components remote desktop requires.</string>
     <string name="rd_err_input_unavailable">Your PC isn’t accepting keyboard or mouse input. A permission prompt on the PC may have been declined — restart RemEx there to be asked again. You can still see the screen.</string>
     <string name="rd_err_connect_timeout">Your PC at %1$s didn’t answer. Make sure it’s awake and connected to the same Wi‑Fi network as this phone, then try again.</string>
     <string name="rd_err_handshake_timeout">Your PC at %1$s answered but then stopped responding while checking this device. It may have gone to sleep. Try connecting again.</string>
