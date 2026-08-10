@@ -76,6 +76,36 @@ internal fun channelMatches(open: Boolean, current: ChannelTarget?, target: Chan
     open && current == target
 
 /**
+ * Which stored reconnect secret answers the host's proof-of-possession challenge on this channel.
+ *
+ * **THE SPKI ALIAS FIRST, AND THAT ORDER IS THE ENTIRE FIX (RemEx-6bfyt).** Pairing writes the same
+ * secret under three aliases — `hostId`, the host address, and the SPKI hash — each encrypted
+ * separately with its own alias as Tink associated data. They are therefore independent records, and
+ * a re-pair reached over a different address leaves the OLD secret sitting under the OLD address key
+ * while the SPKI key carries the current one. An address-only lookup then finds a secret, computes a
+ * perfectly well-formed HMAC with it, and is rejected.
+ *
+ * That is not hypothetical: it is the reported bug. The control channel already resolves it this way
+ * (`RemexClientManager`, RemEx-060g, "prefer the SPKI-keyed secret ... so a stale per-IP secret is
+ * never used after a LAN <-> Tailscale switch"), and that fix was never carried across to this
+ * channel. So `/ws` authenticated on the fresh secret and streamed telemetry while `/ws/files`
+ * presented the stale one and was refused — which surfaced far downstream as the host reporting "The
+ * binary file channel is not connected", naming a socket rather than the credential that failed.
+ *
+ * The address alias is still the fallback, deliberately: pairings made before RemEx-060g have no
+ * SPKI-keyed entry, and dropping it would brick them instead of the one re-pair they already need.
+ *
+ * Takes [lookup] rather than a `Context` so the ORDER is unit-testable. The real source is
+ * `PinnedHostStore.getReconnectSecret`, which needs DataStore and Tink and so cannot be reached from
+ * a JVM unit test — the same reason [channelMatches] above is extracted.
+ */
+internal suspend fun resolveReconnectSecret(
+    spkiHash: String,
+    host: String,
+    lookup: suspend (String) -> String?,
+): String? = lookup(spkiHash) ?: lookup(host)
+
+/**
  * OkHttp WSS client for the dedicated binary `/ws/files` channel (plan §1.1, WP5). This is a plain
  * Kotlin socket — **no JNI / native-lib changes** — that carries only bulk `data`/`ack`/`error`
  * frames; the JSON control plane (offer/ready/complete/result/control/browse/consent) stays on the
@@ -199,7 +229,12 @@ object FileTransferChannelClient : FileFrameChannel {
         // synchronously off the OkHttp dispatcher, not a coroutine — can answer without blocking. A
         // paired client with no stored secret predates PAIR-1 or lost it; fail fast instead of
         // letting the host silently 1008-close the socket after its 10s challenge timeout.
-        val reconnectSecret = PinnedHostStore.getReconnectSecret(context, host)
+        // SPKI-keyed first, address-keyed only as the legacy fallback — see [resolveReconnectSecret].
+        // Looking this up by address alone is what made every transfer fail after a LAN <-> Tailscale
+        // switch: a stale per-address secret is found, proves nothing, and the host refuses the
+        // channel (RemEx-6bfyt).
+        val reconnectSecret =
+            resolveReconnectSecret(spkiHash, host) { PinnedHostStore.getReconnectSecret(context, it) }
         if (reconnectSecret.isNullOrBlank()) {
             Log.e(TAG, "No stored reconnect secret for $host; refusing /ws/files connect (re-pair required)")
             return false
