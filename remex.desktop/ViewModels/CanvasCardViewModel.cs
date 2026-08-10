@@ -80,6 +80,19 @@ public partial class CanvasCardViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(TogglePinToHomeCommand))]
     private bool _isPinnedToHome;
 
+    /// <summary>
+    /// This staged sensor was not in the tick that just arrived (RemEx-yqpa).
+    /// </summary>
+    /// <remarks>
+    /// Marked rather than removed, deliberately: the host alternates its sensor set by category, so a
+    /// drawer that evicted on absence would flicker entries out and back in once a second. Keeping
+    /// them is also what makes this incapable of orphaning the <see cref="SensorViewModel"/> a placed
+    /// card may still be bound to. Only meaningful for staged templates; a placed card is never
+    /// marked.
+    /// </remarks>
+    [ObservableProperty]
+    private bool _isStale;
+
     /// <summary>Action to request a pin toggle, typically wired to the dashboard.</summary>
     private Action? _requestPinToggle;
     public Action? RequestPinToggle

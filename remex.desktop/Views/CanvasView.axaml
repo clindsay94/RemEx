@@ -520,10 +520,27 @@
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
                                 </Style>
+                                <!--
+                                  A conditional class rather than a converter: Avalonia toggles it
+                                  straight from the bool, so there is no third type to keep in step
+                                  with the two that already express this.
+                                -->
+                                <Style Selector="Border.stale">
+                                    <Setter Property="Opacity" Value="0.55"/>
+                                </Style>
                             </ListBox.Styles>
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="vm:CanvasCardViewModel">
-                                    <Border Classes="glass-card interactive" Padding="12" Margin="0,0,0,8">
+                                    <!--
+                                      Dimmed when the host has stopped reporting this sensor (RemEx-yqpa).
+                                      The ordering already sinks these below the live ones; this is the
+                                      "mark" half of mark-and-group. Opacity rather than a colour so it
+                                      reads the same in all four themes and needs no per-theme value -
+                                      and still legible, because a stale template is exactly as
+                                      droppable as a live one and must not look disabled.
+                                    -->
+                                    <Border Classes="glass-card interactive" Classes.stale="{Binding IsStale}"
+                                            Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="{Binding CardTitle}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                                             <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding Sensor, Converter={x:Static ObjectConverters.IsNotNull}}">

@@ -422,6 +422,17 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
 
     private void OnStagedCardsCollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
     {
+        // **A REORDER IS NOT A MEMBERSHIP CHANGE, AND REBUILDING ON ONE IS PURE WASTE (RemEx-yqpa).**
+        // RefreshSensorActivationItems below clears and rebuilds a UI-BOUND collection, resubscribing
+        // every item's ActiveChanged and re-running RefreshSecondaryWiring. None of it can produce a
+        // different answer for a Move: the names it reads are Distinct().OrderBy()'d, so they do not
+        // depend on staging order, and the active set reads Cards, which a staged move never touches.
+        // Without this, a host stalling with 250 staged sensors flips ~125 of them at once and issues
+        // ~125 Moves - so ~125 synchronous rebuilds of that list in one tick, each resetting its
+        // ListBox. Count cannot change on a Move either, so HasStagedCards is unaffected, and the
+        // moved items already had RequestPinToggle wired when they were added.
+        if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Move) return;
+
         if (e.NewItems != null)
         {
             foreach (CanvasCardViewModel card in e.NewItems)
@@ -1073,12 +1084,18 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
             // One pass over the cards for the whole tick, instead of one pass PER READING.
             var sensorIndex = BuildSensorIndex(Cards, StagedCards);
 
+            // Collected as the readings are walked rather than in a second pass: the identity is
+            // already being computed below for the index lookup, and deriving it twice is how the two
+            // derivations come to disagree.
+            var seenThisTick = new HashSet<string>(StringComparer.Ordinal);
+
             foreach (var reading in payload.Sensors)
             {
                 var sensorName = string.IsNullOrWhiteSpace(reading.Name) ? "Unknown" : reading.Name;
                 // Match by stable identity (host-stamped Id, name fallback), not raw name, so a live
                 // relabel or two same-named sensors bind correctly (RemEx-km0i.14).
                 var identity = SensorIdentity(reading);
+                seenThisTick.Add(identity);
 
                 if (!sensorIndex.TryGetValue(identity, out var sensorVms))
                 {
@@ -1175,7 +1192,92 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
                     sensorVm.Update(reading);
                 }
             }
+
+            RefreshStagingFreshness(seenThisTick);
         }
+    }
+
+    /// <summary>
+    /// Marks staged sensors the host has stopped reporting and sinks them below the live ones
+    /// (RemEx-yqpa).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The drawer used to only ever grow - a template is created on first sight and nothing removed
+    /// it - so across a session it filled with overlapping, partly-stale sensor sets to scroll past.
+    /// The recorded decision is to GROUP AND MARK rather than evict, because the host alternates its
+    /// sensor set by category and eviction would make entries flicker.
+    /// </para>
+    /// <para>
+    /// **THE COLLECTION IS ONLY REWRITTEN WHEN THE ORDER ACTUALLY CHANGED**, which on a steady host
+    /// is never. Telemetry lands about once a second, and replacing the contents raises a reset that
+    /// rebuilds every row: entrance animations restart, the scroll position drops, and a drag out of
+    /// the drawer is cancelled as its source disappears mid-gesture. A drawer that reshuffles under
+    /// the pointer every second would be worse than the unsorted one this replaces.
+    /// </para>
+    /// </remarks>
+    private void RefreshStagingFreshness(IReadOnlySet<string> seenThisTick)
+    {
+        if (StagedCards.Count == 0) return;
+
+        var entries = new List<StagedSensor>(StagedCards.Count);
+
+        foreach (var card in StagedCards)
+        {
+            // NOT A SENSOR, SO NEVER STALE. ReturnToStaging adds every non-sensor card here, and
+            // those have no Sensor to resolve an identity from. Their IsStale is false and stays
+            // false - staleness is a statement about a host that stopped reporting a reading, and a
+            // card with no reading cannot have one made about it.
+            if (SensorIdentity(card.Sensor) is not { } identity) continue;
+
+            card.IsStale = StagingDrawerFreshness.IsStale(identity, seenThisTick);
+            entries.Add(new StagedSensor(identity, card.CardTitle ?? identity));
+        }
+
+        var desired = StagingDrawerFreshness.Order(entries, seenThisTick);
+        if (!StagingDrawerFreshness.OrderWouldChange(entries, desired)) return;
+
+        // **MOVED IN PLACE, NOT CLEARED AND REFILLED, AND THE FIRST VERSION HERE WAS THE SECOND.**
+        // Two things were wrong with that. A Clear drops every card whose identity did not resolve,
+        // because only the classified ones come back - so the rows this method deliberately declines
+        // to judge would have been deleted by it. And Clear-then-add raises a reset plus one event
+        // per item, which rebuilds every container, restarts the entrance animations and blinks
+        // HasStagedCards through false on the way past. Move raises a Move: containers survive, the
+        // count never changes, and only the rows that actually moved are touched.
+        for (var target = 0; target < desired.Count; target++)
+        {
+            var identity = desired[target].Identity;
+            var current = IndexOfStaged(identity, target);
+            if (current > target) StagedCards.Move(current, target);
+        }
+    }
+
+    /// <summary>Where the staged card with this identity currently sits, searching from <paramref name="from"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// Searching forward only is what makes the loop above a selection sort rather than an O(n^2)
+    /// scan per position: everything before <paramref name="from"/> is already in its final place,
+    /// and the identities in <c>desired</c> are distinct, so the match is never behind it.
+    /// </para>
+    /// <para>
+    /// **UNCLASSIFIED CARDS DRIFT TO THE END; THEY ARE NOT HELD IN PLACE, AND AN EARLIER VERSION OF
+    /// THIS COMMENT CLAIMED THEY WERE.** A staged card with no resolvable sensor identity - which
+    /// <c>ReturnToStaging</c> produces for every non-sensor card - is not in <c>desired</c> at all, so
+    /// classified cards are pulled past it and it ends up after the classified block. That is benign,
+    /// because <c>StagedCards.Add</c> already appends, but it is not what "stepped over" means. The
+    /// <c>return from</c> fallback is likewise unreachable: every identity searched for came out of
+    /// this same collection.
+    /// </para>
+    /// </remarks>
+    private int IndexOfStaged(string identity, int from)
+    {
+        for (var i = from; i < StagedCards.Count; i++)
+        {
+            if (string.Equals(SensorIdentity(StagedCards[i].Sensor), identity, StringComparison.Ordinal))
+                return i;
+        }
+
+        return from;
     }
 
     // ═══════════════ Persistence ═══════════════
