@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Anything that could reach the automation port could make RemEx set aside 10 MB of memory before
+  proving who it was.** RemEx listens on one port for scripts you write yourself. A sender there says
+  how big its message is, RemEx sets aside that much room, and only afterwards checks whether the
+  sender is a device you have paired. The size it was allowed to claim was 10 MB, and it did not have
+  to actually send any of it — so something on your network could tie up memory just by asking,
+  repeatedly, without ever identifying itself.
+
+  The most it can claim now is 64 KB. Nothing legitimate comes close: the commands this port accepts
+  are whole-machine actions like shut down and wake, the largest of which carries a network address
+  and a delay. This was never an opening into your PC — it needed nothing but the ability to reach the
+  port, and it could not do anything except waste memory that was released shortly after — but the
+  size was chosen by a stranger, and it no longer is. Scripts that send an over-sized request now have
+  the connection closed; that limit is written into the API contract. (RemEx-ga503)
+
 - **And it could do the same with a single ordinary message, without touching the file connection at
   all.** The previous entry covers the channel that carries file data. The channel that carries
   commands had the same gap and was easier to reach: a program running on your PC could send one
