@@ -188,6 +188,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The dashboard stopped telling itself, once a second, about four things that had not changed.**
+  Each sensor announced four display values on every update — the gauge's floor, its ceiling, which
+  graph shape to use, and whether it is showing two metrics — and the app dutifully re-checked every
+  card on screen against all four, every second, almost always to arrive at the number already
+  showing. One of the four could not change at all: the gauge floor is fixed at zero on purpose, so
+  that a CPU sitting steadily at 19% reads as 19% rather than as full.
+
+  They are announced now only when they actually move. Nothing looks different — the values were
+  always right, they were simply being repeated. A fifth value that nothing on screen reads at all
+  was being announced twice a second per sensor as well, which was found while doing this and has
+  stopped too. (RemEx-atgvl)
+
 - **Three small efficiencies in file transfer and address checking.** Sending a file the older way
   made a fresh copy of every chunk in memory purely to hand its length along — the two things that
   needed it already accepted a length, so the copy told them nothing they were not being told anyway.
