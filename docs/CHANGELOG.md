@@ -137,6 +137,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **Groundwork for showing every PC on your network instead of whichever one answers first.** When
+  the phone looks for PCs it stops at the first reply, so with two machines running RemEx on one
+  network you get one of them and no sign the other exists. The rule that keeps listening — finding
+  machines, looking up their addresses, noticing when one goes away, and packing up cleanly when you
+  leave the screen — is written and tested now.
+
+  You will not see any difference yet. Nothing is connected to it, the screen that shows the list is
+  separate work, and the piece that talks to Android's own network-discovery service was deliberately
+  left out of this change rather than shipped half-sure: it kept turning up problems that only showed
+  as silence, and the honest place for it is its own piece of work with everything already learned
+  written down. The test that matters needs two PCs on one network and is still outstanding.
+  (RemEx-tslc1)
+
 - **The phone reads each second of PC readings once instead of four times.** Every second the PC
   sends the phone a list of everything it is measuring — every temperature, fan, clock and load it
   can see. The phone used to walk that whole list four separate times: once to find the CPU
