@@ -146,6 +146,67 @@ public partial class SensorViewModel : ObservableObject
         IsTemperatureMetric ? 100 :
         (_maxSeen == double.MinValue ? 100 : Math.Max(_maxSeen, 1));
 
+    // ── What was last announced, so a tick only announces what moved (RemEx-atgvl) ──
+    private double? _lastMaxSeenValue;
+    private GraphType? _lastResolvedGraphType;
+    private bool? _lastIsDualMetric;
+
+    /// <summary>
+    /// Raises the gauge-bound properties, but only the ones whose value actually changed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THIS RAN ONCE A SECOND PER SENSOR AND ANNOUNCED FOUR PROPERTIES, USUALLY NONE OF WHICH HAD
+    /// MOVED.** Telemetry ticks at 1 Hz and one view model is shared by every card for a sensor, so
+    /// twenty sensors meant eighty binding invalidations a second to redeliver values already on
+    /// screen. An earlier draft of this remark said "four times a second per card", which is wrong on
+    /// both halves and disagreed with the arithmetic in this change's own tests.
+    /// </para>
+    /// <para>
+    /// **<see cref="MinSeenValue"/> IS NOT HERE AT ALL, BECAUSE IT IS A CONSTANT.** Its entire body is
+    /// <c>=&gt; 0</c>, deliberately — the remark on it explains that a gauge must not rescale to its
+    /// own observed floor, or a CPU sitting steadily at 19% reads as full. So that raise could never,
+    /// in the life of the app, have delivered a different number. Bindings read it once when they
+    /// attach and that is the only time it can matter.
+    /// </para>
+    /// <para>
+    /// Compared against the last announced value rather than reasoned about per property. MaxSeenValue
+    /// is 100 for any percent or temperature metric and otherwise moves only on a new peak;
+    /// ResolvedGraphType changes when the user picks one, which a telemetry tick does not do. Both are
+    /// true today and comparing does not depend on their staying true.
+    /// </para>
+    /// </remarks>
+    private void RaiseGaugePropertiesThatActuallyChanged()
+    {
+        // NULLABLE RATHER THAN A NaN SENTINEL. MaxSeenValue provably cannot be NaN today - Update
+        // compares with `>`, which is false for NaN, so _maxSeen never takes one - but that argument
+        // lives in a different method, and "safe because of something over there" is the shape that
+        // stops being true quietly. Null means "nothing announced yet" and cannot collide with a value.
+        var maxSeen = MaxSeenValue;
+        if (_lastMaxSeenValue != maxSeen)
+        {
+            _lastMaxSeenValue = maxSeen;
+            OnPropertyChanged(nameof(MaxSeenValue));
+        }
+
+        var graphType = ResolvedGraphType;
+        if (_lastResolvedGraphType != graphType)
+        {
+            _lastResolvedGraphType = graphType;
+            OnPropertyChanged(nameof(ResolvedGraphType));
+        }
+
+        // DERIVED FROM THE LOCAL, NOT RE-READ. IsDualMetric is `ResolvedGraphType == DualMetric` by
+        // definition, so reading the property would resolve the graph type a second time - avoidable
+        // per-tick work added by a method whose whole purpose is to remove some.
+        var dual = graphType == GraphType.DualMetric;
+        if (_lastIsDualMetric != dual)
+        {
+            _lastIsDualMetric = dual;
+            OnPropertyChanged(nameof(IsDualMetric));
+        }
+    }
+
     private bool IsPercentMetric =>
         RawReading?.Kind is MetricKind.CpuLoad or MetricKind.GpuLoad or MetricKind.RamLoad
         || (!string.IsNullOrEmpty(Unit) && Unit.Contains('%'));
@@ -162,7 +223,11 @@ public partial class SensorViewModel : ObservableObject
 
     /// <summary>
     /// Short accessible description of the sensor's current reading, e.g. "CPU Temp: 72 °C".
-    /// Used as AutomationProperties.HelpText on sensor cards.
+    ///
+    /// **NOT CURRENTLY BOUND BY ANYTHING.** This said it was used as AutomationProperties.HelpText on
+    /// sensor cards; no .axaml in the repo has one. Kept because it is a reasonable description for a
+    /// card to expose and the sparkline cards genuinely lack one - but it is not announced on change,
+    /// so a binding added later must restore the raises in OnValueChanged/OnUnitChanged (RemEx-atgvl).
     /// </summary>
     public string HistorySummary =>
         string.IsNullOrWhiteSpace(Unit)
@@ -182,8 +247,13 @@ public partial class SensorViewModel : ObservableObject
     }
 
     partial void OnCustomTitleChanged(string? value) => OnPropertyChanged(nameof(DisplayName));
-    partial void OnValueChanged(double value) => OnPropertyChanged(nameof(HistorySummary));
-    partial void OnUnitChanged(string value) => OnPropertyChanged(nameof(HistorySummary));
+    // HistorySummary IS NOT RAISED, BECAUSE NOTHING READS IT (RemEx-atgvl). Its own doc said it was
+    // used as AutomationProperties.HelpText on sensor cards; there is no AutomationProperties.HelpText
+    // in any .axaml, and repo-wide the only mentions of the property are its declaration and the
+    // raises that used to be here. So this was the same per-tick waste this bead exists to remove,
+    // three lines below it. The property is left in place rather than deleted - it is a reasonable
+    // accessible description and someone may yet bind it - but it is no longer announced to nobody.
+    // If it acquires a binding, restore these two raises with it.
 
     // ═══════════════ Commands ═══════════════
 
@@ -289,11 +359,7 @@ public partial class SensorViewModel : ObservableObject
 
         History.Add(normalized);
 
-        // Notify gauge-related properties
-        OnPropertyChanged(nameof(MinSeenValue));
-        OnPropertyChanged(nameof(MaxSeenValue));
-        OnPropertyChanged(nameof(ResolvedGraphType));
-        OnPropertyChanged(nameof(IsDualMetric));
+        RaiseGaugePropertiesThatActuallyChanged();
 
         // The ONLY call site, which makes threshold evaluation a side effect of the per-sensor
         // update work rather than something independent of it. That coupling is easy to break by
