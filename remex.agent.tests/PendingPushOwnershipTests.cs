@@ -217,6 +217,70 @@ public sealed class PendingPushOwnershipTests : IDisposable
         Assert.DoesNotContain(_log.Warnings, w => w.Contains("No /ws/files channel", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task APushThatDIESAfterTheAcceptTELLSThePeerToLETGO()
+    {
+        // **THE PEER IS HOLDING SOMETHING AND NOTHING USED TO TELL IT (RemEx-cc30z).** By the time the
+        // channel lookup misses, the phone has answered accepted=true - which means it has registered
+        // a receive session, a sink and a staging .remexpart. The host returned false and sent NOTHING:
+        // no cancel, no result. The partial then sits until the phone's seven-day orphan sweep, and
+        // the person who approved the transfer watches it never arrive.
+        //
+        // Cancel rather than a decline, because there is nothing left to decline - they already
+        // accepted. Their handler releases the grant, unregisters the sink, deletes the partial and
+        // closes the session, which is exactly the cleanup that was being skipped.
+        var manager = NewManager();
+        var (push, socket) = StartPush(manager);
+        await socket.OfferSent.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        // Accepted by the owner, and no file channel exists for it - the reported failure exactly.
+        manager.HandleReady(new FileTransferReady { TransferId = Transfer, Accepted = true }, channelKey: Phone);
+
+        Assert.False(await push.WaitAsync(TimeSpan.FromSeconds(5)));
+
+        var cancel = Assert.Single(socket.Sent, f => f.Contains("file_transfer_control", StringComparison.Ordinal));
+        Assert.Contains("\"cancel\"", cancel, StringComparison.Ordinal);
+        Assert.Contains(Transfer, cancel, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ADECLINEDPushIsNotCancelledAtThePeer()
+    {
+        // THE OTHER SIDE OF IT, and the reason the cancel is not simply sent on every failure. A peer
+        // that DECLINED is holding nothing - it never opened a session - so a cancel would name a
+        // transfer it has no record of. Harmless today, since its handler no-ops on an unknown id, but
+        // a message sent for no reason is one somebody later has to explain, and the distinction here
+        // is exactly "did they accept" rather than "did the push fail".
+        var manager = NewManager();
+        var (push, socket) = StartPush(manager);
+        await socket.OfferSent.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        manager.HandleReady(new FileTransferReady { TransferId = Transfer, Accepted = false }, channelKey: Phone);
+
+        Assert.False(await push.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.DoesNotContain(socket.Sent, f => f.Contains("file_transfer_control", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task APushWHOSESocketDiesWhileTellingThePeerStillGivesUpQUIETLY()
+    {
+        // THE BEST-EFFORT CATCH, WHICH NOTHING REACHED. The whole reason the cancel is wrapped is
+        // that the control socket is quite likely dying too - that is a good explanation for the
+        // binary channel being gone. Deleting the catch left both other tests green, so the branch
+        // written to stop PushFileAsync throwing was itself unexercised.
+        var manager = NewManager();
+        var (push, socket) = StartPush(manager);
+        await socket.OfferSent.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        socket.FailAfterFirstSend = new System.Net.WebSockets.WebSocketException("the socket went away");
+        manager.HandleReady(new FileTransferReady { TransferId = Transfer, Accepted = true }, channelKey: Phone);
+
+        // Returns rather than throws, which is the point: a silent abandonment must not be replaced
+        // by a thrown one.
+        Assert.False(await push.WaitAsync(TimeSpan.FromSeconds(5)));
+        Assert.Contains(_log.Warnings, w => w.Contains("Could not tell the peer to release", StringComparison.Ordinal));
+    }
+
     // ── Harness ────────────────────────────────────────────────────────────────
 
     private TransferSessionManager NewManager() => NewManager(_log);
@@ -296,9 +360,42 @@ public sealed class PendingPushOwnershipTests : IDisposable
         public override Task<System.Net.WebSockets.WebSocketReceiveResult> ReceiveAsync(
             ArraySegment<byte> b, CancellationToken c)
             => throw new NotSupportedException("nothing here reads");
+        /// <summary>Every complete frame this socket was asked to send, as text.</summary>
+        /// <remarks>
+        /// The payload used to be discarded, which was fine while the only question was WHETHER a
+        /// frame reached the wire. RemEx-cc30z asks what is IN one - the peer has to be told to let
+        /// go of a transfer that died after it accepted - so the frame has to be readable. Reassembled
+        /// on endOfMessage rather than per call, because a fragmented send would otherwise be recorded
+        /// as several frames and a Contains assertion would pass on half a message.
+        /// </remarks>
+        public System.Collections.Concurrent.ConcurrentQueue<string> Sent { get; } = new();
+
+        /// <summary>Set to make the SECOND send throw, so the best-effort catch is exercised.</summary>
+        public Exception? FailAfterFirstSend { get; set; }
+
+        private readonly List<byte> _partial = [];
+        private int _sends;
+
         public override Task SendAsync(
             ArraySegment<byte> b, System.Net.WebSockets.WebSocketMessageType t, bool e, CancellationToken c)
         {
+            lock (_partial)
+            {
+                if (_sends++ > 0 && FailAfterFirstSend is not null) throw FailAfterFirstSend;
+
+                // BYTES ACCUMULATED AND DECODED ONCE, NOT DECODED PER FRAGMENT. Decoding each
+                // fragment and concatenating splits any multi-byte sequence that straddles a frame
+                // boundary into replacement characters on both sides - which would break exactly the
+                // fragmented case this reassembly exists for, and would do it to a non-ASCII file
+                // name in an assertion that looked correct.
+                _partial.AddRange(b.AsSpan());
+                if (e)
+                {
+                    Sent.Enqueue(System.Text.Encoding.UTF8.GetString(_partial.ToArray()));
+                    _partial.Clear();
+                }
+            }
+
             OfferSent.TrySetResult();
             return Task.CompletedTask;
         }

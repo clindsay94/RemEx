@@ -795,6 +795,48 @@ public sealed class TransferSessionManager : IDisposable
                     "Cannot push {TransferId}: the peer acknowledged but its binary channel is not connected.",
                     transferId);
                 LogChannelMiss(clientId, "push");
+
+                // **THE PEER IS TOLD, BECAUSE IT IS HOLDING SOMETHING (RemEx-cc30z).** Returning here
+                // used to send nothing at all - no cancel, no result - and the peer had just answered
+                // accepted=true, which means it registered a receive session, a sink and a staging
+                // .remexpart it will not clear for seven days. From the user's side a file they
+                // approved simply never arrives, and the only record is this log line on the machine
+                // they are not looking at.
+                //
+                // Cancel rather than a decline: they already accepted, so there is nothing left to
+                // decline - what is needed is for them to let go. Their handler releases the push
+                // grant, unregisters the sink, deletes the partial and closes the session, which is
+                // exactly the cleanup that was being skipped. Symmetric with the download path, which
+                // has always answered its own channel miss rather than going quiet.
+                //
+                // Best-effort on purpose: the control socket may be dying too, and that is the likely
+                // reason the binary channel is gone. Failing to send the cancel must not replace a
+                // silent abandonment with a thrown one, so it is caught and logged - the transfer is
+                // already lost either way, and the peer's 7-day sweep remains the backstop.
+                try
+                {
+                    await SendControlAsync(controlWs, transferId, FileTransferControlActions.Cancel, ct);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    // SEPARATED FROM THE FAULTS BELOW, AND WITHOUT THE EXCEPTION OBJECT. A cancelled
+                    // token here is an ordinary shutdown, not a fault - MessageSerializer's send gate
+                    // throws before it writes anything - so a stack trace at Warning would put a
+                    // routine teardown in the log at the same weight as a broken socket. The peer is
+                    // not told on this path, which is a real gap and the reason it is stated rather
+                    // than merged into the line below: the process is going away, so its 7-day sweep
+                    // is the backstop.
+                    _logger.LogDebug("Shutting down before {TransferId} could be released at the peer.", transferId);
+                }
+                catch (Exception ex) when (ex is WebSocketException or InvalidOperationException)
+                {
+                    // ObjectDisposedException derives from InvalidOperationException, which is the
+                    // exception a control socket that has already gone away actually throws - the
+                    // likeliest reason the binary channel is missing in the first place.
+                    _logger.LogWarning(
+                        ex, "Could not tell the peer to release {TransferId} after the channel miss.", transferId);
+                }
+
                 return false;
             }
 
@@ -1276,6 +1318,29 @@ public sealed class TransferSessionManager : IDisposable
             await source.DisposeAsync();
             _sendSessions.TryRemove(session.TransferId, out _);
         }
+    }
+
+    /// <summary>
+    /// Tells the peer to stop and let go of a transfer (RemEx-cc30z).
+    /// </summary>
+    /// <remarks>
+    /// The counterpart to <see cref="HandleControl"/>, which is the inbound half and has existed all
+    /// along — the host could always be told to release a transfer and had no way to say it. Used
+    /// where a push dies after the peer has already accepted, at which point the peer is holding a
+    /// receive session, a sink and a staging file that only its orphan sweep would ever collect.
+    /// </remarks>
+    private static async Task SendControlAsync(WebSocket controlWs, string transferId, string action, CancellationToken ct)
+    {
+        await MessageSerializer.SendAsync(controlWs, new RemexMessage
+        {
+            Type = MessageTypes.FileTransferControl,
+            ProtocolVersion = ProtocolVersionPolicy.Current,
+            FileTransferControl = new FileTransferControl
+            {
+                TransferId = transferId,
+                Action = action,
+            },
+        }, ct);
     }
 
     private async Task SendReadyAsync(WebSocket controlWs, string transferId, bool accepted, long startOffset, string? declineReason, CancellationToken ct)

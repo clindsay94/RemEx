@@ -95,6 +95,10 @@ public static class MessageAudience
         [MessageTypes.FileThumbnailResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileTransferChunk] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileTransferComplete] = ClientSurface.AndroidControl,
+        // Host -> client only since RemEx-cc30z, which made the host able to say "let go of this"
+        // rather than abandoning a push in silence. Inbound long before that; the phone is the only
+        // surface with sessions to release, and it receives this through the file_ prefix forward.
+        [MessageTypes.FileTransferControl] = ClientSurface.AndroidControl,
         [MessageTypes.FileTransferEnd] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileTransferOffer] = ClientSurface.AndroidControl,
         [MessageTypes.FileTransferProgress] = ClientSurface.AndroidControl | ClientSurface.PcUi,
