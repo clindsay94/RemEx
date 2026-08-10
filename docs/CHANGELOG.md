@@ -43,6 +43,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **After you switched your phone to a different PC, a file transfer could still be sent to the old
+  one.** Transfers use a second connection, separate from the one that carries everything else. Before
+  starting a transfer the phone checked whether that connection was open — but not whether it was open
+  to the PC you were actually using. So if you changed the PC in settings while the old connection was
+  still alive, the transfer was agreed with the new machine and its contents went to the old one. It
+  now checks which PC the connection goes to, on both the sending and the receiving side.
+
+  A related problem is fixed with it: when the phone swapped that connection for a new one, the old
+  connection's shutdown could arrive minutes later and be mistaken for the new one failing, stopping a
+  transfer that was working perfectly well. Transfers that really were on the retired connection are
+  now told at the moment it is retired, instead of eventually and to the wrong audience.
+  (RemEx-5t4k9)
+
 - **A file the PC sent could be accepted by your phone and then never arrive, with nothing said
   anywhere.** Receiving a file needs a second connection that your phone opens while the transfer is
   being agreed. If opening it failed — no PC address stored, a missing security key after a re-pair,
