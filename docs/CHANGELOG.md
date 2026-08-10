@@ -57,6 +57,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Every file transfer failed with "The binary file channel is not connected", on a phone that was
+  plainly connected.** Browsing the PC's folders from the phone worked, the dashboard kept showing
+  live readings, and then every download and every upload failed with a message about a connection
+  that looked fine.
+
+  When you pair, your phone files the reconnect password it will need later under three labels: the
+  PC's name, its address, and its certificate. File transfers used a separate connection from
+  everything else, and that connection looked the password up by address only. If you had paired
+  again while reaching the PC a different way — over your home Wi-Fi one day and over Tailscale the
+  next — the copy filed under the old address was still the old password. Your phone offered it, the
+  PC refused it, and the refusal was never shown to you: the phone reported the connection open
+  because it had sent its answer, and the failure only surfaced later as a complaint about the
+  connection rather than the password. Everything else kept working the whole time, because the main
+  connection had already been taught to look under the certificate first.
+
+  The file connection now looks under the certificate first as well, falling back to the address so
+  that pairings made before this existed keep working. (RemEx-6bfyt)
+
 - **An idle PC was packing up its sensor readings for delivery every second even with no phone
   connected.** RemEx bundles each set of readings into the exact form it sends over the network, and
   it was doing that on every reading whether or not anything was listening. On a PC with a lot of

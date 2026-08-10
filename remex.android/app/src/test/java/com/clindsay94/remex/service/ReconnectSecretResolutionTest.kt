@@ -72,6 +72,26 @@ class ReconnectSecretResolutionTest {
     }
 
     @Test
+    fun `a blank SPKI hash is skipped rather than looked up`() {
+        // Unreachable from today's callers — both refuse to dial without a pin — and pinned anyway
+        // because this is a credential lookup and "" is a WRITABLE key in the store, not a
+        // guaranteed miss. Looking it up would be asking for whatever was filed under no host at
+        // all. A future third caller that forgets to validate its pin must not get an answer.
+        val asked = mutableListOf<String>()
+        val store = mapOf("" to "secret-filed-under-no-host", HOST to STALE)
+
+        val resolved = runBlocking {
+            resolveReconnectSecret(spkiHash = "", host = HOST) { key ->
+                asked += key
+                store[key]
+            }
+        }
+
+        assertEquals(STALE, resolved)
+        assertEquals(listOf(HOST), asked)
+    }
+
+    @Test
     fun `no stored secret under either alias resolves to nothing`() {
         // Anti-vacuity, and it is load-bearing: the caller treats null as "refuse to connect and say
         // a re-pair is required". A resolver that invented a blank string instead would dial the

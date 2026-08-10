@@ -95,6 +95,11 @@ internal fun channelMatches(open: Boolean, current: ChannelTarget?, target: Chan
  * The address alias is still the fallback, deliberately: pairings made before RemEx-060g have no
  * SPKI-keyed entry, and dropping it would brick them instead of the one re-pair they already need.
  *
+ * A BLANK [spkiHash] is skipped rather than looked up. Both callers already refuse to get this far
+ * without a pin, so nothing reaches it today — but this is a credential lookup, and a blank alias is
+ * a writable key in the store rather than a guaranteed miss. Asking for it would be asking "give me
+ * whatever was filed under no host at all", which is never a question worth answering here.
+ *
  * Takes [lookup] rather than a `Context` so the ORDER is unit-testable. The real source is
  * `PinnedHostStore.getReconnectSecret`, which needs DataStore and Tink and so cannot be reached from
  * a JVM unit test — the same reason [channelMatches] above is extracted.
@@ -103,7 +108,7 @@ internal suspend fun resolveReconnectSecret(
     spkiHash: String,
     host: String,
     lookup: suspend (String) -> String?,
-): String? = lookup(spkiHash) ?: lookup(host)
+): String? = spkiHash.takeIf { it.isNotBlank() }?.let { lookup(it) } ?: lookup(host)
 
 /**
  * OkHttp WSS client for the dedicated binary `/ws/files` channel (plan §1.1, WP5). This is a plain

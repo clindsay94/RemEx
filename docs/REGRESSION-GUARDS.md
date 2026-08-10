@@ -424,6 +424,26 @@ challenge. **Without a stored secret the host rejects the reconnect and forces a
 live in a dedicated DataStore (`remex_reconnect_secrets`, separate from `remex_pinned_hosts`),
 encrypted with Tink AES-256-GCM AEAD using `hostId` as associated data. (PAIR-1 / RemEx-xuo)
 
+**Resolve the secret SPKI-alias FIRST, address alias only as the legacy fallback — on BOTH channels.**
+Pairing writes the same secret under three aliases (`hostId`, host address, SPKI hash), each sealed
+with its own alias as associated data, so they are three independent records rather than three views
+of one. Only the SPKI record is refreshed by *every* pairing; the address record is refreshed only by
+a pairing that happened to use that address. So a re-pair reached over a different address — LAN today,
+Tailscale tomorrow — leaves a STALE secret under the old address key.
+
+Both consumers must resolve in that order: `RemexClientManager.kt` (control `/ws`, RemEx-060g) and
+`FileTransferChannelClient.resolveReconnectSecret` (binary `/ws/files`, RemEx-6bfyt). The second one
+was missed for a release, and reverting either to a bare `getReconnectSecret(context, host)` compiles
+fine and reintroduces the failure.
+
+**It presents as silence about the wrong subsystem.** The stale secret is a real secret, so the client
+computes a well-formed HMAC and reports its channel open; the host refuses proof-of-possession, never
+registers the channel, and the transfer fails much later with *"The binary file channel is not
+connected."* — a message naming a socket, while `/ws` keeps streaming telemetry because it held the
+fresh secret. A phone that is visibly connected cannot move a byte, and nothing anywhere says
+"wrong credential". Keep the address alias as the fallback: pairings predating RemEx-060g have no SPKI
+record, and requiring one would brick them rather than cost them a re-pair.
+
 ### Proof-of-possession reconnect auth
 
 `PairedClientRegistry` stores a 32-byte ECDH/HKDF session key per client. Reconnect auth is an
