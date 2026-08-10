@@ -53,6 +53,17 @@ enum class PushRefusal {
      * file could not be created. The remedy is the same in every case: ask the PC to send it again.
      */
     CouldNotBeSaved,
+
+    /**
+     * This device could not open the binary channel the transfer needs, so it refused the offer.
+     *
+     * Distinct from [CouldNotBeSaved], which is scoped to "the bytes arrived and could not be
+     * committed" — here nothing arrived at all, and the remedy is different: try again, and re-pair
+     * if it persists, since a missing SPKI pin is one of the three causes. The user is owed this one
+     * as much as any other push refusal: they answered a prompt, and without it the file they
+     * approved simply never appears (RemEx-iq484).
+     */
+    ChannelUnavailable,
 }
 
 /**
@@ -598,6 +609,37 @@ class FileHostHandler(
             sendReady(transferId, false, 0, "A transfer cannot declare a negative size.")
             return
         }
+
+        // **ACCEPTING AN OFFER WE CANNOT CARRY IS WORSE THAN REFUSING IT (RemEx-iq484).** Every mode
+        // below moves its bytes over the binary channel, and the Android wiring opens that channel
+        // lazily, in response to this very offer - AndroidFileTransferHost awaits ensureBinaryChannel
+        // immediately before handing the message here. That await can fail three silent ways: a blank
+        // host, no pinned SPKI for it, or a dial the host refused. Its result was discarded, so a
+        // failure arrived here as an ordinary offer and was answered accepted=true.
+        //
+        // What the PC did with that: believed the phone was ready, found no channel, logged "the peer
+        // acknowledged but its binary channel is not connected" and sent NOTHING back. No cancel, no
+        // result. The transfer was abandoned mid-negotiation, this device kept a receive session and a
+        // staging .remexpart that only the 7-day orphan sweep would collect, and the person watching
+        // saw a transfer they had accepted simply never arrive.
+        //
+        // Declining is symmetric with what the PC already does in the mirror-image case: when IT has
+        // no channel on the download path it answers accepted=false with a reason rather than going
+        // quiet (TransferSessionManager.cs:1184-1188). The reason names THIS device deliberately - the
+        // PC's own message says only that the channel is not connected, which reads as the PC's fault.
+        if (!channel.isOpen) {
+            sendReady(transferId, false, 0, "This device could not open its binary file channel.")
+
+            // REPORTED ONLY WHEN A GRANT EXISTS, WHICH IS THE SAME RULE EVERY OTHER PUSH REFUSAL
+            // FOLLOWS. A user who answered a prompt is owed an explanation for the silence that
+            // came after it; a download or upload raised no prompt and has a caller to report to.
+            // The grant check is also what stops a paired PC from using a dead channel to raise
+            // notifications for pushes nobody agreed to - hasGrant, not isGrantedFor, because a
+            // grant for the wrong file still means this user answered something under this id.
+            if (pushConsent.hasGrant(transferId)) reportRefusal(PushRefusal.ChannelUnavailable)
+            return
+        }
+
         when (mode) {
             FileTransferModes.DOWNLOAD -> beginHostSend(transferId, destRoot, destRelativePath, fileName)
             FileTransferModes.UPLOAD ->

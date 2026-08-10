@@ -868,6 +868,7 @@
     <string name="file_push_failed_destination">Nie udało się zapisać pliku: folder docelowy nie jest już dostępny.</string>
     <string name="file_push_failed_wrong_file">Nie udało się zapisać pliku: to nie był plik, na który wyrażono zgodę.</string>
     <string name="file_push_failed_not_saved">Nie udało się zapisać pliku z komputera. Poproś komputer o ponowne wysłanie.</string>
+    <string name="file_push_failed_no_channel">Nie udało się odebrać pliku z komputera: ten telefon nie mógł otworzyć połączenia plików. Spróbuj ponownie, a jeśli błąd się powtarza, sparuj ponownie.</string>
     <string name="file_received_title">Odebrano plik</string>
     <string name="file_received_text">%1$s dotarł z komputera.</string>
     <string name="file_received_share">Udostępnij</string>

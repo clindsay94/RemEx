@@ -207,6 +207,7 @@ object AndroidFileTransferHost {
                     PushRefusal.UnusableFileName -> R.string.file_push_failed_bad_name
                     PushRefusal.DestinationUnavailable -> R.string.file_push_failed_destination
                     PushRefusal.CouldNotBeSaved -> R.string.file_push_failed_not_saved
+                    PushRefusal.ChannelUnavailable -> R.string.file_push_failed_no_channel
                 }
             )
         FileTransferNotificationManager.showIncomingPushFailed(context, message)
@@ -225,15 +226,38 @@ object AndroidFileTransferHost {
      * always Android-initiated (cert-pinned via the SPKI captured at pairing time). Returns true once
      * connected.
      */
+    /**
+     * Opens the binary `/ws/files` channel if it is not already up.
+     *
+     * **EACH FAILURE SAYS WHICH ONE IT WAS (RemEx-iq484).** This used to return a bare `false` three
+     * different ways, and its one caller discarded it — so a transfer that died because no SPKI pin
+     * was stored looked exactly like one that died because the host refused the socket, and both
+     * looked like nothing at all. The three causes want different fixes (re-pair, check the host
+     * address, look at the host log), so they are worth a line each.
+     */
     private suspend fun ensureBinaryChannel(): Boolean {
         if (FileTransferChannelClient.isOpen) return true
         val host = settingsManager.hostFlow.first()
         val port = settingsManager.portFlow.first()
-        if (host.isBlank()) return false
+        if (host.isBlank()) {
+            Log.w(TAG, "Cannot open the binary file channel: no host is configured.")
+            return false
+        }
         val clientId = settingsManager.getOrCreateClientId()
-        val spki =
-            PinnedHostStore.getPin(context, host)?.takeIf { it.isNotBlank() } ?: return false
-        return FileTransferChannelClient.ensureConnected(context, host, port, clientId, spki)
+        val spki = PinnedHostStore.getPin(context, host)?.takeIf { it.isNotBlank() }
+        if (spki == null) {
+            // Not a transient failure - this device has no pinned key for that host, so it cannot
+            // verify the socket it is about to open. Re-pairing is what fixes it.
+            Log.w(TAG, "Cannot open the binary file channel: no pinned SPKI for the configured host.")
+            return false
+        }
+        val opened = FileTransferChannelClient.ensureConnected(context, host, port, clientId, spki)
+        if (!opened) {
+            // FileTransferChannelClient already logged the transport-level detail, including the HTTP
+            // status of a rejection. This line is what ties that to a transfer.
+            Log.w(TAG, "Cannot open the binary file channel: the host did not accept the connection.")
+        }
+        return opened
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -379,7 +403,16 @@ object AndroidFileTransferHost {
                     // A v3 transfer needs the binary channel; open it before negotiating. Per-file
                     // push offers ride this after the file_push_offer below was already consented, so
                     // no second prompt is raised here (mirrors the PC's file_push_offer → offer flow).
-                    ensureBinaryChannel()
+                    //
+                    // THE MESSAGE IS STILL HANDED ON WHEN THIS FAILS, AND THAT IS DELIBERATE.
+                    // handleOffer refuses an offer it has no open channel for and answers with a
+                    // stated reason (RemEx-iq484); short-circuiting here instead would leave the PC
+                    // waiting out its 30-second ready timeout for a phone that already knew.
+                    // ensureBinaryChannel has already logged WHICH of its three failures happened;
+                    // this line is what ties that to the transfer the user is watching.
+                    if (!ensureBinaryChannel()) {
+                        Log.w(TAG, "Binary channel unavailable for an incoming v3 offer; declining it.")
+                    }
                     hostHandler?.handleControlMessage(json)
                 }
                 // Incoming push from the PC: consent-gated on this (serving) device (plan §2 / WP9).

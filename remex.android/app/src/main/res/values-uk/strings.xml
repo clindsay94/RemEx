@@ -868,6 +868,7 @@
     <string name="file_push_failed_destination">Не вдалося зберегти файл: папка призначення більше недоступна.</string>
     <string name="file_push_failed_wrong_file">Не вдалося зберегти файл: це був не той файл, який ви погодилися отримати.</string>
     <string name="file_push_failed_not_saved">Не вдалося зберегти файл з ПК. Попросіть ПК надіслати його ще раз.</string>
+    <string name="file_push_failed_no_channel">Не вдалося отримати файл з ПК: цей телефон не зміг відкрити з\'єднання для файлів. Спробуйте ще раз, а якщо помилка повторюється, виконайте сполучення заново.</string>
     <string name="file_received_title">Файл отримано</string>
     <string name="file_received_text">%1$s надійшов з вашого ПК.</string>
     <string name="file_received_share">Поділитися</string>

@@ -148,7 +148,12 @@ class FileHostHandlerTest {
     }
 
     private class NoopChannel : FileFrameChannel {
-        override val isOpen = false
+        // OPEN BY DEFAULT, AND IT USED TO BE HARD-CODED SHUT. Nothing read it, so `false` cost
+        // nothing and said the wrong thing - this fake stands in for a connected channel that
+        // discards frames, not for a disconnected one. handleOffer now refuses an offer it has no
+        // channel for (RemEx-iq484), so the old value would have failed every offer test at once and
+        // read like a regression. Flip it per-test to exercise the refusal.
+        override var isOpen = true
         override fun registerSink(transferId: String, sink: FileFrameSink) {}
         override fun unregisterSink(transferId: String) {}
         override fun sendFrame(envelope: FileFrameEnvelope, payload: ByteArray) = false
@@ -172,11 +177,14 @@ class FileHostHandlerTest {
     /** Arrivals reported to the UI layer: name actually saved, plus its URI (RemEx-pwkc). */
     private val pushArrivals = mutableListOf<Pair<String, String?>>()
 
+    private var stagingSeq = 0
+
     private fun build(
         root: FakeNode,
         granted: Boolean = false,
         pushConsent: PushConsentRegistry = PushConsentRegistry(),
         roots: List<RootDescriptor> = listOf(rootDescriptor()),
+        channelOpen: Boolean = true,
     ): Triple<FileHostHandler, CapturingSender, FakeMutator> {
         val provider = FakeRoots(granted, roots)
         val facade = FakeFacade(root, roots)
@@ -187,9 +195,11 @@ class FileHostHandlerTest {
                 facade = facade,
                 rootsProvider = provider,
                 sender = sender,
-                channel = NoopChannel(),
+                channel = NoopChannel().apply { isOpen = channelOpen },
                 rootMutator = mutator,
-                stagingDir = tmp.newFolder("staging"),
+                // Numbered, because a test may build more than one handler - a refusal followed by the
+                // retry that succeeds, for instance - and newFolder("staging") throws on the second.
+                stagingDir = tmp.newFolder("staging-${stagingSeq++}"),
                 scope = CoroutineScope(Dispatchers.Unconfined),
                 pushConsent = pushConsent,
                 onPushRefused = { pushRefusals.add(it) },
@@ -814,5 +824,152 @@ class FileHostHandlerTest {
         // The grant survives: this offer failed its own check, and discarding the grant on the
         // strength of a message that did not match would let a bad offer cancel a good one.
         assertTrue(consent.isGrantedFor("minted-id", "cat.jpg", 5))
+    }
+
+    // ── the binary channel has to be up before an offer can be accepted (RemEx-iq484) ──
+
+    /**
+     * Every mode is refused when the channel is shut, because every mode moves bytes over it.
+     *
+     * **THE BUG WAS THE ACCEPT, NOT THE FAILURE.** The Android wiring opens the channel lazily in
+     * response to this very offer and used to discard the result, so a failed dial arrived here as an
+     * ordinary offer and was answered `accepted=true`. The PC then found no channel, logged it, and
+     * sent nothing back at all — no cancel, no result — leaving this device holding a receive session
+     * and a staging file, and the user watching a transfer they had accepted never arrive. Refusing
+     * costs one round trip and says what happened.
+     */
+    @Test
+    fun offer_isRefusedInEveryModeWhenTheBinaryChannelIsShut() = runBlocking {
+        for (mode in listOf("push", "download", "upload")) {
+            val consent = PushConsentRegistry()
+            consent.grant(mapOf("minted-id" to GrantedFile("pushed.txt", 5)))
+            val (h, sender, _) =
+                build(sampleTree(), granted = true, pushConsent = consent, channelOpen = false)
+
+            h.handleControlMessage(
+                """
+                {"type":"file_transfer_offer","fileTransferOffer":{
+                  "transferId":"minted-id","mode":"$mode","fileName":"pushed.txt","size":5}}
+                """.trimIndent()
+            )
+
+            val payload = sender.last().getJSONObject("fileTransferReady")
+            assertFalse("$mode must not be accepted without a channel", payload.getBoolean("accepted"))
+            // The reason names THIS device on purpose. The PC's own message for the mirror case says
+            // only that the channel is not connected, which reads as the PC's fault and sent the
+            // original bug report looking at the host.
+            assertTrue(
+                "the reason should name this device, was: " + payload.optString("declineReason"),
+                payload.getString("declineReason").contains("This device"),
+            )
+        }
+    }
+
+    /**
+     * A shut channel does not burn the push grant, so the retry that follows still works.
+     *
+     * The gate sits ABOVE the consent check for exactly this reason: the channel being down says
+     * nothing about whether the user agreed, and spending their answer on a dial that failed would
+     * make them approve the same file twice.
+     */
+    @Test
+    fun offer_refusedForAShutChannel_leavesThePushGrantIntactForTheRetry() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(mapOf("minted-id" to GrantedFile("pushed.txt", 5)))
+        val offer =
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"minted-id","mode":"push","fileName":"pushed.txt","size":5}}
+            """.trimIndent()
+
+        val (first, firstSender, _) =
+            build(sampleTree(), granted = true, pushConsent = consent, channelOpen = false)
+        first.handleControlMessage(offer)
+
+        // THE REFUSAL IS ASSERTED HERE AND THE FIRST DRAFT DID NOT ASSERT IT. Without this line the
+        // test passed with the gate deleted entirely - a granted push over a shut channel simply
+        // succeeded, and the grant is not released until handleComplete, so both remaining
+        // assertions held. A reviewer caught it. The name promised a refusal; only this checks one.
+        assertFalse(
+            "the offer must be refused before the grant question arises",
+            firstSender.last().getJSONObject("fileTransferReady").getBoolean("accepted"),
+        )
+        assertTrue("the grant must survive a channel failure", consent.isGrantedFor("minted-id", "pushed.txt", 5))
+
+        // AND THE RETRY GENUINELY SUCCEEDS. Asserting only that the grant survives would pass just as
+        // well if something else downstream had consumed it, so the second half is what proves the
+        // refusal left the device able to receive the file the user already approved.
+        val (retry, sender, _) = build(sampleTree(), granted = true, pushConsent = consent)
+        retry.handleControlMessage(offer)
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertTrue(
+            "the retry should be accepted, was declined with: " + payload.optString("declineReason"),
+            payload.getBoolean("accepted"),
+        )
+    }
+
+    /**
+     * The user who answered the prompt is told; a peer that never had consent raises nothing.
+     *
+     * Refusing cleanly fixed the PC's side of this — no 30-second stall, no abandoned session — but
+     * on its own it left the person who tapped Allow watching a file that never arrived with nothing
+     * said anywhere. That is the failure shape this bead exists to remove, so the report is part of
+     * the fix rather than a nicety. Gated on an existing grant, because otherwise a paired PC could
+     * use a dead channel to raise notifications for pushes nobody agreed to.
+     */
+    @Test
+    fun shutChannel_reportsToTheUserOnlyWhenTheyActuallyConsented() = runBlocking {
+        val consent = PushConsentRegistry()
+        consent.grant(mapOf("minted-id" to GrantedFile("pushed.txt", 5)))
+        val (h, _, _) = build(sampleTree(), granted = true, pushConsent = consent, channelOpen = false)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"minted-id","mode":"push","fileName":"pushed.txt","size":5}}
+            """.trimIndent()
+        )
+
+        assertEquals(listOf(PushRefusal.ChannelUnavailable), pushRefusals)
+
+        // An id nobody granted anything under: refused just the same, but silently. The user was
+        // never asked about this file, so there is no silence for them to be owed an explanation of.
+        pushRefusals.clear()
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"never-granted","mode":"push","fileName":"pushed.txt","size":5}}
+            """.trimIndent()
+        )
+
+        assertTrue("an unconsented push must not raise a notification", pushRefusals.isEmpty())
+    }
+
+    /**
+     * A malformed offer still reports its OWN fault, not the channel's.
+     *
+     * Ordering, stated as a test: the negative-size refusal is above the channel gate, so an offer
+     * that is wrong in itself says so even when the channel happens to be down. Putting the gate
+     * first would have relabelled every malformed offer as a connectivity problem the moment the
+     * channel dropped, which is the kind of misdirection that costs an afternoon.
+     */
+    @Test
+    fun offer_withANegativeSize_reportsThatRatherThanTheShutChannel() = runBlocking {
+        val (h, sender, _) = build(sampleTree(), granted = true, channelOpen = false)
+
+        h.handleControlMessage(
+            """
+            {"type":"file_transfer_offer","fileTransferOffer":{
+              "transferId":"t1","mode":"push","fileName":"pushed.txt","size":-1}}
+            """.trimIndent()
+        )
+
+        val payload = sender.last().getJSONObject("fileTransferReady")
+        assertFalse(payload.getBoolean("accepted"))
+        assertTrue(
+            "should blame the size, was: " + payload.optString("declineReason"),
+            payload.getString("declineReason").contains("negative size"),
+        )
     }
 }

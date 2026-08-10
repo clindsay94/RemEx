@@ -852,6 +852,7 @@
     <string name="file_push_failed_destination">Un fichier n\'a pas pu être enregistré : le dossier de destination n\'est plus disponible.</string>
     <string name="file_push_failed_wrong_file">Un fichier n\'a pas pu être enregistré : ce n\'était pas celui que vous aviez accepté.</string>
     <string name="file_push_failed_not_saved">Un fichier du PC n\'a pas pu être enregistré. Demandez au PC de le renvoyer.</string>
+    <string name="file_push_failed_no_channel">Un fichier du PC n\'a pas pu être reçu : ce téléphone n\'a pas pu ouvrir sa connexion de fichiers. Réessayez, et réassociez si le problème persiste.</string>
     <string name="file_received_title">Fichier reçu</string>
     <string name="file_received_text">%1$s est arrivé depuis votre PC.</string>
     <string name="file_received_share">Partager</string>
