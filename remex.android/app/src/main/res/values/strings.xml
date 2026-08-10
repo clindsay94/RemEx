@@ -810,6 +810,7 @@
     <string name="rd_err_target_unavailable">The selected display is no longer available.</string>
     <string name="rd_err_target_switch_unsupported">This session can’t switch displays while streaming.</string>
     <string name="rd_err_runtime_unavailable">Remote desktop isn’t available on your PC right now.</string>
+    <string name="rd_err_input_unavailable">Your PC isn’t accepting keyboard or mouse input. A permission prompt on the PC may have been declined — restart RemEx there to be asked again. You can still see the screen.</string>
     <string name="rd_err_connect_timeout">Your PC at %1$s didn’t answer. Make sure it’s awake and connected to the same Wi‑Fi network as this phone, then try again.</string>
     <string name="rd_err_handshake_timeout">Your PC at %1$s answered but then stopped responding while checking this device. It may have gone to sleep. Try connecting again.</string>
     <string name="cd_clear_search">Clear search</string>

@@ -38,7 +38,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.draw.clip
@@ -102,6 +104,16 @@ private val FullscreenOverlayIconSpacing = 8.dp
 // Both are anchored to the bottom of the video box, and the lane carries the modifier latch states —
 // covering those with a transient message would read as Ctrl/Alt/Shift having come unstuck.
 private val PcKeysLaneClearance = 72.dp
+
+/**
+ * Vertical space the input-unavailable banner leaves for the fullscreen action row above it
+ * (RemEx-iaxc).
+ *
+ * One 48dp icon button plus its 16dp band. The banner is declared after that row in the same Box, so
+ * it would otherwise paint over the toolbar — and being persistent, it would cover Stop for the rest
+ * of the session.
+ */
+private val InputWarningTopClearance = 64.dp
 
 // Gesture timing thresholds (ms)
 private const val TAP_MAX_DURATION_MS = 250L
@@ -310,6 +322,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
         val modifierStates by viewModel.modifierStates.collectAsStateWithLifecycle()
         val hasShownUnlimitedWarning by viewModel.hasShownUnlimitedWarning.collectAsStateWithLifecycle()
         val screenshotStatus by viewModel.screenshotStatus.collectAsStateWithLifecycle()
+        val inputUnavailable by viewModel.inputUnavailable.collectAsStateWithLifecycle()
 
         var isFullscreen by rememberSaveable { mutableStateOf(false) }
         var showFpsOverlay by rememberSaveable { mutableStateOf(false) }
@@ -398,6 +411,7 @@ fun RemoteDesktopScreen(viewModel: RemoteDesktopViewModel = viewModel()) {
                 showFpsOverlay = showFpsOverlay,
                 onToggleFpsOverlay = { showFpsOverlay = !showFpsOverlay },
                 screenshotStatus = screenshotStatus,
+                inputUnavailable = inputUnavailable,
                 onTakeScreenshot = { viewModel.takeScreenshot() },
                 activeCodec = activeCodec,
                 streamPixelWidth = streamPixelWidth,
@@ -467,6 +481,8 @@ fun RemoteDesktopScreenContent(
         showFpsOverlay: Boolean = false,
         onToggleFpsOverlay: () -> Unit = {},
         screenshotStatus: String? = null,
+        /** Non-null while the PC is discarding our input but still streaming video (RemEx-iaxc). */
+        inputUnavailable: String? = null,
         onTakeScreenshot: () -> Unit = {},
         activeCodec: String = "Mjpeg",
         streamPixelWidth: Int = 1920,
@@ -2845,6 +2861,74 @@ fun RemoteDesktopScreenContent(
                                 // consume the IME or nav-bar insets (doing so would resize the video and
                                 // tear down the decoder, RemEx-2y31), so a child anchored to its bottom
                                 // edge renders UNDER an open keyboard unless it insets itself.
+                                // **THE PICTURE KEEPS RUNNING UNDERNEATH, WHICH IS THE WHOLE POINT
+                                // (RemEx-iaxc).** The PC has told us it cannot inject our input - a
+                                // Wayland permission prompt was declined and it has no fallback tool -
+                                // while the video stream is entirely healthy. Routing that through the
+                                // fatal error path would blank a working picture and reconnect into
+                                // the same refused prompt, so it is said over the top instead.
+                                //
+                                // TOP, not bottom: the screenshot pill owns BottomCenter, and unlike
+                                // that one this does not time out. It stays until the stream restarts,
+                                // because the condition it reports does not go away by itself.
+                                //
+                                // **PUSHED BELOW THE ACTION ROW, WHICH IS NOT COSMETIC.** A Box paints
+                                // its children in source order, and this is declared after the
+                                // fullscreen action row above - so without the offset it paints OVER
+                                // the toolbar. In fullscreen statusBarsPadding resolves to zero, so
+                                // both would sit in the same 16dp band, and a 340dp pill centred
+                                // against a right-anchored row of seven icon buttons covers its
+                                // leftmost ones. Since this banner is deliberately persistent, they
+                                // would stay covered for the whole session - including Stop, which is
+                                // one of the few controls still worth anything to a user whose input
+                                // is dead.
+                                PlainAnimatedVisibility(
+                                        visible = inputUnavailable != null,
+                                        modifier =
+                                                Modifier.align(Alignment.TopCenter)
+                                                        .statusBarsPadding()
+                                                        .padding(
+                                                                top = InputWarningTopClearance,
+                                                                start = 16.dp,
+                                                                end = 16.dp,
+                                                                bottom = 16.dp
+                                                        )
+                                ) {
+                                        Box(
+                                                modifier =
+                                                        Modifier.clip(MaterialTheme.shapes.small)
+                                                                .background(
+                                                                        MaterialTheme.colorScheme
+                                                                                .errorContainer.copy(
+                                                                                alpha = 0.94f
+                                                                        )
+                                                                )
+                                                                // Announced when it appears: a
+                                                                // persistent error nobody reads aloud
+                                                                // is invisible to a screen-reader user,
+                                                                // who has the least other evidence that
+                                                                // their input stopped working.
+                                                                .semantics {
+                                                                        liveRegion =
+                                                                                LiveRegionMode.Polite
+                                                                }
+                                        ) {
+                                                Text(
+                                                        text = inputUnavailable.orEmpty(),
+                                                        style = MaterialTheme.typography.labelLarge,
+                                                        color =
+                                                                MaterialTheme.colorScheme
+                                                                        .onErrorContainer,
+                                                        modifier =
+                                                                Modifier.widthIn(max = 340.dp)
+                                                                        .padding(
+                                                                                horizontal = 14.dp,
+                                                                                vertical = 10.dp
+                                                                        )
+                                                )
+                                        }
+                                }
+
                                 PlainAnimatedVisibility(
                                         visible = screenshotStatus != null,
                                         modifier =

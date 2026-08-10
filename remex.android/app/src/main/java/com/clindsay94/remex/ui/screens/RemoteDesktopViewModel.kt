@@ -33,6 +33,30 @@ import org.json.JSONObject
 
 private const val TAG = "RemoteDesktopVM"
 
+/** Separates code, optional argument and English fallback in a coded desktop error. */
+private const val ERROR_CODE_DELIMITER = '\u001F'
+
+/**
+ * The host is discarding our input while the stream itself is fine (RemEx-iaxc).
+ *
+ * Named here rather than only inside the `when` that localizes codes, because this one is also
+ * matched BEFORE that point to keep it off the fatal error path entirely.
+ */
+private const val DESKTOP_ERR_INPUT_UNAVAILABLE = "input_unavailable"
+
+/**
+ * True when a coded desktop error is the advisory "the PC is discarding your input" (RemEx-iaxc).
+ *
+ * **A TOP-LEVEL FUNCTION SO IT CAN BE TESTED WITHOUT AN ANDROID RUNTIME.** The literal it matches is
+ * a cross-language contract with `DesktopErrorCodes.InputUnavailable` on the host, duplicated here
+ * because the two do not share a build. If they ever drift, this returns false, the message falls
+ * through to the fatal handler that clears `isStreaming` and reconnects, and a declined permission
+ * prompt turns into a reconnect loop that blanks a healthy picture once per input event — worse than
+ * the silent bug this fixes. Both sides are pinned by tests for that reason.
+ */
+internal fun isInputUnavailableError(errorText: String?): Boolean =
+        errorText?.substringBefore(ERROR_CODE_DELIMITER) == DESKTOP_ERR_INPUT_UNAVAILABLE
+
 /** Frame-arrival watchdog poll interval and stall threshold (RemEx-5t4). */
 private const val FRAME_WATCHDOG_POLL_MS = 1000L
 private const val FRAME_STALL_TIMEOUT_MS = 7000L
@@ -449,6 +473,22 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     private val _desktopError = MutableStateFlow<String?>(null)
     val desktopError: StateFlow<String?> = _desktopError.asStateFlow()
 
+    /**
+     * Set when the PC says it is discarding our input, or null when input is believed to work
+     * (RemEx-iaxc).
+     *
+     * **SEPARATE FROM [desktopError] BECAUSE THIS ONE IS NOT FATAL, AND ROUTING IT THERE WOULD BE
+     * WORSE THAN THE BUG.** Everything arriving on `desktopErrors` clears `_isStreaming` and calls
+     * `attemptReconnect()`. The host raises this one while the video stream is perfectly healthy —
+     * only input is dead — so taking that path would blank a working picture, reconnect, re-trigger
+     * the very permission dialog the user just declined, and do it again on the next event.
+     *
+     * The picture keeps running and this is shown over it, because a remote desktop you can watch but
+     * not control is still worth seeing, and the user needs to be told which half stopped.
+     */
+    private val _inputUnavailable = MutableStateFlow<String?>(null)
+    val inputUnavailable: StateFlow<String?> = _inputUnavailable.asStateFlow()
+
     private val _windowResults = MutableStateFlow<List<DesktopWindowModel>>(emptyList())
     val windowResults: StateFlow<List<DesktopWindowModel>> = _windowResults.asStateFlow()
 
@@ -655,6 +695,7 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
             "target_switch_unsupported" ->
                     app.getString(R.string.rd_err_target_switch_unsupported)
             "runtime_unavailable" -> app.getString(R.string.rd_err_runtime_unavailable)
+            DESKTOP_ERR_INPUT_UNAVAILABLE -> app.getString(R.string.rd_err_input_unavailable)
             // Raised client-side rather than by the host (RemEx-nl0z). Both take host:port as the
             // arg, and both are kept distinct because the next step differs: a connect timeout means
             // the PC was never reached, while a handshake timeout means it WAS reached and the
@@ -866,6 +907,18 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
 
         viewModelScope.launch {
             RemexClientManager.desktopErrors.collect { errorText ->
+                // **ADVISORY, NOT FATAL — TAKE IT OFF THIS PATH BEFORE ANYTHING ELSE (RemEx-iaxc).**
+                // The PC is telling us it cannot inject our input (a declined Wayland portal prompt,
+                // with no xdotool or ydotool to fall back to) while the video stream is entirely
+                // healthy. Everything below clears _isStreaming and reconnects, which here would blank
+                // a working picture and then re-trigger the very dialog the user just declined - on a
+                // loop, once per input event. Say so over the video and carry on streaming.
+                if (isInputUnavailableError(errorText)) {
+                    Log.w(TAG, "Host is discarding our input: $errorText")
+                    _inputUnavailable.value = localizeDesktopError(errorText)
+                    return@collect
+                }
+
                 Log.e(TAG, "Desktop stream error: $errorText")
                 _desktopError.value = localizeDesktopError(errorText)
                 _isStreaming.value = false
@@ -1331,6 +1384,14 @@ class RemoteDesktopViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun actuallyStartStreaming() {
+        // Cleared unconditionally, unlike the fatal error above (RemEx-iaxc). Note this is NOT because
+        // a new session re-asks for permission - it does not: the PC asks once per run, so a refusal
+        // usually outlives the reconnect. It is cleared because the new session re-reports from
+        // scratch (the host's once-per-session guard is per connection), so holding a stale banner
+        // would only race the fresh one, and on a PC where the user has since fixed it by restarting
+        // RemEx the banner would be a lie that never cleared.
+        _inputUnavailable.value = null
+
         catalogTimeoutJob?.cancel()
         catalogTimeoutJob = null
         pendingStreamStart = false

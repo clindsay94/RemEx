@@ -814,6 +814,16 @@ public sealed class RemoteDesktopHandler : IDisposable
                 try { await frameAvailable.WaitAsync(ct); }
                 catch (OperationCanceledException) { break; }
 
+                // **ALSO CHECKED HERE, NOT ONLY WHERE INPUT ARRIVES (RemEx-iaxc).** The input path
+                // can only notice on the event AFTER the one that failed, which assumes another event
+                // is coming. Two cases break that: a user who presses one key, sees nothing happen and
+                // stops; and hosts with a live unified capture session, where pointer motion is
+                // injected through the capture lifetime and never touches the portal at all, so the
+                // continuous stream of moves that argument leans on never triggers the detection.
+                // This loop runs as long as the stream does, so the notice no longer depends on the
+                // client doing anything more. The one-shot guard inside makes the double call free.
+                await ReportInputSilentlyDroppedOnceAsync(webSocket, sendLock, ct);
+
                 // Retrieve the latest frame (and clear it from the buffer)
                 var currentFrame = Interlocked.Exchange(ref frameBuffer.Frame, null);
                 if (currentFrame?.Bytes is not { Length: > 0 })
@@ -913,6 +923,50 @@ public sealed class RemoteDesktopHandler : IDisposable
             h264Encoder?.Dispose();
             frameAvailable.Dispose();
         }
+    }
+
+    /// <summary>Set once this session has told the client its input is going nowhere (RemEx-iaxc).</summary>
+    private int _inputSilentlyDroppedReported;
+
+    /// <summary>
+    /// Tells the client, at most once per session, that the host is discarding its input (RemEx-iaxc).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// **THE HOST ADVERTISED THAT INPUT WORKS AND WAS RIGHT AT THE TIME.** On Wayland the portal
+    /// injector is started lazily on the first event, so the permission dialog appears only once a
+    /// remote session actually begins sending input. Decline it with no xdotool or ydotool installed
+    /// and every click and keystroke is discarded — the stream keeps running, the cursor does not
+    /// move, and nothing anywhere says why. No capability flag can carry this, because at capability
+    /// time the prediction was correct; it is only knowable once a user has answered a dialog.
+    /// </para>
+    /// <para>
+    /// **CALLED FROM BOTH THE INPUT PATH AND THE FRAME LOOP, BECAUSE THE INPUT PATH ALONE CAN MISS
+    /// IT.** The reason is set by the input worker while dispatching, so the input-side call can only
+    /// observe it on the event AFTER the one that failed — which assumes another event is coming. It
+    /// usually is, and that call is the fast path. But a user who presses one key, sees nothing happen
+    /// and stops sends no second event; and on hosts with a live unified capture session, pointer
+    /// motion is injected through the capture lifetime and never touches the portal at all, so the
+    /// continuous stream of moves is not even a trigger there. The frame loop runs for as long as the
+    /// stream does and closes both gaps.
+    /// </para>
+    /// <para>
+    /// Once per session because the condition does not clear: the portal is asked once and, on
+    /// refusal, every later event fails the same way. Repeating it per event would put a dialog on the
+    /// phone for every pixel of mouse travel.
+    /// </para>
+    /// </remarks>
+    private async Task ReportInputSilentlyDroppedOnceAsync(
+        WebSocket webSocket, SemaphoreSlim sendLock, CancellationToken ct)
+    {
+        if (_inputSimulation.InputSilentlyDroppedReason is not { } reason)
+            return;
+
+        if (Interlocked.Exchange(ref _inputSilentlyDroppedReported, 1) != 0)
+            return;
+
+        _logger.LogWarning("Telling the client its input is being discarded: {Reason}", reason);
+        await SendDesktopErrorCoded(webSocket, DesktopErrorCodes.InputUnavailable, reason, sendLock, ct);
     }
 
     private async Task SendDesktopError(WebSocket webSocket, string text, SemaphoreSlim sendLock, CancellationToken ct)
@@ -1086,6 +1140,8 @@ public sealed class RemoteDesktopHandler : IDisposable
                             _logger.LogWarning("Input queue full ({Capacity} items) — dropping {Type} event.",
                                 _inputQueue.BoundedCapacity, message.InputEvent.EventType);
                         }
+
+                        await ReportInputSilentlyDroppedOnceAsync(webSocket, sendLock, ct);
                         break;
 
                     case MessageTypes.DesktopConfig when message.DesktopConfig is not null:

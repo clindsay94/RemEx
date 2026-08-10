@@ -57,6 +57,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **On Linux, declining the PC's permission prompt left the remote screen looking fine and doing
+  nothing.** On newer Linux desktops, RemEx has to ask the system for permission before it can move
+  your mouse or type for you, and it only asks at the moment you first try — so the prompt appears on
+  the PC after you have already connected and started clicking. If nobody was at the PC to accept it,
+  or it was dismissed, RemEx had nowhere left to send your input. It carried on streaming the picture
+  perfectly while quietly throwing away every click and keystroke, and the phone had no way to know:
+  the PC had said input was available, which had been true when it said it.
+
+  Your phone is now told, and shows a message over the video explaining that the PC is not accepting
+  input. The picture keeps streaming, because a screen you can watch but not control is still worth
+  seeing. RemEx asks the system for permission only once per run, so getting the prompt back means
+  restarting RemEx on the PC — the message on your phone says exactly that, rather than leaving you to
+  guess or suggesting a reconnect that would quietly fail the same way. The PC's log now names the
+  refused prompt as the cause too, instead of pointing at a missing tool that would not have helped.
+  (RemEx-iaxc)
+
 - **And they still ran slow when your PC was slow to read its own sensors.** The RemEx-uj7s change
   described below put every phone on the PC's single reading cycle. That cycle, though, waited a
   second *after* each reading finished — so the true gap was a second plus however long the reading

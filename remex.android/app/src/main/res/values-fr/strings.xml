@@ -602,6 +602,7 @@
     <string name="rd_err_target_unavailable">L’écran sélectionné n’est plus disponible.</string>
     <string name="rd_err_target_switch_unsupported">Cette session ne peut pas changer d’écran pendant la diffusion.</string>
     <string name="rd_err_runtime_unavailable">Le bureau à distance n’est pas disponible sur votre PC pour le moment.</string>
+    <string name="rd_err_input_unavailable">Votre PC n’accepte pas les entrées clavier ou souris. Une invite d’autorisation a peut-être été refusée sur le PC — redémarrez RemEx sur celui-ci pour qu’elle réapparaisse. Vous pouvez toujours voir l’écran.</string>
     <string name="rd_err_connect_timeout">Votre PC à l’adresse %1$s n’a pas répondu. Vérifiez qu’il est allumé et connecté au même réseau Wi‑Fi que ce téléphone, puis réessayez.</string>
     <string name="rd_err_handshake_timeout">Votre PC à l’adresse %1$s a répondu, puis s’est arrêté pendant la vérification de cet appareil. Il s’est peut-être mis en veille. Réessayez de vous connecter.</string>
     <string name="cd_clear_search">Effacer la recherche</string>

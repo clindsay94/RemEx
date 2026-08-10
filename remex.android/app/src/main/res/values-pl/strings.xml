@@ -595,6 +595,7 @@
     <string name="rd_err_target_unavailable">Wybrany ekran nie jest już dostępny.</string>
     <string name="rd_err_target_switch_unsupported">Ta sesja nie może przełączać ekranów podczas przesyłania.</string>
     <string name="rd_err_runtime_unavailable">Pulpit zdalny nie jest teraz dostępny na Twoim komputerze.</string>
+    <string name="rd_err_input_unavailable">Twój komputer nie przyjmuje sygnałów z klawiatury ani myszy. Monit o uprawnienia na komputerze mógł zostać odrzucony — uruchom tam RemEx ponownie, aby pojawił się znowu. Nadal widzisz ekran.</string>
     <string name="rd_err_connect_timeout">Komputer pod adresem %1$s nie odpowiedział. Upewnij się, że jest włączony i połączony z tą samą siecią Wi‑Fi co ten telefon, a potem spróbuj ponownie.</string>
     <string name="rd_err_handshake_timeout">Komputer pod adresem %1$s odpowiedział, ale przestał reagować podczas sprawdzania tego urządzenia. Mógł przejść w stan uśpienia. Spróbuj połączyć się ponownie.</string>
     <string name="cd_clear_search">Wyczyść wyszukiwanie</string>

@@ -37,6 +37,14 @@ public class LinuxInputSimulationService : IInputSimulationService
 {
     private readonly ILogger<LinuxInputSimulationService> _logger;
     private readonly LinuxDesktopBackendStatus _backendStatus;
+
+    /// <summary>Set once the portal refused and there is no shell tool to fall back to (RemEx-iaxc).</summary>
+    /// <remarks>
+    /// Written on the input worker thread and read by the desktop stream's message loop, so both ends
+    /// go through <see cref="Volatile"/>. A plain field would let the reader cache the null it saw on
+    /// the first event forever, which is the one value that must not be sticky.
+    /// </remarks>
+    private string? _inputSilentlyDroppedReason;
     private readonly string? _display;
     private readonly InputToolLauncher _launch;
     private readonly VirtualDesktopOrigin _virtualDesktopOrigin;
@@ -666,6 +674,9 @@ public class LinuxInputSimulationService : IInputSimulationService
                     {
                         _logger.LogWarning(ex, "Portal input session start raised an exception.");
                     }
+
+                    if (!_portalInjector.IsActive)
+                        NotePortalStartFailed();
                 }
             }
         }
@@ -678,11 +689,62 @@ public class LinuxInputSimulationService : IInputSimulationService
         return _portalInjector.IsActive;
     }
 
+    /// <inheritdoc />
+    public string? InputSilentlyDroppedReason => Volatile.Read(ref _inputSilentlyDroppedReason);
+
+    /// <summary>
+    /// Records that the portal session could not be started, so the fall-through can name the real
+    /// cause and the stream can tell the user (RemEx-iaxc).
+    /// </summary>
+    /// <remarks>
+    /// Only meaningful when there is ALSO no shell tool to fall back to. With xdotool or ydotool
+    /// present a declined portal is a degradation, not a failure — input still reaches the desktop —
+    /// so <see cref="InputSilentlyDroppedReason"/> stays null and nothing is reported.
+    /// </remarks>
+    private void NotePortalStartFailed()
+    {
+        if (_backendStatus.InputTool != LinuxDesktopTool.None && _backendStatus.InputToolPath is not null)
+        {
+            _logger.LogWarning(
+                "Portal input session did not start; falling back to {Tool}. Input still works.",
+                _backendStatus.InputTool);
+            return;
+        }
+
+        // **CRITICAL RATHER THAN WARNING, BECAUSE NOTHING ELSE WILL EVER SAY SO.** From here every
+        // click and keystroke is discarded and the host keeps advertising that input works.
+        // **THE REMEDY IS A RESTART, NOT A RECONNECT, AND SAYING OTHERWISE SENDS THE USER IN CIRCLES.**
+        // The service is a singleton and _portalStartAttempted is never reset, so the portal is asked
+        // exactly once per agent process: reconnecting builds a new handler but takes the
+        // already-attempted branch and never re-prompts. Only ydotool is suggested because this path
+        // is reachable only on Wayland, where xdotool is not the tool that would help (RemEx-iaxc).
+        _logger.LogCritical(
+            "Remote input is being DISCARDED: the desktop portal session was refused or failed to " +
+            "start, and there is no fallback input tool installed. If a permission dialog appeared, " +
+            "it was declined or dismissed. RemEx will not ask again until it is restarted on this " +
+            "PC — restart the agent and accept the prompt, or install ydotool.");
+
+        Volatile.Write(
+            ref _inputSilentlyDroppedReason,
+            "The PC refused permission to control it, and has no fallback input tool installed.");
+    }
+
     private void RunTool(params string[] arguments)
     {
         if (_backendStatus.InputTool == LinuxDesktopTool.None || _backendStatus.InputToolPath is null)
         {
-            _logger.LogWarning("No input simulation tool available (install xdotool or ydotool).");
+            // **THE MESSAGE DEPENDS ON WHETHER A PORTAL WAS EVER IN PLAY (RemEx-iaxc).** With no
+            // injector at all this is the static X11-with-nothing-installed case and "install
+            // xdotool" is exactly right - that is RemEx-vgxv's territory and this warning is its only
+            // signal today, so it is left alone. With an injector present the portal WAS the plan, a
+            // refused dialog is what actually killed the event, and naming the missing shell tool
+            // points at the wrong thing entirely. That case is reported once, with its real cause, by
+            // NotePortalStartFailed; here it drops to Debug because it fires for every discarded event
+            // and a per-event warning buries the one line that explains why.
+            if (_portalInjector is null)
+                _logger.LogWarning("No input simulation tool available (install xdotool or ydotool).");
+            else
+                _logger.LogDebug("Input event discarded: the portal session is not delivering events.");
             return;
         }
 

@@ -57,6 +57,24 @@ public static class DesktopErrorCodes
     public const string HandshakeTimeout = "handshake_timeout";
 
     /// <summary>
+    /// The host accepted the stream but is discarding every input event. (RemEx-iaxc)
+    /// </summary>
+    /// <remarks>
+    /// **THE ONLY CODE HERE THAT CONTRADICTS A CAPABILITY THE HOST ALREADY ADVERTISED, WHICH IS WHY IT
+    /// HAS TO EXIST AT ALL.** <c>SupportsInputSimulation</c> is computed once at startup and was right
+    /// when it was computed: on Wayland the host can inject through the desktop portal, so it answers
+    /// true. The portal session is started lazily on the first input event, deliberately, so the
+    /// permission dialog appears only when a remote session actually begins sending input — and if the
+    /// user declines it, or the session setup fails, there is nothing left to inject through. With no
+    /// xdotool or ydotool to fall back to, every subsequent click and keystroke is discarded in
+    /// silence while the advertised capability still says input works.
+    ///
+    /// No capability flag can express this, because at capability time the prediction was correct.
+    /// It is only knowable after the user answers a dialog, so it has to be pushed.
+    /// </remarks>
+    public const string InputUnavailable = "input_unavailable";
+
+    /// <summary>
     /// Builds the wire string <c>"code␟arg␟englishFallback"</c>. <paramref name="arg"/> is an
     /// optional machine-readable parameter (e.g. a frame count) the client can substitute into its
     /// localized template; pass null when there is none.

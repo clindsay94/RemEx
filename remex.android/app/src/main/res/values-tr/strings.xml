@@ -602,6 +602,7 @@
     <string name="rd_err_target_unavailable">Seçilen ekran artık kullanılamıyor.</string>
     <string name="rd_err_target_switch_unsupported">Bu oturum yayın sırasında ekran değiştiremez.</string>
     <string name="rd_err_runtime_unavailable">Uzak masaüstü şu anda bilgisayarınızda kullanılamıyor.</string>
+    <string name="rd_err_input_unavailable">Bilgisayarınız klavye veya fare girişini kabul etmiyor. Bilgisayardaki izin istemi reddedilmiş olabilir — tekrar sorulması için RemEx’i orada yeniden başlatın. Ekranı hâlâ görebilirsiniz.</string>
     <string name="rd_err_connect_timeout">%1$s adresindeki bilgisayarınız yanıt vermedi. Açık olduğundan ve bu telefonla aynı Wi‑Fi ağına bağlı olduğundan emin olun, sonra tekrar deneyin.</string>
     <string name="rd_err_handshake_timeout">%1$s adresindeki bilgisayarınız yanıt verdi ama bu cihazı doğrularken durdu. Uyku moduna geçmiş olabilir. Yeniden bağlanmayı deneyin.</string>
     <string name="cd_clear_search">Aramayı temizle</string>

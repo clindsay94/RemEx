@@ -602,6 +602,7 @@
     <string name="rd_err_target_unavailable">La pantalla seleccionada ya no está disponible.</string>
     <string name="rd_err_target_switch_unsupported">Esta sesión no puede cambiar de pantalla durante la transmisión.</string>
     <string name="rd_err_runtime_unavailable">El escritorio remoto no está disponible en tu PC en este momento.</string>
+    <string name="rd_err_input_unavailable">Tu PC no acepta entradas de teclado ni ratón. Puede que se haya rechazado un aviso de permiso en el PC: reinicia RemEx allí para que vuelva a preguntar. Todavía puedes ver la pantalla.</string>
     <string name="rd_err_connect_timeout">Tu PC en %1$s no respondió. Asegúrate de que esté encendido y conectado a la misma red Wi‑Fi que este teléfono, y vuelve a intentarlo.</string>
     <string name="rd_err_handshake_timeout">Tu PC en %1$s respondió, pero dejó de hacerlo mientras verificaba este dispositivo. Puede que se haya suspendido. Intenta conectarte de nuevo.</string>
     <string name="cd_clear_search">Borrar búsqueda</string>
