@@ -64,9 +64,41 @@ public sealed class TelemetryBackgroundService(
     public event Action<TelemetryPayload>? TelemetryPublished;
 
 
+    /// <summary>How often a sample is taken.</summary>
+    internal static readonly TimeSpan SamplePeriod = TimeSpan.FromSeconds(1);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Telemetry background broadcaster started.");
+
+        // **A PeriodicTimer, NOT Task.Delay AT THE FOOT OF THE LOOP (RemEx-6sibx).** A trailing delay
+        // makes the period the sample duration PLUS a second, and that duration varies - WMI can block
+        // for seconds where an hwmon read is instant. Samples therefore landed at uneven intervals.
+        // Since RemEx-uj7s this is the only clock in the subsystem, so that unevenness is delivered
+        // verbatim to every client, and the phone appends one history point per message against an
+        // INDEX axis: uniform spacing is exactly what makes its x-axis linear in time.
+        //
+        // **WHAT THAT BUYS IS AN AVERAGE, AND SAYING IT REMOVES THE SAMPLE DURATION WOULD BE TOO
+        // STRONG.** A publish lands when the sample FINISHES while the timer paces when it STARTS, so
+        // the gap is `period + (Dn - Dn-1)`. The LEVEL of the duration is gone - the mean is now the
+        // period no matter how slow the sensors are, where before it was the period plus that level -
+        // but the CHANGE in duration between consecutive samples still passes through one for one.
+        // That residue is far smaller than the level, and it does not accumulate.
+        //
+        // PeriodicTimer does NOT queue missed ticks; they coalesce into one. A sample slower than the
+        // period drops ticks rather than bursting to catch up, which is what this wants - a backlog of
+        // stale telemetry has no value and the burst would be a second kind of uneven spacing.
+        //
+        // **THE OTHER EDGE OF THAT COALESCING IS DELIBERATE AND IS A REAL CHANGE FOR SLOW MACHINES
+        // (RemEx-c2bxf).** A saved tick means the wait returns immediately, so a sample taking longer
+        // than the period is followed by NO idle at all and the next one starts back to back. The old
+        // trailing delay guaranteed a second of quiet between polls whatever the poll cost. A machine
+        // whose sensors take ~1.1s therefore moves from polling every 2.1s to every 1.1s: closer to
+        // the 1 Hz everyone else already gets, which is the intent, but up to twice the polls and no
+        // pause. The amplification is bounded at 2x, worst when the duration is near the period, and
+        // decays toward 1x as it grows. Whether a slow machine should instead be given a floor is a
+        // policy question with a number nobody has measured, so it is filed rather than guessed.
+        using var ticker = new PeriodicTimer(SamplePeriod);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -114,8 +146,22 @@ public sealed class TelemetryBackgroundService(
                 logger.LogError(ex, "Error polling telemetry data.");
             }
 
-            // Poll every 1 second
-            await Task.Delay(1000, stoppingToken);
+            try
+            {
+                // False means the timer was disposed; cancellation throws. Both are shutdown.
+                if (!await ticker.WaitForNextTickAsync(stoppingToken))
+                    break;
+            }
+            catch (OperationCanceledException)
+            {
+                // **CAUGHT SO THE LINE BELOW CAN ACTUALLY RUN.** The old `await Task.Delay(1000,
+                // stoppingToken)` sat uncaught at the foot of the loop, so on shutdown it threw
+                // straight out of ExecuteAsync and the "stopped" message was unreachable - leaving a
+                // log that recorded the sampler starting and never stopping. (Strictly, it survived a
+                // microseconds-wide window where cancellation landed between the delay completing and
+                // the loop re-checking the token; in practice, never.)
+                break;
+            }
         }
 
         logger.LogInformation("Telemetry background broadcaster stopped.");

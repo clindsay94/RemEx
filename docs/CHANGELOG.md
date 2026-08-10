@@ -57,6 +57,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **And they still ran slow when your PC was slow to read its own sensors.** The RemEx-uj7s change
+  described below put every phone on the PC's single reading cycle. That cycle, though, waited a
+  second *after* each reading finished — so the true gap was a second plus however long the reading
+  took, and that varies: some sensors answer instantly, and others (particularly with a lot of
+  hardware monitoring installed) can stall for a noticeable moment. On a machine like that, readings
+  meant to be a second apart were arriving every second and a half, and the graph draws them evenly
+  regardless, for the reason described in that entry.
+
+  The PC now takes a reading on a fixed one-second beat rather than a second after finishing the last
+  one, so readings average a second apart no matter how long the sensors take. If a reading ever takes
+  longer than a second, the missed beat is skipped rather than queued — you get the current reading
+  rather than a burst of stale ones catching up. (RemEx-6sibx)
+
 - **The history graphs on your phone stretched time unevenly.** Your PC takes a reading once a
   second, and each connected phone asked for the latest one on its own separate one-second timer. The
   two never quite lined up: the PC's cycle is a second *plus* however long the reading takes, so a
