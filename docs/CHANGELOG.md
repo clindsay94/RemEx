@@ -57,6 +57,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The history graphs on your phone stretched time unevenly.** Your PC takes a reading once a
+  second, and each connected phone asked for the latest one on its own separate one-second timer. The
+  two never quite lined up: the PC's cycle is a second *plus* however long the reading takes, so a
+  phone's timer was always fractionally the faster of the pair and regularly came back to find nothing
+  new since last time. Sending nothing was the right call — but it meant your updates were mostly a
+  second apart with a two-second gap every so often, and the history graph spaces its points evenly
+  regardless of when they actually arrived. A two-second gap therefore drew in the width of one, so
+  the line was quietly wrong about *when* things happened: a graph showing what looked like the last
+  minute was often covering nearer to seventy-five seconds, and everything on it read as more recent
+  than it really was.
+
+  Phones now take their readings from the PC's own cycle rather than each running a timer, so every
+  connected phone gets exactly the readings that exist, as they exist, and the graph's timeline is
+  honest again. (RemEx-uj7s)
+
 - **The dashboard's sensor drawer filled up with readings your PC had stopped sending, and never
   tidied itself.** Every sensor your PC has mentioned since the app started gets a card in the drawer
   you drag from, and nothing ever took one out. Because the PC swaps between two sources of readings

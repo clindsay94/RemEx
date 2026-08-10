@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.WebSockets;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -40,8 +41,8 @@ namespace Remex.Agent.Tests;
 /// </remarks>
 public class LoopbackTelemetryStreamTests
 {
-    /// <summary>Accepts one message, then reports Close so <c>HandleAsync</c> unwinds.</summary>
-    private sealed class OneShotWebSocket : WebSocket
+    /// <summary>Accepts messages for <paramref name="holdMs"/>, then reports Close so <c>HandleAsync</c> unwinds.</summary>
+    private sealed class OneShotWebSocket(int holdMs = 400) : WebSocket
     {
         public List<RemexMessage> Received { get; } = [];
 
@@ -56,7 +57,48 @@ public class LoopbackTelemetryStreamTests
         public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> b, CancellationToken c)
         {
             // Hold the connection open long enough for a telemetry tick to be due, then close it.
-            await Task.Delay(TimeSpan.FromMilliseconds(400), c);
+            await Task.Delay(TimeSpan.FromMilliseconds(holdMs), c);
+            return new WebSocketReceiveResult(0, WebSocketMessageType.Close, true);
+        }
+
+        public override WebSocketCloseStatus? CloseStatus => null;
+        public override string? CloseStatusDescription => null;
+        public override WebSocketState State => WebSocketState.Open;
+        public override string? SubProtocol => null;
+        public override void Abort() { }
+        public override Task CloseAsync(WebSocketCloseStatus s, string? d, CancellationToken c) => Task.CompletedTask;
+        public override Task CloseOutputAsync(WebSocketCloseStatus s, string? d, CancellationToken c) => Task.CompletedTask;
+        public override void Dispose() { }
+    }
+
+    /// <summary>Fails every telemetry send with a transient error, counting the attempts.</summary>
+    /// <remarks>
+    /// Only telemetry throws. Failing every send would take down the handshake instead, and the
+    /// question here is specifically what the telemetry loop does when a send keeps failing while the
+    /// connection itself stays healthy — which is the case the loop's per-iteration catch exists for.
+    /// <see cref="InvalidOperationException"/> rather than <see cref="WebSocketException"/> on purpose:
+    /// the latter is the one exception the loop treats as fatal, so it would end the stream and prove
+    /// nothing about retry pacing.
+    /// </remarks>
+    private sealed class TelemetryFailingWebSocket(int holdMs) : WebSocket
+    {
+        private int _telemetryAttempts;
+
+        public int TelemetryAttempts => Volatile.Read(ref _telemetryAttempts);
+
+        public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType t, bool e, CancellationToken c)
+        {
+            var message = MessageSerializer.Deserialize(buffer.AsSpan());
+            if (message?.Type != MessageTypes.Telemetry)
+                return Task.CompletedTask;
+
+            Interlocked.Increment(ref _telemetryAttempts);
+            throw new InvalidOperationException("transient send failure");
+        }
+
+        public override async Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> b, CancellationToken c)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(holdMs), c);
             return new WebSocketReceiveResult(0, WebSocketMessageType.Close, true);
         }
 
@@ -99,7 +141,16 @@ public class LoopbackTelemetryStreamTests
     }
 
     private static async Task<List<RemexMessage>> RunConnectionAsync(
-        bool isLoopback, ClientSessionRegistry? sessionRegistry = null)
+        bool isLoopback, ClientSessionRegistry? sessionRegistry = null, int holdMs = 400)
+    {
+        var socket = new OneShotWebSocket(holdMs);
+        await RunHandlerAsync(socket, isLoopback, sessionRegistry);
+        lock (socket.Received) return [.. socket.Received];
+    }
+
+    /// <summary>Drives one whole connection over <paramref name="socket"/> and returns when it closes.</summary>
+    private static async Task RunHandlerAsync(
+        WebSocket socket, bool isLoopback, ClientSessionRegistry? sessionRegistry = null)
     {
         var sampler = new TelemetryBackgroundService(
             new StubTelemetryService(), NullLogger<TelemetryBackgroundService>.Instance);
@@ -133,7 +184,6 @@ public class LoopbackTelemetryStreamTests
             NewActivityStore(),
             new FakeHostClipboard());
 
-        var socket = new OneShotWebSocket();
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -146,8 +196,6 @@ public class LoopbackTelemetryStreamTests
             handler.Dispose();
             await sampler.StopAsync(CancellationToken.None);
         }
-
-        lock (socket.Received) return [.. socket.Received];
     }
 
     [Fact]
@@ -193,6 +241,64 @@ public class LoopbackTelemetryStreamTests
         var sent = await RunConnectionAsync(isLoopback: false);
 
         Assert.Contains(sent, m => m.Type == MessageTypes.Telemetry && m.Telemetry is not null);
+    }
+
+    [Fact]
+    public async Task ARemoteClientKeepsReceivingTelemetryAndNotJustTheFirstSample()
+    {
+        // **THE TEST ABOVE ASSERTS "AT LEAST ONE", AND THAT IS EXACTLY THE HOLE A ONE-CHARACTER SLIP
+        // FITS THROUGH (RemEx-uj7s).** When the stream stopped running its own timer and began waiting
+        // on the sampler, the first draft wrote `lastSentSnapshot = await WaitForNextSnapshotAsync(...)`
+        // - which marks the awaited sample as SENT before sending it, so the loop's reference-equality
+        // check then skips it. The stream emitted its opening sample and went silent forever, with a
+        // healthy socket, no exception and no log line. Every test in this file stayed green.
+        //
+        // Counting past one is the only thing that sees it. The hold spans several sampler ticks
+        // rather than the 400 ms the other cases use, because at 1 Hz a shorter connection cannot
+        // distinguish "streaming" from "sent one and stopped".
+        var sent = await RunConnectionAsync(isLoopback: false, holdMs: 2500);
+
+        var telemetry = sent.Count(m => m.Type == MessageTypes.Telemetry);
+        Assert.True(telemetry >= 2, $"expected the stream to keep sending; got {telemetry} telemetry message(s)");
+    }
+
+    [Fact]
+    public async Task AFailingSendIsRetriedAtIntervalsRatherThanInATightLoop()
+    {
+        // **WAITING ON THE SAMPLER REMOVED THE PACING FROM THE ERROR PATH, WHICH THE OLD Task.Delay
+        // GAVE FOR FREE (RemEx-uj7s).** lastSentSnapshot is advanced only AFTER a send returns, so a
+        // failed send leaves it pointing at the previous sample - and the new wait, asked for anything
+        // newer than that, finds the current sample already qualifies and returns instantly. The loop
+        // then retries the failing send immediately, and again, and again: a hot spin burning a core
+        // and writing one warning per pass for as long as the fault lasts, on a connection that still
+        // looks healthy. The fix backs off on a failed tick instead of waiting.
+        //
+        // Counting attempts over a window is what distinguishes "retrying" from "spinning" - both send
+        // more than once, and only the rate tells them apart. The bound is deliberately loose: the
+        // failure mode it guards produces thousands, not four.
+        // **BOTH BOUNDS ARE LOAD-BEARING, AND AN EARLIER DRAFT ASSERTED ONLY `>= 1`.** That is
+        // satisfied by a stream that attempts one send and then DIES - the opposite failure, and
+        // precisely the per-iteration resilience the bead warns a redesign must preserve (only
+        // WebSocket-state failures may end the stream). Nothing else in the repo covers it, because
+        // OneShotWebSocket never throws. Changing the generic catch to `return` would have passed.
+        var socket = new TelemetryFailingWebSocket(holdMs: 2500);
+
+        var elapsed = Stopwatch.StartNew();
+        await RunHandlerAsync(socket, isLoopback: false);
+        elapsed.Stop();
+
+        Assert.True(
+            socket.TelemetryAttempts >= 2,
+            $"the stream must keep retrying, not die on the first failure; got {socket.TelemetryAttempts}");
+
+        // Against measured elapsed time rather than the nominal hold. Retries are one per second, so
+        // the ceiling has to move with the window actually observed - a scheduling overshoot on a
+        // loaded machine lengthens the hold and would fail a fixed bound for a reason that has nothing
+        // to do with spinning. The failure this guards produces thousands, so the slack costs nothing.
+        var ceiling = elapsed.Elapsed.TotalSeconds + 2;
+        Assert.True(
+            socket.TelemetryAttempts <= ceiling,
+            $"expected ~1 retry/sec over {elapsed.Elapsed.TotalSeconds:F1}s; got {socket.TelemetryAttempts}, which is a spin");
     }
 
     /// <summary>

@@ -1324,6 +1324,12 @@ public sealed class PingPongHandler(
         // we log a warning and keep going; only WebSocket-state failures end the stream.
         TelemetryBackgroundService.TelemetrySnapshot? lastSentSnapshot = null;
 
+        // Set in the generic catch, consumed and reset at the single point below that reads it. Its
+        // lifetime is wider than its meaning, so: DO NOT INTRODUCE A `continue` BETWEEN THE CATCH AND
+        // THAT READ. One would carry a stale `true` into the next iteration and insert a spurious
+        // one-second backoff after a perfectly healthy tick, halving that client's update rate.
+        var tickFailed = false;
+
         while (webSocket.State == WebSocketState.Open && !ct.IsCancellationRequested)
         {
             try
@@ -1352,11 +1358,48 @@ public sealed class PingPongHandler(
             {
                 // Transient failure (e.g. /proc parse, hwmon read). Log loudly and keep going.
                 logger.LogWarning(ex, "Telemetry stream tick failed; continuing.");
+                tickFailed = true;
             }
 
             try
             {
-                await Task.Delay(1000, ct);
+                // **WAITS FOR THE SAMPLER RATHER THAN RUNNING ITS OWN CLOCK (RemEx-uj7s).** This was
+                // Task.Delay(1000), which drifts against the sampler's 1000 ms plus sample duration -
+                // so this loop was systematically the faster one, routinely woke to find the snapshot
+                // it had already sent, and skipped. The skip is correct and the drift is not: a
+                // client's updates became mostly one second apart with a two-second gap whenever the
+                // phase caught up, and the phone plots its history against an index axis, so those
+                // gaps render as uniform and the chart's x-axis quietly stops being linear in time.
+                //
+                // The loop body above is unchanged and still sends before waiting, so a client that
+                // connects mid-cycle gets the current reading immediately rather than after a second.
+                //
+                // **THE RETURN VALUE IS DISCARDED ON PURPOSE, AND ASSIGNING IT IS A SILENT KILL.** It
+                // is the snapshot that ended the wait, not one this loop has sent - assign it to
+                // lastSentSnapshot and the send above sees ReferenceEquals and skips, so the stream
+                // emits its first sample and then, in practice, nothing again - with no error
+                // anywhere. (Strictly, a sample landing in the microseconds between the wait returning
+                // and the re-read would get through; at 1 Hz that is never.) The wait
+                // means only "block until something newer than what I sent exists"; re-reading
+                // CurrentSnapshot at the top is what picks up the newest one, including any that
+                // landed while this line was returning.
+                //
+                // **A FAILED TICK BACKS OFF INSTEAD OF WAITING, BECAUSE THE WAIT WOULD NOT WAIT.** A
+                // transient send failure leaves lastSentSnapshot un-advanced (it is assigned only
+                // after the send returns), so a newer snapshot already satisfies the wait and it
+                // returns instantly - retrying the failing send in a hot loop, one warning per pass,
+                // for as long as the fault lasts. Task.Delay(1000) used to provide that spacing for
+                // free by pacing every iteration; once the wait replaced the clock, the error path
+                // was the one case left with no pacing at all. This is a backoff, not a clock.
+                if (tickFailed)
+                {
+                    tickFailed = false;
+                    await Task.Delay(1000, ct);
+                }
+                else
+                {
+                    await telemetryBackgroundService.WaitForNextSnapshotAsync(lastSentSnapshot, ct);
+                }
             }
             catch (OperationCanceledException) { return; }
         }

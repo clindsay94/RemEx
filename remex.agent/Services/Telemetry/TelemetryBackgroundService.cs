@@ -29,13 +29,29 @@ public sealed class TelemetryBackgroundService(
     /// </remarks>
     public sealed record TelemetrySnapshot(TelemetryPayload Payload, ReadOnlyMemory<byte> Frame);
 
-    private TelemetrySnapshot? _snapshot;
+    private readonly TelemetrySnapshotGate<TelemetrySnapshot> _gate = new();
 
     /// <summary>
     /// The latest sample together with its serialized frame, or <see langword="null"/> before the
     /// first successful poll.
     /// </summary>
-    public TelemetrySnapshot? CurrentSnapshot => Volatile.Read(ref _snapshot);
+    public TelemetrySnapshot? CurrentSnapshot => _gate.Current;
+
+    /// <summary>
+    /// Waits until a sample exists that the caller has not already sent (RemEx-uj7s).
+    /// </summary>
+    /// <remarks>
+    /// This is what makes client fan-out push-driven. Every stream used to run its own 1-second
+    /// Task.Delay, which drifts against the sampler's 1000 ms PLUS sample duration - so a stream was
+    /// systematically the faster loop, routinely found the sample it had already sent, and skipped.
+    /// The result was update intervals of mostly one second with a two-second gap whenever the phase
+    /// caught up: invisible on screen, but the phone plots history against an index axis rather than
+    /// a time axis, so the gaps rendered as uniform and the chart's x-axis stopped being linear in
+    /// time. Waiting on the sampler instead means every client receives exactly the samples that
+    /// exist, in step.
+    /// </remarks>
+    public Task<TelemetrySnapshot> WaitForNextSnapshotAsync(TelemetrySnapshot? alreadySent, CancellationToken ct)
+        => _gate.WaitForNextAsync(alreadySent, ct);
 
     /// <inheritdoc />
     public TelemetryPayload? CurrentTelemetry => CurrentSnapshot?.Payload;
@@ -76,7 +92,7 @@ public sealed class TelemetryBackgroundService(
                 });
 
                 var snapshot = new TelemetrySnapshot(payload, frame);
-                Volatile.Write(ref _snapshot, snapshot);
+                _gate.Publish(snapshot);
 
                 try
                 {
