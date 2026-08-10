@@ -10,6 +10,18 @@ public enum SystemStatusAffordance
 
     /// <summary>Perform a specific, named repair, only when the user asks for it.</summary>
     Fix,
+
+    /// <summary>
+    /// Explain what the state means and what to do about it, in a dialog (RemEx-tb0a).
+    /// </summary>
+    /// <remarks>
+    /// Held back from RemEx-id37 because there was nowhere for it to go, and a button that does
+    /// nothing teaches the user the whole card does nothing. The destination is an in-app dialog per
+    /// check rather than a docs URL — Connor's call, and the right one: the firewall row is the check
+    /// most likely to be why a phone cannot reach the PC, and a link is no use to someone whose
+    /// network is the thing that is broken.
+    /// </remarks>
+    Explain,
 }
 
 /// <summary>
@@ -68,9 +80,21 @@ public static class SystemStatusPresentation
     /// </remarks>
     public static SystemStatusAffordance AffordanceFor(ReadinessCheckId id) => id switch
     {
+        // Fix, not Explain: autostart is the one check with a local, reversible repair the user can
+        // ask for. Everything else needs a person to change something outside RemEx, so the honest
+        // offer is an explanation rather than a button that pretends to act.
         ReadinessCheckId.Autostart => SystemStatusAffordance.Fix,
-        _ => SystemStatusAffordance.ReportOnly,
+        _ => SystemStatusAffordance.Explain,
     };
+
+    /// <summary>Resource key for the "what this means and what to do" text of a check (RemEx-tb0a).</summary>
+    /// <remarks>
+    /// Derived from the enum name rather than switched, so a new <see cref="ReadinessCheckId"/> gets a
+    /// key by construction. The missing-resource case is what makes that safe to do: a key with no
+    /// entry surfaces as the key itself, which is visible immediately, where a switch would need a
+    /// default arm that silently showed some other check's advice.
+    /// </remarks>
+    public static string HelpBodyKeyFor(ReadinessCheckId id) => $"SystemStatus_Help_{id}";
 
     /// <summary>
     /// Whether this row shows its affordance at all.

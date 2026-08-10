@@ -55,6 +55,12 @@ public sealed partial class SystemStatusRowViewModel : ObservableObject
 
     public bool ShowsFix => ShowsAffordance && Affordance == SystemStatusAffordance.Fix;
 
+    /// <summary>Whether this row offers the explain button (RemEx-tb0a).</summary>
+    public bool ShowsExplain => ShowsAffordance && Affordance == SystemStatusAffordance.Explain;
+
+    /// <summary>Resource key for this row's help text.</summary>
+    public string HelpBodyKey => SystemStatusPresentation.HelpBodyKeyFor(Id);
+
     /// <summary>Re-reads both strings in the current language.</summary>
     public void Resolve()
     {
@@ -207,6 +213,36 @@ public sealed partial class SystemStatusViewModel : ObservableObject, IDisposabl
     /// row green would be worse than no button at all.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Supplied by the view to show the help dialog; null when nothing has wired one (RemEx-tb0a).
+    /// </summary>
+    /// <remarks>
+    /// Same shape as the confirmation delegate established by RemEx-07jx, and wired from the same
+    /// host, because this IS that dialog used informationally - one button, nothing destructive. A
+    /// view that cannot host a dialog leaves this null and the command does nothing, which is the
+    /// right failure for a button whose only job is to tell you something.
+    /// </remarks>
+    public Func<string, string, string, Task<bool>>? OnExplainRequested { get; set; }
+
+    /// <summary>Explains one row's state and what to do about it (RemEx-tb0a).</summary>
+    /// <remarks>
+    /// The text is looked up by the row's key rather than passed in, so the dialog cannot show one
+    /// check's advice against another's title - which is the failure a shared dialog invites.
+    /// </remarks>
+    [RelayCommand]
+    private async Task ExplainAsync(SystemStatusRowViewModel? row)
+    {
+        if (row is null || !row.ShowsExplain || OnExplainRequested is null)
+        {
+            return;
+        }
+
+        await OnExplainRequested(
+            LocalizationService.Instance[row.TitleKey],
+            LocalizationService.Instance[row.HelpBodyKey],
+            LocalizationService.Instance["SystemStatus_HelpClose"]);
+    }
+
     [RelayCommand]
     private async Task FixAsync(SystemStatusRowViewModel? row)
     {

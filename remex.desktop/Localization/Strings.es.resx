@@ -2837,6 +2837,24 @@ Puedes cambiar:
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Todo lo que RemEx necesita está funcionando.</value>
   </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Qué significa</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Cerrar</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx debe ejecutarse como administrador. Sin ello, el emparejamiento y el control remoto no funcionan. Cierra RemEx y ábrelo con Ejecutar como administrador.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx no pudo leer el certificado que acredita la identidad de este PC ante tu teléfono. Al reiniciar RemEx como administrador se vuelve a crear.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Nada escucha en el puerto al que se conecta tu teléfono. Puede que RemEx aún esté iniciando o que otro programa use ese puerto. Reinicia RemEx y cambia el puerto en Ajustes si sigue ocurriendo.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>El firewall bloquea las conexiones entrantes, por lo que tu teléfono ve este PC pero no puede conectarse. Permite RemEx en el firewall para redes privadas. Es el motivo más frecuente de que un teléfono no alcance un PC encendido.</value>
+  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Solucionar</value>
   </data>

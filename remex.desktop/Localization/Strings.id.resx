@@ -2826,6 +2826,24 @@ Anda dapat mengubah:
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Semua yang dibutuhkan RemEx berfungsi.</value>
   </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Apa artinya</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Tutup</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx harus dijalankan sebagai administrator. Tanpa itu, penyandingan dan kendali jarak jauh tidak dapat bekerja. Tutup RemEx lalu buka lagi dengan Run as administrator.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx tidak dapat membaca sertifikat yang membuktikan identitas PC ini kepada ponsel Anda. Memulai ulang RemEx sebagai administrator akan membuatnya kembali.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Tidak ada yang mendengarkan di port yang dihubungi ponsel Anda. RemEx mungkin masih memulai, atau program lain memakai port itu. Mulai ulang RemEx, dan ubah port di Pengaturan jika terus terjadi.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>Firewall memblokir koneksi masuk, sehingga ponsel Anda dapat melihat PC ini tetapi tidak dapat terhubung. Izinkan RemEx melalui firewall untuk jaringan pribadi. Ini penyebab paling umum ponsel tidak dapat menjangkau PC yang menyala.</value>
+  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Perbaiki</value>
   </data>

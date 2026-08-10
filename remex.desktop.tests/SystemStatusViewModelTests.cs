@@ -150,9 +150,13 @@ public class SystemStatusViewModelTests
         Assert.Equal("SystemStatus_Certificate_Title", row.TitleKey);
         Assert.Equal("SystemStatus_Certificate_Problem", row.SentenceKey);
 
-        // And the certificate row never offers a button, whatever state it is in.
-        Assert.False(row.ShowsAffordance);
+        // And the certificate row never offers a FIX, whatever state it is in - regenerating a
+        // certificate un-pairs every phone at once. It does now offer Explain (RemEx-tb0a), which
+        // regenerates nothing and says to restart RemEx as administrator, so the assertion is on the
+        // rule rather than on "no button at all", which was only ever a proxy for it.
         Assert.False(row.ShowsFix);
+        Assert.True(row.ShowsExplain);
+        Assert.Equal("SystemStatus_Help_Certificate", row.HelpBodyKey);
     }
 
     [Fact]

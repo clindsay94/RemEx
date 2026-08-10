@@ -2829,6 +2829,24 @@ You can change:
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Everything RemEx needs is working.</value>
   </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>What this means</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx must run as administrator. Without it, pairing and remote control cannot work. Close RemEx and start it again using Run as administrator.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx could not read the certificate that proves this PC’s identity to your phone. Restarting RemEx as administrator recreates it.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Nothing is listening on the port your phone connects to. RemEx may still be starting, or another program may be using that port. Restart RemEx, and change the port in Settings if it keeps happening.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>The firewall is blocking incoming connections, so your phone can see this PC but cannot connect to it. Allow RemEx through the firewall on private networks. This is the most common reason a phone cannot reach a PC that is switched on and awake.</value>
+  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Fix this</value>
   </data>

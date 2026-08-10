@@ -186,6 +186,18 @@
                                                 CommandParameter="{Binding}"
                                                 AutomationProperties.Name="{local:Localize SystemStatus_Fix}"
                                                 Content="{local:Localize SystemStatus_Fix}"/>
+                                        <!-- Same $parent[ItemsControl] cast as the Fix button above,
+                                             and for the same reason: the ItemsControl inherits
+                                             HomeViewModel, so reaching the card's command needs the
+                                             explicit cast. Avalonia binding failures are silent, so
+                                             getting this wrong gives a button that does nothing with
+                                             no error anywhere. (RemEx-tb0a) -->
+                                        <Button Classes="action-pill" Padding="12,6" FontSize="12"
+                                                IsVisible="{Binding ShowsExplain}"
+                                                Command="{Binding $parent[ItemsControl].((vm:SystemStatusViewModel)DataContext).ExplainCommand}"
+                                                CommandParameter="{Binding}"
+                                                AutomationProperties.Name="{local:Localize SystemStatus_Explain}"
+                                                Content="{local:Localize SystemStatus_Explain}"/>
                                     </StackPanel>
                                 </Grid>
                             </DataTemplate>

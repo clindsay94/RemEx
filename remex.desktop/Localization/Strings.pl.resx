@@ -2824,6 +2824,24 @@ Możesz zmienić:
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Wszystko, czego potrzebuje RemEx, działa.</value>
   </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Co to znaczy</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Zamknij</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx musi działać jako administrator. Bez tego parowanie i zdalne sterowanie nie zadziałają. Zamknij RemEx i uruchom go ponownie przez Uruchom jako administrator.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx nie mógł odczytać certyfikatu potwierdzającego tożsamość tego komputera wobec telefonu. Ponowne uruchomienie RemEx jako administrator utworzy go na nowo.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Nic nie nasłuchuje na porcie, z którym łączy się telefon. RemEx może się jeszcze uruchamiać albo inny program zajął ten port. Uruchom RemEx ponownie, a jeśli to się powtarza, zmień port w Ustawieniach.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>Zapora blokuje połączenia przychodzące, więc telefon widzi ten komputer, ale nie może się połączyć. Zezwól RemEx w zaporze dla sieci prywatnych. To najczęstsza przyczyna, gdy telefon nie może dosięgnąć włączonego komputera.</value>
+  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Napraw to</value>
   </data>

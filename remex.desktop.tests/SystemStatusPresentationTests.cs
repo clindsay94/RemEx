@@ -118,16 +118,22 @@ public class SystemStatusPresentationTests
         // every paired phone pinned - one button would un-pair every device at once, with no undo
         // except pairing each again by hand. CLAUDE.md classes cert handling as high-risk for exactly
         // this. Reporting it is useful; offering to fix it is not.
-        Assert.Equal(
-            SystemStatusAffordance.ReportOnly,
+        // **ASSERTS "NEVER A FIX", NOT "NEVER A BUTTON", AND THE DIFFERENCE IS THE WHOLE POINT.** This
+        // used to assert ReportOnly, which was a proxy for the safety rule while ReportOnly was the
+        // only alternative to Fix. RemEx-tb0a added Explain, and an Explain button here is safe and
+        // useful - it says to restart RemEx as administrator, which regenerates nothing. Keeping the
+        // proxy would have blocked that; dropping the test would have lost the rule. So the rule is
+        // now stated directly, which also means a future affordance cannot slip past it.
+        Assert.NotEqual(
+            SystemStatusAffordance.Fix,
             SystemStatusPresentation.AffordanceFor(ReadinessCheckId.Certificate));
 
         foreach (var state in RenderableStates)
         {
-            Assert.False(
-                SystemStatusPresentation.ShowsAffordance(
-                    new ReadinessCheck(ReadinessCheckId.Certificate, state, "detail")),
-                $"the certificate row offered a button in state {state}");
+            var row = new SystemStatusRowViewModel(
+                new ReadinessCheck(ReadinessCheckId.Certificate, state, "detail"));
+
+            Assert.False(row.ShowsFix, $"the certificate row offered a Fix button in state {state}");
         }
     }
 
@@ -159,17 +165,38 @@ public class SystemStatusPresentationTests
     }
 
     [Fact]
-    public void ONLYAutostartOffersAnything()
+    public void EveryNotOkRowOffersSomething_AutostartFixesAndTheRestExplain()
     {
-        // The deviation from the bead, pinned so it is a decision rather than a drift: every other
-        // row reports and offers no button, because an Explain button with nowhere to go would be
-        // inert UI. If a help destination ever lands, this test is where the change gets noticed.
+        // WAS ONLYAutostartOffersAnything, INVERTED BY RemEx-tb0a AS ITS OWN COMMENT SAID IT WOULD BE.
+        // It pinned that only autostart offered a button, because Explain had nowhere to go and an
+        // inert button teaches the user the whole card is inert. There is a destination now - an
+        // in-app dialog per check - so every not-Ok row offers something, and the split is that
+        // autostart FIXES (local, reversible, user-invoked) while the rest EXPLAIN, because they need
+        // a person to change something outside RemEx.
         foreach (var id in Enum.GetValues<ReadinessCheckId>())
         {
-            var offers = SystemStatusPresentation.ShowsAffordance(
-                new ReadinessCheck(id, ReadinessState.Problem, "d"));
+            var check = new ReadinessCheck(id, ReadinessState.Problem, "d");
 
-            Assert.Equal(id == ReadinessCheckId.Autostart, offers);
+            Assert.True(SystemStatusPresentation.ShowsAffordance(check));
+            Assert.Equal(
+                id == ReadinessCheckId.Autostart
+                    ? SystemStatusAffordance.Fix
+                    : SystemStatusAffordance.Explain,
+                SystemStatusPresentation.AffordanceFor(id));
+        }
+    }
+
+    [Fact]
+    public void AnOkRowStillOffersNothing()
+    {
+        // The other half of the rule, and the one the inversion above could have quietly dropped:
+        // a row that is fine has nothing to fix OR explain, so offering a button there would invite
+        // the user to act on something that is already working.
+        foreach (var id in Enum.GetValues<ReadinessCheckId>())
+        {
+            Assert.False(
+                SystemStatusPresentation.ShowsAffordance(
+                    new ReadinessCheck(id, ReadinessState.Ok, "d")));
         }
     }
 

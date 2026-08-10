@@ -2823,6 +2823,24 @@ Vous pouvez modifier :
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Tout ce dont RemEx a besoin fonctionne.</value>
   </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Ce que cela signifie</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx doit s’exécuter en tant qu’administrateur. Sans cela, l’appairage et le contrôle à distance ne peuvent pas fonctionner. Fermez RemEx et relancez-le via Exécuter en tant qu’administrateur.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx n’a pas pu lire le certificat qui prouve l’identité de ce PC à votre téléphone. Redémarrer RemEx en tant qu’administrateur le recrée.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Rien n’écoute sur le port auquel votre téléphone se connecte. RemEx démarre peut-être encore, ou un autre programme utilise ce port. Redémarrez RemEx et changez le port dans les paramètres si cela persiste.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>Le pare-feu bloque les connexions entrantes : votre téléphone voit ce PC mais ne peut pas s’y connecter. Autorisez RemEx dans le pare-feu pour les réseaux privés. C’est la cause la plus fréquente lorsqu’un téléphone n’atteint pas un PC allumé.</value>
+  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Corriger</value>
   </data>

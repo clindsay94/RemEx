@@ -2823,6 +2823,24 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>RemEx को जिन चीज़ों की ज़रूरत है, वे सब काम कर रही हैं।</value>
   </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>इसका मतलब</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>बंद करें</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx को प्रशासक के रूप में चलना चाहिए। इसके बिना पेयरिंग और रिमोट कंट्रोल काम नहीं करेंगे। RemEx बंद करके उसे Run as administrator से फिर से शुरू करें।</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx उस प्रमाणपत्र को नहीं पढ़ सका जो आपके फ़ोन को इस पीसी की पहचान बताता है। RemEx को प्रशासक के रूप में पुनः आरंभ करने पर वह फिर से बन जाता है।</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>जिस पोर्ट से आपका फ़ोन जुड़ता है, उस पर कुछ सुन नहीं रहा। हो सकता है RemEx अभी शुरू हो रहा हो या कोई दूसरा प्रोग्राम उस पोर्ट का उपयोग कर रहा हो। RemEx पुनः आरंभ करें, और बार-बार हो तो सेटिंग्स में पोर्ट बदलें।</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>फ़ायरवॉल आने वाले कनेक्शन रोक रहा है, इसलिए आपका फ़ोन इस पीसी को देख सकता है पर जुड़ नहीं सकता। निजी नेटवर्क के लिए फ़ायरवॉल में RemEx को अनुमति दें। चालू पीसी तक फ़ोन के न पहुँचने का यह सबसे आम कारण है।</value>
+  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>इसे ठीक करें</value>
   </data>

@@ -2827,6 +2827,24 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>RemEx'in ihtiyaç duyduğu her şey çalışıyor.</value>
   </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Bu ne demek</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx yönetici olarak çalışmalıdır. Aksi halde eşleme ve uzaktan denetim çalışmaz. RemEx’i kapatıp Yönetici olarak çalıştır ile yeniden başlatın.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx, bu bilgisayarın kimliğini telefonunuza kanıtlayan sertifikayı okuyamadı. RemEx’i yönetici olarak yeniden başlatmak sertifikayı yeniden oluşturur.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Telefonunuzun bağlandığı bağı dinleyen bir şey yok. RemEx hâlâ başlatılıyor olabilir ya da başka bir program o bağı kullanıyor olabilir. RemEx’i yeniden başlatın, sürerse Ayarlar’dan bağı değiştirin.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>Güvenlik duvarı gelen bağlantıları engelliyor; telefonunuz bu bilgisayarı görüyor ama bağlanamıyor. Özel ağlar için RemEx’e güvenlik duvarında izin verin. Açık bir bilgisayara telefonun ulaşamamasının en yaygın nedeni budur.</value>
+  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Bunu düzelt</value>
   </data>

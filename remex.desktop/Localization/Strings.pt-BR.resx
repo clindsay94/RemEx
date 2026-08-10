@@ -2823,6 +2823,24 @@ Você pode mudar:
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Tudo o que o RemEx precisa está funcionando.</value>
   </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>O que isso significa</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Fechar</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>O RemEx precisa ser executado como administrador. Sem isso, o pareamento e o controle remoto não funcionam. Feche o RemEx e abra novamente com Executar como administrador.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>O RemEx não conseguiu ler o certificado que comprova a identidade deste PC para o seu telefone. Reiniciar o RemEx como administrador o recria.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Nada está escutando na porta à qual seu telefone se conecta. O RemEx pode ainda estar iniciando, ou outro programa pode estar usando essa porta. Reinicie o RemEx e mude a porta nas Configurações se continuar.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>O firewall está bloqueando conexões de entrada, então seu telefone vê este PC mas não consegue se conectar. Permita o RemEx no firewall para redes privadas. Esse é o motivo mais comum de um telefone não alcançar um PC ligado.</value>
+  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Corrigir</value>
   </data>

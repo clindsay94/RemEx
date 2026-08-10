@@ -2824,6 +2824,24 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="SystemStatus_AllReady" xml:space="preserve">
     <value>Усе, що потрібно RemEx, працює.</value>
   </data>
+  <data name="SystemStatus_Explain" xml:space="preserve">
+    <value>Що це означає</value>
+  </data>
+  <data name="SystemStatus_HelpClose" xml:space="preserve">
+    <value>Закрити</value>
+  </data>
+  <data name="SystemStatus_Help_Elevation" xml:space="preserve">
+    <value>RemEx має працювати від імені адміністратора. Без цього парування та віддалене керування не працюватимуть. Закрийте RemEx і запустіть його через Запустити від імені адміністратора.</value>
+  </data>
+  <data name="SystemStatus_Help_Certificate" xml:space="preserve">
+    <value>RemEx не зміг прочитати сертифікат, який підтверджує особу цього ПК для вашого телефона. Перезапуск RemEx від імені адміністратора створює його заново.</value>
+  </data>
+  <data name="SystemStatus_Help_PortListening" xml:space="preserve">
+    <value>Нічого не прослуховує порт, до якого підключається телефон. Можливо, RemEx ще запускається або інша програма зайняла цей порт. Перезапустіть RemEx, а якщо повторюється — змініть порт у Налаштуваннях.</value>
+  </data>
+  <data name="SystemStatus_Help_Firewall" xml:space="preserve">
+    <value>Брандмауер блокує вхідні з’єднання, тому телефон бачить цей ПК, але не може підключитися. Дозвольте RemEx у брандмауері для приватних мереж. Це найчастіша причина, чому телефон не дістається до увімкненого ПК.</value>
+  </data>
   <data name="SystemStatus_Fix" xml:space="preserve">
     <value>Виправити</value>
   </data>

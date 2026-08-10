@@ -57,6 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The System status card on the PC told you something was wrong but not what to do about it.** Only
+  the autostart row had a button; the rest reported a problem and left you there. Each of the other
+  rows now has a "What this means" button that opens a short explanation and the next step - how to
+  start RemEx as administrator, what a missing certificate means, what to do when nothing is listening
+  on the port, and how to let RemEx through the firewall. The firewall one matters most: it is the
+  usual reason a phone can see your PC but cannot connect to it. (RemEx-tb0a)
+
 - **Remote desktop errors on your phone said what went wrong but not what to do about it.** Five of
   them - screen capture not working, capture stopping partway, a display that has gone away, a session
   that cannot switch displays, and remote desktop being unavailable on the PC - described the problem
