@@ -84,10 +84,12 @@ untestable in isolation.
   `TrayFlyoutWindow.axaml` and the code-behind (they currently disagree — the axaml says
   `"AcrylicBlur, Mica, None"`, the constructor overwrites it with `Mica, Blur, Transparent`). One
   declaration, in the code-behind, with the axaml attribute removed.
-- Replace the backdrop with a **themed translucent `SolidColorBrush`** on the inner rounded `Border` — one
-  new alpha-bearing token per theme (see §7). `ExperimentalAcrylicBorder` is deliberately **not** used: it is
-  marked experimental in Avalonia, and a per-theme translucent brush is deterministic, clips to
-  `CornerRadius` without argument, and behaves identically on Linux.
+- Replace the backdrop with the existing **`GlassBaseDarkBrush`** on the inner rounded `Border`. Verified
+  2026-08-11: all four theme dictionaries define this key with their own value, so despite the name it is a
+  per-theme surface token, not a dark-only one — no new token is needed.
+  `ExperimentalAcrylicBorder` is deliberately **not** used: it is marked experimental in Avalonia, and a
+  per-theme translucent brush is deterministic, clips to `CornerRadius` without argument, and behaves
+  identically on Linux.
 - On Windows, additionally set the DWM `DWMWA_WINDOW_CORNER_PREFERENCE` attribute to `DWMWCP_ROUND` on the
   window handle. This is belt-and-braces against the OS-drawn edge and is a no-op on Windows 10.
 - Non-Windows: the P/Invoke is guarded by `OperatingSystem.IsWindows()`. Linux keeps the transparent-window
@@ -129,7 +131,7 @@ untestable in isolation.
 | Sleep | `ConnectionViewModel.SleepAsync` | always |
 | Remote desktop | navigate to `RemoteDesktopView` | a phone is attached |
 | Send file | navigate to `FileTransferView` | always |
-| Pair | navigate to pairing / reveal PIN | no phone attached |
+| Pair | navigate to pairing / reveal PIN | always — RemEx supports several paired devices, so gating this on "already paired" would block adding a second phone |
 | Power ▾ | opens submenu | always |
 
 Power submenu: Restart, Shutdown, Sign out, Hibernate. Restart, Shutdown and Sign out each route through the
@@ -188,10 +190,11 @@ All four PC themes — CyberNOC, Monolith, SolarFlare, BaseDarkGlass — must be
 
 - Tokens only. No hardcoded colors, no hardcoded `#RRGGBB` in the new XAML.
 - Tile surfaces use `CardBackgroundBrush` / `CardBackgroundHoverBrush` / `CardBorderBrush`; accents use
-  `AccentPrimaryBrush`. If a needed token does not exist, it is added to all four theme dictionaries in the
-  same commit — never defaulted in one and omitted in another.
-- The translucent inner border (§2) must be checked against the light theme specifically: the current
-  `GlassBaseDarkBrush` is a dark-glass token and will read wrong if reused unconditionally.
+  `AccentPrimaryBrush`; the flyout surface uses `GlassBaseDarkBrush`. All five keys are verified present in
+  all four theme dictionaries. If a needed token does not exist, it is added to all four in the same
+  commit — never defaulted in one and omitted in another.
+- **SolarFlare is the light theme** (`App.axaml.cs:592` treats it as the light case). Every new surface must
+  be checked against it specifically, since the other three are dark and will hide a contrast mistake.
 
 ### 8. Localization
 
