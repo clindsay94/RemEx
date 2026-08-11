@@ -88,6 +88,27 @@ public sealed class TransferSessionManager : IDisposable
     /// </remarks>
     internal TimeSpan ReadyTimeout { get; init; } = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// How long <see cref="WaitForFinalAckAsync"/> will wait for one further ack before giving a
+    /// host-sent transfer up (RemEx-zd8ws).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// AN IDLE WINDOW, NOT A DEADLINE, and the distinction is the whole design. Up to
+    /// <see cref="FileTransferLimits.MaxUnackedBytes"/> (8 MB) can still be in flight when the send loop
+    /// ends, so a total budget would have to be sized for 8 MB draining over the slowest link a user
+    /// might have — and any number large enough to be safe there is far too large to be a useful
+    /// backstop. Every ack instead refreshes the window: a transfer that is still moving is never killed
+    /// no matter how slow it is, and a peer that has genuinely stopped talking is given up on after one
+    /// quiet minute.
+    /// </para>
+    /// <para>
+    /// The same test-only seam as <see cref="ReadyTimeout"/> above, for the same reason: a test must be
+    /// able to reach the gave-up branch without spending a minute per assertion.
+    /// </para>
+    /// </remarks>
+    internal TimeSpan AckDrainIdleTimeout { get; init; } = TimeSpan.FromSeconds(60);
+
     /// <summary>Orphaned staging partials older than this are swept at startup (plan §1.3).</summary>
     private static readonly TimeSpan OrphanMaxAge = TimeSpan.FromDays(7);
 
@@ -1271,7 +1292,12 @@ public sealed class TransferSessionManager : IDisposable
         _ = Task.Run(() => StreamSenderAsync(channel, sendSession, source, size, controlWs, ct), ct);
     }
 
-    private async Task StreamSenderAsync(FileChannel channel, SendSession session, Stream source, long size, WebSocket controlWs, CancellationToken outerCt)
+    // internal, not private, so HostSendDrainTests can drive the send path directly and assert the one
+    // property that matters here: that no file_transfer_complete reaches the control socket before the
+    // peer has acked the data (RemEx-zd8ws). Reaching it through the public offer entry points instead
+    // would mean standing up consent, a real volume and a live /ws/files channel loop, and would still
+    // leave the ack — the very thing under test — to be injected through a scripted socket race.
+    internal async Task StreamSenderAsync(FileChannel channel, SendSession session, Stream source, long size, WebSocket controlWs, CancellationToken outerCt)
     {
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(outerCt, session.CancellationToken);
         var ct = linked.Token;
@@ -1302,6 +1328,57 @@ public sealed class TransferSessionManager : IDisposable
                 sentOffset += read;
             }
 
+            // DRAIN BEFORE COMPLETING (RemEx-zd8ws). The bulk data frames and file_transfer_complete
+            // travel on SEPARATE sockets — /ws/files and the control /ws — and TCP orders bytes only
+            // WITHIN one connection, never between two. Announcing completion the instant the last frame
+            // is enqueued lets the tiny complete overtake the still-in-flight bulk bytes: the peer
+            // finalizes a zero-byte transfer and reports "Transfer incomplete." while the data is
+            // literally still arriving. Measured on a 353,985-byte screenshot push: every one of its two
+            // data frames was dropped as "No sink", because handleComplete had already torn the sink
+            // down.
+            //
+            // THE BACKPRESSURE WAIT ABOVE IS NOT THIS WAIT, which is exactly why this survived so long.
+            // It blocks only once outstanding unacked bytes exceed MaxUnackedBytes (8 MB), so every
+            // transfer smaller than that — nearly all of them, and every screenshot — reached this line
+            // without ever forcing a single ack round trip. The failure was INVERSELY sized: large
+            // pushes incidentally survived because backpressure had already drained them, small ones
+            // failed every time. That is the shape that makes a bug look like a flaky feature.
+            //
+            // This mirrors the Kotlin fix (RemEx-y6x6, FileTransferEngine.runUpload); the phone learned
+            // it first and the C# sender never got the same treatment. Both receivers ack the final
+            // frame unconditionally — `envelope.Final || interval elapsed`, in HandleInboundDataFrameAsync
+            // here and FileHostHandler.kt on the phone — so the ack this waits for is guaranteed to be
+            // sent, and it carries a committed offset covering everything we wrote.
+            //
+            // Against sentOffset rather than `size`: sentOffset is what actually went on the wire. The
+            // two are equal whenever the source's length matched the declared size, and where they
+            // differ, waiting for `size` would be waiting on bytes nobody ever sent.
+            if (!await WaitForFinalAckAsync(session, sentOffset, ct))
+            {
+                _logger.LogWarning(
+                    "Host-sent transfer {TransferId} gave up waiting for the peer to acknowledge its data ({Committed}/{Sent} bytes acked); not announcing completion.",
+                    session.TransferId, session.CommittedOffset, sentOffset);
+
+                // Tell the peer to let go, for the RemEx-cc30z reason: it accepted, so it is holding a
+                // receive session, a sink and a staging partial that only its 7-day sweep would collect.
+                // Best-effort on purpose — a failure to send the release must not replace a silent
+                // abandonment with a thrown one, and the transfer is lost either way. Narrowed to the
+                // faults the channel-miss release above already handles, rather than catching
+                // everything, so an unexpected exception still surfaces instead of being filed away as
+                // "the peer could not be told".
+                try
+                {
+                    await SendControlAsync(controlWs, session.TransferId, FileTransferControlActions.Cancel, ct);
+                }
+                catch (Exception releaseEx) when (releaseEx is WebSocketException or InvalidOperationException or OperationCanceledException)
+                {
+                    _logger.LogDebug(
+                        releaseEx, "Could not release stalled transfer {TransferId} at the peer.", session.TransferId);
+                }
+
+                return;
+            }
+
             var sha256 = Convert.ToBase64String(hasher.GetHashAndReset());
             await MessageSerializer.SendAsync(controlWs, new RemexMessage
             {
@@ -1327,6 +1404,49 @@ public sealed class TransferSessionManager : IDisposable
             await source.DisposeAsync();
             _sendSessions.TryRemove(session.TransferId, out _);
         }
+    }
+
+    /// <summary>
+    /// Waits until the peer has acked every byte <see cref="StreamSenderAsync"/> put on the wire.
+    /// Returns false when it stops acking altogether (RemEx-zd8ws).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A DEAD SOCKET DOES NOT RELY ON THE TIMEOUT AT ALL, which is what keeps
+    /// <see cref="AckDrainIdleTimeout"/> free to be generous. <see cref="RunChannelAsync"/>'s teardown
+    /// cancels every send session belonging to a client whose /ws/files channel dropped; that cancels
+    /// <paramref name="ct"/> and unblocks this immediately. The idle window covers only the narrower
+    /// case of a peer that holds its socket open and quietly stops acking — which is indistinguishable
+    /// from a very slow one except by waiting.
+    /// </para>
+    /// <para>
+    /// The offset is re-checked around every wait rather than trusting one wakeup, because the ack
+    /// signal is a counting semaphore: acks that arrived during the send loop and were never consumed
+    /// by the backpressure wait leave permits behind, so a wakeup does not by itself mean progress.
+    /// Conversely no wakeup can be lost — <see cref="SendSession.OnAck"/> stores the offset BEFORE it
+    /// releases, so an ack landing between the check and the wait leaves a permit that satisfies it.
+    /// </para>
+    /// </remarks>
+    private async Task<bool> WaitForFinalAckAsync(SendSession session, long sentOffset, CancellationToken ct)
+    {
+        while (session.CommittedOffset < sentOffset)
+        {
+            using var idle = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            idle.CancelAfter(AckDrainIdleTimeout);
+            try
+            {
+                await session.WaitForAckAsync(idle.Token);
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                // Our own idle window expired. A REAL cancellation — shutdown, a dropped channel, a peer
+                // cancel — is deliberately not caught here: it must keep propagating as it always did,
+                // so that a torn-down transfer still logs as cancelled rather than as a stalled peer.
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -1540,7 +1660,9 @@ public sealed class TransferSessionManager : IDisposable
         }
     }
 
-    private sealed class SendSession
+    // internal for the same reason as StreamSenderAsync above: the drain test has to play the peer and
+    // deliver the ack itself. Still a nested type, so this widens nothing outside the assembly.
+    internal sealed class SendSession
     {
         private readonly CancellationTokenSource _cts = new();
         private readonly SemaphoreSlim _ackSignal = new(0, int.MaxValue);

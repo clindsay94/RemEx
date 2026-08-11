@@ -368,6 +368,37 @@ is recorded because the rule above makes adding it the obvious "fix". (RemEx-1t0
 deserialization failures, not clean errors. Non-breaking additions (new optional fields) need no
 bump, but document them in `CHANGELOG.md`.
 
+### Never announce `file_transfer_complete` before the peer has acked the data
+
+Bulk file data travels on `/ws/files`; `file_transfer_complete` travels on the control `/ws`. **TCP
+orders bytes only within one connection, never between two.** A sender that announces completion the
+instant its last frame is *enqueued* lets the tiny completion overtake the still-in-flight bulk
+bytes. The receiver then tears its sink down and finalizes a zero-byte transfer, reporting
+*"Transfer incomplete."* while the data is literally still arriving.
+
+Both senders must drain first, and both do:
+
+- C# host → phone: `TransferSessionManager.WaitForFinalAckAsync` (`TransferSessionManager.cs:1427`),
+  called at `TransferSessionManager.cs:1356` before the completion is sent.
+- Kotlin phone → host: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:323`).
+
+**The backpressure wait is NOT this wait.** It only blocks once outstanding unacked bytes exceed
+`FileTransferLimits.MaxUnackedBytes` (8 MB, `TransferSessionManager.cs:1314`), so every transfer
+*smaller* than 8 MB reaches the completion without ever forcing an ack round trip. That inverse
+sizing is what made this look like a flaky feature rather than a bug: large pushes incidentally
+survived because backpressure had already drained them, while every screenshot failed. Measured on a
+353,985-byte screenshot push — both data frames dropped as *"No sink"* (RemEx-zd8ws; the phone had
+learned the same lesson as RemEx-y6x6 and the C# sender never got the fix).
+
+The wait is an **idle window**, not a deadline (`AckDrainIdleTimeout`, `TransferSessionManager.cs:110`):
+up to 8 MB may still be draining, so any total budget safe on a slow link is useless as a backstop.
+A dead socket does not depend on it — `RunChannelAsync`'s teardown cancels the send session.
+
+Guarded by `HostSendDrainTests`. Its discriminating assertion is *negative* — with the final ack
+withheld, the sender must still be blocked. Asserting only on the final ordering does not catch a
+regression here, because once the ack is delivered a fixed and a broken sender emit identical
+control traffic.
+
 ---
 
 ## Security

@@ -57,6 +57,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Sending a screenshot to your phone failed every time, saying "Transfer incomplete" while the
+  picture was still on its way.** The PC sends the file itself on one connection and the "that's all
+  of it" note on another, and it was sending the note the moment it handed over the last piece of the
+  file rather than waiting for the phone to confirm it had them. The note is small and the file is
+  not, so the note arrived first. The phone, told the transfer was over, closed the file it was
+  writing and then had nowhere to put the picture that turned up a moment later.
+
+  The PC now waits for the phone to confirm every byte before saying the transfer is done. If the
+  phone stops confirming altogether, the PC gives up instead of hanging, and tells it to let go of
+  the half-finished file rather than leaving it parked for a week.
+
+  This is why it looked so arbitrary: anything under 8 MB failed, and anything larger usually worked.
+  Big transfers already pause for confirmation as they go, so they were being drained by accident.
+  Small ones never paused at all, and screenshots are always small. The phone had already learned to
+  wait when sending in the other direction; the PC had not. (RemEx-zd8ws)
+
 - **Letting a phone browse your whole PC is now approved on the PC, not on the phone.** Two different
   questions were being asked the same way. When your phone sends you a file, the "accept this?"
   prompt belongs on the phone — you are holding it, and putting that question on a monitor in another
