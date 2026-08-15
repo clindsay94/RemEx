@@ -57,6 +57,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The tray flyout had a grey square sitting behind its rounded corners.** The window asks Windows
+  for a frosted backdrop, and Windows paints that across the whole window, including the small
+  transparent border the flyout keeps around itself so its drop shadow has somewhere to fall. The
+  result was a sharp grey rectangle framing a rounded card. The window no longer asks for the
+  backdrop at all: the frosted look was never coming from it, it comes from the card itself, which is
+  a per-theme colour and clips to its own corners. (RemEx-zu09j)
+
 - **Sending a screenshot to your phone failed every time, saying "Transfer incomplete" while the
   picture was still on its way.** The PC sends the file itself on one connection and the "that's all
   of it" note on another, and it was sending the note the moment it handed over the last piece of the
@@ -277,6 +284,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now logged separately too — they need different fixes and used to look identical. (RemEx-iq484)
 
 ### Added
+
+- **The tray flyout is somewhere you can do things from now.** Clicking the tray icon used to show
+  pinned sensors and two buttons, both of which only opened the main window. So the surface that was
+  quickest to reach was the one you could not act from, and every action meant going the long way
+  round. It is now a grid of tiles that work on this PC: lock, sleep, remote desktop, send a file,
+  pair a device, and a power menu holding restart, shut down, sign out and hibernate. Restart, shut
+  down and sign out ask first. Hibernate does not, because it gives you the session back exactly as
+  it was, and a prompt you always dismiss is a prompt you stop reading.
+
+  The status line at the top is the same sentence the tray tooltip shows, so the two cannot disagree.
+  Remote desktop is greyed out with a tooltip saying why when no phone is attached, and it comes back
+  by itself when one connects rather than waiting for you to reopen the flyout.
+
+  You can also pin the flyout. A pinned window stays open where you put it, at the size you left it,
+  and comes back that way next time RemEx starts. Widening it adds a column of tiles rather than
+  stretching the ones already there. If the screen you pinned it to is not connected when RemEx
+  starts, it opens at the tray corner instead of restoring somewhere off the edge of your desktop
+  with no title bar to drag it back by. (RemEx-exfu7, RemEx-7n5gr, RemEx-5g5b7, RemEx-3m4ho,
+  RemEx-el6gh)
+
+- **Right-clicking the tray icon gives you a menu worth opening.** It offered the main window, the
+  flyout, a light/dark switch covering two of the four themes, and Exit. It now opens with the same
+  status line the tooltip and the flyout show, then lock, remote desktop, transfers and pairing, then
+  the main window, settings and exit. Remote desktop is greyed out until a phone is attached. The
+  theme switch is gone; Settings has all four themes and always did. (RemEx-0gbjy)
 
 - **A failed remote-desktop stream left you with nothing to press.** When streaming failed, the
   phone showed the error and hid the start button — because several failure paths also clear the
