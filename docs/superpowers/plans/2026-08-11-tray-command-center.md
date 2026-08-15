@@ -878,9 +878,32 @@ Done before the view model so the VM can reference real keys rather than placeho
 
 Reuse, do **not** duplicate: `Tray_ShowMainWindow`, `Tray_Exit`, `A11y_Close`, and the presence strings already backing `PhonePresenceMonitor`. If any English value above is byte-identical to an existing string's value, use the existing key instead and drop the new one — a second key with the same text is a translation asked for twice and a chance for the two to drift.
 
+**APPLIED (2026-08-15).** Eight of the twenty already existed, so only twelve keys were added.
+Tasks 5, 8 and 9 must bind to the **right-hand** name for these — the left-hand ones do not exist:
+
+| Planned key | Use instead | Existing English |
+|---|---|---|
+| `Tray_Tile_Pair` | `Btn_Pair` | `Pair` |
+| `Tray_Tile_Power` | `PaletteCategory_Power` | `Power` |
+| `Tray_Power_Restart` | `Confirm_Restart_Btn` | `Restart` |
+| `Tray_Power_Shutdown` | `Confirm_Shutdown_Btn` | `Shut Down` |
+| `Tray_Power_SignOut` | `Confirm_SignOut_Btn` | `Sign Out` |
+| `Tray_Menu_LockPc` | `Palette_LockPc` | `Lock PC` |
+| `Tray_Menu_RemoteDesktop` | `Palette_RemoteDesktop` | `Remote Desktop` |
+| `Tray_Menu_Settings` | `Palette_Settings` | `Settings` |
+
+`Tray_Tile_SendFile` was kept as its own key even though `FileTransfer_QueueKindSend` also reads
+`Send`: that one labels a queue entry's *direction*, and a noun-vs-imperative split is exactly the
+kind of thing that does not survive translation into the same word.
+
 - [ ] **Step 2: Remove the retired keys from `Strings.resx`**
 
 Delete `Tray_LiveGlance`, `Tray_SwitchLightMode`, `Tray_SwitchDarkMode`. Theme switching moves to Settings, where it already exists.
+
+**DEFERRED TO TASK 9 (2026-08-15).** All three are still referenced — `App.axaml:335-336` and
+`App.axaml.cs:594,595,616,624,625` — and Task 9 is what removes those call sites. Deleting the keys
+here fails axis 3 of the localization gate ("referenced in code but declared nowhere"), so the
+removal travels with the commit that removes the last reference.
 
 - [ ] **Step 3: Mirror both changes across the eight locale files**
 

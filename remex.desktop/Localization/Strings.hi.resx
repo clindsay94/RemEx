@@ -1826,6 +1826,42 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Tray_Exit" xml:space="preserve">
     <value>बाहर निकलें</value>
   </data>
+  <data name="Tray_Tile_Lock" xml:space="preserve">
+    <value>लॉक करें</value>
+  </data>
+  <data name="Tray_Tile_Sleep" xml:space="preserve">
+    <value>स्लीप</value>
+  </data>
+  <data name="Tray_Tile_RemoteDesktop" xml:space="preserve">
+    <value>रिमोट</value>
+  </data>
+  <data name="Tray_Tile_SendFile" xml:space="preserve">
+    <value>भेजें</value>
+  </data>
+  <data name="Tray_Power_Hibernate" xml:space="preserve">
+    <value>हाइबरनेट करें</value>
+  </data>
+  <data name="Tray_Disabled_NeedsPhone" xml:space="preserve">
+    <value>इसका उपयोग करने के लिए एक फ़ोन कनेक्ट करें</value>
+  </data>
+  <data name="Tray_Pin" xml:space="preserve">
+    <value>इस विंडो को पिन करें</value>
+  </data>
+  <data name="Tray_Unpin" xml:space="preserve">
+    <value>इस विंडो को अनपिन करें</value>
+  </data>
+  <data name="Tray_Menu_OpenTransfers" xml:space="preserve">
+    <value>ट्रांसफ़र खोलें</value>
+  </data>
+  <data name="Tray_Menu_PairDevice" xml:space="preserve">
+    <value>डिवाइस पेयर करें</value>
+  </data>
+  <data name="A11y_TrayFlyout_Header" xml:space="preserve">
+    <value>RemEx स्थिति</value>
+  </data>
+  <data name="A11y_TrayFlyout_Pin" xml:space="preserve">
+    <value>RemEx विंडो को पिन या अनपिन करें</value>
+  </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>ऑटो (स्मार्ट)</value>
   </data>

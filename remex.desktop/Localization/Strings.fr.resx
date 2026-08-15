@@ -1826,6 +1826,42 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Quitter</value>
   </data>
+  <data name="Tray_Tile_Lock" xml:space="preserve">
+    <value>Verrouiller</value>
+  </data>
+  <data name="Tray_Tile_Sleep" xml:space="preserve">
+    <value>Veille</value>
+  </data>
+  <data name="Tray_Tile_RemoteDesktop" xml:space="preserve">
+    <value>Distant</value>
+  </data>
+  <data name="Tray_Tile_SendFile" xml:space="preserve">
+    <value>Envoyer</value>
+  </data>
+  <data name="Tray_Power_Hibernate" xml:space="preserve">
+    <value>Veille prolongée</value>
+  </data>
+  <data name="Tray_Disabled_NeedsPhone" xml:space="preserve">
+    <value>Connectez un téléphone pour utiliser ceci</value>
+  </data>
+  <data name="Tray_Pin" xml:space="preserve">
+    <value>Épingler cette fenêtre</value>
+  </data>
+  <data name="Tray_Unpin" xml:space="preserve">
+    <value>Détacher cette fenêtre</value>
+  </data>
+  <data name="Tray_Menu_OpenTransfers" xml:space="preserve">
+    <value>Ouvrir les transferts</value>
+  </data>
+  <data name="Tray_Menu_PairDevice" xml:space="preserve">
+    <value>Appairer un appareil</value>
+  </data>
+  <data name="A11y_TrayFlyout_Header" xml:space="preserve">
+    <value>État de RemEx</value>
+  </data>
+  <data name="A11y_TrayFlyout_Pin" xml:space="preserve">
+    <value>Épingler ou détacher la fenêtre RemEx</value>
+  </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>Auto (intelligent)</value>
   </data>

@@ -1826,6 +1826,42 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Keluar</value>
   </data>
+  <data name="Tray_Tile_Lock" xml:space="preserve">
+    <value>Kunci</value>
+  </data>
+  <data name="Tray_Tile_Sleep" xml:space="preserve">
+    <value>Tidur</value>
+  </data>
+  <data name="Tray_Tile_RemoteDesktop" xml:space="preserve">
+    <value>Jarak Jauh</value>
+  </data>
+  <data name="Tray_Tile_SendFile" xml:space="preserve">
+    <value>Kirim</value>
+  </data>
+  <data name="Tray_Power_Hibernate" xml:space="preserve">
+    <value>Hibernasi</value>
+  </data>
+  <data name="Tray_Disabled_NeedsPhone" xml:space="preserve">
+    <value>Hubungkan ponsel untuk menggunakan ini</value>
+  </data>
+  <data name="Tray_Pin" xml:space="preserve">
+    <value>Sematkan jendela ini</value>
+  </data>
+  <data name="Tray_Unpin" xml:space="preserve">
+    <value>Lepas sematan jendela ini</value>
+  </data>
+  <data name="Tray_Menu_OpenTransfers" xml:space="preserve">
+    <value>Buka transfer</value>
+  </data>
+  <data name="Tray_Menu_PairDevice" xml:space="preserve">
+    <value>Pasangkan perangkat</value>
+  </data>
+  <data name="A11y_TrayFlyout_Header" xml:space="preserve">
+    <value>Status RemEx</value>
+  </data>
+  <data name="A11y_TrayFlyout_Pin" xml:space="preserve">
+    <value>Sematkan atau lepas sematan jendela RemEx</value>
+  </data>
   <data name="Canvas_GraphSmart" xml:space="preserve">
     <value>Otomatis (pintar)</value>
   </data>
