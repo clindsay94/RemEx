@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
@@ -36,8 +37,15 @@ public partial class TrayFlyoutWindow : Window
         // TRANSPARENT ONLY — NOT MICA, NOT BLUR (RemEx-zu09j). DWM composites a Mica or acrylic
         // backdrop across the whole window rect, including the margin this window leaves around its
         // rounded card for the drop shadow, which is the grey rectangle that bug was about.
-        Background = null;
-        TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
+        //
+        // Everything here now matches TrayBalloonWindow, minus Mica (RemEx-8pym0). That window uses
+        // the same undecorated-transparent-window-around-a-rounded-card pattern and renders with no
+        // stray edge, so where the two differed, the balloon wins. Two of those differences mattered:
+        // Background is Transparent rather than null - a null background is not a brush that paints
+        // nothing, it is no brush at all - and the hint list keeps a fallback, because a single
+        // unachievable entry leaves the level to chance.
+        Background = Brushes.Transparent;
+        TransparencyLevelHint = [WindowTransparencyLevel.Transparent, WindowTransparencyLevel.None];
         SystemDecorations = SystemDecorations.None;
         ShowInTaskbar = false;
         Topmost = true;
@@ -45,8 +53,11 @@ public partial class TrayFlyoutWindow : Window
         _saveTimer = new DispatcherTimer { Interval = SaveDebounce };
         _saveTimer.Tick += OnSaveTimerTick;
 
-        // Not in the constructor body: the platform handle does not exist until the window opens.
-        Opened += (_, _) => TrayWindowCorners.ApplyRounded(this);
+        // No DWM corner-preference call. It was belt-and-braces for an edge nothing draws: the
+        // visible rounding comes from the inner Border, and the window rect it would round sits 12px
+        // outside that card where nothing is painted. Asking DWM to manage the frame of an
+        // undecorated window is the one thing this window did that TrayBalloonWindow does not, and a
+        // frame that will not go away is what it got (RemEx-8pym0).
         Deactivated += OnDeactivated;
 
         // ONLY WHEN PINNED. The plan saved on every PositionChanged, which fires when ShowAtTray
@@ -135,6 +146,35 @@ public partial class TrayFlyoutWindow : Window
         var pinning = ViewModel?.IsPinned != true;
         ApplyMode(pinning);
         ScheduleSave();
+    }
+
+    /// <summary>
+    /// Starts a resize from one of the eight hit areas in the window's transparent margin.
+    /// </summary>
+    /// <remarks>
+    /// <c>CanResize = true</c> ALONE DOES NOTHING HERE. With <c>SystemDecorations.None</c> Windows
+    /// draws no frame, so there is no resize border to grab and no grip in the corner — the window
+    /// reported itself resizable and could not be resized (RemEx-2j58q). These handlers put the hit
+    /// areas back by hand, in the 12px band between the window edge and the card, which is otherwise
+    /// empty space carrying only the drop shadow.
+    /// <para>
+    /// The edge comes from <c>Tag</c> rather than from eight near-identical handlers. A typo'd tag
+    /// disables that one grip instead of throwing, which is the right failure for a resize border:
+    /// the other seven still work and the window stays usable.
+    /// </para>
+    /// </remarks>
+    private void OnResizePressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (ViewModel?.IsPinned != true)
+            return;
+
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+
+        if ((sender as Control)?.Tag is not string tag || !Enum.TryParse<WindowEdge>(tag, out var edge))
+            return;
+
+        BeginResizeDrag(edge, e);
     }
 
     /// <summary>Drags the whole window by its header, since it has no system title bar.</summary>

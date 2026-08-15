@@ -91,8 +91,10 @@
         </Style>
     </Window.Styles>
 
-    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="0 12 40 0 #60000000">
-        <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+    <Panel>
+
+    <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="{DynamicResource CornerRadiusExtraLarge}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="12" BoxShadow="0 8 28 0 #60000000">
+        <Grid RowDefinitions="Auto,Auto,*" Margin="16">
 
             <!-- Status strip. Doubles as the drag handle in pinned mode: this window has no system
                  title bar, so without PointerPressed here a pinned window could not be moved. -->
@@ -139,9 +141,59 @@
                         AutomationProperties.Name="{local:Localize A11y_Close}"/>
             </Grid>
 
+            <!-- Sensor strip, directly under the status line rather than along the bottom edge
+                 (RemEx-or8f8). At the bottom its horizontal scrollbar sat on top of a 16px-tall
+                 strip and covered the values it was there to scroll. Scrollbar is Hidden rather
+                 than Auto for the same reason - the wheel still scrolls it, nothing steals height.
+                 It collapses entirely when nothing is pinned: a command center with no telemetry
+                 should just be shorter, not show a paragraph explaining its own emptiness. The
+                 double bang is Avalonia's coercion-to-bool; the negated single-bang form was
+                 already used in this file, so the positive case is written as its double rather
+                 than relying on an implicit int-to-bool that may not exist. -->
+            <ScrollViewer Grid.Row="1"
+                          Margin="0,12,0,0"
+                          HorizontalScrollBarVisibility="Hidden"
+                          VerticalScrollBarVisibility="Disabled"
+                          IsVisible="{Binding !!PinnedSensors.Count}">
+                <ItemsControl ItemsSource="{Binding PinnedSensors}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="16"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SensorViewModel">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}"
+                                           FontSize="9" FontWeight="Black" LetterSpacing="1"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextMutedBrush}"/>
+                                <TextBlock FontSize="12" FontWeight="Bold"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{StaticResource JetBrainsMono}"
+                                           Foreground="{DynamicResource TextPrimaryBrush}">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
+                                            <Binding Path="Value"/>
+                                            <Binding Path="Unit"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <ctrl:SparklineControl History="{Binding History}"
+                                                       GraphType="{Binding ResolvedGraphType}"
+                                                       AccentColor="{Binding Theme.AccentColor,
+                                                                     Converter={x:Static conv:HexToColorConverter.Instance}}"
+                                                       Width="44" Height="16"
+                                                       Opacity="0.7" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
             <!-- Action grid. Columns are driven by the window's own width so that resizing reveals
                  more of the grid per row instead of only stretching the tiles. -->
-            <ItemsControl Grid.Row="1" ItemsSource="{Binding Tiles}" Margin="0,16">
+            <ItemsControl Grid.Row="2" ItemsSource="{Binding Tiles}" Margin="0,16,0,0">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <UniformGrid Columns="{Binding $parent[Window].Bounds.Width,
@@ -197,50 +249,34 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Sensor strip. Collapses entirely when nothing is pinned: a command center with no
-                 telemetry should just be shorter, not show a paragraph explaining its own emptiness.
-                 The double bang is Avalonia's coercion-to-bool; the single-bang negated form was
-                 already used in this file, so the positive case is written as its double rather than
-                 relying on an implicit int-to-bool that may not exist. -->
-            <ScrollViewer Grid.Row="2"
-                          HorizontalScrollBarVisibility="Auto"
-                          VerticalScrollBarVisibility="Disabled"
-                          IsVisible="{Binding !!PinnedSensors.Count}">
-                <ItemsControl ItemsSource="{Binding PinnedSensors}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="16"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:SensorViewModel">
-                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Name}"
-                                           FontSize="9" FontWeight="Black" LetterSpacing="1"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource TextMutedBrush}"/>
-                                <TextBlock FontSize="12" FontWeight="Bold"
-                                           VerticalAlignment="Center"
-                                           FontFamily="{StaticResource JetBrainsMono}"
-                                           Foreground="{DynamicResource TextPrimaryBrush}">
-                                    <TextBlock.Text>
-                                        <MultiBinding Converter="{x:Static conv:SensorValueConverter.Instance}">
-                                            <Binding Path="Value"/>
-                                            <Binding Path="Unit"/>
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <ctrl:SparklineControl History="{Binding History}"
-                                                       GraphType="{Binding ResolvedGraphType}"
-                                                       AccentColor="{Binding Theme.AccentColor,
-                                                                     Converter={x:Static conv:HexToColorConverter.Instance}}"
-                                                       Width="44" Height="16"
-                                                       Opacity="0.7" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
         </Grid>
     </Border>
+
+    <!-- Resize border, by hand. SystemDecorations="None" means Windows draws no frame, so
+         CanResize="True" alone gives nothing to grab (RemEx-2j58q). These eight hit areas sit in
+         the 12px band between the window edge and the card, which otherwise holds only the drop
+         shadow. The Grid itself has no Background and the centre cell is empty, so everything over
+         the card hit-tests straight through to the tiles. Only present when pinned - a transient
+         popup is not resizable and should not show resize cursors. -->
+    <Grid IsVisible="{Binding IsPinned}"
+          RowDefinitions="12,*,12" ColumnDefinitions="12,*,12">
+        <Border Grid.Row="0" Grid.Column="0" Background="Transparent" Cursor="TopLeftCorner"
+                Tag="NorthWest" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="0" Grid.Column="1" Background="Transparent" Cursor="TopSide"
+                Tag="North" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="0" Grid.Column="2" Background="Transparent" Cursor="TopRightCorner"
+                Tag="NorthEast" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="1" Grid.Column="0" Background="Transparent" Cursor="LeftSide"
+                Tag="West" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="1" Grid.Column="2" Background="Transparent" Cursor="RightSide"
+                Tag="East" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="2" Grid.Column="0" Background="Transparent" Cursor="BottomLeftCorner"
+                Tag="SouthWest" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="2" Grid.Column="1" Background="Transparent" Cursor="BottomSide"
+                Tag="South" PointerPressed="OnResizePressed"/>
+        <Border Grid.Row="2" Grid.Column="2" Background="Transparent" Cursor="BottomRightCorner"
+                Tag="SouthEast" PointerPressed="OnResizePressed"/>
+    </Grid>
+
+    </Panel>
 </Window>
