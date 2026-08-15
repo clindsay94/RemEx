@@ -9,14 +9,28 @@ public partial class TrayFlyoutWindow : Window
     public TrayFlyoutWindow()
     {
         InitializeComponent();
-        
+
+        // TRANSPARENT ONLY — NOT MICA, NOT BLUR (RemEx-zu09j). DWM composites a Mica or acrylic
+        // backdrop across the WHOLE window rect, including the margin this window leaves around its
+        // rounded card for the drop shadow. The result was an opaque square sitting behind rounded
+        // corners: the sharp grey rectangle. The frosted look now comes from GlassBaseDarkBrush on
+        // the inner Border, which clips to its own CornerRadius and is a per-theme token, so all
+        // four themes keep their own surface colour.
+        //
+        // These are set HERE AND ONLY HERE. The same three properties used to be declared on the
+        // Window element as well, with a different list, and the code-behind silently won because it
+        // runs after InitializeComponent - so the markup read as though Mica were a fallback when it
+        // was actually first choice.
         Background = null;
-        TransparencyLevelHint = new[] { WindowTransparencyLevel.Mica, WindowTransparencyLevel.Blur, WindowTransparencyLevel.Transparent };
+        TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
         SystemDecorations = SystemDecorations.None;
         ShowInTaskbar = false;
         Topmost = true;
         Focusable = false;
-        
+
+        // Not in the constructor: the platform handle does not exist until the window is opened.
+        Opened += (_, _) => TrayWindowCorners.ApplyRounded(this);
+
         // Don't auto-hide on Deactivated yet, as it might conflict with the Tray menu showing.
         // We will rely on explicit Toggle from the TrayIcon.
     }

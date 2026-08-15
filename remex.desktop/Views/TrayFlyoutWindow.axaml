@@ -3,7 +3,7 @@
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:ctrl="using:Remex.Desktop.Controls"
-    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.TrayFlyoutWindow" x:DataType="vm:HomeViewModel" Width="360" SizeToContent="Height" MaxHeight="540" Title="{local:Localize TrayFlyout_Title}" CanResize="False" Focusable="False" ShowInTaskbar="False" Background="Transparent" TransparencyLevelHint="AcrylicBlur, Mica, None" SystemDecorations="None">
+    xmlns:local="clr-namespace:Remex.Desktop.Converters" x:Class="Remex.Desktop.Views.TrayFlyoutWindow" x:DataType="vm:HomeViewModel" Width="360" SizeToContent="Height" MaxHeight="540" Title="{local:Localize TrayFlyout_Title}" CanResize="False" Focusable="False" ShowInTaskbar="False">
 
     <Window.Styles>
         <Style Selector="Border.widget-card">
