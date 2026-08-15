@@ -150,13 +150,17 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:TrayTile">
-                        <Panel>
+                        <!-- The tooltip hangs on the PANEL, not on the Button. DisabledTooltip is
+                             non-null only when IsEnabled is false, and Avalonia excludes disabled
+                             controls from hit testing with no ShowOnDisabled equivalent - so on the
+                             Button the one string that explains why a tile is dead could never
+                             open. The panel stays enabled, so the pointer still reaches it. -->
+                        <Panel ToolTip.Tip="{Binding DisabledTooltip}">
                             <!-- Ordinary tile -->
                             <Button Classes="tray-tile"
                                     IsVisible="{Binding !HasSubmenu}"
                                     Command="{Binding Command}"
                                     IsEnabled="{Binding IsEnabled}"
-                                    ToolTip.Tip="{Binding DisabledTooltip}"
                                     AutomationProperties.Name="{Binding Label}"
                                     ContentTemplate="{StaticResource TrayTileFace}"
                                     Content="{Binding}"

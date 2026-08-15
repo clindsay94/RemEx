@@ -610,8 +610,15 @@ public partial class App : Application
         };
 
         var lockItem = new NativeMenuItem { Header = strings["Palette_LockPc"] };
-        lockItem.Click += async (_, _) =>
-            await Services.GetRequiredService<ShellViewModel>().Connection.LockAsync();
+
+        // NOT `async (_, _) => await ...`. An exception escaping an async void handler is raised on
+        // the synchronization context and takes the process down (RemEx-ajk3, and the note on
+        // ShowFileConsentDialogAsync above). LockAsync reaches string.Format over a localized format
+        // string, which is the failure PhonePresenceMonitor guards its own first Refresh against: a
+        // translation that gains a placeholder throws FormatException in one language only.
+        lockItem.Click += (_, _) =>
+            Services.GetRequiredService<ShellViewModel>().Connection.LockAsync()
+                .FireAndForget("lock the PC from the tray menu");
 
         var transfersItem = new NativeMenuItem { Header = strings["Tray_Menu_OpenTransfers"] };
         transfersItem.Click += (_, _) =>

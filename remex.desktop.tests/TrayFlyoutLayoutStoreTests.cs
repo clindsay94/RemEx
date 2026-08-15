@@ -76,6 +76,22 @@ public class TrayFlyoutLayoutStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task Save_to_an_unwritable_path_does_not_throw()
+    {
+        // The only caller is a DispatcherTimer tick, which is an async void handler by necessity -
+        // an exception escaping it is raised on the synchronization context and takes the process
+        // down (RemEx-ajk3). WriteAllTextAtomicAsync deletes its staging file and RETHROWS, so
+        // without a catch here a locked file or a full volume closes RemEx mid-drag. Losing a
+        // remembered window position is acceptable; losing the application is not.
+        var store = new TrayFlyoutLayoutStore(Path.Combine(_dir, "no-such-folder", "layout.json"));
+
+        var exception = await Record.ExceptionAsync(
+            () => store.SaveAsync(new TrayFlyoutGeometry { IsPinned = true, X = 1, Y = 1, Width = 400, Height = 300 }));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
     public async Task Unpinned_state_survives_a_round_trip()
     {
         // IsPinned = false is the DEFAULT for a bool, so a serializer misconfiguration that drops

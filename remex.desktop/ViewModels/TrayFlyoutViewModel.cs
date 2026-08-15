@@ -89,6 +89,15 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
         // rather than at the next time the flyout happens to be reopened.
         Presence.PropertyChanged += OnPresenceChanged;
 
+        // And rebuild on a language switch. Every tile label is a snapshot taken in RebuildTiles,
+        // and a PINNED flyout is never re-shown - so without this it keeps the previous language
+        // until the app restarts, sitting next to a shell and a tray menu that both changed.
+        // PhonePresenceMonitor and the tray menu subscribe for the same reason.
+        LocalizationService.Instance.PropertyChanged += OnLocalizationChanged;
+
+        // Neither unsubscribe is needed: this view model is a singleton (App.axaml.cs) and both
+        // publishers are process-lifetime singletons too. That stops being true if the registration
+        // is ever changed to AddTransient.
         RebuildTiles();
     }
 
@@ -105,6 +114,19 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
         if (e.PropertyName == nameof(PhonePresenceMonitor.IsPhoneAttached))
             RebuildTiles();
     }
+
+    /// <summary>
+    /// Re-reads every tile label after a language switch.
+    /// </summary>
+    /// <remarks>
+    /// Unfiltered on purpose. <c>LocalizationService.SetCulture</c> raises three indexer-shaped
+    /// names — <c>Item</c>, <c>Item[]</c> and <c>string.Empty</c> — and no real property name, so
+    /// there is nothing to match on and this runs three times per language switch. That is
+    /// accepted rather than overlooked: it is six resource lookups, three times, on an action a
+    /// user takes about once. Matching one of the three by string would be cheaper and would break
+    /// silently the day someone tidies that list.
+    /// </remarks>
+    private void OnLocalizationChanged(object? sender, PropertyChangedEventArgs e) => RebuildTiles();
 
     private void RebuildTiles()
     {

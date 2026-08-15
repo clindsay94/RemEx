@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Remex.Core.Logging;
 using Remex.Core.Services;
 
 namespace Remex.Desktop.Services;
@@ -61,9 +63,27 @@ public sealed class TrayFlyoutLayoutStore
         }
     }
 
+    /// <summary>Writes the state, reporting rather than throwing if the write fails.</summary>
+    /// <remarks>
+    /// NEVER THROWS, and that is load-bearing rather than defensive. The only caller is a
+    /// <c>DispatcherTimer</c> tick in <c>TrayFlyoutWindow</c>, which is an <c>async void</c> event
+    /// handler by necessity — an exception escaping it is raised on the synchronization context and
+    /// takes the process down (RemEx-ajk3). <see cref="RemexDataPaths.WriteAllTextAtomicAsync"/>
+    /// deletes its staging file and RETHROWS, so a locked file, a full volume or a folder mid-sync
+    /// would otherwise close RemEx while the user was dragging the window. Losing a remembered
+    /// window position is an acceptable outcome; losing the application is not.
+    /// </remarks>
     public async Task SaveAsync(TrayFlyoutGeometry geometry)
     {
-        var json = JsonSerializer.Serialize(geometry, JsonOptions);
-        await RemexDataPaths.WriteAllTextAtomicAsync(_configPath, json);
+        try
+        {
+            var json = JsonSerializer.Serialize(geometry, JsonOptions);
+            await RemexDataPaths.WriteAllTextAtomicAsync(_configPath, json);
+        }
+        catch (Exception ex)
+        {
+            InMemoryLogSink.Append(
+                LogLevel.Warning, "TrayFlyout", "Could not persist the tray flyout layout", ex);
+        }
     }
 }

@@ -115,6 +115,21 @@ public partial class TrayFlyoutWindow : Window
             vm.IsPinned = isPinned;
     }
 
+    /// <summary>Pins or unpins, and records the result.</summary>
+    /// <remarks>
+    /// UNPINNING DISCARDS THE PINNED RECT, and that is the intended behaviour rather than an
+    /// oversight. <c>ApplyMode(false)</c> restores <c>SizeToContent.Height</c>, so the window
+    /// collapses before the debounced save reads it, and what lands on disk is the transient
+    /// geometry with <c>IsPinned = false</c>. Re-pinning therefore starts from the tray corner at
+    /// the default size rather than from wherever the window used to live.
+    /// <para>
+    /// The alternative — keeping the old rect under a second key so unpin/re-pin round-trips — was
+    /// not built. Unpin means "go back to being a popup", and a popup that remembers a size the
+    /// user cannot see is a surprise waiting to be rediscovered. If this turns out to be the wrong
+    /// call, the place to change it is here and in <see cref="ShowAtTray"/>'s
+    /// <c>IsPinned: true</c> guard.
+    /// </para>
+    /// </remarks>
     private void OnTogglePin(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         var pinning = ViewModel?.IsPinned != true;
@@ -166,8 +181,10 @@ public partial class TrayFlyoutWindow : Window
     {
         _saveTimer.Stop();
 
-        // async void is correct for an event handler, and safe here only because SaveAsync swallows
-        // its own I/O failures (Task 2) — nothing can escape to the dispatcher.
+        // async void is correct for an event handler, and safe only because SaveAsync catches and
+        // logs its own I/O failures. That was ASSERTED here before it was TRUE: the store had no
+        // catch and RemexDataPaths.WriteAllTextAtomicAsync rethrows, so any write failure reached
+        // the dispatcher unhandled. If you change SaveAsync's contract, change this too.
         await _layoutStore.SaveAsync(new TrayFlyoutGeometry
         {
             IsPinned = ViewModel?.IsPinned ?? false,
