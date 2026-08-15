@@ -405,6 +405,17 @@ public partial class App : Application
 
     private void OnTrayIconClicked(object? sender, EventArgs e)
     {
+        // Interacting with the tray icon deactivates the flyout, and a transient flyout hides on
+        // deactivation - so without this, clicking the icon that owns the window is indistinguishable
+        // from clicking away from it. The flag is cleared again in ShowAtTray, so arming it for a
+        // deactivation that never arrives cannot swallow the next genuine click-away.
+        //
+        // NOTE this covers the LEFT click only. Avalonia raises Clicked for the left button; a
+        // right-click opens the native menu without routing through here, so the "right-click the
+        // tray icon and the flyout survives" behaviour is unverified and has no hook to hang on -
+        // TrayIcon exposes no menu-opening event. See Task 7's verification list.
+        _flyout?.SuppressNextDeactivate();
+
         ToggleLiveGlance();
     }
 
@@ -412,16 +423,20 @@ public partial class App : Application
 
     private void ToggleLiveGlance()
     {
-        var homeVm = Services.GetRequiredService<HomeViewModel>();
-        homeVm.RefreshPinnedSensors();
-
         if (_flyout == null)
         {
-            _flyout = new TrayFlyoutWindow
-            {
-                DataContext = homeVm
-            };
+            var vm = Services.GetRequiredService<TrayFlyoutViewModel>();
+            _flyout = new TrayFlyoutWindow { DataContext = vm };
+
+            // The flyout is a visible Window, so it can host a modal dialog. Wired here rather than
+            // in the view model because a view model owns no UI (RemEx-07jx). ConfirmationDialogHost
+            // returns false when the owner has no visible window, so a destructive action declines
+            // rather than proceeding unconfirmed if that ever stops being true.
+            vm.OnConfirmationRequested = ConfirmationDialogHost.For(_flyout);
         }
+
+        // The flyout refreshes itself in ShowAtTray now - HomeViewModel is no longer its data
+        // context, so refreshing that here would have refreshed something nothing was binding to.
 
         if (_flyout.IsVisible)
         {
