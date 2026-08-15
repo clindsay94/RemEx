@@ -1606,15 +1606,6 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Pokaż główne okno</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Szybki podgląd na żywo</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Przełącz na tryb ciemny</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Przełącz na tryb jasny</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Wyjdź</value>
   </data>

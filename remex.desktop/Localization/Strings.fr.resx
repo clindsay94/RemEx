@@ -1814,15 +1814,6 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Afficher la fenêtre principale</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Aperçu en direct</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Passer au mode sombre</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Passer au mode clair</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Quitter</value>
   </data>

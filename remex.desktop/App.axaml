@@ -336,17 +336,11 @@
 
     <TrayIcon.Icons>
         <TrayIcons>
-            <TrayIcon Icon="avares://Remex.Desktop/Assets/icon.png" ToolTipText="{local:Localize Tray_TooltipDefault}" IsVisible="True" Clicked="OnTrayIconClicked">
-                <TrayIcon.Menu>
-                    <NativeMenu>
-                        <NativeMenuItem Header="{local:Localize Tray_ShowMainWindow}" Click="OnShowMainWindow" />
-                        <NativeMenuItem Header="{local:Localize Tray_LiveGlance}" Click="OnToggleLiveGlance" />
-                        <NativeMenuItem Header="{local:Localize Tray_SwitchLightMode}" Click="OnToggleTheme" />
-                        <NativeMenuItemSeparator />
-                        <NativeMenuItem Header="{local:Localize Tray_Exit}" Click="OnExitApp" />
-                    </NativeMenu>
-                </TrayIcon.Menu>
-            </TrayIcon>
+            <!-- The menu is built in App.BuildTrayMenu, not declared here. Its items are not
+                 static: the status header changes with phone presence and Remote desktop enables
+                 and disables. A declared menu can only be updated by index, which is how the old
+                 UpdateTrayMenuHeaders came to address items[0], [1], [2] and [4] by number. -->
+            <TrayIcon Icon="avares://Remex.Desktop/Assets/icon.png" ToolTipText="{local:Localize Tray_TooltipDefault}" IsVisible="True" Clicked="OnTrayIconClicked" />
         </TrayIcons>
     </TrayIcon.Icons>
 </Application>

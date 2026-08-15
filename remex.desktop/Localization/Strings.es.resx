@@ -1820,15 +1820,6 @@ Linux: ip addr  o  hostname -I</value>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Mostrar ventana principal</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Vistazo rápido en vivo</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Cambiar a modo oscuro</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Cambiar a modo claro</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Salir</value>
   </data>

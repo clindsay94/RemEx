@@ -1814,15 +1814,6 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Tampilkan Jendela Utama</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Sekilas Info Langsung</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Beralih ke Mode Gelap</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Beralih ke Mode Terang</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Keluar</value>
   </data>

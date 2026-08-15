@@ -1814,15 +1814,6 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>मुख्य विंडो दिखाएं</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>लाइव झलक</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>डार्क मोड पर स्विच करें</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>लाइट मोड पर स्विच करें</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>बाहर निकलें</value>
   </data>

@@ -21,7 +21,9 @@ namespace Remex.Desktop;
 public partial class App : Application
 {
     private TrayFlyoutWindow? _flyout;
-    private NativeMenuItem? _themeToggleMenuItem;
+    /// <summary>The two tray-menu items whose text or enablement follows phone presence.</summary>
+    private NativeMenuItem? _statusHeaderItem;
+    private NativeMenuItem? _remoteDesktopItem;
     public static IServiceProvider Services { get; private set; } = null!;
     public static bool IsShuttingDown { get; set; }
 
@@ -108,6 +110,7 @@ public partial class App : Application
             ApplicationLifetime is IClassicDesktopStyleApplicationLifetime lifetime
             && lifetime.MainWindow is { IsVisible: true, WindowState: not WindowState.Minimized };
 
+        BuildTrayMenu();
         WireTrayTooltipToPhonePresence();
 
         _ = InitializeAppAsync();
@@ -256,10 +259,9 @@ public partial class App : Application
                 }
             };
 
-            // P8-H: seed the theme toggle label from the persisted theme
-            UpdateThemeToggleLabel(profile?.Customization?.ThemeId);
-            UpdateTrayMenuHeaders();
-            LocalizationService.Instance.PropertyChanged += (s, e) => UpdateTrayMenuHeaders();
+            // Rebuilding is the simplest correct response to a language switch - every header is
+            // read from LocalizationService at build time, so there is nothing to re-address.
+            LocalizationService.Instance.PropertyChanged += (s, e) => BuildTrayMenu();
 
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -419,8 +421,6 @@ public partial class App : Application
         ToggleLiveGlance();
     }
 
-    private void OnToggleLiveGlance(object? sender, EventArgs e) => ToggleLiveGlance();
-
     private void ToggleLiveGlance()
     {
         if (_flyout == null)
@@ -468,9 +468,13 @@ public partial class App : Application
         void Apply() => icon.ToolTipText =
             TrayTooltip.Compose(product, PhonePresenceMonitor.Instance.PresenceText);
 
+        // One 3-second poll drives both surfaces. The menu's status header is the same sentence as
+        // the tooltip, so refreshing them from separate subscriptions would only create a window in
+        // which they disagree.
         PhonePresenceMonitor.Instance.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(PhonePresenceMonitor.PresenceText)) Apply();
+            RefreshTrayMenu();
         };
 
         Apply();
@@ -577,73 +581,97 @@ public partial class App : Application
             icon.ToolTipText = text;
     }
 
-    // ═══════════════ P8-H: Theme Toggle ═══════════════
+    // ═══════════════ Tray context menu ═══════════════
 
-    private void OnToggleTheme(object? sender, EventArgs e)
+    /// <summary>
+    /// Builds the tray context menu in code.
+    /// </summary>
+    /// <remarks>
+    /// IN CODE RATHER THAN IN App.axaml BECAUSE THE ITEMS ARE NOT STATIC. The declared menu could
+    /// only be updated by index — <c>menu.Items[2] as NativeMenuItem</c> — which silently did
+    /// nothing the moment anyone inserted an item, and could not enable or disable anything at all.
+    /// Holding the two live items in fields removes both problems.
+    /// <para>
+    /// The theme toggle that used to live here is gone rather than ported. It only ever swapped
+    /// BaseDarkGlass and SolarFlare, which is two of the four themes, and Settings already offers
+    /// all four.
+    /// </para>
+    /// </remarks>
+    private void BuildTrayMenu()
     {
-        var themeService = Services.GetRequiredService<ThemeService>();
-        var layoutService = Services.GetRequiredService<DashboardLayoutService>();
-        var currentThemeId = layoutService.CurrentProfile?.Customization.ThemeId ?? "BaseDarkGlass";
+        var strings = LocalizationService.Instance;
 
-        bool isCurrentlyLight = string.Equals(currentThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
-        var newThemeId = isCurrentlyLight ? "BaseDarkGlass" : "SolarFlare";
-
-        var currentCustomization = layoutService.CurrentProfile?.Customization ?? new Remex.Core.Models.CustomizationSettings();
-        var newCustomization = currentCustomization with { ThemeId = newThemeId };
-        themeService.ApplyCustomization(newCustomization);
-
-        var profile = layoutService.CurrentProfile ?? new Remex.Core.Models.DashboardProfile();
-        layoutService.RequestSave(profile with { Customization = newCustomization });
-
-        // Sync the shell's Customization property so the UI reflects the change
-        if (Services.GetService<ShellViewModel>() is { } shellVm) // optional service
-            shellVm.Customization = newCustomization;
-
-        UpdateThemeToggleLabel(newThemeId);
-    }
-
-    private void UpdateThemeToggleLabel(string? themeId)
-    {
-        _themeToggleMenuItem ??= FindThemeToggleMenuItem();
-        if (_themeToggleMenuItem is null) return;
-
-        bool isLight = string.Equals(themeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
-        _themeToggleMenuItem.Header = isLight
-            ? LocalizationService.Instance["Tray_SwitchDarkMode"]
-            : LocalizationService.Instance["Tray_SwitchLightMode"];
-    }
-
-    private NativeMenuItem? FindThemeToggleMenuItem()
-    {
-        var icons = TrayIcon.GetIcons(this);
-        var menu = icons?.FirstOrDefault()?.Menu;
-        if (menu == null || menu.Items.Count < 3) return null;
-        return menu.Items[2] as NativeMenuItem;
-    }
-
-    private void UpdateTrayMenuHeaders()
-    {
-        var icons = TrayIcon.GetIcons(this);
-        var menu = icons?.FirstOrDefault()?.Menu;
-        if (menu == null || menu.Items.Count < 5) return;
-
-        if (menu.Items[0] is NativeMenuItem showItem)
-            showItem.Header = LocalizationService.Instance["Tray_ShowMainWindow"];
-
-        if (menu.Items[1] is NativeMenuItem glanceItem)
-            glanceItem.Header = LocalizationService.Instance["Tray_LiveGlance"];
-
-        if (menu.Items[2] is NativeMenuItem themeItem)
+        _statusHeaderItem = new NativeMenuItem { IsEnabled = false };
+        _remoteDesktopItem = new NativeMenuItem { Header = strings["Palette_RemoteDesktop"] };
+        _remoteDesktopItem.Click += (_, _) =>
         {
-            var layoutService = Services.GetRequiredService<DashboardLayoutService>();
-            var currentThemeId = layoutService.CurrentProfile?.Customization.ThemeId ?? "BaseDarkGlass";
-            bool isCurrentlyLight = string.Equals(currentThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
-            themeItem.Header = isCurrentlyLight
-                ? LocalizationService.Instance["Tray_SwitchDarkMode"]
-                : LocalizationService.Instance["Tray_SwitchLightMode"];
-        }
+            BringMainWindowToFront();
+            Services.GetRequiredService<ShellViewModel>().NavigateToRemoteDesktop();
+        };
 
-        if (menu.Items[4] is NativeMenuItem exitItem)
-            exitItem.Header = LocalizationService.Instance["Tray_Exit"];
+        var lockItem = new NativeMenuItem { Header = strings["Palette_LockPc"] };
+        lockItem.Click += async (_, _) =>
+            await Services.GetRequiredService<ShellViewModel>().Connection.LockAsync();
+
+        var transfersItem = new NativeMenuItem { Header = strings["Tray_Menu_OpenTransfers"] };
+        transfersItem.Click += (_, _) =>
+        {
+            BringMainWindowToFront();
+            Services.GetRequiredService<ShellViewModel>().NavigateToFileTransfer();
+        };
+
+        var pairItem = new NativeMenuItem { Header = strings["Tray_Menu_PairDevice"] };
+        pairItem.Click += (_, _) =>
+        {
+            BringMainWindowToFront();
+            Services.GetRequiredService<ShellViewModel>().NavigateToSettings();
+        };
+
+        var showItem = new NativeMenuItem { Header = strings["Tray_ShowMainWindow"] };
+        showItem.Click += OnShowMainWindow;
+
+        var settingsItem = new NativeMenuItem { Header = strings["Palette_Settings"] };
+        settingsItem.Click += (_, _) =>
+        {
+            BringMainWindowToFront();
+            Services.GetRequiredService<ShellViewModel>().NavigateToSettings();
+        };
+
+        var exitItem = new NativeMenuItem { Header = strings["Tray_Exit"] };
+        exitItem.Click += OnExitApp;
+
+        var menu = new NativeMenu();
+        menu.Items.Add(_statusHeaderItem);
+        menu.Items.Add(new NativeMenuItemSeparator());
+        menu.Items.Add(lockItem);
+        menu.Items.Add(_remoteDesktopItem);
+        menu.Items.Add(transfersItem);
+        menu.Items.Add(pairItem);
+        menu.Items.Add(new NativeMenuItemSeparator());
+        menu.Items.Add(showItem);
+        menu.Items.Add(settingsItem);
+        menu.Items.Add(exitItem);
+
+        if (TrayIcon.GetIcons(this)?.FirstOrDefault() is { } icon)
+            icon.Menu = menu;
+
+        RefreshTrayMenu();
+    }
+
+    /// <summary>Republishes the state-dependent parts: the status header and Remote's enablement.</summary>
+    /// <remarks>
+    /// Reuses <see cref="TrayTileRules.IsRemoteDesktopEnabled"/> rather than restating
+    /// <c>IsPhoneAttached</c> — one rule, two surfaces, no chance of them disagreeing. That is the
+    /// mistake the flyout's presence dot made before RemEx-7zzw.
+    /// </remarks>
+    private void RefreshTrayMenu()
+    {
+        var presence = PhonePresenceMonitor.Instance;
+
+        if (_statusHeaderItem is not null)
+            _statusHeaderItem.Header = presence.PresenceText;
+
+        if (_remoteDesktopItem is not null)
+            _remoteDesktopItem.IsEnabled = TrayTileRules.IsRemoteDesktopEnabled(presence.IsPhoneAttached);
     }
 }

@@ -1814,15 +1814,6 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Ana Pencereyi Göster</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Canlı Bakış</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Karanlık Moda Geç</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Aydınlık Moda Geç</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Çıkış</value>
   </data>

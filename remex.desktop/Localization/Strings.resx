@@ -2012,15 +2012,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Show Main Window</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Live Glance</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Switch to Dark Mode</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Switch to Light Mode</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Exit</value>
   </data>

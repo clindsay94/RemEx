@@ -1814,15 +1814,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="Tray_ShowMainWindow" xml:space="preserve">
     <value>Показати головне вікно</value>
   </data>
-  <data name="Tray_LiveGlance" xml:space="preserve">
-    <value>Швидкий перегляд наживо</value>
-  </data>
-  <data name="Tray_SwitchDarkMode" xml:space="preserve">
-    <value>Переключити на темний режим</value>
-  </data>
-  <data name="Tray_SwitchLightMode" xml:space="preserve">
-    <value>Переключити на світлий режим</value>
-  </data>
   <data name="Tray_Exit" xml:space="preserve">
     <value>Вихід</value>
   </data>
