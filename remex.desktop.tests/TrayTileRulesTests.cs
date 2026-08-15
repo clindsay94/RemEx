@@ -40,6 +40,23 @@ public class TrayTileRulesTests
         }
     }
 
+    [Theory]
+    [InlineData(TrayPowerAction.Restart)]
+    [InlineData(TrayPowerAction.Shutdown)]
+    [InlineData(TrayPowerAction.SignOut)]
+    [InlineData(TrayPowerAction.Hibernate)]
+    public void Every_power_action_resolves_to_a_real_string(TrayPowerAction action)
+    {
+        // LocalizationService returns the KEY when a key is missing (LocalizationService.cs:41), so
+        // a typo in TrayFlyoutViewModel.PowerLabel puts "Confirm_Restart_Btn" on a menu item and
+        // nothing anywhere fails. Resource keys contain an underscore and these four labels do not,
+        // which is the cheapest way to tell a resolved string from an unresolved one.
+        var label = TrayFlyoutViewModel.PowerLabel(action);
+
+        Assert.False(string.IsNullOrWhiteSpace(label));
+        Assert.DoesNotContain('_', label);
+    }
+
     // ---- TrayPowerInvoker: the routing itself, not just the policy ----------------------------
     //
     // These matter more than the policy tests above. "Shutdown requires confirmation" being true

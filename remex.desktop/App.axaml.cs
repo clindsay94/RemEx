@@ -79,6 +79,9 @@ public partial class App : Application
         collection.AddTransient<TaskManagerViewModel>();
         collection.AddSingleton<HomeViewModel>();
         collection.AddSingleton<ShellViewModel>();
+        // Singleton: the tray flyout window is created once and reused, and its tile list is
+        // rebuilt in place as phone presence changes rather than per show.
+        collection.AddSingleton<TrayFlyoutViewModel>();
         collection.AddTransient<DiagnosticLogsViewModel>();
 
         RegisterPlatformServices?.Invoke(collection);
