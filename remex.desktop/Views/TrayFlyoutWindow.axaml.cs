@@ -186,6 +186,25 @@ public partial class TrayFlyoutWindow : Window
             ScheduleSave();
     }
 
+    /// <summary>
+    /// Raises the main window for the tiles that navigate it, and only those.
+    /// </summary>
+    /// <remarks>
+    /// The tile's own <c>Command</c> does the navigating; this is the other half the old flyout had
+    /// and the tile grid initially lost. RemEx closes to the tray by default, so telling
+    /// <c>ShellViewModel</c> to change page without showing the window changes a page nobody can
+    /// see. Gated on <see cref="TrayTile.OpensMainWindow"/> because Lock and Sleep must not pop a
+    /// window up as the screen goes away.
+    /// </remarks>
+    private void OnTileClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is not TrayTile { OpensMainWindow: true })
+            return;
+
+        Hide();
+        App.BringMainWindowToFront();
+    }
+
     private void OnOpenMainApp(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Hide();

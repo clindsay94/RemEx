@@ -21,6 +21,18 @@ public sealed record TrayTile
     public bool IsEnabled { get; init; } = true;
     public string? DisabledTooltip { get; init; }
     public bool HasSubmenu { get; init; }
+
+    /// <summary>
+    /// Whether clicking this tile should also raise the main window.
+    /// </summary>
+    /// <remarks>
+    /// The navigating tiles need it and the power tiles must not have it. RemEx closes to the tray
+    /// by default, so a tile that only tells <c>ShellViewModel</c> to change page changes a page
+    /// nobody can see — the click reads as doing nothing. Lock and Sleep are the opposite case:
+    /// popping the window up as the screen locks would be absurd. The view acts on this rather than
+    /// the view model, because raising a window is not a view model's to do (RemEx-07jx).
+    /// </remarks>
+    public bool OpensMainWindow { get; init; }
 }
 
 /// <summary>
@@ -117,6 +129,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
                 Label = LocalizationService.Instance["Tray_Tile_RemoteDesktop"],
                 Icon = FindIcon("IconRemote"),
                 Command = OpenRemoteDesktopCommand,
+                OpensMainWindow = true,
                 IsEnabled = remoteEnabled,
                 DisabledTooltip = remoteEnabled
                     ? null
@@ -127,6 +140,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
                 Label = LocalizationService.Instance["Tray_Tile_SendFile"],
                 Icon = FindIcon("IconUpload"),
                 Command = OpenTransfersCommand,
+                OpensMainWindow = true,
             },
             new TrayTile
             {
@@ -135,6 +149,7 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
                 // Always enabled: RemEx supports several paired devices, so gating this on
                 // "already paired" would block adding a second phone.
                 Command = OpenPairingCommand,
+                OpensMainWindow = true,
             },
             new TrayTile
             {
