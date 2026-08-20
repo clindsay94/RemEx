@@ -1230,6 +1230,9 @@ Linux: ip addr  ou  hostname -I</value>
   <data name="About_Tagline" xml:space="preserve">
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
+  <data name="About_BuildId" xml:space="preserve">
+    <value>Compilação</value>
+  </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>RemEx neste PC</value>
   </data>

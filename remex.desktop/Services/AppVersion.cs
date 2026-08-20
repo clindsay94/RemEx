@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 
 namespace Remex.Desktop.Services;
@@ -24,6 +25,51 @@ public static class AppVersion
     /// to show in that case.
     /// </summary>
     public static string Display { get; } = Resolve(typeof(AppVersion).Assembly);
+
+    /// <summary>
+    /// This build's own identity, e.g. "39b0b09", or "39b0b09+a3f1" when it was built from a working
+    /// tree with uncommitted changes. Empty when the assembly carries no stamp.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A DIFFERENT QUESTION FROM <see cref="Display"/>, which is why it is a separate value rather
+    /// than more characters appended to the version. The version says which RELEASE this is; the
+    /// build id says which BUILD. Both heads sat on 2.4.0 for months, so during a review session the
+    /// version answered nothing at all and "is the fix in this binary?" had to be settled by
+    /// comparing a file timestamp against a commit timestamp — which was done twice on this branch
+    /// and got the wrong answer once.
+    /// </para>
+    /// <para>
+    /// THE '+' IS THE PART TO READ. It means the binary was built from uncommitted work, so the
+    /// commit it names is where the build STARTED, not what it contains. See build/BuildId.targets
+    /// for exactly how much the four characters after it distinguish — less than they look like.
+    /// </para>
+    /// </remarks>
+    public static string BuildId { get; } = ResolveBuildId(typeof(AppVersion).Assembly);
+
+    /// <summary>
+    /// Reads the build stamp written into <paramref name="assembly"/> by <c>build/BuildId.targets</c>.
+    /// Public for tests; production code should read <see cref="BuildId"/>.
+    /// </summary>
+    /// <remarks>
+    /// Returns empty for both "no stamp at all" and the literal "unknown" the targets file writes
+    /// when git is unavailable. Callers only ever need to decide whether there is something worth
+    /// showing, and an About row reading "unknown" next to a real version is worse than no row.
+    /// </remarks>
+    public static string ResolveBuildId(Assembly assembly)
+    {
+        var stamp = assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => string.Equals(a.Key, "RemexBuildId", StringComparison.Ordinal))
+            ?.Value;
+
+        if (string.IsNullOrWhiteSpace(stamp)) return string.Empty;
+
+        var trimmed = stamp.Trim();
+        return string.Equals(trimmed, "unknown", StringComparison.OrdinalIgnoreCase)
+            ? string.Empty
+            : trimmed;
+    }
 
     /// <summary>
     /// Resolves the display version of <paramref name="assembly"/>. Public for tests; production

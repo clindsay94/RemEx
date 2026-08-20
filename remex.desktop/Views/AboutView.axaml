@@ -101,6 +101,20 @@
                                     <TextBlock Text="{local:Localize About_DesktopClient}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding ClientVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
+                                <!-- Build id: which BUILD, as opposed to which release (RemEx-2ckhm).
+                                     Monospaced and selectable on purpose — the entire use case is
+                                     reading it off a screen and typing it into a message, and the
+                                     digit/letter pairs a proportional face blurs are exactly the ones
+                                     that get transcribed wrong. Hidden rather than shown as "unknown"
+                                     when the assembly carries no stamp. -->
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="30,0,0,0"
+                                            IsVisible="{Binding HasClientBuildId}">
+                                    <TextBlock Text="{local:Localize About_BuildId}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <SelectableTextBlock Text="{Binding ClientBuildId}"
+                                                         FontSize="12"
+                                                         FontFamily="Consolas, Menlo, monospace"
+                                                         Foreground="{DynamicResource TextMutedBrush}"/>
+                                </StackPanel>
                             </StackPanel>
 
                             <!-- Divider -->

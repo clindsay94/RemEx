@@ -6,6 +6,9 @@
     <RootNamespace>Remex.Desktop</RootNamespace>
     <AssemblyName>Remex.Desktop</AssemblyName>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+
+    <!-- This assembly owns the About page, so it is the one that carries the build id (RemEx-2ckhm). -->
+    <RemexStampBuildId>true</RemexStampBuildId>
   </PropertyGroup>
 
   <ItemGroup>

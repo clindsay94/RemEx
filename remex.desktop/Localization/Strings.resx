@@ -1275,6 +1275,9 @@ Linux: ip addr  or  hostname -I</value>
   <data name="About_Tagline" xml:space="preserve">
     <value>SECURE REMOTE PC CONTROL</value>
   </data>
+  <data name="About_BuildId" xml:space="preserve">
+    <value>Build</value>
+  </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>RemEx on this PC</value>
   </data>

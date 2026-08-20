@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Version>2.4.0</Version>
+    <Version>2.5.0</Version>
     <Authors>Connor Lindsay</Authors>
     <Company>CLindsay94</Company>
     <NoWarn>$(NoWarn);CA1416;CS0067;CS1591;CS1573</NoWarn>
@@ -65,6 +65,14 @@
          to mistake for source) — see scripts/installer paths which target artifacts/publish/... -->
     <UseArtifactsOutput>true</UseArtifactsOutput>
   </PropertyGroup>
+
+  <!--
+    Build-id stamping, opted into per project rather than applied to all of them (RemEx-2ckhm).
+    Only the assembly that DISPLAYS the id needs to carry it, and each project that opts in pays two
+    `git` invocations per build. remex.desktop owns the About page, so it is the one that opts in;
+    see build/BuildId.targets for what the value means and what its dirty marker does not promise.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)build\BuildId.targets" />
 
   <!--
     Every project fails the build on any warning the compiler or an analyzer emits, not just the

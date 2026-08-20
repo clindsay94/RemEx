@@ -31,6 +31,28 @@ public partial class AboutViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _clientVersion = "unknown";
 
+    /// <summary>
+    /// This build's identity — a short commit sha, with a "+" marker when it was built from a
+    /// working tree that had uncommitted changes. Empty when the assembly carries no stamp.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="ClientVersion"/> because it answers a separate question: the version
+    /// says which release, this says which build. It exists because both heads sat on 2.4.0 long
+    /// enough that the version could not tell two binaries apart (RemEx-2ckhm).
+    /// </remarks>
+    [ObservableProperty]
+    private string _clientBuildId = string.Empty;
+
+    /// <summary>Whether there is a build id worth showing a row for.</summary>
+    /// <remarks>
+    /// A row reading "unknown" beside a real version number is worse than no row — it invites the
+    /// reader to treat the absence of a stamp as a property of the build rather than of the machine
+    /// that built it, which is the opposite of what this feature is for.
+    /// </remarks>
+    public bool HasClientBuildId => !string.IsNullOrEmpty(ClientBuildId);
+
+    partial void OnClientBuildIdChanged(string value) => OnPropertyChanged(nameof(HasClientBuildId));
+
     [ObservableProperty]
     private string _hostVersion = "Disconnected";
 
@@ -96,6 +118,7 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         // shows for the same release (e.g. "2.4.0") rather than a four-part "2.4.0.0".
         var version = AppVersion.Display;
         ClientVersion = string.IsNullOrEmpty(version) ? "unknown" : version;
+        ClientBuildId = AppVersion.BuildId;
 
         // The update check runs at startup (App.InitializeAppAsync); pick up any cached result so the
         // card is populated the instant About opens, and stay subscribed for the startup check that may
