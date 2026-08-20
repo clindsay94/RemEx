@@ -80,15 +80,29 @@ public class ThemeService : IDisposable
             SetResourceOverrideInternal("AppWindowOpacity", settings.AppWindowOpacity);
             SetResourceOverrideInternal("GlowStrength", settings.GlowStrength);
 
-            // All themes — including static presets — run through M3.
-            // Each preset's AccentColor is the seed; SolarFlare gets a light-mode palette.
-            var isLightTheme = string.Equals(settings.ThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
+            // EVERY THEME IS A SEED NOW. The four presets are not four palettes any more, they are
+            // four saved seeds; whichever one is selected, its AccentColor goes through M3 and the
+            // result overrides the whole colour surface. Light/dark is a setting rather than a
+            // property of the preset's name — see CustomizationSettings.UseLightPalette for why the
+            // null case still answers the old question.
+            var isLightTheme = settings.UseLightPalette
+                ?? string.Equals(settings.ThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
+
+            // The base theme file resolved a variant from the preset NAME. Now that light/dark is
+            // its own setting, the variant has to follow the setting, or Fluent's own control
+            // templates paint dark chrome underneath a light M3 palette.
+            if (Application.Current is { } themedApp)
+            {
+                themedApp.RequestedThemeVariant = isLightTheme ? ThemeVariant.Light : ThemeVariant.Dark;
+            }
+
             if (Color.TryParse(settings.AccentColor, out var accentColor))
             {
                 var palette = DynamicColorGenerator.Generate(
                     accentColor,
                     settings.SchemeVariant,
-                    isDark: !isLightTheme);
+                    isDark: !isLightTheme,
+                    contrast: Math.Clamp(settings.ThemeContrast, -1.0, 1.0));
 
                 SetResourceOverrideInternal("AccentPrimary", palette.Primary);
                 SetResourceOverrideInternal("AccentPrimaryBrush", new SolidColorBrush(palette.Primary));
@@ -115,8 +129,72 @@ public class ThemeService : IDisposable
                 SetResourceOverrideInternal("CardBackgroundHoverBrush", new SolidColorBrush(cardHoverColor));
                 SetResourceOverrideInternal("CardBorder", palette.Outline);
                 SetResourceOverrideInternal("CardBorderBrush", new SolidColorBrush(palette.Outline));
+
+                // De-emphasised text. M3 has no "muted" role; Outline is the role it has for
+                // exactly this job, and it lands where the hand-authored greys already were.
+                SetResourceOverrideInternal("TextMuted", palette.Outline);
+                SetResourceOverrideInternal("TextMutedBrush", new SolidColorBrush(palette.Outline));
+
+                // ── Semantic fills and the text that sits ON them ────────────────────────────
+                // THESE FOUR FOREGROUNDS USED TO BE HAND-MEASURED HEX, one per theme, each with a
+                // comment recording the ratio it was chosen for. They are M3 "on" roles now, which
+                // is the same guarantee arrived at by construction instead of by hand: the
+                // generator walks each one along its own tonal palette until it clears its target
+                // against the exact fill it will be drawn on. Retuning a fill can no longer strand
+                // its foreground, because the foreground is derived from the fill.
                 SetResourceOverrideInternal("SystemError", palette.Error);
                 SetResourceOverrideInternal("SystemErrorBrush", new SolidColorBrush(palette.Error));
+                SetResourceOverrideInternal("ErrorForegroundBrush", new SolidColorBrush(palette.OnError));
+                SetResourceOverrideInternal("SystemErrorBackgroundBrush", new SolidColorBrush(palette.Error) { Opacity = 0.15 });
+                SetResourceOverrideInternal("SystemErrorBackgroundHoverBrush", new SolidColorBrush(palette.Error) { Opacity = 0.22 });
+
+                SetResourceOverrideInternal("SystemSuccess", palette.Success);
+                SetResourceOverrideInternal("SystemSuccessBrush", new SolidColorBrush(palette.Success));
+                SetResourceOverrideInternal("SuccessForegroundBrush", new SolidColorBrush(palette.OnSuccess));
+                SetResourceOverrideInternal("SystemSuccessBackgroundBrush", new SolidColorBrush(palette.Success) { Opacity = 0.15 });
+                SetResourceOverrideInternal("SystemSuccessBackgroundHoverBrush", new SolidColorBrush(palette.Success) { Opacity = 0.22 });
+
+                SetResourceOverrideInternal("SystemWarning", palette.Warning);
+                SetResourceOverrideInternal("SystemWarningBrush", new SolidColorBrush(palette.Warning));
+                SetResourceOverrideInternal("SystemWarningBackgroundBrush", new SolidColorBrush(palette.Warning) { Opacity = 0.15 });
+
+                // Text on an accent-filled surface, and text on a 15%/22% TINT. They are different
+                // answers and always have been: the tint is mostly surface, so what reads on it is
+                // whatever reads on the surface — OnSurface — not what reads on the solid fill.
+                SetResourceOverrideInternal("AccentForegroundBrush", new SolidColorBrush(palette.OnPrimary));
+                SetResourceOverrideInternal("ErrorTintForegroundBrush", new SolidColorBrush(palette.OnSurface));
+
+                // ── The shell backdrop ───────────────────────────────────────────────────────
+                // The gradient BRUSH has to be replaced, not just its three Color keys: the theme
+                // dictionaries bind their gradient stops with StaticResource, which resolves once
+                // and never hears about an override.
+                SetResourceOverrideInternal("BackgroundGradientStart", palette.BackgroundStart);
+                SetResourceOverrideInternal("BackgroundGradientMid", palette.BackgroundMid);
+                SetResourceOverrideInternal("BackgroundGradientEnd", palette.BackgroundEnd);
+                SetResourceOverrideInternal("BackgroundGradientBrush", new LinearGradientBrush
+                {
+                    StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                    EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                    GradientStops =
+                    {
+                        new GradientStop(palette.BackgroundStart, 0),
+                        new GradientStop(palette.BackgroundMid, 0.5),
+                        new GradientStop(palette.BackgroundEnd, 1),
+                    },
+                });
+
+                // Scrims. Both are "darken what is behind me", so both take the darkest neutral the
+                // palette has rather than a literal black — on a light palette a pure-black scrim
+                // reads as a hole, and BackgroundEnd is already white there.
+                var scrim = isLightTheme ? palette.OnSurface : palette.BackgroundEnd;
+                SetResourceOverrideInternal("GlassOverlayBrush",
+                    new SolidColorBrush(Color.FromArgb(0x33, scrim.R, scrim.G, scrim.B)));
+                SetResourceOverrideInternal("OverlayBackdropBrush",
+                    new SolidColorBrush(Color.FromArgb(0xE6, palette.Surface.R, palette.Surface.G, palette.Surface.B)));
+
+                // WinUI-name alias. It is CardBackground under another key, and it has to be
+                // overridden explicitly for the same StaticResource reason as the gradient above.
+                SetResourceOverrideInternal("SystemControlBackgroundListLowBrush", new SolidColorBrush(cardColor));
 
                 // Override Fluent theme's SystemAccentColor so native controls (Button, Slider,
                 // ToggleSwitch, ComboBox, TextBox focus ring, etc.) pick up M3 colors.

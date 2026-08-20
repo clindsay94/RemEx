@@ -208,6 +208,21 @@ public record CustomizationSettings
     /// <summary>Material 3 scheme variant for the Dynamic theme.</summary>
     public string SchemeVariant { get; init; } = "TonalSpot";
 
+    /// <summary>
+    /// Whether the generated palette is a light one. <c>null</c> means "decide from
+    /// <see cref="ThemeId"/>", which is how every profile written before this key existed behaves.
+    /// </summary>
+    /// <remarks>
+    /// DELIBERATELY NULLABLE, AND THAT IS THE WHOLE MIGRATION. Light/dark used to be a property of
+    /// the preset name — the code asked <c>ThemeId == "SolarFlare"</c> — so a user who picked a
+    /// light preset and then changed the seed silently got a dark palette. Making it a real setting
+    /// has to not repaint every existing install on upgrade: an absent key deserialises to null,
+    /// null reproduces the old name-based answer exactly, and the first time the user touches the
+    /// switch it becomes explicit and stays that way.
+    /// </remarks>
+    [JsonPropertyName("useLightPalette")]
+    public bool? UseLightPalette { get; init; }
+
     /// <summary>Requested window or surface material treatment.</summary>
     [JsonPropertyName("canvasBackgroundType")]
     public string BackgroundMaterial { get; init; } = "Mica";

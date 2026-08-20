@@ -332,9 +332,20 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     {
         if (_isApplyingPreset) return;
 
+        // EVERY FIELD THIS SCREEN DOES NOT OWN HAS TO BE CARRIED FORWARD BY HAND. Building a fresh
+        // record and assigning only what the sliders bind to silently resets the rest to their
+        // defaults on the next save — which is why ThemeContrast has been persisted, reloaded and
+        // then wiped on the first customization change since it was added, and why "the contrast
+        // setting does nothing" (RemEx-68ynp) was true in two independent places at once.
+        // CustomizationSettingsRoundTripTests fails if a new field is added and not listed here.
+        var carried = _layoutService.CurrentProfile.Customization;
+
         var settings = new CustomizationSettings
         {
             ThemeId = SelectedTheme.ToString(),
+            ThemeContrast = carried.ThemeContrast,
+            ThemeSeedChroma = carried.ThemeSeedChroma,
+            UseLightPalette = carried.UseLightPalette,
             CornerRadius = CornerRadius,
             RemoteCardCornerRadius = RemoteCardCornerRadius,
             GlassOpacity = GlassOpacity,
@@ -346,7 +357,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             SyncWithHardware = SyncWithHardware,
             SplashStyle = SplashStyle,
             PageTitleFontFamily = SelectedPageTitleFont?.Value ?? "avares://Remex.Desktop/Assets/Fonts#Orbitron",
-            CardHeaderFontFamily = _layoutService.CurrentProfile.Customization.CardHeaderFontFamily,
+            CardHeaderFontFamily = carried.CardHeaderFontFamily,
             BodyFontFamily = SelectedBodyFont?.Value ?? "avares://Avalonia.Fonts.Inter/Assets#Inter",
             UiScale = UiScale,
             CustomAccentColors = CustomAccentColors.Take(8).ToList()
