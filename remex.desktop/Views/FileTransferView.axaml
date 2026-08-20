@@ -171,7 +171,18 @@
                     <StackPanel>
                         <WrapPanel Orientation="Horizontal" IsVisible="{Binding !IsCreatingFolder}">
                             <Button Content="{local:Localize FileTransfer_UploadBtn}" Classes="action-btn" Command="{Binding UploadCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadTooltip}"/>
-                            <Button Content="{local:Localize FileTransfer_SendToPhoneBtn}" Classes="action-btn" Command="{Binding SendFileCommand}" ToolTip.Tip="{local:Localize FileTransfer_SendToPhoneTooltip}"/>
+                            <!-- "Send to phone" REMOVED (RemEx-74kfg), not hidden. It never sent anything to a
+                                 phone: SendFileAsync was byte-identical to UploadAsync bar a queue label, so it
+                                 uploaded into the HOST's own shared root over loopback. Worse than misleading —
+                                 when the picked file already lived in a shared root the host resolved the
+                                 destination to that same path and opened it for write while the client held it
+                                 for read, so the transfer failed with "The process cannot access the file ...
+                                 because it is being used by another process". Connor hit that twice pushing a
+                                 photo from Pictures on 2026-08-20.
+
+                                 The button beside it, Upload, is what this actually did. Restore a phone-directed
+                                 action when there is a PC-to-phone channel to carry it (RemEx-uov9y), and give it
+                                 its own code path rather than this one. -->
                             <Button Content="{local:Localize FileTransfer_UploadFolderBtn}" Classes="action-btn" Command="{Binding UploadFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadFolderTooltip}"/>
                             <Button Content="{local:Localize FileTransfer_DownloadBtn}" Classes="subtle-btn" Command="{Binding DownloadCommand}" ToolTip.Tip="{local:Localize FileTransfer_DownloadTooltip}"/>
                             <Button Content="{local:Localize FileTransfer_DownloadFolderBtn}" Classes="subtle-btn" Command="{Binding DownloadFolderCommand}" IsVisible="{Binding SupportsFolderTransfer}" ToolTip.Tip="{local:Localize FileTransfer_DownloadFolderTooltip}"/>

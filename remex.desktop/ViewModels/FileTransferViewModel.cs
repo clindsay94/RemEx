@@ -161,7 +161,6 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(UploadCommand))]
-    [NotifyCanExecuteChangedFor(nameof(SendFileCommand))]
     [NotifyCanExecuteChangedFor(nameof(RemoveCurrentRootCommand))]
     [NotifyCanExecuteChangedFor(nameof(NewFolderCommand))]
     [NotifyCanExecuteChangedFor(nameof(PasteCommand))]
@@ -592,12 +591,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         await PickAndEnqueueUploadsAsync(FileTransferQueueKind.Upload);
     }
 
-    [RelayCommand(CanExecute = nameof(CanUpload))]
-    private async Task SendFileAsync()
-    {
-        if (SelectedRemoteRoot is null) return;
-        await PickAndEnqueueUploadsAsync(FileTransferQueueKind.SendToPhone);
-    }
+    // SendFileAsync REMOVED with its button (RemEx-74kfg). It was UploadAsync with a different queue
+    // label: same picker, same PickAndEnqueueUploadsAsync, same upload into the host's own shared root
+    // over loopback. Nothing was ever offered to a phone, and when the picked file already lived in a
+    // shared root the host opened that same path for write while the client held it for read, failing
+    // the transfer with a sharing violation that named a local file.
+    //
+    // FileTransferQueueKind.SendToPhone STAYS — it is not dead. DropZoneResolver still resolves the
+    // upper drop zone to it, so drag-and-drop reaches this behaviour even with the button gone. That
+    // is deliberately left alone here rather than quietly collapsed: the two-zone drop is a separate
+    // surface and a separate decision.
 
     private async Task PickAndEnqueueUploadsAsync(FileTransferQueueKind kind)
     {
@@ -1555,7 +1558,6 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             UploadCommand.NotifyCanExecuteChanged();
-            SendFileCommand.NotifyCanExecuteChanged();
             DownloadCommand.NotifyCanExecuteChanged();
             DownloadFolderCommand.NotifyCanExecuteChanged();
             UploadFolderCommand.NotifyCanExecuteChanged();
