@@ -409,6 +409,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **Wrote down what the dashboard does, before the redesign starts changing it.** The Home screen is
+  the one surface with a stated no-regression requirement, and the Material redesign is about to
+  rewrite it. Every binding on it is the kind Avalonia checks at run time rather than at build time,
+  and when one of those is wrong the app does not complain — it draws the control perfectly and the
+  control does nothing. Two buttons on that screen have already shipped that way.
+
+  So there is now a written inventory of the screen in `docs/DASHBOARD-CHARACTERISATION.md` — all 20
+  buttons and the command behind each, where the live numbers come from and how often, the three
+  empty states, the four status indicators, the automation names — and thirteen tests that hold the
+  mechanical half of it in place. Nothing about the app changes. The point is that when the redesign
+  lands, "nothing was lost" is something anyone can check instead of something someone asserts.
+
+  The tests were themselves checked by breaking the screen nine different ways and confirming each
+  break was caught. Two holes turned up, and neither was found by the breaking — review pointed at
+  both and the breaking then measured them. The first version of the tests proved the Fix and Explain
+  buttons' commands *existed*, which is a fact about the code behind the screen and stays true even
+  when the screen can no longer reach them; rewiring those two buttons to nothing left every test
+  green. And the check for hardcoded colours could only see a colour that filled a whole setting, so
+  it had missed the one the screen actually has, and would have missed a new one written the same
+  way. Both now do what they claimed. (RemEx-1qpjh)
+
 - **The dashboard stopped telling itself, once a second, about four things that had not changed.**
   Each sensor announced four display values on every update — the gauge's floor, its ceiling, which
   graph shape to use, and whether it is showing two metrics — and the app dutifully re-checked every
