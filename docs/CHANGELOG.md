@@ -409,6 +409,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **Added the Material Design component library the desktop redesign will be built on, and found a
+  ceiling on it.** The packages are referenced but not switched on — nothing about the app looks or
+  behaves differently yet.
+
+  The ceiling is worth knowing about. The library's current releases require Avalonia 12, the UI
+  framework RemEx is built on, and RemEx is on Avalonia 11. There is no release in between: the
+  library skips straight from one to the other. So the newest version that works here is about five
+  releases behind, and the whole redesign is capped at that feature set until the framework itself
+  moves — which is a much larger change than a redesign and not one to make by accident. Nothing is
+  blocked meanwhile.
+
+  Checked rather than assumed, and the check changed the answer twice: every candidate version's
+  declared requirements were read directly from the package registry rather than guessed at, and a
+  first attempt to keep one stale sub-dependency in line turned out to do nothing at all — the build
+  stayed green while quietly ignoring it. (RemEx-851li)
+
 - **Wrote down what the dashboard does, before the redesign starts changing it.** The Home screen is
   the one surface with a stated no-regression requirement, and the Material redesign is about to
   rewrite it. Every binding on it is the kind Avalonia checks at run time rather than at build time,

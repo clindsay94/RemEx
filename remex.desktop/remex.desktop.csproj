@@ -20,6 +20,15 @@
     <PackageReference Include="Avalonia.Skia" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
+    <!-- Material.Avalonia (RemEx-851li). Versionless: ManagePackageVersionsCentrally is true, so a
+         Version attribute here is NU1008 and a restore error. Measured, not assumed — adding
+         Version="3.14.2" to the line below fails restore with "The following PackageReference items
+         cannot define a value for Version". Versions, and the reason they are not the latest, are in
+         Directory.Packages.props. Nothing includes these styles yet — that is RemEx-prkot — so the
+         app looks exactly as it did. -->
+    <PackageReference Include="Material.Avalonia" />
+    <PackageReference Include="Material.Avalonia.Dialogs" />
+    <PackageReference Include="Material.Icons.Avalonia" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="MaterialColorUtilities" />
     <PackageReference Include="Microsoft.Extensions.Configuration" />
