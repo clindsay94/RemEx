@@ -77,6 +77,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The File-Sharing Trust list called your phone "07ca4e9d5383…" instead of its name.** Settings has
+  two cards about your paired phones, one above the other. The top one shows the name you gave the
+  device. The bottom one — the list of what each phone is allowed to do with your files — showed a
+  fragment of an internal identifier, which means nothing to anyone and cannot be matched to a phone
+  by looking at it. That list is where you go to revoke a phone's access, so it was the one place the
+  name mattered most, and the confirmation asked whether you were sure about "07ca4e9d5383…".
+
+  It now shows the same name as the card above it, with the identifier kept underneath in small text
+  — that fragment is still the only thing you can compare against what the phone itself displays, so
+  removing it would trade one problem for another. Renaming a device on the card above now updates
+  the list below straight away, rather than waiting for a Refresh.
+
+  The machinery for this already existed and was already being used by the card directly above; it
+  had simply never been connected here. Its own internal notes cite this very list as the bad example
+  it was written to avoid. (RemEx-9me77)
+
 - **The tray flyout had a grey square sitting behind its rounded corners.** The window asks Windows
   for a frosted backdrop, and Windows paints that across the whole window, including the small
   transparent border the flyout keeps around itself so its drop shadow has somewhere to fall. The

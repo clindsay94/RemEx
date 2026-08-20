@@ -583,7 +583,12 @@ public class DestructiveActionFailClosedTests
         await vm.RevokeTrustAsync(device);
 
         body.Should().NotBeNull();
-        body.Should().Contain(device.ShortId,
+        // DISPLAYNAME RATHER THAN SHORTID SINCE RemEx-9me77, and the property being pinned is
+        // unchanged: the user must be told WHICH device. The dialog now names it the way the rest of
+        // Settings does instead of quoting a truncated client id, and with no name map in this test
+        // DisplayName falls back to the full id — PairedDeviceDisplayName.Resolve's never-blank
+        // contract. FileTrustDisplayNameTests covers the named case.
+        body.Should().Contain(device.DisplayName,
             "the user must be told WHICH device they are about to cut off, not just that they are");
         body.Should().NotContain("Confirm_", "a resource key reaching the dialog means the lookup failed");
     }
@@ -666,7 +671,7 @@ public class DestructiveActionFailClosedTests
         var vm = CreateSettings();
         vm.FileTrustServiceForTests = new RevokeRecordingTrustService();
 
-        var device = new FileTrustDeviceItem("client-abcdef123456", fullBrowseGranted: true, autoAcceptIncoming: false);
+        var device = new FileTrustDeviceItem("client-abcdef123456", fullBrowseGranted: true, autoAcceptIncoming: false, names: null);
         vm.TrustedDevices.Add(device);
         return (vm, device);
     }

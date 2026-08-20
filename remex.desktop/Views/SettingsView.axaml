@@ -395,7 +395,13 @@
                                     <Border Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="12" Padding="16" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,0,12">
                                         <StackPanel Spacing="12">
                                             <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Grid.Column="0" Text="{Binding ShortId}" FontSize="14" FontWeight="Bold" FontFamily="Consolas,monospace" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                                <!-- Name first, id underneath (RemEx-9me77). The id stays because it is the
+                                                     one thing here comparable against what the phone shows; it is just no
+                                                     longer the only thing, which is what made this card unreadable. -->
+                                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DisplayName}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding ShortId}" FontSize="11" FontFamily="Consolas,monospace" Foreground="{DynamicResource TextMutedBrush}" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
                                                 <Button Grid.Column="1" Content="{local:Localize Settings_TrustRevoke}" Command="{Binding RevokeCommand}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource SystemErrorBrush}" BorderBrush="{DynamicResource SystemErrorBrush}" BorderThickness="1" Padding="12,8" CornerRadius="8" Cursor="Hand"/>
                                             </Grid>
                                             <Grid ColumnDefinitions="*,Auto">

@@ -273,17 +273,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         var unknown = LocalizationService.Instance["Settings_PairedDeviceUnknownDate"];
         var rows = source.PairedDevices();
-
-        // THE USER'S OVERRIDE OUTRANKS THE DEVICE'S REPORTED NAME, which is what
-        // PairedDeviceDisplayName.Resolve implements — it takes the override map and falls back. The
-        // two are kept apart all the way from their separate stores to here, so a re-pair can refresh
-        // one without discarding the other (review of RemEx-4gbp2).
-        var names = rows
-            .Where(r => !string.IsNullOrWhiteSpace(r.NameOverride) || !string.IsNullOrWhiteSpace(r.DeviceName))
-            .ToDictionary(
-                r => r.ClientId,
-                r => (r.NameOverride ?? r.DeviceName)!,
-                StringComparer.Ordinal);
+        var names = BuildDeviceNameMap(rows);
 
         foreach (var row in rows)
         {
@@ -306,10 +296,63 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                     row.IsOnline ? "A11y_PairedDeviceOnline" : "A11y_PairedDeviceOffline"],
             });
         }
+
+        // THE TRUST CARD READS THE SAME NAMES, SO IT REFRESHES HERE — one wiring point, not four
+        // (RemEx-9me77, review). This was hung off ApplyPairedDeviceRename alone, which covered the
+        // rename button and missed the other three callers of this method. The map's value is
+        // (NameOverride ?? DeviceName), and the DeviceName half changes without anyone renaming
+        // anything: a phone renamed in Android settings that then re-pairs shifts it. Pressing
+        // Refresh on the paired card would have updated that row and left the trust row below it
+        // showing the old string.
+        //
+        // Free when the trust list is empty — RefreshTrustedDeviceNames early-returns on Count == 0 —
+        // and deliberately after the early return above, so a vanished host leaves the last known
+        // names on screen rather than degrading them all to raw ids.
+        RefreshTrustedDeviceNames();
     }
 
     [RelayCommand]
     private void RefreshPairedDeviceList() => RefreshPairedDevices();
+
+    /// <summary>
+    /// The friendly names to show for paired devices, keyed by client id.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE USER'S OVERRIDE OUTRANKS THE DEVICE'S REPORTED NAME, which is what
+    /// <see cref="PairedDeviceDisplayName.Resolve"/> implements — it takes this map and falls back.
+    /// The two are kept apart all the way from their separate stores to here, so a re-pair can
+    /// refresh one without discarding the other (review of RemEx-4gbp2).
+    /// </para>
+    /// <para>
+    /// SHARED BY BOTH CARDS, and that is the point of it being a method (RemEx-9me77). This was
+    /// inline in <see cref="RefreshPairedDevices"/>, so the File-Sharing Trust list had no way to
+    /// reach it and rendered raw ids instead — the exact "opaque" list
+    /// <see cref="PairedDeviceDisplayName"/>'s own remarks cite as the bad example it was written to
+    /// avoid. Two lists on one page deriving names from two places is how they come to disagree.
+    /// </para>
+    /// </remarks>
+    private static IReadOnlyDictionary<string, string> BuildDeviceNameMap(
+        IEnumerable<PairedDeviceRow> rows)
+        => rows
+            .Where(r => !string.IsNullOrWhiteSpace(r.NameOverride) || !string.IsNullOrWhiteSpace(r.DeviceName))
+            .ToDictionary(
+                r => r.ClientId,
+                r => (r.NameOverride ?? r.DeviceName)!,
+                StringComparer.Ordinal);
+
+    /// <summary>
+    /// The current name map, or null when no host is in this process.
+    /// </summary>
+    /// <remarks>
+    /// Resolved fresh rather than cached, for the reason given on
+    /// <see cref="ResolvePairedDeviceSource"/>: the embedded host publishes its container after it
+    /// starts and this view model can be built first, so a cached null would stick for the session.
+    /// </remarks>
+    private static IReadOnlyDictionary<string, string>? CurrentDeviceNames()
+        => ResolvePairedDeviceSource() is { } source
+            ? BuildDeviceNameMap(source.PairedDevices())
+            : null;
 
     /// <summary>Whether this PC can rename a paired device — false when no host is in this process.</summary>
     public bool CanRenamePairedDevices => ResolvePairedDeviceNameWriter() is not null;
@@ -421,6 +464,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (writer is null) return;
 
         writer.Rename(item.ClientId, item.PendingName);
+
+        // Refreshes BOTH cards: the trust list resolves names from the same map and is refreshed at
+        // the tail of RefreshPairedDevices, so the two can never show different names for one device
+        // (RemEx-9me77).
         RefreshPairedDevices();
     }
 
@@ -920,21 +967,54 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task RefreshTrustedDevicesAsync() => await LoadTrustedDevicesAsync();
 
-    private void ReplaceTrustedDevices(IReadOnlyList<FileTrustRecord> records)
+    /// <summary>
+    /// Rebuilds the trust list from freshly-fetched records.
+    /// </summary>
+    /// <remarks>
+    /// INTERNAL RATHER THAN PRIVATE, AND WITHOUT A ForTests ALIAS (the RemEx-mzbn lesson). The load
+    /// path above hops through <c>Dispatcher.UIThread.Post</c>, which never runs in a headless test,
+    /// so a test driving the async loader would assert against an empty list forever. Tests call
+    /// this — the method production actually uses — rather than a parallel alias that could drift
+    /// from it.
+    /// </remarks>
+    internal void ReplaceTrustedDevices(IReadOnlyList<FileTrustRecord> records)
     {
         foreach (var existing in TrustedDevices)
             UnsubscribeTrustDevice(existing);
 
         TrustedDevices.Clear();
 
+        // The SAME name map the Paired Devices card above uses (RemEx-9me77). Resolved once for the
+        // whole list rather than per row, because it walks the host's pairing list each time.
+        var names = CurrentDeviceNames();
+
         foreach (var record in records)
         {
-            var item = new FileTrustDeviceItem(record.ClientId, record.FullBrowseGranted, record.AutoAcceptIncoming);
+            var item = new FileTrustDeviceItem(
+                record.ClientId, record.FullBrowseGranted, record.AutoAcceptIncoming, names);
             SubscribeTrustDevice(item);
             TrustedDevices.Add(item);
         }
 
         OnPropertyChanged(nameof(HasTrustedDevices));
+    }
+
+    /// <summary>
+    /// Re-resolves the trust rows' display names in place, after a rename (RemEx-9me77).
+    /// </summary>
+    /// <remarks>
+    /// WITHOUT THIS THE TWO CARDS ON THIS PAGE DISAGREE until the user hits Refresh — the paired row
+    /// shows the new name and the trust row below it still shows the old one, which reads as the
+    /// rename having half-failed. Renaming only touches the name map, so nothing needs re-fetching
+    /// from the trust service; the rows already on screen just resolve again.
+    /// </remarks>
+    internal void RefreshTrustedDeviceNames()
+    {
+        if (TrustedDevices.Count == 0) return;
+
+        var names = CurrentDeviceNames();
+        foreach (var item in TrustedDevices)
+            item.DisplayName = PairedDeviceDisplayName.Resolve(item.ClientId, names);
     }
 
     private void SubscribeTrustDevice(FileTrustDeviceItem item)
@@ -1017,7 +1097,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 LocalizationService.Instance["Confirm_RevokeTrust_Title"],
                 string.Format(
                     LocalizationService.Instance["Confirm_RevokeTrust_Format"],
-                    item.ShortId),
+                    // The NAME, not the raw id (RemEx-9me77). What this dialog has to establish is
+                    // WHICH device is about to lose access, and an id the user has never seen cannot
+                    // do that. Resolve's contract is that this is never blank.
+                    item.DisplayName),
                 LocalizationService.Instance["Settings_TrustRevoke"]))
         {
             return;
@@ -1403,7 +1486,37 @@ public partial class FileTrustDeviceItem : ObservableObject
 {
     public string ClientId { get; }
 
+    /// <summary>
+    /// The name this device is shown under — the user's own, when they have set one (RemEx-9me77).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// THE HEADLINE OF THE ROW, because "07ca4e9d5383…" is not something anyone can act on and this
+    /// row carries a Revoke button. Resolved through <see cref="PairedDeviceDisplayName.Resolve"/>,
+    /// the same helper the Paired Devices card on this page already uses, so the two cards cannot
+    /// disagree about what a device is called.
+    /// </para>
+    /// <para>
+    /// SETTABLE, so a rename applied on the paired card can refresh this one in place. Trust rows
+    /// and pairing rows are separate lists over separate stores; a rename only touches the name map,
+    /// so re-fetching trust records to pick up a new name would be a round trip for nothing.
+    /// </para>
+    /// <para>
+    /// Never blank — that is <see cref="PairedDeviceDisplayName.Resolve"/>'s documented contract, and
+    /// its fallback is the id itself. A nameless row beside a Revoke button is a decision the user
+    /// cannot make safely.
+    /// </para>
+    /// </remarks>
+    [ObservableProperty]
+    private string _displayName;
+
     /// <summary>Short, friendly identifier for a (non-technical) user — the leading chars of the client id.</summary>
+    /// <remarks>
+    /// KEPT, AND DEMOTED TO A SECOND LINE (RemEx-9me77). It is no longer the row's headline, but it
+    /// stays visible because it is the one thing on this card comparable against what the phone
+    /// shows — which is how a user tells two identically-named devices apart, and how anyone
+    /// debugging a trust problem matches a row to a log line.
+    /// </remarks>
     public string ShortId => ClientId.Length > 12 ? ClientId[..12] + "…" : ClientId;
 
     private readonly bool _seeding;
@@ -1418,9 +1531,27 @@ public partial class FileTrustDeviceItem : ObservableObject
     public event EventHandler<bool>? AutoAcceptChanged;
     public event EventHandler? RevokeRequested;
 
-    public FileTrustDeviceItem(string clientId, bool fullBrowseGranted, bool autoAcceptIncoming)
+    /// <param name="names">
+    /// The friendly-name map, or null when there is genuinely none.
+    /// </param>
+    /// <remarks>
+    /// <c>names</c> IS REQUIRED, NOT OPTIONAL, and that is deliberate (review of RemEx-9me77). A
+    /// default would make "no name map" the compiler-blessed path, so the next list to construct one
+    /// of these — a pending-trust-request card, say — would compile, ship, and render raw ids: this
+    /// bead again, in a new place. Passing an explicit null documents "deliberately no map here"
+    /// instead of hiding it.
+    /// </remarks>
+    public FileTrustDeviceItem(
+        string clientId,
+        bool fullBrowseGranted,
+        bool autoAcceptIncoming,
+        IReadOnlyDictionary<string, string>? names)
     {
         ClientId = clientId;
+        // Resolve BEFORE the seeding window opens: DisplayName is not one of the properties whose
+        // change events write back to the trust service, but constructing it in the same shape as
+        // the others keeps that obvious.
+        _displayName = PairedDeviceDisplayName.Resolve(clientId, names);
         _seeding = true;
         FullBrowseGranted = fullBrowseGranted;
         AutoAcceptIncoming = autoAcceptIncoming;
