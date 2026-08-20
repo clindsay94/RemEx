@@ -77,6 +77,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The phone could tell the PC a file had finished sending before it had.** When the PC pulls a file
+  off your phone, the file data and the "that's everything" message travel over two separate
+  connections. Sending order is only guaranteed *within* one connection, so announcing the finish the
+  moment the last chunk is handed off lets the small message overtake the data still in flight. The PC
+  then closes the file and reports it incomplete — while the rest of it is literally still arriving.
+
+  The phone now waits until the PC has confirmed every byte before saying it is done. This was the
+  last of three senders with the same flaw; the other two were fixed after it was seen happening. This
+  one had never been caught in the wild, because the PC happens to receive faster than the phone does
+  — which was luck, not safety.
+
+  Two related things were wrong underneath it and are fixed too. The wait was measured against the
+  file size the phone reported *before* opening the file, which some storage providers report as zero
+  and which is stale if the file changed in between — so on those providers the wait was skipped
+  entirely, and on a file that had shrunk it would have waited forever. And the flag marking the last
+  chunk came from that same unreliable number, so it could land on the first chunk of a large file.
+  Both now follow what was actually read. (RemEx-xrb2v)
+
 - **The File-Sharing Trust list called your phone "07ca4e9d5383…" instead of its name.** Settings has
   two cards about your paired phones, one above the other. The top one shows the name you gave the
   device. The bottom one — the list of what each phone is allowed to do with your files — showed a

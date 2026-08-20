@@ -376,11 +376,83 @@ instant its last frame is *enqueued* lets the tiny completion overtake the still
 bytes. The receiver then tears its sink down and finalizes a zero-byte transfer, reporting
 *"Transfer incomplete."* while the data is literally still arriving.
 
-Both senders must drain first, and both do:
+**All three senders must drain first, and all three now do:**
 
 - C# host → phone: `TransferSessionManager.WaitForFinalAckAsync` (`TransferSessionManager.cs:1427`),
   called at `TransferSessionManager.cs:1356` before the completion is sent.
-- Kotlin phone → host: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:323`).
+- Kotlin phone → host, upload: `FileTransferEngine.runUpload` (`FileTransferEngine.kt:323`).
+- Kotlin phone → host, **download-serving**: `FileHostHandler.beginHostSend`, the
+  `while (session.committedOffset < sent)` loop before `sendComplete`. Added by `RemEx-xrb2v`; this
+  sender had the defect for three beads after the other two were fixed. It was the only one never
+  observed failing in the field, because the PC-side receiver is faster than the phone-side one — so
+  "we have not seen it" was never evidence that this one was sound.
+
+**Bound the wait on what was SENT, never on the declared length.** `node.length` is read before the
+file is opened and is not trustworthy: `FileSystemFacade` returns `DocumentFile.length()`, which is
+**0** whenever a SAF provider omits `COLUMN_SIZE`, and it goes stale if the file is appended to or
+truncated in between. The first version of this fix waited `while (committedOffset < size)` and had
+two silent modes — a declared 0 made the wait a no-op and left the bug fully live, and a declared
+length larger than the file waited forever, because there is deliberately no deadline.
+
+**A DECLARED SIZE OF ZERO MEANS "UNKNOWN", NOT "EMPTY". Do not reconcile against it.** This is a
+contract with the other end, written down there: `TransferSessionManager.cs:60` — *"a declared size of
+ZERO is legitimate — a phone reports it for a content URI whose length it cannot read"* — and the PC
+gates both its overshoot bound (`:345`) and its completion check (`:385`) on `ExpectedSize > 0`. So
+`beginHostSend` reconciles only a length that was actually reported:
+
+```kotlin
+if (size > 0 && sent != size) throw IllegalStateException(...)
+```
+
+The second version of this fix made that throw **unconditional**, and would have failed every
+download from a provider that omits `COLUMN_SIZE` — a path that works today, whose only defect was
+the missing drain. A bead about completion ordering would have taken out a working transfer path.
+Bounding the drain on `sent` is what makes the unknown-size case correct without needing a declared
+length at all.
+
+**The `final` flag comes from a one-chunk read-ahead**, not from `size`, and the two halves depend on
+each other: the PC acks on `Final || interval` (`TransferSessionManager.cs:1149`), so on an
+unknown-size transfer a wrongly-flagged last frame would strand a sub-interval tail even with the
+drain bounded correctly. The old `sent + read >= size` marked the *first* frame final on a provider
+reporting 0, and no frame final at all on a stale larger size.
+
+In production the reconcile is shrink-only in practice: for growth the PC throws *"overshot its
+declared size"* the moment bytes exceed `ExpectedSize` and that ERROR cancels the send first. Belt
+and braces, not dead code — but that is why the growth branch never appears in logs.
+
+**Why this one hid so long, and what it costs to test.** `FileHostHandler` documents itself as pure
+logic over injected seams, but the send loop reached past its injected `FileFrameChannel` to call the
+`FileTransferChannelClient` singleton, which has no websocket under test and refuses every frame — so
+the loop threw before reaching anything worth asserting. And the sha used `android.util.Base64`,
+which returns **null** under `isReturnDefaultValues`, so `sendComplete` threw and no completion was
+ever emitted in a unit test. Both were fixed to make the guard testable: `sendData` moved onto the
+`FileFrameChannel` interface, and this one call switched to `java.util.Base64` (minSdk is 34; output
+is byte-identical). If either is reverted, the drain becomes unobservable again.
+
+**The assertion has to be negative.** "A complete was sent and named the right hash" passes just as
+happily when the complete overtook the data — every fake answers from memory, so the ordering the bug
+produces is the ordering a positive-only test sees. Pin *"no completion has been sent while the peer
+has acked nothing"*: `FileHostHandlerTest.downloadSend_doesNotAnnounceComplete_untilThePeerHasAckedEveryByte`
+and `downloadSend_withAPartialAck_isStillWaiting` on the Kotlin side, `HostSendDrainTests.cs` on the
+C# side.
+
+**The measured mutation set for this sender**, all restored byte-identical, all on the release
+variant. Re-run these rather than inventing new ones; each was written after an earlier version of it
+came back green against a defect that was really there:
+
+| Mutation | Failures |
+|---|---|
+| Delete the drain loop | 5 |
+| Bound the drain on `size` instead of `sent` | 1 |
+| Remove the `size > 0` gate on the reconcile | 1 |
+| Derive `final` from `size` again | 1 |
+| Drop the `CancellationException` rethrow | 1 |
+| Deliver an ERROR frame from inside `registerSink` | 1 |
+
+Two of those were green until the *tests* were fixed, not the code: bounding on `size` was
+unfalsifiable while the reconcile ran unconditionally, and the `final`-flag mutation passed against a
+five-byte fixture where the first and last frame are the same frame. If a mutation here comes back
+green, suspect the fixture before concluding the code is covered.
 
 **The backpressure wait is NOT this wait.** It only blocks once outstanding unacked bytes exceed
 `FileTransferLimits.MaxUnackedBytes` (8 MB, `TransferSessionManager.cs:1314`), so every transfer

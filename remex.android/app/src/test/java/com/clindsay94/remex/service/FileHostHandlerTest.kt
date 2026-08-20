@@ -40,7 +40,19 @@ class FileHostHandlerTest {
         /** A fake stand-in for the SAF document URI, so "what was saved" is assertable. */
         override val contentUri: String get() = "content://fake/$name"
 
-        override val length: Long get() = if (isDirectory) 0L else content.size.toLong()
+        /**
+         * Overrides what [length] reports, WITHOUT changing what [openInput] streams (RemEx-xrb2v).
+         *
+         * The fake derived length from content, so `size` and `sent` were structurally incapable of
+         * disagreeing and no injection here could reach the send loop's dependence on `size`. That is
+         * not a hypothetical gap: production reads `DocumentFile.length()`, which returns **0**
+         * whenever a SAF provider omits `COLUMN_SIZE`, and it goes stale the moment a file is
+         * appended to or truncated between resolve and read.
+         */
+        var declaredLength: Long? = null
+
+        override val length: Long get() =
+            if (isDirectory) 0L else declaredLength ?: content.size.toLong()
         override val lastModifiedMs: Long = 1000L
         override val canRead: Boolean = true
         override val canWrite: Boolean get() = writable
@@ -147,6 +159,73 @@ class FileHostHandlerTest {
         fun last() = JSONObject(sent.last())
     }
 
+    /**
+     * A channel that records what was sent and hands back the registered sink, so a test can decide
+     * when — or whether — the peer acks (RemEx-xrb2v).
+     *
+     * [NoopChannel] cannot serve here: its `sendData` refuses every frame, which is right for the
+     * tests that only care about refusals and wrong for any test of the send loop itself.
+     */
+    private class RecordingChannel : FileFrameChannel {
+        override var isOpen = true
+        val sinks = mutableMapOf<String, FileFrameSink>()
+        val dataFrames = mutableListOf<Triple<Long, Int, Boolean>>()
+        /** ERROR frames the handler sent back to the peer, so a failure can be asserted on. */
+        val errors = mutableListOf<String>()
+        var acceptData = true
+
+        /**
+         * Delivers an ERROR to the sink from inside [registerSink], simulating a peer that aborts at
+         * the earliest instant the handler is reachable.
+         *
+         * This is what makes the register-vs-assign ordering observable single-threaded. It was
+         * recorded as untestable in review round 3 — with `Dispatchers.Unconfined` the body runs
+         * inline, so no ordinary mutation can separate "sink registered before the job was assigned"
+         * from "after". Re-entrant delivery pins it exactly: with the correct ordering the cancel
+         * lands on an assigned-but-unstarted job and NO data frame is ever sent.
+         */
+        var errorOnRegister = false
+
+        override fun registerSink(transferId: String, sink: FileFrameSink) {
+            sinks[transferId] = sink
+            if (errorOnRegister) {
+                sink.onFrame(
+                    FileFrameEnvelope(FileFrameKinds.ERROR, transferId, error = "gone"),
+                    ByteArray(0),
+                )
+            }
+        }
+        override fun unregisterSink(transferId: String) { sinks.remove(transferId) }
+        override fun sendFrame(envelope: FileFrameEnvelope, payload: ByteArray): Boolean {
+            if (envelope.kind == FileFrameKinds.ERROR) errors.add(envelope.error ?: "")
+            return true
+        }
+
+        override fun sendData(
+            transferId: String,
+            offset: Long,
+            buffer: ByteArray,
+            count: Int,
+            final: Boolean,
+        ): Boolean {
+            if (!acceptData) return false
+            dataFrames.add(Triple(offset, count, final))
+            return true
+        }
+
+        /** Delivers the peer's ack for everything sent so far. */
+        fun ack(transferId: String, committedOffset: Long) {
+            sinks[transferId]?.onFrame(
+                FileFrameEnvelope(
+                    kind = FileFrameKinds.ACK,
+                    transferId = transferId,
+                    committedOffset = committedOffset,
+                ),
+                ByteArray(0),
+            )
+        }
+    }
+
     private class NoopChannel : FileFrameChannel {
         // OPEN BY DEFAULT, AND IT USED TO BE HARD-CODED SHUT. Nothing read it, so `false` cost
         // nothing and said the wrong thing - this fake stands in for a connected channel that
@@ -157,6 +236,13 @@ class FileHostHandlerTest {
         override fun registerSink(transferId: String, sink: FileFrameSink) {}
         override fun unregisterSink(transferId: String) {}
         override fun sendFrame(envelope: FileFrameEnvelope, payload: ByteArray) = false
+        override fun sendData(
+            transferId: String,
+            offset: Long,
+            buffer: ByteArray,
+            count: Int,
+            final: Boolean,
+        ) = false
     }
 
     private class FakeMutator : RootMutator {
@@ -185,6 +271,8 @@ class FileHostHandlerTest {
         pushConsent: PushConsentRegistry = PushConsentRegistry(),
         roots: List<RootDescriptor> = listOf(rootDescriptor()),
         channelOpen: Boolean = true,
+        /** Supply a [RecordingChannel] to drive the send loop; defaults to the discarding fake. */
+        channel: FileFrameChannel? = null,
     ): Triple<FileHostHandler, CapturingSender, FakeMutator> {
         val provider = FakeRoots(granted, roots)
         val facade = FakeFacade(root, roots)
@@ -195,7 +283,7 @@ class FileHostHandlerTest {
                 facade = facade,
                 rootsProvider = provider,
                 sender = sender,
-                channel = NoopChannel().apply { isOpen = channelOpen },
+                channel = channel ?: NoopChannel().apply { isOpen = channelOpen },
                 rootMutator = mutator,
                 // Numbered, because a test may build more than one handler - a refusal followed by the
                 // retry that succeeds, for instance - and newFolder("staging") throws on the second.
@@ -493,6 +581,298 @@ class FileHostHandlerTest {
           "transferId":"$transferId","mode":"$mode","destRoot":"root1",
           "destRelativePath":"Docs","fileName":"pushed.txt","size":5}}
     """.trimIndent()
+
+    // ── The download sender must drain before completing (RemEx-xrb2v) ────────
+    //
+    // Third and last instance of the pattern, after RemEx-zd8ws (the C# sender) and RemEx-y6x6 (the
+    // Kotlin upload sender). Bulk data goes out on /ws/files and file_transfer_complete on the
+    // control /ws — two sockets, and TCP orders bytes only within one connection. Announcing
+    // completion the instant the last frame is enqueued lets the tiny completion overtake the data,
+    // so the PC tears its sink down and finalizes a short or empty file.
+    //
+    // THE ASSERTION HAS TO BE NEGATIVE TO DISCRIMINATE, exactly as HostSendDrainTests.cs found on
+    // the C# side. "A complete was sent and named the right hash" passes just as happily when the
+    // complete overtook the data — every fake here answers from memory, so the ordering the bug
+    // produces is the ordering a positive-only test sees.
+
+    /** Reads the transferId out of a download offer helper's fixed id, for readability. */
+    private fun downloadOffer(transferId: String) = """
+        {"type":"file_transfer_offer","fileTransferOffer":{
+          "transferId":"$transferId","mode":"download","destRoot":"root1",
+          "destRelativePath":"Docs","fileName":"report.txt","size":5}}
+    """.trimIndent()
+
+    @Test
+    fun downloadSend_doesNotAnnounceComplete_untilThePeerHasAckedEveryByte() = runBlocking {
+        val channel = RecordingChannel()
+        val (h, sender, _) = build(sampleTree(), granted = true, channel = channel)
+
+        h.handleControlMessage(downloadOffer("dl-1"))
+
+        // The file was read and put on the wire in full...
+        assertTrue("the sender should have sent its data frames", channel.dataFrames.isNotEmpty())
+        assertTrue("the last data frame is marked final", channel.dataFrames.last().third)
+
+        // ...and the sender is still waiting, because nothing has been acked. THIS is the assertion
+        // that discriminates: before the fix it had already announced completion here.
+        assertFalse(
+            "no file_transfer_complete may be sent while the peer has acked nothing",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+
+        // The peer acks the lot; only now may the completion go out.
+        channel.ack("dl-1", 5)
+
+        val complete = sender.sent.map { JSONObject(it) }.firstOrNull {
+            it.optString("type") == "file_transfer_complete"
+        }
+        assertNotNull("the completion must follow the final ack", complete)
+        val body = complete!!.getJSONObject("fileTransferComplete")
+        assertEquals("dl-1", body.getString("transferId"))
+
+        // THE HASH STRING ITSELF, not merely that one was sent (review). This encoding switched from
+        // android.util.Base64 to java.util.Base64 in this bead; getUrlEncoder() or withoutPadding()
+        // are one word away from each here and both are silently fatal — the PC compares this against
+        // its own computation and reports a mismatch as "file corrupted in transit", pointing at the
+        // network rather than at base64. Computed here rather than hardcoded, so it stays honest
+        // about which encoding is intended.
+        val expected = java.util.Base64.getEncoder().encodeToString(
+            java.security.MessageDigest.getInstance("SHA-256").digest("hello".toByteArray()),
+        )
+        assertEquals("standard base64, padded, unwrapped", expected, body.getString("sha256"))
+    }
+
+    @Test
+    fun downloadSend_withAPartialAck_isStillWaiting() = runBlocking {
+        // The wait is on the FINAL offset, not on "some ack arrived". An implementation that waited
+        // for one ack signal rather than for committedOffset to reach the size would pass the test
+        // above and fail here.
+        val channel = RecordingChannel()
+        val (h, sender, _) = build(sampleTree(), granted = true, channel = channel)
+
+        h.handleControlMessage(downloadOffer("dl-2"))
+        channel.ack("dl-2", 3)
+
+        assertFalse(
+            "3 of 5 bytes acked is not all of them",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+
+        channel.ack("dl-2", 5)
+        assertTrue(
+            "the completion goes out once the final offset is acked",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+    }
+
+    /** A tree whose `report.txt` holds [content] but reports [declared] as its length. */
+    private fun treeWithLyingLength(content: ByteArray, declared: Long): FakeNode {
+        val root = FakeNode("root1", true)
+        val docs = FakeNode("Docs", true, parent = root)
+        root.children["Docs"] = docs
+        docs.children["report.txt"] =
+            FakeNode("report.txt", false, content = content, parent = docs)
+                .apply { declaredLength = declared }
+        return root
+    }
+
+    @Test
+    fun downloadSend_whenTheProviderReportsZeroLength_stillTransfersAndStillDrains() = runBlocking {
+        // THE TEST THAT WOULD HAVE CAUGHT BOTH VERSIONS OF THIS FIX GOING WRONG, in opposite ways.
+        //
+        // A declared size of ZERO means "unknown", not "empty" — a phone reports it for a content URI
+        // whose length it cannot read, and the PC receiver treats it as a deliberate case
+        // (TransferSessionManager.cs:60, with its overshoot bound and completion check both gated on
+        // ExpectedSize > 0). So this transfer must WORK.
+        //
+        // v1 of the fix bounded the drain on `size`, so `while (0 < 0)` never ran and the completion
+        // went out with nothing acked — this bead's bug, fully live, on exactly the providers that
+        // report 0. v2 threw on any size/sent mismatch, which failed the transfer outright instead.
+        // Both are caught here: the completion must not come early, and it must come at all.
+        //
+        // The old fake could not express this: FakeNode.length was derived from the content, so size
+        // and sent were structurally incapable of disagreeing.
+        val channel = RecordingChannel()
+        val (h, sender, _) = build(
+            treeWithLyingLength("hello".toByteArray(), declared = 0),
+            granted = true,
+            channel = channel,
+        )
+
+        h.handleControlMessage(downloadOffer("dl-zero"))
+
+        assertTrue("the bytes still go out", channel.dataFrames.isNotEmpty())
+        assertFalse(
+            "but no completion while the peer has acked nothing — a declared 0 must not skip the drain",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+        assertTrue(
+            "and an unknown declared size is not an error",
+            channel.errors.isEmpty(),
+        )
+
+        channel.ack("dl-zero", 5)
+
+        assertTrue(
+            "the transfer completes once the bytes are acked; zero means unknown, not broken",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+    }
+
+    @Test
+    fun downloadSend_whenTheFileShrankSinceItWasMeasured_failsLoudlyRatherThanHanging() = runBlocking {
+        // The other direction, and the one with no deadline behind it. Declared 500, five bytes on
+        // disk: bounding the wait on the declared length waits for an ack that can never arrive,
+        // forever, with the sink still registered and the PC waiting on a completion. Now it is
+        // reconciled and reported.
+        val channel = RecordingChannel()
+        val (h, sender, _) = build(
+            treeWithLyingLength("hello".toByteArray(), declared = 500),
+            granted = true,
+            channel = channel,
+        )
+
+        h.handleControlMessage(downloadOffer("dl-shrank"))
+        channel.ack("dl-shrank", 5)
+
+        assertFalse(
+            "no completion may be announced for a transfer that did not send what it promised",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+        assertTrue(
+            "the peer must be told, rather than left waiting on a send that will never finish",
+            channel.errors.any { it.contains("changed size") },
+        )
+    }
+
+    @Test
+    fun downloadSend_marksTheFinalFrameFromEndOfFile_notFromTheDeclaredLength() = runBlocking {
+        // `isFinal` was `sent + read >= size`. With a provider reporting 0 that marked the FIRST
+        // frame final on a multi-megabyte file; with a stale larger size it marked no frame final at
+        // all, so the peer never acked the tail. Derived from a one-chunk lookahead now.
+        //
+        // MUST BE MORE THAN ONE CHUNK, and the first version of this test was not — it used five
+        // bytes, where "first frame" and "last frame" are the same frame and both formulas agree.
+        // Reverting the flag to `sent + curLen >= size` passed it. Measured, and the reason it is now
+        // two chunks: with a declared 0, the old formula marks frame 1 final, so a peer that trusted
+        // the flag would stop reading half a file.
+        val twoChunks = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES + 1024) { 'x'.code.toByte() }
+        val channel = RecordingChannel()
+        val (h, _, _) = build(
+            treeWithLyingLength(twoChunks, declared = 0),
+            granted = true,
+            channel = channel,
+        )
+
+        h.handleControlMessage(downloadOffer("dl-final"))
+
+        assertEquals("two chunks of content are two frames", 2, channel.dataFrames.size)
+        assertFalse(
+            "the FIRST frame is not final — a declared 0 must not end the transfer early",
+            channel.dataFrames[0].third,
+        )
+        assertTrue("the second frame is, by EOF", channel.dataFrames[1].third)
+    }
+
+    // ── The drain has no deadline, so the two cancels are its only way out ────
+    //
+    // These are the entire safety argument for a wait with no timeout, and until the job was started
+    // lazily they could not be tested at all: session.job was assigned only after launch returned, so
+    // it was null for the whole drain and both `job?.cancel()` paths were silent no-ops.
+
+    @Test
+    fun downloadSend_parkedInTheDrain_isReleasedByAnErrorFrameFromThePeer() = runBlocking {
+        val channel = RecordingChannel()
+        val (h, sender, _) = build(sampleTree(), granted = true, channel = channel)
+
+        h.handleControlMessage(downloadOffer("dl-err"))
+        assertTrue("parked in the drain", channel.sinks.containsKey("dl-err"))
+
+        // The PC gives up — disk full, say — while we are waiting for its ack.
+        channel.sinks["dl-err"]!!.onFrame(
+            FileFrameEnvelope(FileFrameKinds.ERROR, "dl-err", error = "no space"),
+            ByteArray(0),
+        )
+
+        assertFalse(
+            "no completion after the peer aborted",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+        assertFalse("the sink is released, so the finally ran", channel.sinks.containsKey("dl-err"))
+        assertTrue(
+            "and we do NOT answer the peer's own reported failure with an error of our own — that is "
+                + "what the CancellationException rethrow buys; without it this reads "
+                + "'StandaloneCoroutine was cancelled'",
+            channel.errors.isEmpty(),
+        )
+    }
+
+    @Test
+    fun downloadSend_abortedAtTheEarliestPossibleInstant_neverSendsAByte() = runBlocking {
+        // THE REGISTER-VS-ASSIGN ORDERING, which round 3 recorded as untestable before review handed
+        // over this recipe. The sink goes up immediately before the job starts; if it were registered
+        // before `session.job` was assigned — as it was originally — a frame arriving in that window
+        // would meet `job?.cancel()` with a null job, the cancel would be silently dropped, and the
+        // body would run on and park in a drain with no deadline waiting for a peer that had already
+        // given up.
+        //
+        // Re-entrant delivery is what makes that observable without threading: the ERROR arrives
+        // during registerSink, which is the earliest instant the handler is reachable at all.
+        val channel = RecordingChannel().apply { errorOnRegister = true }
+        val (h, sender, _) = build(sampleTree(), granted = true, channel = channel)
+
+        h.handleControlMessage(downloadOffer("dl-race"))
+
+        assertTrue(
+            "the cancel must land before the body runs — not one byte should go out",
+            channel.dataFrames.isEmpty(),
+        )
+        assertFalse(
+            "and certainly no completion",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+        assertFalse("the session is cleaned up", channel.sinks.containsKey("dl-race"))
+    }
+
+    @Test
+    fun downloadSend_parkedInTheDrain_isReleasedWhenTheChannelCloses() = runBlocking {
+        val channel = RecordingChannel()
+        val (h, sender, _) = build(sampleTree(), granted = true, channel = channel)
+
+        h.handleControlMessage(downloadOffer("dl-close"))
+        val sink = channel.sinks["dl-close"]
+        assertNotNull("parked in the drain", sink)
+
+        sink!!.onChannelClosed()
+
+        assertFalse(
+            "a dropped socket must not produce a completion",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+        assertFalse("and the session is cleaned up", channel.sinks.containsKey("dl-close"))
+    }
+
+    @Test
+    fun downloadSend_ofAnEmptyFile_completesWithoutWaitingForAnAck() = runBlocking {
+        // Nothing was sent, so there is nothing to drain — the wait is `while (committedOffset < sent)`
+        // and with sent == 0 it never runs. A naive "wait for one ack"
+        // would hang here forever, and a hang in a coroutine test is a timeout, not a failure
+        // message, so it is worth pinning explicitly.
+        val root = FakeNode("root1", true)
+        val docs = FakeNode("Docs", true, parent = root)
+        root.children["Docs"] = docs
+        docs.children["report.txt"] = FakeNode("report.txt", false, content = ByteArray(0), parent = docs)
+
+        val channel = RecordingChannel()
+        val (h, sender, _) = build(root, granted = true, channel = channel)
+
+        h.handleControlMessage(downloadOffer("dl-3"))
+
+        assertTrue(
+            "an empty file has nothing to drain and must complete straight away",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
+    }
 
     /**
      * The defect: a paired PC could skip file_push_offer entirely, invent a transfer id, and land

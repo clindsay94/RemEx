@@ -1,11 +1,14 @@
 package com.clindsay94.remex.service
 
 import android.util.Base64
+import java.util.Base64 as JavaBase64
 import java.io.File
 import java.io.RandomAccessFile
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -1053,33 +1056,136 @@ class FileHostHandler(
 
         val session = HostSendSession(transferId)
         sendSessions[transferId] = session
-        channel.registerSink(transferId, session)
 
+        // STARTED LAZILY SO session.job IS SET BEFORE THE BODY CAN RUN (review of RemEx-xrb2v).
+        // `session.job = scope.launch { … }` only writes the field when launch RETURNS, and on any
+        // dispatcher but Unconfined the body can already be suspended in the drain by then. Both of
+        // this send's abort paths are `job?.cancel()` — onChannelClosed and the inbound ERROR frame —
+        // so a null job in that window makes them silent no-ops and the drain, which has no deadline
+        // by design, waits until the socket itself drops. The drain's whole safety argument rests on
+        // those two cancels actually landing.
         session.job =
-            scope.launch {
+            scope.launch(start = CoroutineStart.LAZY) {
                 val digest = MessageDigest.getInstance("SHA-256")
                 var sent = 0L
                 try {
                     val input = facade.openInput(node) ?: throw IllegalStateException("Cannot open source.")
                     input.use {
-                        val buf = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES)
-                        while (true) {
-                            val read = it.read(buf)
-                            if (read <= 0) break
+                        // TWO BUFFERS AND A ONE-CHUNK LOOKAHEAD, so `final` is derived from EOF rather
+                        // than from `size` (review of RemEx-xrb2v). `size` is node.length, read BEFORE
+                        // the file was opened, and it is not reliable: FileSystemFacade returns
+                        // DocumentFile.length(), which is 0 whenever a SAF provider omits COLUMN_SIZE.
+                        // The old `sent + read >= size` then marked the FIRST frame final on a
+                        // multi-megabyte file, and on a file that had shrunk since it was measured it
+                        // marked NO frame final at all. Reading one chunk ahead removes the dependence.
+                        //
+                        // Swapped rather than copied: this runs once per 64 KB of every transfer, and
+                        // copying each chunk into a right-sized array would add an allocation per frame.
+                        var cur = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES)
+                        var next = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES)
+                        var curLen = it.read(cur)
+                        while (curLen > 0) {
+                            val nextLen = it.read(next)
+                            val isFinal = nextLen <= 0
                             // Backpressure: never exceed the unacked cap.
                             while (sent - session.committedOffset > FileTransferLimits.MAX_UNACKED_BYTES) {
                                 session.ackSignal.receive()
                             }
-                            val isFinal = sent + read >= size
-                            if (!FileTransferChannelClient.sendData(transferId, sent, buf, read, isFinal)) {
+                            if (!channel.sendData(transferId, sent, cur, curLen, isFinal)) {
                                 throw IllegalStateException("Binary channel closed.")
                             }
-                            digest.update(buf, 0, read)
-                            sent += read
+                            digest.update(cur, 0, curLen)
+                            sent += curLen
+
+                            val swap = cur
+                            cur = next
+                            next = swap
+                            curLen = nextLen
                         }
                     }
-                    val sha = Base64.encodeToString(digest.digest(), Base64.NO_WRAP)
+
+                    // WHAT WE PROMISED AND WHAT WE SENT MUST MATCH, and a mismatch is loud rather than
+                    // silent (review). The PC negotiated this transfer against `size`; sending a
+                    // different number of bytes leaves it verifying a file it was told the wrong length
+                    // for. Both directions were previously silent: a file that shrank produced a
+                    // permanent hang below, and a provider reporting 0 made the drain a no-op and left
+                    // this bead's bug fully live behind a guard doc claiming it was fixed.
+                    // GATED ON size > 0, BECAUSE ZERO MEANS "UNKNOWN" ON THIS WIRE, NOT "EMPTY".
+                    // The PC receiver says so explicitly and treats it as a product decision:
+                    // TransferSessionManager.cs:60 — "a declared size of ZERO is legitimate — a phone
+                    // reports it for a content URI whose length it cannot read" — and it gates both
+                    // its overshoot bound (:345) and its completion check (:385) on ExpectedSize > 0.
+                    // An unconditional throw here would have failed every download from a SAF provider
+                    // that omits COLUMN_SIZE: a path that works today, where the ONLY defect was the
+                    // missing drain this bead exists to add. Bounding the drain on `sent` already makes
+                    // the unknown-size case correct without needing a declared length at all.
+                    if (size > 0 && sent != size) {
+                        throw IllegalStateException(
+                            "Source changed size mid-transfer (declared $size, read $sent).",
+                        )
+                    }
+
+                    // DRAIN BEFORE COMPLETING (RemEx-xrb2v). The bulk data frames go out on
+                    // /ws/files and file_transfer_complete goes out on the control /ws — two
+                    // sockets. TCP orders bytes within one connection, never between two, so
+                    // announcing completion the instant the last frame is ENQUEUED lets the tiny
+                    // completion overtake the still-in-flight bulk bytes. The PC then tears its sink
+                    // down and finalizes a short or empty file, reporting "Transfer incomplete"
+                    // while the data is still arriving.
+                    //
+                    // THE BACKPRESSURE WAIT ABOVE IS NOT THIS WAIT. It only blocks once outstanding
+                    // unacked bytes exceed MAX_UNACKED_BYTES (8 MB), so every transfer smaller than
+                    // that reached sendComplete without ever forcing an ack round trip. That inverse
+                    // sizing is why the two sibling bugs looked like a flaky feature rather than a
+                    // defect: large transfers incidentally survived because backpressure had already
+                    // drained them, and small ones always failed.
+                    //
+                    // Third and last instance of the pattern, after RemEx-zd8ws (the C# sender) and
+                    // RemEx-y6x6 (the Kotlin upload sender). Mirrors FileTransferEngine.kt's drain in
+                    // runUpload. Never observed in the field on this path — the PC-side receiver is
+                    // faster than the phone-side one, which is probably why it had not bitten yet.
+                    //
+                    // Placed AFTER input.use closes, unlike the engine's, so the source file handle
+                    // is released rather than held open across a wait of unbounded length.
+                    //
+                    // No deadline, by design: up to 8 MB may still legitimately be draining, so any
+                    // total budget safe on a slow link is useless as a backstop. A dead socket does
+                    // not depend on one — HostSendSession.onChannelClosed cancels this job, and an
+                    // ERROR frame cancels it too, so both failure paths break the wait.
+                    //
+                    // BOUNDED ON `sent`, NOT ON `size` (review). The peer's committedOffset can never
+                    // exceed what was actually put on the wire, so bounding on a declared length that
+                    // turned out to be larger waits forever — and there is deliberately no deadline
+                    // here, so "forever" is exactly what it means. The reconcile above now rejects a
+                    // mismatch before we ever get here; this bound is what makes the wait correct
+                    // rather than merely usually-correct.
+                    while (session.committedOffset < sent) {
+                        session.ackSignal.receive()
+                    }
+
+                    // java.util.Base64, NOT android.util.Base64, and only on this path (RemEx-xrb2v).
+                    // This class's own doc says it is "pure logic over injected seams so it can be
+                    // unit-tested against fakes" — and android.util.Base64 breaks that: unit tests run
+                    // with isReturnDefaultValues, so encodeToString returns NULL, sendComplete's
+                    // non-null parameter throws, and the completion is never sent. Every assertion
+                    // about WHEN the completion goes out was therefore impossible to write, which is
+                    // presumably why this sender went three beads without the drain its two siblings got.
+                    //
+                    // Safe: minSdk is 34 and java.util.Base64 is API 26+. Byte-identical output —
+                    // both emit standard base64 with padding and no line wrapping (NO_WRAP is what
+                    // the android call asked for).
+                    val sha = JavaBase64.getEncoder().encodeToString(digest.digest())
                     sendComplete(transferId, sha)
+                } catch (e: CancellationException) {
+                    // RETHROWN, NOT REPORTED (review of RemEx-xrb2v). Cancellation is now this send's
+                    // DESIGNED abort path — the drain below has no deadline and relies on
+                    // onChannelClosed or an inbound ERROR frame cancelling this job. Since
+                    // CancellationException is an Exception, the general handler below would have
+                    // caught it and answered the peer with an ERROR frame reading "StandaloneCoroutine
+                    // was cancelled", attributing the PC's own reported failure to an opaque
+                    // sender-side fault — and swallowing the cancel so it never reached the scope.
+                    // The finally still runs; unregisterSink and the map removal do not suspend.
+                    throw e
                 } catch (e: Exception) {
                     channel.sendFrame(
                         FileFrameEnvelope(FileFrameKinds.ERROR, transferId, error = e.message ?: "send failed"),
@@ -1090,6 +1196,22 @@ class FileHostHandler(
                     sendSessions.remove(transferId)
                 }
             }
+
+        // THE SINK GOES UP LAST, immediately before the start (review). Registering it at the top
+        // reopened the very window the LAZY start closed: a frame arriving between registerSink and
+        // the assignment still met `job?.cancel()` with a null job, so a PC that answered with ERROR
+        // microseconds after file_transfer_ready got a silent no-op and left this send parked in a
+        // drain that has no deadline. Nothing can reach the session before it can be cancelled now.
+        channel.registerSink(transferId, session)
+
+        // AND A FAILED START MUST NOT LEAK THE SESSION. start() returns false if the job was already
+        // cancelled — a scope torn down during shutdown, say — and in that case the body never runs,
+        // so neither does its `finally`. Without this the sink and the sendSessions entry would
+        // outlive the transfer with nothing left to clear them.
+        if (session.job?.start() != true) {
+            channel.unregisterSink(transferId)
+            sendSessions.remove(transferId)
+        }
     }
 
     private fun handleComplete(req: JSONObject?) {

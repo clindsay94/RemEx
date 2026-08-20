@@ -42,6 +42,29 @@ interface FileFrameChannel {
 
     /** Sends one frame. Returns false if the socket is not open. */
     fun sendFrame(envelope: FileFrameEnvelope, payload: ByteArray): Boolean
+
+    /**
+     * Sends one DATA frame carrying `count` bytes from `buffer`. Returns false if the socket is not
+     * open.
+     *
+     * ON THE INTERFACE SO THE SEND LOOP CAN BE INJECTED (RemEx-xrb2v). [FileHostHandler] already
+     * takes its channel as a constructor parameter, but its download-send loop reached past that to
+     * call [FileTransferChannelClient.sendData] directly — so in a unit test the singleton has no
+     * websocket, the very first data frame returns false, and the loop throws before reaching
+     * anything worth asserting about. The ack-drain that bead fixed was therefore unreachable from a
+     * test.
+     *
+     * Takes the buffer plus a count rather than a sized ByteArray on purpose: this runs once per
+     * 64 KB chunk of every transfer, and copying each chunk into a right-sized array to satisfy
+     * [sendFrame] would add an allocation per frame to the hot path.
+     */
+    fun sendData(
+        transferId: String,
+        offset: Long,
+        buffer: ByteArray,
+        count: Int,
+        final: Boolean,
+    ): Boolean
 }
 
 /**
@@ -168,7 +191,7 @@ object FileTransferChannelClient : FileFrameChannel {
     }
 
     /** Sends a data frame without an extra payload copy. */
-    fun sendData(
+    override fun sendData(
         transferId: String,
         offset: Long,
         buffer: ByteArray,
