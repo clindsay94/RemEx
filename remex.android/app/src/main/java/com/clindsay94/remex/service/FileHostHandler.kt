@@ -144,6 +144,33 @@ class FileHostHandler(
      * that something arrived.
      */
     private val onPushReceived: (fileName: String, contentUri: String?) -> Unit = { _, _ -> },
+    /**
+     * How many bytes may be outstanding unacked before the send loop stops reading (RemEx-68wwl).
+     *
+     * A TEST SEAM. It adopts the PATTERN recorded on the C# side's
+     * `TransferSessionManager.MaxTransferBytes` — a const made injectable so a guard gets coverage,
+     * because one that never goes red "is exactly how a guard like this gets deleted by a tidy-up".
+     *
+     * **IT IS NOT THE COUNTERPART OF THAT PROPERTY, AND SAYING SO WOULD BE WORSE THAN SAYING
+     * NOTHING** (review). `MaxTransferBytes` is the 5 GB RECEIVE-side total-transfer ceiling
+     * (`TransferSessionManager.cs:67`, applied at `:201`); it has nothing to do with backpressure.
+     * The C# BACKPRESSURE loop at `TransferSessionManager.cs:1314` still reads
+     * `FileTransferLimits.MaxUnackedBytes` raw and is **still uncovered** — see RemEx-xefvb. A
+     * comment implying both sides were done here would end the next parity pass before it started.
+     *
+     * Defaulted, so production and every existing call site are unchanged.
+     *
+     * **MUST EXCEED THE PEER'S ACK INTERVAL.** The PC acks only on `Final || committed - lastAcked
+     * >= AckIntervalBytes` (4 MB), so a cap below that against a real peer deadlocks in silence: the
+     * sender parks here, the receiver has less buffered than its interval and nothing final, and
+     * neither moves. A value under 4 MB is valid ONLY against a fake that acks by hand, which is
+     * what the tests do. Deliberately not a `require` — that would reject the tests' cap of 100.
+     *
+     * What it guards is real: this is the only thing stopping a sender from queueing an unbounded
+     * amount of unacked data into a peer that has stopped reading. It is NOT the completion drain —
+     * see docs/REGRESSION-GUARDS.md, which exists partly because those two were once confused.
+     */
+    private val maxUnackedBytes: Long = FileTransferLimits.MAX_UNACKED_BYTES.toLong(),
 ) {
     private val receiveSessions = ConcurrentHashMap<String, HostReceiveSession>()
     private val sendSessions = ConcurrentHashMap<String, HostSendSession>()
@@ -1088,7 +1115,7 @@ class FileHostHandler(
                             val nextLen = it.read(next)
                             val isFinal = nextLen <= 0
                             // Backpressure: never exceed the unacked cap.
-                            while (sent - session.committedOffset > FileTransferLimits.MAX_UNACKED_BYTES) {
+                            while (sent - session.committedOffset > maxUnackedBytes) {
                                 session.ackSignal.receive()
                             }
                             if (!channel.sendData(transferId, sent, cur, curLen, isFinal)) {
@@ -1461,6 +1488,27 @@ class FileHostHandler(
     /** Sender session (Android → PC). A [FileFrameSink] that consumes inbound ack frames. */
     private inner class HostSendSession(val transferId: String) : FileFrameSink {
         @Volatile var committedOffset: Long = 0L
+        /**
+         * Wakes the send loop when an ack lands. **CONFLATED IS LOAD-BEARING — DO NOT MAKE THIS A
+         * RENDEZVOUS** (review of RemEx-68wwl).
+         *
+         * The capacity-1 buffer is what closes the gap between the sender evaluating its wait
+         * condition and actually parking in `receive()`. On a real device the ack arrives on the
+         * frame-reader thread; if it lands in that gap, `trySend` on a RENDEZVOUS channel finds no
+         * waiter, returns false, and the token is dropped. The sender then parks forever — and the
+         * peer, having nothing left to receive, never acks again. The transfer freezes mid-file with
+         * no error on either side, which is the failure mode both waits here exist to avoid.
+         *
+         * Every unit test would stay green through that change: under `Dispatchers.Unconfined` the
+         * ack is always delivered while the coroutine is already suspended, and `trySend` to a
+         * waiting receiver succeeds on RENDEZVOUS too. `downloadSend_ackArrivingBeforeTheSenderParks_
+         * isNotLost` is the one that does not.
+         *
+         * Conflation itself is safe for both consumers: each is a `while (condition) receive()`
+         * re-check over a `@Volatile` field, so a stale token just re-tests and re-parks. And no
+         * wakeup can be lost the other way either, because `committedOffset` is written *before*
+         * `trySend` below.
+         */
         val ackSignal = Channel<Unit>(Channel.CONFLATED)
         var job: Job? = null
 

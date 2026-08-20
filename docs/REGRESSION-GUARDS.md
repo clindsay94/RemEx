@@ -448,6 +448,17 @@ came back green against a defect that was really there:
 | Derive `final` from `size` again | 1 |
 | Drop the `CancellationException` rethrow | 1 |
 | Deliver an ERROR frame from inside `registerSink` | 1 |
+| Delete the backpressure loop | 1 |
+| Invert the backpressure comparison | 7 |
+| Re-inline `MAX_UNACKED_BYTES` over the seam | 1 |
+
+**One mutation in this function is known NOT to be caught, and it is recorded rather than hidden:**
+flipping `HostSendSession.ackSignal` from `CONFLATED` to `RENDEZVOUS` leaves every test green
+(`RemEx-3uv7s`). Under `Dispatchers.Unconfined` an ack resumes the sender inline, so it is always
+already parked when the next ack arrives — the "token arrives with nobody waiting" case the buffer
+exists for is unreachable, and reaching it re-entrantly deadlocks the test thread instead of failing.
+The buffer is load-bearing: without it an ack landing between the condition check and the park is
+dropped and the transfer freezes mid-file with no error either side.
 
 Two of those were green until the *tests* were fixed, not the code: bounding on `size` was
 unfalsifiable while the reconcile ran unconditionally, and the `final`-flag mutation passed against a
@@ -455,8 +466,13 @@ five-byte fixture where the first and last frame are the same frame. If a mutati
 green, suspect the fixture before concluding the code is covered.
 
 **The backpressure wait is NOT this wait.** It only blocks once outstanding unacked bytes exceed
-`FileTransferLimits.MaxUnackedBytes` (8 MB, `TransferSessionManager.cs:1314`), so every transfer
-*smaller* than 8 MB reaches the completion without ever forcing an ack round trip. That inverse
+8 MB, so every transfer *smaller* than that reaches the completion without ever forcing an ack round
+trip. On the Kotlin sender that cap is now an injectable constructor parameter defaulting to
+`FileTransferLimits.MAX_UNACKED_BYTES`, so the branch is reachable from a test (`RemEx-68wwl`); the
+C# sender at `TransferSessionManager.cs:1314` still reads the raw const and is **still uncovered**
+(`RemEx-xefvb`), as is `FileTransferEngine.runUpload` on the upload path (`RemEx-yi7id`). Any value
+set there must exceed the peer's 4 MB ack interval or the sender deadlocks in silence — a smaller cap
+is valid only against a fake that acks by hand. That inverse
 sizing is what made this look like a flaky feature rather than a bug: large pushes incidentally
 survived because backpressure had already drained them, while every screenshot failed. Measured on a
 353,985-byte screenshot push — both data frames dropped as *"No sink"* (RemEx-zd8ws; the phone had

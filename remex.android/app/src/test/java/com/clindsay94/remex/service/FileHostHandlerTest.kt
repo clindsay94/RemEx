@@ -273,6 +273,8 @@ class FileHostHandlerTest {
         channelOpen: Boolean = true,
         /** Supply a [RecordingChannel] to drive the send loop; defaults to the discarding fake. */
         channel: FileFrameChannel? = null,
+        /** Lower the unacked cap so the backpressure branch is reachable without 8 MB (RemEx-68wwl). */
+        maxUnackedBytes: Long = FileTransferLimits.MAX_UNACKED_BYTES.toLong(),
     ): Triple<FileHostHandler, CapturingSender, FakeMutator> {
         val provider = FakeRoots(granted, roots)
         val facade = FakeFacade(root, roots)
@@ -292,6 +294,7 @@ class FileHostHandlerTest {
                 pushConsent = pushConsent,
                 onPushRefused = { pushRefusals.add(it) },
                 onPushReceived = { name, uri -> pushArrivals.add(name to uri) },
+                maxUnackedBytes = maxUnackedBytes,
             )
         return Triple(handler, sender, mutator)
     }
@@ -772,6 +775,72 @@ class FileHostHandlerTest {
             channel.dataFrames[0].third,
         )
         assertTrue("the second frame is, by EOF", channel.dataFrames[1].third)
+    }
+
+    // ── Backpressure: stop reading when too much is unacked (RemEx-68wwl) ─────
+    //
+    // NOT THE COMPLETION DRAIN, and docs/REGRESSION-GUARDS.md exists partly because the two were
+    // once confused: this one bounds outstanding unacked bytes mid-transfer, the drain waits for the
+    // last ack before announcing completion. Every transfer under the cap reaches the completion
+    // without this loop ever blocking, which is precisely why the missing drain looked like a flaky
+    // feature rather than a bug.
+    //
+    // Reachable at all only since the cap became injectable; at 8 MB a test would have had to stream
+    // 8 MB through a fake, so nothing ever did.
+
+    @Test
+    fun downloadSend_stopsReadingOnceTooMuchIsUnacked() = runBlocking {
+        // Cap set below one chunk, so the first frame alone exceeds it. The second frame must not go
+        // out until the peer acks — a negative assertion, for the same reason the drain's is:
+        // "both frames arrived" passes just as happily when backpressure never engaged.
+        val twoChunks = ByteArray(FileTransferLimits.DATA_PAYLOAD_BYTES + 1024) { 'x'.code.toByte() }
+        val channel = RecordingChannel()
+        val (h, _, _) = build(
+            treeWithLyingLength(twoChunks, declared = twoChunks.size.toLong()),
+            granted = true,
+            channel = channel,
+            maxUnackedBytes = 100,
+        )
+
+        h.handleControlMessage(downloadOffer("dl-bp"))
+
+        assertEquals(
+            "the sender must stop after the frame that breached the cap, not stream the whole file",
+            1,
+            channel.dataFrames.size,
+        )
+
+        // The peer catches up; the rest follows.
+        channel.ack("dl-bp", FileTransferLimits.DATA_PAYLOAD_BYTES.toLong())
+
+        assertEquals("the second frame goes out once there is room", 2, channel.dataFrames.size)
+    }
+
+    // NO TEST FOR THE CONFLATED BUFFER, AND THAT IS A MEASURED CONCLUSION, NOT AN OMISSION.
+    // The capacity-1 buffer on HostSendSession.ackSignal is load-bearing (see its KDoc), and I wrote
+    // a test for it that did not discriminate: flipping CONFLATED to RENDEZVOUS left all 51 green.
+    // Under Dispatchers.Unconfined an ack resumes the coroutine INLINE, so the sender is always
+    // parked again before the next ack is delivered — the "token arrives with nobody waiting" case
+    // the buffer exists for cannot be reached this way. Delivering an ack re-entrantly from inside
+    // sendData does reach it, but on RENDEZVOUS that DEADLOCKS the test thread rather than failing,
+    // and a hang is a timeout rather than a message. Recorded on RemEx-3uv7s instead of shipping an
+    // assertion that proves nothing.
+
+    @Test
+    fun downloadSend_underTheCap_neverBlocksOnBackpressure() = runBlocking {
+        // The control. Without it the test above would pass just as well against a sender that
+        // blocked on every frame regardless of the cap — which would be a different bug with the
+        // same symptom in that one test.
+        val channel = RecordingChannel()
+        val (h, sender, _) = build(sampleTree(), granted = true, channel = channel)
+
+        h.handleControlMessage(downloadOffer("dl-small"))
+
+        assertEquals("five bytes is one frame, and the cap is 8 MB", 1, channel.dataFrames.size)
+        assertFalse(
+            "still waiting on the completion drain, which is a different wait",
+            sender.sent.any { it.contains("file_transfer_complete") },
+        )
     }
 
     // ── The drain has no deadline, so the two cancels are its only way out ────
