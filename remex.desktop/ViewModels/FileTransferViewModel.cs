@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Collections.ObjectModel;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -52,6 +53,9 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     /// <summary>Wired by the view to a native file-save picker (for download).</summary>
     public Func<FilePickerSaveOptions, Task<IStorageFile?>>? PickDownloadDestinationAsync { get; set; }
+
+    /// <summary>Wired by the view to a native folder picker (for folder upload / folder download).</summary>
+    public Func<FolderPickerOpenOptions, Task<IReadOnlyList<IStorageFolder>>>? PickLocalFolderAsync { get; set; }
 
     /// <summary>Wired by the view so the VM can select every entry in the list for a multi-select op.</summary>
     public Action? SelectAllEntries { get; set; }
@@ -133,12 +137,22 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     [ObservableProperty]
     private bool _supportsFullBrowse;
 
+    /// <summary>
+    /// True when the host answers <c>file_manifest_request</c>, i.e. a remote FOLDER can be downloaded.
+    /// Folder UPLOAD deliberately does not read this: the client walks its own tree and sends ordinary
+    /// per-file uploads, which every v2 host already accepts.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(DownloadFolderCommand))]
+    private bool _supportsFolderTransfer;
+
     private void RefreshCapabilityFlags()
     {
         SupportsCopyMove = _client.SupportsOp(FileManageOperations.Copy) && _client.SupportsOp(FileManageOperations.Move);
         SupportsMkdir = _client.SupportsOp(FileManageOperations.Mkdir);
         SupportsSearch = _client.SupportsV3 && _client.SupportsOp("search");
         SupportsFullBrowse = _client.SupportsFullBrowse;
+        SupportsFolderTransfer = _client.SupportsV3 && _client.SupportsOp("manifest");
     }
 
     // ─── Roots ────────────────────────────────────────────────────────────────
@@ -372,6 +386,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(DownloadCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DownloadFolderCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenSelectedRemoteCommand))]
     [NotifyCanExecuteChangedFor(nameof(DeleteRemoteCommand))]
     [NotifyCanExecuteChangedFor(nameof(StartRenameCommand))]
@@ -690,6 +705,266 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         TransferQueue.Enqueue(FileTransferQueueKind.Download, fileName, (progress, ct) =>
             _client.DownloadAsync(root.RootId, remoteFile, localFile!, progress, ct));
         StatusText = LocalizationService.Instance["FileTransfer_QueuedForDownload"];
+    }
+
+    // ─── Folder transfer (RemEx-q3twg) ─────────────────────────────────────────
+    //
+    // Both directions end in the SAME per-file queue items an individual transfer produces. The only
+    // difference is where the list of files comes from: the host's paged manifest going down, a local
+    // directory walk going up. Nothing below owns bytes, progress, resume or conflicts — that all stays
+    // with the queue, which is the entire reason a folder transfer is cheap to have.
+
+    /// <summary>
+    /// Downloads the selected remote FOLDER: pages the host's manifest, recreates the directory shape
+    /// locally, then enqueues one ordinary download per file.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanDownloadFolder))]
+    private async Task DownloadFolderAsync()
+    {
+        var root = SelectedRemoteRoot;
+        var entry = SelectedRemoteEntry;
+        if (root is null || entry is not { IsDirectory: true })
+            return;
+
+        if (PickLocalFolderAsync is null)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_PickerUnavailable"];
+            return;
+        }
+
+        var chosen = await PickLocalFolderAsync(new FolderPickerOpenOptions
+        {
+            Title = LocalizationService.Instance["FileTransfer_FolderDownloadPickerTitle"],
+            AllowMultiple = false,
+        });
+
+        var destinationRoot = chosen.FirstOrDefault()?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(destinationRoot))
+            return;
+
+        // The picked folder is the PARENT: a folder named "photos" lands as <chosen>/photos, matching
+        // what every file manager does on a drag-drop and keeping two downloads of different folders
+        // from merging into one another.
+        var localRoot = Path.Combine(destinationRoot!, SanitizeLocalName(entry.Name));
+        var remoteFolder = CombineRemotePath(RemotePath, entry.Name);
+
+        RemoteSubtree subtree;
+        IsLoading = true;
+        StatusText = LocalizationService.Instance["FileTransfer_FolderScanning"];
+        try
+        {
+            subtree = await _client.EnumerateRemoteSubtreeAsync(root.RootId, remoteFolder, null, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            StatusText = string.Format(
+                CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], ex.Message);
+            return;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+
+        var queued = EnqueueSubtreeDownloads(root, subtree, localRoot);
+        if (queued == 0)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_FolderEmpty"];
+            return;
+        }
+
+        // A truncated manifest means the host stopped describing the folder, so what was just queued is
+        // NOT the folder. Saying so is the whole point — silently transferring a prefix looks identical
+        // to success right up until something is missing.
+        StatusText = subtree.Truncated
+            ? string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedTruncated"], queued)
+            : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedForDownload"], queued);
+    }
+
+    private bool CanDownloadFolder()
+        => SupportsFolderTransfer && SelectedRemoteEntry is { IsDirectory: true } && SelectedRemoteRoot is not null && _connection.IsConnected;
+
+    /// <summary>
+    /// Creates the local directory shape and enqueues one download per file. Returns how many transfers
+    /// were queued.
+    /// </summary>
+    private int EnqueueSubtreeDownloads(FileSharedRoot root, RemoteSubtree subtree, string localRoot)
+    {
+        // Directories are created up front, empty ones included. Leaving them to the file downloads
+        // would quietly drop every empty folder — the one part of the shape no file can imply.
+        foreach (var directory in subtree.Entries.Where(candidate => candidate.IsDirectory))
+        {
+            var relative = ToSafeLocalRelativePath(subtree.ToDestinationRelative(directory));
+            if (relative is null)
+                continue;
+
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(localRoot, relative));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // A folder that cannot be made will fail its own files' downloads with a real message;
+                // aborting the whole fan-out here would lose the ones that are fine.
+            }
+        }
+
+        var queued = 0;
+        foreach (var file in subtree.Files)
+        {
+            var relative = ToSafeLocalRelativePath(subtree.ToDestinationRelative(file));
+            if (relative is null)
+                continue;
+
+            var localPath = Path.Combine(localRoot, relative);
+            var parent = Path.GetDirectoryName(localPath);
+            if (!string.IsNullOrEmpty(parent))
+            {
+                try
+                {
+                    Directory.CreateDirectory(parent);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    continue;
+                }
+            }
+
+            var remotePath = file.RelativePath;
+            TransferQueue.Enqueue(FileTransferQueueKind.Download, Path.GetFileName(localPath), (progress, ct) =>
+                _client.DownloadAsync(root.RootId, remotePath, localPath, progress, ct));
+            queued++;
+        }
+
+        return queued;
+    }
+
+    /// <summary>
+    /// Uploads a local FOLDER into the current remote folder. No manifest is involved — the tree is
+    /// right here, so the client walks it directly and enqueues the same per-file uploads.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanUpload))]
+    private async Task UploadFolderAsync()
+    {
+        var root = SelectedRemoteRoot;
+        if (root is not { IsWritable: true })
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_DropTargetReadOnly"];
+            return;
+        }
+
+        if (PickLocalFolderAsync is null)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_PickerUnavailable"];
+            return;
+        }
+
+        var chosen = await PickLocalFolderAsync(new FolderPickerOpenOptions
+        {
+            Title = LocalizationService.Instance["FileTransfer_FolderUploadPickerTitle"],
+            AllowMultiple = false,
+        });
+
+        var localRoot = chosen.FirstOrDefault()?.TryGetLocalPath();
+        if (string.IsNullOrWhiteSpace(localRoot) || !Directory.Exists(localRoot))
+            return;
+
+        EnqueueFolderUpload(localRoot!, FileTransferQueueKind.Upload);
+    }
+
+    /// <summary>
+    /// Enqueues an upload of every file under <paramref name="localRoot"/>, preserving the folder shape
+    /// under the current remote folder. Shared by the upload-folder button and folder drag-drop.
+    /// </summary>
+    public void EnqueueFolderUpload(string localRoot, FileTransferQueueKind kind = FileTransferQueueKind.Upload)
+    {
+        var root = SelectedRemoteRoot;
+        if (root is not { IsWritable: true })
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_DropTargetReadOnly"];
+            return;
+        }
+
+        List<string> localFiles;
+        try
+        {
+            localFiles = [.. Directory.EnumerateFiles(localRoot, "*", new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                // Symlinked directories are not followed, for the same reason the host does not follow
+                // them: one loop turns a folder upload into an unbounded one.
+                AttributesToSkip = FileAttributes.ReparsePoint,
+                IgnoreInaccessible = true,
+            })];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            StatusText = string.Format(
+                CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], ex.Message);
+            return;
+        }
+
+        if (localFiles.Count > FileTransferLimits.ManifestMaxTotalEntries)
+        {
+            StatusText = LocalizationService.Instance["FileTransfer_FolderTooLarge"];
+            return;
+        }
+
+        var folderName = SanitizeLocalName(new DirectoryInfo(localRoot).Name);
+        var targetFolder = CombineRemotePath(RemotePath, folderName);
+        var queued = 0;
+
+        foreach (var localPath in localFiles)
+        {
+            var relative = Path.GetRelativePath(localRoot, localPath).Replace('\\', '/');
+            var remoteFile = CombineRemotePath(targetFolder, relative);
+            TransferQueue.Enqueue(kind, Path.GetFileName(localPath), (progress, ct) =>
+                _client.UploadAsync(localPath, root.RootId, remoteFile, progress, ct));
+            queued++;
+        }
+
+        StatusText = queued == 0
+            ? LocalizationService.Instance["FileTransfer_FolderEmpty"]
+            : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedForUpload"], queued);
+    }
+
+    /// <summary>
+    /// Turns a host-supplied subtree-relative path into one that is safe to combine with a local folder,
+    /// or null when it is not.
+    /// </summary>
+    /// <remarks>
+    /// <b>THE HOST'S PATHS ARE INPUT, NOT TRUTH.</b> A folder download is the one flow that takes remote
+    /// strings and writes to arbitrary local paths built from them, so <c>..</c>, a rooted path, or a
+    /// drive-qualified segment must be refused here rather than reaching <c>Path.Combine</c> —
+    /// which would happily let a rooted segment discard the destination folder entirely.
+    /// </remarks>
+    private static string? ToSafeLocalRelativePath(string subtreeRelative)
+    {
+        if (string.IsNullOrWhiteSpace(subtreeRelative))
+            return null;
+
+        var segments = subtreeRelative.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0)
+            return null;
+
+        foreach (var segment in segments)
+        {
+            if (segment is "." or "..")
+                return null;
+            if (Path.IsPathRooted(segment) || segment.Contains(':', StringComparison.Ordinal))
+                return null;
+            if (segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                return null;
+        }
+
+        return Path.Combine(segments);
+    }
+
+    /// <summary>Folder name usable as a local directory, falling back when the remote name is not.</summary>
+    private static string SanitizeLocalName(string name)
+    {
+        var cleaned = string.Concat(name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)).Trim(' ', '.');
+        return string.IsNullOrEmpty(cleaned) ? "folder" : cleaned;
     }
 
     private bool CanDownload() => SelectedRemoteEntry is { IsDirectory: false } && SelectedRemoteRoot is not null && _connection.IsConnected;
@@ -1282,6 +1557,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
             UploadCommand.NotifyCanExecuteChanged();
             SendFileCommand.NotifyCanExecuteChanged();
             DownloadCommand.NotifyCanExecuteChanged();
+            DownloadFolderCommand.NotifyCanExecuteChanged();
+            UploadFolderCommand.NotifyCanExecuteChanged();
             VerifyHashCommand.NotifyCanExecuteChanged();
             SearchCommand.NotifyCanExecuteChanged();
             LoadVolumesCommand.NotifyCanExecuteChanged();

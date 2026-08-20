@@ -694,6 +694,15 @@
     <string name="file_manager_full_browse_refused">Tüm cihazda gezinme reddedildi.</string>
     <string name="file_manager_queued_upload">Sıraya alınan yükleme: %1$s</string>
     <string name="file_manager_queued_download">Sıraya alınan indirme: %1$s</string>
+    <string name="file_manager_download_folder">Klasörü indir</string>
+    <string name="file_manager_folder_scanning">Klasör listeleniyor…</string>
+    <string name="file_manager_folder_scan_failed">Klasör listelenemedi.</string>
+    <string name="file_manager_folder_empty">Bu klasörde aktarılacak dosya yok.</string>
+    <string name="file_manager_folder_queued_download">%1$d dosya indirme kuyruğuna alındı.</string>
+    <string name="file_manager_upload_folder">Klasör yükle</string>
+    <string name="file_manager_folder_queued_upload">%1$d dosya yükleme kuyruğuna alındı.</string>
+    <string name="file_manager_folder_too_large">Bu klasör tek seferde aktarılamayacak kadar çok dosya içeriyor.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d dosya kuyruğa alındı, ancak klasör tamamen listelenemeyecek kadar büyüktü — bazı dosyalar dışarıda kaldı.</string>
     <string name="file_manager_transfers_title">Aktarımlar (%1$d)</string>
     <string name="file_manager_clear_finished">Bitenleri temizle</string>
     <string name="file_manager_pause">Duraklat</string>

@@ -14,6 +14,42 @@
   </resheader>
 
   
+  <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
+    <value>फ़ोल्डर डाउनलोड करें</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderTooltip" xml:space="preserve">
+    <value>चुने गए फ़ोल्डर और उसके अंदर की हर चीज़ को सहेजें</value>
+  </data>
+  <data name="FileTransfer_FolderDownloadPickerTitle" xml:space="preserve">
+    <value>फ़ोल्डर सहेजने की जगह चुनें</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForDownload" xml:space="preserve">
+    <value>{0} फ़ाइलें डाउनलोड के लिए कतार में हैं।</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForUpload" xml:space="preserve">
+    <value>{0} फ़ाइलें अपलोड के लिए कतार में हैं।</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedTruncated" xml:space="preserve">
+    <value>{0} फ़ाइलें कतार में हैं, लेकिन फ़ोल्डर पूरी सूची बनाने के लिए बहुत बड़ा था — कुछ फ़ाइलें छूट गईं।</value>
+  </data>
+  <data name="FileTransfer_FolderScanFailed" xml:space="preserve">
+    <value>फ़ोल्डर की सूची नहीं बन सकी: {0}</value>
+  </data>
+  <data name="FileTransfer_FolderScanning" xml:space="preserve">
+    <value>फ़ोल्डर की सूची बन रही है…</value>
+  </data>
+  <data name="FileTransfer_FolderTooLarge" xml:space="preserve">
+    <value>उस फ़ोल्डर में एक बार में स्थानांतरित करने के लिए बहुत अधिक फ़ाइलें हैं।</value>
+  </data>
+  <data name="FileTransfer_FolderUploadPickerTitle" xml:space="preserve">
+    <value>भेजने के लिए फ़ोल्डर चुनें</value>
+  </data>
+  <data name="FileTransfer_UploadFolderBtn" xml:space="preserve">
+    <value>फ़ोल्डर अपलोड करें</value>
+  </data>
+  <data name="FileTransfer_UploadFolderTooltip" xml:space="preserve">
+    <value>पूरा फ़ोल्डर भेजें, उसके अंदर की हर चीज़ सहित</value>
+  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>होम</value>
   </data>

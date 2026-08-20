@@ -14,6 +14,42 @@
   </resheader>
 
   
+  <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
+    <value>Pobierz folder</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderTooltip" xml:space="preserve">
+    <value>Zapisuje wybrany folder wraz z całą jego zawartością</value>
+  </data>
+  <data name="FileTransfer_FolderDownloadPickerTitle" xml:space="preserve">
+    <value>Wybierz miejsce zapisu folderu</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForDownload" xml:space="preserve">
+    <value>Dodano {0} plików do kolejki pobierania.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForUpload" xml:space="preserve">
+    <value>Dodano {0} plików do kolejki wysyłania.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedTruncated" xml:space="preserve">
+    <value>Dodano {0} plików do kolejki, ale folder był zbyt duży, aby odczytać go w całości — część plików pominięto.</value>
+  </data>
+  <data name="FileTransfer_FolderScanFailed" xml:space="preserve">
+    <value>Nie udało się odczytać folderu: {0}</value>
+  </data>
+  <data name="FileTransfer_FolderScanning" xml:space="preserve">
+    <value>Odczytywanie folderu…</value>
+  </data>
+  <data name="FileTransfer_FolderTooLarge" xml:space="preserve">
+    <value>Ten folder zawiera zbyt wiele plików, aby przesłać je naraz.</value>
+  </data>
+  <data name="FileTransfer_FolderUploadPickerTitle" xml:space="preserve">
+    <value>Wybierz folder do wysłania</value>
+  </data>
+  <data name="FileTransfer_UploadFolderBtn" xml:space="preserve">
+    <value>Wyślij folder</value>
+  </data>
+  <data name="FileTransfer_UploadFolderTooltip" xml:space="preserve">
+    <value>Wysyła cały folder wraz z całą jego zawartością</value>
+  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Główna</value>
   </data>

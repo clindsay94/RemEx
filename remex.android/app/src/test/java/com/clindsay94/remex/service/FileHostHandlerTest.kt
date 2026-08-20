@@ -318,6 +318,121 @@ class FileHostHandlerTest {
         assertFalse(payload.getBoolean("truncated"))
     }
 
+    // ── Manifest (folder transfer, RemEx-q3twg) ───────────────────────────────
+
+    /** A tree with an empty folder and two levels, so pre-order and directory rows are both visible. */
+    private fun manifestTree(): FakeNode {
+        val root = FakeNode("root1", true)
+        val a = FakeNode("a.txt", false, content = "12345".toByteArray(), parent = root)
+        val docs = FakeNode("Docs", true, parent = root)
+        val deep = FakeNode("deep", true, parent = docs)
+        val d1 = FakeNode("d1.txt", false, content = "xy".toByteArray(), parent = deep)
+        val empty = FakeNode("Empty", true, parent = root)
+        deep.children["d1.txt"] = d1
+        docs.children["deep"] = deep
+        root.children["a.txt"] = a
+        root.children["Docs"] = docs
+        root.children["Empty"] = empty
+        return root
+    }
+
+    private fun manifestPaths(payload: JSONObject): List<String> {
+        val entries = payload.getJSONArray("entries")
+        return (0 until entries.length()).map { entries.getJSONObject(it).getString("relativePath") }
+    }
+
+    @Test
+    fun manifest_listsTheWholeSubtreePreOrderIncludingEmptyFolders() = runBlocking {
+        val (h, sender, _) = build(manifestTree())
+        h.handleControlMessage(
+            """{"type":"file_manifest_request","fileManifestRequest":{"requestId":"m1","rootId":"root1","relativePath":"","maxEntries":100}}"""
+        )
+        val payload = sender.last().getJSONObject("fileManifestResponse")
+
+        assertEquals("m1", payload.getString("requestId"))
+        // Ordinal by name, depth-first — the order the cursor is defined against.
+        assertEquals(
+            listOf("Docs", "Docs/deep", "Docs/deep/d1.txt", "Empty", "a.txt"),
+            manifestPaths(payload),
+        )
+        // No file implies an empty folder, so it has to arrive in its own right.
+        assertTrue(payload.getJSONArray("entries").let { entries ->
+            (0 until entries.length()).any {
+                entries.getJSONObject(it).getString("relativePath") == "Empty" &&
+                    entries.getJSONObject(it).getBoolean("isDirectory")
+            }
+        })
+        assertFalse(payload.has("nextCursor"))
+        assertEquals(2L, payload.getLong("totalFiles"))
+        assertEquals(3L, payload.getLong("totalDirectories"))
+        assertEquals(7L, payload.getLong("totalBytes"))
+        assertTrue(payload.getBoolean("totalsComplete"))
+    }
+
+    @Test
+    fun manifest_pagedWalkMatchesTheUnpagedOne() = runBlocking {
+        // Paging must be transparent: a cursor bug looks like a folder transfer quietly missing files.
+        val (h, sender, _) = build(manifestTree())
+        h.handleControlMessage(
+            """{"type":"file_manifest_request","fileManifestRequest":{"requestId":"whole","rootId":"root1","relativePath":"","maxEntries":100}}"""
+        )
+        val whole = manifestPaths(sender.last().getJSONObject("fileManifestResponse"))
+
+        val paged = mutableListOf<String>()
+        var cursor: String? = null
+        var guard = 0
+        do {
+            val cursorJson = if (cursor == null) "" else ",\"cursor\":\"" + cursor + "\""
+            h.handleControlMessage(
+                "{\"type\":\"file_manifest_request\",\"fileManifestRequest\":{\"requestId\":\"p\"," +
+                    "\"rootId\":\"root1\",\"relativePath\":\"\"" + cursorJson + ",\"maxEntries\":1}}"
+            )
+            val payload = sender.last().getJSONObject("fileManifestResponse")
+            paged.addAll(manifestPaths(payload))
+            cursor = if (payload.has("nextCursor")) payload.getString("nextCursor") else null
+            assertTrue("The manifest did not terminate", ++guard < 50)
+        } while (cursor != null)
+
+        assertEquals(whole, paged)
+    }
+
+    @Test
+    fun manifest_pathsAreRootRelativeWhenASubtreeIsRequested() = runBlocking {
+        // Entries feed straight into a download request, which addresses by rootId + ROOT-relative path.
+        val (h, sender, _) = build(manifestTree())
+        h.handleControlMessage(
+            """{"type":"file_manifest_request","fileManifestRequest":{"requestId":"m1","rootId":"root1","relativePath":"Docs","maxEntries":100}}"""
+        )
+        assertEquals(
+            listOf("Docs/deep", "Docs/deep/d1.txt"),
+            manifestPaths(sender.last().getJSONObject("fileManifestResponse")),
+        )
+    }
+
+    @Test
+    fun manifest_missingFolder_answersWithAnErrorRatherThanGoingQuiet() = runBlocking {
+        val (h, sender, _) = build(manifestTree())
+        h.handleControlMessage(
+            """{"type":"file_manifest_request","fileManifestRequest":{"requestId":"m1","rootId":"root1","relativePath":"nope","maxEntries":10}}"""
+        )
+        val payload = sender.last().getJSONObject("fileManifestResponse")
+        assertEquals("m1", payload.getString("requestId"))
+        assertEquals(0, payload.getJSONArray("entries").length())
+        assertNotNull(payload.optString("errorMessage").takeIf { it.isNotBlank() })
+    }
+
+    @Test
+    fun manifest_malformedCursor_restartsRatherThanFailing() = runBlocking {
+        val (h, sender, _) = build(manifestTree())
+        h.handleControlMessage(
+            """{"type":"file_manifest_request","fileManifestRequest":{"requestId":"m1","rootId":"root1","relativePath":"","cursor":"garbage","maxEntries":100}}"""
+        )
+        assertEquals(
+            listOf("Docs", "Docs/deep", "Docs/deep/d1.txt", "Empty", "a.txt"),
+            manifestPaths(sender.last().getJSONObject("fileManifestResponse")),
+        )
+    }
+
     @Test
     fun metadata_reportsSizeAndReadOnly() = runBlocking {
         val tree = sampleTree()

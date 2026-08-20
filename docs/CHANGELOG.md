@@ -55,6 +55,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   release; this closes the two data channels it did not cover. Nothing you would normally run is
   affected — RemEx's own window never claimed to be a phone.
 
+### Added
+
+- **You can transfer a whole folder now, not just the files in it one at a time.** Picking a folder
+  used to mean opening it, selecting everything inside, and repeating that for every subfolder — and
+  an empty folder had no way through at all. On the PC there are now Upload folder and Download folder
+  buttons beside the existing ones, and on the phone a folder's menu has Download folder while the
+  toolbar has an upload-folder button. Both sides recreate the folder shape as it was, empty
+  subfolders included.
+
+  What actually happens underneath is that the sending device lists the folder and then queues the
+  ordinary one-file-at-a-time transfers RemEx already does. So a folder transfer pauses, resumes after
+  a dropped connection, shows per-file progress, and checks every file when it lands — all of it the
+  same behaviour a single file has always had, rather than a second version of it built for folders.
+
+  The listing arrives in pages, so a folder with tens of thousands of files does not have to be
+  described in one message, and the count of files and total size shown up front is the real one
+  rather than a guess. Very large folders are capped: past 200,000 items RemEx queues what it listed
+  and says plainly that some files were left out, instead of transferring part of a folder and looking
+  like it finished. (RemEx-q3twg)
+
 ### Fixed
 
 - **The tray flyout had a grey square sitting behind its rounded corners.** The window asks Windows

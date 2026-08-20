@@ -694,6 +694,15 @@
     <string name="file_manager_full_browse_refused">Se rechazó la exploración de todo el dispositivo.</string>
     <string name="file_manager_queued_upload">Subida en cola: %1$s</string>
     <string name="file_manager_queued_download">Descarga en cola: %1$s</string>
+    <string name="file_manager_download_folder">Descargar carpeta</string>
+    <string name="file_manager_folder_scanning">Listando la carpeta…</string>
+    <string name="file_manager_folder_scan_failed">No se pudo listar la carpeta.</string>
+    <string name="file_manager_folder_empty">Esa carpeta no tiene archivos que transferir.</string>
+    <string name="file_manager_folder_queued_download">%1$d archivos en cola para descargar.</string>
+    <string name="file_manager_upload_folder">Subir carpeta</string>
+    <string name="file_manager_folder_queued_upload">%1$d archivos en cola para subir.</string>
+    <string name="file_manager_folder_too_large">Esa carpeta tiene demasiados archivos para transferirlos de una vez.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d archivos en cola, pero la carpeta era demasiado grande para listarla por completo: se omitieron algunos archivos.</string>
     <string name="file_manager_transfers_title">Transferencias (%1$d)</string>
     <string name="file_manager_clear_finished">Borrar finalizadas</string>
     <string name="file_manager_pause">Pausar</string>

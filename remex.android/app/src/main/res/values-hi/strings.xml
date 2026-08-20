@@ -694,6 +694,15 @@
     <string name="file_manager_full_browse_refused">पूरे डिवाइस को ब्राउज़ करने की अनुमति नहीं दी गई।</string>
     <string name="file_manager_queued_upload">अपलोड कतार में: %1$s</string>
     <string name="file_manager_queued_download">डाउनलोड कतार में: %1$s</string>
+    <string name="file_manager_download_folder">फ़ोल्डर डाउनलोड करें</string>
+    <string name="file_manager_folder_scanning">फ़ोल्डर की सूची बन रही है…</string>
+    <string name="file_manager_folder_scan_failed">फ़ोल्डर की सूची नहीं बन सकी।</string>
+    <string name="file_manager_folder_empty">उस फ़ोल्डर में स्थानांतरित करने योग्य कोई फ़ाइल नहीं है।</string>
+    <string name="file_manager_folder_queued_download">%1$d फ़ाइलें डाउनलोड के लिए कतार में हैं।</string>
+    <string name="file_manager_upload_folder">फ़ोल्डर अपलोड करें</string>
+    <string name="file_manager_folder_queued_upload">%1$d फ़ाइलें अपलोड के लिए कतार में हैं।</string>
+    <string name="file_manager_folder_too_large">उस फ़ोल्डर में एक बार में स्थानांतरित करने के लिए बहुत अधिक फ़ाइलें हैं।</string>
+    <string name="file_manager_folder_queued_truncated">%1$d फ़ाइलें कतार में हैं, लेकिन फ़ोल्डर पूरी सूची बनाने के लिए बहुत बड़ा था — कुछ फ़ाइलें छूट गईं।</string>
     <string name="file_manager_transfers_title">स्थानांतरण (%1$d)</string>
     <string name="file_manager_clear_finished">पूर्ण हटाएँ</string>
     <string name="file_manager_pause">रोकें</string>

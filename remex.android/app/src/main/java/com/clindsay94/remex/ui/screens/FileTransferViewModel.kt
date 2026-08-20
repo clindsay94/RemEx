@@ -8,6 +8,7 @@ import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import android.util.Base64
 import android.util.Log
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.clindsay94.remex.RemexClientManager
@@ -37,8 +38,13 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
@@ -46,6 +52,9 @@ import org.json.JSONObject
 private const val TAG = "FileTransferVM"
 private const val CHUNK_SIZE = 65_536
 private const val SEARCH_DEBOUNCE_MS = 400L
+
+/** One manifest page is a metadata walk of a folder; the first also pays for the whole-subtree count. */
+private const val MANIFEST_PAGE_TIMEOUT_MS = 120_000L
 
 private fun JSONObject.optMeaningfulString(key: String): String? {
     if (!has(key) || isNull(key)) return null
@@ -1131,6 +1140,308 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
+    // ── Folder transfer (RemEx-q3twg) ─────────────────────────────────────────
+    //
+    // A folder download is not a new kind of transfer. The host pages out a flat manifest of the
+    // subtree, this side recreates the folder shape under the tree the user picked, and then enqueues
+    // the SAME per-file downloads the engine already runs — keeping resume, pause, notifications and
+    // integrity checking exactly as they are for one file.
+
+    /** True when the host answers `file_manifest_request`, i.e. a remote folder can be downloaded. */
+    val supportsFolderTransfer: StateFlow<Boolean> =
+        _capabilities
+            .map { it?.ops?.contains("manifest") == true }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    private var pendingManifestRequestId: String? = null
+    private var pendingManifestDeferred: CompletableDeferred<JSONObject>? = null
+
+    /**
+     * Downloads a remote FOLDER into [treeUri] (a SAF tree the user granted). The folder lands as a
+     * child of that tree under its own name, so two folder downloads into the same place do not merge.
+     */
+    fun downloadFolderTo(entry: RemoteFileEntry, treeUri: Uri) {
+        val rootId = _selectedRootId.value
+        if (rootId.isNullOrBlank()) {
+            _statusText.value = app().getString(R.string.file_transfer_select_folder_first)
+            return
+        }
+        if (!entry.isDirectory) return
+
+        val base = entry.relativePath ?: FileManagerLogic.combinePath(_remotePath.value, entry.name)
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _statusText.value = app().getString(R.string.file_manager_folder_scanning)
+            try {
+                val subtree = fetchSubtree(rootId, base)
+                if (subtree == null) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_scan_failed)
+                    return@launch
+                }
+
+                val destinationRoot = withContext(Dispatchers.IO) {
+                    DocumentFile.fromTreeUri(app(), treeUri)?.let { tree ->
+                        tree.findFile(entry.name)?.takeIf { it.isDirectory } ?: tree.createDirectory(entry.name)
+                    }
+                }
+                if (destinationRoot == null) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_scan_failed)
+                    return@launch
+                }
+
+                val queued = withContext(Dispatchers.IO) {
+                    enqueueSubtreeDownloads(rootId, base, subtree.entries, destinationRoot)
+                }
+
+                if (queued == 0) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_empty)
+                    return@launch
+                }
+
+                FileTransferJobService.schedule(app())
+                // A truncated manifest means what was queued is NOT the folder. Saying so matters:
+                // a partial transfer looks exactly like a complete one until something is missing.
+                _statusText.value =
+                    if (subtree.truncated) {
+                        app().getString(R.string.file_manager_folder_queued_truncated, queued)
+                    } else {
+                        app().getString(R.string.file_manager_folder_queued_download, queued)
+                    }
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Uploads a local FOLDER (a SAF tree the user granted) into the current remote folder. No manifest
+     * is involved in this direction — the tree is right here, so this side walks it and enqueues the
+     * same per-file uploads a single file produces.
+     */
+    fun uploadFolderFromTree(treeUri: Uri) {
+        val rootId = _selectedRootId.value
+        if (rootId.isNullOrBlank()) {
+            _statusText.value = app().getString(R.string.file_transfer_select_folder_first)
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoading.value = true
+            _statusText.value = app().getString(R.string.file_manager_folder_scanning)
+            try {
+                val tree = withContext(Dispatchers.IO) { DocumentFile.fromTreeUri(app(), treeUri) }
+                if (tree == null || !tree.isDirectory) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_scan_failed)
+                    return@launch
+                }
+
+                val folderName = tree.name ?: "folder"
+                val currentFolder = _remotePath.value.replace('\\', '/').trim('/')
+                val destBase = if (currentFolder.isEmpty()) folderName else "$currentFolder/$folderName"
+
+                val files = withContext(Dispatchers.IO) { collectTreeFiles(tree) }
+                if (files.isEmpty()) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_empty)
+                    return@launch
+                }
+                if (files.size > FileTransferLimits.MANIFEST_MAX_TOTAL_ENTRIES) {
+                    _statusText.value = app().getString(R.string.file_manager_folder_too_large)
+                    return@launch
+                }
+
+                for ((file, parentRelative) in files) {
+                    // destRelativePath is the DIRECTORY only — the host appends the file name itself
+                    // (RemEx-y6x6). Passing the full path here doubles it into 'name/name'.
+                    val destDirectory = if (parentRelative.isEmpty()) destBase else "$destBase/$parentRelative"
+                    FileTransferEngine.enqueueUpload(
+                        localUri = file.uri.toString(),
+                        fileName = file.name ?: continue,
+                        size = file.length(),
+                        destRoot = rootId,
+                        destRelativePath = destDirectory,
+                    )
+                }
+
+                FileTransferJobService.schedule(app())
+                _statusText.value = app().getString(R.string.file_manager_folder_queued_upload, files.size)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Flattens a SAF tree into (file, directory-relative-to-the-tree) pairs, breadth-first. Bounded by
+     * [FileTransferLimits.MANIFEST_MAX_TOTAL_ENTRIES] so a pathological tree cannot walk forever.
+     */
+    private fun collectTreeFiles(tree: DocumentFile): List<Pair<DocumentFile, String>> {
+        val found = mutableListOf<Pair<DocumentFile, String>>()
+        val pending = ArrayDeque<Pair<DocumentFile, String>>()
+        pending.add(tree to "")
+        var visited = 0
+
+        while (pending.isNotEmpty()) {
+            val (directory, relative) = pending.removeFirst()
+            for (child in directory.listFiles()) {
+                if (++visited > FileTransferLimits.MANIFEST_MAX_TOTAL_ENTRIES) return found
+                val name = child.name ?: continue
+                if (child.isDirectory) {
+                    pending.add(child to if (relative.isEmpty()) name else "$relative/$name")
+                } else {
+                    found.add(child to relative)
+                }
+            }
+        }
+
+        return found
+    }
+
+    /** A whole subtree, paged to the end. */
+    private class SubtreeListing(val entries: List<ManifestNode>, val truncated: Boolean)
+
+    /** One manifest row. [relativePath] is ROOT-relative, i.e. already a valid transfer source. */
+    private class ManifestNode(
+        val relativePath: String,
+        val isDirectory: Boolean,
+        val sizeBytes: Long,
+    )
+
+    /** Pages `file_manifest_request` to its end. Null when the host errored or went quiet. */
+    private suspend fun fetchSubtree(rootId: String, relativePath: String): SubtreeListing? {
+        val entries = mutableListOf<ManifestNode>()
+        var cursor: String? = null
+        var truncated = false
+
+        do {
+            val response = requestManifestPage(rootId, relativePath, cursor) ?: return null
+            val error = response.optMeaningfulString("errorMessage")
+            if (error != null) {
+                Log.w(TAG, "Folder listing failed: $error")
+                return null
+            }
+
+            val array = response.optJSONArray("entries") ?: JSONArray()
+            for (i in 0 until array.length()) {
+                val node = array.getJSONObject(i)
+                entries.add(
+                    ManifestNode(
+                        relativePath = node.optString("relativePath"),
+                        isDirectory = node.optBoolean("isDirectory"),
+                        sizeBytes = node.optLong("sizeBytes"),
+                    )
+                )
+            }
+
+            truncated = truncated || response.optBoolean("truncated", false)
+            cursor = response.optMeaningfulString("nextCursor")
+        } while (cursor != null)
+
+        return SubtreeListing(entries, truncated)
+    }
+
+    /** Sends one page request and awaits its correlated reply, or null on timeout. */
+    private suspend fun requestManifestPage(rootId: String, relativePath: String, cursor: String?): JSONObject? {
+        val requestId = newRequestId()
+        val deferred = CompletableDeferred<JSONObject>()
+        pendingManifestRequestId = requestId
+        pendingManifestDeferred = deferred
+
+        sendV3(
+            "file_manifest_request",
+            "fileManifestRequest",
+            JSONObject().apply {
+                put("requestId", requestId)
+                put("rootId", rootId)
+                put("relativePath", relativePath)
+                if (cursor != null) put("cursor", cursor)
+                put("maxEntries", FileTransferLimits.MANIFEST_MAX_ENTRIES_PER_PAGE)
+            },
+        )
+
+        return try {
+            withTimeout(MANIFEST_PAGE_TIMEOUT_MS) { deferred.await() }
+        } catch (_: TimeoutCancellationException) {
+            Log.w(TAG, "Folder listing page timed out.")
+            null
+        } finally {
+            if (pendingManifestDeferred === deferred) {
+                pendingManifestDeferred = null
+                pendingManifestRequestId = null
+            }
+        }
+    }
+
+    /**
+     * Recreates the folder shape under [destinationRoot] and enqueues one download per file. Returns
+     * how many transfers were queued.
+     */
+    private fun enqueueSubtreeDownloads(
+        rootId: String,
+        base: String,
+        entries: List<ManifestNode>,
+        destinationRoot: DocumentFile,
+    ): Int {
+        val basePrefix = base.trim('/')
+        // Directories are created up front, empty ones included — no file implies an empty folder, so
+        // leaving them to the downloads would silently drop them.
+        val directories = mutableMapOf("" to destinationRoot)
+
+        fun directoryFor(path: String): DocumentFile? {
+            if (path.isEmpty()) return destinationRoot
+            directories[path]?.let { return it }
+            val cut = path.lastIndexOf('/')
+            val parentPath = if (cut < 0) "" else path.substring(0, cut)
+            val name = if (cut < 0) path else path.substring(cut + 1)
+            val parent = directoryFor(parentPath) ?: return null
+            val made = parent.findFile(name)?.takeIf { it.isDirectory } ?: parent.createDirectory(name)
+            if (made != null) directories[path] = made
+            return made
+        }
+
+        fun toDestinationRelative(node: ManifestNode): String? {
+            val relative =
+                when {
+                    basePrefix.isEmpty() -> node.relativePath
+                    node.relativePath.startsWith("$basePrefix/") -> node.relativePath.substring(basePrefix.length + 1)
+                    else -> return null
+                }
+            // The host's paths are input, not truth: refuse anything that could climb out of the tree
+            // the user granted before it reaches SAF.
+            val segments = relative.split('/').filter { it.isNotEmpty() }
+            if (segments.isEmpty() || segments.any { it == "." || it == ".." }) return null
+            return segments.joinToString("/")
+        }
+
+        for (node in entries.filter { it.isDirectory }) {
+            val relative = toDestinationRelative(node) ?: continue
+            directoryFor(relative)
+        }
+
+        var queued = 0
+        for (node in entries.filter { !it.isDirectory }) {
+            val relative = toDestinationRelative(node) ?: continue
+            val cut = relative.lastIndexOf('/')
+            val parentPath = if (cut < 0) "" else relative.substring(0, cut)
+            val fileName = if (cut < 0) relative else relative.substring(cut + 1)
+            val parent = directoryFor(parentPath) ?: continue
+
+            val existing = parent.findFile(fileName)?.takeIf { !it.isDirectory }
+            val target = existing ?: parent.createFile("application/octet-stream", fileName) ?: continue
+
+            FileTransferEngine.enqueueDownload(
+                destUri = target.uri.toString(),
+                fileName = fileName,
+                size = node.sizeBytes,
+                sourceRoot = rootId,
+                sourceRelativePath = node.relativePath,
+            )
+            queued++
+        }
+
+        return queued
+    }
+
     // ── v3 queue controls ─────────────────────────────────────────────────────
 
     fun pauseTransfer(id: String) = FileTransferEngine.pause(id)
@@ -1273,6 +1584,7 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
                 "file_root_manage_response" -> handleRootManageResponse(obj)
                 "file_volumes_response" -> handleVolumesResponse(obj)
                 "file_search_response" -> handleSearchResponse(obj)
+                "file_manifest_response" -> handleManifestResponse(obj)
                 "file_metadata_response" -> handleMetadataResponse(obj)
                 "file_thumbnail_response" -> handleThumbnailResponse(obj)
                 // Legacy (v2) transfer stream:
@@ -1460,6 +1772,12 @@ class FileTransferViewModel(application: Application) : AndroidViewModel(applica
         if (_statusText.value == app().getString(R.string.file_manager_requesting_volumes)) {
             _statusText.value = app().getString(messageRes)
         }
+    }
+
+    private fun handleManifestResponse(obj: JSONObject) {
+        val response = obj.optJSONObject("fileManifestResponse") ?: return
+        if (response.optString("requestId") != pendingManifestRequestId) return
+        pendingManifestDeferred?.complete(response)
     }
 
     private fun handleSearchResponse(obj: JSONObject) {

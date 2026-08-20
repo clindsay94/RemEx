@@ -252,7 +252,8 @@ public sealed record FileCapabilities
     [JsonPropertyName("binary")] public bool Binary { get; init; }
     /// <summary>True when offset-based resume is supported.</summary>
     [JsonPropertyName("resume")] public bool Resume { get; init; }
-    /// <summary>Supported file-manager operations, e.g. ["delete","rename","copy","move","mkdir","search"].</summary>
+    /// <summary>Supported file-manager operations, e.g. ["delete","rename","copy","move","mkdir","search","manifest"].</summary>
+    /// <remarks><c>"manifest"</c> means the host answers <c>file_manifest_request</c>, i.e. folder transfer works.</remarks>
     [JsonPropertyName("ops")] public required string[] Ops { get; init; }
     /// <summary>True when the host can serve full-device (volume) browsing once consent is granted.</summary>
     [JsonPropertyName("fullBrowse")] public bool FullBrowse { get; init; }
@@ -383,6 +384,133 @@ public sealed record FileSearchResponse
     [JsonPropertyName("truncated")] public bool Truncated { get; init; }
     [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
 }
+
+// ── Folder transfer (RemEx-q3twg) ──
+// A folder transfer is NOT a new kind of transfer. The host enumerates the subtree once, in pages,
+// and the client then enqueues the ordinary per-file transfers it already performs. Everything the
+// queue, resume, conflict and consent machinery knows stays exactly as it was; the only new thing
+// on the wire is the listing below.
+
+/// <summary>
+/// Client → host: enumerate the whole subtree under <c>rootId</c> + <c>relativePath</c>, one page at
+/// a time. The reply is a flat, pre-order list — the client never recurses.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <b>PAGED, AND THE CURSOR IS OPAQUE.</b> A folder can hold more entries than one message should
+/// carry, so the host answers with at most <see cref="FileTransferLimits.ManifestMaxEntriesPerPage"/>
+/// entries plus a <see cref="FileManifestResponse.NextCursor"/>. The client sends that value back
+/// verbatim to get the following page and stops when it comes back null. It must not parse, compare
+/// or synthesize a cursor: the format is the host's, and the two hosts (PC and Android) do not have
+/// to agree on it.
+/// </para>
+/// <para>
+/// <b>THE HOST KEEPS NO PER-REQUEST STATE.</b> The cursor encodes the resume position, so pages
+/// survive a reconnect and a host restart, and an abandoned enumeration costs nothing. That is the
+/// reason it is a path-shaped token rather than a session id.
+/// </para>
+/// </remarks>
+public sealed record FileManifestRequest
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    [JsonPropertyName("rootId")] public required string RootId { get; init; }
+    /// <summary>Subtree to enumerate, relative to the root. Null or empty means the whole root.</summary>
+    [JsonPropertyName("relativePath")] public string? RelativePath { get; init; }
+    /// <summary>
+    /// Opaque continuation token from the previous page's <see cref="FileManifestResponse.NextCursor"/>.
+    /// Null or empty requests the first page.
+    /// </summary>
+    [JsonPropertyName("cursor")] public string? Cursor { get; init; }
+    /// <summary>
+    /// Requested entries per page; the host clamps to
+    /// <see cref="FileTransferLimits.ManifestMaxEntriesPerPage"/> and treats &lt;= 0 as
+    /// <see cref="FileTransferLimits.ManifestDefaultEntriesPerPage"/>.
+    /// </summary>
+    [JsonPropertyName("maxEntries")] public int MaxEntries { get; init; }
+}
+
+/// <summary>
+/// One node of an enumerated subtree. Directories are listed in their own right so an empty folder
+/// still arrives and can be recreated on the receiving side.
+/// </summary>
+/// <remarks>
+/// <b><see cref="RelativePath"/> IS ROOT-RELATIVE, NOT SUBTREE-RELATIVE</b>, matching
+/// <see cref="FileSearchEntry.RelativePath"/> — so it can be handed straight back to a download,
+/// hash or metadata request without the client rebuilding it. The local destination is what needs
+/// the subtree-relative form, and the client derives that by stripping
+/// <see cref="FileManifestResponse.RelativePath"/> from the front. Storing both on the wire was
+/// considered and dropped: at a hundred thousand entries the duplicate string is the larger cost,
+/// and the strip is one line in each client.
+/// </remarks>
+public sealed record FileManifestEntry
+{
+    /// <summary>Path relative to the ROOT (forward slashes), directly usable as a transfer source.</summary>
+    [JsonPropertyName("relativePath")] public required string RelativePath { get; init; }
+    [JsonPropertyName("isDirectory")] public bool IsDirectory { get; init; }
+    /// <summary>Bytes; always 0 for a directory.</summary>
+    [JsonPropertyName("sizeBytes")] public long SizeBytes { get; init; }
+    [JsonPropertyName("modifiedUnixMs")] public long ModifiedUnixMs { get; init; }
+}
+
+/// <summary>
+/// Host → client: one page of an enumerated subtree, echoing the location so a late reply cannot be
+/// mistaken for the folder the user has since moved to. Errors arrive as <c>errorMessage</c> with
+/// the request still correlated, the same as browse and search.
+/// </summary>
+public sealed record FileManifestResponse
+{
+    [JsonPropertyName("requestId")] public required string RequestId { get; init; }
+    /// <summary>Echo of the requested root.</summary>
+    [JsonPropertyName("rootId")] public string? RootId { get; init; }
+    /// <summary>Echo of the requested subtree, so the client can strip it to build local paths.</summary>
+    [JsonPropertyName("relativePath")] public string? RelativePath { get; init; }
+    [JsonPropertyName("entries")] public required FileManifestEntry[] Entries { get; init; }
+    /// <summary>Token for the next page, or null when this page completed the subtree.</summary>
+    [JsonPropertyName("nextCursor")] public string? NextCursor { get; init; }
+    /// <summary>
+    /// Total files in the WHOLE subtree, present on the first page only (null on continuations,
+    /// which is how a client tells "not counted here" from "counted zero"). See
+    /// <see cref="TotalsComplete"/>.
+    /// </summary>
+    [JsonPropertyName("totalFiles")] public long? TotalFiles { get; init; }
+    /// <summary>Total directories in the whole subtree; first page only. See <see cref="TotalFiles"/>.</summary>
+    [JsonPropertyName("totalDirectories")] public long? TotalDirectories { get; init; }
+    /// <summary>Total bytes of all files in the whole subtree; first page only. See <see cref="TotalFiles"/>.</summary>
+    [JsonPropertyName("totalBytes")] public long? TotalBytes { get; init; }
+    /// <summary>
+    /// False when the count pass hit <see cref="FileTransferLimits.ManifestCountBudgetEntries"/> and
+    /// the totals are therefore LOWER BOUNDS. A progress denominator built on them must be shown as
+    /// approximate rather than as a fixed target.
+    /// </summary>
+    [JsonPropertyName("totalsComplete")] public bool TotalsComplete { get; init; }
+    /// <summary>
+    /// True when enumeration stopped at <see cref="FileTransferLimits.ManifestMaxTotalEntries"/> and
+    /// the subtree is only partly described. <see cref="NextCursor"/> is null in that case — there is
+    /// no more to fetch — so this is the only signal that entries are missing.
+    /// </summary>
+    [JsonPropertyName("truncated")] public bool Truncated { get; init; }
+    [JsonPropertyName("errorMessage")] public string? ErrorMessage { get; init; }
+}
+
+/// <summary>
+/// One page of an enumerated subtree as produced by
+/// <see cref="Services.FileTransfer.IFileTransferService"/>. The handler wraps this into a
+/// <see cref="FileManifestResponse"/> (adding the correlation id and echoing the location), the same
+/// split <see cref="FileMetadata"/> uses. Server-side only, and deliberately NOT wire-serialized.
+/// </summary>
+public sealed record FileManifestPage
+{
+    public required IReadOnlyList<FileManifestEntry> Entries { get; init; }
+    /// <summary>Opaque continuation token, or null when the subtree is fully described.</summary>
+    public string? NextCursor { get; init; }
+    /// <summary>Whole-subtree totals; null on continuation pages. See <see cref="FileManifestResponse.TotalFiles"/>.</summary>
+    public long? TotalFiles { get; init; }
+    public long? TotalDirectories { get; init; }
+    public long? TotalBytes { get; init; }
+    public bool TotalsComplete { get; init; }
+    public bool Truncated { get; init; }
+}
+
 
 /// <summary>Client → host: request detailed metadata for a single file/directory.</summary>
 public sealed record FileMetadataRequest
@@ -626,6 +754,22 @@ public static class FileTransferLimits
 {
     /// <summary>Maximum search hits returned regardless of the client's requested cap (plan §1.2).</summary>
     public const int SearchMaxResults = 200;
+    /// <summary>Maximum manifest entries the host will put in a single page (RemEx-q3twg).</summary>
+    public const int ManifestMaxEntriesPerPage = 1000;
+    /// <summary>Page size used when the client asks for none.</summary>
+    public const int ManifestDefaultEntriesPerPage = 500;
+    /// <summary>
+    /// Hard ceiling on entries an enumeration will describe across ALL its pages. Past this the host
+    /// stops and sets <c>truncated</c> with a null cursor: a folder that large is a mistake to fan out
+    /// into individual transfers, and the client must say so rather than start.
+    /// </summary>
+    public const int ManifestMaxTotalEntries = 200_000;
+    /// <summary>
+    /// Entries the first-page count pass will visit before giving up and reporting the totals as lower
+    /// bounds (<c>totalsComplete: false</c>). Counting is metadata-only, so this is far cheaper than the
+    /// transfers it precedes - but it is still a full walk, and it must not be unbounded.
+    /// </summary>
+    public const int ManifestCountBudgetEntries = 200_000;
     /// <summary>Default thumbnail maximum edge length in pixels.</summary>
     public const int ThumbnailDefaultMaxDim = 128;
     /// <summary>Maximum encoded thumbnail size in bytes (≈96 KB).</summary>

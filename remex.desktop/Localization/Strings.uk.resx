@@ -14,6 +14,42 @@
   </resheader>
 
   
+  <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
+    <value>Завантажити теку</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderTooltip" xml:space="preserve">
+    <value>Зберігає вибрану теку разом з усім її вмістом</value>
+  </data>
+  <data name="FileTransfer_FolderDownloadPickerTitle" xml:space="preserve">
+    <value>Виберіть, куди зберегти теку</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForDownload" xml:space="preserve">
+    <value>{0} файлів додано до черги завантаження.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForUpload" xml:space="preserve">
+    <value>{0} файлів додано до черги надсилання.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedTruncated" xml:space="preserve">
+    <value>{0} файлів додано до черги, але теку було завелико, щоб прочитати її повністю — деякі файли пропущено.</value>
+  </data>
+  <data name="FileTransfer_FolderScanFailed" xml:space="preserve">
+    <value>Не вдалося прочитати теку: {0}</value>
+  </data>
+  <data name="FileTransfer_FolderScanning" xml:space="preserve">
+    <value>Читання теки…</value>
+  </data>
+  <data name="FileTransfer_FolderTooLarge" xml:space="preserve">
+    <value>Ця тека містить забагато файлів, щоб передати їх за один раз.</value>
+  </data>
+  <data name="FileTransfer_FolderUploadPickerTitle" xml:space="preserve">
+    <value>Виберіть теку для надсилання</value>
+  </data>
+  <data name="FileTransfer_UploadFolderBtn" xml:space="preserve">
+    <value>Надіслати теку</value>
+  </data>
+  <data name="FileTransfer_UploadFolderTooltip" xml:space="preserve">
+    <value>Надсилає цілу теку разом з усім її вмістом</value>
+  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Головна</value>
   </data>

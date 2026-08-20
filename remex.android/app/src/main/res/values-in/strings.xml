@@ -687,6 +687,15 @@
     <string name="file_manager_full_browse_refused">Penjelajahan seluruh perangkat ditolak.</string>
     <string name="file_manager_queued_upload">Unggahan diantrekan: %1$s</string>
     <string name="file_manager_queued_download">Unduhan diantrekan: %1$s</string>
+    <string name="file_manager_download_folder">Unduh folder</string>
+    <string name="file_manager_folder_scanning">Mendaftar isi folder…</string>
+    <string name="file_manager_folder_scan_failed">Folder tidak dapat didaftar.</string>
+    <string name="file_manager_folder_empty">Folder itu tidak memiliki berkas untuk ditransfer.</string>
+    <string name="file_manager_folder_queued_download">%1$d berkas masuk antrean unduhan.</string>
+    <string name="file_manager_upload_folder">Unggah folder</string>
+    <string name="file_manager_folder_queued_upload">%1$d berkas masuk antrean unggahan.</string>
+    <string name="file_manager_folder_too_large">Folder itu berisi terlalu banyak berkas untuk ditransfer sekaligus.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d berkas masuk antrean, tetapi folder terlalu besar untuk didaftar seluruhnya — sebagian berkas tidak disertakan.</string>
     <string name="file_manager_transfers_title">Transfer (%1$d)</string>
     <string name="file_manager_clear_finished">Hapus yang selesai</string>
     <string name="file_manager_pause">Jeda</string>

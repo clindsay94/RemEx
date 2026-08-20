@@ -172,7 +172,9 @@
                         <WrapPanel Orientation="Horizontal" IsVisible="{Binding !IsCreatingFolder}">
                             <Button Content="{local:Localize FileTransfer_UploadBtn}" Classes="action-btn" Command="{Binding UploadCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadTooltip}"/>
                             <Button Content="{local:Localize FileTransfer_SendToPhoneBtn}" Classes="action-btn" Command="{Binding SendFileCommand}" ToolTip.Tip="{local:Localize FileTransfer_SendToPhoneTooltip}"/>
+                            <Button Content="{local:Localize FileTransfer_UploadFolderBtn}" Classes="action-btn" Command="{Binding UploadFolderCommand}" ToolTip.Tip="{local:Localize FileTransfer_UploadFolderTooltip}"/>
                             <Button Content="{local:Localize FileTransfer_DownloadBtn}" Classes="subtle-btn" Command="{Binding DownloadCommand}" ToolTip.Tip="{local:Localize FileTransfer_DownloadTooltip}"/>
+                            <Button Content="{local:Localize FileTransfer_DownloadFolderBtn}" Classes="subtle-btn" Command="{Binding DownloadFolderCommand}" IsVisible="{Binding SupportsFolderTransfer}" ToolTip.Tip="{local:Localize FileTransfer_DownloadFolderTooltip}"/>
                             <Button Content="{local:Localize FileTransfer_NewFolderBtn}" Classes="subtle-btn" Command="{Binding NewFolderCommand}" IsVisible="{Binding SupportsMkdir}" ToolTip.Tip="{local:Localize FileTransfer_NewFolderTooltip}"/>
                             <Button Content="{local:Localize FileTransfer_RenameBtn}" Classes="subtle-btn" Command="{Binding StartRenameCommand}" ToolTip.Tip="{local:Localize FileTransfer_RenameTooltip}"/>
                             <Button Content="{local:Localize FileTransfer_CopyBtn}" Classes="subtle-btn" Command="{Binding CopySelectionCommand}" IsVisible="{Binding SupportsCopyMove}" ToolTip.Tip="{local:Localize FileTransfer_CopyTooltip}"/>

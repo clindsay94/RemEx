@@ -92,6 +92,7 @@ public static class MessageAudience
         [MessageTypes.FileRootManageResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileRootsResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileSearchResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
+        [MessageTypes.FileManifestResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileThumbnailResponse] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileTransferChunk] = ClientSurface.AndroidControl | ClientSurface.PcUi,
         [MessageTypes.FileTransferComplete] = ClientSurface.AndroidControl,

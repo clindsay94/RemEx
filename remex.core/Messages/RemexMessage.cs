@@ -275,6 +275,12 @@ public sealed record RemexMessage
     [JsonPropertyName("fileSearchResponse")]
     public FileSearchResponse? FileSearchResponse { get; init; }
 
+    [JsonPropertyName("fileManifestRequest")]
+    public FileManifestRequest? FileManifestRequest { get; init; }
+
+    [JsonPropertyName("fileManifestResponse")]
+    public FileManifestResponse? FileManifestResponse { get; init; }
+
     [JsonPropertyName("fileMetadataRequest")]
     public FileMetadataRequest? FileMetadataRequest { get; init; }
 
@@ -440,6 +446,8 @@ public static class MessageTypes
     public const string FileVolumesResponse = "file_volumes_response";
     public const string FileSearchRequest = "file_search_request";
     public const string FileSearchResponse = "file_search_response";
+    public const string FileManifestRequest = "file_manifest_request";
+    public const string FileManifestResponse = "file_manifest_response";
     public const string FileMetadataRequest = "file_metadata_request";
     public const string FileMetadataResponse = "file_metadata_response";
     public const string FileThumbnailRequest = "file_thumbnail_request";

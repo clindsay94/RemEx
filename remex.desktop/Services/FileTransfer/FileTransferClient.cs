@@ -88,6 +88,7 @@ public sealed class FileTransferClient : IDisposable
     // ── 2.1 File Sharing Overhaul (protocolVersion 3) response waiters ──
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _volumesWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _searchWaiters = new();
+    private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _manifestWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _metadataWaiters = new();
     private readonly ConcurrentDictionary<string, TaskCompletionSource<RemexMessage>> _thumbnailWaiters = new();
 
@@ -317,6 +318,11 @@ public sealed class FileTransferClient : IDisposable
 
     /// <inheritdoc cref="ControlRequestTimeoutSeconds"/>
     private const int SearchRequestTimeoutSeconds = 120;
+    /// <summary>
+    /// Enumerating a subtree is a full metadata walk of the folder, and the first page pays for the
+    /// whole-subtree count on top of it — so this is generous where search's cap keeps it short.
+    /// </summary>
+    private const int ManifestRequestTimeoutSeconds = 180;
 
     public async Task<string> VerifyRemoteHashAsync(string rootId, string relativePath, CancellationToken ct)
     {
@@ -438,6 +444,100 @@ public sealed class FileTransferClient : IDisposable
 
         var resp = response.FileSearchResponse;
         return (resp?.Entries ?? [], resp?.Truncated ?? false);
+    }
+
+    /// <summary>
+    /// Fetches ONE page of a recursive subtree listing. Callers normally want
+    /// <see cref="EnumerateRemoteSubtreeAsync"/>, which pages to the end for them.
+    /// </summary>
+    public async Task<FileManifestResponse> ManifestRemotePageAsync(
+        string rootId, string? relativePath, string? cursor, int maxEntries, CancellationToken ct)
+    {
+        var requestId = Guid.NewGuid().ToString("N");
+        var tcs = new TaskCompletionSource<RemexMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _manifestWaiters[requestId] = tcs;
+        using var reg = ct.Register(() => tcs.TrySetCanceled(ct));
+
+        var response = await SendAndAwaitReplyAsync(
+            new RemexMessage
+            {
+                Type = MessageTypes.FileManifestRequest,
+                FileManifestRequest = new FileManifestRequest
+                {
+                    RequestId = requestId,
+                    RootId = rootId,
+                    RelativePath = relativePath,
+                    Cursor = cursor,
+                    MaxEntries = maxEntries,
+                }
+            },
+            tcs,
+            () => _manifestWaiters.TryRemove(requestId, out _),
+            TimeSpan.FromSeconds(ManifestRequestTimeoutSeconds),
+            ct);
+
+        if (response.FileManifestResponse?.ErrorMessage is string err && !string.IsNullOrWhiteSpace(err))
+            throw FileTransferHostException.ForHostError(err, "The host could not list that folder.");
+
+        return response.FileManifestResponse
+            ?? throw new IOException("The host answered a folder listing with no manifest body.");
+    }
+
+    /// <summary>
+    /// Pages a whole remote subtree into one flat, pre-order list — the client half of folder transfer
+    /// (RemEx-q3twg). Paths are ROOT-relative and can be handed straight to
+    /// <see cref="DownloadAsync"/>; <see cref="RemoteSubtree.BasePath"/> is the prefix to strip when
+    /// building local destinations.
+    /// </summary>
+    /// <remarks>
+    /// <b>THIS ENQUEUES NOTHING AND MOVES NO BYTES.</b> It exists so the caller can fan a folder out
+    /// into the per-file transfers the queue already knows how to run, with all their resume, conflict
+    /// and progress behaviour intact. Growing a bespoke "folder transfer" past this point would mean a
+    /// second implementation of every one of those.
+    /// </remarks>
+    public async Task<RemoteSubtree> EnumerateRemoteSubtreeAsync(
+        string rootId, string? relativePath, IProgress<int>? discovered, CancellationToken ct)
+    {
+        var entries = new List<FileManifestEntry>();
+        string? cursor = null;
+        long? totalFiles = null, totalDirectories = null, totalBytes = null;
+        var totalsComplete = false;
+        var truncated = false;
+        var basePath = (relativePath ?? string.Empty).Trim('/');
+
+        do
+        {
+            ct.ThrowIfCancellationRequested();
+            var page = await ManifestRemotePageAsync(
+                rootId, relativePath, cursor, FileTransferLimits.ManifestMaxEntriesPerPage, ct);
+
+            entries.AddRange(page.Entries);
+            if (cursor is null)
+            {
+                // Totals ride on the first page only, so capture them before the loop overwrites cursor.
+                totalFiles = page.TotalFiles;
+                totalDirectories = page.TotalDirectories;
+                totalBytes = page.TotalBytes;
+                totalsComplete = page.TotalsComplete;
+                basePath = (page.RelativePath ?? basePath).Trim('/');
+            }
+
+            truncated |= page.Truncated;
+            cursor = page.NextCursor;
+            discovered?.Report(entries.Count);
+        }
+        while (!string.IsNullOrEmpty(cursor));
+
+        return new RemoteSubtree
+        {
+            BasePath = basePath,
+            Entries = entries,
+            TotalFiles = totalFiles,
+            TotalDirectories = totalDirectories,
+            TotalBytes = totalBytes,
+            TotalsComplete = totalsComplete,
+            Truncated = truncated,
+        };
     }
 
     /// <summary>Detailed metadata (size, timestamps, item count, mime, read-only) for a single item.</summary>
@@ -1079,6 +1179,11 @@ public sealed class FileTransferClient : IDisposable
             case MessageTypes.FileSearchResponse when message.FileSearchResponse is { } search:
                 if (_searchWaiters.TryGetValue(search.RequestId, out var searchTcs))
                     searchTcs.TrySetResult(message);
+                break;
+
+            case MessageTypes.FileManifestResponse when message.FileManifestResponse is { } manifest:
+                if (_manifestWaiters.TryGetValue(manifest.RequestId, out var manifestTcs))
+                    manifestTcs.TrySetResult(message);
                 break;
 
             case MessageTypes.FileMetadataResponse when message.FileMetadataResponse is { } metadata:

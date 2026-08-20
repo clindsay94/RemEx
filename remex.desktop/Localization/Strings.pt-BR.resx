@@ -14,6 +14,42 @@
   </resheader>
 
   
+  <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
+    <value>Baixar pasta</value>
+  </data>
+  <data name="FileTransfer_DownloadFolderTooltip" xml:space="preserve">
+    <value>Salva a pasta selecionada e tudo que há dentro dela</value>
+  </data>
+  <data name="FileTransfer_FolderDownloadPickerTitle" xml:space="preserve">
+    <value>Escolha onde salvar a pasta</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForDownload" xml:space="preserve">
+    <value>{0} arquivos na fila de download.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedForUpload" xml:space="preserve">
+    <value>{0} arquivos na fila de envio.</value>
+  </data>
+  <data name="FileTransfer_FolderQueuedTruncated" xml:space="preserve">
+    <value>{0} arquivos na fila, mas a pasta era grande demais para listar por completo — alguns arquivos ficaram de fora.</value>
+  </data>
+  <data name="FileTransfer_FolderScanFailed" xml:space="preserve">
+    <value>Não foi possível listar a pasta: {0}</value>
+  </data>
+  <data name="FileTransfer_FolderScanning" xml:space="preserve">
+    <value>Listando a pasta…</value>
+  </data>
+  <data name="FileTransfer_FolderTooLarge" xml:space="preserve">
+    <value>Essa pasta tem arquivos demais para transferir de uma vez.</value>
+  </data>
+  <data name="FileTransfer_FolderUploadPickerTitle" xml:space="preserve">
+    <value>Escolha uma pasta para enviar</value>
+  </data>
+  <data name="FileTransfer_UploadFolderBtn" xml:space="preserve">
+    <value>Enviar pasta</value>
+  </data>
+  <data name="FileTransfer_UploadFolderTooltip" xml:space="preserve">
+    <value>Envia uma pasta inteira, com tudo que há dentro dela</value>
+  </data>
   <data name="Nav_Home" xml:space="preserve">
     <value>Início</value>
   </data>

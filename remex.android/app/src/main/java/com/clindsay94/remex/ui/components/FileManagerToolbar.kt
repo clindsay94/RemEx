@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.DriveFolderUpload
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -71,6 +72,7 @@ fun FileManagerToolbar(
     canWrite: Boolean,
     onNewFolder: () -> Unit,
     onUpload: () -> Unit,
+    onUploadFolder: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var searchExpanded by remember { mutableStateOf(false) }
@@ -127,6 +129,7 @@ fun FileManagerToolbar(
                 canWrite = canWrite,
                 onNewFolder = onNewFolder,
                 onUpload = onUpload,
+                onUploadFolder = onUploadFolder,
             )
         }
     }
@@ -144,6 +147,7 @@ private fun ToolbarIconRow(
     canWrite: Boolean,
     onNewFolder: () -> Unit,
     onUpload: () -> Unit,
+    onUploadFolder: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -196,6 +200,11 @@ private fun ToolbarIconRow(
                 RemexTooltip(stringResource(R.string.file_transfer_upload)) {
                     IconButton(onClick = onUpload) {
                         Icon(Icons.Default.Upload, contentDescription = stringResource(R.string.file_transfer_upload))
+                    }
+                }
+                RemexTooltip(stringResource(R.string.file_manager_upload_folder)) {
+                    IconButton(onClick = onUploadFolder) {
+                        Icon(Icons.Default.DriveFolderUpload, contentDescription = stringResource(R.string.file_manager_upload_folder))
                     }
                 }
             }

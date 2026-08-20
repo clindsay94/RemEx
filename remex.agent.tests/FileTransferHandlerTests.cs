@@ -793,6 +793,118 @@ public sealed class FileTransferHandlerTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(rootDir, "..", "escaped")));
     }
 
+
+    // ── Manifest (folder transfer) ────────────────────────────────────────────
+
+    private static FileManifestResponse LastManifest(FakeWebSocket ws)
+        => ws.ReceivedMessages.Last(m => m.Type == MessageTypes.FileManifestResponse).FileManifestResponse!;
+
+    [Fact]
+    public async Task Manifest_EchoesTheLocationSoALateReplyCannotBeMisread()
+    {
+        // A folder transfer builds local paths from the echoed base. Without it a reply arriving after
+        // the user moved on would be applied against the wrong folder.
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        Directory.CreateDirectory(Path.Combine(rootDir, "sub"));
+        await File.WriteAllTextAsync(Path.Combine(rootDir, "sub", "a.txt"), "x");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManifestRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileManifestRequest,
+            FileManifestRequest = new FileManifestRequest
+            {
+                RequestId = "m1",
+                RootId = "root-1",
+                RelativePath = "sub",
+                MaxEntries = 100,
+            }
+        }, ws, null, CancellationToken.None);
+
+        var resp = LastManifest(ws);
+        Assert.Equal("m1", resp.RequestId);
+        Assert.Equal("root-1", resp.RootId);
+        Assert.Equal("sub", resp.RelativePath);
+        Assert.Equal("sub/a.txt", Assert.Single(resp.Entries).RelativePath);
+        Assert.Null(resp.NextCursor);
+        Assert.Null(resp.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Manifest_Paged_ReturnsACursorAndThenClearsIt()
+    {
+        var (handler, _, rootDir) = CreateRealServiceHandler();
+        for (var i = 0; i < 5; i++)
+            await File.WriteAllTextAsync(Path.Combine(rootDir, $"f{i}.dat"), "x");
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManifestRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileManifestRequest,
+            FileManifestRequest = new FileManifestRequest { RequestId = "m1", RootId = "root-1", MaxEntries = 2 }
+        }, ws, null, CancellationToken.None);
+
+        var first = LastManifest(ws);
+        Assert.Equal(2, first.Entries.Length);
+        Assert.False(string.IsNullOrEmpty(first.NextCursor));
+        Assert.Equal(5, first.TotalFiles);
+        Assert.True(first.TotalsComplete);
+
+        var seen = first.Entries.Select(e => e.RelativePath).ToList();
+        var cursor = first.NextCursor;
+        while (!string.IsNullOrEmpty(cursor))
+        {
+            await handler.HandleFileManifestRequestAsync(new RemexMessage
+            {
+                Type = MessageTypes.FileManifestRequest,
+                FileManifestRequest = new FileManifestRequest { RequestId = "m1", RootId = "root-1", Cursor = cursor, MaxEntries = 2 }
+            }, ws, null, CancellationToken.None);
+
+            var page = LastManifest(ws);
+            seen.AddRange(page.Entries.Select(e => e.RelativePath));
+            cursor = page.NextCursor;
+        }
+
+        Assert.Equal(new[] { "f0.dat", "f1.dat", "f2.dat", "f3.dat", "f4.dat" }, seen);
+    }
+
+    [Fact]
+    public async Task Manifest_UnknownRoot_AnswersWithAnErrorRatherThanGoingQuiet()
+    {
+        // The client blocks its whole folder transfer on the first page; silence would hang it.
+        var (handler, _, _) = CreateRealServiceHandler();
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManifestRequestAsync(new RemexMessage
+        {
+            Type = MessageTypes.FileManifestRequest,
+            FileManifestRequest = new FileManifestRequest { RequestId = "m1", RootId = "not-a-root", MaxEntries = 10 }
+        }, ws, null, CancellationToken.None);
+
+        var resp = LastManifest(ws);
+        Assert.Equal("m1", resp.RequestId);
+        Assert.Empty(resp.Entries);
+        Assert.False(string.IsNullOrWhiteSpace(resp.ErrorMessage));
+    }
+
+    [Fact]
+    public async Task Manifest_MissingBody_AnswersWithAnError()
+    {
+        var (handler, _, _) = CreateRealServiceHandler();
+        var ws = new FakeWebSocket();
+
+        await handler.HandleFileManifestRequestAsync(
+            new RemexMessage { Type = MessageTypes.FileManifestRequest, FileManifestRequest = null },
+            ws, "paired-android-device", CancellationToken.None);
+
+        var sent = ws.ReceivedMessages.Last();
+        Assert.Equal(MessageTypes.FileManifestResponse, sent.Type);
+        Assert.NotNull(sent.FileManifestResponse);
+        Assert.Empty(sent.FileManifestResponse!.Entries);
+        Assert.Equal(string.Empty, sent.FileManifestResponse!.RequestId);
+        Assert.False(string.IsNullOrWhiteSpace(sent.FileManifestResponse!.ErrorMessage));
+    }
+
     // ── Search ────────────────────────────────────────────────────────────────
 
     [Fact]

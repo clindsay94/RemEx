@@ -687,6 +687,15 @@
     <string name="file_manager_full_browse_refused">Odmówiono przeglądania całego urządzenia.</string>
     <string name="file_manager_queued_upload">Wysyłanie w kolejce: %1$s</string>
     <string name="file_manager_queued_download">Pobieranie w kolejce: %1$s</string>
+    <string name="file_manager_download_folder">Pobierz folder</string>
+    <string name="file_manager_folder_scanning">Odczytywanie folderu…</string>
+    <string name="file_manager_folder_scan_failed">Nie udało się odczytać folderu.</string>
+    <string name="file_manager_folder_empty">Ten folder nie zawiera plików do przesłania.</string>
+    <string name="file_manager_folder_queued_download">Dodano %1$d plików do kolejki pobierania.</string>
+    <string name="file_manager_upload_folder">Wyślij folder</string>
+    <string name="file_manager_folder_queued_upload">Dodano %1$d plików do kolejki wysyłania.</string>
+    <string name="file_manager_folder_too_large">Ten folder zawiera zbyt wiele plików, aby przesłać je naraz.</string>
+    <string name="file_manager_folder_queued_truncated">Dodano %1$d plików do kolejki, ale folder był zbyt duży, aby odczytać go w całości — część plików pominięto.</string>
     <string name="file_manager_transfers_title">Transfery (%1$d)</string>
     <string name="file_manager_clear_finished">Wyczyść zakończone</string>
     <string name="file_manager_pause">Wstrzymaj</string>

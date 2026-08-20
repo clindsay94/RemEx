@@ -188,6 +188,101 @@ public class FileTransferProtocolSerializationTests
     }
 
     [Fact]
+    public void RoundTrip_FileManifestRequest_PreservesAllFields()
+    {
+        var back = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FileManifestRequest,
+            ProtocolVersion = 3,
+            FileManifestRequest = new FileManifestRequest
+            {
+                RequestId = "rq-manifest",
+                RootId = "root-1",
+                RelativePath = "photos/2026",
+                Cursor = "42|photos/2026/b/b1.jpg",
+                MaxEntries = 500,
+            },
+        });
+
+        var m = back.FileManifestRequest;
+        Assert.NotNull(m);
+        Assert.Equal("rq-manifest", m!.RequestId);
+        Assert.Equal("root-1", m.RootId);
+        Assert.Equal("photos/2026", m.RelativePath);
+        Assert.Equal("42|photos/2026/b/b1.jpg", m.Cursor);
+        Assert.Equal(500, m.MaxEntries);
+    }
+
+    [Fact]
+    public void RoundTrip_FileManifestResponse_PreservesAllFields()
+    {
+        var back = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FileManifestResponse,
+            FileManifestResponse = new FileManifestResponse
+            {
+                RequestId = "rq-manifest",
+                RootId = "root-1",
+                RelativePath = "photos/2026",
+                Entries =
+                [
+                    new FileManifestEntry { RelativePath = "photos/2026/b", IsDirectory = true, SizeBytes = 0, ModifiedUnixMs = 111 },
+                    new FileManifestEntry { RelativePath = "photos/2026/b/b1.jpg", IsDirectory = false, SizeBytes = 2048, ModifiedUnixMs = 222 },
+                ],
+                NextCursor = "2|photos/2026/b/b1.jpg",
+                TotalFiles = 9,
+                TotalDirectories = 3,
+                TotalBytes = 4096,
+                TotalsComplete = true,
+                Truncated = false,
+            },
+        });
+
+        var m = back.FileManifestResponse;
+        Assert.NotNull(m);
+        Assert.Equal("rq-manifest", m!.RequestId);
+        Assert.Equal("root-1", m.RootId);
+        Assert.Equal("photos/2026", m.RelativePath);
+        Assert.Equal(2, m.Entries.Length);
+        Assert.True(m.Entries[0].IsDirectory);
+        Assert.Equal("photos/2026/b/b1.jpg", m.Entries[1].RelativePath);
+        Assert.Equal(2048, m.Entries[1].SizeBytes);
+        Assert.Equal(222, m.Entries[1].ModifiedUnixMs);
+        Assert.Equal("2|photos/2026/b/b1.jpg", m.NextCursor);
+        Assert.Equal(9, m.TotalFiles);
+        Assert.Equal(3, m.TotalDirectories);
+        Assert.Equal(4096, m.TotalBytes);
+        Assert.True(m.TotalsComplete);
+        Assert.False(m.Truncated);
+    }
+
+    /// <summary>
+    /// The totals are NULLABLE on purpose: a continuation page reports "not counted here", which a
+    /// client must be able to tell apart from "counted zero". Serializing null as 0 would erase that
+    /// distinction silently, so it is pinned here.
+    /// </summary>
+    [Fact]
+    public void RoundTrip_FileManifestResponse_ContinuationPage_KeepsTotalsNull()
+    {
+        var back = RoundTrip(new RemexMessage
+        {
+            Type = MessageTypes.FileManifestResponse,
+            FileManifestResponse = new FileManifestResponse
+            {
+                RequestId = "rq",
+                Entries = [],
+                NextCursor = "10|a/b",
+            },
+        });
+
+        var m = back.FileManifestResponse!;
+        Assert.Null(m.TotalFiles);
+        Assert.Null(m.TotalDirectories);
+        Assert.Null(m.TotalBytes);
+        Assert.False(m.TotalsComplete);
+    }
+
+    [Fact]
     public void RoundTrip_Metadata_PreservesAllFields()
     {
         var back = RoundTrip(new RemexMessage
@@ -477,6 +572,8 @@ public class FileTransferProtocolSerializationTests
             FileVolumesResponse = new FileVolumesResponse { RequestId = "r", Volumes = [] },
             FileSearchRequest = new FileSearchRequest { RequestId = "r", RootId = "x", Query = "q", MaxResults = 1 },
             FileSearchResponse = new FileSearchResponse { RequestId = "r", Entries = [] },
+            FileManifestRequest = new FileManifestRequest { RequestId = "r", RootId = "x", MaxEntries = 1 },
+            FileManifestResponse = new FileManifestResponse { RequestId = "r", Entries = [] },
             FileMetadataRequest = new FileMetadataRequest { RequestId = "r", RootId = "x", RelativePath = "p" },
             FileMetadataResponse = new FileMetadataResponse { RequestId = "r" },
             FileThumbnailRequest = new FileThumbnailRequest { RequestId = "r", RootId = "x", RelativePath = "p", MaxDim = 128 },
@@ -498,6 +595,8 @@ public class FileTransferProtocolSerializationTests
         Assert.NotNull(back.FileVolumesResponse);
         Assert.NotNull(back.FileSearchRequest);
         Assert.NotNull(back.FileSearchResponse);
+        Assert.NotNull(back.FileManifestRequest);
+        Assert.NotNull(back.FileManifestResponse);
         Assert.NotNull(back.FileMetadataRequest);
         Assert.NotNull(back.FileMetadataResponse);
         Assert.NotNull(back.FileThumbnailRequest);

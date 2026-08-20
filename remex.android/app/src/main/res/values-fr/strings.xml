@@ -694,6 +694,15 @@
     <string name="file_manager_full_browse_refused">L’exploration de tout l’appareil a été refusée.</string>
     <string name="file_manager_queued_upload">Envoi en file : %1$s</string>
     <string name="file_manager_queued_download">Téléchargement en file : %1$s</string>
+    <string name="file_manager_download_folder">Télécharger le dossier</string>
+    <string name="file_manager_folder_scanning">Lecture du dossier…</string>
+    <string name="file_manager_folder_scan_failed">Impossible de lister le dossier.</string>
+    <string name="file_manager_folder_empty">Ce dossier ne contient aucun fichier à transférer.</string>
+    <string name="file_manager_folder_queued_download">%1$d fichiers en file d\'attente pour le téléchargement.</string>
+    <string name="file_manager_upload_folder">Envoyer un dossier</string>
+    <string name="file_manager_folder_queued_upload">%1$d fichiers en file d\'attente pour l\'envoi.</string>
+    <string name="file_manager_folder_too_large">Ce dossier contient trop de fichiers pour un transfert en une seule fois.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d fichiers en file d\'attente, mais le dossier était trop volumineux pour être listé entièrement : certains fichiers ont été omis.</string>
     <string name="file_manager_transfers_title">Transferts (%1$d)</string>
     <string name="file_manager_clear_finished">Effacer les terminés</string>
     <string name="file_manager_pause">Pause</string>

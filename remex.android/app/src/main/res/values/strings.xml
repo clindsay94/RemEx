@@ -867,6 +867,15 @@
     <string name="file_manager_full_browse_refused">Full-device browsing was declined.</string>
     <string name="file_manager_queued_upload">Queued upload: %1$s</string>
     <string name="file_manager_queued_download">Queued download: %1$s</string>
+    <string name="file_manager_download_folder">Download folder</string>
+    <string name="file_manager_folder_scanning">Listing the folder…</string>
+    <string name="file_manager_folder_scan_failed">The folder could not be listed.</string>
+    <string name="file_manager_folder_empty">That folder has no files to transfer.</string>
+    <string name="file_manager_folder_queued_download">Queued %1$d files for download.</string>
+    <string name="file_manager_upload_folder">Upload folder</string>
+    <string name="file_manager_folder_queued_upload">Queued %1$d files for upload.</string>
+    <string name="file_manager_folder_too_large">That folder holds too many files to transfer at once.</string>
+    <string name="file_manager_folder_queued_truncated">Queued %1$d files, but the folder was too large to list in full — some files were left out.</string>
     <string name="file_manager_transfers_title">Transfers (%1$d)</string>
     <string name="file_manager_clear_finished">Clear finished</string>
     <string name="file_manager_pause">Pause</string>

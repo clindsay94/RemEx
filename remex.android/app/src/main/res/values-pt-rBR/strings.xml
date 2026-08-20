@@ -694,6 +694,15 @@
     <string name="file_manager_full_browse_refused">A navegação em todo o dispositivo foi recusada.</string>
     <string name="file_manager_queued_upload">Envio na fila: %1$s</string>
     <string name="file_manager_queued_download">Download na fila: %1$s</string>
+    <string name="file_manager_download_folder">Baixar pasta</string>
+    <string name="file_manager_folder_scanning">Listando a pasta…</string>
+    <string name="file_manager_folder_scan_failed">Não foi possível listar a pasta.</string>
+    <string name="file_manager_folder_empty">Essa pasta não tem arquivos para transferir.</string>
+    <string name="file_manager_folder_queued_download">%1$d arquivos na fila de download.</string>
+    <string name="file_manager_upload_folder">Enviar pasta</string>
+    <string name="file_manager_folder_queued_upload">%1$d arquivos na fila de envio.</string>
+    <string name="file_manager_folder_too_large">Essa pasta tem arquivos demais para transferir de uma vez.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d arquivos na fila, mas a pasta era grande demais para listar por completo — alguns arquivos ficaram de fora.</string>
     <string name="file_manager_transfers_title">Transferências (%1$d)</string>
     <string name="file_manager_clear_finished">Limpar concluídas</string>
     <string name="file_manager_pause">Pausar</string>

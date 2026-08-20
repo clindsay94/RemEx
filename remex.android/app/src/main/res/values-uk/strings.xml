@@ -708,6 +708,15 @@
     <string name="file_manager_full_browse_refused">Перегляд усього пристрою відхилено.</string>
     <string name="file_manager_queued_upload">Вивантаження в черзі: %1$s</string>
     <string name="file_manager_queued_download">Завантаження в черзі: %1$s</string>
+    <string name="file_manager_download_folder">Завантажити теку</string>
+    <string name="file_manager_folder_scanning">Читання теки…</string>
+    <string name="file_manager_folder_scan_failed">Не вдалося прочитати теку.</string>
+    <string name="file_manager_folder_empty">У цій теці немає файлів для передавання.</string>
+    <string name="file_manager_folder_queued_download">%1$d файлів додано до черги завантаження.</string>
+    <string name="file_manager_upload_folder">Надіслати теку</string>
+    <string name="file_manager_folder_queued_upload">%1$d файлів додано до черги надсилання.</string>
+    <string name="file_manager_folder_too_large">Ця тека містить забагато файлів, щоб передати їх за один раз.</string>
+    <string name="file_manager_folder_queued_truncated">%1$d файлів додано до черги, але теку було завелико, щоб прочитати її повністю — деякі файли пропущено.</string>
     <string name="file_manager_transfers_title">Передавання (%1$d)</string>
     <string name="file_manager_clear_finished">Очистити завершені</string>
     <string name="file_manager_pause">Пауза</string>

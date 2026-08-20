@@ -74,7 +74,7 @@ public sealed class FileTransferHandler(
         Ops =
         [
             FileManageOperations.Delete, FileManageOperations.Rename, FileManageOperations.Copy,
-            FileManageOperations.Move, FileManageOperations.Mkdir, "search",
+            FileManageOperations.Move, FileManageOperations.Mkdir, "search", "manifest",
         ],
         FullBrowse = true,
 
@@ -872,6 +872,86 @@ public sealed class FileTransferHandler(
                     RequestId = req.RequestId,
                     Entries = [],
                     Truncated = false,
+                    ErrorMessage = ex.Message,
+                }
+            };
+        }
+
+        await MessageSerializer.SendAsync(ws, response, ct);
+    }
+
+    /// <summary>
+    /// Handles a <c>file_manifest_request</c> (RemEx-q3twg): one page of a recursive subtree listing, so
+    /// a client can fan a folder out into the ordinary per-file transfers it already performs. Like
+    /// browse and search this runs against a configured shared root (already gated by pairing) or, for a
+    /// non-configured rootId, a consent-granted volume — it adds no reach of its own.
+    /// </summary>
+    /// <remarks>
+    /// The manifest is a LISTING, not a transfer: it moves no bytes and grants no write. Every file it
+    /// names still has to survive the normal download authorization when the client asks for it, which
+    /// is why a folder transfer needs no consent prompt beyond the ones its files already trigger.
+    /// </remarks>
+    public async Task HandleFileManifestRequestAsync(RemexMessage message, WebSocket ws, string? clientId, CancellationToken ct)
+    {
+        var req = message.FileManifestRequest;
+        if (req is null)
+        {
+            // Answer rather than go quiet — see the note on HandleFileBrowseRequestAsync (RemEx-rie6).
+            // The client correlates by requestId and a folder transfer blocks on the first page, so a
+            // silent drop leaves the queue waiting on a page that will never arrive.
+            logger.LogWarning("Received a file_manifest_request with no request body; answering with an error.");
+            await MessageSerializer.SendAsync(ws, new RemexMessage
+            {
+                Type = MessageTypes.FileManifestResponse,
+                FileManifestResponse = new FileManifestResponse
+                {
+                    RequestId = string.Empty,
+                    Entries = [],
+                    ErrorMessage = "The file_manifest_request carried no request body.",
+                }
+            }, ct);
+            return;
+        }
+
+        RemexMessage response;
+        try
+        {
+            var relativePath = req.RelativePath ?? string.Empty;
+            var page = await IsConfiguredRootAsync(req.RootId, ct)
+                ? await fileTransferService.EnumerateSubtreeAsync(req.RootId, relativePath, req.Cursor, req.MaxEntries, ct)
+                : await fileTransferService.EnumerateVolumeSubtreeAsync(
+                    (await ResolveConsentedVolumeAsync(req.RootId, clientId, ct)).Path, relativePath, req.Cursor, req.MaxEntries, ct);
+
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileManifestResponse,
+                FileManifestResponse = new FileManifestResponse
+                {
+                    RequestId = req.RequestId,
+                    RootId = req.RootId,
+                    RelativePath = relativePath,
+                    Entries = [.. page.Entries],
+                    NextCursor = page.NextCursor,
+                    TotalFiles = page.TotalFiles,
+                    TotalDirectories = page.TotalDirectories,
+                    TotalBytes = page.TotalBytes,
+                    TotalsComplete = page.TotalsComplete,
+                    Truncated = page.Truncated,
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "File manifest failed for root {RootId}, path {Path}", req.RootId, req.RelativePath);
+            response = new RemexMessage
+            {
+                Type = MessageTypes.FileManifestResponse,
+                FileManifestResponse = new FileManifestResponse
+                {
+                    RequestId = req.RequestId,
+                    RootId = req.RootId,
+                    RelativePath = req.RelativePath,
+                    Entries = [],
                     ErrorMessage = ex.Message,
                 }
             };

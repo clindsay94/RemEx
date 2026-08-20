@@ -98,6 +98,15 @@ public partial class FileTransferView : UserControl
             return await topLevel.StorageProvider.OpenFilePickerAsync(options);
         };
 
+        vm.PickLocalFolderAsync = async options =>
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null)
+                return Array.Empty<IStorageFolder>();
+
+            return await topLevel.StorageProvider.OpenFolderPickerAsync(options);
+        };
+
         vm.PickDownloadDestinationAsync = async options =>
         {
             var topLevel = TopLevel.GetTopLevel(this);

@@ -99,6 +99,24 @@ public interface IFileTransferService
     /// </summary>
     Task<IReadOnlyList<FileSearchEntry>> SearchAsync(string rootId, string relativePath, string query, int maxResults, CancellationToken ct);
 
+    /// <summary>
+    /// Enumerates the whole subtree under <paramref name="relativePath"/> as a flat, pre-order page of
+    /// entries (RemEx-q3twg) - the host-side half of folder transfer. The client pages through with the
+    /// returned cursor and then enqueues the ordinary per-file transfers itself.
+    /// </summary>
+    /// <param name="cursor">
+    /// Opaque continuation token from the previous page, or null for the first page. The format belongs
+    /// to the implementation; callers pass it back verbatim and never construct one.
+    /// </param>
+    /// <param name="maxEntries">
+    /// Requested page size, clamped to <see cref="Models.FileTransferLimits.ManifestMaxEntriesPerPage"/>;
+    /// &lt;= 0 means <see cref="Models.FileTransferLimits.ManifestDefaultEntriesPerPage"/>.
+    /// </param>
+    Task<FileManifestPage> EnumerateSubtreeAsync(string rootId, string relativePath, string? cursor, int maxEntries, CancellationToken ct);
+
+    /// <summary>Volume-mode counterpart of <see cref="EnumerateSubtreeAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    Task<FileManifestPage> EnumerateVolumeSubtreeAsync(string volumeAbsolutePath, string relativePath, string? cursor, int maxEntries, CancellationToken ct);
+
     /// <summary>Returns detailed metadata for a single file/directory.</summary>
     Task<FileMetadata> GetMetadataAsync(string rootId, string relativePath, CancellationToken ct);
 

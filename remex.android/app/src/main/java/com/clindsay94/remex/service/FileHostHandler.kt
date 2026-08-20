@@ -178,6 +178,7 @@ class FileHostHandler(
             }
             "file_volumes_request" -> { handleVolumes(obj.optJSONObject("fileVolumesRequest")); true }
             "file_search_request" -> { handleSearch(obj.optJSONObject("fileSearchRequest")); true }
+            "file_manifest_request" -> { handleManifest(obj.optJSONObject("fileManifestRequest")); true }
             "file_metadata_request" -> { handleMetadata(obj.optJSONObject("fileMetadataRequest")); true }
             "file_thumbnail_request" -> { handleThumbnail(obj.optJSONObject("fileThumbnailRequest")); true }
             "file_transfer_offer" -> { handleOffer(obj.optJSONObject("fileTransferOffer")); true }
@@ -220,6 +221,7 @@ class FileHostHandler(
                     put(FileManageOperations.MOVE)
                     put(FileManageOperations.MKDIR)
                     put("search")
+                    put("manifest")
                 },
             )
             put("fullBrowse", rootsProvider.isFullBrowseGranted())
@@ -525,6 +527,217 @@ class FileHostHandler(
                 if (error != null) put("errorMessage", error)
             }
         sender.send(envelope("file_search_response", "fileSearchResponse", payload, v3 = true))
+    }
+
+    /**
+     * Answers `file_manifest_request` (RemEx-q3twg): one page of a recursive subtree listing, so a peer
+     * can fan a folder out into the ordinary per-file transfers it already performs.
+     *
+     * The manifest is a LISTING and moves no bytes — every file it names still faces the normal
+     * transfer authorization when it is actually asked for.
+     *
+     * Mirrors the PC host's walk exactly, and the two halves must stay in step: pre-order, children in
+     * ordinal name order, directories emitted in their own right (so an empty folder survives the trip),
+     * and a cursor of `{emittedSoFar}|{lastRelativePath}` that carries all the resume state there is. The
+     * cursor is opaque to clients by contract, which is what lets this side hold no per-request state —
+     * a page survives a reconnect, and an abandoned enumeration costs nothing to forget.
+     */
+    private fun handleManifest(req: JSONObject?) {
+        req ?: return
+        val requestId = req.optString("requestId")
+        val rootId = req.optString("rootId")
+        val relativePath = if (req.has("relativePath")) req.optString("relativePath").trim('/') else ""
+        val requestedPageSize = req.optInt("maxEntries", FileTransferLimits.MANIFEST_DEFAULT_ENTRIES_PER_PAGE)
+        val pageSize =
+            if (requestedPageSize <= 0) FileTransferLimits.MANIFEST_DEFAULT_ENTRIES_PER_PAGE
+            else minOf(requestedPageSize, FileTransferLimits.MANIFEST_MAX_ENTRIES_PER_PAGE)
+
+        val base = facade.resolve(rootId, relativePath)
+        if (base == null || !base.canRead || !base.isDirectory) {
+            sendManifest(requestId, rootId, relativePath, JSONArray(), null, null, false, "Folder not found.")
+            return
+        }
+
+        val (emittedBefore, cursorPath) = parseManifestCursor(req.optString("cursor"))
+        val cursorSegments = cursorPath?.split('/')?.filter { it.isNotEmpty() }?.takeIf { it.isNotEmpty() }
+
+        val state = ManifestPageState(pageSize = pageSize, emittedBefore = emittedBefore)
+        manifestWalk(base, relativePath, cursorSegments, 0, state)
+
+        val totals =
+            if (cursorSegments == null) countSubtree(base) else null
+
+        val nextCursor =
+            if (state.truncated || state.lastPath == null || state.entries.length() < pageSize) null
+            else "${emittedBefore + state.entries.length()}|${state.lastPath}"
+
+        sendManifest(requestId, rootId, relativePath, state.entries, nextCursor, totals, state.truncated, null)
+    }
+
+    /** Running state of one manifest page. See [handleManifest]. */
+    private class ManifestPageState(val pageSize: Int, val emittedBefore: Long) {
+        val entries = JSONArray()
+        var lastPath: String? = null
+        var truncated = false
+        val full: Boolean get() = truncated || entries.length() >= pageSize
+    }
+
+    /** Whole-subtree totals for the first page. [complete] is false when the budget cut the count short. */
+    private class ManifestTotals(val files: Long, val directories: Long, val bytes: Long, val complete: Boolean)
+
+    /**
+     * Emits one directory's children in ordinal name order, recursing depth-first. While
+     * [cursorSegments] is non-null the walk is POSITIONING rather than emitting: names ordering before
+     * the cursor segment at this [depth] are skipped, the name equal to it is descended into (it was
+     * emitted on an earlier page), and everything after it resumes ordinary emission.
+     */
+    private fun manifestWalk(
+        dir: FileNode,
+        dirRelative: String,
+        cursorSegments: List<String>?,
+        depth: Int,
+        state: ManifestPageState,
+    ) {
+        if (state.full) return
+
+        val children =
+            try {
+                dir.listChildren().sortedWith(compareBy { it.name })
+            } catch (e: Exception) {
+                // An unreadable subtree is skipped, not fatal — the same choice handleSearch makes.
+                // Failing the whole folder because one directory said no is the worse answer.
+                return
+            }
+
+        var positioning = cursorSegments != null && depth < cursorSegments.size
+        var segments = cursorSegments
+
+        for (child in children) {
+            if (state.full) return
+
+            val childRelative = if (dirRelative.isEmpty()) child.name else "$dirRelative/${child.name}"
+
+            if (positioning) {
+                val comparison = child.name.compareTo(segments!![depth])
+                if (comparison < 0) continue
+                if (comparison == 0) {
+                    val isCursorLeaf = depth == segments.size - 1
+                    if (child.isDirectory) {
+                        manifestWalk(
+                            child,
+                            childRelative,
+                            if (isCursorLeaf) null else segments,
+                            if (isCursorLeaf) 0 else depth + 1,
+                            state,
+                        )
+                    }
+                    // The cursor entry itself was emitted on the previous page; never emit it twice.
+                    continue
+                }
+                // Past the cursor at this level: this sibling and everything after it is new.
+                positioning = false
+                segments = null
+            }
+
+            if (state.emittedBefore + state.entries.length() >= FileTransferLimits.MANIFEST_MAX_TOTAL_ENTRIES) {
+                state.truncated = true
+                return
+            }
+
+            state.entries.put(
+                JSONObject().apply {
+                    put("relativePath", childRelative)
+                    put("isDirectory", child.isDirectory)
+                    put("sizeBytes", if (child.isDirectory) 0L else child.length)
+                    put("modifiedUnixMs", child.lastModifiedMs)
+                }
+            )
+            state.lastPath = childRelative
+
+            if (child.isDirectory) manifestWalk(child, childRelative, null, 0, state)
+        }
+    }
+
+    /**
+     * Counts the whole subtree for the first page's totals, giving up at
+     * [FileTransferLimits.MANIFEST_COUNT_BUDGET_ENTRIES] and reporting the numbers as lower bounds.
+     * Iterative, so a pathological depth cannot blow the stack.
+     */
+    private fun countSubtree(base: FileNode): ManifestTotals {
+        var files = 0L
+        var directories = 0L
+        var bytes = 0L
+        var visited = 0L
+        val pending = ArrayDeque<FileNode>()
+        pending.add(base)
+
+        while (pending.isNotEmpty()) {
+            val dir = pending.removeFirst()
+            val children =
+                try {
+                    dir.listChildren()
+                } catch (e: Exception) {
+                    continue
+                }
+
+            for (child in children) {
+                if (++visited > FileTransferLimits.MANIFEST_COUNT_BUDGET_ENTRIES) {
+                    return ManifestTotals(files, directories, bytes, complete = false)
+                }
+                if (child.isDirectory) {
+                    directories++
+                    pending.add(child)
+                } else {
+                    files++
+                    bytes += child.length
+                }
+            }
+        }
+
+        return ManifestTotals(files, directories, bytes, complete = true)
+    }
+
+    /**
+     * Cursor format: `{entriesEmittedSoFar}|{lastRelativePath}`. A malformed cursor restarts from the
+     * beginning rather than failing: it is client-supplied text, and the position it names grants
+     * nothing the request did not already have.
+     */
+    private fun parseManifestCursor(cursor: String?): Pair<Long, String?> {
+        if (cursor.isNullOrBlank()) return 0L to null
+        val separator = cursor.indexOf('|')
+        if (separator <= 0) return 0L to null
+        val emitted = cursor.substring(0, separator).toLongOrNull()?.takeIf { it >= 0 } ?: return 0L to null
+        val path = cursor.substring(separator + 1)
+        return if (path.isEmpty()) 0L to null else emitted to path
+    }
+
+    private fun sendManifest(
+        requestId: String,
+        rootId: String,
+        relativePath: String,
+        entries: JSONArray,
+        nextCursor: String?,
+        totals: ManifestTotals?,
+        truncated: Boolean,
+        error: String?,
+    ) {
+        val payload =
+            JSONObject().apply {
+                put("requestId", requestId)
+                put("rootId", rootId)
+                put("relativePath", relativePath)
+                put("entries", entries)
+                if (nextCursor != null) put("nextCursor", nextCursor)
+                if (totals != null) {
+                    put("totalFiles", totals.files)
+                    put("totalDirectories", totals.directories)
+                    put("totalBytes", totals.bytes)
+                    put("totalsComplete", totals.complete)
+                }
+                put("truncated", truncated)
+                if (error != null) put("errorMessage", error)
+            }
+        sender.send(envelope("file_manifest_response", "fileManifestResponse", payload, v3 = true))
     }
 
     private fun handleMetadata(req: JSONObject?) {

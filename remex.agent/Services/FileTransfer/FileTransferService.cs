@@ -886,6 +886,296 @@ public sealed class FileTransferService : IFileTransferService
         return Task.FromResult<IReadOnlyList<FileSearchEntry>>(results);
     }
 
+    // ── Folder transfer: subtree enumeration (RemEx-q3twg) ──
+
+    public Task<FileManifestPage> EnumerateSubtreeAsync(
+        string rootId, string relativePath, string? cursor, int maxEntries, CancellationToken ct)
+    {
+        var root = GetConfiguredRoot(rootId);
+        return ManifestCore(Path.GetFullPath(root.AbsolutePath), root.DisplayName, relativePath, cursor, maxEntries, ct);
+    }
+
+    /// <summary>Volume-mode counterpart of <see cref="EnumerateSubtreeAsync"/>. See <see cref="OpenVolumeForReadAsync"/>.</summary>
+    public Task<FileManifestPage> EnumerateVolumeSubtreeAsync(
+        string volumeAbsolutePath, string relativePath, string? cursor, int maxEntries, CancellationToken ct)
+    {
+        var rootPath = Path.GetFullPath(volumeAbsolutePath);
+        return ManifestCore(rootPath, volumeAbsolutePath, relativePath, cursor, maxEntries, ct);
+    }
+
+    /// <summary>
+    /// Walks the subtree pre-order, emitting at most one page and returning the cursor that resumes
+    /// exactly where it stopped. Directories are emitted in their own right so an empty folder is
+    /// recreated on the receiving side rather than silently dropped.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>THE WALK IS STATELESS BETWEEN PAGES</b>, which is why the cursor carries a path rather than a
+    /// session id: pages then survive a reconnect and a host restart, and an abandoned enumeration
+    /// costs nothing to forget. The price is that each page re-descends the cursor path — bounded by
+    /// tree DEPTH, not by tree size, because <see cref="ManifestWalk"/> skips whole sibling ranges by
+    /// name comparison instead of re-emitting them.
+    /// </para>
+    /// <para>
+    /// <b>ORDER IS ORDINAL BY NAME AND MUST STAY THAT WAY.</b> The cursor is only meaningful against a
+    /// deterministic sequence; a culture-sensitive or filesystem-supplied order would silently skip or
+    /// repeat entries across a page boundary, and the client — which is only consuming a flat list —
+    /// would have no way to notice.
+    /// </para>
+    /// </remarks>
+    private static Task<FileManifestPage> ManifestCore(
+        string rootPath, string rootDisplay, string relativePath, string? cursor, int maxEntries, CancellationToken ct)
+    {
+        var baseDir = FilePathValidation.ResolveWithinRoot(rootPath, relativePath, rootDisplay);
+        if (!Directory.Exists(baseDir))
+            throw new DirectoryNotFoundException($"'{relativePath}' is not a folder in root '{rootDisplay}'.");
+
+        var pageSize = maxEntries <= 0
+            ? FileTransferLimits.ManifestDefaultEntriesPerPage
+            : Math.Min(maxEntries, FileTransferLimits.ManifestMaxEntriesPerPage);
+
+        var (emittedBefore, cursorPath) = ParseManifestCursor(cursor);
+        var state = new ManifestState
+        {
+            PageSize = pageSize,
+            EmittedBefore = emittedBefore,
+        };
+
+        var cursorSegments = string.IsNullOrEmpty(cursorPath)
+            ? null
+            : cursorPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+        var baseRelative = ToManifestBase(rootPath, baseDir);
+        ManifestWalk(new DirectoryInfo(baseDir), baseRelative, cursorSegments, 0, state, ct);
+
+        var isFirstPage = cursorSegments is null || cursorSegments.Length == 0;
+        long? files = null, directories = null, bytes = null;
+        var totalsComplete = false;
+        if (isFirstPage)
+        {
+            var counted = CountSubtree(new DirectoryInfo(baseDir), ct);
+            files = counted.Files;
+            directories = counted.Directories;
+            bytes = counted.Bytes;
+            totalsComplete = counted.Complete;
+        }
+
+        return Task.FromResult(new FileManifestPage
+        {
+            Entries = state.Entries,
+            NextCursor = state.Truncated || !state.MorePending
+                ? null
+                : FormatManifestCursor(state.EmittedBefore + state.Entries.Count, state.LastPath!),
+            TotalFiles = files,
+            TotalDirectories = directories,
+            TotalBytes = bytes,
+            TotalsComplete = totalsComplete,
+            Truncated = state.Truncated,
+        });
+    }
+
+    /// <summary>Root-relative form of the enumerated base, or the empty string when it IS the root.</summary>
+    private static string ToManifestBase(string rootPath, string baseDir)
+    {
+        var relative = ToRootRelative(rootPath, baseDir);
+        return relative is "." or "/" ? string.Empty : relative.Trim('/');
+    }
+
+    /// <summary>
+    /// Mutable walk state. <see cref="MorePending"/> is the single source of truth for whether a cursor
+    /// is owed: a page that ended because it filled up has more to give, one that simply ran out does not.
+    /// </summary>
+    private sealed class ManifestState
+    {
+        public required int PageSize { get; init; }
+        public required long EmittedBefore { get; init; }
+        public List<FileManifestEntry> Entries { get; } = [];
+        /// <summary>Root-relative path of the last entry emitted on this page.</summary>
+        public string? LastPath { get; set; }
+        /// <summary>Set when <see cref="FileTransferLimits.ManifestMaxTotalEntries"/> stopped the walk.</summary>
+        public bool Truncated { get; set; }
+        /// <summary>True once this page is full (or the walk was truncated) and unwinding should stop.</summary>
+        public bool Full => Truncated || Entries.Count >= PageSize;
+        /// <summary>
+        /// True when the walk stopped because the page filled rather than because the subtree ended —
+        /// the ONLY case in which a next cursor is meaningful.
+        /// </summary>
+        public bool MorePending => !Truncated && LastPath is not null && Entries.Count >= PageSize;
+    }
+
+    /// <summary>
+    /// Emits one directory's children in ordinal name order, recursing depth-first. When
+    /// <paramref name="cursorSegments"/> is non-null the walk is positioning rather than emitting: names
+    /// ordering before the cursor segment at this <paramref name="depth"/> are skipped outright, the name
+    /// equal to it is descended into (it was emitted on an earlier page), and everything after it resumes
+    /// ordinary emission.
+    /// </summary>
+    private static void ManifestWalk(
+        DirectoryInfo dir, string dirRelative, string[]? cursorSegments, int depth, ManifestState state, CancellationToken ct)
+    {
+        if (state.Full)
+            return;
+
+        ct.ThrowIfCancellationRequested();
+
+        FileSystemInfo[] children;
+        try
+        {
+            children = dir.GetFileSystemInfos();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // An unreadable subtree is skipped, not fatal — the same choice SearchRecursive makes. The
+            // alternative fails a whole folder transfer because one directory said no.
+            return;
+        }
+
+        Array.Sort(children, static (a, b) => string.CompareOrdinal(a.Name, b.Name));
+
+        var onCursorPath = cursorSegments is not null && depth < cursorSegments.Length;
+
+        foreach (var child in children)
+        {
+            if (state.Full)
+                return;
+            ct.ThrowIfCancellationRequested();
+
+            // Reparse points are not followed. A directory symlink can point back above the base or at
+            // itself, and either one turns a bounded enumeration into a walk that never ends.
+            if ((child.Attributes & FileAttributes.ReparsePoint) != 0)
+                continue;
+            if (FilePathValidation.IsRestrictedSystemPath(child.FullName))
+                continue;
+
+            var childRelative = dirRelative.Length == 0 ? child.Name : $"{dirRelative}/{child.Name}";
+            var isDirectory = child is DirectoryInfo;
+
+            if (onCursorPath)
+            {
+                var comparison = string.CompareOrdinal(child.Name, cursorSegments![depth]);
+                if (comparison < 0)
+                    continue;
+
+                if (comparison == 0)
+                {
+                    var isCursorLeaf = depth == cursorSegments.Length - 1;
+                    if (isDirectory)
+                    {
+                        // Either this directory contains the cursor (descend, still positioning), or it IS
+                        // the cursor — in which case its children are the next thing owed to the client.
+                        ManifestWalk(
+                            (DirectoryInfo)child,
+                            childRelative,
+                            isCursorLeaf ? null : cursorSegments,
+                            isCursorLeaf ? 0 : depth + 1,
+                            state,
+                            ct);
+                    }
+
+                    // The cursor entry itself was emitted on the previous page; never emit it twice.
+                    continue;
+                }
+
+                // Past the cursor at this level: this sibling and every later one is new, and so is
+                // everything beneath them.
+                onCursorPath = false;
+                cursorSegments = null;
+            }
+
+            if (state.EmittedBefore + state.Entries.Count >= FileTransferLimits.ManifestMaxTotalEntries)
+            {
+                state.Truncated = true;
+                return;
+            }
+
+            state.Entries.Add(new FileManifestEntry
+            {
+                RelativePath = childRelative,
+                IsDirectory = isDirectory,
+                SizeBytes = child is FileInfo file ? file.Length : 0,
+                ModifiedUnixMs = ToUnixMs(child.LastWriteTimeUtc),
+            });
+            state.LastPath = childRelative;
+
+            if (isDirectory)
+                ManifestWalk((DirectoryInfo)child, childRelative, null, 0, state, ct);
+        }
+    }
+
+    /// <summary>
+    /// Cursor format: <c>{entriesEmittedSoFar}|{lastRelativePath}</c>. Opaque to clients by contract —
+    /// the count rides along only so the whole-enumeration ceiling can be enforced without the host
+    /// keeping per-request state. A malformed cursor restarts from the beginning rather than throwing:
+    /// it is client-supplied text, and the walk it positions grants nothing the request did not already.
+    /// </summary>
+    private static (long EmittedBefore, string? Path) ParseManifestCursor(string? cursor)
+    {
+        if (string.IsNullOrWhiteSpace(cursor))
+            return (0, null);
+
+        var separator = cursor.IndexOf('|');
+        if (separator <= 0 || !long.TryParse(cursor.AsSpan(0, separator), out var emitted) || emitted < 0)
+            return (0, null);
+
+        var path = cursor[(separator + 1)..];
+        return string.IsNullOrEmpty(path) ? (0, null) : (emitted, path);
+    }
+
+    private static string FormatManifestCursor(long emitted, string lastPath) => $"{emitted}|{lastPath}";
+
+    /// <summary>
+    /// Counts the whole subtree for the first page's totals, giving up at
+    /// <see cref="FileTransferLimits.ManifestCountBudgetEntries"/> and reporting the numbers as lower
+    /// bounds. Iterative so a pathological depth cannot overflow the stack in the one place a folder
+    /// transfer has not yet moved a single byte.
+    /// </summary>
+    private static (long Files, long Directories, long Bytes, bool Complete) CountSubtree(DirectoryInfo baseDir, CancellationToken ct)
+    {
+        long files = 0, directories = 0, bytes = 0, visited = 0;
+        var pending = new Stack<DirectoryInfo>();
+        pending.Push(baseDir);
+
+        while (pending.Count > 0)
+        {
+            ct.ThrowIfCancellationRequested();
+            var dir = pending.Pop();
+
+            FileSystemInfo[] children;
+            try
+            {
+                children = dir.GetFileSystemInfos();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            foreach (var child in children)
+            {
+                if ((child.Attributes & FileAttributes.ReparsePoint) != 0)
+                    continue;
+                if (FilePathValidation.IsRestrictedSystemPath(child.FullName))
+                    continue;
+
+                if (++visited > FileTransferLimits.ManifestCountBudgetEntries)
+                    return (files, directories, bytes, false);
+
+                if (child is DirectoryInfo subdirectory)
+                {
+                    directories++;
+                    pending.Push(subdirectory);
+                }
+                else if (child is FileInfo file)
+                {
+                    files++;
+                    bytes += file.Length;
+                }
+            }
+        }
+
+        return (files, directories, bytes, true);
+    }
+
     public Task<FileMetadata> GetMetadataAsync(string rootId, string relativePath, CancellationToken ct)
     {
         var root = GetConfiguredRoot(rootId);

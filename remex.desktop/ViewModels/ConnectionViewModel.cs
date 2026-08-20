@@ -1393,6 +1393,7 @@ public partial class ConnectionViewModel : ObservableValidator, IDisposable, IFi
                     //    hosts never send these, so v2 peers are unaffected. ──
                     case MessageTypes.FileVolumesResponse:
                     case MessageTypes.FileSearchResponse:
+                    case MessageTypes.FileManifestResponse:
                     case MessageTypes.FileMetadataResponse:
                     case MessageTypes.FileThumbnailResponse:
                         FileTransferMessageReceived?.Invoke(message);

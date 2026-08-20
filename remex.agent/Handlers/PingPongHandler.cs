@@ -740,6 +740,18 @@ public sealed class PingPongHandler(
                         await fileTransferHandler.HandleFileSearchRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
 
+                    // Detached like file_volumes_request: enumerating a large subtree can take a while
+                    // and it must not stall the control socket's read loop behind it (RemEx-q3twg).
+                    case MessageTypes.FileManifestRequest:
+                    {
+                        var manifestMsg = message;
+                        var manifestClientId = connectionClientId;
+                        _ = RunDetachedAsync(
+                            () => fileTransferHandler.HandleFileManifestRequestAsync(manifestMsg, webSocket, manifestClientId, ct),
+                            "file_manifest_request");
+                        break;
+                    }
+
                     case MessageTypes.FileMetadataRequest:
                         await fileTransferHandler.HandleFileMetadataRequestAsync(message, webSocket, connectionClientId, ct);
                         break;
