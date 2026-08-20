@@ -1302,7 +1302,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Bilgisayarda görünen 6 haneli PIN'i girin:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
+    <value>Eşleştir</value>
   </data>
 
   

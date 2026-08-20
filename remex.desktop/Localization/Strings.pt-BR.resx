@@ -1302,7 +1302,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Digite o PIN de 6 dígitos exibido no PC:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
+    <value>Emparelhar</value>
   </data>
 
   
