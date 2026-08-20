@@ -2179,6 +2179,12 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
     <value>AKTARIMLAR</value>
   </data>
+  <data name="FileTransfer_QueueCancelAll" xml:space="preserve">
+    <value>Tümünü iptal et</value>
+  </data>
+  <data name="FileTransfer_QueueCancelAllTooltip" xml:space="preserve">
+    <value>Devam eden veya bekleyen tüm aktarımları iptal et</value>
+  </data>
   <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
     <value>Bitenleri temizle</value>
   </data>

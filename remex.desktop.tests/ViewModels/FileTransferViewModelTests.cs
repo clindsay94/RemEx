@@ -1,3 +1,4 @@
+using System.IO;
 using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.ViewModels;
@@ -139,5 +140,107 @@ public class FileTransferViewModelTests
         vm.SortByCommand.Execute("size");
         vm.SortField.Should().Be(FileSortField.Size);
         vm.SortDescending.Should().BeFalse();
+    }
+
+    // ─── Folder upload: the remote directory shape (RemEx-0xves) ──────────────
+    //
+    // Uploading a folder to a PHONE could not work at all. The desktop built remote paths like
+    // "<current>/photos/2024/img.jpg" and enqueued a transfer per file, but nothing ever created
+    // "photos" or "2024" on the far side. The PC host creates a missing parent on write, so a PC
+    // destination hid it; the Android host resolves the parent and refuses when it is not there, so
+    // every file in the folder came back "Cannot write to destination folder."
+
+    private static string Local(params string[] segments) =>
+        string.Join(Path.DirectorySeparatorChar, segments);
+
+    [Fact]
+    public void PlanRemoteFolderCreation_CreatesTheTargetFolderEvenWhenTheTreeIsFlat()
+    {
+        var plan = FileTransferViewModel.PlanRemoteFolderCreation(
+            Local("C:", "src", "photos"),
+            [],
+            [Local("C:", "src", "photos", "a.jpg"), Local("C:", "src", "photos", "b.jpg")],
+            "/shared/photos");
+
+        plan.Should().Equal("/shared/photos");
+    }
+
+    [Fact]
+    public void PlanRemoteFolderCreation_OrdersParentsBeforeChildren()
+    {
+        var root = Local("C:", "src", "photos");
+
+        var plan = FileTransferViewModel.PlanRemoteFolderCreation(
+            root,
+            // Deliberately deepest-first, which is an order a walk can genuinely produce.
+            [Local(root, "2024", "may", "raw"), Local(root, "2024", "may"), Local(root, "2024")],
+            [],
+            "/shared/photos");
+
+        plan.Should().Equal(
+            "/shared/photos",
+            "/shared/photos/2024",
+            "/shared/photos/2024/may",
+            "/shared/photos/2024/may/raw");
+    }
+
+    /// <summary>
+    /// An empty folder is the one part of a tree's shape that no file can imply, which is why the
+    /// directory walk is unioned in rather than the file parents being trusted alone.
+    /// </summary>
+    [Fact]
+    public void PlanRemoteFolderCreation_KeepsAnEmptyDirectory()
+    {
+        var root = Local("C:", "src", "photos");
+
+        var plan = FileTransferViewModel.PlanRemoteFolderCreation(
+            root,
+            [Local(root, "empty")],
+            [Local(root, "a.jpg")],
+            "/shared/photos");
+
+        plan.Should().Contain("/shared/photos/empty");
+    }
+
+    /// <summary>
+    /// The mirror case: a directory the walk could not read, whose files were still reached through
+    /// it. Its parents come from the file paths.
+    /// </summary>
+    [Fact]
+    public void PlanRemoteFolderCreation_DerivesDirectoriesFromFilePathsToo()
+    {
+        var root = Local("C:", "src", "photos");
+
+        var plan = FileTransferViewModel.PlanRemoteFolderCreation(
+            root,
+            [],
+            [Local(root, "2024", "may", "img.jpg")],
+            "/shared/photos");
+
+        plan.Should().Equal(
+            "/shared/photos",
+            "/shared/photos/2024",
+            "/shared/photos/2024/may");
+    }
+
+    /// <summary>
+    /// Both sources name the same folders; asking for each one once is the point of the union.
+    /// </summary>
+    [Fact]
+    public void PlanRemoteFolderCreation_AsksForEachFolderOnce()
+    {
+        var root = Local("C:", "src", "photos");
+
+        var plan = FileTransferViewModel.PlanRemoteFolderCreation(
+            root,
+            [Local(root, "2024"), Local(root, "2024", "may")],
+            [Local(root, "2024", "may", "a.jpg"), Local(root, "2024", "may", "b.jpg"), Local(root, "2024", "c.jpg")],
+            "/shared/photos");
+
+        plan.Should().OnlyHaveUniqueItems();
+        plan.Should().Equal(
+            "/shared/photos",
+            "/shared/photos/2024",
+            "/shared/photos/2024/may");
     }
 }

@@ -2161,6 +2161,12 @@ Linux: ip addr  o  hostname -I</value>
   <data name="FileTransfer_QueueTitle" xml:space="preserve">
     <value>TRANSFERENCIAS</value>
   </data>
+  <data name="FileTransfer_QueueCancelAll" xml:space="preserve">
+    <value>Cancelar todo</value>
+  </data>
+  <data name="FileTransfer_QueueCancelAllTooltip" xml:space="preserve">
+    <value>Cancelar todas las transferencias en curso o en espera</value>
+  </data>
   <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
     <value>Borrar finalizadas</value>
   </data>

@@ -100,6 +100,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     {
         OnPropertyChanged(nameof(HasQueueItems));
         OnPropertyChanged(nameof(HasActiveTransfer));
+        CancelAllTransfersCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>Records a successful user-driven transfer in the Home "Recent activity" feed.</summary>
@@ -117,6 +118,12 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
     [RelayCommand]
     private void ClearCompletedTransfers() => TransferQueue.ClearCompleted();
+
+    /// <summary>Stops everything still in flight or waiting. Enabled only while there is something to stop.</summary>
+    [RelayCommand(CanExecute = nameof(HasCancellableTransfers))]
+    private void CancelAllTransfers() => TransferQueue.CancelAll();
+
+    private bool HasCancellableTransfers() => TransferQueue.Items.Any(item => !item.IsTerminal);
 
     // ─── Capabilities (v3 gating) ─────────────────────────────────────────────
 
@@ -872,14 +879,14 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         if (string.IsNullOrWhiteSpace(localRoot) || !Directory.Exists(localRoot))
             return;
 
-        EnqueueFolderUpload(localRoot!, FileTransferQueueKind.Upload);
+        await EnqueueFolderUploadAsync(localRoot!, FileTransferQueueKind.Upload);
     }
 
     /// <summary>
     /// Enqueues an upload of every file under <paramref name="localRoot"/>, preserving the folder shape
     /// under the current remote folder. Shared by the upload-folder button and folder drag-drop.
     /// </summary>
-    public void EnqueueFolderUpload(string localRoot, FileTransferQueueKind kind = FileTransferQueueKind.Upload)
+    public async Task EnqueueFolderUploadAsync(string localRoot, FileTransferQueueKind kind = FileTransferQueueKind.Upload)
     {
         var root = SelectedRemoteRoot;
         if (root is not { IsWritable: true })
@@ -915,6 +922,19 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
 
         var folderName = SanitizeLocalName(new DirectoryInfo(localRoot).Name);
         var targetFolder = CombineRemotePath(RemotePath, folderName);
+
+        // THE REMOTE DIRECTORIES HAVE TO EXIST BEFORE THE FIRST FILE IS ENQUEUED, and nothing else
+        // creates them. The download direction says so out loud - EnqueueSubtreeDownloads calls
+        // Directory.CreateDirectory for every entry - but the upload direction had no counterpart,
+        // and the two hosts disagree about whether that matters. The PC host creates the parent on
+        // write (FileTransferService.EnsureParentDirectory), so a PC destination hid this; the
+        // Android host resolves the parent and refuses when it is missing
+        // (AndroidFileTransferHost.handleTransferStart, FileHostHandler at the v3 path), so a phone
+        // destination failed EVERY file in the folder. Uploading a folder to a phone could not work
+        // at all. (RemEx-0xves)
+        if (!await EnsureRemoteFolderShapeAsync(root, targetFolder, localRoot, localFiles))
+            return;
+
         var queued = 0;
 
         foreach (var localPath in localFiles)
@@ -929,6 +949,138 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
         StatusText = queued == 0
             ? LocalizationService.Instance["FileTransfer_FolderEmpty"]
             : string.Format(CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderQueuedForUpload"], queued);
+    }
+
+    /// <summary>
+    /// Creates <paramref name="targetFolder"/> and every subdirectory the upload will write into.
+    /// Returns false when the shape could not be made, in which case nothing is enqueued.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// SHALLOWEST FIRST. mkdir names a parent and a child, so a nested folder cannot be created
+    /// before the folder above it; ordering by depth is what makes one pass enough.
+    /// </para>
+    /// <para>
+    /// AN EXISTING FOLDER IS NOT AN ERROR, and it has to be tolerated here rather than avoided.
+    /// The hosts refuse a mkdir onto a name that is already taken - that refusal is right for the
+    /// New-folder button, which is a user naming something - but uploading into a folder that is
+    /// already there is the ordinary case, not a collision. There is no "create if missing" on the
+    /// wire and adding one would be a protocol change, so the refusal is absorbed and the upload
+    /// proceeds; if the name is a FILE rather than a folder, the per-file transfers fail with the
+    /// host's own message, which is more specific than anything guessed here.
+    /// </para>
+    /// <para>
+    /// A failure to reach the host at all is different, and stops the whole thing: enqueuing several
+    /// hundred transfers that are all going to fail is precisely the outcome this feature keeps
+    /// producing, and it costs the user a queue they then have to clear.
+    /// </para>
+    /// </remarks>
+    private async Task<bool> EnsureRemoteFolderShapeAsync(
+        FileSharedRoot root, string targetFolder, string localRoot, IReadOnlyList<string> localFiles)
+    {
+        // Empty directories are included deliberately: a file list cannot imply them, and losing
+        // them silently is the same shape of bug the download side calls out.
+        var localDirectories = Directory.EnumerateDirectories(localRoot, "*", new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            AttributesToSkip = FileAttributes.ReparsePoint,
+            IgnoreInaccessible = true,
+        });
+
+        foreach (var remoteFolder in PlanRemoteFolderCreation(localRoot, localDirectories, localFiles, targetFolder))
+        {
+            var trimmed = remoteFolder.Trim('/');
+            var parent = trimmed.Contains('/') ? trimmed[..trimmed.LastIndexOf('/')] : string.Empty;
+            var name = trimmed.Contains('/') ? trimmed[(trimmed.LastIndexOf('/') + 1)..] : trimmed;
+            if (name.Length == 0)
+                continue;
+
+            try
+            {
+                await _client.MakeDirectoryRemoteAsync(root.RootId, parent, name, CancellationToken.None);
+            }
+            catch (FileTransferHostException ex)
+            {
+                // Already there, read-only, or a file in the way. Only the first is benign, and the
+                // host does not distinguish them in a way worth branching on - the per-file transfers
+                // report the other two accurately.
+                _logger.LogDebug(ex, "Creating remote folder {Folder} was refused; continuing.", remoteFolder);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Creating remote folder {Folder} failed.", remoteFolder);
+                StatusText = string.Format(
+                    CultureInfo.CurrentCulture, LocalizationService.Instance["FileTransfer_FolderScanFailed"], ex.Message);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Works out which remote folders a folder upload needs, and in what order to ask for them.
+    /// Returns full remote paths, shallowest first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Separated from the sending so it can be tested: the view model itself needs a live client and
+    /// connection, and the part with any judgement in it is this one.
+    /// </para>
+    /// <para>
+    /// ORDER IS THE CONTRACT. mkdir names a parent and a child, so <c>a/b/c</c> is unaskable until
+    /// <c>a/b</c> exists. Sorting by depth is what lets a single forward pass work regardless of the
+    /// order the local walk happened to produce, and the ordinal tiebreak only exists so the sequence
+    /// is stable enough to assert on.
+    /// </para>
+    /// <para>
+    /// Both sources are unioned rather than either taken alone. The directory walk is what preserves
+    /// EMPTY folders, which no file can imply; the file parents are what survive a directory the walk
+    /// could not read but whose files it still reached. Names are compared case-insensitively because
+    /// the destinations are Windows and SAF, neither of which would treat two casings as two folders.
+    /// </para>
+    /// </remarks>
+    internal static IReadOnlyList<string> PlanRemoteFolderCreation(
+        string localRoot,
+        IEnumerable<string> localDirectories,
+        IEnumerable<string> localFiles,
+        string targetFolder)
+    {
+        var relativeDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // EVERY ANCESTOR, not just the folder itself. Neither source is guaranteed to name the whole
+        // chain - a walk may skip an unreadable level, and a file only ever names its immediate
+        // parent - and mkdir cannot create "2024/may" while "2024" is missing. Adding the ancestors
+        // here is what makes the single ordered pass below sufficient.
+        void AddWithAncestors(string relative)
+        {
+            var path = relative.Replace('\\', '/').Trim('/');
+            while (path.Length > 0 && path != ".")
+            {
+                relativeDirectories.Add(path);
+                var cut = path.LastIndexOf('/');
+                path = cut < 0 ? string.Empty : path[..cut];
+            }
+        }
+
+        foreach (var directory in localDirectories)
+            AddWithAncestors(Path.GetRelativePath(localRoot, directory));
+
+        foreach (var localPath in localFiles)
+        {
+            var relative = Path.GetRelativePath(localRoot, localPath).Replace('\\', '/').Trim('/');
+            var cut = relative.LastIndexOf('/');
+            if (cut > 0)
+                AddWithAncestors(relative[..cut]);
+        }
+
+        return relativeDirectories
+            .Select(path => CombineRemotePath(targetFolder, path))
+            .Prepend(targetFolder)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(path => path.Trim('/').Count(character => character == '/'))
+            .ThenBy(path => path, StringComparer.Ordinal)
+            .ToList();
     }
 
     /// <summary>

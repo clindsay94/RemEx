@@ -77,6 +77,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Transferring a folder froze the PC, and the only way out was cancelling every file by hand.**
+  A folder transfer turns into one queued transfer per file, and the transfer list was drawing all of
+  them at once. A folder of 900 files meant 900 rows built at the same moment, several controls each,
+  with the whole list re-measured every time another one arrived. The window stopped responding, so
+  nothing appeared to happen at all — which looked exactly like the transfer failing silently. It had
+  not failed; the app simply had no attention left to show it.
+
+  The list now draws only the rows you can actually see and scrolls the rest, so the size of the
+  folder no longer decides whether the app stays usable. (RemEx-u3abk)
+
+- **There was no way to stop a folder transfer once it had started.** Every row had its own cancel
+  button and there was nothing above them, so abandoning a folder cost one click per file. "Clear
+  finished" was no help — it removes transfers that have already ended, which is none of the ones you
+  want to stop. There is now a **Cancel all** next to it, which stops the transfer in progress and
+  everything waiting behind it. (RemEx-l1ddp)
+
+- **Cancelling a transfer that had not started yet looked like nothing happened.** Only one transfer
+  runs at a time, and a waiting one was not marked cancelled until its turn came round — which, behind
+  a long queue, could be a very long time. The row kept its "Queued" label and its cancel button, so
+  the click appeared to have missed. It is now marked cancelled immediately. A transfer already
+  running still finishes stopping properly first, because that is what closes the connection and
+  removes the partly-written file. (RemEx-p5lu2)
+
+- **Uploading a folder to your phone failed on every single file.** The PC worked out where each file
+  should go on the phone but never created the folders to put them in, and the phone refuses to write
+  into a folder that is not there — so every file came back "Cannot write to destination folder". The
+  reverse direction worked, which is why this went unnoticed: when the phone uploads to the PC, the PC
+  creates the missing folder itself. The PC now creates the folder structure on the phone first,
+  outermost first, including folders that are empty. (RemEx-0xves)
+
 - **The phone could tell the PC a file had finished sending before it had.** When the PC pulls a file
   off your phone, the file data and the "that's everything" message travel over two separate
   connections. Sending order is only guaranteed *within* one connection, so announcing the finish the

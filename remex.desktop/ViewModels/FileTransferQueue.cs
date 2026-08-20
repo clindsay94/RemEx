@@ -142,6 +142,21 @@ public sealed partial class FileTransferQueueItem : ObservableObject
     {
         try { Cts.Cancel(); }
         catch (ObjectDisposedException) { /* already finished */ }
+
+        // A QUEUED item is terminal the moment it is cancelled, and saying so here is not cosmetic.
+        // The queue runs ONE transfer at a time, so an item at position 500 will not be dequeued for
+        // a long while - and until the pump reaches it, RunItemAsync is the only thing that writes
+        // Cancelled. Before this the row kept both its "Queued" label and its X, so cancelling it
+        // looked exactly like the click had missed. Connor found that out by clicking 900 times
+        // (RemEx-p5lu2).
+        //
+        // ONLY from Queued. Anything already running has to reach its terminal state through
+        // RunItemAsync, which is what unwinds the wire, deletes the partial file and completes the
+        // TaskCompletionSource; short-circuiting it here would mark the row Cancelled while the
+        // transfer was still writing to disk. The pump re-asserts Cancelled when it dequeues this
+        // item, which is idempotent.
+        if (State == TransferState.Queued)
+            State = TransferState.Cancelled;
     }
 }
 
@@ -224,6 +239,34 @@ public sealed class FileTransferQueue : IDisposable
         });
         StartPumpIfNeeded();
         return item;
+    }
+
+    /// <summary>
+    /// Cancels every item that has not reached a terminal state: the one transfer in flight and
+    /// everything still queued behind it. Returns nothing - the states are the result.
+    /// </summary>
+    /// <remarks>
+    /// THE PER-ROW X DOES NOT SCALE, AND A FOLDER TRANSFER IS WHERE THAT STOPS BEING A DETAIL.
+    /// One folder enqueues one item per file, so abandoning a folder used to cost one click per file
+    /// - 900 of them, in the case that produced this (RemEx-l1ddp). "Clear finished" cannot stand in
+    /// for it: it removes terminal items, which is by definition none of the ones you want to stop.
+    /// <para>
+    /// Iterated over a SNAPSHOT because <see cref="FileTransferQueueItem.Cancel"/> now moves a queued
+    /// item straight to Cancelled, and a handler reacting to that could otherwise mutate
+    /// <see cref="Items"/> underneath the loop.
+    /// </para>
+    /// </remarks>
+    public void CancelAll()
+    {
+        _post(() =>
+        {
+            foreach (var item in Items.ToArray())
+            {
+                if (!item.IsTerminal)
+                    item.CancelCommand.Execute(null);
+            }
+            Changed?.Invoke();
+        });
     }
 
     /// <summary>Removes every item that has reached a terminal state (Done/Failed/Cancelled).</summary>

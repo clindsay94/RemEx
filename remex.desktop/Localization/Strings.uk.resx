@@ -2127,6 +2127,12 @@ Linux: ip addr  або  hostname -I</value>
   <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
     <value>Показати відомості та попередній перегляд вибраного елемента.</value>
   </data>
+  <data name="FileTransfer_QueueCancelAll" xml:space="preserve">
+    <value>Скасувати все</value>
+  </data>
+  <data name="FileTransfer_QueueCancelAllTooltip" xml:space="preserve">
+    <value>Скасувати всі поточні та очікувані передавання</value>
+  </data>
   <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
     <value>Очистити завершені</value>
   </data>

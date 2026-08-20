@@ -1919,6 +1919,12 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="FileTransfer_PropertiesTooltip" xml:space="preserve">
     <value>Pokaż szczegóły i podgląd zaznaczonego elementu.</value>
   </data>
+  <data name="FileTransfer_QueueCancelAll" xml:space="preserve">
+    <value>Anuluj wszystkie</value>
+  </data>
+  <data name="FileTransfer_QueueCancelAllTooltip" xml:space="preserve">
+    <value>Anuluj wszystkie trwające i oczekujące transfery</value>
+  </data>
   <data name="FileTransfer_QueueClearCompleted" xml:space="preserve">
     <value>Wyczyść zakończone</value>
   </data>

@@ -1,3 +1,4 @@
+using System;
 using FluentAssertions;
 using Remex.Core.Models;
 using Remex.Desktop.Services;
@@ -377,5 +378,150 @@ public class FileTransferQueueTests
         {
             LocalizationService.Instance.SetCulture(original);
         }
+    }
+
+    // ─── Cancelling a queue you cannot click through (RemEx-p5lu2 / RemEx-l1ddp) ───
+
+    /// <summary>
+    /// Every wait in the cancellation tests below is bounded. THE REGRESSION THESE GUARD AGAINST IS A
+    /// TRANSFER THAT NEVER STOPS, so an unbounded await would turn a broken cancel into a hung test
+    /// run rather than a red one — which is how a CI job burns its whole timeout saying nothing.
+    /// </summary>
+    private static Task Settled(FileTransferQueueItem item) =>
+        item.Completion.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+    /// <summary>
+    /// The queue runs one transfer at a time, so an item deep in the backlog will not be dequeued for
+    /// a long while. Until this fix, RunItemAsync was the only writer of Cancelled, so a cancelled
+    /// queued row kept its "Queued" label and its X and looked untouched.
+    /// </summary>
+    [Fact]
+    public async Task Cancel_MarksAQueuedItemCancelledImmediately()
+    {
+        var queue = NewQueue();
+        var gate = new TaskCompletionSource();
+        var firstStarted = new TaskCompletionSource();
+
+        var first = queue.Enqueue(FileTransferQueueKind.Upload, "first", async (_, _) =>
+        {
+            firstStarted.TrySetResult();
+            await gate.Task;
+        });
+        var queued = queue.Enqueue(FileTransferQueueKind.Download, "queued", (_, _) => Task.CompletedTask);
+
+        await firstStarted.Task;
+        queued.State.Should().Be(TransferState.Queued);
+
+        queued.CancelCommand.Execute(null);
+
+        // Before the pump has been anywhere near it.
+        queued.State.Should().Be(TransferState.Cancelled);
+        queued.IsTerminal.Should().BeTrue();
+        queued.CanCancel.Should().BeFalse();
+        queued.CancelCommand.CanExecute(null).Should().BeFalse();
+
+        gate.SetResult();
+        await Settled(queued);
+
+        // The pump re-asserting Cancelled must be idempotent, and must not run the work.
+        queued.State.Should().Be(TransferState.Cancelled);
+    }
+
+    /// <summary>
+    /// The ACTIVE item is not short-circuited: it has to unwind through RunItemAsync, which is what
+    /// stops the wire and deletes the partial file. Marking it terminal here would call it Cancelled
+    /// while it was still writing.
+    /// </summary>
+    [Fact]
+    public async Task Cancel_LeavesAnActiveItemToUnwindThroughTheWorker()
+    {
+        var queue = NewQueue();
+        var started = new TaskCompletionSource();
+
+        var active = queue.Enqueue(FileTransferQueueKind.Upload, "active", async (_, ct) =>
+        {
+            started.TrySetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+        });
+
+        await started.Task;
+        active.State.Should().Be(TransferState.Active);
+
+        active.CancelCommand.Execute(null);
+
+        await Settled(active);
+        active.State.Should().Be(TransferState.Cancelled);
+    }
+
+    /// <summary>
+    /// A folder transfer enqueues one item per file, so abandoning one used to cost one click per
+    /// file. CancelAll is the whole queue in one action.
+    /// </summary>
+    [Fact]
+    public async Task CancelAll_StopsTheActiveItemAndEveryQueuedOne()
+    {
+        var queue = NewQueue();
+        var started = new TaskCompletionSource();
+        var ranAfterCancel = false;
+
+        var active = queue.Enqueue(FileTransferQueueKind.Download, "active", async (_, ct) =>
+        {
+            started.TrySetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+        });
+
+        var queued = new List<FileTransferQueueItem>();
+        for (var i = 0; i < 50; i++)
+        {
+            queued.Add(queue.Enqueue(FileTransferQueueKind.Download, $"f{i}", (_, _) =>
+            {
+                ranAfterCancel = true;
+                return Task.CompletedTask;
+            }));
+        }
+
+        await started.Task;
+
+        queue.CancelAll();
+
+        await Settled(active);
+        foreach (var item in queued)
+            await Settled(item);
+
+        active.State.Should().Be(TransferState.Cancelled);
+        queued.Should().OnlyContain(item => item.State == TransferState.Cancelled);
+        ranAfterCancel.Should().BeFalse("a cancelled transfer must never touch the wire");
+    }
+
+    /// <summary>
+    /// CancelAll must not disturb work that already finished — it is not "clear", and a Done item
+    /// that flipped to Cancelled would rewrite history in the Recent activity feed.
+    /// </summary>
+    [Fact]
+    public async Task CancelAll_LeavesTerminalItemsAlone()
+    {
+        var queue = NewQueue();
+
+        var done = queue.Enqueue(FileTransferQueueKind.Upload, "done", (_, _) => Task.CompletedTask);
+        var failed = queue.Enqueue(FileTransferQueueKind.Upload, "failed", (_, _) => throw new IOException("nope"));
+
+        await Settled(done);
+        await Settled(failed);
+
+        queue.CancelAll();
+
+        done.State.Should().Be(TransferState.Done);
+        failed.State.Should().Be(TransferState.Failed);
+    }
+
+    /// <summary>An empty queue is not an error case; CancelAll on one is a no-op.</summary>
+    [Fact]
+    public void CancelAll_OnAnEmptyQueueDoesNothing()
+    {
+        var queue = NewQueue();
+
+        queue.Invoking(q => q.CancelAll()).Should().NotThrow();
+
+        queue.Items.Should().BeEmpty();
     }
 }

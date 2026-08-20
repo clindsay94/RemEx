@@ -357,11 +357,27 @@
             <!-- Transfer queue panel -->
             <Border Classes="glass-card" Padding="16,12" IsVisible="{Binding HasQueueItems}">
                 <StackPanel Spacing="8">
-                    <Grid ColumnDefinitions="*,Auto">
+                    <Grid ColumnDefinitions="*,Auto,Auto">
                         <TextBlock Grid.Column="0" Text="{local:Localize FileTransfer_QueueTitle}" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="1" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="{local:Localize FileTransfer_QueueClearCompleted}" Classes="icon-btn" Command="{Binding ClearCompletedTransfersCommand}"/>
+                        <Button Grid.Column="1" Content="{local:Localize FileTransfer_QueueCancelAll}" Classes="icon-btn" Command="{Binding CancelAllTransfersCommand}" ToolTip.Tip="{local:Localize FileTransfer_QueueCancelAllTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_QueueCancelAllTooltip}" Margin="0,0,8,0"/>
+                        <Button Grid.Column="2" Content="{local:Localize FileTransfer_QueueClearCompleted}" Classes="icon-btn" Command="{Binding ClearCompletedTransfersCommand}"/>
                     </Grid>
-                    <ItemsControl ItemsSource="{Binding TransferQueue.Items}">
+                    <!--
+                        SCROLLVIEWER + MaxHeight + VirtualizingStackPanel, and all three are load-bearing.
+                        A folder transfer enqueues one item PER FILE, so this list is not a handful of rows -
+                        Connor queued 900 and the window stopped responding (RemEx-u3abk). A bare ItemsControl
+                        defaults to a plain StackPanel, which realizes every row; and the panel sits inside a
+                        StackPanel, so it is measured with INFINITE height, under which a virtualizing panel
+                        would realize everything anyway. The MaxHeight is what gives virtualization a real
+                        viewport to work against, so it is a correctness constraint here rather than styling.
+                    -->
+                    <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding TransferQueue.Items}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:FileTransferQueueItem">
                                 <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,4">
@@ -375,7 +391,8 @@
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </StackPanel>
             </Border>
 
