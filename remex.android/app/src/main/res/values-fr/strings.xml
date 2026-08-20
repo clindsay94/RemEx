@@ -494,6 +494,7 @@
     <string name="sensor_gpu_temp">Température GPU</string>
     <string name="sensor_fallback_label">Capteur %1$d</string>
     <string name="about_android_client_label">Client Android</string>
+    <string name="about_build_id">Build %1$s</string>
     <string name="about_pc_host_label">Votre PC</string>
     <string name="about_status_unknown">Inconnu</string>
     <string name="about_view_github">Voir le code source sur GitHub</string>

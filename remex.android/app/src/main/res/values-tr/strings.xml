@@ -494,6 +494,7 @@
     <string name="sensor_gpu_temp">Grafik Kartı Sıcaklığı</string>
     <string name="sensor_fallback_label">Sensör %1$d</string>
     <string name="about_android_client_label">Android İstemcisi</string>
+    <string name="about_build_id">Derleme %1$s</string>
     <string name="about_pc_host_label">PC\'niz</string>
     <string name="about_status_unknown">Bilinmeyen</string>
     <string name="about_view_github">GitHub\'da Kaynağı Görüntüle</string>

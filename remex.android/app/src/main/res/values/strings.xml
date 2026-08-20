@@ -402,6 +402,7 @@
     <string name="screen_faq_title">FAQ</string>
     <string name="screen_about_title">About RemEx</string>
     <string name="about_android_client_label">Android Client</string>
+    <string name="about_build_id">Build %1$s</string>
     <string name="about_pc_host_label">Your PC</string>
     <string name="about_view_github">View Source on GitHub</string>
     <string name="about_status_unknown">Unknown</string>

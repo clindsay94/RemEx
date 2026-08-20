@@ -1,9 +1,11 @@
 import com.android.build.api.variant.VariantOutputConfiguration
 import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.ZipFile
+import javax.inject.Inject
 
 plugins {
     alias(libs.plugins.android.application)
@@ -54,6 +56,77 @@ if (isPublishBuild) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── Build id ────────────────────────────────────────────────────────────────
+// An identity for THIS BUILD, distinct from versionName. NOT a version bump:
+// versionCode and versionName above are untouched and stay Connor's call.
+//
+// WHY: both heads shipped 2.4.0 for months, so the version number could not tell two binaries
+// apart — which is exactly when "is the fix in this build?" starts getting asked and cannot be
+// answered. On the PC that question was settled twice by comparing a file timestamp against a
+// commit timestamp, and one of those answers was wrong.
+//
+// SAME SHAPE AS THE DESKTOP (build/BuildId.targets, RemEx-2ckhm): seven hex for the short commit
+// sha, and when the working tree has uncommitted changes, "+" and four more characters. Read the
+// SHA HALF when comparing the phone against the PC — that half is git's and is identical on both.
+// The four characters after "+" are computed independently on each platform and are only
+// comparable against other builds of the SAME platform. Unifying them would mean reimplementing
+// one build system's hash in the other for a suffix that only ever distinguishes local rebuilds.
+//
+// A VALUE SOURCE, NOT A BARE exec: org.gradle.configuration-cache is on (gradle.properties:17), so
+// shelling out at configuration time has to go through an interface Gradle can track, or the cache
+// is either poisoned or silently disabled. It also re-runs each build to decide whether the cached
+// configuration is still valid, which is precisely the invalidation this wants — a new commit
+// changes the id, which changes BuildConfig, which rebuilds.
+abstract class RemexBuildIdSource : ValueSource<String, RemexBuildIdSource.Params> {
+    interface Params : ValueSourceParameters {
+        val repoRoot: Property<String>
+    }
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    override fun obtain(): String {
+        val sha = git("rev-parse", "--short=7", "HEAD")?.trim().orEmpty()
+        // No git, no .git, a source drop, a build agent without git on PATH: all of these are facts
+        // about the MACHINE, not the build, and none of them may fail the build. The About screen
+        // hides the row instead.
+        if (sha.isEmpty()) return UNKNOWN
+
+        val status = git("status", "--porcelain") ?: return sha
+        if (status.isBlank()) return sha
+
+        // String.hashCode is SPECIFIED by the JVM and stable across runs and machines, unlike
+        // .NET's, which is randomised per process — the desktop side needs MSBuild's
+        // StableStringHash for the same reason this needs nothing special.
+        return sha + "+" + String.format("%08x", status.hashCode()).substring(0, 4)
+    }
+
+    private fun git(vararg args: String): String? = try {
+        val out = ByteArrayOutputStream()
+        val result = execOperations.exec {
+            commandLine(listOf("git", "-C", parameters.repoRoot.get()) + args)
+            standardOutput = out
+            errorOutput = ByteArrayOutputStream()
+            isIgnoreExitValue = true
+        }
+        if (result.exitValue == 0) out.toString(Charsets.UTF_8.name()) else null
+    } catch (_: Exception) {
+        // Deliberately broad. The failure modes here are "git is not installed", "git is not on
+        // PATH for this user", "the process could not be started at all" — an open-ended set whose
+        // only correct handling is identical, and none of which is worth a stack trace in a build log.
+        null
+    }
+
+    companion object {
+        const val UNKNOWN = "unknown"
+    }
+}
+
+val remexBuildId: String = providers.of(RemexBuildIdSource::class.java) {
+    parameters.repoRoot.set(repoRootDir.absolutePath)
+}.get()
+// ─────────────────────────────────────────────────────────────────────────────
+
 android {
     namespace = remexAndroidApplicationId
     //noinspection GradleDependency
@@ -68,6 +141,9 @@ android {
         //noinspection OldTargetApi
         versionCode = remexVersionCode
         versionName = remexVersionName
+
+        // Which BUILD, as opposed to which release. See the RemexBuildIdSource block above.
+        buildConfigField("String", "BUILD_ID", "\"$remexBuildId\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

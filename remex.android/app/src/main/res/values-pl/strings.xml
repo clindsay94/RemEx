@@ -488,6 +488,7 @@
     <string name="sensor_gpu_temp">Temperatura karty graficznej</string>
     <string name="sensor_fallback_label">Sensor %1$d</string>
     <string name="about_android_client_label">Klient Android</string>
+    <string name="about_build_id">Kompilacja %1$s</string>
     <string name="about_status_unknown">Nieznany</string>
     <string name="about_view_github">Zobacz kod źródłowy na GitHubie</string>
     <string name="about_whats_new_1_label">Pulpit 2.0</string>

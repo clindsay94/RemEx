@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.clindsay94.remex.ui.theme.RemExTheme
@@ -159,6 +160,31 @@ fun AboutScreenContent(
                                         style = MaterialTheme.typography.bodyMediumEmphasized
                                 )
                             },
+                            supportingContent =
+                                    // Which BUILD, as opposed to which release (RemEx-f2x9g). The
+                                    // "+" marker means the APK was built from uncommitted work, so
+                                    // the commit it names is where the build started rather than
+                                    // what it contains. Compare the sha half against the PC's — the
+                                    // four characters after "+" are computed per platform.
+                                    //
+                                    // Absent, not "unknown", when git was unavailable at build
+                                    // time: that is a fact about the build machine, and a row
+                                    // saying "unknown" invites the reader to conclude something
+                                    // about the APK instead.
+                                    if (BuildConfig.BUILD_ID.isNotEmpty() &&
+                                                    BuildConfig.BUILD_ID != "unknown"
+                                    ) {
+                                        {
+                                            Text(
+                                                    stringResource(
+                                                            R.string.about_build_id,
+                                                            BuildConfig.BUILD_ID
+                                                    ),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontFamily = FontFamily.Monospace
+                                            )
+                                        }
+                                    } else null,
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     ) {
                         Text(stringResource(R.string.about_android_client_label))

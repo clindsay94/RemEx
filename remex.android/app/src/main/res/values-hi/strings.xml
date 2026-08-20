@@ -494,6 +494,7 @@
     <string name="sensor_gpu_temp">जीपीयू तापमान</string>
     <string name="sensor_fallback_label">सेंसर %1$d</string>
     <string name="about_android_client_label">एंड्रॉइड क्लाइंट</string>
+    <string name="about_build_id">Build %1$s</string>
     <string name="about_pc_host_label">आपका पीसी</string>
     <string name="about_status_unknown">अज्ञान</string>
     <string name="about_view_github">GitHub पर स्रोत कोड देखें</string>
