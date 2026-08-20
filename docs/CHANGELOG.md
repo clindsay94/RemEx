@@ -409,6 +409,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **Checked what would actually break if the desktop app swapped its component library, before
+  swapping it.** The redesign replaces the library that draws every standard control — buttons, menus,
+  dialogs, scrollbars. The worry was that some controls would come out the other side with nothing
+  drawing them at all, which in this framework means they render as *nothing*: there is no fallback.
+
+  That turned out to be a non-issue. Exactly one control is missing from the new library and the app
+  does not use it. What the audit found instead was in the opposite place: the two libraries disagree
+  about a handful of settings that cascade down from each window and popup to everything inside it —
+  the typeface, the text colour, the background. Ten of the app's eleven windows never pin those
+  themselves, so they would inherit whatever the new library says. The text-colour half is the one
+  that matters, because a colour from one palette on top of a background from another is how text
+  ends up unreadable on a pale theme.
+
+  Nothing is fixed here — the audit is the deliverable, and the fixes are now written down as
+  decisions someone has to make on purpose rather than discover afterwards. Worth noting that the
+  obvious fix for the font is a trap for the colours: the font settings have exactly one meaning
+  each, so redefining them is safe, while six of the colour names are used as both a background *and*
+  a text colour depending on where you look. Redefining one of those to fix a window background would
+  make tooltip text unreadable — the exact problem the audit warns about, caused by its own fix.
+  (RemEx-3e65x)
+
 - **Added the Material Design component library the desktop redesign will be built on, and found a
   ceiling on it.** The packages are referenced but not switched on — nothing about the app looks or
   behaves differently yet.
