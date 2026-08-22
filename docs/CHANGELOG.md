@@ -55,6 +55,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   release; this closes the two data channels it did not cover. Nothing you would normally run is
   affected — RemEx's own window never claimed to be a phone.
 
+### Changed
+
+- **RemEx's UI framework moved up a major version, and the app should look and behave exactly as it
+  did.** This is groundwork rather than a feature: the toolkit the PC app is built on, Avalonia, went
+  from 11.3 to 12.1. The reason to do it now is that the Material design components RemEx has been
+  planning to adopt stopped supporting the old version months ago, so the desktop redesign could not
+  begin until this landed.
+
+  Two things underneath moved with it, and both are worth naming because they touch how your screen
+  reaches your phone. The graphics library went up a major version too, which meant rewriting how
+  every piece of text on the splash screen is drawn and how screen images get scaled down. The
+  scaling had to be matched exactly: getting it wrong makes a shared desktop softer, and nothing
+  reports a problem when it happens. The Linux code that asks the system for permission to capture
+  and control the screen needed the same treatment.
+
+  If you notice anything different about the window frame, the splash screen, or the sharpness of a
+  remote desktop, that is worth reporting — those are the three places this could show up.
+  (RemEx-jcma3)
+
 ### Added
 
 - **You can transfer a whole folder now, not just the files in it one at a time.** Picking a folder
