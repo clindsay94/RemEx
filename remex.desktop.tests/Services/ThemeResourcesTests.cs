@@ -22,10 +22,10 @@ namespace Remex.Desktop.Tests.Services;
 /// </remarks>
 public sealed class ThemeResourcesTests
 {
-    private static readonly string[] ThemeFiles =
-    {
-        "BaseDarkGlass.axaml", "CyberNOC.axaml", "Monolith.axaml", "SolarFlare.axaml",
-    };
+    // Resolved through ThemeDictionary rather than read raw: since RemEx-07jij a preset file holds
+    // only its geometry and merges Themes/Shared/FallbackPalette.axaml for the colours, so a raw
+    // read would see four keys and report every colour key missing from every theme.
+    private static string[] ThemeFiles => ThemeDictionary.PresetNames;
 
     [Fact]
     public void Brush_FallsBack_WhenThereIsNoApplication()
@@ -124,13 +124,7 @@ public sealed class ThemeResourcesTests
             .ToList();
     }
 
-    private static HashSet<string> KeysIn(string themeFile)
-    {
-        var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Themes", themeFile));
-
-        return new HashSet<string>(
-            Regex.Matches(source, @"x:Key=""([^""]+)""").Select(m => m.Groups[1].Value));
-    }
+    private static HashSet<string> KeysIn(string theme) => ThemeDictionary.KeysIn(theme);
 
     // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path
     // outside the repo does not break this with an unrelated-looking error (RemEx-6i1l).

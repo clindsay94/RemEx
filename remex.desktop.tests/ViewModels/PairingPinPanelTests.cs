@@ -7,6 +7,7 @@ using FluentAssertions;
 using Moq;
 using Remex.Core.Services.Security;
 using Remex.Desktop.Services;
+using Remex.Desktop.Tests.Services;
 using Remex.Desktop.ViewModels;
 using Xunit;
 
@@ -231,13 +232,17 @@ public class PairingPinPanelTests
     {
         // A literal here would survive the default theme and die on another. SolarFlare is the one
         // that catches contrast mistakes.
-        var themes = Directory.GetFiles(Path.Combine(RepoRoot(), "remex.desktop", "Themes"), "*.axaml");
+        //
+        // RESOLVED, NOT READ RAW (RemEx-07jij). A preset file carries only its geometry now and
+        // merges Themes/Shared/FallbackPalette.axaml for the colours, so File.ReadAllText on the
+        // preset would report the brush missing from all four.
+        var themes = ThemeDictionary.PresetNames;
         themes.Should().HaveCountGreaterThanOrEqualTo(4, "all four PC themes must be present to check");
 
         foreach (var theme in themes)
         {
-            File.ReadAllText(theme).Should().Contain("SystemWarningBrush",
-                $"{Path.GetFileName(theme)} must define the brush the expiry warning uses");
+            ThemeDictionary.ResolvedText(theme).Should().Contain("SystemWarningBrush",
+                $"{theme} must define the brush the expiry warning uses");
         }
     }
 

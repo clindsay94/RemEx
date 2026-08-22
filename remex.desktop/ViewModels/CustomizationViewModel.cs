@@ -19,6 +19,19 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private readonly ThemeService _themeService;
     private bool _isApplyingPreset;
 
+    /// <summary>
+    /// The light/dark choice carried into the next save. Null means "never chosen explicitly", which
+    /// <see cref="ThemeService.ApplyCustomization"/> still answers by looking at the preset name.
+    /// </summary>
+    /// <remarks>
+    /// SELECTING A PRESET IS CHOOSING ITS LIGHT/DARK, so SelectTheme writes this rather than leaving
+    /// the name-matching fallback to infer it. The fallback exists for settings saved before the
+    /// field did; once a user has picked anything, changing the seed must not drag the mode back to
+    /// whatever the preset happens to be called. There is no UI for the switch yet - RemEx-5u0vy
+    /// owns that surface - so this is the only writer.
+    /// </remarks>
+    private bool? _useLightPalette;
+
     // ═══ Slider snap ═══
     private static readonly double[] CardSnapPoints = [0, 2, 8, 16, 24, 32];
     private static readonly double[] RemoteSnapPoints = [0, 4, 12, 24, 48];
@@ -131,6 +144,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _schemeVariant = settings.SchemeVariant;
         _canvasBackgroundType = settings.BackgroundMaterial;
         _syncWithHardware = settings.SyncWithHardware;
+        _useLightPalette = settings.UseLightPalette;
         _splashStyle = settings.SplashStyle;
         _selectedPageTitleFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.PageTitleFontFamily)
                                  ?? AvailableFonts.FirstOrDefault();
@@ -345,7 +359,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             ThemeId = SelectedTheme.ToString(),
             ThemeContrast = carried.ThemeContrast,
             ThemeSeedChroma = carried.ThemeSeedChroma,
-            UseLightPalette = carried.UseLightPalette,
+            UseLightPalette = _useLightPalette,
             CornerRadius = CornerRadius,
             RemoteCardCornerRadius = RemoteCardCornerRadius,
             GlassOpacity = GlassOpacity,
@@ -390,6 +404,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                         AccentColor = "#00F3FF";
                         GlowStrength = 10;
                         GlassOpacity = 0.05;
+                        _useLightPalette = false;
                         break;
                     case AppTheme.SolarFlare:
                         CornerRadius = 24;
@@ -397,6 +412,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                         AccentColor = "#FFB800";
                         GlowStrength = 2;
                         GlassOpacity = 0.8;
+                        _useLightPalette = true;
                         break;
                     case AppTheme.Monolith:
                         CornerRadius = 8;
@@ -404,6 +420,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                         AccentColor = "#0A84FF";
                         GlowStrength = 0;
                         GlassOpacity = 1.0;
+                        _useLightPalette = false;
                         break;
                     case AppTheme.BaseDarkGlass:
                         CornerRadius = 16;
@@ -412,13 +429,16 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                         GlowStrength = 2;
                         GlassOpacity = 0.1;
                         SplashStyle = "RemexCommand";
+                        _useLightPalette = false;
                         break;
                     case AppTheme.Dynamic:
                         CornerRadius = 24;
                         RemoteCardCornerRadius = 24;
                         GlowStrength = 4;
                         GlassOpacity = 0.4;
-                        // Keep existing AccentColor as the seed
+                        // Keep existing AccentColor as the seed, and the existing light/dark choice
+                        // with it — Dynamic is "whatever the user has built", so it is the one preset
+                        // that must not overwrite _useLightPalette.
                         break;
                 }
             }

@@ -103,14 +103,14 @@ public class ThemeKeyCoverageTests
     }
 
     /// <summary>Keys declared with a colour-valued element: <c>Color</c> and the brush types.</summary>
-    private static string[] ColourKeysIn(string path) =>
-        Regex.Matches(File.ReadAllText(path),
+    private static string[] ColourKeysIn(string preset) =>
+        Regex.Matches(ThemeDictionary.ResolvedText(preset),
                 @"<(?:Color|SolidColorBrush|LinearGradientBrush|RadialGradientBrush) x:Key=""([^""]+)""")
             .Select(m => m.Groups[1].Value)
             .ToArray();
 
-    private static string[] AllKeysIn(string path) =>
-        Regex.Matches(File.ReadAllText(path), @"x:Key=""([^""]+)""")
+    private static string[] AllKeysIn(string preset) =>
+        Regex.Matches(ThemeDictionary.ResolvedText(preset), @"x:Key=""([^""]+)""")
             .Select(m => m.Groups[1].Value)
             .ToArray();
 
@@ -127,11 +127,16 @@ public class ThemeKeyCoverageTests
         return keys;
     }
 
+    /// <summary>
+    /// The selectable presets, by name. Resolved through <see cref="ThemeDictionary"/>, because a
+    /// preset file has held only its geometry since RemEx-07jij and the colours it resolves come
+    /// from the shared fallback it merges.
+    /// </summary>
     private static string[] ThemeFiles()
     {
-        var files = Directory.GetFiles(Path.Combine(RepoRoot(), "remex.desktop", "Themes"), "*.axaml");
-        files.Should().HaveCountGreaterThan(1, "the theme directory moved or emptied");
-        return files;
+        var presets = ThemeDictionary.PresetNames;
+        presets.Should().HaveCountGreaterThan(1, "the theme directory moved or emptied");
+        return presets;
     }
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")

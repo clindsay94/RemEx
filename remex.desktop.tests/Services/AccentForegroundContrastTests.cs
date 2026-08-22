@@ -1,5 +1,8 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using Avalonia.Media;
+using Remex.Desktop.Services;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Services;
@@ -27,25 +30,84 @@ namespace Remex.Desktop.Tests.Services;
 /// </remarks>
 public class AccentForegroundContrastTests
 {
-    private static string ThemesDirectory() =>
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "remex.desktop", "Themes");
-
     /// <summary>Every theme on disk, not a list someone has to remember to extend.</summary>
     /// <remarks>
     /// A HARDCODED LIST IS SILENTLY INCOMPLETE. Adding a fifth theme without the tokens would give
     /// exactly the unresolved-DynamicResource failure this class exists to catch, with every test
     /// green, because the new file would never be looked at.
     /// </remarks>
-    private static string[] Themes =>
-        Directory.EnumerateFiles(ThemesDirectory(), "*.axaml")
-            .Select(Path.GetFileNameWithoutExtension)
-            .Where(name => !string.IsNullOrEmpty(name))
-            .Select(name => name!)
-            .OrderBy(name => name, StringComparer.Ordinal)
+    private static string[] Themes => ThemeDictionary.PresetNames;
+
+    /// <summary>
+    /// A theme's resolved text — its own file plus the shared fallback palette it merges.
+    /// </summary>
+    /// <remarks>
+    /// RAW UNTIL RemEx-07jij, AND THE RAW READ WOULD NOW FIND NOTHING. A preset file holds only its
+    /// geometry; the tokens measured below live in <c>Themes/Shared/FallbackPalette.axaml</c>, which
+    /// every preset merges. <see cref="ThemeDictionary"/> throws on an include it cannot resolve, so
+    /// a broken merge fails here rather than quietly leaving every <c>Assert.Contains</c> unmet for a
+    /// reason that looks like a missing token.
+    /// </remarks>
+    private static string ThemeText(string theme) => ThemeDictionary.ResolvedText(theme);
+
+    // ── The preset seeds, which is where the per-theme variation lives now (RemEx-07jij) ──────────
+
+    /// <summary>One preset's seed and light/dark, as <c>SelectTheme</c> writes them.</summary>
+    internal readonly record struct PresetSeed(string Preset, string Seed, bool IsLight);
+
+    /// <summary>
+    /// Every preset's seed, READ OUT OF <c>CustomizationViewModel.SelectTheme</c> rather than copied.
+    /// </summary>
+    /// <remarks>
+    /// A DUPLICATED SEED TABLE WOULD GO STALE SILENTLY, and stale is worse than absent here: the
+    /// tests would keep measuring #00F3FF long after the preset moved off it, stay green, and report
+    /// an accessibility guarantee about a colour the app no longer ships. Reading the switch means a
+    /// retuned preset is measured on its new value or fails loudly for the right reason.
+    /// <para>
+    /// <c>Dynamic</c> is excluded because it deliberately sets no seed — it keeps whatever the user
+    /// has, which is not a value this file can measure.
+    /// </para>
+    /// </remarks>
+    private static PresetSeed[] PresetSeeds()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
+
+        var body = Regex.Match(source, @"private void SelectTheme\(.*?\n    \}", RegexOptions.Singleline);
+        Assert.True(body.Success, "SelectTheme moved or changed shape - the seed scan cannot see it");
+
+        var seeds = Regex.Matches(
+                body.Value,
+                @"case AppTheme\.(\w+):(.*?)break;",
+                RegexOptions.Singleline)
+            .Select(m => (Preset: m.Groups[1].Value, Body: m.Groups[2].Value))
+            .Where(c => Regex.IsMatch(c.Body, @"AccentColor\s*=\s*""#"))
+            .Select(c => new PresetSeed(
+                c.Preset,
+                Regex.Match(c.Body, @"AccentColor\s*=\s*""(#[0-9A-Fa-f]{6,8})""").Groups[1].Value,
+                Regex.IsMatch(c.Body, @"_useLightPalette\s*=\s*true")))
             .ToArray();
 
-    private static string ThemePath(string theme) =>
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "remex.desktop", "Themes", theme + ".axaml");
+        // ANTI-VACUITY. Every count-based assertion below is trivially satisfiable by an empty list,
+        // and a regex that stopped matching is exactly how that happens. Four presets carry a seed;
+        // Dynamic is the fifth case and correctly carries none.
+        Assert.Equal(4, seeds.Length);
+        Assert.Single(seeds, p => p.IsLight);
+        return seeds;
+    }
+
+    private static DynamicColorGenerator.M3Palette Generated(PresetSeed preset)
+    {
+        Assert.True(Color.TryParse(preset.Seed, out var seed), $"{preset.Preset}: unparseable seed {preset.Seed}");
+        return DynamicColorGenerator.Generate(seed, isDark: !preset.IsLight);
+    }
+
+    private static string Hex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path
+    // outside the repo does not break this with an unrelated-looking error (RemEx-6i1l).
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 
     private static double RelativeLuminance(string hex)
     {
@@ -75,7 +137,7 @@ public class AccentForegroundContrastTests
         // the key would render an unstyled default with no error anywhere.
         foreach (var theme in Themes)
         {
-            var text = File.ReadAllText(ThemePath(theme));
+            var text = ThemeText(theme);
             Assert.Contains("AccentForegroundBrush", text);
         }
     }
@@ -88,7 +150,7 @@ public class AccentForegroundContrastTests
         // is per-theme rather than one literal.
         foreach (var theme in Themes)
         {
-            var text = File.ReadAllText(ThemePath(theme));
+            var text = ThemeText(theme);
 
             var accent = Extract(text, "<Color x:Key=\"AccentPrimary\">");
             var foreground = ExtractBrush(text, "AccentForegroundBrush");
@@ -100,21 +162,39 @@ public class AccentForegroundContrastTests
     }
 
     [Fact]
-    public void PlainWhiteWouldFailOnMostThemes_WhichIsWhyTheTokenExists()
+    public void PlainWhiteWouldFailOnSomePresetSeeds_WhichIsWhyTheTokenExists()
     {
-        // The control. Without it the test above could pass against a token that merely happens to
-        // equal the literal it replaced, and the change would look justified when it was not.
-        var failures = 0;
-        foreach (var theme in Themes)
-        {
-            var accent = Extract(File.ReadAllText(ThemePath(theme)), "<Color x:Key=\"AccentPrimary\">");
-            if (Contrast(accent, "#FFFFFF") < 4.5) failures++;
-        }
+        // THE CONTROL, AND IT MOVED (RemEx-07jij). It used to count theme FILES whose accent literal
+        // white failed against, and the answer was three of four. There is one palette file now, so
+        // that count can only be zero or four and the control would have become decorative - true by
+        // construction, tripped by nothing.
+        //
+        // The variation did not disappear, it moved: the four presets are four SEEDS, and each is put
+        // through the M3 generator at runtime. So the control asks the same question of the pair that
+        // actually ships. If white ever cleared AA on every preset's generated accent, the token would
+        // stop being earned and the split would need re-arguing rather than silently keeping.
+        var failures = PresetSeeds().Count(p => Contrast(Hex(Generated(p).Primary), "#FFFFFF") < 4.5);
 
-        // EXPRESSED AGAINST THE LIST, NOT AS 3. Themes now comes from disk, so a literal 3 would
-        // fail on a fifth theme for the wrong reason - it would look like a contrast regression when
-        // it is only a bigger list. White passes on exactly one theme, BaseDarkGlass.
-        Assert.Equal(Themes.Length - 1, failures);
+        Assert.True(failures > 0,
+            "white now clears AA on every preset's generated accent, so AccentForegroundBrush is no "
+                + "longer justified by measurement - re-measure before deleting or keeping it.");
+    }
+
+    [Fact]
+    public void TheGeneratedAccentForegroundMeetsWcagAAOnEveryPresetSeed()
+    {
+        // THE PROPERTY, AT THE PLACE IT NOW HOLDS. The theme-file measurement above pins the fallback
+        // palette - the two or three frames before ApplyCustomization lands. This pins what a user
+        // actually looks at: whatever the generator returns for their seed.
+        foreach (var preset in PresetSeeds())
+        {
+            var palette = Generated(preset);
+            var ratio = Contrast(Hex(palette.Primary), Hex(palette.OnPrimary));
+
+            Assert.True(ratio >= 4.5,
+                $"{preset.Preset}: generated OnPrimary {Hex(palette.OnPrimary)} on Primary "
+                    + $"{Hex(palette.Primary)} is {ratio:F2}:1, below WCAG AA 4.5:1");
+        }
     }
 
     /// <summary>Reads a colour literal, whether it is written #RRGGBB or #AARRGGBB.</summary>
@@ -166,7 +246,7 @@ public class AccentForegroundContrastTests
     {
         foreach (var theme in Themes)
         {
-            Assert.Contains("SuccessForegroundBrush", File.ReadAllText(ThemePath(theme)));
+            Assert.Contains("SuccessForegroundBrush", ThemeText(theme));
         }
     }
 
@@ -180,7 +260,7 @@ public class AccentForegroundContrastTests
         // looking fixed. Green needs dark text in every theme; the accent does not.
         foreach (var theme in Themes)
         {
-            var text = File.ReadAllText(ThemePath(theme));
+            var text = ThemeText(theme);
             var success = Extract(text, "<Color x:Key=\"SystemSuccess\">");
             var foreground = ExtractBrush(text, "SuccessForegroundBrush");
 
@@ -638,7 +718,7 @@ public class AccentForegroundContrastTests
         // green in all FOUR themes, not three. Without this the comment's numbers are asserted
         // nowhere and could drift from the themes they describe.
         var failures = Themes.Count(theme =>
-            Contrast(Extract(File.ReadAllText(ThemePath(theme)), "<Color x:Key=\"SystemSuccess\">"), "#FFFFFFFF") < 4.5);
+            Contrast(Extract(ThemeText(theme), "<Color x:Key=\"SystemSuccess\">"), "#FFFFFFFF") < 4.5);
 
         Assert.Equal(Themes.Length, failures);
     }
@@ -654,7 +734,7 @@ public class AccentForegroundContrastTests
         // sweep had to be reverted.
         foreach (var theme in Themes)
         {
-            var text = File.ReadAllText(ThemePath(theme));
+            var text = ThemeText(theme);
             var error = Extract(text, "<Color x:Key=\"SystemError\">");
             var foreground = ExtractBrush(text, "ErrorForegroundBrush");
 
@@ -668,7 +748,7 @@ public class AccentForegroundContrastTests
     {
         foreach (var theme in Themes)
         {
-            Assert.Contains("ErrorForegroundBrush", File.ReadAllText(ThemePath(theme)));
+            Assert.Contains("ErrorForegroundBrush", ThemeText(theme));
         }
     }
 
@@ -687,7 +767,7 @@ public class AccentForegroundContrastTests
         // silently keeping.
         var borrowWouldFail = Themes.Count(theme =>
         {
-            var text = File.ReadAllText(ThemePath(theme));
+            var text = ThemeText(theme);
             return Contrast(Extract(text, "<Color x:Key=\"SystemError\">"),
                             ExtractBrush(text, "AccentForegroundBrush")) < 4.5;
         });
@@ -742,7 +822,7 @@ public class AccentForegroundContrastTests
     {
         foreach (var theme in Themes)
         {
-            Assert.Contains("ErrorTintForegroundBrush", File.ReadAllText(ThemePath(theme)));
+            Assert.Contains("ErrorTintForegroundBrush", ThemeText(theme));
         }
     }
 
@@ -755,7 +835,7 @@ public class AccentForegroundContrastTests
         // shipped a button that fails the moment you reach for it.
         foreach (var theme in Themes)
         {
-            var text = File.ReadAllText(ThemePath(theme));
+            var text = ThemeText(theme);
             var error = Extract(text, "<Color x:Key=\"SystemError\">");
             var glass = Extract(text, "<Color x:Key=\"GlassBaseMedium\">");
             var foreground = ExtractBrush(text, "ErrorTintForegroundBrush");
@@ -836,7 +916,7 @@ public class AccentForegroundContrastTests
         // while the other three are dark. Same colour, opposite answer, one theme apart.
         var failures = Themes.Count(theme =>
         {
-            var text = File.ReadAllText(ThemePath(theme));
+            var text = ThemeText(theme);
             var surface = Composite(
                 Extract(text, "<Color x:Key=\"SystemError\">"),
                 TintOpacity(text, "SystemErrorBackgroundBrush"),
@@ -844,13 +924,44 @@ public class AccentForegroundContrastTests
             return Contrast(surface, "#FFFFFFFF") < 4.5;
         });
 
-        // AGAINST THE LIST RATHER THAN A LITERAL 1, which is the convention this file argues for twice
-        // above and which the first version of this test broke. A fifth theme — a second light one,
-        // added correctly with its own measured token — would take this to 2 and read as a contrast
-        // regression when it is only a longer list. What is worth pinning is that white fails
-        // SOMEWHERE and not everywhere: that is the inversion against the solid fill, where white
-        // fails on every theme but SolarFlare.
-        Assert.InRange(failures, 1, Themes.Length - 1);
+        // ONE PALETTE FILE MEANS ONE ANSWER (RemEx-07jij). This used to assert the count landed
+        // strictly inside the list — the inversion against the solid fill, where white failed on
+        // every theme but SolarFlare. With one shared fallback the four themes cannot disagree, so
+        // the only honest claim left about the FALLBACK is that white and the tint token do not agree
+        // about it. The per-preset inversion is asserted on the generated palettes instead, in
+        // TheGeneratedTintForegroundInvertsTheSolidFillOnSomeSeed below.
+        var tintTokenAgreesWithWhite = Themes.All(theme =>
+            ExtractBrush(ThemeText(theme), "ErrorTintForegroundBrush")
+                .Equals("#FFFFFFFF", StringComparison.OrdinalIgnoreCase));
+
+        Assert.True(failures == 0 && tintTokenAgreesWithWhite || failures == Themes.Length,
+            $"white fails on {failures} of {Themes.Length} identical fallback tints, which is only "
+                + "possible if the presets stopped sharing Themes/Shared/FallbackPalette.axaml");
+    }
+
+    [Fact]
+    public void TheGeneratedTintForegroundInvertsTheSolidFillOnSomeSeed()
+    {
+        // WHY THE FOURTH TOKEN IS STILL EARNED, measured on what ships. ErrorTintForegroundBrush
+        // exists because 15% red over glass is a different surface from solid red and wants the
+        // opposite foreground. At runtime it is palette.OnSurface over palette.SurfaceVariant, while
+        // the solid fill is palette.OnError over palette.Error - so the claim to pin is that those
+        // two answers really do disagree for at least one preset seed. If they ever agree everywhere,
+        // one of the two tokens is redundant and the split should be re-argued, not kept by inertia.
+        var inversions = PresetSeeds().Count(preset =>
+        {
+            var palette = Generated(preset);
+            var tint = Composite(Hex(palette.Error), 0.15, Hex(palette.SurfaceVariant));
+
+            var tintWantsLight = Contrast(tint, "#FFFFFFFF") >= Contrast(tint, "#FF0A0A0A");
+            var fillWantsLight = Contrast(Hex(palette.Error), "#FFFFFFFF")
+                                 >= Contrast(Hex(palette.Error), "#FF0A0A0A");
+            return tintWantsLight != fillWantsLight;
+        });
+
+        Assert.True(inversions > 0,
+            "the tint and the solid fill now want the same foreground on every preset seed, so "
+                + "ErrorTintForegroundBrush is no longer justified by measurement.");
     }
 
     [Fact]
@@ -868,23 +979,25 @@ public class AccentForegroundContrastTests
         // Color="{DynamicResource SystemError}" with no literal on the line, so ExtractBrush's
         // "first # after the key" would walk on to whatever colour is declared next and measure it
         // instead — silently, and against a value from an unrelated token.
-        var borrowedTokens = new (string Name, Func<string, string> Read)[]
+        // MEASURED ON THE GENERATED PALETTES, NOT THE FALLBACK FILE (RemEx-07jij). The four presets
+        // share one fallback palette now, so counting theme files gives one answer four times and the
+        // "> 0" below would be decided by a single colour - which is how AccentForegroundBrush, dark
+        // on the old SolarFlare dictionary and white in the shared one, turned this green. The
+        // borrowed tokens are the generator's equivalents, on the palette each preset seed produces.
+        var borrowedTokens = new (string Name, Func<DynamicColorGenerator.M3Palette, string> Read)[]
         {
-            ("ErrorForegroundBrush", text => ExtractBrush(text, "ErrorForegroundBrush")),
-            ("AccentForegroundBrush", text => ExtractBrush(text, "AccentForegroundBrush")),
-            ("SystemErrorBrush", text => Extract(text, "<Color x:Key=\"SystemError\">")),
+            ("ErrorForegroundBrush", p => Hex(p.OnError)),
+            ("AccentForegroundBrush", p => Hex(p.OnPrimary)),
+            ("SystemErrorBrush", p => Hex(p.Error)),
         };
 
         foreach (var (name, read) in borrowedTokens)
         {
-            var wouldFail = Themes.Count(theme =>
+            var wouldFail = PresetSeeds().Count(preset =>
             {
-                var text = File.ReadAllText(ThemePath(theme));
-                var surface = Composite(
-                    Extract(text, "<Color x:Key=\"SystemError\">"),
-                    TintOpacity(text, "SystemErrorBackgroundBrush"),
-                    Extract(text, "<Color x:Key=\"GlassBaseMedium\">"));
-                return Contrast(surface, read(text)) < 4.5;
+                var palette = Generated(preset);
+                var surface = Composite(Hex(palette.Error), 0.15, Hex(palette.SurfaceVariant));
+                return Contrast(surface, read(palette)) < 4.5;
             });
 
             Assert.True(wouldFail > 0,
@@ -894,17 +1007,34 @@ public class AccentForegroundContrastTests
     }
 
     [Fact]
-    public void PlainWhiteWouldFailOnEveryErrorFillButOne()
+    public void PlainWhiteWouldFailOnSomePresetSeedsErrorFill()
     {
-        // The control this surface was missing, and the file's own pattern: without it, the 3.41 /
-        // 3.67 / 3.88 / 4.83 quoted in four theme comments and the changelog are asserted NOWHERE and
-        // can drift from the themes they describe.
-        var failures = Themes.Count(theme =>
-            Contrast(Extract(File.ReadAllText(ThemePath(theme)), "<Color x:Key=\"SystemError\">"), "#FFFFFFFF") < 4.5);
+        // The control for the error surface, moved to the seeds for the same reason as the accent one
+        // (RemEx-07jij): there is one palette file now, so counting theme files can only answer zero
+        // or four and the claim "white fails on every fill but one" no longer has four fills to be
+        // about. The generated error colour still varies per seed, because M3 derives it from the
+        // scheme, so the question is still worth asking - just of the generator.
+        var failures = PresetSeeds().Count(p => Contrast(Hex(Generated(p).Error), "#FFFFFFFF") < 4.5);
 
-        // Against the list, not 3. White passes on exactly one theme, SolarFlare, at 4.83:1 - which
-        // is why that theme alone keeps white.
-        Assert.Equal(Themes.Length - 1, failures);
+        Assert.True(failures > 0,
+            "white now clears AA on every preset's generated error fill, so ErrorForegroundBrush is "
+                + "no longer justified by measurement - re-measure before keeping it.");
+    }
+
+    [Fact]
+    public void TheGeneratedErrorForegroundMeetsWcagAAOnEveryPresetSeed()
+    {
+        // The property, at the place it now holds - the generated pair a user actually sees, rather
+        // than the fallback literals measured against the palette file above.
+        foreach (var preset in PresetSeeds())
+        {
+            var palette = Generated(preset);
+            var ratio = Contrast(Hex(palette.Error), Hex(palette.OnError));
+
+            Assert.True(ratio >= 4.5,
+                $"{preset.Preset}: generated OnError {Hex(palette.OnError)} on Error "
+                    + $"{Hex(palette.Error)} is {ratio:F2}:1, below WCAG AA 4.5:1");
+        }
     }
 
 }

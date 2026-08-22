@@ -1,95 +1,19 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- ═══ MONOLITH (INDUSTRIAL) ═══ -->
+    <!-- ═══ MONOLITH THEME ═══
 
-    <!-- Colors -->
-    <Color x:Key="GlassBaseDark">#1C1C1E</Color>
-    <Color x:Key="GlassBaseMedium">#2C2C2E</Color>
-    <Color x:Key="AccentPrimary">#0A84FF</Color>
-    <Color x:Key="AccentHover">#409CFF</Color>
-    <Color x:Key="AccentPressed">#0064CC</Color>
-    <Color x:Key="SystemSuccess">#30D158</Color>
-    <Color x:Key="SystemError">#FF453A</Color>
-    <Color x:Key="SystemWarning">#FFD60A</Color>
-    <Color x:Key="CardBackground">#402C2C2E</Color>
-    <Color x:Key="CardBackgroundHover">#602C2C2E</Color>
-    <Color x:Key="CardBorder">#803A3A3C</Color>
-    <Color x:Key="TextPrimary">#FFFFFF</Color>
-    <Color x:Key="TextSecondary">#8E8E93</Color>
-    <Color x:Key="TextMuted">#6E6E73</Color>
+         A preset is its GEOMETRY plus a seed. The colours come from Shared/FallbackPalette.axaml
+         until ThemeService.ApplyCustomization lands, and from the M3 generator after that; this
+         preset's seed (#0A84FF) lives in CustomizationViewModel.SelectTheme. (RemEx-07jij)
+    -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Remex.Desktop/Themes/Shared/FallbackPalette.axaml"/>
+    </ResourceDictionary.MergedDictionaries>
 
-    <!-- Brushes -->
-    <SolidColorBrush x:Key="GlassBaseDarkBrush" Color="{DynamicResource GlassBaseDark}"/>
-    <SolidColorBrush x:Key="GlassBaseMediumBrush" Color="{DynamicResource GlassBaseMedium}"/>
-    <SolidColorBrush x:Key="AccentPrimaryBrush" Color="{DynamicResource AccentPrimary}"/>
-    <!-- Text/icons ON an accent-filled surface. MEASURED, not chosen: white on this
-         theme's accent is 3.65:1 and black is 5.76:1, so this is the value WCAG AA picks,
-         not a taste call. The literal Foreground="White" it replaces failed AA on three
-         of the four themes - CyberNOC at 1.38:1 was barely legible. (RemEx-tq2e) -->
-    <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FF0A0A0A"/>
-    <SolidColorBrush x:Key="AccentHoverBrush" Color="{DynamicResource AccentHover}"/>
-    <SolidColorBrush x:Key="AccentPressedBrush" Color="{DynamicResource AccentPressed}"/>
-    <SolidColorBrush x:Key="CardBackgroundBrush" Color="{DynamicResource CardBackground}"/>
-    <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="{DynamicResource CardBackgroundHover}"/>
-    <SolidColorBrush x:Key="CardBorderBrush" Color="{DynamicResource CardBorder}"/>
-    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimary}"/>
-    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondary}"/>
-    <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMuted}"/>
-    <SolidColorBrush x:Key="SystemSuccessBrush" Color="{DynamicResource SystemSuccess}"/>
-    <!-- MEASURED, NOT CHOSEN. White on this theme's success fill #30D158 is 2.02:1, below
-         WCAG AA - and AccentForegroundBrush cannot stand in, because on BaseDarkGlass that
-         token is white (correctly, for a purple accent). Green wants dark text in every
-         theme; the accent does not. This value gives 9.79:1. Retune SystemSuccess and
-         AccentForegroundContrastTests will fail until this is revisited. (RemEx-iegl) -->
-    <SolidColorBrush x:Key="SuccessForegroundBrush" Color="#FF0A0A0A"/>
-    <SolidColorBrush x:Key="SystemSuccessBackgroundBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.15"/>
-    <SolidColorBrush x:Key="SystemSuccessBackgroundHoverBrush" Color="{DynamicResource SystemSuccess}" Opacity="0.22"/>
-    <SolidColorBrush x:Key="SystemWarningBrush" Color="{DynamicResource SystemWarning}"/>
-    <SolidColorBrush x:Key="SystemWarningBackgroundBrush" Color="{DynamicResource SystemWarning}" Opacity="0.15"/>
-    <SolidColorBrush x:Key="SystemErrorBrush" Color="{DynamicResource SystemError}"/>
-    <!-- MEASURED, NOT CHOSEN. This theme's accent token happens to be the SAME value, and that is a
-         coincidence rather than a licence: red is not allowed to borrow it. See SolarFlare, where the
-         accent token is dark (#FF141414) and takes red from 4.83:1 down to 3.81:1 - which is exactly
-         why RemEx-tq2e's blanket sweep had to be reverted.
-         White on this theme's error fill #FF453A is 3.41:1; this value gives 5.81:1. Retune SystemError
-         and AccentForegroundContrastTests fails. (RemEx-xb3c) -->
-    <SolidColorBrush x:Key="ErrorForegroundBrush" Color="#FF0A0A0A"/>
-    <SolidColorBrush x:Key="SystemErrorBackgroundBrush" Color="{DynamicResource SystemError}" Opacity="0.15"/>
-    <SolidColorBrush x:Key="SystemErrorBackgroundHoverBrush" Color="{DynamicResource SystemError}" Opacity="0.22"/>
-    <!-- A FOURTH TOKEN, because the TINT is a different surface from the FILL and inverts its answer.
-         ErrorForegroundBrush above is dark, correctly, for solid red. Over 15% red on glass it would
-         measure 1.67:1 here - dark text on a dark surface. White is right on this theme: 11.85:1 at
-         rest and 10.85:1 on hover, composited over GlassBaseMedium. (RemEx-1elh) -->
-    <SolidColorBrush x:Key="ErrorTintForegroundBrush" Color="#FFFFFFFF"/>
-    <!-- Semi-transparent dark overlay for toolbars and floating panels -->
-    <SolidColorBrush x:Key="GlassOverlayBrush" Color="#40000000"/>
-    <!-- Deep overlay for modal/tutorial backdrops -->
-    <SolidColorBrush x:Key="OverlayBackdropBrush" Color="#E6141720"/>
-
-    <!-- Background Gradients (Solid Dark) -->
-    <Color x:Key="BackgroundGradientStart">#0A0A0C</Color>
-    <Color x:Key="BackgroundGradientMid">#08080A</Color>
-    <Color x:Key="BackgroundGradientEnd">#050505</Color>
-
-    <LinearGradientBrush x:Key="BackgroundGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Offset="0" Color="{StaticResource BackgroundGradientStart}" />
-        <GradientStop Offset="0.5" Color="{StaticResource BackgroundGradientMid}" />
-        <GradientStop Offset="1" Color="{StaticResource BackgroundGradientEnd}" />
-    </LinearGradientBrush>
-
-    <!-- UI Geometry -->
+    <!-- The heavy 3px border is the whole identity of this preset - it is the only one that is not
+         glass, and the only one whose cards are drawn rather than floated. -->
     <CornerRadius x:Key="CardCornerRadius">8</CornerRadius>
     <Thickness x:Key="CardBorderThickness">3</Thickness>
     <BoxShadows x:Key="CardShadow">0 8 32 0 #40000000</BoxShadows>
     <BoxShadows x:Key="CardHoverShadow">0 12 48 0 #60000000, 0 0 15 2 #400A84FF</BoxShadows>
-
-    <!-- Compatibility aliases for WinUI-style resource names -->
-    <SolidColorBrush x:Key="SystemControlBackgroundListLowBrush" Color="{DynamicResource CardBackground}"/>
-
-    <!-- UI Geometry (Material 3 Expressive Tokens) -->
-    <CornerRadius x:Key="CornerRadiusSmall">8</CornerRadius>
-    <CornerRadius x:Key="CornerRadiusMedium">16</CornerRadius>
-    <CornerRadius x:Key="CornerRadiusLarge">28</CornerRadius>
-    <CornerRadius x:Key="CornerRadiusExtraLarge">36</CornerRadius>
-    <CornerRadius x:Key="RemoteCardCornerRadius">12</CornerRadius>
 </ResourceDictionary>
