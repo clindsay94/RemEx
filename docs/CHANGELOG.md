@@ -92,6 +92,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **You can now pick the colour the whole app is built from, on a wheel, and watch it repaint as you
+  drag.** Personalize has a new Palette Studio. There is a colour wheel with a thumb you drag, and
+  three sliders beside it — hue, chroma and tone — which are two views of the same colour rather than
+  separate settings: move either and the other follows. Every surface in RemEx is generated from that
+  one colour, so the whole window changes under your hand rather than after you press something.
+
+  The six preset swatches and the "+" box for typing a hex code are still there and still work exactly
+  as before; the hex box in the Studio is the same one, so a colour you type is checked the same way
+  and saved to the same list. Colours you settle on join a Recent row underneath, and a colour only
+  goes in there when you finish choosing it — dragging across half the wheel on the way to the one you
+  want does not fill the row with colours you passed through.
+
+  Two settings that RemEx has been honouring for a while had no way to reach them except by editing a
+  file by hand, and both now have a control. **Light palette** generates everything for a light
+  background instead of a dark one, and it stays where you put it — previously a light preset would
+  quietly go dark again the moment you changed the colour. **Contrast** pushes text further from, or
+  closer to, the surface behind it, matching the slider the Android app has had.
+
+  The wheel works without a mouse: tab to it and the arrow keys move hue and chroma, holding shift to
+  move faster. (RemEx-5u0vy)
+
 - **You can transfer a whole folder now, not just the files in it one at a time.** Picking a folder
   used to mean opening it, selecting everything inside, and repeating that for every subfolder — and
   an empty folder had no way through at all. On the PC there are now Upload folder and Download folder
