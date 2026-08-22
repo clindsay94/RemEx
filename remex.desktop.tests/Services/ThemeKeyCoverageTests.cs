@@ -79,6 +79,52 @@ public class ThemeKeyCoverageTests
     }
 
     [Fact]
+    public void NoPresetDeclaresAColourOfItsOwn()
+    {
+        // THE INVARIANT THE MERGE EXISTS FOR (RemEx-07jij), and it needs its own guard because
+        // nothing else would notice it breaking. Every test in this file and in
+        // AccentForegroundContrastTests reads a preset RESOLVED - preset plus merged fallback - so a
+        // colour pasted back into one preset would simply shadow the shared value, resolve fine,
+        // measure fine, and pass everything. It would also be invisible: the key it overrides is
+        // overwritten from the seed a moment later, so the wrong value paints for two frames on one
+        // preset. That is the "four copies drift" failure returning one key at a time.
+        foreach (var preset in ThemeFiles())
+        {
+            var ownText = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Themes", preset + ".axaml"));
+
+            Regex.Matches(ownText,
+                    @"<(?:Color|SolidColorBrush|LinearGradientBrush|RadialGradientBrush) x:Key=""([^""]+)""")
+                .Select(m => m.Groups[1].Value)
+                .Should().BeEmpty(
+                    $"{preset}.axaml must take its colours from Themes/Shared/FallbackPalette.axaml, "
+                    + "not carry its own copy");
+
+            ownText.Should().Contain("Themes/Shared/FallbackPalette.axaml",
+                $"{preset}.axaml resolves no colours at all unless it merges the shared palette");
+        }
+    }
+
+    [Fact]
+    public void TheGeometryAPresetKeepsIsTheGeometryThatDiffers()
+    {
+        // SCOPE CONTROL FOR THE TEST ABOVE. "No colours in a preset" is also satisfied by a preset
+        // that has been hollowed out entirely, which would silently take every card in that theme to
+        // the fallback's shape. These four keys are the ones whose values genuinely differ between
+        // presets, and they are the reason a preset file still exists.
+        foreach (var preset in ThemeFiles())
+        {
+            var ownKeys = Regex.Matches(
+                    File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Themes", preset + ".axaml")),
+                    @"x:Key=""([^""]+)""")
+                .Select(m => m.Groups[1].Value);
+
+            ownKeys.Should().BeEquivalentTo(
+                new[] { "CardCornerRadius", "CardBorderThickness", "CardShadow", "CardHoverShadow" },
+                $"{preset}.axaml is geometry plus a merge; anything else belongs in the shared palette");
+        }
+    }
+
+    [Fact]
     public void ThemeServiceFeedsBothSettingsIntoTheGenerator()
     {
         // THE BUG THIS EXISTS TO PREVENT IS A MISSING ARGUMENT, WHICH COMPILES. Generate's contrast

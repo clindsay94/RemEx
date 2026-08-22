@@ -67,6 +67,60 @@ public class CustomizationSettingsRoundTripTests
             "if reflection stops finding the record's properties this class asserts nothing");
     }
 
+    [Fact]
+    public void EverySeededPresetWritesItsLightDarkChoiceExplicitly()
+    {
+        // PICKING A PRESET IS PICKING ITS LIGHT/DARK (RemEx-07jij). Before this, SelectTheme set only
+        // the seed and ThemeService inferred the mode from the preset's NAME - so a user who picked
+        // SolarFlare and then changed the seed kept a light palette because of a string comparison,
+        // and one who picked a dark preset after choosing light explicitly kept light. Neither is
+        // discoverable from the UI, and neither throws.
+        var body = SelectThemeBody();
+
+        var cases = Regex.Matches(body, @"case AppTheme\.(\w+):(.*?)break;", RegexOptions.Singleline)
+            .Select(m => (Preset: m.Groups[1].Value, Body: m.Groups[2].Value))
+            .ToArray();
+
+        cases.Should().HaveCountGreaterThan(4, "the preset switch moved or the scan broke");
+
+        var seeded = cases.Where(c => Regex.IsMatch(c.Body, @"AccentColor\s*=\s*""#")).ToArray();
+        seeded.Should().HaveCount(4, "four presets carry a seed; Dynamic deliberately carries none");
+
+        seeded.Where(c => !Regex.IsMatch(c.Body, @"_useLightPalette\s*=\s*(true|false)"))
+            .Select(c => c.Preset)
+            .Should().BeEmpty("a preset that leaves the mode unwritten falls back to matching its own name");
+
+        // Dynamic is the exception, and it is an exception on purpose: it means "whatever the user
+        // has built", so it is the one case that must NOT overwrite the choice.
+        var dynamicCase = cases.Single(c => c.Preset == "Dynamic");
+        dynamicCase.Body.Should().NotMatchRegex(@"_useLightPalette\s*=",
+            "Dynamic keeps the user's existing mode along with their existing seed");
+    }
+
+    [Fact]
+    public void ApplyAndSaveCarriesTheModeSelectThemeWrote_NotTheOneOnDisk()
+    {
+        // THE SILENT UNDO. SelectTheme's writes go to a field; ApplyAndSave builds the record. If it
+        // reads UseLightPalette back off the loaded profile instead - which is what it did before
+        // RemEx-07jij, and which still compiles - every write above is discarded on the same call
+        // that made it, and the test above stays green while the behaviour is exactly what it was.
+        var initializer = ApplyAndSaveInitializer();
+
+        initializer.Should().MatchRegex(@"UseLightPalette\s*=\s*_useLightPalette",
+            "the mode the user just chose has to reach the record, not be re-read from the profile "
+            + "it is about to replace");
+    }
+
+    private static string SelectThemeBody()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
+
+        var body = Regex.Match(source, @"private void SelectTheme\(.*?\n    \}", RegexOptions.Singleline);
+        body.Success.Should().BeTrue("SelectTheme moved or changed shape - the scan cannot see it");
+        return body.Value;
+    }
+
     /// <summary>Every settable property that actually round-trips to disk.</summary>
     private static string[] PersistedProperties() =>
         typeof(CustomizationSettings)
