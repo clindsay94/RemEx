@@ -44,9 +44,10 @@ public class AccentForegroundContrastTests
     /// <remarks>
     /// RAW UNTIL RemEx-07jij, AND THE RAW READ WOULD NOW FIND NOTHING. A preset file holds only its
     /// geometry; the tokens measured below live in <c>Themes/Shared/FallbackPalette.axaml</c>, which
-    /// every preset merges. <see cref="ThemeDictionary"/> throws on an include it cannot resolve, so
-    /// a broken merge fails here rather than quietly leaving every <c>Assert.Contains</c> unmet for a
-    /// reason that looks like a missing token.
+    /// every preset merges. A merge that does not resolve cannot reach a build — the XAML compiler
+    /// rejects it with AVLN2000 — but it can reach a test run, because these read the files rather
+    /// than the assembly, so <see cref="ThemeDictionary"/> throws rather than silently measuring the
+    /// four geometry keys and finding nothing to be wrong.
     /// </remarks>
     private static string ThemeText(string theme) => ThemeDictionary.ResolvedText(theme);
 

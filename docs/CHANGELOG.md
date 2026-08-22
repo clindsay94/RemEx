@@ -57,6 +57,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The four PC themes stopped being four copies of the same colour list.** CyberNOC, Monolith,
+  SolarFlare and BaseDarkGlass each carried their own 53 colour values, written by hand. Since RemEx
+  started generating its palette from a single seed colour, every one of those values has been
+  replaced the moment a theme is applied — so what the four files actually held was four copies of a
+  fallback that shows for the fraction of a second before the real palette lands. Four copies drift
+  apart; one cannot. There is one now, and each theme keeps only the shape that is genuinely its own:
+  its corner radius, its border thickness, its shadows.
+
+  Nothing about how the themes look should change. What changes is that a fix to the fallback is a
+  fix everywhere rather than in one theme out of four.
+
+  Picking a theme now also sets light or dark outright instead of leaving RemEx to guess it from the
+  theme's name. That guess was invisible and it was wrong in a specific case: choosing SolarFlare and
+  then changing the accent colour kept you on the light palette because of what the theme was called,
+  not because you had asked for light. (RemEx-07jij)
+
 - **RemEx's UI framework moved up a major version, and the app should look and behave exactly as it
   did.** This is groundwork rather than a feature: the toolkit the PC app is built on, Avalonia, went
   from 11.3 to 12.1. The reason to do it now is that the Material design components RemEx has been

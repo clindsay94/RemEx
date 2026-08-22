@@ -20,11 +20,12 @@ namespace Remex.Desktop.Tests.Services;
 /// read of the preset file now sees four keys where the app sees fifty-three.
 /// </para>
 /// <para>
-/// THE DANGEROUS FAILURE IS THE QUIET ONE, so <see cref="ResolvedText"/> throws when an include does
-/// not resolve on disk rather than returning what it managed to read. A mistyped <c>Source</c> is
-/// silent in Avalonia at build time and would be silent here too: every key would simply be absent,
-/// every "does this theme define X" guard would fail for a reason that looks nothing like the cause,
-/// and every "is this value readable" guard would find no value to measure and vacuously pass.
+/// <see cref="ResolvedText"/> throws when an include does not resolve on disk rather than returning
+/// what it managed to read. NOT because Avalonia would be quiet about it — measured, a mistyped
+/// <c>Source</c> is a hard build error, <c>AVLN2000 Unable to resolve XAML resource</c>, so the app
+/// cannot ship with one. It throws because these tests read the FILES, not the built assembly: a
+/// resolver that silently returned only the preset's four geometry keys would leave every "is this
+/// value readable" guard with no value to measure, and a guard with nothing to measure passes.
 /// </para>
 /// </remarks>
 internal static class ThemeDictionary
