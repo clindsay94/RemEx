@@ -77,6 +77,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The PC app was about to start reporting version 2.4.0 again.** RemEx keeps its version number in
+  two places, one belonging to the phone and one to the PC, and a full build copies the phone's number
+  over the PC's. The PC's had been raised to 2.5.0 on its own, so the next full build would have
+  quietly copied 2.4.0 back over it and reported success while doing it. Nothing would have failed:
+  the About page would simply have gone back a release, and the first sign of it would have been
+  somebody noticing the wrong number on screen.
+
+  Both places now say 2.5.0, and a test compares them, so the two can no longer drift apart without
+  something going red. The number RemEx submits to the Play Store with is deliberately unchanged.
+  (RemEx-ixfbn)
+
 - **Transferring a folder froze the PC, and the only way out was cancelling every file by hand.**
   A folder transfer turns into one queued transfer per file, and the transfer list was drawing all of
   them at once. A folder of 900 files meant 900 rows built at the same moment, several controls each,
