@@ -42,7 +42,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
     private readonly ILogger<LinuxPortalRemoteDesktopSessionService> _logger;
     private readonly string _appId;
 
-    private Connection? _conn;
+    private DBusConnection? _conn;
     private string? _normalizedSender;
 
     private volatile PortalSessionState _state = PortalSessionState.Idle;
@@ -226,7 +226,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                         logger: _logger,
                         ct: ct);
                 }
-                catch (DBusException ex) when (requestDevicePersist && (
+                catch (DBusErrorReplyException ex) when (requestDevicePersist && (
                     ex.ErrorName == "org.freedesktop.portal.Error.InvalidArgument" ||
                     (ex.Message?.Contains("persist", StringComparison.OrdinalIgnoreCase) ?? false)))
                 {
@@ -317,7 +317,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                     logger: _logger,
                     ct: ct);
             }
-            catch (DBusException ex) when (requestPersist && (
+            catch (DBusErrorReplyException ex) when (requestPersist && (
                 ex.ErrorName == "org.freedesktop.portal.Error.InvalidArgument" ||
                 (ex.Message?.Contains("persist", StringComparison.OrdinalIgnoreCase) ?? false)))
             {
@@ -572,7 +572,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
                     logger: _logger,
                     ct: ct);
             }
-            catch (DBusException ex) when (
+            catch (DBusErrorReplyException ex) when (
                 ex.ErrorName == "org.freedesktop.DBus.Error.UnknownMethod" ||
                 ex.ErrorName == "org.freedesktop.DBus.Error.ServiceUnknown" ||
                 ex.ErrorName == "org.freedesktop.DBus.Error.UnknownInterface")
@@ -603,7 +603,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
     {
         if (_conn is not null) return true;
 
-        var address = Address.Session;
+        var address = DBusAddress.Session;
         if (string.IsNullOrEmpty(address))
         {
             _logger.LogWarning(
@@ -613,7 +613,7 @@ public sealed class LinuxPortalRemoteDesktopSessionService : IAsyncDisposable
 
         try
         {
-            var conn = new Connection(address);
+            var conn = new DBusConnection(address);
             await conn.ConnectAsync();
             _conn = conn;
 

@@ -38,7 +38,7 @@
 
             <!-- Search and Sort Controls -->
             <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8">
-                <TextBox Text="{Binding SearchText}" Watermark="{local:Localize TaskMgr_SearchPlaceholder}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13" VerticalAlignment="Center"/>
+                <TextBox Text="{Binding SearchText}" PlaceholderText="{local:Localize TaskMgr_SearchPlaceholder}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13" VerticalAlignment="Center"/>
 
                 <Button Grid.Column="1" Margin="12,0,0,0" Command="{Binding SortCommand}" CommandParameter="Name" Content="{local:Localize TaskMgr_SortName}" Classes="sort-btn" VerticalAlignment="Center"/>
                 <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding SortCommand}" CommandParameter="Cpu" Content="{local:Localize TaskMgr_SortCpu}" Classes="sort-btn" VerticalAlignment="Center"/>

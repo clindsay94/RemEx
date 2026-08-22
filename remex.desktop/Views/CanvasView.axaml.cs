@@ -300,7 +300,10 @@ public partial class CanvasView : UserControl
             var fileName = $"Remex_Snapshot_{DateTime.Now:yyyyMMdd_HHmmss}.png";
             var filePath = Path.Combine(pictures, fileName);
 
-            rtb.Save(filePath);
+            // Avalonia 12 replaced the int?-quality Save overload with typed encoder options
+            // (RemEx-jcma3). The old call passed no quality at all, so PNG defaults reproduce it;
+            // naming the encoder also makes the .png extension above and the format agree out loud.
+            rtb.Save(filePath, PngBitmapEncoderOptions.Default);
 
             (DataContext as CanvasDashboardViewModel)?.SetSnapshotStatus($"Saved to {fileName}");
         }

@@ -134,7 +134,8 @@ public class ColorPickerPopup : ContentControl
             BorderBrush = ThemeResources.Brush("CardBorderBrush", new SolidColorBrush(Color.Parse("#2A2A3E"))),
             CornerRadius = new CornerRadius(4),
             Padding = new Thickness(6, 4),
-            Watermark = "#RRGGBB",
+            // Renamed from Watermark in Avalonia 12 (RemEx-jcma3). Same hint text, same behaviour.
+            PlaceholderText = "#RRGGBB",
         };
         _hexInput.KeyDown += HexInput_KeyDown;
         hexRow.Children.Add(_hexInput);

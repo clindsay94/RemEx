@@ -1058,13 +1058,37 @@ public partial class CanvasDashboardViewModel : ObservableObject, IDisposable
     /// uncovered, which is where the failure actually lives - a post that never runs looks like an
     /// unchanged collection and no error at all.
     ///
-    /// It needed no new infrastructure, which was the surprise: the bead expected an
-    /// Avalonia.Headless harness, and one was built and then removed once it was measured to change
-    /// nothing. Post plus Dispatcher.UIThread.RunJobs() runs the callback with no Avalonia
-    /// application booted. Nobody had called RunJobs.
+    /// It needed no new infrastructure under Avalonia 11, which was the surprise at the time: Post
+    /// plus Dispatcher.UIThread.RunJobs() ran the callback with no Avalonia application booted, and
+    /// nobody had called RunJobs.
+    ///
+    /// AVALONIA 12 TOOK THAT BACK (RemEx-jcma3). The dispatcher is genuinely thread-affine now, so
+    /// RunJobs() throws unless the caller owns it, and ownership goes to whichever thread touched
+    /// Dispatcher.UIThread first anywhere in the process. The test passed alone and failed in the
+    /// suite. Two fixes were built and measured before this one: a dedicated dispatcher-owning
+    /// thread started from a [ModuleInitializer] deadlocked the whole suite under the loader lock,
+    /// and the same thread started lazily lost the binding race to an earlier test. So the coupling
+    /// is removed instead of being worked around - see <see cref="Dispatch"/>.
     /// </remarks>
     internal void ProcessTelemetry(TelemetryPayload payload)
-        => Dispatcher.UIThread.Post(() => ApplyTelemetry(payload));
+        => Dispatch(() => ApplyTelemetry(payload));
+
+    /// <summary>
+    /// How <see cref="ProcessTelemetry"/> reaches the UI thread. Replaceable so the post can be
+    /// tested without a dispatcher (RemEx-jcma3).
+    /// </summary>
+    /// <remarks>
+    /// Mirrors <c>NotificationService.Dispatch</c>, which exists for exactly this reason and states
+    /// the property that matters: the lambda is NOT evaluated at construction, so a test never
+    /// touches <see cref="Dispatcher.UIThread"/> - and never binds it to a thread-pool thread -
+    /// merely by creating a view model. That mattered less when the binding was harmless; under
+    /// Avalonia 12 an accidental binding is what breaks other tests.
+    ///
+    /// Deliberately narrow. The other Dispatcher.UIThread calls in this class are untouched, because
+    /// widening the seam to all of them would be a refactor riding along on a framework upgrade, and
+    /// only this one has a test that needs it.
+    /// </remarks>
+    internal Action<Action> Dispatch { get; set; } = static work => Dispatcher.UIThread.Post(work);
 
     /// <summary>
     /// The body of a telemetry tick, split out from the dispatcher post so it can be tested.

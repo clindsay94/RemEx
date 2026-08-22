@@ -85,8 +85,14 @@
   <ItemGroup>
     <!-- Avalonia GUI -->
     <PackageReference Include="Avalonia.Desktop" />
-    <!--Condition removes Avalonia.Diagnostics from Release build output.-->
-    <PackageReference Include="Avalonia.Diagnostics">
+    <!-- Text shaping. Avalonia 12 stopped having UseSkia() imply HarfBuzz, so this has to be
+         referenced and .UseHarfBuzz() called explicitly (Program.cs BuildAvaloniaApp). Without it
+         Latin text still renders and nothing throws — Hindi loses its shaping quietly. -->
+    <PackageReference Include="Avalonia.HarfBuzz" />
+    <!--Condition removes DevTools from Release build output. Was Avalonia.Diagnostics, which does
+        not exist for Avalonia 12; DevTools now ships as the independently versioned
+        AvaloniaUI.DiagnosticsSupport (RemEx-jcma3).-->
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>

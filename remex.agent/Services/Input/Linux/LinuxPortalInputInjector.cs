@@ -9,7 +9,7 @@ namespace Remex.Agent.Services.Input.Linux;
 /// <summary>
 /// Injects pointer and keyboard events via the xdg-desktop-portal RemoteDesktop D-Bus API.
 ///
-/// Wayland-only path. Maintains a persistent <see cref="Connection"/> so that the
+/// Wayland-only path. Maintains a persistent <see cref="DBusConnection"/> so that the
 /// portal session (which is tied to the caller's unique bus name) survives across
 /// every Notify* invocation. Permission dialogue is shown once during
 /// <see cref="EnsureStartedAsync"/>; afterwards every Notify* method is fire-and-forget.
@@ -30,7 +30,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable, IPortalInputS
 
     private readonly ILogger _logger;
 
-    private Connection? _conn;
+    private DBusConnection? _conn;
     private string? _sessionHandle;
     private string? _normalizedSender;
     private volatile bool _active;
@@ -430,7 +430,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable, IPortalInputS
                     logger: _logger,
                     ct: ct);
             }
-            catch (DBusException ex) when (
+            catch (DBusErrorReplyException ex) when (
                 ex.ErrorName == "org.freedesktop.DBus.Error.UnknownMethod" ||
                 ex.ErrorName == "org.freedesktop.DBus.Error.ServiceUnknown" ||
                 ex.ErrorName == "org.freedesktop.DBus.Error.UnknownInterface")
@@ -461,7 +461,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable, IPortalInputS
     {
         if (_conn is not null) return true;
 
-        var address = Address.Session;
+        var address = DBusAddress.Session;
         if (string.IsNullOrEmpty(address))
         {
             _logger.LogInformation(
@@ -472,7 +472,7 @@ internal sealed class LinuxPortalInputInjector : IAsyncDisposable, IPortalInputS
 
         try
         {
-            var conn = new Connection(address);
+            var conn = new DBusConnection(address);
             await conn.ConnectAsync();
             _conn = conn;
 

@@ -325,7 +325,11 @@ public class LinuxScreenCaptureService : IScreenCaptureService
                     var destInfo = new SkiaSharp.SKImageInfo(targetW, targetH, colorType, SkiaSharp.SKAlphaType.Premul);
                     using var srcBitmap = SkiaSharp.SKBitmap.FromImage(baseImage);
                     scaledBitmap = new SkiaSharp.SKBitmap(destInfo);
-                    if (srcBitmap.ScalePixels(scaledBitmap, SkiaSharp.SKFilterQuality.Medium))
+                    // SkiaSharp 3 equivalent of the old Medium quality (RemEx-jcma3): bilinear
+                    // filtering plus mipmapping, which is what Medium did on a size reduction.
+                    if (srcBitmap.ScalePixels(
+                        scaledBitmap,
+                        new SkiaSharp.SKSamplingOptions(SkiaSharp.SKFilterMode.Linear, SkiaSharp.SKMipmapMode.Linear)))
                     {
                         finalImage = SkiaSharp.SKImage.FromBitmap(scaledBitmap);
                     }

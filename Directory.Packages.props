@@ -3,44 +3,50 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Avalonia UI -->
-    <PackageVersion Include="Avalonia" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Skia" Version="11.3.11" />
+    <!-- Avalonia UI (RemEx-jcma3) -->
+    <PackageVersion Include="Avalonia" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.Desktop" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="12.1.1" />
+    <PackageVersion Include="Avalonia.Skia" Version="12.1.1" />
+
+    <!-- NOT OPTIONAL, AND ITS ABSENCE IS SILENT. Up to Avalonia 11, UseSkia() implied HarfBuzz;
+         in 12 it does not, and the package must be referenced and .UseHarfBuzz() called explicitly.
+         Skip it and text still renders — Latin looks fine — while complex scripts lose shaping.
+         RemEx ships Hindi (hi) among its nine locales, which is exactly the case that degrades, and
+         nothing throws to say so. See Program.cs / App builder configuration. -->
+    <PackageVersion Include="Avalonia.HarfBuzz" Version="12.1.1" />
+
+    <!-- REPLACES Avalonia.Diagnostics, which does not exist for Avalonia 12 — its NuGet listing
+         stops at 11.3.20. DevTools moved to a separately versioned package, hence 2.2.3 rather than
+         a 12.x number, and AttachDevTools() became AttachDeveloperTools(). -->
+    <PackageVersion Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3" />
 
     <!-- Material.Avalonia (RemEx-851li) — the design system for the desktop overhaul, RemEx-kb4im.
          Referenced but INERT until RemEx-prkot includes the styles in App.axaml.
 
-         PINNED TO THE 3.14.x LINE ON PURPOSE, AND IT IS NOT THE LATEST. Material.Avalonia 3.15.0
-         and everything after it — up to 3.19.0 today — declares a dependency on Avalonia 12.0.0.
-         3.14.2 is the newest STABLE release that still targets Avalonia 11.x. It declares Avalonia
-         11.1.0, which is a floor rather than a pin, so it resolves against our 11.3.11 without a
-         downgrade. Checked against the nuspecs on nuget.org rather than assumed, because the bead
-         asked for exactly that.
-
-         So the epic is capped here until Avalonia itself moves to 12, which is a framework major
-         upgrade and the operator's call — see the note on RemEx-851li.
-
-         AND THE CAP IS ENFORCED BY NUGET, NOT JUST BY CONVENTION. Measured on 2026-08-20: setting
-         these two to 3.15.0 fails `dotnet restore` outright with
+         THE CEILING THAT USED TO BE HERE IS GONE (RemEx-jcma3). This was pinned to 3.14.2 because
+         3.15.0 onward require Avalonia 12.0.0 and the repo was on 11.3.11, which NuGet refused as
+         a downgrade:
            error NU1605: Detected package downgrade: Avalonia from 12.0.0 to 11.3.11.
-           Remex.Desktop -> Material.Avalonia 3.15.0 -> Avalonia (>= 12.0.0)
-           Remex.Desktop -> Avalonia (>= 11.3.11)
-         So a careless bump cannot slip through quietly; it stops the build. An earlier draft of this
-         comment said it "silently drags Avalonia 12 into the graph", which was a guess and was wrong
-         in the direction that matters — it is loud. MaterialPackagePinTests exists to say WHY that
-         NU1605 happens, because the error names a downgrade rather than a deliberate ceiling. -->
+         That cap is what held the entire desktop Material epic. Avalonia is now on 12.1.1, so the
+         constraint these packages declare is satisfied and they move to the current line.
 
-    <PackageVersion Include="Material.Avalonia" Version="3.14.2" />
-    <PackageVersion Include="Material.Avalonia.Dialogs" Version="3.14.2" />
+         Worth keeping from the old note, because it is the fact that made the upgrade the answer
+         rather than a workaround: the cap was enforced by NuGet, loudly, not by convention. A
+         careless bump could never have slipped through quietly — it stopped the build. -->
 
-    <!-- NOT PINNED, AND THAT IS THE FINDING. Material.Avalonia.Dialogs pulls
-         Avalonia.Controls.ItemsRepeater transitively and resolves it to 11.0.9, three minors behind
-         the 11.3.11 everything else is on. There is no 11.3.x to pin it to: that package's 11 line
-         stops at 11.1.5 and the next release is 12.0.0.
+    <PackageVersion Include="Material.Avalonia" Version="3.19.0" />
+    <PackageVersion Include="Material.Avalonia.Dialogs" Version="3.19.0" />
+
+    <!-- RESOLVED BY THE UPGRADE (RemEx-60x5f, closed by RemEx-jcma3). Kept as a record because the
+         measurement below cost a day and the next person to reach for a transitive pin should read
+         it. Material.Avalonia.Dialogs 3.19.0 depends on Avalonia.Controls.ItemsRepeater 12.0.0, so
+         the stale resolution this describes cannot happen any more — the package's 11 line stopped
+         at 11.1.5 and 12.0.0 is its next release, which is precisely why there was no 11.3.x to pin
+         to and why the problem evaporates rather than being fixed.
+
+         WHAT IT USED TO SAY, and what is still true about NuGet:
 
          A `PackageVersion` entry alone does NOT fix this — MEASURED. This was written as a pin to
          11.3.11 first, and NuGet ignored it in silence: restore and build both stayed green while
@@ -67,11 +73,11 @@
          Dialogs up should LOOK at the first Material dialog rather than trust the green build.
          RemEx-60x5f carries the decision. -->
 
-    <!-- A separate package by design — Material.Avalonia does not bundle the icon pack. Same story
-         one version later: 3.0.1 and up require Avalonia 12, so 3.0.0 is the newest stable on
-         Avalonia 11.x. It declares Avalonia 11.3.0, the closest thing to a real 11.3 target in
-         this whole set. RemEx-wyx2c consumes it. -->
-    <PackageVersion Include="Material.Icons.Avalonia" Version="3.0.0" />
+    <!-- A separate package by design — Material.Avalonia does not bundle the icon pack. It was held
+         at 3.0.0 for the same reason as the two above, one version later: 3.0.1 and up require
+         Avalonia 12. On 12.1.1 that ceiling is gone, so this moves to the current stable 3.0.2.
+         (3.0.3 exists only as nightlies; stable is what belongs in a pin.) RemEx-wyx2c consumes it. -->
+    <PackageVersion Include="Material.Icons.Avalonia" Version="3.0.2" />
 
     <!-- Microsoft Extensions & Standard Libraries -->
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
@@ -88,16 +94,22 @@
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="MaterialColorUtilities" Version="0.3.0" />
     <PackageVersion Include="QRCoder" Version="1.6.0" />
-    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.21.3" />
+    <!-- Also forced by Avalonia 12 (RemEx-jcma3): Avalonia.FreeDesktop 12.1.1 requires >= 0.94.1,
+         so the old 0.21.3 fails restore. Consumed directly by the Linux portal input and
+         remote-desktop session services. -->
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.94.1" />
 
     <!-- Pinned Multicast DNS (Load-bearing, risk of drift/abandonment) -->
     <PackageVersion Include="Makaretu.Dns.Multicast" Version="0.27.0" />
 
-    <!-- Pinned SkiaSharp (2.88.x line - do not upgrade to 3.x, which has breaking changes).
-         2.88.9 matches the floor required by Avalonia.Skia 11.3.11, now that the host's direct
-         SkiaSharp use (Linux JPEG encode) and Avalonia live in the same remex.agent project. -->
-    <PackageVersion Include="SkiaSharp" Version="2.88.9" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" />
+    <!-- SkiaSharp 3.x, FORCED BY THE FRAMEWORK (RemEx-jcma3), not chosen.
+         This used to read "2.88.x line - do not upgrade to 3.x, which has breaking changes", and
+         that warning was correct for as long as the choice was ours. It is not any more:
+         Avalonia.Skia 12.1.1 depends on SkiaSharp >= 3.119.4, so staying on 2.88.9 fails restore
+         with NU1605 and there is no Avalonia 12 configuration that keeps the old line.
+         The version is therefore the floor Avalonia declares, matched exactly. -->
+    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
 
     <!-- Testing Packages -->
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />

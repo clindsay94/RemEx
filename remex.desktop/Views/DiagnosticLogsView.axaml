@@ -51,7 +51,7 @@
                                 <TextBlock Text="{local:Localize Logs_Preset}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                 <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" Width="185" CornerRadius="8" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <TextBox Text="{Binding SearchText}" Watermark="{local:Localize Logs_SearchWatermark}" Width="220" CornerRadius="8" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                            <TextBox Text="{Binding SearchText}" PlaceholderText="{local:Localize Logs_SearchWatermark}" Width="220" CornerRadius="8" VerticalAlignment="Center" Margin="0,0,16,8"/>
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,0,8">
                                 <TextBlock Text="{local:Localize Logs_CaptureLevel}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
                                 <ComboBox ItemsSource="{Binding CaptureLevelOptions}" SelectedItem="{Binding SelectedCaptureLevel}" Width="120" CornerRadius="8" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Logs_CaptureLevelTip}"/>

@@ -30,7 +30,7 @@
                            TextWrapping="Wrap" />
                 
                 <TextBox Text="{Binding PinInput}" 
-                         Watermark="000000"
+                         PlaceholderText="000000"
                          MaxLength="6"
                          FontSize="24"
                          FontWeight="Bold"

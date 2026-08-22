@@ -30,7 +30,7 @@ internal static class PortalDbusHelper
     /// null if the user cancelled / response code is non-zero / timeout / error.
     /// </summary>
     public static async Task<Dictionary<string, VariantValue>?> CallPortalAsync(
-        Connection conn,
+        DBusConnection conn,
         string normalizedSender,
         string interfaceName,
         string method,
@@ -68,14 +68,26 @@ internal static class PortalDbusHelper
                     var dict = reader.ReadDictionaryOfStringToVariantValue();
                     return (response, dict);
                 },
-                (Exception? ex, (uint Response, Dictionary<string, VariantValue> Results) data,
-                    object? rs, object? hs) =>
+                // Tmds.DBus.Protocol 0.94 folded the four loose callback arguments into one
+                // Notification<T> (RemEx-jcma3). The exception and the value used to arrive as
+                // separate parameters where "ex is null" implied a good value; now they are two
+                // properties on one struct, and CRUCIALLY they are not exhaustive. A completion
+                // notification can carry NEITHER - ObserverDisposed is a completion with no
+                // exception and no value - so the HasValue guard below is load-bearing rather than
+                // defensive. Reading .Value without it throws on observer teardown, inside a
+                // callback, where the only visible symptom is a portal request that never resolves.
+                (Notification<(uint Response, Dictionary<string, VariantValue> Results)> n) =>
                 {
-                    if (ex is not null)
+                    if (n.Exception is not null)
                     {
-                        tcs.TrySetException(ex);
+                        tcs.TrySetException(n.Exception);
                         return;
                     }
+                    if (!n.HasValue)
+                    {
+                        return;
+                    }
+                    var data = n.Value;
                     if (data.Response != 0u)
                     {
                         // 1 = cancelled by user, 2 = other (e.g. compositor terminated session).
@@ -84,7 +96,7 @@ internal static class PortalDbusHelper
                     }
                     tcs.TrySetResult(data.Results);
                 },
-                ObserverFlags.None);
+                flags: ObserverFlags.None);
 
             MessageBuffer buf;
             {

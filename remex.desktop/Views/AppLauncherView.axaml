@@ -69,7 +69,7 @@
 
 
             <!-- ═══ Search ═══ -->
-            <TextBox Watermark="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13" ToolTip.Tip="{local:Localize AppLauncher_DragDisabledWhileFiltered}"/>
+            <TextBox PlaceholderText="{local:Localize AppLauncher_SearchWatermark}" Text="{Binding SearchText}" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="16" Padding="16,10" FontSize="13" ToolTip.Tip="{local:Localize AppLauncher_DragDisabledWhileFiltered}"/>
 
             <!-- ═══ Apps Grid ═══ -->
             <ItemsControl ItemsSource="{Binding FilteredApps}" x:Name="LauncherGrid">

@@ -102,7 +102,7 @@
                             <StackPanel Spacing="8" ToolTip.Tip="{local:Localize Settings_ConfigureHostAddressTooltip}">
                                 <TextBlock Text="{local:Localize Settings_HostAddress}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBox Text="{Binding HostAddress}" Watermark="wss://host:port/ws" FontFamily="Consolas" Classes="modern" ToolTip.Tip="{local:Localize Settings_InputConnectionUrlTooltip}"/>
+                                    <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas" Classes="modern" ToolTip.Tip="{local:Localize Settings_InputConnectionUrlTooltip}"/>
                                     <Button Grid.Column="1" Content="{local:Localize Btn_Discover}" Command="{Binding DiscoverHostCommand}" IsEnabled="{Binding !IsDiscovering}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand" ToolTip.Tip="{local:Localize Settings_DiscoverHostsTooltip}"/>
                                 </Grid>
                             </StackPanel>
@@ -349,7 +349,7 @@
                                                      row, and clearing it is a deliberate act — blank means
                                                      "fall back to the device id", which the hint says. -->
                                                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0" IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanRenamePairedDevices}">
-                                                    <TextBox Text="{Binding PendingName}" Watermark="{local:Localize Settings_PairedDeviceNewName}" Width="220" FontSize="12" Padding="8,6" CornerRadius="6" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}"/>
+                                                    <TextBox Text="{Binding PendingName}" PlaceholderText="{local:Localize Settings_PairedDeviceNewName}" Width="220" FontSize="12" Padding="8,6" CornerRadius="6" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}"/>
                                                     <Button Content="{local:Localize Settings_PairedDeviceRename}"
                                                             Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).ApplyPairedDeviceRenameCommand}"
                                                             CommandParameter="{Binding}"

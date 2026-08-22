@@ -57,36 +57,42 @@ public static partial class SplashBrand
     /// <summary>Two-color wordmark: "Rem" (off-white) + "Ex" (amber), centered horizontally at (cx, baselineY).</summary>
     public static void DrawWordmark(SKCanvas canvas, float cx, float baselineY, float textSizePx, float opacity = 1f)
     {
-        using var rem = TextPaint(textSizePx, OffWhite.WithAlpha(A(opacity)), SKTextAlign.Left);
-        using var ex = TextPaint(textSizePx, Amber.WithAlpha(A(opacity)), SKTextAlign.Left);
-        float wRem = rem.MeasureText("Rem");
-        float wEx = ex.MeasureText("Ex");
+        using var font = TextFont(textSizePx);
+        using var rem = TextPaint(OffWhite.WithAlpha(A(opacity)));
+        using var ex = TextPaint(Amber.WithAlpha(A(opacity)));
+        float wRem = font.MeasureText("Rem");
+        float wEx = font.MeasureText("Ex");
         float startX = cx - (wRem + wEx) / 2f;
-        canvas.DrawText("Rem", startX, baselineY, rem);
-        canvas.DrawText("Ex", startX + wRem, baselineY, ex);
+        canvas.DrawText("Rem", startX, baselineY, SKTextAlign.Left, font, rem);
+        canvas.DrawText("Ex", startX + wRem, baselineY, SKTextAlign.Left, font, ex);
     }
 
     /// <summary>Centered single-color line of brand text (e.g. a tagline).</summary>
     public static void DrawText(SKCanvas canvas, string text, float cx, float baselineY, float textSizePx, SKColor color, float opacity = 1f)
     {
-        using var paint = TextPaint(textSizePx, color.WithAlpha(A(opacity)), SKTextAlign.Center);
-        canvas.DrawText(text, cx, baselineY, paint);
+        using var font = TextFont(textSizePx);
+        using var paint = TextPaint(color.WithAlpha(A(opacity)));
+        canvas.DrawText(text, cx, baselineY, SKTextAlign.Center, font, paint);
     }
 
     /// <summary>Measured width of a run of brand text at the given size (for layout).</summary>
     public static float MeasureText(string text, float textSizePx)
     {
-        using var paint = TextPaint(textSizePx, SKColors.White, SKTextAlign.Left);
-        return paint.MeasureText(text);
+        using var font = TextFont(textSizePx);
+        return font.MeasureText(text);
     }
 
-    private static SKPaint TextPaint(float size, SKColor color, SKTextAlign align) => new()
+    // SPLIT IN TWO FOR SKIASHARP 3 (RemEx-jcma3). Typeface, size and alignment used to live on
+    // SKPaint; they are on SKFont now, and alignment is not state at all any more — it is an
+    // argument to the DrawText overload. Keeping the same measurement font that draws the text is
+    // the part that matters: the wordmark positions "Ex" using the measured width of "Rem", so a
+    // measure taken at a different size or face would silently misalign the two halves.
+    private static SKFont TextFont(float size) => new(FaceOrDefault, size);
+
+    private static SKPaint TextPaint(SKColor color) => new()
     {
         IsAntialias = true,
         Color = color,
-        Typeface = FaceOrDefault,
-        TextSize = size,
-        TextAlign = align,
     };
 
     // ── Feature glyphs (ported from SplashBrand.kt drawFeatureGlyph) ─────────────

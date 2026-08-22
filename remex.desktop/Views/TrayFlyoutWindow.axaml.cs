@@ -46,7 +46,10 @@ public partial class TrayFlyoutWindow : Window
         // unachievable entry leaves the level to chance.
         Background = Brushes.Transparent;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent, WindowTransparencyLevel.None];
-        SystemDecorations = SystemDecorations.None;
+        // Renamed in Avalonia 12 (RemEx-jcma3). The old SystemDecorations property survives as an
+        // obsolete alias, but its TYPE is now WindowDecorations - so "SystemDecorations.None" binds
+        // to the property rather than the enum and fails to compile. Both halves have to move.
+        WindowDecorations = WindowDecorations.None;
         ShowInTaskbar = false;
         Topmost = true;
 

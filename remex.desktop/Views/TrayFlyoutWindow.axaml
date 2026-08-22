@@ -278,7 +278,7 @@
         </Grid>
     </Border>
 
-    <!-- Resize border, by hand. SystemDecorations="None" means Windows draws no frame, so
+    <!-- Resize border, by hand. WindowDecorations="None" means Windows draws no frame, so
          CanResize="True" alone gives nothing to grab (RemEx-2j58q). These eight hit areas sit in
          the 12px band between the window edge and the card, which otherwise holds only the drop
          shadow. The Grid itself has no Background and the centre cell is empty, so everything over

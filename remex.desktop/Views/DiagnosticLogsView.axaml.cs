@@ -1,4 +1,7 @@
 using Avalonia.Controls;
+// Avalonia 12 moved SetTextAsync off IClipboard onto ClipboardExtensions in this namespace
+// (RemEx-jcma3). The interface now speaks IDataTransfer; the text convenience is an extension.
+using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 using Remex.Desktop.ViewModels;
 

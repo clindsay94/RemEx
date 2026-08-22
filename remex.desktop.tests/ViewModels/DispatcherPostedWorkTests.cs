@@ -53,17 +53,52 @@ public class DispatcherPostedWorkTests
         // destructive-action suite already relies on.
         var vm = new CanvasDashboardViewModel(new ConnectionViewModel(), null!, null!);
 
+        // THE QUEUE, HELD RATHER THAN RUN. Substituting the dispatch seam keeps the two things this
+        // test has always cared about — that ProcessTelemetry SCHEDULES rather than executes, and
+        // that what it schedules is the real ApplyTelemetry — while removing the dependency on
+        // Avalonia's UI dispatcher that Avalonia 12 turned into a thread-affinity failure
+        // (RemEx-jcma3). It is also strictly stronger than the old RunJobs() version: that one could
+        // not tell "ProcessTelemetry posted our callback" from "ProcessTelemetry ran something else
+        // that happened to stage a card", because it never held the callback in its hand.
+        Action? posted = null;
+        vm.Dispatch = work => posted = work;
+
         vm.ProcessTelemetry(OneSensor());
 
-        // Nothing has run yet: Post queues, it does not execute inline. Asserted so the RunJobs below
-        // is visibly the thing that matters rather than decoration — and it is load-bearing, verified
-        // by deleting that call, which reddens the assertion at the end.
-        vm.StagedCards.Should().BeEmpty("Post only queues the callback — nothing has drained it yet");
+        posted.Should().NotBeNull("ProcessTelemetry must hand its work to the dispatcher, not run it inline");
+        vm.StagedCards.Should().BeEmpty("scheduling is not executing — nothing has drained the queue yet");
 
-        Dispatcher.UIThread.RunJobs();
+        posted!();
 
         vm.StagedCards.Should().NotBeEmpty(
             "a sensor seen for the first time is staged by ApplyTelemetry, which only runs if the "
             + "posted callback actually executed");
+    }
+
+    [Fact]
+    public void ProcessTelemetryDefaultsToTheRealUiDispatcher()
+    {
+        // ANTI-VACUITY FOR THE TEST ABOVE, and the reason the seam is not just a hole in the class.
+        // Substituting Dispatch proves ProcessTelemetry routes through Dispatch; it says nothing
+        // about where Dispatch goes when nobody substitutes it. If the default were left unset — or
+        // quietly changed to run inline — the test above would still pass while the production path
+        // no longer reached the UI thread at all, which is the silent-failure shape this whole file
+        // was written about.
+        //
+        // Asserting the DEFAULT rather than calling it: invoking it would touch
+        // Dispatcher.UIThread and bind it to this test's thread, which is precisely the accidental
+        // binding that broke the suite in the first place.
+        var vm = new CanvasDashboardViewModel(new ConnectionViewModel(), null!, null!);
+
+        vm.Dispatch.Should().NotBeNull(
+            "an unset dispatcher would make ProcessTelemetry throw on every real telemetry tick");
+
+        // STARTSWITH, NOT EQUALS, and the difference is not pedantry. A `static` lambda is compiled
+        // into a nested closure class, so the declaring type is "CanvasDashboardViewModel+<>c" and
+        // an equality check fails against a perfectly correct default — which is how this assertion
+        // was first written, and it failed on the very code it was meant to bless.
+        vm.Dispatch.Method.DeclaringType!.FullName.Should().StartWith(
+            typeof(CanvasDashboardViewModel).FullName,
+            "the default has to be the class's own lambda, not something a previous test left behind");
     }
 }

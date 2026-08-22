@@ -311,7 +311,7 @@
                                                  SettingsViewModel and this card is a CanvasCardViewModel. Canvas would
                                                  have had no host-link indication at all. -->
                                             <TextBlock Text="{Binding Connection.StatusText}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
-                                            <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="8 6" FontSize="12" FontFamily="Consolas, monospace" Watermark="wss://host:port/ws" IsEnabled="{Binding !Connection.IsConnected}"/>
+                                            <TextBox Text="{Binding Connection.HostAddress}" Margin="0,12,0,0" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="8 6" FontSize="12" FontFamily="Consolas, monospace" PlaceholderText="wss://host:port/ws" IsEnabled="{Binding !Connection.IsConnected}"/>
                                         </StackPanel>
 
                                         <!-- ═══ ACTIONS ═══ -->

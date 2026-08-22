@@ -286,6 +286,11 @@ public partial class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            // EXPLICIT SINCE AVALONIA 12, and its absence is silent. Up to 11 the Skia backend
+            // brought HarfBuzz in on its own; in 12 it does not. Drop this call and Latin text still
+            // renders perfectly, so a smoke test says nothing is wrong — what breaks is complex
+            // script shaping, and RemEx ships Hindi among its nine locales.
+            .UseHarfBuzz()
             .WithInterFont()
             .LogToTrace();
 }

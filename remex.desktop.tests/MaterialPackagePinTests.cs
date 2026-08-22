@@ -7,37 +7,44 @@ using Xunit;
 namespace Remex.Desktop.Tests;
 
 /// <summary>
-/// The Material.Avalonia package set is held on the last line that still targets Avalonia 11.x
-/// (RemEx-851li).
+/// The Material.Avalonia package set and Avalonia itself must stay on generations that can actually
+/// resolve together (RemEx-851li, rewritten by RemEx-jcma3).
 /// </summary>
 /// <remarks>
 /// <para>
-/// WHAT ACTUALLY HAPPENS ON A BUMP, MEASURED RATHER THAN GUESSED. Material.Avalonia 3.15.0 and later
-/// declare a dependency on Avalonia 12.0.0, and this solution is on 11.3.11. Setting the pins to
-/// 3.15.0 fails <c>dotnet restore</c> outright:
+/// THIS FILE USED TO GUARD THE OPPOSITE CLAIM, and that is worth saying plainly rather than quietly
+/// rewriting. Until 2026-08-21 the solution was on Avalonia 11.3.11 and these tests asserted that
+/// the Material packages were held at the last versions targeting Avalonia 11 — 3.14.2 and 3.0.0 —
+/// because 3.15.0 and 3.0.1 require Avalonia 12.0.0 and restore refused the pairing:
 /// <code>
 /// error NU1605: Detected package downgrade: Avalonia from 12.0.0 to 11.3.11.
 ///   Remex.Desktop -> Material.Avalonia 3.15.0 -> Avalonia (>= 12.0.0)
 ///   Remex.Desktop -> Avalonia (>= 11.3.11)
 /// </code>
-/// So the ceiling is enforced by NuGet and a careless bump cannot pass unnoticed. The first draft of
-/// this file assumed the opposite — that a bump would slip through quietly — and asserted against a
-/// hazard nobody had measured. Review asked for the measurement and it came back the other way.
+/// The old test said, in its own failure message, "if Avalonia has genuinely moved to 12, change
+/// this test on purpose". Avalonia has moved to 12, so this is that change, made on purpose.
 /// </para>
 /// <para>
-/// WHICH RAISES THE FAIR QUESTION OF WHY THIS FILE EXISTS. Because NU1605 names a *downgrade*, which
-/// reads as "your Avalonia is too old — raise it", and the correct response here is the opposite:
-/// the Material line is capped on purpose until the operator decides to move the framework. These
-/// assertions fail first, in the test output, saying so in words. They are a signpost in front of a
-/// wall, not the wall.
+/// WHAT SURVIVES IS THE PAIRING, NOT THE CEILING. The ceiling was a consequence of the framework
+/// version, and it is gone. What is still true — and still worth a test — is that these two sides
+/// are coupled: Material.Avalonia 3.15.0+ and Material.Icons.Avalonia 3.0.1+ REQUIRE Avalonia 12,
+/// and the older lines cannot use it. Either half moving alone recreates the same NU1605, in one
+/// direction or the other. So the assertions below check the RELATIONSHIP rather than three frozen
+/// version literals, which means they keep working through ordinary patch bumps and only speak up
+/// when someone splits the pair.
 /// </para>
 /// <para>
-/// PARSED, NOT REGEXED (review). An earlier version matched raw file text and took the first hit,
-/// which cannot tell a real element from one quoted inside a comment — and quoting elements in
-/// comments is exactly this repo's house style, including in the very files this reads. A stale
-/// commented-out version above the real entry would have made these assertions read the comment:
-/// failing on a correct file in one order, and passing on an Avalonia 12 app in the other. XDocument
-/// ignores comment nodes.
+/// WHY BOTHER, GIVEN RESTORE ALREADY FAILS. Same reason as before: NU1605 names a *downgrade*, which
+/// reads as "your Avalonia is too old, raise it". When the real cause is that somebody pinned
+/// Material back down, that message points at the wrong file. These assertions fail first, in the
+/// test output, and say which half moved. They are a signpost in front of a wall, not the wall.
+/// </para>
+/// <para>
+/// PARSED, NOT REGEXED (review, and still true). An earlier version matched raw file text and took
+/// the first hit, which cannot tell a real element from one quoted inside a comment — and quoting
+/// elements in comments is exactly this repo's house style, including in the files this reads. A
+/// stale commented-out version above the real entry would have made these assertions read the
+/// comment. <see cref="XDocument"/> ignores comment nodes.
 /// </para>
 /// <para>
 /// It does not consult nuget.org. A suite that depends on the network and on a third party's release
@@ -47,41 +54,80 @@ namespace Remex.Desktop.Tests;
 public class MaterialPackagePinTests
 {
     /// <summary>
-    /// Package, pinned version, and the first version that would require Avalonia 12.
+    /// Each Material package, and the first version of it that requires Avalonia 12.
     /// </summary>
     /// <remarks>
-    /// Verified against the nuspecs on nuget.org on 2026-08-20, and the 3.15.0 boundary re-confirmed
-    /// locally by the NU1605 above. <c>FirstAvalonia12</c> feeds the failure message only.
+    /// Verified against the nuspecs on nuget.org on 2026-08-20 and re-confirmed on 2026-08-21 when
+    /// the upgrade landed. These boundaries are historical facts about published packages, so unlike
+    /// the old pinned-version column they do not go stale.
     /// </remarks>
-    private static readonly (string Package, string Pinned, string FirstAvalonia12)[] Pins =
+    private static readonly (string Package, string FirstAvalonia12)[] MaterialPackages =
     [
-        ("Material.Avalonia", "3.14.2", "3.15.0"),
-        ("Material.Avalonia.Dialogs", "3.14.2", "3.15.0"),
-        ("Material.Icons.Avalonia", "3.0.0", "3.0.1"),
+        ("Material.Avalonia", "3.15.0"),
+        ("Material.Avalonia.Dialogs", "3.15.0"),
+        ("Material.Icons.Avalonia", "3.0.1"),
     ];
 
     [Fact]
-    public void TheMaterialPackagesAreStillOnTheLastAvaloniaElevenLine()
+    public void AvaloniaIsOnTwelve()
     {
-        foreach (var (package, pinned, firstAvalonia12) in Pins)
+        // The anchor the two tests below hang off. Stated as its own assertion so that a framework
+        // downgrade fails HERE, with this message, instead of showing up as three confusing
+        // complaints about Material packages being too new.
+        PinnedVersionOf("Avalonia").Should().StartWith("12.",
+            "the Material package versions below require Avalonia 12. If the framework is being "
+            + "moved off 12, the Material pins have to move with it — see RemEx-jcma3 for what the "
+            + "12 upgrade touched, because reverting it is not just a version edit");
+    }
+
+    [Fact]
+    public void TheMaterialPackagesAreOnLinesThatRequireAvaloniaTwelve()
+    {
+        foreach (var (package, firstAvalonia12) in MaterialPackages)
         {
-            PinnedVersionOf(package).Should().Be(pinned,
-                $"{package} {firstAvalonia12} and later require Avalonia 12.0.0, and this solution is "
-                + "on Avalonia 11.3.11 — restore fails with NU1605 if you raise it. That error calls "
-                + "it a downgrade; it is really a deliberate ceiling. If Avalonia has genuinely moved "
-                + "to 12, change this test on purpose");
+            var pinned = PinnedVersionOf(package);
+
+            IsAtLeast(pinned, firstAvalonia12).Should().BeTrue(
+                $"{package} {pinned} predates {firstAvalonia12}, which is the first version built "
+                + "against Avalonia 12. This solution is on Avalonia 12, so an older Material line "
+                + "is the stale half of a pair — raise it rather than lowering the framework");
         }
     }
 
     [Fact]
-    public void AvaloniaItselfIsStillOnEleven()
+    public void TheAvaloniaPackagesAllMoveTogether()
     {
-        // The other half of the same claim. If someone upgrades Avalonia to 12 without touching the
-        // Material pins, the test above starts guarding the wrong thing — holding Material on an
-        // 11-only line under an Avalonia 12 app.
-        PinnedVersionOf("Avalonia").Should().StartWith("11.",
-            "the Material pins above exist only because this solution is on Avalonia 11. If Avalonia "
-            + "has moved to 12, revisit them together rather than leaving them stale");
+        // A framework where one package lags the rest resolves, runs, and then fails somewhere
+        // specific and unhelpful. Nothing warns about it, so pin the agreement.
+        var avalonia = PinnedVersionOf("Avalonia");
+
+        foreach (var package in new[]
+                 {
+                     "Avalonia.Desktop", "Avalonia.Themes.Fluent", "Avalonia.Fonts.Inter",
+                     "Avalonia.Skia", "Avalonia.HarfBuzz",
+                 })
+        {
+            PinnedVersionOf(package).Should().Be(avalonia,
+                $"{package} ships from the Avalonia repo on the same cadence as Avalonia itself, so "
+                + "a version that differs is drift rather than a decision");
+        }
+    }
+
+    [Fact]
+    public void HarfBuzzIsReferencedBecauseTwelveNoLongerImpliesIt()
+    {
+        // THE ONE THAT FAILS SILENTLY IN PRODUCTION. Up to Avalonia 11, UseSkia() brought HarfBuzz
+        // with it; in 12 it does not. Without the package AND the .UseHarfBuzz() call, Latin text
+        // renders perfectly and complex scripts lose their shaping — and RemEx ships Hindi. Nothing
+        // throws, so there is no other way to notice. Pin both halves.
+        var props = XDocument.Load(Path.Combine(RepoRoot(), "Directory.Packages.props"));
+        props.Descendants("PackageVersion")
+            .Any(e => (string?)e.Attribute("Include") == "Avalonia.HarfBuzz")
+            .Should().BeTrue("Avalonia 12's Skia backend does not imply HarfBuzz any more");
+
+        var program = File.ReadAllText(Path.Combine(RepoRoot(), "remex.agent", "Program.cs"));
+        program.Should().Contain(".UseHarfBuzz()",
+            "referencing the package does nothing on its own — the AppBuilder has to call it");
     }
 
     [Fact]
@@ -92,7 +138,7 @@ public class MaterialPackagePinTests
         // a value for Version".
         var project = XDocument.Load(Path.Combine(RepoRoot(), "remex.desktop", "remex.desktop.csproj"));
 
-        foreach (var (package, _, _) in Pins)
+        foreach (var (package, _) in MaterialPackages)
         {
             var reference = project.Descendants("PackageReference")
                 .SingleOrDefault(e => (string?)e.Attribute("Include") == package);
@@ -111,6 +157,17 @@ public class MaterialPackagePinTests
                 $"{package} must not carry a Version child element either");
         }
     }
+
+    /// <summary>
+    /// Whether <paramref name="candidate"/> is the same as or newer than <paramref name="floor"/>,
+    /// compared component by component rather than as text.
+    /// </summary>
+    /// <remarks>
+    /// String comparison would get "3.9.0" vs "3.15.0" backwards, which is exactly the pair this has
+    /// to judge — Material.Icons went 3.0.0 to 3.0.2 and Material.Avalonia 3.14.2 to 3.19.0.
+    /// </remarks>
+    private static bool IsAtLeast(string candidate, string floor)
+        => System.Version.Parse(candidate) >= System.Version.Parse(floor);
 
     /// <summary>The version a <c>PackageVersion</c> element pins, ignoring anything in a comment.</summary>
     private static string PinnedVersionOf(string package)
