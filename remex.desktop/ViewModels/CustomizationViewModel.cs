@@ -52,10 +52,26 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// </remarks>
     private bool _lightPaletteChosenThisSession;
 
+    /// <summary>
+    /// Set while <see cref="SetLightPalette"/> pushes its value out to <see cref="UseLightPaletteSwitch"/>,
+    /// so the switch's own handler does not read that echo back as a fresh user choice.
+    /// </summary>
+    private bool _isSyncingLightPalette;
+
     private void SetLightPalette(bool useLight)
     {
         _useLightPalette = useLight;
         _lightPaletteChosenThisSession = true;
+
+        _isSyncingLightPalette = true;
+        try
+        {
+            UseLightPaletteSwitch = useLight;
+        }
+        finally
+        {
+            _isSyncingLightPalette = false;
+        }
     }
 
     // ═══ Slider snap ═══
@@ -104,8 +120,142 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         "TonalSpot", "Vibrant", "Expressive", "Rainbow", "FruitSalad", "Content", "Spritz"
     };
 
-    /// <summary>User-saved custom accent colours shown after the built-in swatches.</summary>
+    /// <summary>
+    /// User-saved custom accent colours shown after the built-in swatches, most recent first. Also
+    /// the Palette Studio's "recently used seeds" row — one list, two views of it, because a seed
+    /// the user liked enough to keep and a seed they just landed on are the same thing.
+    /// </summary>
     public ObservableCollection<string> CustomAccentColors { get; } = new();
+
+    // ═══════════════ Palette Studio ═══════════════
+    //
+    // THE SEED HEX STAYS THE SINGLE SOURCE OF TRUTH and HCT is a view of it. AccentColor is what is
+    // persisted and what ThemeService reads; SeedHue/SeedChroma/SeedTone are derived from it on the
+    // way in and recombined into it on the way out. Holding HCT as a second stored copy would mean
+    // two values that can disagree, and the one the app paints from would not be the one the sliders
+    // show.
+
+    /// <summary>
+    /// Set while one representation of the seed is writing the other, so the change notification
+    /// that lands on the far side is not mistaken for a new edit and bounced straight back.
+    /// </summary>
+    private bool _isSyncingSeed;
+
+    /// <summary>The seed's hue in degrees (0–360). Editing it rewrites <see cref="AccentColor"/>.</summary>
+    [ObservableProperty]
+    private double _seedHue;
+
+    /// <summary>The seed's chroma (0–<see cref="SeedHct.MaxChroma"/>). Editing it rewrites <see cref="AccentColor"/>.</summary>
+    [ObservableProperty]
+    private double _seedChroma;
+
+    /// <summary>The seed's tone (0–100). Editing it rewrites <see cref="AccentColor"/>.</summary>
+    [ObservableProperty]
+    private double _seedTone;
+
+    /// <summary>
+    /// Contrast target for the generated palette, -1.0 (softer) to 1.0 (WCAG AAA). Persisted as
+    /// <see cref="CustomizationSettings.ThemeContrast"/>, which until this screen existed could only
+    /// be set by hand-editing the profile JSON.
+    /// </summary>
+    [ObservableProperty]
+    private double _themeContrast;
+
+    /// <summary>
+    /// Whether the generated palette is a light one. Bound to the studio's switch; writing it is
+    /// what turns <see cref="CustomizationSettings.UseLightPalette"/> from "derive it from the preset
+    /// name" into an explicit choice that survives changing the seed.
+    /// </summary>
+    [ObservableProperty]
+    private bool _useLightPaletteSwitch;
+
+    partial void OnSeedHueChanged(double value) => PushSeedToAccent();
+
+    partial void OnSeedChromaChanged(double value) => PushSeedToAccent();
+
+    partial void OnSeedToneChanged(double value) => PushSeedToAccent();
+
+    partial void OnThemeContrastChanged(double value) => ApplyAndSave();
+
+    partial void OnUseLightPaletteSwitchChanged(bool value)
+    {
+        if (_isSyncingLightPalette) return;
+        SetLightPalette(value);
+        ApplyAndSave();
+    }
+
+    /// <summary>Rebuilds <see cref="AccentColor"/> from the three HCT axes, which repaints the shell.</summary>
+    private void PushSeedToAccent()
+    {
+        if (_isSyncingSeed) return;
+
+        _isSyncingSeed = true;
+        try
+        {
+            // ApplyAndSave runs from AccentColor's own handler, so the live preview is this
+            // assignment. The write to disk behind it is debounced by DashboardLayoutService, which
+            // is what keeps a drag from being one file write per frame.
+            AccentColor = SeedHct.ToHex(SeedHue, SeedChroma, SeedTone);
+        }
+        finally
+        {
+            _isSyncingSeed = false;
+        }
+    }
+
+    /// <summary>
+    /// Re-derives the three HCT axes from <see cref="AccentColor"/> — for a swatch click, a preset,
+    /// or the hex box, none of which go through the wheel.
+    /// </summary>
+    /// <remarks>
+    /// AN UNPARSEABLE ACCENT LEAVES THE SLIDERS ALONE rather than collapsing them to black. The
+    /// accent can be a bad string for exactly as long as it takes the user to finish typing one, and
+    /// ThemeService already has the fallback that keeps the window readable meanwhile (RemEx-07jij).
+    /// </remarks>
+    private void SyncSeedFromAccent()
+    {
+        if (_isSyncingSeed) return;
+        if (!Color.TryParse(AccentColor, out var seed)) return;
+
+        var (hue, chroma, tone) = SeedHct.FromColor(seed);
+
+        _isSyncingSeed = true;
+        try
+        {
+            SeedHue = hue;
+            SeedChroma = chroma;
+            SeedTone = tone;
+        }
+        finally
+        {
+            _isSyncingSeed = false;
+        }
+    }
+
+    /// <summary>
+    /// Records the seed the user has just settled on in the recently-used row. Called when a wheel
+    /// drag or a key repeat ENDS, not while it runs — every intermediate colour a drag passes
+    /// through is not a colour anyone chose.
+    /// </summary>
+    public void CommitSeedToRecents()
+    {
+        var hex = AccentColor;
+        if (!Color.TryParse(hex, out _)) return;
+
+        var existing = CustomAccentColors.IndexOf(hex);
+        if (existing == 0) return;
+
+        if (existing > 0) CustomAccentColors.Move(existing, 0);
+        else CustomAccentColors.Insert(0, hex);
+
+        while (CustomAccentColors.Count > MaxRecentSeeds)
+            CustomAccentColors.RemoveAt(CustomAccentColors.Count - 1);
+
+        ApplyAndSave();
+    }
+
+    /// <summary>How many recently-used seeds are kept. Matches what ApplyAndSave persists.</summary>
+    private const int MaxRecentSeeds = 8;
 
     /// <summary>Controls the visibility of the hex input flyout for custom accent entry.</summary>
     [ObservableProperty]
@@ -140,19 +290,10 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         AccentColor = hex;
 
-        if (!CustomAccentColors.Contains(hex))
-        {
-            CustomAccentColors.Add(hex);
-
-            // Persist custom colours in the profile (up to 8)
-            var saved = CustomAccentColors.Take(8).ToList();
-            var profile = _layoutService.CurrentProfile;
-            var updated = profile with
-            {
-                Customization = profile.Customization with { CustomAccentColors = saved }
-            };
-            _layoutService.RequestSave(updated);
-        }
+        // ONE WRITER FOR THE LIST. This used to build its own profile record and save it, which is a
+        // second place that has to remember every field ApplyAndSave carries forward — the exact
+        // shape of the deletion-by-omission bug CustomizationSettingsRoundTripTests exists to catch.
+        CommitSeedToRecents();
 
         IsCustomAccentPickerOpen = false;
         CustomAccentHex = string.Empty;
@@ -177,6 +318,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _canvasBackgroundType = settings.BackgroundMaterial;
         _syncWithHardware = settings.SyncWithHardware;
         _useLightPalette = settings.UseLightPalette;
+        _themeContrast = Math.Clamp(settings.ThemeContrast, -1.0, 1.0);
+
+        // THE SWITCH HAS TO SHOW WHAT IS ACTUALLY PAINTED, and for a profile written before
+        // UseLightPalette existed that is the preset-name answer, not "dark". This mirrors
+        // ThemeService.ApplyCustomization's null case deliberately — a switch that reads the
+        // opposite of the window behind it is worse than no switch.
+        _useLightPaletteSwitch = settings.UseLightPalette
+            ?? string.Equals(settings.ThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
+
         _splashStyle = settings.SplashStyle;
         _selectedPageTitleFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.PageTitleFontFamily)
                                  ?? AvailableFonts.FirstOrDefault();
@@ -187,8 +337,14 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // Load saved custom accent colours
         var profile = _layoutService.CurrentProfile;
         var colors = profile.Customization.CustomAccentColors ?? Array.Empty<string>();
-        foreach (var hex in colors.Take(8))
+        foreach (var hex in colors.Take(MaxRecentSeeds))
             CustomAccentColors.Add(hex);
+
+        // Seed the studio's HCT axes from the accent the profile actually carries. Done directly
+        // rather than through SyncSeedFromAccent because the generated property setters would fire
+        // ApplyAndSave, i.e. a save on construction before the user has touched anything.
+        if (Color.TryParse(_accentColor, out var initialSeed))
+            (_seedHue, _seedChroma, _seedTone) = SeedHct.FromColor(initialSeed);
 
         // Load available background types
         RefreshBackgroundTypes();
@@ -362,7 +518,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     partial void OnGlassOpacityChanged(double value) => ApplyAndSave();
     partial void OnAppWindowOpacityChanged(double value) => ApplyAndSave();
     partial void OnGlowStrengthChanged(double value) => ApplyAndSave();
-    partial void OnAccentColorChanged(string value) => ApplyAndSave();
+    partial void OnAccentColorChanged(string value)
+    {
+        // Order matters: the sliders have to be showing the new seed before the repaint, or a swatch
+        // click leaves the wheel's thumb sitting on the colour the user just replaced.
+        SyncSeedFromAccent();
+        ApplyAndSave();
+    }
     partial void OnSchemeVariantChanged(string value) => ApplyAndSave();
     partial void OnCanvasBackgroundTypeChanged(string value)
     {
@@ -389,8 +551,14 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         var settings = new CustomizationSettings
         {
             ThemeId = SelectedTheme.ToString(),
-            ThemeContrast = carried.ThemeContrast,
-            ThemeSeedChroma = carried.ThemeSeedChroma,
+            ThemeContrast = Math.Clamp(ThemeContrast, -1.0, 1.0),
+
+            // THE SEED'S OWN CHROMA, not the slider's requested one. Most hue/tone pairs cannot
+            // reach high chroma in sRGB, so a request of 120 can land on a colour of 60 — writing
+            // the request would persist a number the seed does not have. Writing what it achieved
+            // means Hct.From(hue, ThemeSeedChroma, tone) reproduces this exact seed, which is the
+            // property the Android side needs for the two platforms to agree (RemEx-ndhlv).
+            ThemeSeedChroma = SeedHct.ChromaOf(AccentColor, carried.ThemeSeedChroma),
             UseLightPalette = _lightPaletteChosenThisSession ? _useLightPalette : carried.UseLightPalette,
             CornerRadius = CornerRadius,
             RemoteCardCornerRadius = RemoteCardCornerRadius,
@@ -406,7 +574,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             CardHeaderFontFamily = carried.CardHeaderFontFamily,
             BodyFontFamily = SelectedBodyFont?.Value ?? "avares://Avalonia.Fonts.Inter/Assets#Inter",
             UiScale = UiScale,
-            CustomAccentColors = CustomAccentColors.Take(8).ToList()
+            CustomAccentColors = CustomAccentColors.Take(MaxRecentSeeds).ToList()
         };
 
         // Update the current profile object
