@@ -62,7 +62,12 @@ public class PaletteStudioWiringTests
 
         // A wheel is the most obviously mouse-only control on the screen, so the accessible name is
         // the difference between "a colour picker" and "an unlabelled square" to a screen reader.
-        studio.Should().MatchRegex(@"<controls:HctColorWheel[\s\S]*?AutomationProperties\.Name=");
+        //
+        // BOUNDED TO THE WHEEL'S OWN TAG. This was [\s\S]*?, which is not stopped by the end of the
+        // element: deleting the wheel's AutomationProperties.Name let the match run on to the Hue
+        // slider's a few lines below and the test stayed green over the exact defect it names. Use
+        // the same [^>] bound the slider loop below already uses.
+        studio.Should().MatchRegex(@"<controls:HctColorWheel[^>]*AutomationProperties\.Name=");
 
         foreach (var axis in new[] { "SeedHue", "SeedChroma", "SeedTone", "ThemeContrast" })
         {

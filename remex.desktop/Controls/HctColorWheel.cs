@@ -5,9 +5,12 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
+using Avalonia.Threading;
 using Remex.Desktop.Services;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Remex.Desktop.Controls;
 
@@ -99,6 +102,15 @@ public class HctColorWheel : Control
     private readonly Dictionary<int, WriteableBitmap> _discCache = new();
     private bool _isDragging;
 
+    /// <summary>
+    /// The seed as it stood when this control last gained focus, so <see cref="OnLostFocusCommit"/>
+    /// can tell an edit from a visit.
+    /// </summary>
+    private (double Hue, double Chroma, double Tone)? _seedAtFocus;
+
+    private bool _isWarming;
+    private CancellationTokenSource _warmCancellation = new();
+
     static HctColorWheel()
     {
         AffectsRender<HctColorWheel>(HueProperty, ChromaProperty, ToneProperty);
@@ -109,6 +121,7 @@ public class HctColorWheel : Control
 
     public HctColorWheel()
     {
+        GotFocus += OnGotFocusRemember;
         LostFocus += OnLostFocusCommit;
     }
 
@@ -230,11 +243,34 @@ public class HctColorWheel : Control
     /// end event and keeps using it.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// SUBSCRIBED RATHER THAN OVERRIDDEN: Avalonia 12 does not expose a virtual <c>OnLostFocus</c> on
     /// <c>Control</c>, so the routed event is the seam that exists.
+    /// </para>
+    /// <para>
+    /// AND ONLY WHEN THE SEED ACTUALLY MOVED. Leaving is not the same as choosing: tabbing THROUGH the
+    /// drawer would otherwise commit whatever seed happened to be loaded, evicting a colour the user
+    /// had deliberately saved once the list of eight was full — from pure keyboard navigation, with
+    /// nothing touched. Worse, when the departing focus is a click on the eighth recents swatch, the
+    /// eviction destroys the Button under the pointer before it can be released, so that swatch
+    /// silently does nothing.
+    /// </para>
     /// </remarks>
     private void OnLostFocusCommit(object? sender, RoutedEventArgs e)
-        => SeedCommitted?.Invoke(this, EventArgs.Empty);
+    {
+        // NO RECORDED VISIT MEANS NO EDIT, so the default is silence rather than a commit. Focus is a
+        // precondition for changing anything here — the keyboard needs it and the pointer path takes
+        // it — so a LostFocus with nothing remembered cannot be carrying a user's choice.
+        var moved = _seedAtFocus is { } start
+            && (Math.Abs(start.Hue - Hue) > 0.001
+                || Math.Abs(start.Chroma - Chroma) > 0.001
+                || Math.Abs(start.Tone - Tone) > 0.001);
+
+        _seedAtFocus = null;
+        if (moved) SeedCommitted?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnGotFocusRemember(object? sender, RoutedEventArgs e) => _seedAtFocus = (Hue, Chroma, Tone);
 
     private void ApplyPointer(Point position)
     {
@@ -282,21 +318,149 @@ public class HctColorWheel : Control
         if (change.Property == IsFocusedProperty) InvalidateVisual();
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        // THE CHROME DOES NOT REPAINT ON ITS OWN. The rim, thumb and focus ring are resolved by
+        // ThemeResources INSIDE Render, which reads the current value but does not subscribe the way
+        // a DynamicResource binding would — and AffectsRender only covers the three seed axes. A
+        // palette change that does not move the seed (picking the Dynamic preset, which deliberately
+        // leaves AccentColor alone) would otherwise leave this control's chrome drawn in the previous
+        // palette's brushes. Most visible on a light palette, where a dark thumb ring is the usual
+        // contrast failure.
+        //
+        // ResourcesChanged rather than ActualThemeVariantChanged: ThemeService repaints by swapping
+        // values in a merged dictionary, so the variant frequently does not change at all.
+        if (Application.Current is { } app) app.ResourcesChanged += OnAppResourcesChanged;
+
+        WarmDiscCache();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        if (Application.Current is { } app) app.ResourcesChanged -= OnAppResourcesChanged;
+
+        _warmCancellation.Cancel();
+        _warmCancellation.Dispose();
+        _warmCancellation = new CancellationTokenSource();
+        _isWarming = false;
+
+        // WriteableBitmap owns a native surface. Navigating in and out of Personalize builds a new
+        // panel and a new wheel each time, so leaving up to ToneBuckets discs (~1.7 MB of native
+        // memory per wheel) to a finaliser puts an unowned cost on a process that is also running the
+        // capture pipeline. Releasing at detach is deterministic; the cache rebuilds on reattach.
+        ClearDiscCache();
+    }
+
+    private void OnAppResourcesChanged(object? sender, ResourcesChangedEventArgs e) => InvalidateVisual();
+
+    private void ClearDiscCache()
+    {
+        foreach (var disc in _discCache.Values) disc.Dispose();
+        _discCache.Clear();
+    }
+
     private WriteableBitmap DiscFor(double tone)
     {
-        var bucket = (int)Math.Round(Math.Clamp(tone, 0.0, 100.0) / ToneBucketSize);
+        var bucket = BucketFor(tone);
         if (_discCache.TryGetValue(bucket, out var cached)) return cached;
 
         // Bounded rather than unbounded: the cache exists to make a tone DRAG cheap, and the whole
         // tone axis is only ToneBuckets discs wide, so anything past that is a bug, not a workload.
-        if (_discCache.Count >= ToneBuckets) _discCache.Clear();
+        if (_discCache.Count >= ToneBuckets) ClearDiscCache();
 
-        var disc = RenderDisc(bucket * ToneBucketSize);
+        // The synchronous path stays as the fallback for a miss the warm-up has not reached yet.
+        var disc = BitmapFrom(SolveDiscPixels(bucket * ToneBucketSize));
         _discCache[bucket] = disc;
         return disc;
     }
 
-    private static WriteableBitmap RenderDisc(double tone)
+    private static int BucketFor(double tone) => (int)Math.Round(Math.Clamp(tone, 0.0, 100.0) / ToneBucketSize);
+
+    /// <summary>
+    /// Fills the whole tone axis on a background thread, so a tone drag never pays for a solve.
+    /// </summary>
+    /// <remarks>
+    /// MEASURED, AND THE REASON THIS EXISTS. One disc is 12,892 in-disc solves and takes about 43 ms
+    /// — roughly two and a half frames. Caching alone made a REPEATED tone cheap but did nothing for
+    /// a MOVING one: dragging the tone slider from 0 to 100 crosses every bucket, so the dispatcher
+    /// would absorb 26 cold solves, about 1.1 seconds of stalls spread over the drag, interleaved
+    /// with the palette regeneration each step already triggers. The wheel drag never showed this
+    /// because hue and chroma are the axes the disc already contains; only tone invalidates it.
+    /// <para>
+    /// ONLY THE MATHS MOVES OFF THE UI THREAD. The pixel buffers are pure computation and safe
+    /// anywhere; the <see cref="WriteableBitmap"/>s are built back on the dispatcher, where they cost
+    /// an allocation and a memcpy each. That keeps the threading question away from a graphics
+    /// resource rather than betting on it being safe.
+    /// </para>
+    /// </remarks>
+    private void WarmDiscCache()
+    {
+        if (_isWarming) return;
+        _isWarming = true;
+
+        var token = _warmCancellation.Token;
+
+        Task.Run(() =>
+        {
+            for (var bucket = 0; bucket <= ToneBuckets - 1; bucket++)
+            {
+                if (token.IsCancellationRequested) return;
+
+                var pixels = SolveDiscPixels(bucket * ToneBucketSize);
+                var captured = bucket;
+
+                Dispatcher.UIThread.Post(() =>
+                {
+                    // The control may have detached — or the cache been cleared — while this bucket
+                    // was being solved. Dropping the result is correct; a later miss re-solves it.
+                    if (token.IsCancellationRequested || _discCache.ContainsKey(captured)) return;
+
+                    _discCache[captured] = BitmapFrom(pixels);
+                    if (BucketFor(Tone) == captured) InvalidateVisual();
+                });
+            }
+        }, token);
+    }
+
+    /// <summary>The expensive half: one tightly packed BGRA buffer for a disc at <paramref name="tone"/>.</summary>
+    private static byte[] SolveDiscPixels(double tone)
+    {
+        var pixels = new byte[BitmapSize * BitmapSize * 4];
+        var radius = BitmapSize / 2.0;
+
+        for (var y = 0; y < BitmapSize; y++)
+        {
+            for (var x = 0; x < BitmapSize; x++)
+            {
+                var dx = x + 0.5 - radius;
+                var dy = y + 0.5 - radius;
+
+                // Outside the disc stays fully transparent, and premultiplied alpha means every
+                // channel has to be zero too or the colour bleeds past the rim when composited.
+                if ((dx * dx) + (dy * dy) > radius * radius) continue;
+
+                // Sample the pixel CENTRE, not its corner — sampling corners shifts the whole
+                // disc half a pixel up and left of the ellipse drawn over it.
+                var (hue, chroma) = PointToHueChroma(new Point(x + 0.5, y + 0.5), BitmapSize);
+                var color = SeedHct.ToColor(hue, chroma, tone);
+
+                var offset = ((y * BitmapSize) + x) * 4;
+                pixels[offset + 0] = color.B;
+                pixels[offset + 1] = color.G;
+                pixels[offset + 2] = color.R;
+                pixels[offset + 3] = 0xFF;
+            }
+        }
+
+        return pixels;
+    }
+
+    /// <summary>The cheap half: wrap a solved buffer in a bitmap. Dispatcher thread only.</summary>
+    private static WriteableBitmap BitmapFrom(byte[] pixels)
     {
         var bitmap = new WriteableBitmap(
             new PixelSize(BitmapSize, BitmapSize),
@@ -304,41 +468,18 @@ public class HctColorWheel : Control
             PixelFormat.Bgra8888,
             AlphaFormat.Premul);
 
-        var radius = BitmapSize / 2.0;
-
         using (var framebuffer = bitmap.Lock())
         {
             // ROW BY ROW, USING THE FRAMEBUFFER'S OWN STRIDE. A backend is free to pad rows, and a
             // single copy of a tightly packed buffer into a padded one skews the image progressively
             // — which looks like a rendering bug in the disc rather than a copy bug here.
-            var row = new byte[BitmapSize * 4];
-
             for (var y = 0; y < BitmapSize; y++)
             {
-                Array.Clear(row);
-
-                for (var x = 0; x < BitmapSize; x++)
-                {
-                    var dx = x + 0.5 - radius;
-                    var dy = y + 0.5 - radius;
-
-                    // Outside the disc stays fully transparent, and premultiplied alpha means every
-                    // channel has to be zero too or the colour bleeds past the rim when composited.
-                    if ((dx * dx) + (dy * dy) > radius * radius) continue;
-
-                    // Sample the pixel CENTRE, not its corner — sampling corners shifts the whole
-                    // disc half a pixel up and left of the ellipse drawn over it.
-                    var (hue, chroma) = PointToHueChroma(new Point(x + 0.5, y + 0.5), BitmapSize);
-                    var color = SeedHct.ToColor(hue, chroma, tone);
-
-                    var offset = x * 4;
-                    row[offset + 0] = color.B;
-                    row[offset + 1] = color.G;
-                    row[offset + 2] = color.R;
-                    row[offset + 3] = 0xFF;
-                }
-
-                Marshal.Copy(row, 0, framebuffer.Address + (y * framebuffer.RowBytes), row.Length);
+                Marshal.Copy(
+                    pixels,
+                    y * BitmapSize * 4,
+                    framebuffer.Address + (y * framebuffer.RowBytes),
+                    BitmapSize * 4);
             }
         }
 

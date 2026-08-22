@@ -157,4 +157,30 @@ public class SeedHctTests
         // Answering 0 there would persist "grey" over a perfectly good saved chroma.
         SeedHct.ChromaOf(hex, fallback: 48.0).Should().Be(48.0);
     }
+
+    [Fact]
+    public void TheDefaultSeedIsNotBlackSoAnUnparseableAccentDoesNotOpenOnOne()
+    {
+        // WHAT THE VIEW MODEL FALLS BACK TO AT CONSTRUCTION, pinned here because the failure it
+        // prevents is silent. Mid-edit the right answer is to leave the axes alone; at construction
+        // there is nothing to leave alone, and the C# default of 0/0/0 is not neutral, it is BLACK.
+        // A profile carrying "#FF0O00" survives a restart (RemEx-07jij), so a studio that opened on
+        // 0/0/0 would show a solid black disc and push #000000 over the app on the first arrow key.
+        var (hue, chroma, tone) = SeedHct.FromColor(ThemeService.FallbackAccentColor);
+
+        tone.Should().BeGreaterThan(0, "a fallback of tone 0 is black, which is the bug");
+        chroma.Should().BeGreaterThan(0, "a fallback with no chroma is grey — the seed has a colour");
+
+        // And it has to be the same seed the painting side falls back to, or the sliders describe a
+        // window that is not there.
+        SeedHct.ToColor(hue, chroma, tone).Should().Be(Color.Parse(ThemeService.FallbackAccentSeed));
+    }
+
+    [Fact]
+    public void HexOutputIsUpperCaseSoTheRecentsListCanDeduplicateAgainstTypedInput()
+    {
+        // The recents list compares case-insensitively for this reason; this pins the other half, so
+        // that the two writers at least AGREE on a canonical form rather than both being arbitrary.
+        SeedHct.ToHex(200, 60, 50).Should().Be(SeedHct.ToHex(200, 60, 50).ToUpperInvariant());
+    }
 }

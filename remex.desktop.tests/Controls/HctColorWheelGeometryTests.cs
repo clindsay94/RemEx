@@ -117,10 +117,52 @@ public class HctColorWheelGeometryTests
         source.Should().Contain("LostFocus += OnLostFocusCommit;",
             "the keyboard path still has to commit SOMETHING, or a seed chosen with the arrows never "
             + "reaches the recently-used row at all");
-        source.Should().MatchRegex(@"OnLostFocusCommit\(object\? sender, RoutedEventArgs e\)\s*=>\s*SeedCommitted\?\.Invoke",
+        MethodBody(source, "private void OnLostFocusCommit").Should().Contain("SeedCommitted?.Invoke",
             "the subscribed handler has to be the one that raises the commit");
         source.Should().MatchRegex(@"OnPointerReleased[\s\S]{0,400}?SeedCommitted\?\.Invoke",
             "a drag has a real end event and must keep using it");
+    }
+
+    [Fact]
+    public void LeavingTheWheelWithoutTouchingItIsNotAChoice()
+    {
+        // TABBING THROUGH IS NOT PICKING. With the commit on LostFocus, an unconditional raise means
+        // moving keyboard focus across the drawer commits whatever seed was already loaded — and once
+        // the recently-used row holds its maximum of eight, that insert EVICTS a colour the user
+        // deliberately saved, from navigation alone. The nastier variant is a pointer: if focus leaves
+        // because the user pressed the eighth recents swatch, the eviction destroys the Button under
+        // the pointer before it can be released, so that swatch silently does nothing.
+        var source = ControlSource();
+
+        source.Should().Contain("GotFocus += OnGotFocusRemember;",
+            "telling an edit from a visit needs the seed as it stood on arrival");
+        source.Should().MatchRegex(@"OnGotFocusRemember[^\n]*_seedAtFocus = \(Hue, Chroma, Tone\)",
+            "all three axes, or a tone-only change made while the wheel held focus reads as untouched");
+
+        var commit = MethodBody(source, "private void OnLostFocusCommit");
+        commit.Should().Contain("_seedAtFocus",
+            "the commit has to consult the remembered seed rather than firing unconditionally");
+        commit.Should().MatchRegex(@"if \(moved\) SeedCommitted",
+            "the raise must be conditional on the seed having actually moved");
+    }
+
+    /// <summary>Everything from a member's signature to the closing brace of its own block.</summary>
+    private static string MethodBody(string source, string signature)
+    {
+        var start = source.IndexOf(signature, StringComparison.Ordinal);
+        start.Should().BeGreaterThanOrEqualTo(0, "{0} moved or was renamed", signature);
+
+        var brace = source.IndexOf('{', start);
+        brace.Should().BeGreaterThanOrEqualTo(0);
+
+        var depth = 0;
+        for (var i = brace; i < source.Length; i++)
+        {
+            if (source[i] == '{') depth++;
+            else if (source[i] == '}' && --depth == 0) return source[start..(i + 1)];
+        }
+
+        throw new InvalidOperationException($"{signature}'s body is unterminated");
     }
 
     [Fact]

@@ -21,6 +21,19 @@ public class ThemeService : IDisposable
     /// </summary>
     internal const string FallbackAccentSeed = "#6C4CFF";
 
+    /// <summary>
+    /// <see cref="FallbackAccentSeed"/> as a colour, for callers that need the seed rather than the
+    /// string — the Palette Studio initialises its HCT axes from this when the saved accent will not
+    /// parse, so the sliders and the painted window agree about what a broken seed means.
+    /// </summary>
+    /// <remarks>
+    /// TryParse ON A CONSTANT, for the same reason the apply path uses it: <c>Parse</c> throws, and a
+    /// throw from a static initialiser is a type that can never be loaded. The literal second branch
+    /// makes that structurally impossible rather than merely unlikely.
+    /// </remarks>
+    internal static readonly Color FallbackAccentColor =
+        Color.TryParse(FallbackAccentSeed, out var fallback) ? fallback : Color.FromRgb(0x6C, 0x4C, 0xFF);
+
     public ThemeService()
     {
         // Add our override dictionary to the application resources.

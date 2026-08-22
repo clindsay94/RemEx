@@ -249,7 +249,18 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         var hex = AccentColor;
         if (!Color.TryParse(hex, out _)) return;
 
-        var existing = CustomAccentColors.IndexOf(hex);
+        // CASE-INSENSITIVE, because the two writers disagree on case and always will. SeedHct.ToHex
+        // emits upper case; the hex box saves whatever the user typed. An ordinal compare therefore
+        // treats "#00f3ff" typed by hand and "#00F3FF" landed on with the wheel as two colours, and
+        // they occupy two of the eight slots while looking identical.
+        var existing = -1;
+        for (var i = 0; i < CustomAccentColors.Count; i++)
+        {
+            if (!string.Equals(CustomAccentColors[i], hex, StringComparison.OrdinalIgnoreCase)) continue;
+            existing = i;
+            break;
+        }
+
         if (existing == 0) return;
 
         if (existing > 0) CustomAccentColors.Move(existing, 0);
@@ -352,8 +363,20 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // Seed the studio's HCT axes from the accent the profile actually carries. Done directly
         // rather than through SyncSeedFromAccent because the generated property setters would fire
         // ApplyAndSave, i.e. a save on construction before the user has touched anything.
-        if (Color.TryParse(_accentColor, out var initialSeed))
-            (_seedHue, _seedChroma, _seedTone) = SeedHct.FromColor(initialSeed);
+        //
+        // AN UNPARSEABLE ACCENT NEEDS THE FALLBACK SEED, NOT "LEAVE THEM ALONE". Mid-edit, leaving
+        // the axes untouched is right (SyncSeedFromAccent does exactly that) — but at construction
+        // there is nothing to leave alone, and the fields' default of 0/0/0 is not neutral, it is
+        // BLACK. A profile written before RemEx-07jij's validation fix can still carry something like
+        // "#FF0O00" (a capital O for a zero) and survive a restart, so this is reachable today: the
+        // shell would paint with ThemeService's fallback while the sliders read 0/0/0 and the disc
+        // rendered solid black, and the first arrow key would push #000000 over the whole app.
+        // Matching ThemeService's own fallback keeps the two agreeing on what a bad seed means.
+        var initialSeed = Color.TryParse(_accentColor, out var parsedSeed)
+            ? parsedSeed
+            : ThemeService.FallbackAccentColor;
+
+        (_seedHue, _seedChroma, _seedTone) = SeedHct.FromColor(initialSeed);
 
         // Load available background types
         RefreshBackgroundTypes();
