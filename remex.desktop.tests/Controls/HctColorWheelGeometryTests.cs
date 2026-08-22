@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Runtime.CompilerServices;
 using Avalonia;
 using FluentAssertions;
 using Remex.Desktop.Controls;
@@ -94,6 +97,33 @@ public class HctColorWheelGeometryTests
     }
 
     [Fact]
+    public void AnArrowKeyIsANudgeAndNotACommit()
+    {
+        // MEASURED, NOT REASONED. A verification run on the real app pressed Left five times and the
+        // recently-used row came back holding #068EC6, #008EC4, #008FC1, #008FBE, #0090BC, #0090B9
+        // and #0091B2 — seven swatches nobody could tell apart, filling a row of eight and pushing
+        // out every colour that had actually been chosen. The keyboard's "I have finished" is leaving
+        // the control.
+        //
+        // Source text because there is no headless render here to raise a real key event; what this
+        // pins is that the commit is NOT wired to a per-keystroke handler, which is the whole defect.
+        var source = ControlSource();
+
+        source.Should().NotMatchRegex(@"OnKeyUp[\s\S]{0,400}?SeedCommitted\?\.Invoke",
+            "committing on key-up makes every 2° nudge a separate entry in the recently-used row");
+        // Two independent facts rather than one order-dependent window: the handler is subscribed,
+        // and the handler is the thing that commits. A single regex spanning both breaks the moment
+        // either moves, which makes it a test about line order rather than about behaviour.
+        source.Should().Contain("LostFocus += OnLostFocusCommit;",
+            "the keyboard path still has to commit SOMETHING, or a seed chosen with the arrows never "
+            + "reaches the recently-used row at all");
+        source.Should().MatchRegex(@"OnLostFocusCommit\(object\? sender, RoutedEventArgs e\)\s*=>\s*SeedCommitted\?\.Invoke",
+            "the subscribed handler has to be the one that raises the commit");
+        source.Should().MatchRegex(@"OnPointerReleased[\s\S]{0,400}?SeedCommitted\?\.Invoke",
+            "a drag has a real end event and must keep using it");
+    }
+
+    [Fact]
     public void AZeroSizedWheelIsAnsweredRatherThanDividedBy()
     {
         // Layout hands a control a zero size before its first measure, and Render is not the only
@@ -103,4 +133,19 @@ public class HctColorWheelGeometryTests
         act.Should().NotThrow();
         HctColorWheel.PointToHueChroma(new Point(0, 0), 0).Should().Be((0.0, 0.0));
     }
+
+    /// <summary>The control's own source, for the one assertion that has to be made over text.</summary>
+    private static string ControlSource()
+    {
+        var path = Path.Combine(RepoRoot(), "remex.desktop", "Controls", "HctColorWheel.cs");
+        var source = File.ReadAllText(path);
+
+        // Anti-vacuity: a moved file would make every NotMatchRegex above pass over nothing.
+        source.Length.Should().BeGreaterThan(2000);
+        source.Should().Contain("SeedCommitted");
+        return source;
+    }
+
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 }

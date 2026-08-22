@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -26,13 +27,18 @@ public class PaletteStudioWiringTests
     [InlineData("SeedHue")]
     [InlineData("SeedChroma")]
     [InlineData("SeedTone")]
-    public void EverySettingTheStudioOwnsIsBoundToSomethingOnThePanel(string property)
+    public void EverySettingTheStudioOwnsIsBoundToAControlThatCanWriteIt(string property)
     {
         var markup = PanelMarkup();
 
-        markup.Should().MatchRegex($@"\{{Binding {Regex.Escape(property)}\b",
-            "{0} is persisted and honoured, so a build with no control bound to it is a setting the "
-            + "user cannot reach — which is the state this bead was filed to end", property);
+        // A WRITER, NOT MERELY A MENTION. This asked only that the name appear in some binding, and
+        // an injection proved that vacuous: deleting the contrast SLIDER's binding left the readout
+        // TextBlock next to it still matching, so the test stayed green over a setting that had gone
+        // back to being unreachable — the exact condition it is named for. Value= and IsChecked= are
+        // the two properties on this panel through which a user changes anything.
+        markup.Should().MatchRegex($@"(Value|IsChecked)=""\{{Binding {Regex.Escape(property)}[,}}]",
+            "{0} is persisted and honoured, so a build with no INPUT control bound to it is a setting "
+            + "the user cannot reach — which is the state this bead was filed to end", property);
     }
 
     [Fact]
@@ -136,6 +142,13 @@ public class PaletteStudioWiringTests
         markup.Should().Contain("Custom_PaletteStudio");
         StudioSection(markup).Length.Should().BeGreaterThan(500);
         ApplyAndSaveInitializer().Length.Should().BeGreaterThan(200);
+
+        // MethodBody must stop at ITS OWN member. An injection that emptied OnSeedHueChanged used to
+        // pass because the extracted "body" ran on into the two handlers below it, both of which say
+        // PushSeedToAccent — a guard reading a neighbour's code and reporting on this one.
+        var hueHandler = MethodBody(ViewModelSource(), "partial void OnSeedHueChanged");
+        hueHandler.Should().NotContain("OnSeedChromaChanged");
+        hueHandler.Should().NotContain("OnSeedToneChanged");
     }
 
     // ═══════════════ Helpers ═══════════════
@@ -156,19 +169,37 @@ public class PaletteStudioWiringTests
         return end < 0 ? markup[start..] : markup[start..end];
     }
 
-    /// <summary>Everything between a member's signature and the blank line that ends its block.</summary>
+    /// <summary>Exactly one member's body — expression-bodied or block-bodied — and nothing after it.</summary>
+    /// <remarks>
+    /// A FIXED-SIZE WINDOW WAS NOT GOOD ENOUGH, and an injection is what showed it. This used to take
+    /// 1200 characters from the signature and search inside them, which for an EMPTY body swallowed
+    /// the two handlers below it — so emptying <c>OnSeedHueChanged</c> left the test reading its
+    /// neighbours' bodies and reporting the wiring intact. Brace-matching costs eight lines and
+    /// cannot over-capture.
+    /// </remarks>
     private static string MethodBody(string source, string signature)
     {
         var start = source.IndexOf(signature, StringComparison.Ordinal);
         start.Should().BeGreaterThanOrEqualTo(0, "{0} moved or was renamed — re-point this test rather than deleting it", signature);
 
-        // Expression-bodied members end at the first semicolon; block-bodied ones at a closing brace
-        // in the member's own indentation. Taking a generous window and searching inside it covers
-        // both without a brace matcher.
-        var window = source.Substring(start, Math.Min(1200, source.Length - start));
-        var end = window.IndexOf("\n    }", StringComparison.Ordinal);
-        if (end < 0) end = window.IndexOf(";", StringComparison.Ordinal);
-        return end < 0 ? window : window[..end];
+        var brace = source.IndexOf('{', start);
+        var semicolon = source.IndexOf(';', start);
+        var arrow = source.IndexOf("=>", start, StringComparison.Ordinal);
+
+        // Expression-bodied: the "=>" arrives before any block would have opened.
+        if (arrow >= 0 && semicolon >= 0 && arrow < semicolon && (brace < 0 || arrow < brace))
+            return source[start..(semicolon + 1)];
+
+        brace.Should().BeGreaterThanOrEqualTo(0, "{0} has neither a block nor an expression body", signature);
+
+        var depth = 0;
+        for (var i = brace; i < source.Length; i++)
+        {
+            if (source[i] == '{') depth++;
+            else if (source[i] == '}' && --depth == 0) return source[start..(i + 1)];
+        }
+
+        throw new InvalidOperationException($"{signature}'s body is unterminated — the source did not parse");
     }
 
     private static string ApplyAndSaveInitializer()

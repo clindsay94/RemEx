@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -84,10 +85,15 @@ public class HctColorWheel : Control
     }
 
     /// <summary>
-    /// Raised when the user finishes choosing — pointer released, or an arrow key let go. The panel
-    /// uses it to push the settled seed into the recently-used list, which is why it is a separate
-    /// signal from the property changes a drag fires on every frame.
+    /// Raised when the user finishes choosing — a pointer drag released, or keyboard focus leaving
+    /// the wheel. The panel uses it to push the settled seed into the recently-used list, which is
+    /// why it is a separate signal from the property changes a drag fires on every frame.
     /// </summary>
+    /// <remarks>
+    /// NOT ON KEY-UP. A single arrow tap is a 2° nudge, not a decision, so committing per key-up
+    /// filled the recently-used row with a run of colours indistinguishable from each other. Leaving
+    /// the control is the keyboard's equivalent of letting go.
+    /// </remarks>
     public event EventHandler? SeedCommitted;
 
     private readonly Dictionary<int, WriteableBitmap> _discCache = new();
@@ -99,6 +105,11 @@ public class HctColorWheel : Control
 
         // A wheel nobody can reach with Tab is not keyboard-navigable, whatever its key handling does.
         FocusableProperty.OverrideDefaultValue<HctColorWheel>(true);
+    }
+
+    public HctColorWheel()
+    {
+        LostFocus += OnLostFocusCommit;
     }
 
     // ═══════════════ Geometry ═══════════════
@@ -210,12 +221,20 @@ public class HctColorWheel : Control
         e.Handled = true;
     }
 
-    protected override void OnKeyUp(KeyEventArgs e)
-    {
-        base.OnKeyUp(e);
-        if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down)
-            SeedCommitted?.Invoke(this, EventArgs.Empty);
-    }
+    /// <summary>
+    /// THE KEYBOARD'S "I HAVE FINISHED" IS LEAVING THE CONTROL, NOT LIFTING A KEY, and getting that
+    /// wrong was visible immediately. Committing on key-up meant five taps of Left were five separate
+    /// choices: the recently-used row came back from a verification run holding #068EC6, #008EC4,
+    /// #008FC1, #008FBE, #0090BC, #0090B9, #0091B2 — seven swatches nobody could tell apart, filling
+    /// the row and pushing out every colour the user had actually picked. A pointer drag has a real
+    /// end event and keeps using it.
+    /// </summary>
+    /// <remarks>
+    /// SUBSCRIBED RATHER THAN OVERRIDDEN: Avalonia 12 does not expose a virtual <c>OnLostFocus</c> on
+    /// <c>Control</c>, so the routed event is the seam that exists.
+    /// </remarks>
+    private void OnLostFocusCommit(object? sender, RoutedEventArgs e)
+        => SeedCommitted?.Invoke(this, EventArgs.Empty);
 
     private void ApplyPointer(Point position)
     {

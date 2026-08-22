@@ -81,66 +81,74 @@
             <StackPanel Spacing="16">
                 <TextBlock Text="{local:Localize Custom_PaletteStudio}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" LetterSpacing="2"/>
 
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
-                    <controls:HctColorWheel Grid.Column="0" Width="176" Height="176" VerticalAlignment="Top"
-                        Hue="{Binding SeedHue, Mode=TwoWay}"
-                        Chroma="{Binding SeedChroma, Mode=TwoWay}"
-                        Tone="{Binding SeedTone, Mode=TwoWay}"
-                        SeedCommitted="OnSeedCommitted"
-                        AutomationProperties.Name="{local:Localize Custom_SeedWheel}"
-                        ToolTip.Tip="{local:Localize Custom_SeedWheelTooltip}"/>
+                <!-- STACKED, NOT SIDE BY SIDE, AND THAT IS A MEASUREMENT. This panel is hosted in the
+                     Personalize drawer, which is about 300px wide - a 176px wheel beside a column of
+                     labelled sliders left roughly 110px for the sliders, and the seed row's own
+                     label/box/button/swatch overflowed it outright, clipping the label to "See". The
+                     wheel is square and does not benefit from the extra width; the sliders do. -->
+                <controls:HctColorWheel Width="176" Height="176" HorizontalAlignment="Center"
+                    Hue="{Binding SeedHue, Mode=TwoWay}"
+                    Chroma="{Binding SeedChroma, Mode=TwoWay}"
+                    Tone="{Binding SeedTone, Mode=TwoWay}"
+                    SeedCommitted="OnSeedCommitted"
+                    AutomationProperties.Name="{local:Localize Custom_SeedWheel}"
+                    ToolTip.Tip="{local:Localize Custom_SeedWheelTooltip}"/>
 
-                    <StackPanel Grid.Column="1" Spacing="12">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                            <TextBlock Text="{local:Localize Custom_SeedHue}" VerticalAlignment="Center" MinWidth="64"/>
-                            <Slider Grid.Column="1" Minimum="0" Maximum="360" Value="{Binding SeedHue}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedHue}"/>
-                            <TextBlock Grid.Column="2" Text="{Binding SeedHue, StringFormat={}{0:F0}°}" VerticalAlignment="Center" MinWidth="42" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </Grid>
+                <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="{local:Localize Custom_SeedHue}" VerticalAlignment="Center" MinWidth="52"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="360" Value="{Binding SeedHue}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedHue}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding SeedHue, StringFormat={}{0:F0}°}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </Grid>
 
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                            <TextBlock Text="{local:Localize Custom_SeedChroma}" VerticalAlignment="Center" MinWidth="64"/>
-                            <Slider Grid.Column="1" Minimum="0" Maximum="120" Value="{Binding SeedChroma}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedChroma}"/>
-                            <TextBlock Grid.Column="2" Text="{Binding SeedChroma, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="42" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </Grid>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="{local:Localize Custom_SeedChroma}" VerticalAlignment="Center" MinWidth="52"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="120" Value="{Binding SeedChroma}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedChroma}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding SeedChroma, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </Grid>
 
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                            <TextBlock Text="{local:Localize Custom_SeedTone}" VerticalAlignment="Center" MinWidth="64"/>
-                            <Slider Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding SeedTone}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedTone}"/>
-                            <TextBlock Grid.Column="2" Text="{Binding SeedTone, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="42" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
-                        </Grid>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="{local:Localize Custom_SeedTone}" VerticalAlignment="Center" MinWidth="52"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding SeedTone}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedTone}"/>
+                        <TextBlock Grid.Column="2" Text="{Binding SeedTone, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                    </Grid>
+                </StackPanel>
 
-                        <!-- The same hex machinery the "+" swatch flyout uses, so there is one
-                             validator and one writer rather than two that can disagree. The current
-                             seed is the placeholder, which keeps the box empty and unambiguous
-                             instead of fighting the sliders for ownership of its text. -->
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
-                            <TextBlock Text="{local:Localize Custom_SeedHex}" VerticalAlignment="Center" MinWidth="64"/>
-                            <TextBox Grid.Column="1" Text="{Binding CustomAccentHex}" PlaceholderText="{Binding AccentColor}" FontFamily="Consolas, monospace" FontSize="12" MaxLength="9" MinWidth="96" Padding="8,5" CornerRadius="6" AutomationProperties.Name="{local:Localize Custom_SeedHex}">
-                                <TextBox.KeyBindings>
-                                    <KeyBinding Gesture="Enter" Command="{Binding ConfirmCustomAccentCommand}"/>
-                                </TextBox.KeyBindings>
-                            </TextBox>
-                            <Button Grid.Column="2" Content="{local:Localize Btn_Apply}" Command="{Binding ConfirmCustomAccentCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" FontSize="12" FontWeight="SemiBold" CornerRadius="6"/>
-                            <Border Grid.Column="3" x:CompileBindings="False" Width="28" Height="28" CornerRadius="6" Background="{Binding AccentColor}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" ToolTip.Tip="{Binding AccentColor}"/>
-                        </Grid>
+                <!-- The same hex machinery the "+" swatch flyout uses, so there is one validator and
+                     one writer rather than two that can disagree. The current seed is the
+                     placeholder, which keeps the box empty and unambiguous instead of fighting the
+                     sliders for ownership of its text. -->
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{local:Localize Custom_SeedHex}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                        <TextBox Text="{Binding CustomAccentHex}" PlaceholderText="{Binding AccentColor}" FontFamily="Consolas, monospace" FontSize="12" MaxLength="9" Padding="8,5" CornerRadius="6" AutomationProperties.Name="{local:Localize Custom_SeedHex}">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding ConfirmCustomAccentCommand}"/>
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <Button Grid.Column="1" Content="{local:Localize Btn_Apply}" Command="{Binding ConfirmCustomAccentCommand}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentForegroundBrush}" Padding="10,5" FontSize="12" FontWeight="SemiBold" CornerRadius="6" VerticalAlignment="Stretch"/>
+                        <Border Grid.Column="2" x:CompileBindings="False" Width="28" Height="28" CornerRadius="6" Background="{Binding AccentColor}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" ToolTip.Tip="{Binding AccentColor}"/>
+                    </Grid>
+                </StackPanel>
 
-                        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasRecentSeeds}">
-                            <TextBlock Text="{local:Localize Custom_RecentSeeds}" VerticalAlignment="Center" MinWidth="64" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
-                            <ItemsControl ItemsSource="{Binding CustomAccentColors}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="8"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Classes="accent-picker" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </StackPanel>
-                </Grid>
+                <StackPanel Spacing="6" IsVisible="{Binding HasRecentSeeds}">
+                    <TextBlock Text="{local:Localize Custom_RecentSeeds}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                    <ItemsControl ItemsSource="{Binding CustomAccentColors}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <!-- WRAPPING, BECAUSE EIGHT SWATCHES DO NOT FIT ON ONE ROW HERE. A
+                                     horizontal StackPanel would push the last of them out past the
+                                     drawer's edge, where they are unreachable rather than merely ugly. -->
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Classes="accent-picker" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
 
                 <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
 
