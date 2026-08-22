@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Text.RegularExpressions;
 using Avalonia.Media;
 using FluentAssertions;
 using Remex.Desktop.Services;
@@ -115,9 +117,11 @@ public class SeedHctTests
     [Fact]
     public void TheHexFormIsTheSevenCharacterFormThatThemeServiceParses()
     {
-        // AccentColor is persisted as this string and ThemeService runs Color.TryParse over it. An
-        // eight-character or lower-case-prefixed variant would parse, but CustomAccentColors is
-        // de-duplicated by ORDINAL string comparison, so a second format silently doubles the row.
+        // AccentColor is persisted as this string and ThemeService runs Color.TryParse over it. The
+        // LENGTH is the part that matters here: an eight-character #AARRGGBB would parse and paint
+        // correctly while being a different string from the six-character form the swatches hold, so
+        // the recents row would carry the same colour twice. (Case is handled separately — the row
+        // compares case-insensitively, because the hex box saves whatever the user typed.)
         var hex = SeedHct.ToHex(265.0, 60.0, 55.0);
 
         hex.Should().MatchRegex("^#[0-9A-F]{6}$");
@@ -181,6 +185,18 @@ public class SeedHctTests
     {
         // The recents list compares case-insensitively for this reason; this pins the other half, so
         // that the two writers at least AGREE on a canonical form rather than both being arbitrary.
-        SeedHct.ToHex(200, 60, 50).Should().Be(SeedHct.ToHex(200, 60, 50).ToUpperInvariant());
+        //
+        // A SWEEP, NOT ONE SAMPLE, AND IT COUNTS THE LETTERS. Asserting case over a single colour is
+        // vacuous whenever that colour's hex happens to be all digits — an injection that lower-cased
+        // the format string passed exactly that way. Only a value containing A–F can tell the two
+        // cases apart, so the test checks that it actually saw some.
+        var samples = Enumerable.Range(0, 36)
+            .Select(i => SeedHct.ToHex(i * 10, 60, 50))
+            .ToArray();
+
+        samples.Should().OnlyContain(hex => Regex.IsMatch(hex, "^#[0-9A-F]{6}$"));
+
+        samples.Count(hex => hex.Any(char.IsLetter))
+            .Should().BeGreaterThan(0, "with no letters anywhere, the case assertion above proves nothing");
     }
 }
