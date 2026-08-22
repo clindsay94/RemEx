@@ -14,6 +14,48 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>कंट्रास्ट</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>तीव्र</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>नरम</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>जनरेट किया गया पैलेट टेक्स्ट को उसके पीछे की सतह से कितना अलग करता है।</value>
+  </data>
+  <data name="Custom_LightPalette" xml:space="preserve">
+    <value>हल्का पैलेट</value>
+  </data>
+  <data name="Custom_LightPaletteDesc" xml:space="preserve">
+    <value>गहरे के बजाय हल्के बैकग्राउंड के लिए पैलेट बनाएँ।</value>
+  </data>
+  <data name="Custom_PaletteStudio" xml:space="preserve">
+    <value>पैलेट स्टूडियो</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>हाल के</value>
+  </data>
+  <data name="Custom_SeedChroma" xml:space="preserve">
+    <value>क्रोमा</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>सीड</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>ह्यू</value>
+  </data>
+  <data name="Custom_SeedTone" xml:space="preserve">
+    <value>टोन</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>सीड रंग चक्र</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>सीड रंग चुनने के लिए खींचें। ह्यू चक्र के चारों ओर चलता है, क्रोमा केंद्र से बाहर की ओर। तीर कुंजियाँ भी काम करती हैं।</value>
+  </data>
   <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
     <value>फ़ोल्डर डाउनलोड करें</value>
   </data>

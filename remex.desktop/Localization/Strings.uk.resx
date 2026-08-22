@@ -14,6 +14,48 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>Контраст</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>Різкіший</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>М'якший</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>Наскільки згенерована палітра відділяє текст від поверхні позаду нього.</value>
+  </data>
+  <data name="Custom_LightPalette" xml:space="preserve">
+    <value>Світла палітра</value>
+  </data>
+  <data name="Custom_LightPaletteDesc" xml:space="preserve">
+    <value>Створює палітру для світлого тла замість темного.</value>
+  </data>
+  <data name="Custom_PaletteStudio" xml:space="preserve">
+    <value>СТУДІЯ ПАЛІТРИ</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>Нещодавні</value>
+  </data>
+  <data name="Custom_SeedChroma" xml:space="preserve">
+    <value>Хрома</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>База</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>Відтінок</value>
+  </data>
+  <data name="Custom_SeedTone" xml:space="preserve">
+    <value>Тон</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>Колесо базового кольору</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>Перетягніть, щоб вибрати базовий колір. Відтінок йде по колу, а хрома — від центру назовні. Клавіші зі стрілками теж працюють.</value>
+  </data>
   <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
     <value>Завантажити теку</value>
   </data>

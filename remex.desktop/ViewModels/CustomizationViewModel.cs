@@ -127,6 +127,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// </summary>
     public ObservableCollection<string> CustomAccentColors { get; } = new();
 
+    /// <summary>
+    /// Whether the recently-used row has anything in it. A plain <c>Count</c> binding would need an
+    /// int-to-bool converter this project does not have, and a "Recent" label over nothing reads as
+    /// a broken row rather than an empty one.
+    /// </summary>
+    public bool HasRecentSeeds => CustomAccentColors.Count > 0;
+
     // ═══════════════ Palette Studio ═══════════════
     //
     // THE SEED HEX STAYS THE SINGLE SOURCE OF TRUTH and HCT is a view of it. AccentColor is what is
@@ -339,6 +346,8 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         var colors = profile.Customization.CustomAccentColors ?? Array.Empty<string>();
         foreach (var hex in colors.Take(MaxRecentSeeds))
             CustomAccentColors.Add(hex);
+
+        CustomAccentColors.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasRecentSeeds));
 
         // Seed the studio's HCT axes from the accent the profile actually carries. Done directly
         // rather than through SyncSeedFromAccent because the generated property setters would fire

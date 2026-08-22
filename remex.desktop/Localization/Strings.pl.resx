@@ -14,6 +14,48 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>Kontrast</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>Ostrzejszy</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>Łagodniejszy</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>Jak mocno wygenerowana paleta odsuwa tekst od powierzchni za nim.</value>
+  </data>
+  <data name="Custom_LightPalette" xml:space="preserve">
+    <value>Jasna paleta</value>
+  </data>
+  <data name="Custom_LightPaletteDesc" xml:space="preserve">
+    <value>Generuj paletę dla jasnego tła zamiast ciemnego.</value>
+  </data>
+  <data name="Custom_PaletteStudio" xml:space="preserve">
+    <value>STUDIO PALETY</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>Ostatnie</value>
+  </data>
+  <data name="Custom_SeedChroma" xml:space="preserve">
+    <value>Chroma</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>Baza</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>Odcień</value>
+  </data>
+  <data name="Custom_SeedTone" xml:space="preserve">
+    <value>Jasność</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>Koło koloru bazowego</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>Przeciągnij, aby wybrać kolor bazowy. Odcień biegnie wokół koła, chroma od środka na zewnątrz. Klawisze strzałek też działają.</value>
+  </data>
   <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
     <value>Pobierz folder</value>
   </data>

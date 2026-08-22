@@ -14,6 +14,48 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>Contrast</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>Sharper</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>Softer</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>How hard the generated palette pushes text away from the surface behind it.</value>
+  </data>
+  <data name="Custom_LightPalette" xml:space="preserve">
+    <value>Light palette</value>
+  </data>
+  <data name="Custom_LightPaletteDesc" xml:space="preserve">
+    <value>Generate the palette for a light background instead of a dark one.</value>
+  </data>
+  <data name="Custom_PaletteStudio" xml:space="preserve">
+    <value>PALETTE STUDIO</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>Recent</value>
+  </data>
+  <data name="Custom_SeedChroma" xml:space="preserve">
+    <value>Chroma</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>Seed</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>Hue</value>
+  </data>
+  <data name="Custom_SeedTone" xml:space="preserve">
+    <value>Tone</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>Seed colour wheel</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>Drag to pick the seed colour. Hue runs around the wheel, chroma from the centre outwards. The arrow keys work too.</value>
+  </data>
   <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
     <value>Download folder</value>
   </data>

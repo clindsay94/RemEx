@@ -14,6 +14,48 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>Contraste</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>Mais forte</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>Mais suave</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>O quanto a paleta gerada separa o texto da superfície atrás dele.</value>
+  </data>
+  <data name="Custom_LightPalette" xml:space="preserve">
+    <value>Paleta clara</value>
+  </data>
+  <data name="Custom_LightPaletteDesc" xml:space="preserve">
+    <value>Gera a paleta para um fundo claro em vez de escuro.</value>
+  </data>
+  <data name="Custom_PaletteStudio" xml:space="preserve">
+    <value>ESTÚDIO DE PALETA</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>Recentes</value>
+  </data>
+  <data name="Custom_SeedChroma" xml:space="preserve">
+    <value>Croma</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>Base</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>Matiz</value>
+  </data>
+  <data name="Custom_SeedTone" xml:space="preserve">
+    <value>Tom</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>Roda de cor base</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>Arraste para escolher a cor base. O matiz percorre a roda e o croma vai do centro para fora. As teclas de seta também funcionam.</value>
+  </data>
   <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
     <value>Baixar pasta</value>
   </data>

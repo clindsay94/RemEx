@@ -14,6 +14,48 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>Kontras</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>Lebih tajam</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>Lebih lembut</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>Seberapa jauh palet yang dihasilkan memisahkan teks dari permukaan di belakangnya.</value>
+  </data>
+  <data name="Custom_LightPalette" xml:space="preserve">
+    <value>Palet terang</value>
+  </data>
+  <data name="Custom_LightPaletteDesc" xml:space="preserve">
+    <value>Buat palet untuk latar terang alih-alih latar gelap.</value>
+  </data>
+  <data name="Custom_PaletteStudio" xml:space="preserve">
+    <value>STUDIO PALET</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>Terbaru</value>
+  </data>
+  <data name="Custom_SeedChroma" xml:space="preserve">
+    <value>Kroma</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>Dasar</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>Rona</value>
+  </data>
+  <data name="Custom_SeedTone" xml:space="preserve">
+    <value>Terang</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>Roda warna dasar</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>Seret untuk memilih warna dasar. Rona mengelilingi roda, kroma dari tengah ke luar. Tombol panah juga berfungsi.</value>
+  </data>
   <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
     <value>Unduh folder</value>
   </data>

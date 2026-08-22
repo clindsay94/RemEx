@@ -14,6 +14,48 @@
   </resheader>
 
   
+  <data name="Custom_ContrastLevel" xml:space="preserve">
+    <value>Karşıtlık</value>
+  </data>
+  <data name="Custom_ContrastSharper" xml:space="preserve">
+    <value>Daha keskin</value>
+  </data>
+  <data name="Custom_ContrastSofter" xml:space="preserve">
+    <value>Daha yumuşak</value>
+  </data>
+  <data name="Custom_ContrastTooltip" xml:space="preserve">
+    <value>Üretilen paletin metni arkasındaki yüzeyden ne kadar ayırdığı.</value>
+  </data>
+  <data name="Custom_LightPalette" xml:space="preserve">
+    <value>Açık palet</value>
+  </data>
+  <data name="Custom_LightPaletteDesc" xml:space="preserve">
+    <value>Paleti koyu yerine açık bir arka plan için üretir.</value>
+  </data>
+  <data name="Custom_PaletteStudio" xml:space="preserve">
+    <value>PALET STÜDYOSU</value>
+  </data>
+  <data name="Custom_RecentSeeds" xml:space="preserve">
+    <value>Son kullanılanlar</value>
+  </data>
+  <data name="Custom_SeedChroma" xml:space="preserve">
+    <value>Kroma</value>
+  </data>
+  <data name="Custom_SeedHex" xml:space="preserve">
+    <value>Tohum</value>
+  </data>
+  <data name="Custom_SeedHue" xml:space="preserve">
+    <value>Renk tonu</value>
+  </data>
+  <data name="Custom_SeedTone" xml:space="preserve">
+    <value>Açıklık</value>
+  </data>
+  <data name="Custom_SeedWheel" xml:space="preserve">
+    <value>Tohum renk çarkı</value>
+  </data>
+  <data name="Custom_SeedWheelTooltip" xml:space="preserve">
+    <value>Tohum rengi seçmek için sürükleyin. Renk tonu çarkın çevresinde, kroma merkezden dışa doğru ilerler. Ok tuşları da çalışır.</value>
+  </data>
   <data name="FileTransfer_DownloadFolderBtn" xml:space="preserve">
     <value>Klasörü indir</value>
   </data>
