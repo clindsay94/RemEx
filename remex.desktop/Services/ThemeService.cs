@@ -118,154 +118,159 @@ public class ThemeService : IDisposable
                 Trace.TraceWarning(
                     $"ThemeService.ApplyCustomization: unparseable accent '{settings.AccentColor}' — "
                     + $"falling back to {FallbackAccentSeed}.");
-                accentColor = Color.Parse(FallbackAccentSeed);
+                // TryParse RATHER THAN Parse, on a constant. Parse throws, and this runs inside a
+                // Dispatcher.Post where a throw is an unhandled dispatcher exception - so the code
+                // path that exists to stop a bad colour breaking the window would itself break the
+                // window if the constant were ever edited to something unparseable. The literal
+                // second branch makes that structurally impossible instead of merely unlikely.
+                accentColor = Color.TryParse(FallbackAccentSeed, out var fallbackSeed)
+                    ? fallbackSeed
+                    : Color.FromRgb(0x6C, 0x4C, 0xFF);
             }
 
+            var palette = DynamicColorGenerator.Generate(
+                accentColor,
+                settings.SchemeVariant,
+                isDark: !isLightTheme,
+                contrast: Math.Clamp(settings.ThemeContrast, -1.0, 1.0));
+
+            SetResourceOverrideInternal("AccentPrimary", palette.Primary);
+            SetResourceOverrideInternal("AccentPrimaryBrush", new SolidColorBrush(palette.Primary));
+            SetResourceOverrideInternal("AccentHover", palette.Secondary);
+            SetResourceOverrideInternal("AccentHoverBrush", new SolidColorBrush(palette.Secondary));
+            SetResourceOverrideInternal("AccentPressed", palette.Tertiary);
+            SetResourceOverrideInternal("AccentPressedBrush", new SolidColorBrush(palette.Tertiary));
+            SetResourceOverrideInternal("GlassBaseDark", palette.Surface);
+            SetResourceOverrideInternal("GlassBaseDarkBrush", new SolidColorBrush(palette.Surface));
+            SetResourceOverrideInternal("GlassBaseMedium", palette.SurfaceVariant);
+            SetResourceOverrideInternal("GlassBaseMediumBrush", new SolidColorBrush(palette.SurfaceVariant));
+            SetResourceOverrideInternal("TextPrimary", palette.OnSurface);
+            SetResourceOverrideInternal("TextPrimaryBrush", new SolidColorBrush(palette.OnSurface));
+            SetResourceOverrideInternal("TextSecondary", palette.OnSurfaceVariant);
+            SetResourceOverrideInternal("TextSecondaryBrush", new SolidColorBrush(palette.OnSurfaceVariant));
+            SetResourceOverrideInternal("CardBackground", palette.SurfaceContainer);
+            SetResourceOverrideInternal("CardBackgroundHover", palette.SurfaceContainerHigh);
+
+            // Apply card opacity: GlassOpacity controls how transparent the card surfaces are.
+            byte cardAlpha = (byte)Math.Round(Math.Clamp(settings.GlassOpacity, 0.05, 1.0) * 255);
+            var cardColor = Color.FromArgb(cardAlpha, palette.SurfaceContainer.R, palette.SurfaceContainer.G, palette.SurfaceContainer.B);
+            var cardHoverColor = Color.FromArgb((byte)Math.Min(cardAlpha + 30, 255), palette.SurfaceContainerHigh.R, palette.SurfaceContainerHigh.G, palette.SurfaceContainerHigh.B);
+            SetResourceOverrideInternal("CardBackgroundBrush", new SolidColorBrush(cardColor));
+            SetResourceOverrideInternal("CardBackgroundHoverBrush", new SolidColorBrush(cardHoverColor));
+            SetResourceOverrideInternal("CardBorder", palette.Outline);
+            SetResourceOverrideInternal("CardBorderBrush", new SolidColorBrush(palette.Outline));
+
+            // De-emphasised text. M3 has no "muted" role; Outline is the role it has for
+            // exactly this job, and it lands where the hand-authored greys already were.
+            SetResourceOverrideInternal("TextMuted", palette.Outline);
+            SetResourceOverrideInternal("TextMutedBrush", new SolidColorBrush(palette.Outline));
+
+            // ── Semantic fills and the text that sits ON them ────────────────────────────
+            // THESE FOUR FOREGROUNDS USED TO BE HAND-MEASURED HEX, one per theme, each with a
+            // comment recording the ratio it was chosen for. They are M3 "on" roles now, which
+            // is the same guarantee arrived at by construction instead of by hand: the
+            // generator walks each one along its own tonal palette until it clears its target
+            // against the exact fill it will be drawn on. Retuning a fill can no longer strand
+            // its foreground, because the foreground is derived from the fill.
+            SetResourceOverrideInternal("SystemError", palette.Error);
+            SetResourceOverrideInternal("SystemErrorBrush", new SolidColorBrush(palette.Error));
+            SetResourceOverrideInternal("ErrorForegroundBrush", new SolidColorBrush(palette.OnError));
+            SetResourceOverrideInternal("SystemErrorBackgroundBrush", new SolidColorBrush(palette.Error) { Opacity = 0.15 });
+            SetResourceOverrideInternal("SystemErrorBackgroundHoverBrush", new SolidColorBrush(palette.Error) { Opacity = 0.22 });
+
+            SetResourceOverrideInternal("SystemSuccess", palette.Success);
+            SetResourceOverrideInternal("SystemSuccessBrush", new SolidColorBrush(palette.Success));
+            SetResourceOverrideInternal("SuccessForegroundBrush", new SolidColorBrush(palette.OnSuccess));
+            SetResourceOverrideInternal("SystemSuccessBackgroundBrush", new SolidColorBrush(palette.Success) { Opacity = 0.15 });
+            SetResourceOverrideInternal("SystemSuccessBackgroundHoverBrush", new SolidColorBrush(palette.Success) { Opacity = 0.22 });
+
+            SetResourceOverrideInternal("SystemWarning", palette.Warning);
+            SetResourceOverrideInternal("SystemWarningBrush", new SolidColorBrush(palette.Warning));
+            SetResourceOverrideInternal("SystemWarningBackgroundBrush", new SolidColorBrush(palette.Warning) { Opacity = 0.15 });
+
+            // Text on an accent-filled surface, and text on a 15%/22% TINT. They are different
+            // answers and always have been: the tint is mostly surface, so what reads on it is
+            // whatever reads on the surface — OnSurface — not what reads on the solid fill.
+            SetResourceOverrideInternal("AccentForegroundBrush", new SolidColorBrush(palette.OnPrimary));
+            SetResourceOverrideInternal("ErrorTintForegroundBrush", new SolidColorBrush(palette.OnSurface));
+
+            // ── The shell backdrop ───────────────────────────────────────────────────────
+            // The gradient BRUSH has to be replaced, not just its three Color keys: the theme
+            // dictionaries bind their gradient stops with StaticResource, which resolves once
+            // and never hears about an override.
+            SetResourceOverrideInternal("BackgroundGradientStart", palette.BackgroundStart);
+            SetResourceOverrideInternal("BackgroundGradientMid", palette.BackgroundMid);
+            SetResourceOverrideInternal("BackgroundGradientEnd", palette.BackgroundEnd);
+            SetResourceOverrideInternal("BackgroundGradientBrush", new LinearGradientBrush
             {
-                var palette = DynamicColorGenerator.Generate(
-                    accentColor,
-                    settings.SchemeVariant,
-                    isDark: !isLightTheme,
-                    contrast: Math.Clamp(settings.ThemeContrast, -1.0, 1.0));
-
-                SetResourceOverrideInternal("AccentPrimary", palette.Primary);
-                SetResourceOverrideInternal("AccentPrimaryBrush", new SolidColorBrush(palette.Primary));
-                SetResourceOverrideInternal("AccentHover", palette.Secondary);
-                SetResourceOverrideInternal("AccentHoverBrush", new SolidColorBrush(palette.Secondary));
-                SetResourceOverrideInternal("AccentPressed", palette.Tertiary);
-                SetResourceOverrideInternal("AccentPressedBrush", new SolidColorBrush(palette.Tertiary));
-                SetResourceOverrideInternal("GlassBaseDark", palette.Surface);
-                SetResourceOverrideInternal("GlassBaseDarkBrush", new SolidColorBrush(palette.Surface));
-                SetResourceOverrideInternal("GlassBaseMedium", palette.SurfaceVariant);
-                SetResourceOverrideInternal("GlassBaseMediumBrush", new SolidColorBrush(palette.SurfaceVariant));
-                SetResourceOverrideInternal("TextPrimary", palette.OnSurface);
-                SetResourceOverrideInternal("TextPrimaryBrush", new SolidColorBrush(palette.OnSurface));
-                SetResourceOverrideInternal("TextSecondary", palette.OnSurfaceVariant);
-                SetResourceOverrideInternal("TextSecondaryBrush", new SolidColorBrush(palette.OnSurfaceVariant));
-                SetResourceOverrideInternal("CardBackground", palette.SurfaceContainer);
-                SetResourceOverrideInternal("CardBackgroundHover", palette.SurfaceContainerHigh);
-
-                // Apply card opacity: GlassOpacity controls how transparent the card surfaces are.
-                byte cardAlpha = (byte)Math.Round(Math.Clamp(settings.GlassOpacity, 0.05, 1.0) * 255);
-                var cardColor = Color.FromArgb(cardAlpha, palette.SurfaceContainer.R, palette.SurfaceContainer.G, palette.SurfaceContainer.B);
-                var cardHoverColor = Color.FromArgb((byte)Math.Min(cardAlpha + 30, 255), palette.SurfaceContainerHigh.R, palette.SurfaceContainerHigh.G, palette.SurfaceContainerHigh.B);
-                SetResourceOverrideInternal("CardBackgroundBrush", new SolidColorBrush(cardColor));
-                SetResourceOverrideInternal("CardBackgroundHoverBrush", new SolidColorBrush(cardHoverColor));
-                SetResourceOverrideInternal("CardBorder", palette.Outline);
-                SetResourceOverrideInternal("CardBorderBrush", new SolidColorBrush(palette.Outline));
-
-                // De-emphasised text. M3 has no "muted" role; Outline is the role it has for
-                // exactly this job, and it lands where the hand-authored greys already were.
-                SetResourceOverrideInternal("TextMuted", palette.Outline);
-                SetResourceOverrideInternal("TextMutedBrush", new SolidColorBrush(palette.Outline));
-
-                // ── Semantic fills and the text that sits ON them ────────────────────────────
-                // THESE FOUR FOREGROUNDS USED TO BE HAND-MEASURED HEX, one per theme, each with a
-                // comment recording the ratio it was chosen for. They are M3 "on" roles now, which
-                // is the same guarantee arrived at by construction instead of by hand: the
-                // generator walks each one along its own tonal palette until it clears its target
-                // against the exact fill it will be drawn on. Retuning a fill can no longer strand
-                // its foreground, because the foreground is derived from the fill.
-                SetResourceOverrideInternal("SystemError", palette.Error);
-                SetResourceOverrideInternal("SystemErrorBrush", new SolidColorBrush(palette.Error));
-                SetResourceOverrideInternal("ErrorForegroundBrush", new SolidColorBrush(palette.OnError));
-                SetResourceOverrideInternal("SystemErrorBackgroundBrush", new SolidColorBrush(palette.Error) { Opacity = 0.15 });
-                SetResourceOverrideInternal("SystemErrorBackgroundHoverBrush", new SolidColorBrush(palette.Error) { Opacity = 0.22 });
-
-                SetResourceOverrideInternal("SystemSuccess", palette.Success);
-                SetResourceOverrideInternal("SystemSuccessBrush", new SolidColorBrush(palette.Success));
-                SetResourceOverrideInternal("SuccessForegroundBrush", new SolidColorBrush(palette.OnSuccess));
-                SetResourceOverrideInternal("SystemSuccessBackgroundBrush", new SolidColorBrush(palette.Success) { Opacity = 0.15 });
-                SetResourceOverrideInternal("SystemSuccessBackgroundHoverBrush", new SolidColorBrush(palette.Success) { Opacity = 0.22 });
-
-                SetResourceOverrideInternal("SystemWarning", palette.Warning);
-                SetResourceOverrideInternal("SystemWarningBrush", new SolidColorBrush(palette.Warning));
-                SetResourceOverrideInternal("SystemWarningBackgroundBrush", new SolidColorBrush(palette.Warning) { Opacity = 0.15 });
-
-                // Text on an accent-filled surface, and text on a 15%/22% TINT. They are different
-                // answers and always have been: the tint is mostly surface, so what reads on it is
-                // whatever reads on the surface — OnSurface — not what reads on the solid fill.
-                SetResourceOverrideInternal("AccentForegroundBrush", new SolidColorBrush(palette.OnPrimary));
-                SetResourceOverrideInternal("ErrorTintForegroundBrush", new SolidColorBrush(palette.OnSurface));
-
-                // ── The shell backdrop ───────────────────────────────────────────────────────
-                // The gradient BRUSH has to be replaced, not just its three Color keys: the theme
-                // dictionaries bind their gradient stops with StaticResource, which resolves once
-                // and never hears about an override.
-                SetResourceOverrideInternal("BackgroundGradientStart", palette.BackgroundStart);
-                SetResourceOverrideInternal("BackgroundGradientMid", palette.BackgroundMid);
-                SetResourceOverrideInternal("BackgroundGradientEnd", palette.BackgroundEnd);
-                SetResourceOverrideInternal("BackgroundGradientBrush", new LinearGradientBrush
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
+                GradientStops =
                 {
-                    StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
-                    EndPoint = new RelativePoint(1, 1, RelativeUnit.Relative),
-                    GradientStops =
-                    {
-                        new GradientStop(palette.BackgroundStart, 0),
-                        new GradientStop(palette.BackgroundMid, 0.5),
-                        new GradientStop(palette.BackgroundEnd, 1),
-                    },
-                });
+                    new GradientStop(palette.BackgroundStart, 0),
+                    new GradientStop(palette.BackgroundMid, 0.5),
+                    new GradientStop(palette.BackgroundEnd, 1),
+                },
+            });
 
-                // Scrims. Both are "darken what is behind me", so both take the darkest neutral the
-                // palette has rather than a literal black — on a light palette a pure-black scrim
-                // reads as a hole, and BackgroundEnd is already white there.
-                var scrim = isLightTheme ? palette.OnSurface : palette.BackgroundEnd;
-                SetResourceOverrideInternal("GlassOverlayBrush",
-                    new SolidColorBrush(Color.FromArgb(0x33, scrim.R, scrim.G, scrim.B)));
-                SetResourceOverrideInternal("OverlayBackdropBrush",
-                    new SolidColorBrush(Color.FromArgb(0xE6, palette.Surface.R, palette.Surface.G, palette.Surface.B)));
+            // Scrims. Both are "darken what is behind me", so both take the darkest neutral the
+            // palette has rather than a literal black — on a light palette a pure-black scrim
+            // reads as a hole, and BackgroundEnd is already white there.
+            var scrim = isLightTheme ? palette.OnSurface : palette.BackgroundEnd;
+            SetResourceOverrideInternal("GlassOverlayBrush",
+                new SolidColorBrush(Color.FromArgb(0x33, scrim.R, scrim.G, scrim.B)));
+            SetResourceOverrideInternal("OverlayBackdropBrush",
+                new SolidColorBrush(Color.FromArgb(0xE6, palette.Surface.R, palette.Surface.G, palette.Surface.B)));
 
-                // WinUI-name alias. It is CardBackground under another key, and it has to be
-                // overridden explicitly for the same StaticResource reason as the gradient above.
-                SetResourceOverrideInternal("SystemControlBackgroundListLowBrush", new SolidColorBrush(cardColor));
+            // WinUI-name alias. It is CardBackground under another key, and it has to be
+            // overridden explicitly for the same StaticResource reason as the gradient above.
+            SetResourceOverrideInternal("SystemControlBackgroundListLowBrush", new SolidColorBrush(cardColor));
 
-                // Override Fluent theme's SystemAccentColor so native controls (Button, Slider,
-                // ToggleSwitch, ComboBox, TextBox focus ring, etc.) pick up M3 colors.
-                SetResourceOverrideInternal("SystemAccentColor", palette.Primary);
-                SetResourceOverrideInternal("SystemAccentColorLight1", palette.Secondary);
-                SetResourceOverrideInternal("SystemAccentColorLight2", palette.OnPrimaryContainer);
-                SetResourceOverrideInternal("SystemAccentColorLight3", palette.Tertiary);
-                SetResourceOverrideInternal("SystemAccentColorDark1", palette.PrimaryContainer);
-                SetResourceOverrideInternal("SystemAccentColorDark2", palette.SurfaceContainerHigh);
-                SetResourceOverrideInternal("SystemAccentColorDark3", palette.Surface);
+            // Override Fluent theme's SystemAccentColor so native controls (Button, Slider,
+            // ToggleSwitch, ComboBox, TextBox focus ring, etc.) pick up M3 colors.
+            SetResourceOverrideInternal("SystemAccentColor", palette.Primary);
+            SetResourceOverrideInternal("SystemAccentColorLight1", palette.Secondary);
+            SetResourceOverrideInternal("SystemAccentColorLight2", palette.OnPrimaryContainer);
+            SetResourceOverrideInternal("SystemAccentColorLight3", palette.Tertiary);
+            SetResourceOverrideInternal("SystemAccentColorDark1", palette.PrimaryContainer);
+            SetResourceOverrideInternal("SystemAccentColorDark2", palette.SurfaceContainerHigh);
+            SetResourceOverrideInternal("SystemAccentColorDark3", palette.Surface);
 
-                // Card hover glow tinted with the current accent color.
-                var p = palette.Primary;
-                SetResourceOverrideInternal("CardHoverShadow", new BoxShadows(
-                    new BoxShadow
-                    {
-                        Blur = 48,
-                        Spread = 0,
-                        OffsetY = 12,
-                        Color = Color.FromArgb(0x60, 0, 0, 0)
-                    },
-                    new BoxShadow[] { new BoxShadow { Blur = 15, Spread = 2,
-                                    Color = Color.FromArgb(0x50, p.R, p.G, p.B) } }));
-
-                // Base card drop shadow + a neon accent glow whose intensity follows the
-                // GlowStrength slider (0 = no glow). Every Border.glass-card consumes CardShadow,
-                // so the glow previews live across whatever screen is open.
-                double glow = Math.Clamp(settings.GlowStrength, 0, 30);
-                var baseCardShadow = new BoxShadow
+            // Card hover glow tinted with the current accent color.
+            var p = palette.Primary;
+            SetResourceOverrideInternal("CardHoverShadow", new BoxShadows(
+                new BoxShadow
                 {
-                    Blur = 24, Spread = 0, OffsetY = 6,
-                    Color = Color.FromArgb(0x40, 0, 0, 0)
-                };
-                var cardShadow = glow > 0.5
-                    ? new BoxShadows(baseCardShadow, new BoxShadow[]
+                    Blur = 48,
+                    Spread = 0,
+                    OffsetY = 12,
+                    Color = Color.FromArgb(0x60, 0, 0, 0)
+                },
+                new BoxShadow[] { new BoxShadow { Blur = 15, Spread = 2,
+                                Color = Color.FromArgb(0x50, p.R, p.G, p.B) } }));
+
+            // Base card drop shadow + a neon accent glow whose intensity follows the
+            // GlowStrength slider (0 = no glow). Every Border.glass-card consumes CardShadow,
+            // so the glow previews live across whatever screen is open.
+            double glow = Math.Clamp(settings.GlowStrength, 0, 30);
+            var baseCardShadow = new BoxShadow
+            {
+                Blur = 24, Spread = 0, OffsetY = 6,
+                Color = Color.FromArgb(0x40, 0, 0, 0)
+            };
+            var cardShadow = glow > 0.5
+                ? new BoxShadows(baseCardShadow, new BoxShadow[]
+                    {
+                        new BoxShadow
                         {
-                            new BoxShadow
-                            {
-                                Blur = glow * 1.6,
-                                Spread = glow * 0.15,
-                                OffsetX = 0, OffsetY = 0,
-                                Color = Color.FromArgb((byte)Math.Clamp(0x30 + glow * 6, 0, 255), p.R, p.G, p.B)
-                            }
-                        })
-                    : new BoxShadows(baseCardShadow);
-                SetResourceOverrideInternal("CardShadow", cardShadow);
-            }
+                            Blur = glow * 1.6,
+                            Spread = glow * 0.15,
+                            OffsetX = 0, OffsetY = 0,
+                            Color = Color.FromArgb((byte)Math.Clamp(0x30 + glow * 6, 0, 255), p.R, p.G, p.B)
+                        }
+                    })
+                : new BoxShadows(baseCardShadow);
+            SetResourceOverrideInternal("CardShadow", cardShadow);
 
             SetResourceOverrideInternal("CanvasBackgroundType", settings.BackgroundMaterial);
 

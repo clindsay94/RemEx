@@ -147,7 +147,7 @@ public class ThemeKeyCoverageTests
         var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Services", "ThemeService.cs"));
 
         source.Should().MatchRegex(
-            @"(?s)if\s*\(\s*!\s*Color\.TryParse\(\s*settings\.AccentColor.*?accentColor\s*=\s*Color\.Parse\(\s*FallbackAccentSeed",
+            @"(?s)if\s*\(\s*!\s*Color\.TryParse\(\s*settings\.AccentColor.*?accentColor\s*=\s*Color\.TryParse\(\s*FallbackAccentSeed",
             "an accent that will not parse must fall back to a seed, not skip the palette");
 
         source.Should().NotMatchRegex(
