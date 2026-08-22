@@ -112,6 +112,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A typo in the custom accent colour box could leave the app unreadable, and it stuck.** The box
+  checked that what you typed was the right LENGTH for a colour, not that it was a colour — so
+  `#FF0O00`, with a capital O where a zero belongs, was accepted, saved, and added to your swatches
+  permanently. RemEx then could not make sense of it and skipped applying the palette entirely,
+  which since the theme change above means the window keeps a dark fallback; on a light theme that
+  is near-white text on white. Nothing reported it and it survived a restart.
+
+  The box now asks whether the value is actually a colour before accepting it, and if a saved colour
+  ever fails to make sense anyway, RemEx falls back to its default accent and writes a line to the
+  log rather than leaving the window half-painted. (RemEx-07jij)
+
 - **The PC app was about to start reporting version 2.4.0 again.** RemEx keeps its version number in
   two places, one belonging to the phone and one to the PC, and a full build copies the phone's number
   over the PC's. The PC's had been raised to 2.5.0 on its own, so the next full build would have
