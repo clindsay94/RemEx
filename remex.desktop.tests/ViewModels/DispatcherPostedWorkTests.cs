@@ -1,4 +1,7 @@
-using Avalonia.Threading;
+using System;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using Remex.Core.Messages;
 using Remex.Core.Models;
@@ -85,20 +88,37 @@ public class DispatcherPostedWorkTests
         // no longer reached the UI thread at all, which is the silent-failure shape this whole file
         // was written about.
         //
-        // Asserting the DEFAULT rather than calling it: invoking it would touch
-        // Dispatcher.UIThread and bind it to this test's thread, which is precisely the accidental
-        // binding that broke the suite in the first place.
+        // NOT CALLED, DELIBERATELY. Invoking the default would touch Dispatcher.UIThread and bind it
+        // to this test's thread — precisely the accidental binding that broke the suite and the
+        // reason this seam exists. So the default is read from source instead.
+        //
+        // AND IT IS READ FROM SOURCE BECAUSE REFLECTION WAS MEASURED AND FOUND USELESS HERE. The
+        // first version asserted the default's DeclaringType sits under CanvasDashboardViewModel.
+        // Injecting `static work => work()` — a default that silently stops reaching the UI thread,
+        // which is the exact defect this test is named after — left it GREEN, because an inline
+        // lambda is still a lambda declared in this class. The assertion could not see the one thing
+        // it was for.
         var vm = new CanvasDashboardViewModel(new ConnectionViewModel(), null!, null!);
 
         vm.Dispatch.Should().NotBeNull(
             "an unset dispatcher would make ProcessTelemetry throw on every real telemetry tick");
 
-        // STARTSWITH, NOT EQUALS, and the difference is not pedantry. A `static` lambda is compiled
-        // into a nested closure class, so the declaring type is "CanvasDashboardViewModel+<>c" and
-        // an equality check fails against a perfectly correct default — which is how this assertion
-        // was first written, and it failed on the very code it was meant to bless.
-        vm.Dispatch.Method.DeclaringType!.FullName.Should().StartWith(
-            typeof(CanvasDashboardViewModel).FullName,
-            "the default has to be the class's own lambda, not something a previous test left behind");
+        // THE TRADEOFF, NAMED: this pins the initializer's exact spelling, so reformatting it or
+        // turning it into a method group reddens a correct build. That is accepted because the
+        // reflection alternative was MEASURED and could not see the defect it existed for (above).
+        // A brittle test that fails loudly on a rename beats a robust one that passes through the
+        // bug.
+        var source = Regex.Replace(
+            File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "ViewModels", "CanvasDashboardViewModel.cs")),
+            @"//.*$", string.Empty, RegexOptions.Multiline);
+
+        source.Should().MatchRegex(
+            @"Action<Action>\s+Dispatch\s*\{\s*get;\s*set;\s*\}\s*=\s*static\s+work\s*=>\s*Dispatcher\.UIThread\.Post\(work\)",
+            "the default has to reach the UI thread. A default that runs inline satisfies every "
+            + "other test in this file while telemetry stops crossing to the UI thread in the real "
+            + "app — no exception, no log line, just a dashboard that updates from the wrong thread");
     }
+
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 }

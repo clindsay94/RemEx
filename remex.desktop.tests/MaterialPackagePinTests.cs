@@ -1,5 +1,6 @@
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
 using Xunit;
@@ -125,10 +126,27 @@ public class MaterialPackagePinTests
             .Any(e => (string?)e.Attribute("Include") == "Avalonia.HarfBuzz")
             .Should().BeTrue("Avalonia 12's Skia backend does not imply HarfBuzz any more");
 
-        var program = File.ReadAllText(Path.Combine(RepoRoot(), "remex.agent", "Program.cs"));
+        // COMMENTS STRIPPED FIRST, and this file learned that the hard way. The first version of
+        // this assertion read the raw source, and the defect injection that was supposed to prove it
+        // — commenting the call out as "//.UseHarfBuzz()" — left the test GREEN, because a commented
+        // call still contains the string. The call site is explained in prose directly above it too,
+        // so even deleting the line outright would have left the words nearby. Same trap
+        // BuildIdTests documents, walked into anyway.
+        var program = StripLineComments(
+            File.ReadAllText(Path.Combine(RepoRoot(), "remex.agent", "Program.cs")));
+
         program.Should().Contain(".UseHarfBuzz()",
             "referencing the package does nothing on its own — the AppBuilder has to call it");
     }
+
+    /// <summary>Removes <c>//</c> line comments so an assertion cannot be satisfied by prose.</summary>
+    /// <remarks>
+    /// Deliberately crude: it does not understand strings containing "//", which is fine for the one
+    /// file it reads. A smarter version would be a C# parser, and the point here is only to stop a
+    /// commented-out call from impersonating a live one.
+    /// </remarks>
+    private static string StripLineComments(string source)
+        => Regex.Replace(source, @"//.*$", string.Empty, RegexOptions.Multiline);
 
     [Fact]
     public void TheMaterialPackagesAreReferencedWithoutAVersion()

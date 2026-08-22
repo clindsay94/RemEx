@@ -71,11 +71,19 @@ internal static class PortalDbusHelper
                 // Tmds.DBus.Protocol 0.94 folded the four loose callback arguments into one
                 // Notification<T> (RemEx-jcma3). The exception and the value used to arrive as
                 // separate parameters where "ex is null" implied a good value; now they are two
-                // properties on one struct, and CRUCIALLY they are not exhaustive. A completion
-                // notification can carry NEITHER - ObserverDisposed is a completion with no
-                // exception and no value - so the HasValue guard below is load-bearing rather than
-                // defensive. Reading .Value without it throws on observer teardown, inside a
-                // callback, where the only visible symptom is a portal request that never resolves.
+                // properties on one struct, and they are NOT exhaustive - a completion notification
+                // (ObserverDisposed, ConnectionClosed) carries neither.
+                //
+                // The HasValue guard is DEFENSIVE, not load-bearing, and the distinction is worth
+                // stating precisely because an earlier draft of this comment claimed the opposite.
+                // This observer is registered with ObserverFlags.None, which means no completion
+                // notification is emitted today, so the guard cannot currently fire. It is kept
+                // because the alternative - reading .Value unguarded - starts throwing inside this
+                // callback the moment somebody adds a flag, and it costs one line.
+                //
+                // Nothing hangs either way: the timeout registered further down completes the
+                // TaskCompletionSource on every path, so the worst case is a full-timeout wait
+                // rather than a request that never resolves.
                 (Notification<(uint Response, Dictionary<string, VariantValue> Results)> n) =>
                 {
                     if (n.Exception is not null)
