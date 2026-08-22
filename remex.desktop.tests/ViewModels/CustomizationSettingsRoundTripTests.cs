@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using Remex.Core.Models;
+using Remex.Desktop.Tests.Services;
 using Xunit;
 
 namespace Remex.Desktop.Tests.ViewModels;
@@ -75,50 +76,40 @@ public class CustomizationSettingsRoundTripTests
         // SolarFlare and then changed the seed kept a light palette because of a string comparison,
         // and one who picked a dark preset after choosing light explicitly kept light. Neither is
         // discoverable from the UI, and neither throws.
-        var body = SelectThemeBody();
+        var cases = ThemeDictionary.SelectThemeCases();
 
-        var cases = Regex.Matches(body, @"case AppTheme\.(\w+):(.*?)break;", RegexOptions.Singleline)
-            .Select(m => (Preset: m.Groups[1].Value, Body: m.Groups[2].Value))
-            .ToArray();
-
-        cases.Should().HaveCountGreaterThan(4, "the preset switch moved or the scan broke");
-
-        var seeded = cases.Where(c => Regex.IsMatch(c.Body, @"AccentColor\s*=\s*""#")).ToArray();
+        var seeded = cases.Where(c => c.IsSeeded).ToArray();
         seeded.Should().HaveCount(4, "four presets carry a seed; Dynamic deliberately carries none");
 
-        seeded.Where(c => !Regex.IsMatch(c.Body, @"_useLightPalette\s*=\s*(true|false)"))
-            .Select(c => c.Preset)
+        seeded.Where(c => !c.WritesMode).Select(c => c.Preset)
             .Should().BeEmpty("a preset that leaves the mode unwritten falls back to matching its own name");
 
         // Dynamic is the exception, and it is an exception on purpose: it means "whatever the user
         // has built", so it is the one case that must NOT overwrite the choice.
         var dynamicCase = cases.Single(c => c.Preset == "Dynamic");
-        dynamicCase.Body.Should().NotMatchRegex(@"_useLightPalette\s*=",
+        dynamicCase.Body.Should().NotMatchRegex(@"SetLightPalette\(|_useLightPalette\s*=",
             "Dynamic keeps the user's existing mode along with their existing seed");
     }
 
     [Fact]
     public void ApplyAndSaveCarriesTheModeSelectThemeWrote_NotTheOneOnDisk()
     {
-        // THE SILENT UNDO. SelectTheme's writes go to a field; ApplyAndSave builds the record. If it
-        // reads UseLightPalette back off the loaded profile instead - which is what it did before
-        // RemEx-07jij, and which still compiles - every write above is discarded on the same call
-        // that made it, and the test above stays green while the behaviour is exactly what it was.
+        // THE SILENT UNDO. SelectTheme's writes go to a field; ApplyAndSave builds the record. Read
+        // UseLightPalette back off the loaded profile unconditionally - which is what it did before
+        // RemEx-07jij, and which still compiles - and every write SelectTheme makes is discarded on
+        // the same call that made it, while the test above stays green.
+        //
+        // THE CONDITION IS LOAD-BEARING, NOT DECORATION. The field is a constructor-time snapshot and
+        // ShellViewModel never rebuilds this view model, so preferring it unconditionally reintroduces
+        // the mirror-image bug: importing a light savefile and then nudging any slider writes the
+        // stale snapshot back over the import. The profile has to stay the source of truth until
+        // SelectTheme has actually chosen, which is what the flag records.
         var initializer = ApplyAndSaveInitializer();
 
-        initializer.Should().MatchRegex(@"UseLightPalette\s*=\s*_useLightPalette",
-            "the mode the user just chose has to reach the record, not be re-read from the profile "
-            + "it is about to replace");
-    }
-
-    private static string SelectThemeBody()
-    {
-        var source = File.ReadAllText(Path.Combine(
-            RepoRoot(), "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
-
-        var body = Regex.Match(source, @"private void SelectTheme\(.*?\n    \}", RegexOptions.Singleline);
-        body.Success.Should().BeTrue("SelectTheme moved or changed shape - the scan cannot see it");
-        return body.Value;
+        initializer.Should().MatchRegex(
+            @"UseLightPalette\s*=\s*_lightPaletteChosenThisSession\s*\?\s*_useLightPalette\s*:\s*carried\.UseLightPalette",
+            "the mode the user just chose has to reach the record, and the one they did not choose "
+            + "has to keep coming off the live profile");
     }
 
     /// <summary>Every settable property that actually round-trips to disk.</summary>

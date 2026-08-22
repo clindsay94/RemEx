@@ -71,22 +71,9 @@ public class AccentForegroundContrastTests
     /// </remarks>
     private static PresetSeed[] PresetSeeds()
     {
-        var source = File.ReadAllText(Path.Combine(
-            RepoRoot(), "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
-
-        var body = Regex.Match(source, @"private void SelectTheme\(.*?\n    \}", RegexOptions.Singleline);
-        Assert.True(body.Success, "SelectTheme moved or changed shape - the seed scan cannot see it");
-
-        var seeds = Regex.Matches(
-                body.Value,
-                @"case AppTheme\.(\w+):(.*?)break;",
-                RegexOptions.Singleline)
-            .Select(m => (Preset: m.Groups[1].Value, Body: m.Groups[2].Value))
-            .Where(c => Regex.IsMatch(c.Body, @"AccentColor\s*=\s*""#"))
-            .Select(c => new PresetSeed(
-                c.Preset,
-                Regex.Match(c.Body, @"AccentColor\s*=\s*""(#[0-9A-Fa-f]{6,8})""").Groups[1].Value,
-                Regex.IsMatch(c.Body, @"_useLightPalette\s*=\s*true")))
+        var seeds = ThemeDictionary.SelectThemeCases()
+            .Where(c => c.IsSeeded)
+            .Select(c => new PresetSeed(c.Preset, c.Seed, c.IsLight))
             .ToArray();
 
         // ANTI-VACUITY. Every count-based assertion below is trivially satisfiable by an empty list,
@@ -909,35 +896,37 @@ public class AccentForegroundContrastTests
     }
 
     [Fact]
-    public void PlainWhiteWouldFailOnExactlyOneThemesErrorTint()
+    public void TheFallbackTintTokenIsTheBetterOfBlackAndWhite()
     {
-        // THE CONTROL, AND IT INVERTS THE SOLID FILL'S — which is the entire reason a fourth token
-        // exists rather than a reuse of the third. On solid red, white fails everywhere but SolarFlare.
-        // On the tint, white fails ONLY on SolarFlare, because its GlassBaseMedium is opaque and light
-        // while the other three are dark. Same colour, opposite answer, one theme apart.
-        var failures = Themes.Count(theme =>
+        // THIS USED TO COUNT THEMES AND IT CANNOT ANY MORE (RemEx-07jij). It asserted that white
+        // failed on exactly one theme's tint — the inversion against the solid fill, where white
+        // failed on every theme but SolarFlare. One shared fallback means one answer given four
+        // times, so a count can only be 0 or 4 and any range assertion over it is decoration.
+        //
+        // WHAT IS STILL WORTH ASKING OF THE FALLBACK is whether its tint token is the right one, and
+        // that is a property rather than a count: the token must be whichever of black and white
+        // measures better on the composite. The old test would have passed with the token merely
+        // being white; this one fails if the palette is retuned and the token is not revisited. The
+        // per-preset inversion — the thing that justifies a fourth token existing at all — is asserted
+        // on the generated palettes in TheGeneratedTintForegroundInvertsTheSolidFillOnSomeSeed below.
+        foreach (var theme in Themes)
         {
             var text = ThemeText(theme);
             var surface = Composite(
                 Extract(text, "<Color x:Key=\"SystemError\">"),
                 TintOpacity(text, "SystemErrorBackgroundBrush"),
                 Extract(text, "<Color x:Key=\"GlassBaseMedium\">"));
-            return Contrast(surface, "#FFFFFFFF") < 4.5;
-        });
 
-        // ONE PALETTE FILE MEANS ONE ANSWER (RemEx-07jij). This used to assert the count landed
-        // strictly inside the list — the inversion against the solid fill, where white failed on
-        // every theme but SolarFlare. With one shared fallback the four themes cannot disagree, so
-        // the only honest claim left about the FALLBACK is that white and the tint token do not agree
-        // about it. The per-preset inversion is asserted on the generated palettes instead, in
-        // TheGeneratedTintForegroundInvertsTheSolidFillOnSomeSeed below.
-        var tintTokenAgreesWithWhite = Themes.All(theme =>
-            ExtractBrush(ThemeText(theme), "ErrorTintForegroundBrush")
-                .Equals("#FFFFFFFF", StringComparison.OrdinalIgnoreCase));
+            var token = ExtractBrush(text, "ErrorTintForegroundBrush");
+            var better = Contrast(surface, "#FFFFFFFF") >= Contrast(surface, "#FF0A0A0A")
+                ? "#FFFFFFFF"
+                : "#FF0A0A0A";
 
-        Assert.True(failures == 0 && tintTokenAgreesWithWhite || failures == Themes.Length,
-            $"white fails on {failures} of {Themes.Length} identical fallback tints, which is only "
-                + "possible if the presets stopped sharing Themes/Shared/FallbackPalette.axaml");
+            Assert.True(token.Equals(better, StringComparison.OrdinalIgnoreCase),
+                $"{theme}: the tint composite {surface} reads better against {better} "
+                    + $"({Contrast(surface, better):F2}:1) than against the declared "
+                    + $"{token} ({Contrast(surface, token):F2}:1)");
+        }
     }
 
     [Fact]

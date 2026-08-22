@@ -67,6 +67,48 @@ internal static class ThemeDictionary
     public static HashSet<string> KeysIn(string preset) =>
         new(Regex.Matches(ResolvedText(preset), @"x:Key=""([^""]+)""").Select(m => m.Groups[1].Value));
 
+    /// <summary>One <c>case AppTheme.X:</c> arm of <c>CustomizationViewModel.SelectTheme</c>.</summary>
+    internal readonly record struct PresetCase(string Preset, string Body)
+    {
+        /// <summary>Whether this preset sets a seed. <c>Dynamic</c> deliberately does not.</summary>
+        public bool IsSeeded => Regex.IsMatch(Body, @"AccentColor\s*=\s*""#");
+
+        public string Seed => Regex.Match(Body, @"AccentColor\s*=\s*""(#[0-9A-Fa-f]{6,8})""").Groups[1].Value;
+
+        public bool WritesMode => Regex.IsMatch(Body, @"SetLightPalette\(\s*(true|false)\s*\)");
+
+        public bool IsLight => Regex.IsMatch(Body, @"SetLightPalette\(\s*true\s*\)");
+    }
+
+    /// <summary>
+    /// Every preset arm of <c>SelectTheme</c>, parsed out of the source.
+    /// </summary>
+    /// <remarks>
+    /// ONE COPY OF THIS SCAN, NOT TWO. It was written twice — once in AccentForegroundContrastTests
+    /// to find the seeds, once in CustomizationSettingsRoundTripTests to find the mode writes — and
+    /// two copies of a regex against the same method break together and are fixed separately. The
+    /// seeds are read rather than duplicated in the first place because a copied seed table goes
+    /// stale silently: the tests would keep certifying the contrast of a colour the app had stopped
+    /// shipping, and stay green doing it.
+    /// </remarks>
+    public static PresetCase[] SelectThemeCases()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
+
+        var body = Regex.Match(source, @"private void SelectTheme\(.*?\n    \}", RegexOptions.Singleline);
+        Assert.True(body.Success, "SelectTheme moved or changed shape - the preset scan cannot see it");
+
+        var cases = Regex.Matches(body.Value, @"case AppTheme\.(\w+):(.*?)break;", RegexOptions.Singleline)
+            .Select(m => new PresetCase(m.Groups[1].Value, m.Groups[2].Value))
+            .ToArray();
+
+        // ANTI-VACUITY. Every count-based assertion built on this is trivially satisfied by an empty
+        // list, and a regex that stopped matching is exactly how that happens.
+        Assert.True(cases.Length > 4, "the preset switch moved or the scan broke");
+        return cases;
+    }
+
     private static string ResolvedTextOfFile(string path, HashSet<string>? seen = null)
     {
         seen ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);

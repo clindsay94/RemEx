@@ -230,12 +230,15 @@ public class PairingPinPanelTests
     [Fact]
     public void TheWarningColourIsAThemeTokenInEveryTheme()
     {
-        // A literal here would survive the default theme and die on another. SolarFlare is the one
-        // that catches contrast mistakes.
+        // A literal here would survive the default theme and die on another.
         //
         // RESOLVED, NOT READ RAW (RemEx-07jij). A preset file carries only its geometry now and
         // merges Themes/Shared/FallbackPalette.axaml for the colours, so File.ReadAllText on the
-        // preset would report the brush missing from all four.
+        // preset would report the brush missing from all four. That also retired the older half of
+        // this comment, which said SolarFlare was the theme that catches contrast mistakes: the four
+        // presets resolve identical text now, so this loop measures one thing four times and no
+        // preset is special. What makes the loop still worth running is that a FIFTH preset added
+        // without the token would be caught, since the list comes from disk.
         var themes = ThemeDictionary.PresetNames;
         themes.Should().HaveCountGreaterThanOrEqualTo(4, "all four PC themes must be present to check");
 

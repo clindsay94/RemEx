@@ -8,9 +8,14 @@
 
          THIS IS THE LIGHT PRESET, and that is now a SETTING rather than a property of the name.
          SelectTheme writes UseLightPalette = true for it explicitly. The fallback palette merged
-         below is dark, so the two or three frames before ApplyCustomization lands paint dark here -
-         which is the price of one fallback instead of four, and is invisible in practice because
-         ApplyCustomization runs during startup before the window is shown.
+         below is dark, so this preset is the one that would show a dark flash if the generated
+         palette ever arrived after the first frame - the price of one fallback instead of four.
+
+         IT DOES NOT FLASH, BUT NOT BECAUSE ANYTHING IS SYNCHRONOUS. ApplyCustomization posts its
+         whole body to the dispatcher (ThemeService.ApplyCustomization), and MainWindow.Show happens
+         from InitializeAppAsync, queued after it. What actually orders them is priority: the post is
+         DispatcherPriority.Default, which runs ahead of Render, so it lands before the first frame.
+         Lower that priority, or move Show ahead of it, and this preset flashes dark.
     -->
     <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Remex.Desktop/Themes/Shared/FallbackPalette.axaml"/>

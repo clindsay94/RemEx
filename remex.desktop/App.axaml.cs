@@ -94,8 +94,16 @@ public partial class App : Application
         Services = collection.BuildServiceProvider();
         CommandModeContext.StartListener(Services);
 
-        // Synchronously apply the saved theme before the window opens.
-        // This prevents a dark-glass flash for SolarFlare (or any non-default) users.
+        // Apply the saved theme before the window opens, so SolarFlare (or any non-default) users do
+        // not see a dark-glass flash.
+        //
+        // "SYNCHRONOUSLY" IS WHAT THIS SAID AND IT WAS NOT TRUE. ThemeService.ApplyCustomization
+        // posts its whole body to the dispatcher, and MainWindow.Show happens later from the
+        // fire-and-forget InitializeAppAsync. The ordering that actually prevents the flash is
+        // priority, not synchrony: a DispatcherPriority.Default job runs ahead of Render, so the
+        // palette lands before the first frame. Worth stating accurately because the flash is now
+        // one shared DARK fallback under every preset (RemEx-07jij), so lowering that priority would
+        // regress a light preset with nothing to point at the cause.
         ApplyThemeBeforeWindowShown();
 
         // Install the notification surfaces BEFORE app init, because app init is one of the things

@@ -99,7 +99,13 @@ public class ThemeKeyCoverageTests
                     $"{preset}.axaml must take its colours from Themes/Shared/FallbackPalette.axaml, "
                     + "not carry its own copy");
 
-            ownText.Should().Contain("Themes/Shared/FallbackPalette.axaml",
+            // MATCHED ON THE ELEMENT, NOT THE NAME. Every preset file also NAMES this path in its
+            // header comment, so a substring check is satisfiable by prose - delete the merge, leave
+            // the comment, and the guard stays green. The build would not catch it either: a mistyped
+            // Source is AVLN2000, but a preset with no include at all compiles fine and simply
+            // resolves nothing.
+            ownText.Should().MatchRegex(
+                @"<ResourceInclude[^>]*Source=""avares://Remex\.Desktop/Themes/Shared/FallbackPalette\.axaml""",
                 $"{preset}.axaml resolves no colours at all unless it merges the shared palette");
         }
     }
@@ -122,6 +128,59 @@ public class ThemeKeyCoverageTests
                 new[] { "CardCornerRadius", "CardBorderThickness", "CardShadow", "CardHoverShadow" },
                 $"{preset}.axaml is geometry plus a merge; anything else belongs in the shared palette");
         }
+    }
+
+    [Fact]
+    public void AnUnparseableAccentStillGetsAPalette()
+    {
+        // FAIL-OPEN, AND IT GOT WORSE WHEN THE FALLBACK BECAME SHARED (RemEx-07jij). The generator
+        // call sat inside `if (Color.TryParse(settings.AccentColor, ...))` with no else, so a saved
+        // accent that will not parse skipped every SetResourceOverrideInternal below it. That used to
+        // leave the selected preset's own complete palette showing. It now leaves the one SHARED DARK
+        // fallback showing - underneath a RequestedThemeVariant that was already set to Light from
+        // UseLightPalette, because that assignment is outside the guard. Near-white text on Fluent's
+        // white chrome, no exception, no log.
+        //
+        // ASSERTED ON THE SOURCE because ApplyCustomization needs an Avalonia Application to run and
+        // there is none in a unit test. What is pinned is the shape that cannot fail open: the parse
+        // is negated and assigns a fallback, rather than gating the palette.
+        var source = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Services", "ThemeService.cs"));
+
+        source.Should().MatchRegex(
+            @"(?s)if\s*\(\s*!\s*Color\.TryParse\(\s*settings\.AccentColor.*?accentColor\s*=\s*Color\.Parse\(\s*FallbackAccentSeed",
+            "an accent that will not parse must fall back to a seed, not skip the palette");
+
+        source.Should().NotMatchRegex(
+            @"if\s*\(\s*Color\.TryParse\(\s*settings\.AccentColor",
+            "gating the palette on the parse is exactly the fail-open shape this replaced");
+
+        // The fallback must be the record's own default, so a user with a broken accent lands where a
+        // user with no accent lands. A third value would be a state nothing else in the app produces.
+        var settingsSource = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.core", "Models", "DashboardProfile.cs"));
+        var recordDefault = Regex.Match(settingsSource, @"AccentColor\s*\{\s*get;\s*init;\s*\}\s*=\s*""(#[0-9A-Fa-f]{6,8})""");
+        recordDefault.Success.Should().BeTrue("CustomizationSettings.AccentColor lost its default");
+
+        source.Should().Contain($"FallbackAccentSeed = \"{recordDefault.Groups[1].Value}\"",
+            "ThemeService's fallback seed and the record's default must not drift apart");
+    }
+
+    [Fact]
+    public void TheCustomAccentBoxRejectsAHexThatWillNotParse()
+    {
+        // THE OTHER HALF OF THE SAME BUG. ConfirmCustomAccent validated the LENGTH of the typed hex
+        // and nothing else, so "#FF0O00" - capital O for zero - was seven characters, became the
+        // accent, and was saved into CustomAccentColors as a permanent swatch that survives a restart.
+        var source = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
+
+        var body = Regex.Match(source, @"private void ConfirmCustomAccent\(\).*?\n    \}", RegexOptions.Singleline);
+        body.Success.Should().BeTrue("ConfirmCustomAccent moved or changed shape");
+
+        body.Value.Should().MatchRegex(@"Color\.TryParse\(\s*hex",
+            "a length check cannot tell a colour from a typo; ask the parser before assigning");
+        body.Value.Should().MatchRegex(@"Color\.TryParse\(\s*hex[^)]*\)\s*\)\s*return;",
+            "the parse result has to gate the assignment, not merely be computed");
     }
 
     [Fact]

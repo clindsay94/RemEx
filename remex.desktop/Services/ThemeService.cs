@@ -14,6 +14,13 @@ public class ThemeService : IDisposable
     public event Action<CustomizationSettings>? CustomizationApplied;
     private readonly ResourceDictionary _overrideResources = new();
 
+    /// <summary>
+    /// The seed used when the saved accent will not parse. Kept equal to
+    /// <c>CustomizationSettings.AccentColor</c>'s own default on purpose: a user with a broken accent
+    /// should land where a user with no accent lands, not somewhere third.
+    /// </summary>
+    internal const string FallbackAccentSeed = "#6C4CFF";
+
     public ThemeService()
     {
         // Add our override dictionary to the application resources.
@@ -96,7 +103,24 @@ public class ThemeService : IDisposable
                 themedApp.RequestedThemeVariant = isLightTheme ? ThemeVariant.Light : ThemeVariant.Dark;
             }
 
-            if (Color.TryParse(settings.AccentColor, out var accentColor))
+            // AN UNPARSEABLE SEED MUST NOT SKIP THE PALETTE, and until RemEx-07jij it quietly did.
+            // The block below used to be the body of this TryParse with no else, so a bad accent left
+            // every colour key on whatever the theme file happened to carry. That was survivable while
+            // each preset carried its own complete palette; it stopped being survivable the moment the
+            // four presets started sharing one DARK fallback, because RequestedThemeVariant is set
+            // above OUTSIDE this check. A light preset with a bad seed would therefore paint Fluent's
+            // light chrome under near-white RemEx text — unreadable, with no exception and no log.
+            //
+            // Falling back to the record's own default seed keeps the palette internally consistent
+            // whatever the setting says, and the warning is what makes the bad value findable at all.
+            if (!Color.TryParse(settings.AccentColor, out var accentColor))
+            {
+                Trace.TraceWarning(
+                    $"ThemeService.ApplyCustomization: unparseable accent '{settings.AccentColor}' — "
+                    + $"falling back to {FallbackAccentSeed}.");
+                accentColor = Color.Parse(FallbackAccentSeed);
+            }
+
             {
                 var palette = DynamicColorGenerator.Generate(
                     accentColor,

@@ -1,9 +1,10 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Desktop.Services;
 using Remex.Desktop.Models;
 using Remex.Core.Models;
 using System.Collections.ObjectModel;
+using Avalonia.Media;
 using Avalonia.Threading;
 
 namespace Remex.Desktop.ViewModels;
@@ -31,6 +32,31 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// owns that surface - so this is the only writer.
     /// </remarks>
     private bool? _useLightPalette;
+
+    /// <summary>
+    /// Whether <see cref="SelectTheme"/> has written <see cref="_useLightPalette"/> since this view
+    /// model was constructed.
+    /// </summary>
+    /// <remarks>
+    /// THE FIELD IS A SNAPSHOT AND THE VALUE IT REPLACED WAS LIVE. ApplyAndSave used to read the mode
+    /// off <c>CurrentProfile.Customization</c> every time; a field read once in the constructor is not
+    /// the same thing, and ShellViewModel caches this view model with <c>??=</c> and never rebuilds it.
+    /// So importing a savefile from a light setup — which replaces the profile and repaints the app —
+    /// and then nudging any slider would have written the stale constructor-time value back and
+    /// silently reverted the import.
+    /// <para>
+    /// The narrow fix: the field wins only once SelectTheme has actually chosen, and until then the
+    /// profile stays the source of truth exactly as before. The same staleness affects CornerRadius
+    /// and the other sliders and is older than this field (RemEx-07jij filed a follow-up).
+    /// </para>
+    /// </remarks>
+    private bool _lightPaletteChosenThisSession;
+
+    private void SetLightPalette(bool useLight)
+    {
+        _useLightPalette = useLight;
+        _lightPaletteChosenThisSession = true;
+    }
 
     // ═══ Slider snap ═══
     private static readonly double[] CardSnapPoints = [0, 2, 8, 16, 24, 32];
@@ -104,7 +130,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     {
         var hex = CustomAccentHex.Trim();
         if (!hex.StartsWith('#')) hex = '#' + hex;
-        if (hex.Length is not (7 or 9)) return; // must be #RRGGBB or #AARRGGBB
+
+        // PARSED, NOT COUNTED. This checked only the LENGTH — "must be #RRGGBB or #AARRGGBB" — so
+        // "#FF0O00", a capital O for a zero, was seven characters and got saved as the accent. It
+        // then reached ThemeService, failed Color.TryParse there, and was persisted as a permanent
+        // swatch in CustomAccentColors, so it survived a restart. Asking the parser costs the same
+        // and answers the question actually being asked. (RemEx-07jij)
+        if (hex.Length is not (7 or 9) || !Color.TryParse(hex, out _)) return;
 
         AccentColor = hex;
 
@@ -359,7 +391,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             ThemeId = SelectedTheme.ToString(),
             ThemeContrast = carried.ThemeContrast,
             ThemeSeedChroma = carried.ThemeSeedChroma,
-            UseLightPalette = _useLightPalette,
+            UseLightPalette = _lightPaletteChosenThisSession ? _useLightPalette : carried.UseLightPalette,
             CornerRadius = CornerRadius,
             RemoteCardCornerRadius = RemoteCardCornerRadius,
             GlassOpacity = GlassOpacity,
@@ -404,7 +436,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                         AccentColor = "#00F3FF";
                         GlowStrength = 10;
                         GlassOpacity = 0.05;
-                        _useLightPalette = false;
+                        SetLightPalette(false);
                         break;
                     case AppTheme.SolarFlare:
                         CornerRadius = 24;
@@ -412,7 +444,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                         AccentColor = "#FFB800";
                         GlowStrength = 2;
                         GlassOpacity = 0.8;
-                        _useLightPalette = true;
+                        SetLightPalette(true);
                         break;
                     case AppTheme.Monolith:
                         CornerRadius = 8;
@@ -420,7 +452,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                         AccentColor = "#0A84FF";
                         GlowStrength = 0;
                         GlassOpacity = 1.0;
-                        _useLightPalette = false;
+                        SetLightPalette(false);
                         break;
                     case AppTheme.BaseDarkGlass:
                         CornerRadius = 16;
@@ -429,7 +461,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
                         GlowStrength = 2;
                         GlassOpacity = 0.1;
                         SplashStyle = "RemexCommand";
-                        _useLightPalette = false;
+                        SetLightPalette(false);
                         break;
                     case AppTheme.Dynamic:
                         CornerRadius = 24;
