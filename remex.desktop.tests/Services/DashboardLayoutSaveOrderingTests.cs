@@ -70,6 +70,33 @@ public class DashboardLayoutSaveOrderingTests
             + "landing on top of the newer, which is how an import silently reverts");
     }
 
+    /// <summary>Disposing drains a queued save rather than dropping it.</summary>
+    /// <remarks>
+    /// SINCE THE MIGRATION WRITE-BACK, THE DROPPED EDIT CAN BE THE SCHEMA STAMP ITSELF. Closing the
+    /// app inside the debounce window of a migrating launch used to lose it, and the next launch
+    /// would re-run the legacy arm — which makes the "once per install" claim in <c>LoadAsync</c>
+    /// false. Dispose cannot await, so the drain is a synchronous best-effort write.
+    /// <para>
+    /// ASSERTED ON FILE CONTENT HERE, unlike the tests above, and the difference is real rather than
+    /// inconsistent: the drain writes directly and raises no <c>ProfileSaved</c>, so there is no
+    /// event to count. A GUID marker keeps it honest whatever else in this assembly has touched the
+    /// shared redirected file.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public void DisposeDrainsAQueuedSaveInsteadOfDroppingIt()
+    {
+        var service = new DashboardLayoutService(new ThemeService());
+        var path = service.FilePathForTests;
+        var marker = "drained-" + Guid.NewGuid().ToString("N");
+
+        service.RequestSave(new DashboardProfile { Language = marker });
+        service.Dispose();
+
+        File.ReadAllText(path).Should().Contain(marker,
+            "a queued edit that Dispose throws away is an edit the user made and lost");
+    }
+
     [Theory]
     [InlineData(null, 7L, false)]   // a direct save is never superseded
     [InlineData(7L, 7L, false)]     // nothing happened while it waited
