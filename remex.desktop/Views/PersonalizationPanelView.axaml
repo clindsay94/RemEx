@@ -27,51 +27,53 @@
 
         <!-- ═══ Section 1: Presets ═══ -->
         <TextBlock Text="{local:Localize Custom_BasePresets}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" LetterSpacing="2"/>
-        <UniformGrid Columns="5">
-            <!-- Dynamic -->
-            <Button AutomationProperties.Name="{local:Localize Custom_PresetDynamic}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="Dynamic" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Dynamic}">
-                <StackPanel Spacing="8">
-                    <Border Height="36" CornerRadius="18" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="2">
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                <GradientStop Offset="0" Color="#6C4CFF" />
-                                <GradientStop Offset="0.5" Color="#00F3FF" />
-                                <GradientStop Offset="1" Color="#FF00FF" />
-                            </LinearGradientBrush>
-                        </Border.Background>
-                    </Border>
-                    <TextBlock Text="{local:Localize Custom_PresetDynamic}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                </StackPanel>
-            </Button>
-            <!-- Base Dark Glass -->
-            <Button AutomationProperties.Name="{local:Localize Custom_PresetStandardGlass}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="BaseDarkGlass" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=BaseDarkGlass}">
-                <StackPanel Spacing="8">
-                    <Border Height="36" Background="#1AFFFFFF" CornerRadius="8" BorderBrush="#2AFFFFFF" BorderThickness="1"/>
-                    <TextBlock Text="{local:Localize Custom_PresetStandardGlass}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                </StackPanel>
-            </Button>
-            <!-- Cyber-NOC -->
-            <Button AutomationProperties.Name="{local:Localize Custom_PresetCyberNOC}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="CyberNOC" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=CyberNOC}">
-                <StackPanel Spacing="8">
-                    <Border Height="36" Background="#050505" CornerRadius="2" BorderBrush="#00F3FF" BorderThickness="1"/>
-                    <TextBlock Text="{local:Localize Custom_PresetCyberNOC}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                </StackPanel>
-            </Button>
-            <!-- Solar-Flare -->
-            <Button AutomationProperties.Name="{local:Localize Custom_PresetSolarFlare}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="SolarFlare" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=SolarFlare}">
-                <StackPanel Spacing="8">
-                    <Border Height="36" Background="#CCFFFFFF" CornerRadius="12" BorderBrush="#FFB800" BorderThickness="1"/>
-                    <TextBlock Text="{local:Localize Custom_PresetSolarFlare}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                </StackPanel>
-            </Button>
-            <!-- Monolith -->
-            <Button AutomationProperties.Name="{local:Localize Custom_PresetMonolith}" Classes="theme-tile" Margin="4" Padding="12" Command="{Binding SelectThemeCommand}" CommandParameter="Monolith" Classes.selected="{Binding SelectedThemePreset, Converter={x:Static local:StringMatchConverter.EqualsParameter}, ConverterParameter=Monolith}">
-                <StackPanel Spacing="8">
-                    <Border Height="36" Background="#2C2C2E" CornerRadius="4" BorderBrush="#444" BorderThickness="3"/>
-                    <TextBlock Text="{local:Localize Custom_PresetMonolith}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                </StackPanel>
-            </Button>
-        </UniformGrid>
+        <!-- THE GALLERY PREVIEWS ITSELF (RemEx-2gjwn). This was five hand-authored tiles whose
+             swatch colours were literals - #050505 and #00F3FF for CyberNOC, and so on - copied
+             from resource dictionaries that no longer exist. Every colour below now comes out of
+             DynamicColorGenerator run on the preset's own seed and variant, which is the same call
+             clicking the tile makes, so a tile cannot show a colour the app will not paint.
+
+             THREE COLUMNS, NOT FIVE, AND THAT IS A MEASUREMENT. This panel is hosted in the
+             Personalize drawer at roughly 300px. Five columns was already tight for four presets
+             and a Dynamic tile; the catalog ships eight, and at five columns each tile is ~52px -
+             narrower than the word "Monolith" at any legible size. Three gives ~92px and three
+             rows, which the drawer scrolls. -->
+        <ItemsControl ItemsSource="{Binding ThemePresets}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="3"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SeedPresetTileViewModel">
+                    <Button Classes="theme-tile" Margin="4" Padding="0"
+                            AutomationProperties.Name="{Binding DisplayName}"
+                            Classes.selected="{Binding IsSelected}"
+                            Command="{Binding $parent[ItemsControl].((vm:CustomizationViewModel)DataContext).SelectThemeCommand}"
+                            CommandParameter="{Binding Id}">
+                        <!-- The card is painted in the preset's OWN surface/outline, and the label in
+                             its OWN on-surface, so the tile doubles as the contrast check: a preset
+                             whose text is unreadable against its surface looks unreadable here. -->
+                        <Border Background="{Binding SurfaceBrush}"
+                                BorderBrush="{Binding OutlineBrush}"
+                                BorderThickness="1"
+                                CornerRadius="{Binding PreviewCornerRadius}"
+                                Padding="6,8">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                                    <Border Width="14" Height="14" CornerRadius="7" Background="{Binding PrimaryBrush}"/>
+                                    <Border Width="11" Height="11" CornerRadius="6" Background="{Binding SecondaryBrush}" VerticalAlignment="Center"/>
+                                    <Border Width="8" Height="8" CornerRadius="4" Background="{Binding TertiaryBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding DisplayName}" FontSize="10" FontWeight="Bold"
+                                           TextAlignment="Center" TextWrapping="Wrap"
+                                           Foreground="{Binding OnSurfaceBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
         <!-- ═══ Section 2: Palette Studio ═══ -->
         <!-- The whole palette comes out of one seed, so this is where the seed is chosen. The wheel

@@ -4,7 +4,7 @@
 
          A preset is its GEOMETRY plus a seed. The colours come from Shared/FallbackPalette.axaml
          until ThemeService.ApplyCustomization lands, and from the M3 generator after that; the seed
-         itself lives in CustomizationViewModel.SelectTheme, not here. (RemEx-07jij)
+         itself lives in Models/SeedPreset.cs (SeedPresetCatalog), not here. (RemEx-2gjwn)
     -->
     <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Remex.Desktop/Themes/Shared/FallbackPalette.axaml"/>

@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Remex.Desktop.Services;
 using Remex.Desktop.Models;
@@ -325,7 +325,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         // Initialize from current profile
         var settings = _layoutService.CurrentProfile.Customization;
-        _selectedTheme = Enum.TryParse<AppTheme>(settings.ThemeId, true, out var theme) ? theme : AppTheme.BaseDarkGlass;
+        _selectedPresetId = SeedPresetCatalog.Resolve(settings.ThemeId).Id;
         _cornerRadius = settings.CornerRadius;
         _remoteCardCornerRadius = settings.RemoteCardCornerRadius;
         _glassOpacity = settings.GlassOpacity;
@@ -378,6 +378,14 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         (_seedHue, _seedChroma, _seedTone) = SeedHct.FromColor(initialSeed);
 
+        // Build the preset gallery. AFTER the seed axes are set, because the tiles are painted from
+        // the live settings and Dynamic's tile is the live settings.
+        foreach (var preset in SeedPresetCatalog.All)
+            ThemePresets.Add(new SeedPresetTileViewModel(preset));
+
+        RefreshPresetPreviews(onlyVarying: false);
+        UpdatePresetSelection();
+
         // Load available background types
         RefreshBackgroundTypes();
 
@@ -408,11 +416,26 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// The selected preset's <see cref="SeedPreset.Id"/>, persisted verbatim as
+    /// <c>CustomizationSettings.ThemeId</c>.
+    /// </summary>
+    /// <remarks>
+    /// A STRING RATHER THAN <see cref="AppTheme"/>, because the enum stopped being the list of
+    /// presets. It is now only the list of structural theme FILES — four of them — while the gallery
+    /// ships more presets than that and will ship more again. Parsing ThemeId through the enum meant
+    /// every preset that was not one of the four resolved to Dynamic and logged a warning on the way.
+    /// </remarks>
     [ObservableProperty]
-    private AppTheme _selectedTheme;
+    private string _selectedPresetId;
 
-    /// <summary>String representation of <see cref="SelectedTheme"/> used for Classes.selected bindings in AXAML.</summary>
-    public string SelectedThemePreset => SelectedTheme.ToString();
+    /// <summary>Alias kept for the Classes.selected bindings in AXAML.</summary>
+    public string SelectedThemePreset => SelectedPresetId;
+
+    /// <summary>
+    /// The preset gallery, each tile painted in its own generated palette.
+    /// </summary>
+    public ObservableCollection<SeedPresetTileViewModel> ThemePresets { get; } = new();
 
     [ObservableProperty]
     private double _cornerRadius;
@@ -505,9 +528,10 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             : string.Format(LocalizationService.Instance["Custom_FontUnavailable"], string.Join(", ", unavailable));
     }
 
-    partial void OnSelectedThemeChanged(AppTheme value)
+    partial void OnSelectedPresetIdChanged(string value)
     {
         OnPropertyChanged(nameof(SelectedThemePreset));
+        UpdatePresetSelection();
         ApplyAndSave();
     }
     partial void OnCornerRadiusChanged(double value)
@@ -582,7 +606,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         var settings = new CustomizationSettings
         {
-            ThemeId = SelectedTheme.ToString(),
+            ThemeId = SelectedPresetId,
             ThemeContrast = Math.Clamp(ThemeContrast, -1.0, 1.0),
 
             // THE SEED'S OWN CHROMA, not the slider's requested one. Most hue/tone pairs cannot
@@ -615,71 +639,86 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // Use the internal setter if possible, or request a save
         _themeService.ApplyCustomization(settings);
         _layoutService.RequestSave(profile);
+
+        // The gallery is downstream of the same settings the shell is, so it repaints here rather
+        // than from four separate change handlers that would each have to remember to.
+        RefreshPresetPreviews(onlyVarying: true);
     }
 
     [RelayCommand]
     private void SelectTheme(string themeName)
     {
-        if (Enum.TryParse<AppTheme>(themeName, true, out var theme))
+        // NO ENUM PARSE AND NO SWITCH. Both used to be here, and both were a second place a preset
+        // had to be declared - the switch arms were even scraped by the tests, because there was
+        // nowhere else to read a preset's seed from. The catalog is that place now, so an unknown
+        // id is a lookup miss rather than a silently-skipped command.
+        if (!SeedPresetCatalog.TryGet(themeName, out var preset)) return;
+
+        _isApplyingPreset = true;
+        try
         {
-            _isApplyingPreset = true;
-            try
-            {
-                SelectedTheme = theme;
+            CornerRadius = preset.CornerRadius;
+            RemoteCardCornerRadius = preset.RemoteCardCornerRadius;
+            GlowStrength = preset.GlowStrength;
+            GlassOpacity = preset.GlassOpacity;
 
-                // Apply preset defaults based on PRD
-                switch (theme)
-                {
-                    case AppTheme.CyberNOC:
-                        CornerRadius = 2;
-                        RemoteCardCornerRadius = 4;
-                        AccentColor = "#00F3FF";
-                        GlowStrength = 10;
-                        GlassOpacity = 0.05;
-                        SetLightPalette(false);
-                        break;
-                    case AppTheme.SolarFlare:
-                        CornerRadius = 24;
-                        RemoteCardCornerRadius = 48;
-                        AccentColor = "#FFB800";
-                        GlowStrength = 2;
-                        GlassOpacity = 0.8;
-                        SetLightPalette(true);
-                        break;
-                    case AppTheme.Monolith:
-                        CornerRadius = 8;
-                        RemoteCardCornerRadius = 12;
-                        AccentColor = "#0A84FF";
-                        GlowStrength = 0;
-                        GlassOpacity = 1.0;
-                        SetLightPalette(false);
-                        break;
-                    case AppTheme.BaseDarkGlass:
-                        CornerRadius = 16;
-                        RemoteCardCornerRadius = 24;
-                        AccentColor = "#6C4CFF";
-                        GlowStrength = 2;
-                        GlassOpacity = 0.1;
-                        SplashStyle = "RemexCommand";
-                        SetLightPalette(false);
-                        break;
-                    case AppTheme.Dynamic:
-                        CornerRadius = 24;
-                        RemoteCardCornerRadius = 24;
-                        GlowStrength = 4;
-                        GlassOpacity = 0.4;
-                        // Keep existing AccentColor as the seed, and the existing light/dark choice
-                        // with it — Dynamic is "whatever the user has built", so it is the one preset
-                        // that must not overwrite _useLightPalette.
-                        break;
-                }
-            }
-            finally
-            {
-                _isApplyingPreset = false;
-            }
+            // THE NULLS ARE THE POINT, not an oversight. Dynamic declines to choose a seed, a
+            // variant, a mode and a contrast, and "declines" has to mean the existing value survives
+            // - a preset that means "my own colour" cannot be the one that overwrites it.
+            if (preset.Seed is { } seed) AccentColor = seed;
+            if (preset.SchemeVariant is { } variant) SchemeVariant = variant;
+            if (preset.IsLight is { } light) SetLightPalette(light);
+            if (preset.Contrast is { } contrast) ThemeContrast = contrast;
+            if (preset.SplashStyle is { } splash) SplashStyle = splash;
 
-            ApplyAndSave();
+            // LAST, because it is the one that triggers the save. Everything above writes through a
+            // generated setter whose partial handler is short-circuited by _isApplyingPreset, so
+            // until this line the profile still holds the outgoing preset's numbers.
+            SelectedPresetId = preset.Id;
+        }
+        finally
+        {
+            _isApplyingPreset = false;
+        }
+
+        ApplyAndSave();
+    }
+
+    /// <summary>
+    /// Rebuilds every tile's palette. Cheap enough to run on any seed change: one
+    /// <c>Generate</c> per tile, and only the Dynamic tile's result actually varies.
+    /// </summary>
+    private void RefreshPresetPreviews(bool onlyVarying)
+    {
+        var liveIsLight = CurrentIsLightPalette();
+        foreach (var tile in ThemePresets)
+        {
+            // A preset that pins all four inputs renders the same colours forever, so re-running the
+            // generator for it on every slider tick is pure waste - and these tick continuously.
+            if (onlyVarying && !HasLiveInput(tile.Preset)) continue;
+            tile.Refresh(AccentColor, SchemeVariant, liveIsLight, ThemeContrast);
+        }
+    }
+
+    private static bool HasLiveInput(SeedPreset preset) =>
+        preset.Seed is null || preset.SchemeVariant is null
+        || preset.IsLight is null || preset.Contrast is null;
+
+    /// <summary>
+    /// What light/dark the profile is actually painting right now - the explicit choice if there is
+    /// one, and otherwise the same preset-name answer <see cref="ThemeService.ApplyCustomization"/>
+    /// falls back to. The tiles have to agree with the window behind them.
+    /// </summary>
+    private bool CurrentIsLightPalette() =>
+        _lightPaletteChosenThisSession
+            ? _useLightPalette ?? UseLightPaletteSwitch
+            : UseLightPaletteSwitch;
+
+    private void UpdatePresetSelection()
+    {
+        foreach (var tile in ThemePresets)
+        {
+            tile.IsSelected = string.Equals(tile.Id, SelectedPresetId, StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -696,7 +735,9 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
-        // No resources to dispose currently, but implementing IDisposable for consistency
-        // in the ViewModel disposal hierarchy
+        // The tiles each hold a LocalizationService.Instance.PropertyChanged subscription, and that
+        // singleton outlives this view model - an undisposed tile is pinned for the process lifetime.
+        foreach (var tile in ThemePresets) tile.Dispose();
+        ThemePresets.Clear();
     }
 }

@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Remex.Desktop.Models;
 using Xunit;
 
 namespace Remex.Desktop.Tests.Services;
@@ -67,46 +68,65 @@ internal static class ThemeDictionary
     public static HashSet<string> KeysIn(string preset) =>
         new(Regex.Matches(ResolvedText(preset), @"x:Key=""([^""]+)""").Select(m => m.Groups[1].Value));
 
-    /// <summary>One <c>case AppTheme.X:</c> arm of <c>CustomizationViewModel.SelectTheme</c>.</summary>
-    internal readonly record struct PresetCase(string Preset, string Body)
+    /// <summary>One entry of <c>SeedPresetCatalog.All</c>, in the shape the older tests expect.</summary>
+    public readonly record struct PresetCase(SeedPreset Definition)
     {
-        /// <summary>Whether this preset sets a seed. <c>Dynamic</c> deliberately does not.</summary>
-        public bool IsSeeded => Regex.IsMatch(Body, @"AccentColor\s*=\s*""#");
+        /// <summary>The persisted id, which is also the display key's suffix.</summary>
+        public string Preset => Definition.Id;
 
-        public string Seed => Regex.Match(Body, @"AccentColor\s*=\s*""(#[0-9A-Fa-f]{6,8})""").Groups[1].Value;
+        /// <summary>Whether this preset pins a seed. <c>Dynamic</c> deliberately does not.</summary>
+        public bool IsSeeded => Definition.Seed is not null;
 
-        public bool WritesMode => Regex.IsMatch(Body, @"SetLightPalette\(\s*(true|false)\s*\)");
+        public string Seed => Definition.Seed ?? string.Empty;
 
-        public bool IsLight => Regex.IsMatch(Body, @"SetLightPalette\(\s*true\s*\)");
+        public string Variant => Definition.SchemeVariant ?? "TonalSpot";
+
+        public double Contrast => Definition.Contrast ?? 0.0;
+
+        public bool WritesMode => Definition.IsLight.HasValue;
+
+        public bool IsLight => Definition.IsLight == true;
     }
 
     /// <summary>
-    /// Every preset arm of <c>SelectTheme</c>, parsed out of the source.
+    /// Every preset, read off the catalog.
     /// </summary>
     /// <remarks>
-    /// ONE COPY OF THIS SCAN, NOT TWO. It was written twice — once in AccentForegroundContrastTests
-    /// to find the seeds, once in CustomizationSettingsRoundTripTests to find the mode writes — and
-    /// two copies of a regex against the same method break together and are fixed separately. The
-    /// seeds are read rather than duplicated in the first place because a copied seed table goes
-    /// stale silently: the tests would keep certifying the contrast of a colour the app had stopped
-    /// shipping, and stay green doing it.
+    /// THIS USED TO BE A REGEX OVER <c>SelectTheme</c>'s SWITCH ARMS, because until RemEx-2gjwn the
+    /// switch WAS the preset list — there was nowhere else to read a seed from. The catalog is that
+    /// place now, so the scan is a plain reference and cannot decay into matching nothing. What the
+    /// scan protected against instead moves to <see cref="AssertSelectThemeReadsTheCatalog"/>: the
+    /// risk was never the regex, it was a second hardcoded copy of the presets drifting from the
+    /// first, and a switch reappearing in SelectTheme is exactly that copy coming back.
     /// </remarks>
     public static PresetCase[] SelectThemeCases()
+    {
+        var cases = SeedPresetCatalog.All.Select(p => new PresetCase(p)).ToArray();
+
+        // ANTI-VACUITY. Every count-based assertion built on this is trivially satisfied by an empty
+        // list, and the four homages plus Dynamic are the floor the catalog may never drop below.
+        Assert.True(cases.Length > 4, "the preset catalog lost entries");
+        foreach (var required in new[] { "BaseDarkGlass", "CyberNOC", "SolarFlare", "Monolith", "Dynamic" })
+        {
+            Assert.Contains(cases, c => c.Preset == required);
+        }
+
+        return cases;
+    }
+
+    /// <summary>
+    /// Fails if <c>SelectTheme</c> stops going through the catalog, or grows a preset switch again.
+    /// </summary>
+    public static void AssertSelectThemeReadsTheCatalog()
     {
         var source = File.ReadAllText(Path.Combine(
             RepoRoot(), "remex.desktop", "ViewModels", "CustomizationViewModel.cs"));
 
         var body = Regex.Match(source, @"private void SelectTheme\(.*?\n    \}", RegexOptions.Singleline);
-        Assert.True(body.Success, "SelectTheme moved or changed shape - the preset scan cannot see it");
+        Assert.True(body.Success, "SelectTheme moved or changed shape - this guard cannot see it");
 
-        var cases = Regex.Matches(body.Value, @"case AppTheme\.(\w+):(.*?)break;", RegexOptions.Singleline)
-            .Select(m => new PresetCase(m.Groups[1].Value, m.Groups[2].Value))
-            .ToArray();
-
-        // ANTI-VACUITY. Every count-based assertion built on this is trivially satisfied by an empty
-        // list, and a regex that stopped matching is exactly how that happens.
-        Assert.True(cases.Length > 4, "the preset switch moved or the scan broke");
-        return cases;
+        Assert.Contains("SeedPresetCatalog.TryGet", body.Value, StringComparison.Ordinal);
+        Assert.DoesNotMatch(@"case AppTheme\.", body.Value);
     }
 
     private static string ResolvedTextOfFile(string path, HashSet<string>? seen = null)

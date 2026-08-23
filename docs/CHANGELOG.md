@@ -92,6 +92,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The preset row in Personalize is now a gallery of eight, and each card is painted in the theme it
+  gives you.** Cyber-NOC, Solar-Flare, Monolith and Standard Glass are all still there, under the same
+  names, looking the way they did — they are just one line of settings each now instead of a file of
+  colour codes, which is what made room for the rest. Daybreak is a proper light mode, neutral rather
+  than the warm cream of Solar-Flare. Voltage is loud on purpose. Sorbet is pastel. Dynamic still means
+  "the colour I chose myself" and is the one card that leaves your seed, your scheme and your light or
+  dark setting alone.
+
+  The cards are not pictures of the themes, they are the themes: each one is generated from its own
+  seed and drawn with its own surface, outline and text colours. So a card shows you the real contrast
+  between the label and the background you would get, and it cannot drift out of date the way the old
+  hand-painted swatches had. The Dynamic card follows your seed as you drag the wheel.
+
+  Picking a preset now sets its scheme and its light-or-dark along with its colour, so a preset lands
+  as a whole look rather than a colour dropped into whatever you last had. (RemEx-2gjwn)
+
 - **You can now pick the colour the whole app is built from, on a wheel, and watch it repaint as you
   drag.** Personalize has a new Palette Studio. There is a colour wheel with a thumb you drag, and
   three sliders beside it — hue, chroma and tone — which are two views of the same colour rather than

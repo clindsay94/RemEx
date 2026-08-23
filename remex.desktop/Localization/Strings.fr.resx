@@ -450,6 +450,15 @@
   <data name="Custom_PresetMonolith" xml:space="preserve">
     <value>Monolith</value>
   </data>
+  <data name="Custom_PresetDaybreak" xml:space="preserve">
+    <value>Daybreak</value>
+  </data>
+  <data name="Custom_PresetVoltage" xml:space="preserve">
+    <value>Voltage</value>
+  </data>
+  <data name="Custom_PresetSorbet" xml:space="preserve">
+    <value>Sorbet</value>
+  </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
     <value>Dynamique</value>
   </data>

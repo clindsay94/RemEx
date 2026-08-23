@@ -53,17 +53,24 @@ public class AccentForegroundContrastTests
 
     // ── The preset seeds, which is where the per-theme variation lives now (RemEx-07jij) ──────────
 
-    /// <summary>One preset's seed and light/dark, as <c>SelectTheme</c> writes them.</summary>
-    internal readonly record struct PresetSeed(string Preset, string Seed, bool IsLight);
+    /// <summary>One preset's generator inputs, exactly as selecting it writes them.</summary>
+    internal readonly record struct PresetSeed(
+        string Preset, string Seed, string Variant, bool IsLight, double Contrast);
 
     /// <summary>
-    /// Every preset's seed, READ OUT OF <c>CustomizationViewModel.SelectTheme</c> rather than copied.
+    /// Every preset's seed, READ OFF <c>SeedPresetCatalog</c> rather than copied.
     /// </summary>
     /// <remarks>
     /// A DUPLICATED SEED TABLE WOULD GO STALE SILENTLY, and stale is worse than absent here: the
     /// tests would keep measuring #00F3FF long after the preset moved off it, stay green, and report
-    /// an accessibility guarantee about a colour the app no longer ships. Reading the switch means a
+    /// an accessibility guarantee about a colour the app no longer ships. Reading the catalog means a
     /// retuned preset is measured on its new value or fails loudly for the right reason.
+    /// <para>
+    /// VARIANT AND CONTRAST ARE CARRIED TOO, since RemEx-2gjwn. A preset is a seed AND a scheme now,
+    /// and measuring every seed at the TonalSpot default — which is what this did — would certify
+    /// contrast ratios for palettes the app never generates. CyberNOC on Vibrant is a different
+    /// primary from CyberNOC on TonalSpot.
+    /// </para>
     /// <para>
     /// <c>Dynamic</c> is excluded because it deliberately sets no seed — it keeps whatever the user
     /// has, which is not a value this file can measure.
@@ -73,21 +80,25 @@ public class AccentForegroundContrastTests
     {
         var seeds = ThemeDictionary.SelectThemeCases()
             .Where(c => c.IsSeeded)
-            .Select(c => new PresetSeed(c.Preset, c.Seed, c.IsLight))
+            .Select(c => new PresetSeed(c.Preset, c.Seed, c.Variant, c.IsLight, c.Contrast))
             .ToArray();
 
-        // ANTI-VACUITY. Every count-based assertion below is trivially satisfiable by an empty list,
-        // and a regex that stopped matching is exactly how that happens. Four presets carry a seed;
-        // Dynamic is the fifth case and correctly carries none.
-        Assert.Equal(4, seeds.Length);
-        Assert.Single(seeds, p => p.IsLight);
+        // ANTI-VACUITY. Every count-based assertion below is trivially satisfiable by an empty list.
+        // Not an exact count any more — the catalog is meant to grow — but the floor is the four
+        // homages, and BOTH modes have to be represented or the light-side measurements below are
+        // silently measuring nothing.
+        Assert.True(seeds.Length >= 4, $"only {seeds.Length} seeded presets - the catalog lost entries");
+        Assert.Contains(seeds, p => p.IsLight);
+        Assert.Contains(seeds, p => !p.IsLight);
+        Assert.DoesNotContain(seeds, p => p.Preset == "Dynamic");
         return seeds;
     }
 
     private static DynamicColorGenerator.M3Palette Generated(PresetSeed preset)
     {
         Assert.True(Color.TryParse(preset.Seed, out var seed), $"{preset.Preset}: unparseable seed {preset.Seed}");
-        return DynamicColorGenerator.Generate(seed, isDark: !preset.IsLight);
+        return DynamicColorGenerator.Generate(
+            seed, preset.Variant, isDark: !preset.IsLight, contrast: preset.Contrast);
     }
 
     private static string Hex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";

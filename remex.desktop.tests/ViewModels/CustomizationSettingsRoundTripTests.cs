@@ -79,16 +79,25 @@ public class CustomizationSettingsRoundTripTests
         var cases = ThemeDictionary.SelectThemeCases();
 
         var seeded = cases.Where(c => c.IsSeeded).ToArray();
-        seeded.Should().HaveCount(4, "four presets carry a seed; Dynamic deliberately carries none");
+        seeded.Should().HaveCountGreaterOrEqualTo(4,
+            "the four homages carry a seed at minimum; only Dynamic deliberately carries none");
 
         seeded.Where(c => !c.WritesMode).Select(c => c.Preset)
             .Should().BeEmpty("a preset that leaves the mode unwritten falls back to matching its own name");
 
         // Dynamic is the exception, and it is an exception on purpose: it means "whatever the user
-        // has built", so it is the one case that must NOT overwrite the choice.
-        var dynamicCase = cases.Single(c => c.Preset == "Dynamic");
-        dynamicCase.Body.Should().NotMatchRegex(@"SetLightPalette\(|_useLightPalette\s*=",
-            "Dynamic keeps the user's existing mode along with their existing seed");
+        // has built", so it is the one preset that must NOT overwrite the choice. Since RemEx-2gjwn
+        // that is four nulls in the catalog rather than an empty switch arm, which is checkable
+        // directly instead of by asserting the absence of a line of source.
+        var dynamic = cases.Single(c => c.Preset == "Dynamic").Definition;
+        dynamic.Seed.Should().BeNull("Dynamic keeps the user's existing seed");
+        dynamic.IsLight.Should().BeNull("Dynamic keeps the user's existing mode");
+        dynamic.SchemeVariant.Should().BeNull("Dynamic keeps the user's existing scheme variant");
+        dynamic.Contrast.Should().BeNull("Dynamic keeps the user's existing contrast");
+
+        // And the switch that used to hold all of this must not come back — a second copy of the
+        // preset list is the failure mode the catalog exists to remove.
+        ThemeDictionary.AssertSelectThemeReadsTheCatalog();
     }
 
     [Fact]

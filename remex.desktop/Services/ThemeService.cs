@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Media;
@@ -71,19 +71,20 @@ public class ThemeService : IDisposable
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            if (Enum.TryParse<AppTheme>(settings.ThemeId, true, out var themeEnum))
-            {
-                ApplyBaseThemeInternal(themeEnum);
-            }
-            else
+            // THE CATALOG RESOLVES THE ID, NOT THE ENUM. AppTheme is the list of structural theme
+            // FILES, which is four; the preset gallery is longer than that and gets longer. Parsing
+            // ThemeId through the enum meant every preset outside the four failed to parse, landed
+            // in the branch below, and logged a warning about a preset that is perfectly valid.
+            if (!SeedPresetCatalog.TryGet(settings.ThemeId, out var preset))
             {
                 // An unrecognized theme id (typo'd/renamed preset, stale saved settings, etc.) must
                 // never leave the app with no base theme applied. Log it so the gap is findable, and
                 // fall back to the known-good default rather than silently doing nothing.
                 Trace.TraceWarning(
-                    $"ThemeService.ApplyCustomization: unknown theme preset '{settings.ThemeId}' — falling back to {nameof(AppTheme.Dynamic)}.");
-                ApplyBaseThemeInternal(AppTheme.Dynamic);
+                    $"ThemeService.ApplyCustomization: unknown theme preset '{settings.ThemeId}' — falling back to {SeedPresetCatalog.DefaultId}.");
             }
+
+            ApplyBaseThemeInternal(preset.BaseTheme);
 
             // ── Batch resource updates ──────────────────────────────────────
             // Build all new values first, then detach the override dictionary,
@@ -105,8 +106,11 @@ public class ThemeService : IDisposable
             // result overrides the whole colour surface. Light/dark is a setting rather than a
             // property of the preset's name — see CustomizationSettings.UseLightPalette for why the
             // null case still answers the old question.
-            var isLightTheme = settings.UseLightPalette
-                ?? string.Equals(settings.ThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
+            // The preset's own mode is the pre-key answer: every id that could appear in a profile
+            // written before UseLightPalette existed is one of the four homages, and only SolarFlare
+            // carries IsLight = true. Reading it off the catalog rather than string-comparing one
+            // name means a new light preset does not need this line edited to be light.
+            var isLightTheme = settings.UseLightPalette ?? preset.IsLight ?? false;
 
             // The base theme file resolved a variant from the preset NAME. Now that light/dark is
             // its own setting, the variant has to follow the setting, or Fluent's own control

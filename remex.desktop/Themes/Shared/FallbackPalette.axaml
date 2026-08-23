@@ -121,7 +121,7 @@
     <CornerRadius x:Key="CornerRadiusLarge">28</CornerRadius>
     <CornerRadius x:Key="CornerRadiusExtraLarge">36</CornerRadius>
 
-    <!-- Also shared, and also overwritten: SelectTheme gives each preset its own value
+    <!-- Also shared, and also overwritten: SeedPresetCatalog gives each preset its own value
          (CyberNOC 4, Monolith 12, BaseDarkGlass 24, SolarFlare 48) the moment it is applied. -->
     <CornerRadius x:Key="RemoteCardCornerRadius">12</CornerRadius>
 </ResourceDictionary>

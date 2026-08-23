@@ -4,10 +4,10 @@
 
          A preset is its GEOMETRY plus a seed. The colours come from Shared/FallbackPalette.axaml
          until ThemeService.ApplyCustomization lands, and from the M3 generator after that; this
-         preset's seed (#FFB800) lives in CustomizationViewModel.SelectTheme. (RemEx-07jij)
+         preset's seed (#FFB800) lives in Models/SeedPreset.cs. (RemEx-2gjwn)
 
          THIS IS THE LIGHT PRESET, and that is now a SETTING rather than a property of the name.
-         SelectTheme writes UseLightPalette = true for it explicitly. The fallback palette merged
+         The catalog pins IsLight = true for it explicitly. The fallback palette merged
          below is dark, so this preset is the one that would show a dark flash if the generated
          palette ever arrived after the first frame - the price of one fallback instead of four.
 
