@@ -137,11 +137,17 @@ public partial class App : Application
             // Fully qualified: `Services` binds to App.Services, the IServiceProvider, not the namespace.
             var filePath = Remex.Desktop.Services.DashboardLayoutService.DefaultFilePath;
 
-            if (!File.Exists(filePath)) return;
-
-            var json = File.ReadAllText(filePath);
-            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            var profile = JsonSerializer.Deserialize<Remex.Core.Models.DashboardProfile>(json, options);
+            // READ AND MIGRATED THROUGH THE SERVICE'S OWN PATH, not a hand-built deserialize
+            // (RemEx-dbkzy). This method used to build its own JsonSerializerOptions and apply the
+            // RAW record — so for a profile written before the seed engine it painted the theme the
+            // migration exists to replace. A 2.4 Cyber-NOC user's window opened violet and turned
+            // cyan once LoadAsync landed, or opened cyan, depending on how this file read raced the
+            // window: the whole point of this method is which palette the window OPENS on, which is
+            // the phrase the bead's acceptance uses.
+            //
+            // The same argument as RemEx-mzbn one line up, one level deeper: a second reader of a
+            // file is a second opinion about what that file means, and the two drift.
+            var profile = Remex.Desktop.Services.DashboardLayoutService.ReadAndMigrate(filePath, out _);
 
             if (profile?.Customization == null) return;
 

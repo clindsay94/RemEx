@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -30,27 +31,66 @@ public class CustomizationMigrationTests
     /// BUILT FROM JSON RATHER THAN FROM THE RECORD, on purpose. Constructing a
     /// <c>CustomizationSettings</c> in C# cannot express "this key was absent" — every field gets
     /// its default whether or not 2.4 would have written one — and absence is the entire input this
-    /// migration reads. The literal below is the shape verified against
-    /// <c>git show v2.4.0:remex.core/Models/DashboardProfile.cs</c>: baseTheme, accentColor and
-    /// schemeVariant present; schemaVersion, useLightPalette and themeContrast not yet invented.
+    /// migration reads.
+    /// <para>
+    /// CAMELCASE, AND THROUGH THE SERVICE'S OWN OPTIONS. The first version of this fixture wrote
+    /// PascalCase keys and deserialised with the DEFAULT options, which agree with the property
+    /// names by coincidence — so it passed while testing a shape no real file has. The app reads
+    /// with <c>PropertyNamingPolicy = CamelCase</c>, and the one serialization contract this bead
+    /// introduces (<c>schemaVersion</c>) is exactly the one a fixture on its own options cannot pin:
+    /// rename the JSON property and every test here still passes while every profile on disk
+    /// deserialises to 0 and re-migrates forever.
+    /// </para>
+    /// <para>
+    /// Verified against <c>git show v2.4.0:remex.core/Models/DashboardProfile.cs</c>: only
+    /// <c>useLightPalette</c> and <c>schemaVersion</c> are genuinely new. <c>themeContrast</c>,
+    /// <c>themeSeedChroma</c> and <c>customAccentColors</c> all existed in 2.4 and are therefore
+    /// omitted here rather than assumed absent — an earlier revision of this comment claimed
+    /// <c>themeContrast</c> was not yet invented, which was wrong and was caught in review.
+    /// </para>
     /// </remarks>
     private static CustomizationSettings LegacyProfile(string themeId, string accent, string variant = "TonalSpot")
     {
         var json = $$"""
         {
           "baseTheme": "{{themeId}}",
-          "AccentColor": "{{accent}}",
-          "SchemeVariant": "{{variant}}",
-          "CornerRadius": 16,
-          "GlowStrength": 2
+          "accentColor": "{{accent}}",
+          "schemeVariant": "{{variant}}",
+          "cornerRadius": 16,
+          "glowStrength": 2
         }
         """;
 
-        var settings = JsonSerializer.Deserialize<CustomizationSettings>(json);
+        var settings = JsonSerializer.Deserialize<CustomizationSettings>(json, DashboardLayoutService.JsonOptions);
         settings.Should().NotBeNull();
-        settings!.SchemaVersion.Should().Be(0, "an absent schemaVersion is what marks a legacy profile");
+
+        // ANTI-VACUITY, and it is the reason to route through the real options at all: if the keys
+        // above stopped binding, every field would silently be its default and the fixture would
+        // still "work" - a legacy profile is mostly defaults.
+        settings!.AccentColor.Should().Be(accent, "the fixture must actually bind, or it tests nothing");
+        settings.ThemeId.Should().Be(themeId);
+        settings.SchemaVersion.Should().Be(0, "an absent schemaVersion is what marks a legacy profile");
         settings.UseLightPalette.Should().BeNull("2.4 had no such key, and null is what the migration reads");
         return settings;
+    }
+
+    [Fact]
+    public void TheVersionStampBindsFromRealCamelCaseJson()
+    {
+        // THE ONE SERIALIZATION CONTRACT THIS BEAD ADDS. Everything else here is a pure function on
+        // a record; this is the round trip that decides whether any of it ever runs on a real file.
+        var current = JsonSerializer.Deserialize<CustomizationSettings>(
+            $$"""{"schemaVersion": {{CustomizationMigration.CurrentSchemaVersion}}}""",
+            DashboardLayoutService.JsonOptions);
+
+        current!.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+
+        var written = JsonSerializer.Serialize(
+            new CustomizationSettings { SchemaVersion = CustomizationMigration.CurrentSchemaVersion },
+            DashboardLayoutService.JsonOptions);
+
+        written.Should().Contain("\"schemaVersion\"",
+            "a renamed key reads back as 0 on every existing profile, and re-migrates it forever");
     }
 
     // ── The acceptance criteria ──────────────────────────────────────────────────────────────
@@ -135,6 +175,36 @@ public class CustomizationMigrationTests
 
         migrated.AccentColor.Should().Be(SeedPresetCatalog.Resolve("CyberNOC").Seed);
         migrated.AccentColor.Should().NotBe(defaultAccent);
+    }
+
+    [Fact]
+    public void ADefaultVIOLETTheUserActuallyPickedIsKept_BecauseTheSwatchListSaysSo()
+    {
+        // THE SIGNAL I CLAIMED DID NOT EXIST (review finding). CustomAccentColors is the colour
+        // picker's saved-swatch list, it shipped in 2.4, and it is written only when someone picks
+        // a colour - so the default violet APPEARING in it is evidence it was chosen rather than
+        // defaulted. Without this the Monolith user below is handed Monolith's blue on upgrade,
+        // which is the exact outcome the bead forbids.
+        var defaultAccent = new CustomizationSettings().AccentColor;
+        var chosen = LegacyProfile("Monolith", defaultAccent) with
+        {
+            CustomAccentColors = new[] { "#123456", defaultAccent },
+        };
+
+        CustomizationMigration.Migrate(chosen, out _).AccentColor.Should().Be(defaultAccent);
+    }
+
+    [Fact]
+    public void ADefaultVioletWithAnEmptySwatchListStillAdoptsThePreset()
+    {
+        // THE OTHER HALF, and the reason the signal is a strict improvement rather than a trade: a
+        // profile that never opened the picker has an empty list and behaves exactly as before.
+        var defaultAccent = new CustomizationSettings().AccentColor;
+        var untouched = LegacyProfile("Monolith", defaultAccent);
+
+        untouched.CustomAccentColors.Should().BeEmpty("anti-vacuity for the test above");
+        CustomizationMigration.Migrate(untouched, out _).AccentColor
+            .Should().Be(SeedPresetCatalog.Resolve("Monolith").Seed);
     }
 
     [Fact]
@@ -285,8 +355,32 @@ public class CustomizationMigrationTests
     /// </para>
     /// </remarks>
     [Fact]
-    public void TheLoadPathMigratesBeforeItAppliesTheTheme()
+    public void MigrateProfileReportsWhetherItActuallyChangedAnything()
     {
+        // The signal the write-back is guarded on. If it were always true the app would write the
+        // profile to disk on every single launch; if it were always false the migration would never
+        // be persisted and would re-derive itself forever, which is the defect it was added for.
+        var legacy = new DashboardProfile { Customization = LegacyProfile("CyberNOC", "#00F3FF") };
+
+        DashboardLayoutService.MigrateProfile(legacy, out var legacyOutcome);
+        legacyOutcome.Changed.Should().BeTrue("a schema-0 profile is rewritten");
+
+        var current = new DashboardProfile
+        {
+            Customization = CustomizationMigration.Migrate(legacy.Customization, out _),
+        };
+
+        var unchanged = DashboardLayoutService.MigrateProfile(current, out var currentOutcome);
+        currentOutcome.Changed.Should().BeFalse("an already-current profile is left alone");
+        unchanged.Should().BeSameAs(current, "and is not even copied");
+    }
+
+    [Fact]
+    public void TheLoadPathPersistsAMigrationRatherThanRederivingItEveryLaunch()
+    {
+        // Behavioural coverage stops at MigrateProfile above: LoadAsync needs a ThemeService, which
+        // posts to a dispatcher there is no app for in this suite. So the WIRING is read from
+        // source, the same way the apply-order guard is, and for the same reason.
         var source = File.ReadAllText(Path.Combine(
             RepoRoot(), "remex.desktop", "Services", "DashboardLayoutService.cs"));
 
@@ -294,17 +388,51 @@ public class CustomizationMigrationTests
             RegexOptions.Singleline);
         body.Success.Should().BeTrue("LoadAsync moved or changed shape - this guard cannot see it");
 
-        var migrate = body.Value.IndexOf("CustomizationMigration.Migrate", StringComparison.Ordinal);
-        var apply = body.Value.IndexOf("ApplyCustomization", StringComparison.Ordinal);
+        body.Value.Should().MatchRegex(@"if \(outcome\.Changed\)\s*RequestSave\(",
+            "a migration nobody writes back is a re-derivation: the repaired seed stays corrupt on "
+            + "disk, the warning logs every launch, and the user's values follow whatever the preset "
+            + "catalogue says today rather than what it said when they upgraded");
+    }
 
-        migrate.Should().BeGreaterOrEqualTo(0, "nothing else in the app calls the migration");
-        apply.Should().BeGreaterOrEqualTo(0, "anti-vacuity: if the apply is gone this comparison means nothing");
-        migrate.Should().BeLessThan(apply, "the first frame has to be painted from migrated values");
+    [Fact]
+    public void EveryThemeApplyInTheAppIsPrecededByAMigration()
+    {
+        // THE COUNT-BASED VERSION OF THIS GUARD WAS WRONG (review finding). It asserted that
+        // LoadAsync mentions Migrate exactly twice, which fails on any legitimate third call site
+        // and reports "expected 2, found 3" rather than naming a defect. Worse, it scanned only
+        // LoadAsync - and the actual defect at the time was in App.axaml.cs, which had its own
+        // deserialize-and-apply for the pre-window paint and never migrated at all. A guard scoped
+        // to the file you were thinking about cannot see the file you were not.
+        //
+        // The property, stated once: anything that hands a persisted record to ApplyCustomization
+        // must have migrated it first. Asserted per occurrence, over every file that applies.
+        var offenders = new List<string>();
 
-        // The corrupt-profile fallback builds its own record and is a second way out of LoadAsync;
-        // a fresh profile that skipped the stamp would be re-migrated on the following launch.
-        Regex.Matches(body.Value, @"CustomizationMigration\.Migrate").Should().HaveCount(2,
-            "both exits from LoadAsync - the loaded profile and the corrupt-file fallback - migrate");
+        foreach (var relative in new[]
+                 {
+                     Path.Combine("remex.desktop", "Services", "DashboardLayoutService.cs"),
+                     Path.Combine("remex.desktop", "App.axaml.cs"),
+                 })
+        {
+            var source = File.ReadAllText(Path.Combine(RepoRoot(), relative));
+
+            var applies = Regex.Matches(source, @"ApplyCustomization\(").Select(m => m.Index).ToArray();
+            applies.Should().NotBeEmpty(
+                $"anti-vacuity: {relative} is listed here because it applies a persisted theme");
+
+            foreach (var apply in applies)
+            {
+                // MigrateProfile / ReadAndMigrate / CustomizationMigration.Migrate all count - the
+                // property is that a migration happened, not which spelling was used.
+                var migratedBefore = Regex.Matches(source[..apply], @"Migrate(Profile)?\(|ReadAndMigrate\(").Count;
+                if (migratedBefore == 0)
+                    offenders.Add($"{relative}: an ApplyCustomization at offset {apply} with no migration before it");
+            }
+        }
+
+        offenders.Should().BeEmpty(
+            "a record applied before it is migrated paints the theme the migration exists to replace, "
+            + "and on the pre-window path that decides which palette the window OPENS on");
     }
 
     [Fact]

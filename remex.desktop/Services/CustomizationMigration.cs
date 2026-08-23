@@ -83,10 +83,17 @@ public static class CustomizationMigration
     /// of these — a Cyber-NOC profile carried the default violet, the default TonalSpot and no mode
     /// at all, because the palette came from the dictionary rather than from any of them.
     /// <para>
-    /// The rule misreads one shape: someone who explicitly picked a value that happens to equal the
-    /// default — the default violet while on Monolith, say — is given Monolith's blue. Accepted
-    /// knowingly. The alternative misreads every pre-2.4 profile, which is both the larger
-    /// population and the louder failure, and there is no third signal to separate them by.
+    /// APPLIED FIELD BY FIELD, WHICH IS THE POINT RATHER THAN A CONSEQUENCE. A Cyber-NOC user with
+    /// a deliberate green accent keeps green and still adopts Vibrant, and Vibrant-green reproduces
+    /// what Cyber-NOC felt like far better than TonalSpot-green does. Deciding all four fields
+    /// together — either all preset or all profile — would be wrong in both directions.
+    /// </para>
+    /// <para>
+    /// The rule still misreads one shape: someone who explicitly picked a value that happens to
+    /// equal the default. For the SEED there is a second signal and <see cref="ResolveSeed"/> uses
+    /// it. For the variant and the contrast there is not, so a user who deliberately chose TonalSpot
+    /// on Cyber-NOC is given Vibrant. Accepted knowingly — the alternative misreads every pre-2.4
+    /// profile, which is both the larger population and the louder failure.
     /// </para>
     /// </remarks>
     private static CustomizationSettings FromPreSeedEngine(CustomizationSettings settings, ref string? warning)
@@ -130,6 +137,16 @@ public static class CustomizationMigration
     /// DAMAGE IS CHECKED BEFORE DEFAULTS, because an unusable seed is not a choice to be preserved.
     /// 2.4's accent box validated the LENGTH of the hex rather than parsing it, so <c>#FF0O00</c> —
     /// a capital O for a zero — is seven characters, saveable, and survives a restart.
+    /// <para>
+    /// THE SEED HAS A SECOND SIGNAL THAT THE OTHER FIELDS DO NOT, and it was a review finding that
+    /// this code originally claimed no such signal existed. <c>CustomAccentColors</c> is the colour
+    /// picker's saved-swatch list; it shipped in 2.4 and is written only when someone actually picks
+    /// a colour. So an accent that equals the record default AND appears in that list was chosen on
+    /// purpose, and an accent that equals the default with an empty list is a profile that never
+    /// opened the picker. That strictly shrinks the misread population — the Monolith user who
+    /// deliberately chose violet keeps violet, and the pre-2.4 profile that never chose anything
+    /// still adopts its preset's seed.
+    /// </para>
     /// </remarks>
     private static string ResolveSeed(
         CustomizationSettings settings, SeedPreset preset, CustomizationSettings defaults, ref string? warning)
@@ -141,10 +158,20 @@ public static class CustomizationMigration
             return replacement;
         }
 
-        return string.Equals(settings.AccentColor, defaults.AccentColor, StringComparison.OrdinalIgnoreCase)
-            ? preset.Seed ?? settings.AccentColor
-            : settings.AccentColor;
+        var looksUnwritten =
+            string.Equals(settings.AccentColor, defaults.AccentColor, StringComparison.OrdinalIgnoreCase)
+            && !WasPickedByHand(settings);
+
+        return looksUnwritten ? preset.Seed ?? settings.AccentColor : settings.AccentColor;
     }
+
+    /// <summary>
+    /// Whether the profile's own accent appears in the colour picker's saved-swatch list, i.e. is a
+    /// colour the user chose rather than one they were given.
+    /// </summary>
+    private static bool WasPickedByHand(CustomizationSettings settings) =>
+        settings.CustomAccentColors is { Count: > 0 } saved
+        && saved.Any(hex => string.Equals(hex, settings.AccentColor, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Whether a hex string is a seed the generator can make a readable palette from.
@@ -167,10 +194,14 @@ public static class CustomizationMigration
     /// </remarks>
     public static bool IsUsableSeed(string? hex)
     {
-        if (!Color.TryParse(hex, out var seed)) return false;
-
+        // THE PARSE IS INSIDE THE TRY DELIBERATELY. Color.TryParse is a non-throwing API and no
+        // input has been found that breaks it - but this class's contract is "must never throw" on
+        // a startup path, and every other line in it is guarded by a local check rather than by a
+        // third party's current implementation. Making the invariant structural costs nothing.
         try
         {
+            if (!Color.TryParse(hex, out var seed)) return false;
+
             // BOTH MODES, because the profile's mode is settled a few lines later and a seed that is
             // unusable in either one is a seed the user reaches by flipping a switch.
             foreach (var isDark in new[] { true, false })

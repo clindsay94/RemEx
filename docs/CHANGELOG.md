@@ -57,6 +57,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Upgrading no longer changes the colour of your app.** RemEx used to store your theme as a name —
+  "Cyber-NOC" — and look up a list of colours under it. It now stores the one colour everything is
+  generated from. Read literally, an older settings file would have handed a Cyber-NOC user the
+  default violet on their first launch after updating, which is not a change anyone asked for.
+
+  So the first time this version opens, it reads your old settings and works out the seed, scheme and
+  light-or-dark that come closest to the theme you were actually looking at, then writes those down.
+  A colour you picked yourself is kept as-is — the old name only fills in the settings you never
+  touched. It happens once; after that your settings are your settings.
+
+  If a stored value is unusable — an older build let you save a colour code with a letter O where a
+  zero should be, and it survived restarts — you now get your theme's own colour instead, and the bad
+  value is written to the log once rather than on every slider you move. (RemEx-dbkzy)
+
 - **The four PC themes stopped being four copies of the same colour list.** CyberNOC, Monolith,
   SolarFlare and BaseDarkGlass each carried their own 53 colour values, written by hand. Since RemEx
   started generating its palette from a single seed colour, every one of those values has been

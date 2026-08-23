@@ -11,11 +11,66 @@ namespace Remex.Desktop.Services;
 /// </summary>
 public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposable
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    /// <summary>
+    /// The only options a profile is ever read or written with.
+    /// </summary>
+    /// <remarks>
+    /// INTERNAL RATHER THAN PRIVATE SO THAT NOTHING HAS TO GUESS AT IT. Both the startup theme
+    /// reader and the migration tests deserialise profiles, and both used to build their own
+    /// <c>JsonSerializerOptions</c> — the tests with the defaults, which match property names only
+    /// by coincidence. A camelCase policy that lives in one place is a contract; three copies of it
+    /// is three chances for a real profile to read differently from a tested one.
+    /// </remarks>
+    internal static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
+
+    /// <summary>
+    /// Reads a profile from disk and brings its customization to the current schema. The one path
+    /// that turns bytes on disk into a profile this app will paint from.
+    /// </summary>
+    /// <remarks>
+    /// EVERY DESERIALIZE MUST COME THROUGH HERE, and it is a review finding that they did not
+    /// (RemEx-dbkzy). <c>App.ApplyThemeBeforeWindowShown</c> had its own read-and-apply so the
+    /// window could open on the saved theme rather than the default one — and it applied the RAW
+    /// record. For a 2.4 Cyber-NOC profile that means the window opens violet and turns cyan a few
+    /// milliseconds later when <see cref="LoadAsync"/> lands, or opens cyan, depending on how the
+    /// file I/O races the window: the acceptance criterion for this bead is the phrase "opens on",
+    /// and a second unmigrated reader is exactly how that fails while every test passes.
+    /// </remarks>
+    /// <returns><c>null</c> when the file does not exist. Throws on unreadable or malformed JSON.</returns>
+    internal static DashboardProfile? MigrateProfile(DashboardProfile? profile, out MigrationOutcome outcome)
+    {
+        outcome = default;
+        if (profile is null) return null;
+
+        var migrated = CustomizationMigration.Migrate(profile.Customization, out var warning);
+        outcome = new MigrationOutcome(
+            Changed: !ReferenceEquals(migrated, profile.Customization),
+            Warning: warning);
+
+        return outcome.Changed ? profile with { Customization = migrated } : profile;
+    }
+
+    /// <summary>What <see cref="MigrateProfile"/> had to do.</summary>
+    /// <param name="Changed">
+    /// Whether the record was rewritten. False means it was already current, and the caller has
+    /// nothing to persist — which is the ordinary case on every launch after the first.
+    /// </param>
+    /// <param name="Warning">A value that had to be repaired, or <c>null</c>.</param>
+    internal readonly record struct MigrationOutcome(bool Changed, string? Warning);
+
+    /// <summary>Reads a profile from disk and brings it to the current schema.</summary>
+    internal static DashboardProfile? ReadAndMigrate(string filePath, out MigrationOutcome outcome)
+    {
+        outcome = default;
+        if (!File.Exists(filePath)) return null;
+
+        return MigrateProfile(
+            JsonSerializer.Deserialize<DashboardProfile>(File.ReadAllText(filePath), JsonOptions), out outcome);
+    }
 
     private readonly string _filePath;
     private readonly ThemeService _themeService;
@@ -81,38 +136,50 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         try
         {
             DashboardProfile profile;
+            MigrationOutcome outcome;
+
             ProfileFileMissingOnLoad = !File.Exists(_filePath);
             if (ProfileFileMissingOnLoad)
             {
-                profile = new DashboardProfile();
+                profile = MigrateProfile(new DashboardProfile(), out outcome)!;
             }
             else
             {
+                // MIGRATED BEFORE THE THEME SERVICE SEES IT, not after (RemEx-dbkzy), and through
+                // the shared reader so this is not a second opinion about what a file on disk means.
                 var json = await File.ReadAllTextAsync(_filePath);
-                profile = JsonSerializer.Deserialize<DashboardProfile>(json, JsonOptions)
-                        ?? new DashboardProfile();
+                profile = MigrateProfile(
+                    JsonSerializer.Deserialize<DashboardProfile>(json, JsonOptions) ?? new DashboardProfile(),
+                    out outcome)!;
             }
 
-            // BEFORE THE THEME SERVICE SEES IT, not after (RemEx-dbkzy). A profile written before
-            // the seed engine names a theme instead of carrying a seed, and applying it literally
-            // paints a palette its owner never chose. Migrating here means the first frame is
-            // already right, rather than being wrong and then corrected once something happens to
-            // trigger a re-apply.
-            profile = profile with { Customization = CustomizationMigration.Migrate(profile.Customization, out var migrationWarning) };
-
-            // ONCE, HERE, RATHER THAN ON EVERY APPLY. ThemeService warns about an unusable seed
-            // each time it repaints, which is every drag of every slider; the occurrence that
-            // carries information is this one, and it is the only one a log can usefully hold.
-            if (migrationWarning is not null)
+            // ONCE PER LOAD, HERE, RATHER THAN ON EVERY APPLY. ThemeService warns about an unusable
+            // seed each time it repaints, which is every drag of every slider; this occurrence is
+            // the one that carries information. The write-back below is what makes it once per
+            // INSTALL rather than once per launch.
+            if (outcome.Warning is not null)
             {
-                Debug.WriteLine($"[RemexLayout] Customization migrated with repairs: {migrationWarning}");
-                Trace.TraceWarning($"DashboardLayoutService.LoadAsync: customization migrated with repairs - {migrationWarning}");
+                Debug.WriteLine($"[RemexLayout] Customization migrated with repairs: {outcome.Warning}");
+                Trace.TraceWarning($"DashboardLayoutService.LoadAsync: customization migrated with repairs - {outcome.Warning}");
             }
 
             // Apply persisted theme settings to the UI.
             _themeService.ApplyCustomization(profile.Customization);
 
             CurrentProfile = profile;
+
+            // A MIGRATION THAT IS NEVER WRITTEN BACK IS NOT A MIGRATION, IT IS A RE-DERIVATION
+            // (review finding). Nothing else persists the stamp except the Palette Studio's save, so
+            // a user who never opens that screen would re-run the legacy arm on every launch: the
+            // repaired seed would stay corrupt on disk, the warning above would log forever, and the
+            // values they end up with would follow whatever the preset catalogue says TODAY rather
+            // than what it said when they upgraded.
+            //
+            // RequestSave only arms a debounce timer, so it does not re-enter the gate this method
+            // is holding - and the guard means the ordinary launch, where nothing changed, writes
+            // nothing.
+            if (outcome.Changed) RequestSave(profile);
+
             return profile;
         }
         catch (Exception ex)
@@ -140,10 +207,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // next save does not read as schema 0. A default profile migrates to itself; what would
             // not survive is skipping the stamp, because the migration would then re-run against a
             // record that had already been written by this build.
-            var profile = new DashboardProfile
-            {
-                Customization = CustomizationMigration.Migrate(new CustomizationSettings(), out _),
-            };
+            var profile = MigrateProfile(new DashboardProfile(), out _)!;
             _themeService.ApplyCustomization(profile.Customization);
             CurrentProfile = profile;
             return profile;
