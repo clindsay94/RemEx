@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -52,20 +53,41 @@ public class DashboardLayoutSaveOrderingTests
             + "landing on top of the newer, which is how an import silently reverts");
     }
 
+    /// <summary>
+    /// A queued save reaches disk on its own, without anyone calling <c>FlushAsync</c>.
+    /// </summary>
+    /// <remarks>
+    /// ANTI-VACUITY for the test above, AND THE FIRST VERSION OF IT WAS ITSELF VACUOUS. It called
+    /// <c>FlushAsync</c> explicitly, which reads <c>_pendingProfile</c> directly — so replacing
+    /// <c>ArmDebounce()</c> with <c>null</c>, i.e. deleting the debounce timer outright, left it
+    /// green. That mutation kills how every card move reaches disk outside of shutdown, and the
+    /// test named for covering it could not see it.
+    /// <para>
+    /// So this waits for the timer rather than short-circuiting it. POLLED, NOT SLEPT: a fixed
+    /// <c>Task.Delay(DebounceMs + margin)</c> is a flake on a loaded machine and a fixed cost on an
+    /// idle one. The poll returns as soon as the write lands — about two seconds — and only spends
+    /// the full budget when the behaviour is genuinely broken, which is the run where waiting is
+    /// worth it.
+    /// </para>
+    /// </remarks>
     [Fact]
-    public async Task AQueuedSaveStillFlushesWhenNothingSupersededIt()
+    public async Task AQueuedSaveReachesDiskOnItsOwn_WithoutAnExplicitFlush()
     {
-        // ANTI-VACUITY for the test above: if CancelPendingSave were called unconditionally, or
-        // RequestSave stopped arming anything, the assertion above would pass for the wrong reason
-        // and the debounced save - which is how every card move reaches disk - would be dead.
         using var service = new DashboardLayoutService(new ThemeService());
 
         var saves = 0;
         service.ProfileSaved += () => Interlocked.Increment(ref saves);
 
         service.RequestSave(new DashboardProfile { Language = "queued" });
-        await service.FlushAsync();
 
-        saves.Should().Be(1, "a queued save with nothing after it must still reach disk");
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (Volatile.Read(ref saves) == 0 && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(50);
+        }
+
+        saves.Should().Be(1,
+            "RequestSave has to arm the debounce timer - it is how every card move reaches disk, and "
+            + "without it a layout edit survives only if something else happens to flush");
     }
 }
