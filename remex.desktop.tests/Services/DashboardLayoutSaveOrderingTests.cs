@@ -1,4 +1,7 @@
 using System;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -67,6 +70,46 @@ public class DashboardLayoutSaveOrderingTests
             + "landing on top of the newer, which is how an import silently reverts");
     }
 
+    [Theory]
+    [InlineData(null, 7L, false)]   // a direct save is never superseded
+    [InlineData(7L, 7L, false)]     // nothing happened while it waited
+    [InlineData(7L, 8L, true)]      // something did
+    [InlineData(7L, 6L, true)]      // and a mismatch in either direction counts
+    public void IsSupersededDecidesWhetherAQueuedWriteStillApplies(long? captured, long current, bool expected) =>
+        DashboardLayoutService.IsSuperseded(captured, current).Should().Be(expected);
+
+    /// <summary>
+    /// The supersede check sits AFTER the gate is acquired, not before it.
+    /// </summary>
+    /// <remarks>
+    /// THE PLACEMENT IS THE WHOLE FIX AND IT CANNOT BE TESTED BEHAVIOURALLY. The race is a debounced
+    /// write preempted between dequeuing its profile and acquiring the gate; reproducing that
+    /// through the public API needs a timing dependency, which is a flake rather than a test. So the
+    /// decision itself is pinned by the theory above and its position is pinned here — checked
+    /// before the wait it is worthless, because the gate is exactly where the ordering is decided
+    /// (SemaphoreSlim does not release FIFO).
+    /// </remarks>
+    [Fact]
+    public void TheSupersedeCheckRunsAfterTheGateIsAcquired()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            RepoRoot(), "remex.desktop", "Services", "DashboardLayoutService.cs"));
+
+        var body = Regex.Match(source, @"private async Task SaveInternalAsync\(.*?\n    \}", RegexOptions.Singleline);
+        body.Success.Should().BeTrue("SaveInternalAsync moved or changed shape - this guard cannot see it");
+
+        var wait = body.Value.IndexOf("_gate.WaitAsync()", StringComparison.Ordinal);
+        var check = body.Value.IndexOf("IsSuperseded(", StringComparison.Ordinal);
+        var write = body.Value.IndexOf("File.WriteAllTextAsync", StringComparison.Ordinal);
+
+        wait.Should().BeGreaterOrEqualTo(0);
+        check.Should().BeGreaterOrEqualTo(0, "the staleness check has to exist to be positioned");
+        write.Should().BeGreaterOrEqualTo(0, "anti-vacuity: without the write these offsets mean nothing");
+
+        check.Should().BeGreaterThan(wait, "checked before the wait, it answers a question that is already stale");
+        check.Should().BeLessThan(write, "and it has to answer it before the bytes go out");
+    }
+
     /// <summary>
     /// A queued save reaches disk on its own, without anyone calling <c>FlushAsync</c>.
     /// </summary>
@@ -104,4 +147,9 @@ public class DashboardLayoutSaveOrderingTests
             "RequestSave has to arm the debounce timer - it is how every card move reaches disk, and "
             + "without it a layout edit survives only if something else happens to flush");
     }
+
+    // [CallerFilePath] rather than walking up from the assembly, so building with --artifacts-path
+    // outside the repo does not break this with an unrelated-looking error (RemEx-6i1l).
+    private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
+        => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 }

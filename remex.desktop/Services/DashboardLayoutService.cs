@@ -344,6 +344,21 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         await SaveInternalAsync(profile, generation);
     }
 
+    /// <summary>
+    /// Whether a captured save generation has been overtaken. <c>null</c> is a direct save, which is
+    /// never superseded.
+    /// </summary>
+    /// <remarks>
+    /// EXTRACTED SO IT IS NOT WHOLLY UNTESTED. The race it guards - a debounced write preempted
+    /// between dequeue and gate acquisition, then overtaken by a direct save - cannot be reproduced
+    /// deterministically through the public API without a timing dependency, which is a flake rather
+    /// than a test. Splitting the decision out means the LOGIC is pinned by assertion and only the
+    /// one-line placement rests on review; the placement is what the source guard in
+    /// DashboardLayoutSaveOrderingTests covers.
+    /// </remarks>
+    internal static bool IsSuperseded(long? captured, long current) =>
+        captured is { } c && current != c;
+
     private async Task SaveInternalAsync(DashboardProfile profile, long? generation)
     {
         // THE WAIT IS INSIDE THE TRY. It was outside, so an ObjectDisposedException from a gate
@@ -360,7 +375,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // SUPERSEDED WHILE IT WAITED. Re-checked here rather than before the wait, because the
             // gate is where the ordering is actually decided - SemaphoreSlim does not release FIFO,
             // so two correctly sequenced waiters can still land out of order.
-            if (generation is { } captured && Volatile.Read(ref _saveGeneration) != captured) return;
+            if (IsSuperseded(generation, Volatile.Read(ref _saveGeneration))) return;
 
             var json = JsonSerializer.Serialize(profile, JsonOptions);
             await File.WriteAllTextAsync(_filePath, json);
