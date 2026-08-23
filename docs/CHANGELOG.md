@@ -65,10 +65,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   So the first time this version opens, it reads your old settings and works out the seed, scheme and
   light-or-dark that come closest to the theme you were actually looking at, then writes those down.
   A colour you picked yourself is kept as-is — the old name only fills in the settings you never
-  touched. It happens once; after that your settings are your settings.
+  touched, and if a colour is in your saved swatches then you picked it, even if it happens to be the
+  one RemEx ships with. It genuinely happens once: the result is saved back, so after that your
+  settings are your settings and later changes to the built-in presets leave you alone.
+
+  The window also opens on the right colours rather than correcting itself a moment after it appears.
+  RemEx reads your theme once before the window is shown so it does not flash the default first, and
+  that early read now goes through the same path as everything else.
 
   If a stored value is unusable — an older build let you save a colour code with a letter O where a
-  zero should be, and it survived restarts — you now get your theme's own colour instead, and the bad
+  zero should be, and it survived restarts — you get your theme's own colour instead, and the bad
   value is written to the log once rather than on every slider you move. (RemEx-dbkzy)
 
 - **The four PC themes stopped being four copies of the same colour list.** CyberNOC, Monolith,
