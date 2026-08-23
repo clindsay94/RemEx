@@ -19,6 +19,12 @@ namespace Remex.Desktop.Models;
 /// Stable identifier, persisted as <c>CustomizationSettings.ThemeId</c>. The four homage ids match
 /// the old <see cref="AppTheme"/> member names EXACTLY, because existing profiles on disk carry
 /// those strings and must keep resolving to the same preset.
+/// <para>
+/// THE ID IS NOT THE NAME, AND THAT SPLIT IS WHY THE RENAME COST NOTHING. Cyber-NOC became Neon,
+/// Solar-Flare became Ember, Monolith became Slate and Standard Glass became Glass — all four are
+/// still stored as the id they always were, so no profile needed migrating and no upgrade path
+/// could silently reset someone's theme. Rename display names freely; NEVER rename an id.
+/// </para>
 /// </param>
 /// <param name="NameKey">Localization key for the display name.</param>
 /// <param name="BaseTheme">
@@ -72,21 +78,24 @@ public static class SeedPresetCatalog
         // presets never used to write at all. Each variant below is the one that reproduces the
         // retired dictionary's character: hard cyan on near-black wants Vibrant, graphite wants
         // Spritz (the low-chroma style), and the two that were always ordinary stay on TonalSpot.
+        //
+        // The ids read Cyber-NOC / Solar-Flare / Monolith / BaseDarkGlass; the names read Neon,
+        // Ember, Slate, Glass. Deliberate — see the Id remarks above.
 
-        new("BaseDarkGlass", "Custom_PresetStandardGlass", AppTheme.BaseDarkGlass,
+        new("BaseDarkGlass", "Custom_PresetGlass", AppTheme.BaseDarkGlass,
             Seed: "#6C4CFF", SchemeVariant: "TonalSpot", IsLight: false, Contrast: 0.0,
             CornerRadius: 16, RemoteCardCornerRadius: 24, GlowStrength: 2, GlassOpacity: 0.1,
             SplashStyle: "RemexCommand"),
 
-        new("CyberNOC", "Custom_PresetCyberNOC", AppTheme.CyberNOC,
+        new("CyberNOC", "Custom_PresetNeon", AppTheme.CyberNOC,
             Seed: "#00F3FF", SchemeVariant: "Vibrant", IsLight: false, Contrast: 0.0,
             CornerRadius: 2, RemoteCardCornerRadius: 4, GlowStrength: 10, GlassOpacity: 0.05),
 
-        new("SolarFlare", "Custom_PresetSolarFlare", AppTheme.SolarFlare,
+        new("SolarFlare", "Custom_PresetEmber", AppTheme.SolarFlare,
             Seed: "#FFB800", SchemeVariant: "TonalSpot", IsLight: true, Contrast: 0.0,
             CornerRadius: 24, RemoteCardCornerRadius: 48, GlowStrength: 2, GlassOpacity: 0.8),
 
-        new("Monolith", "Custom_PresetMonolith", AppTheme.Monolith,
+        new("Monolith", "Custom_PresetSlate", AppTheme.Monolith,
             Seed: "#0A84FF", SchemeVariant: "Spritz", IsLight: false, Contrast: 0.0,
             CornerRadius: 8, RemoteCardCornerRadius: 12, GlowStrength: 0, GlassOpacity: 1.0),
 

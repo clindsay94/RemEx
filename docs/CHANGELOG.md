@@ -93,12 +93,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **The preset row in Personalize is now a gallery of eight, and each card is painted in the theme it
-  gives you.** Cyber-NOC, Solar-Flare, Monolith and Standard Glass are all still there, under the same
-  names, looking the way they did — they are just one line of settings each now instead of a file of
-  colour codes, which is what made room for the rest. Daybreak is a proper light mode, neutral rather
-  than the warm cream of Solar-Flare. Voltage is loud on purpose. Sorbet is pastel. Dynamic still means
-  "the colour I chose myself" and is the one card that leaves your seed, your scheme and your light or
-  dark setting alone.
+  gives you.** All four of the old themes are still there and still look the way they did, under
+  shorter names: Cyber-NOC is now Neon, Solar-Flare is Ember, Monolith is Slate, and Standard Glass is
+  Glass. Nothing about them changed but the label — if you were on one of them, you still are. They
+  are one line of settings each now instead of a file of colour codes, which is what made room for the
+  rest. Daybreak is a proper light mode, neutral rather than the warm cream of Ember. Voltage is loud
+  on purpose. Sorbet is pastel. Dynamic still means "the colour I chose myself" and is the one card
+  that leaves your seed, your scheme and your light or dark setting alone.
 
   The cards are not pictures of the themes, they are the themes: each one is generated from its own
   seed and drawn with its own surface, outline and text colours. So a card shows you the real contrast

@@ -36,7 +36,7 @@
              THREE COLUMNS, NOT FIVE, AND THAT IS A MEASUREMENT. This panel is hosted in the
              Personalize drawer at roughly 300px. Five columns was already tight for four presets
              and a Dynamic tile; the catalog ships eight, and at five columns each tile is ~52px -
-             narrower than the word "Monolith" at any legible size. Three gives ~92px and three
+             narrower than the word "Daybreak" at any legible size. Three gives ~92px and three
              rows, which the drawer scrolls. -->
         <ItemsControl ItemsSource="{Binding ThemePresets}">
             <ItemsControl.ItemsPanel>
