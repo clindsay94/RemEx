@@ -85,10 +85,31 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     private DashboardProfile? _pendingProfile;
 
     /// <summary>
-    /// Guards <see cref="_debounceTimer"/> and <see cref="_pendingProfile"/>, which are written from
-    /// the caller's thread and from the timer callback's.
+    /// Guards <see cref="_debounceTimer"/>, <see cref="_pendingProfile"/> and
+    /// <see cref="_saveGeneration"/>, which are written from the caller's thread and from the timer
+    /// callback's.
     /// </summary>
     private readonly object _saveQueueLock = new();
+
+    /// <summary>
+    /// Bumped whenever the save queue changes. A debounced write captures it and re-checks it after
+    /// acquiring <see cref="_gate"/>; a mismatch means something superseded it while it waited.
+    /// </summary>
+    /// <remarks>
+    /// CANCELLING THE QUEUE IS NOT ENOUGH ON ITS OWN, and the reason is a review finding.
+    /// <see cref="FlushAsync"/> takes the pending profile and clears the fields under the lock, then
+    /// awaits the write OUTSIDE it - so between those two points the profile exists only as a local
+    /// and <see cref="CancelPendingSave"/> has nothing left to null out. A savefile import landing
+    /// in that window finds an empty queue, cancels nothing, and both writes race for the gate;
+    /// SemaphoreSlim is not FIFO, so the older profile can land on top of the import. That is the
+    /// same silent revert the cancel was added to stop, with the window cut from two seconds to the
+    /// length of a preemption rather than closed.
+    /// <para>
+    /// A generation captured before the wait and re-checked after it decides the order under the
+    /// gate, which is the only place that decision is actually safe to make.
+    /// </para>
+    /// </remarks>
+    private long _saveGeneration;
     private const int DebounceMs = 2000;
 
     /// <summary>
@@ -251,7 +272,11 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         // same shape - but RemEx-dbkzy's load-time write-back arms that timer on every launch of an
         // unmigrated profile, which turns a rare race into a routine one.
         CancelPendingSave();
-        return SaveInternalAsync(profile);
+
+        // NO GENERATION: a direct save is the caller's explicit instruction and always writes. Only
+        // the debounced path can be superseded, because only it represents an intention the user has
+        // already moved on from.
+        return SaveInternalAsync(profile, generation: null);
     }
 
     /// <summary>
@@ -262,6 +287,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     {
         lock (_saveQueueLock)
         {
+            _saveGeneration++;
             _pendingProfile = null;
             _debounceTimer?.Dispose();
             _debounceTimer = null;
@@ -278,6 +304,7 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
 
         lock (_saveQueueLock)
         {
+            _saveGeneration++;
             _pendingProfile = profile;
             _debounceTimer?.Dispose();
             _debounceTimer = ArmDebounce();
@@ -300,11 +327,13 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     public async Task FlushAsync()
     {
         DashboardProfile? profile;
+        long generation;
         lock (_saveQueueLock)
         {
             // TAKEN AND CLEARED UNDER THE SAME LOCK. Read-then-clear outside one lets a SaveAsync
             // land between the two and be overwritten by the very profile it superseded.
             profile = _pendingProfile;
+            generation = _saveGeneration;
             _pendingProfile = null;
             _debounceTimer?.Dispose();
             _debounceTimer = null;
@@ -312,14 +341,27 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
 
         if (profile is null) return;
 
-        await SaveInternalAsync(profile);
+        await SaveInternalAsync(profile, generation);
     }
 
-    private async Task SaveInternalAsync(DashboardProfile profile)
+    private async Task SaveInternalAsync(DashboardProfile profile, long? generation)
     {
-        await _gate.WaitAsync();
+        // THE WAIT IS INSIDE THE TRY. It was outside, so an ObjectDisposedException from a gate
+        // disposed while a debounced write was in flight bypassed the only diagnostic on this path
+        // and surfaced at FireAndForget, which has no logger here and falls back to a
+        // Debug.WriteLine that compiles out of Release. Silent, on the path that persists the
+        // user's layout.
+        var acquired = false;
         try
         {
+            await _gate.WaitAsync();
+            acquired = true;
+
+            // SUPERSEDED WHILE IT WAITED. Re-checked here rather than before the wait, because the
+            // gate is where the ordering is actually decided - SemaphoreSlim does not release FIFO,
+            // so two correctly sequenced waiters can still land out of order.
+            if (generation is { } captured && Volatile.Read(ref _saveGeneration) != captured) return;
+
             var json = JsonSerializer.Serialize(profile, JsonOptions);
             await File.WriteAllTextAsync(_filePath, json);
 
@@ -339,13 +381,44 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
         }
         finally
         {
-            _gate.Release();
+            if (acquired) _gate.Release();
         }
     }
 
     public void Dispose()
     {
-        _debounceTimer?.Dispose();
+        // UNDER THE LOCK, LIKE EVERY OTHER READER OF THESE FIELDS. Unguarded, Dispose could read
+        // _debounceTimer during the window where RequestSave has disposed the old timer and not yet
+        // assigned the new one - disposing nothing, and leaving a live timer armed on a disposed
+        // service to fault against a disposed gate two seconds later.
+        DashboardProfile? dropped;
+        lock (_saveQueueLock)
+        {
+            _saveGeneration++;
+            dropped = _pendingProfile;
+            _pendingProfile = null;
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+        }
+
+        // A DROPPED QUEUE IS A LOST EDIT, and since the migration write-back it can be the schema
+        // stamp itself - closing the app within the debounce window of a migrating launch would
+        // silently re-migrate on the next one, contradicting the "once per install" claim in
+        // LoadAsync. Dispose cannot await, so this is a synchronous best-effort write rather than a
+        // flush: the callers that matter (CanvasDashboardViewModel, SettingsViewModel) already
+        // FlushAsync before shutdown, and this is the backstop for the ones that do not.
+        if (dropped is not null)
+        {
+            try
+            {
+                File.WriteAllText(_filePath, JsonSerializer.Serialize(dropped, JsonOptions));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[RemexPersistence] ERROR draining the save queue on dispose: {ex.Message}");
+            }
+        }
+
         _gate.Dispose();
     }
 }

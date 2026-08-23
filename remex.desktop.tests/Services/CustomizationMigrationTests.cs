@@ -443,10 +443,25 @@ public class CustomizationMigrationTests
             applies.Should().NotBeEmpty(
                 $"anti-vacuity: {relative} is listed here because it applies a persisted theme");
 
+            var typeBraces = TypeBodyBraces(source);
+
             foreach (var apply in applies)
             {
                 var body = EnclosingBody(source, apply);
                 body.Should().NotBeNull($"{relative}: no enclosing method body found around offset {apply}");
+
+                // THE THIRD WAY THIS GUARD COULD PASS WHILE THE PROPERTY IS VIOLATED, found in
+                // review before it was reachable. An expression-bodied member has no brace, so the
+                // backward walk runs straight past it to the CLASS brace — and the class body
+                // contains the declarations of MigrateProfile and ReadAndMigrate, which is exactly
+                // the vacuity the brace matching was introduced to remove. This file already uses
+                // `=>` bodies for DefaultFilePath, FilePathForTests and ArmDebounce, so it is the
+                // shape a future edit will take. Failing loudly beats widening silently.
+                typeBraces.Should().NotContain(body!.Value.Start,
+                    $"{relative}: the apply at offset {apply} resolved to a TYPE body, not a method "
+                    + "body - an expression-bodied member cannot be scoped by brace matching, so "
+                    + "give it a braced body or teach EnclosingBody about '=>'");
+
                 examined++;
 
                 // MigrateProfile / ReadAndMigrate / CustomizationMigration.Migrate all count — the
@@ -505,6 +520,12 @@ public class CustomizationMigrationTests
 
         return null;
     }
+
+    /// <summary>The opening brace of every type body in the file.</summary>
+    private static int[] TypeBodyBraces(string source) =>
+        Regex.Matches(source, @"\b(?:class|struct|record|interface)\b[^;{}()]*\{")
+            .Select(m => m.Index + m.Length - 1)
+            .ToArray();
 
     private static int MatchingClose(string source, int open)
     {

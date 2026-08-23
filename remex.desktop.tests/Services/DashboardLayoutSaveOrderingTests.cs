@@ -22,10 +22,24 @@ namespace Remex.Desktop.Tests.Services;
 /// turns a rare race into a routine one. That is what made it worth fixing here.
 /// </para>
 /// <para>
-/// ASSERTED ON THE ProfileSaved COUNT RATHER THAN ON THE FILE'S CONTENT, deliberately. Several test
-/// classes construct this service and they share one redirected <c>dashboard_layout.json</c>; xUnit
-/// runs classes in parallel, so a content assertion would be a flake waiting for a busy machine.
-/// The event is raised by this instance, for this instance's writes, and counts them exactly.
+/// ASSERTED ON THE ProfileSaved COUNT RATHER THAN ON THE FILE'S CONTENT, deliberately — and the
+/// first version of this remark gave the wrong reason for it. It claimed xUnit runs classes in
+/// parallel here; it does not. <c>AssemblyInfo.cs</c> carries
+/// <c>[assembly: CollectionBehavior(DisableTestParallelization = true)]</c>, added for the
+/// <c>LocalizationService</c> singleton (RemEx-6s34), so this assembly is sequential. This repo has
+/// already shipped a defect from a comment asserting a false threading fact (RemEx-rbfq), which is
+/// why the correction is worth more than the deletion.
+/// <para>
+/// The real reason is scope: the event is raised by THIS instance for THIS instance's writes, so it
+/// counts exactly the thing under test, while several other classes construct the service against
+/// the same redirected <c>dashboard_layout.json</c> and a content assertion would be measuring a
+/// file none of us owns.
+/// </para>
+/// <para>
+/// One limit worth knowing: <c>SaveInternalAsync</c> swallows write failures before raising
+/// <c>ProfileSaved</c>, so "no event" means either "the fix works" or "the write threw". The poll
+/// below would report the second as the first.
+/// </para>
 /// </para>
 /// </remarks>
 public class DashboardLayoutSaveOrderingTests
