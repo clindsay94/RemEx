@@ -388,25 +388,48 @@ public class CustomizationMigrationTests
             RegexOptions.Singleline);
         body.Success.Should().BeTrue("LoadAsync moved or changed shape - this guard cannot see it");
 
-        body.Value.Should().MatchRegex(@"if \(outcome\.Changed\)\s*RequestSave\(",
+        body.Value.Should().MatchRegex(@"if \(outcome\.Changed[^)]*\)\s*RequestSave\(",
             "a migration nobody writes back is a re-derivation: the repaired seed stays corrupt on "
             + "disk, the warning logs every launch, and the user's values follow whatever the preset "
             + "catalogue says today rather than what it said when they upgraded");
+
+        // AND NOT ON A FRESH INSTALL. A default profile is always schema 0, so it always reports
+        // Changed - writing it would raise ProfileSaved on first launch, which arms the savefile
+        // service's snapshot debounce, which autosnapshots the empty default and prunes a real
+        // backup from the previous install out of the rolling five (review finding).
+        body.Value.Should().MatchRegex(@"if \(outcome\.Changed && !ProfileFileMissingOnLoad\)",
+            "a brand-new profile has nothing worth persisting and a write costs a stale backup");
     }
 
+    /// <summary>
+    /// Anything that hands a persisted record to <c>ApplyCustomization</c> migrated it first, in the
+    /// same method.
+    /// </summary>
+    /// <remarks>
+    /// THIS GUARD HAS NOW BEEN WRONG TWICE, IN OPPOSITE DIRECTIONS, AND BOTH WAYS ARE WORTH KEEPING
+    /// WRITTEN DOWN.
+    /// <list type="number">
+    /// <item>V1 scanned only <c>LoadAsync</c> and asserted an occurrence COUNT. It passed while the
+    /// real defect sat in <c>App.axaml.cs</c>, which had its own deserialize-and-apply for the
+    /// pre-window paint and never migrated at all. A guard scoped to the file you were thinking
+    /// about cannot see the file you were not.</item>
+    /// <item>V2 fixed the scope and broke the scope. It searched <c>source[..apply]</c> — the whole
+    /// file before the call — so the DECLARATIONS of <c>MigrateProfile(</c> and
+    /// <c>ReadAndMigrate(</c>, which sit near the top of <c>DashboardLayoutService.cs</c>, satisfied
+    /// it for every apply in that file forever. Emptying <c>LoadAsync</c>'s migration entirely left
+    /// it green. A guard that cannot fail for the reason its name gives is worse than a deleted
+    /// one, because it reads as coverage.</item>
+    /// </list>
+    /// So the scope is now the ENCLOSING METHOD, found by brace matching rather than by a regex
+    /// window — that distinction cost three vacuous tests on RemEx-5u0vy and is the same mistake.
+    /// The anti-vacuity assertions at the end are what would have caught V2: they demand that the
+    /// scan actually located bodies and applies, in a known quantity.
+    /// </remarks>
     [Fact]
-    public void EveryThemeApplyInTheAppIsPrecededByAMigration()
+    public void EveryThemeApplyInTheAppIsPrecededByAMigrationInTheSameMethod()
     {
-        // THE COUNT-BASED VERSION OF THIS GUARD WAS WRONG (review finding). It asserted that
-        // LoadAsync mentions Migrate exactly twice, which fails on any legitimate third call site
-        // and reports "expected 2, found 3" rather than naming a defect. Worse, it scanned only
-        // LoadAsync - and the actual defect at the time was in App.axaml.cs, which had its own
-        // deserialize-and-apply for the pre-window paint and never migrated at all. A guard scoped
-        // to the file you were thinking about cannot see the file you were not.
-        //
-        // The property, stated once: anything that hands a persisted record to ApplyCustomization
-        // must have migrated it first. Asserted per occurrence, over every file that applies.
         var offenders = new List<string>();
+        var examined = 0;
 
         foreach (var relative in new[]
                  {
@@ -422,17 +445,77 @@ public class CustomizationMigrationTests
 
             foreach (var apply in applies)
             {
-                // MigrateProfile / ReadAndMigrate / CustomizationMigration.Migrate all count - the
+                var body = EnclosingBody(source, apply);
+                body.Should().NotBeNull($"{relative}: no enclosing method body found around offset {apply}");
+                examined++;
+
+                // MigrateProfile / ReadAndMigrate / CustomizationMigration.Migrate all count — the
                 // property is that a migration happened, not which spelling was used.
-                var migratedBefore = Regex.Matches(source[..apply], @"Migrate(Profile)?\(|ReadAndMigrate\(").Count;
-                if (migratedBefore == 0)
-                    offenders.Add($"{relative}: an ApplyCustomization at offset {apply} with no migration before it");
+                //
+                // NO LOOKBEHIND EXCLUDING DECLARATIONS, because the body scoping already does that
+                // and does it properly: a C# method declaration cannot appear inside another
+                // method's body. The first attempt at this line DID carry one — `(?<=[=(,]\s*)` —
+                // and it silently failed to match the one fully-qualified call in App.axaml.cs,
+                // where the character before the name is a '.'. Two mechanisms for one job, and the
+                // redundant one was the broken one.
+                var before = body!.Value.Text[..(apply - body.Value.Start)];
+                var migrated = Regex.IsMatch(
+                    before, @"\b(CustomizationMigration\.Migrate|MigrateProfile|ReadAndMigrate)\(");
+
+                if (!migrated)
+                    offenders.Add($"{relative}: an ApplyCustomization at offset {apply} with no migration before it in the same method");
             }
         }
 
         offenders.Should().BeEmpty(
             "a record applied before it is migrated paints the theme the migration exists to replace, "
             + "and on the pre-window path that decides which palette the window OPENS on");
+
+        // ANTI-VACUITY, and the half that would have caught the version of this guard that could not
+        // fail: three apply sites exist today — LoadAsync's success path, LoadAsync's corrupt-file
+        // path, and App.ApplyThemeBeforeWindowShown. Fewer means the scan stopped finding them.
+        examined.Should().BeGreaterOrEqualTo(3, "the scan must actually reach every apply site");
+    }
+
+    /// <summary>The brace-matched body of the method containing <paramref name="index"/>.</summary>
+    /// <remarks>
+    /// A REGEX WINDOW IS NOT A SCOPE (RemEx-5u0vy, where a fixed 1200-character "method body" quietly
+    /// swallowed the two handlers below an empty one). Walking braces outward is the only way to get
+    /// the real extent, and it is about ten lines.
+    /// </remarks>
+    private static (int Start, string Text)? EnclosingBody(string source, int index)
+    {
+        var depth = 0;
+        for (var i = index; i >= 0; i--)
+        {
+            if (source[i] == '}') depth++;
+            else if (source[i] == '{')
+            {
+                if (depth == 0)
+                {
+                    // Found the opening brace of the innermost block containing index. Walk forward
+                    // to its match so the body has a real end as well as a real start.
+                    var close = MatchingClose(source, i);
+                    return close < 0 ? null : (i, source[i..close]);
+                }
+
+                depth--;
+            }
+        }
+
+        return null;
+    }
+
+    private static int MatchingClose(string source, int open)
+    {
+        var depth = 0;
+        for (var i = open; i < source.Length; i++)
+        {
+            if (source[i] == '{') depth++;
+            else if (source[i] == '}' && --depth == 0) return i;
+        }
+
+        return -1;
     }
 
     [Fact]

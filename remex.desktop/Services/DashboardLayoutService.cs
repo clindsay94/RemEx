@@ -28,19 +28,12 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     };
 
     /// <summary>
-    /// Reads a profile from disk and brings its customization to the current schema. The one path
-    /// that turns bytes on disk into a profile this app will paint from.
+    /// Brings a profile's customization to the current schema. A pure transform — it touches no disk.
     /// </summary>
-    /// <remarks>
-    /// EVERY DESERIALIZE MUST COME THROUGH HERE, and it is a review finding that they did not
-    /// (RemEx-dbkzy). <c>App.ApplyThemeBeforeWindowShown</c> had its own read-and-apply so the
-    /// window could open on the saved theme rather than the default one — and it applied the RAW
-    /// record. For a 2.4 Cyber-NOC profile that means the window opens violet and turns cyan a few
-    /// milliseconds later when <see cref="LoadAsync"/> lands, or opens cyan, depending on how the
-    /// file I/O races the window: the acceptance criterion for this bead is the phrase "opens on",
-    /// and a second unmigrated reader is exactly how that fails while every test passes.
-    /// </remarks>
-    /// <returns><c>null</c> when the file does not exist. Throws on unreadable or malformed JSON.</returns>
+    /// <returns>
+    /// The same instance when nothing needed changing, a rewritten copy otherwise, and <c>null</c>
+    /// for a <c>null</c> input. <paramref name="outcome"/> says which.
+    /// </returns>
     internal static DashboardProfile? MigrateProfile(DashboardProfile? profile, out MigrationOutcome outcome)
     {
         outcome = default;
@@ -62,7 +55,20 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// <param name="Warning">A value that had to be repaired, or <c>null</c>.</param>
     internal readonly record struct MigrationOutcome(bool Changed, string? Warning);
 
-    /// <summary>Reads a profile from disk and brings it to the current schema.</summary>
+    /// <summary>
+    /// Reads a profile from disk and brings its customization to the current schema. The one path
+    /// that turns bytes on disk into a profile this app will paint from.
+    /// </summary>
+    /// <remarks>
+    /// EVERY DESERIALIZE MUST COME THROUGH HERE, and it is a review finding that they did not
+    /// (RemEx-dbkzy). <c>App.ApplyThemeBeforeWindowShown</c> had its own read-and-apply so the
+    /// window could open on the saved theme rather than the default one — and it applied the RAW
+    /// record. For a 2.4 Cyber-NOC profile that means the window opens violet and turns cyan a few
+    /// milliseconds later when <see cref="LoadAsync"/> lands, or opens cyan, depending on how the
+    /// file I/O races the window: the acceptance criterion for this bead is the phrase "opens on",
+    /// and a second unmigrated reader is exactly how that fails while every test passes.
+    /// </remarks>
+    /// <returns><c>null</c> when the file does not exist. Throws on unreadable or malformed JSON.</returns>
     internal static DashboardProfile? ReadAndMigrate(string filePath, out MigrationOutcome outcome)
     {
         outcome = default;
@@ -77,6 +83,12 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Timer? _debounceTimer;
     private DashboardProfile? _pendingProfile;
+
+    /// <summary>
+    /// Guards <see cref="_debounceTimer"/> and <see cref="_pendingProfile"/>, which are written from
+    /// the caller's thread and from the timer callback's.
+    /// </summary>
+    private readonly object _saveQueueLock = new();
     private const int DebounceMs = 2000;
 
     /// <summary>
@@ -178,7 +190,16 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             // RequestSave only arms a debounce timer, so it does not re-enter the gate this method
             // is holding - and the guard means the ordinary launch, where nothing changed, writes
             // nothing.
-            if (outcome.Changed) RequestSave(profile);
+            //
+            // NOT ON A FRESH INSTALL, and that exclusion is a review finding rather than an
+            // optimisation. SchemaVersion defaults to 0, so a brand-new DashboardProfile always
+            // takes the schema-0 arm and reports Changed - meaning first launch would write a
+            // profile with nothing in it to preserve. That write raises ProfileSaved, which arms the
+            // savefile service's snapshot debounce, which 30 seconds later autosnapshots the empty
+            // default AND prunes to the newest five - deleting a real backup from the previous
+            // install while the restore prompt is still open. Skipping the stamp here costs one
+            // no-op migration on the next launch and nothing else.
+            if (outcome.Changed && !ProfileFileMissingOnLoad) RequestSave(profile);
 
             return profile;
         }
@@ -221,7 +242,30 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// <inheritdoc />
     public Task SaveAsync(DashboardProfile profile)
     {
+        // A DIRECT SAVE SUPERSEDES A QUEUED ONE, BY DEFINITION - and until this line it did not.
+        // SaveInternalAsync wrote the file and left _pendingProfile armed, so a debounced write
+        // queued up to two seconds earlier would fire afterwards and put the older profile back.
+        // The reachable case is the savefile import (RemexSavefileService.ImportDashboardLayoutAsync
+        // calls this directly): the import lands, the stale timer fires, and the restore silently
+        // reverts on disk with nothing logged. Pre-existing - a card drag racing an import has the
+        // same shape - but RemEx-dbkzy's load-time write-back arms that timer on every launch of an
+        // unmigrated profile, which turns a rare race into a routine one.
+        CancelPendingSave();
         return SaveInternalAsync(profile);
+    }
+
+    /// <summary>
+    /// Drops any queued debounced write. Held under <see cref="_saveQueueLock"/> because the timer
+    /// callback and the caller's thread both touch these two fields.
+    /// </summary>
+    private void CancelPendingSave()
+    {
+        lock (_saveQueueLock)
+        {
+            _pendingProfile = null;
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+        }
     }
 
     /// <summary>
@@ -230,18 +274,24 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// </summary>
     public void RequestSave(DashboardProfile profile)
     {
-        _pendingProfile = profile;
         CurrentProfile = profile;
 
-        _debounceTimer?.Dispose();
-        _debounceTimer = new Timer(
+        lock (_saveQueueLock)
+        {
+            _pendingProfile = profile;
+            _debounceTimer?.Dispose();
+            _debounceTimer = ArmDebounce();
+        }
+    }
+
+    private Timer ArmDebounce() =>
+        new Timer(
             // A timer callback cannot await, and a dropped fault here means the debounced save
             // never happened and nothing said so - the user loses the layout they just edited.
             _ => FlushAsync().FireAndForget("flush the debounced dashboard layout save"),
             null,
             DebounceMs,
             Timeout.Infinite);
-    }
 
     /// <summary>
     /// Forces any pending debounced write to disk immediately.
@@ -249,12 +299,18 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
     /// </summary>
     public async Task FlushAsync()
     {
-        var profile = _pendingProfile;
-        if (profile is null) return;
+        DashboardProfile? profile;
+        lock (_saveQueueLock)
+        {
+            // TAKEN AND CLEARED UNDER THE SAME LOCK. Read-then-clear outside one lets a SaveAsync
+            // land between the two and be overwritten by the very profile it superseded.
+            profile = _pendingProfile;
+            _pendingProfile = null;
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+        }
 
-        _pendingProfile = null;
-        _debounceTimer?.Dispose();
-        _debounceTimer = null;
+        if (profile is null) return;
 
         await SaveInternalAsync(profile);
     }
