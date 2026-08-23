@@ -606,6 +606,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         var settings = new CustomizationSettings
         {
+            // WITHOUT THIS LINE THE MIGRATION RE-RUNS ON EVERY LAUNCH. The record's default is 0,
+            // which means "written before the seed engine", so a save that forgets to stamp the
+            // version hands the next startup a profile that looks legacy - and the legacy arm
+            // adopts the preset's variant and contrast over the user's, silently, forever
+            // (RemEx-dbkzy).
+            SchemaVersion = CustomizationMigration.CurrentSchemaVersion,
+
             ThemeId = SelectedPresetId,
             ThemeContrast = Math.Clamp(ThemeContrast, -1.0, 1.0),
 

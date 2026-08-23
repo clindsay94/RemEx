@@ -174,6 +174,26 @@ public record ConnectionProfile
 /// </summary>
 public record CustomizationSettings
 {
+    /// <summary>
+    /// Which shape of this record was written. <c>0</c> — the value an absent key deserialises to —
+    /// means "written before the seed engine existed".
+    /// </summary>
+    /// <remarks>
+    /// THE ONLY HONEST WAY TO ASK "HAS THIS PROFILE BEEN MIGRATED YET". Every other signal is
+    /// ambiguous: an absent <c>ThemeContrast</c> and a deliberate 0.0 deserialise to the same
+    /// double, an absent <c>SchemeVariant</c> and a deliberate TonalSpot to the same string. A
+    /// migration that guesses from those either re-runs on every launch — overwriting the user's
+    /// choices with the preset's every time — or never runs at all. A version stamp is one integer
+    /// and it makes the question exact.
+    /// <para>
+    /// The desktop owns the migration itself, because deciding what a legacy <c>ThemeId</c> means
+    /// requires the preset catalogue and the palette generator, both of which live there. This
+    /// record only carries the stamp. See <c>Remex.Desktop.Services.CustomizationMigration</c>.
+    /// </para>
+    /// </remarks>
+    [JsonPropertyName("schemaVersion")]
+    public int SchemaVersion { get; init; }
+
     /// <summary>Identifier for the selected presentation style.</summary>
     [JsonPropertyName("baseTheme")]
     public string ThemeId { get; init; } = "BaseDarkGlass";

@@ -93,6 +93,22 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
                         ?? new DashboardProfile();
             }
 
+            // BEFORE THE THEME SERVICE SEES IT, not after (RemEx-dbkzy). A profile written before
+            // the seed engine names a theme instead of carrying a seed, and applying it literally
+            // paints a palette its owner never chose. Migrating here means the first frame is
+            // already right, rather than being wrong and then corrected once something happens to
+            // trigger a re-apply.
+            profile = profile with { Customization = CustomizationMigration.Migrate(profile.Customization, out var migrationWarning) };
+
+            // ONCE, HERE, RATHER THAN ON EVERY APPLY. ThemeService warns about an unusable seed
+            // each time it repaints, which is every drag of every slider; the occurrence that
+            // carries information is this one, and it is the only one a log can usefully hold.
+            if (migrationWarning is not null)
+            {
+                Debug.WriteLine($"[RemexLayout] Customization migrated with repairs: {migrationWarning}");
+                Trace.TraceWarning($"DashboardLayoutService.LoadAsync: customization migrated with repairs - {migrationWarning}");
+            }
+
             // Apply persisted theme settings to the UI.
             _themeService.ApplyCustomization(profile.Customization);
 
@@ -119,7 +135,15 @@ public sealed class DashboardLayoutService : IDashboardLayoutService, IDisposabl
             }
 
             LoadFailureWarning = $"Dashboard layout could not be loaded ({ex.GetType().Name}). Defaults have been applied.";
-            var profile = new DashboardProfile();
+
+            // Migrated even though it is brand new, so the fresh profile is stamped current and the
+            // next save does not read as schema 0. A default profile migrates to itself; what would
+            // not survive is skipping the stamp, because the migration would then re-run against a
+            // record that had already been written by this build.
+            var profile = new DashboardProfile
+            {
+                Customization = CustomizationMigration.Migrate(new CustomizationSettings(), out _),
+            };
             _themeService.ApplyCustomization(profile.Customization);
             CurrentProfile = profile;
             return profile;
