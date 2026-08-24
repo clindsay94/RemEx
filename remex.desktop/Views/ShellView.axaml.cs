@@ -81,7 +81,16 @@ public partial class ShellView : UserControl
             // navigation can be swallowed.
             _pageHostWatchdog = new DispatcherTimer(DispatcherPriority.Normal) { Interval = TransitionWatchdog };
             _pageHostWatchdog.Tick += (_, _) => FlushPageHost();
-            _pageHost.TransitionCompleted += (_, _) => FlushPageHost();
+
+            // POSTED, NOT CALLED. TransitioningContentControl raises TransitionCompleted from its
+            // continuation and only then calls HideOldPresenter, which resolves which presenter to
+            // hide from a flag that assigning Content flips. Flushing synchronously from this
+            // handler therefore assigns the next page first and makes HideOldPresenter hide and
+            // blank the presenter that is the outgoing half of the transition just starting: on a
+            // burst of clicks the old page vanishes on frame one instead of sliding out, and the
+            // content area is empty until the incoming half fades up. One dispatcher turn puts the
+            // hide back in front of the assignment.
+            _pageHost.TransitionCompleted += (_, _) => Dispatcher.UIThread.Post(FlushPageHost);
 
             // A running DispatcherTimer is rooted by the dispatcher and its Tick handler holds this
             // control alive, so it has to be stopped on final teardown - the same hook and the same

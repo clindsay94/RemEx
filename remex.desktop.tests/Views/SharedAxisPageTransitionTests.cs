@@ -103,13 +103,36 @@ public class SharedAxisPageTransitionTests
         foreach (var animation in new[] { transition.BuildOutgoing(true), transition.BuildIncoming(true) })
         {
             animation.Duration.Should().Be(Duration);
-            animation.Easing.Should().BeOfType<SplineEasing>();
 
             // Forward fill: the last interpolated value stays applied until the transition clears it,
             // so a page cannot flicker back to its starting offset between the animation ending and
             // the cleanup running.
             animation.FillMode.Should().Be(FillMode.Forward);
         }
+    }
+
+    [Fact]
+    public void TheEasingIsOnTheKeyFramesSoThatACueStillMeansAFractionOfTheDuration()
+    {
+        // Avalonia eases the animation's global progress and THEN picks the key-frame segment by
+        // comparing that eased value against the cue, so an animation-level easing silently moves
+        // every cue: under Material's curve the crossover at 0.3 would land at 14% of the run, and
+        // the outgoing fade would be over in the first ~27ms of a 200ms navigation. A key spline is
+        // applied to the segment's own progress instead, after the lookup.
+        var animation = NewTransition().BuildOutgoing(forward: true);
+
+        animation.Easing.Should().BeOfType<LinearEasing>();
+
+        // Every segment is eased - all but the frame at cue 0, which nothing runs into.
+        foreach (var frame in animation.Children)
+        {
+            if (frame.Cue.CueValue > 0d)
+            {
+                frame.KeySpline.Should().NotBeNull();
+            }
+        }
+
+        animation.Children.Count(f => f.KeySpline != null).Should().Be(animation.Children.Count - 1);
     }
 
     [Fact]

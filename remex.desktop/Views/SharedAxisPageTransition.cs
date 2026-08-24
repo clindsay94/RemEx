@@ -45,10 +45,11 @@ internal enum SharedAxis
 /// transitions off. Hence the local implementation.
 /// </para>
 /// <para>
-/// Cleanup mirrors Avalonia's built-in transitions — clear the render transform, restore opacity,
-/// and leave the presenters' visibility to <c>TransitioningContentControl</c>, which owns it. As
-/// with those, the cleanup is skipped when the token is cancelled, so this type is expected to be
-/// wrapped in <see cref="InterruptSafePageTransition"/>.
+/// Cleanup clears the render transform on both presenters and leaves their visibility to
+/// <c>TransitioningContentControl</c>, which owns it — <c>UpdateContent</c> shows the incoming one
+/// and <c>HideOldPresenter</c> hides the outgoing one from this transition's continuation. As with
+/// Avalonia's own transitions the cleanup is skipped when the token is cancelled, so this type is
+/// expected to be wrapped in <see cref="InterruptSafePageTransition"/>.
 /// </para>
 /// </remarks>
 internal sealed class SharedAxisPageTransition : IPageTransition
@@ -65,7 +66,18 @@ internal sealed class SharedAxisPageTransition : IPageTransition
     /// <summary>
     /// Material's standard easing — accelerates away immediately and decelerates into place.
     /// </summary>
-    private static readonly Easing StandardEasing = new SplineEasing(0.2d, 0d, 0d, 1d);
+    /// <remarks>
+    /// Carried on the key frames rather than on the animation, and that is not a style choice.
+    /// Avalonia eases the animation's global progress and then looks the key-frame segment up with
+    /// the *eased* value (<c>AnimationInstance</c> eases, then <c>Animator.GetKeyFrames</c> compares
+    /// against <c>Cue.CueValue</c>), so an animation-level easing makes every cue a position on the
+    /// curve instead of a fraction of the duration. Under this curve <see cref="FadeCue"/> would
+    /// land at 14% of the run rather than 30%, compressing the outgoing fade into the first ~27ms of
+    /// a 200ms navigation — the old page popping out instead of crossing over. A key spline is
+    /// applied to the segment's own progress, after the cue lookup, which leaves the cues meaning
+    /// what they say.
+    /// </remarks>
+    private static KeySpline StandardEasing => new(0.2d, 0d, 0d, 1d);
 
     /// <param name="duration">How long the whole transition runs.</param>
     /// <param name="axis">The axis to travel along.</param>
@@ -120,16 +132,19 @@ internal sealed class SharedAxisPageTransition : IPageTransition
             return;
         }
 
-        if (from != null)
-        {
-            from.RenderTransform = null;
-            from.Opacity = 1;
-        }
+        // The outgoing page keeps the opacity the animation left it at, deliberately. This runs
+        // BEFORE the task completes, and therefore before TransitioningContentControl's continuation
+        // hides that presenter - so restoring it to 1 here puts a fully opaque copy of the old page,
+        // back at zero translation, on top of the new one for that gap. Nothing composes a frame in
+        // it today, but only because of dispatcher priority ordering nothing here controls. Leaving
+        // it faded out is safe because every animation sets opacity explicitly at cue 0, so the next
+        // use of this presenter starts from a value of its own choosing either way.
+        from?.ClearValue(Visual.RenderTransformProperty);
 
         if (to != null)
         {
-            to.RenderTransform = null;
-            to.Opacity = 1;
+            to.ClearValue(Visual.RenderTransformProperty);
+            to.ClearValue(Visual.OpacityProperty);
         }
     }
 
@@ -141,7 +156,6 @@ internal sealed class SharedAxisPageTransition : IPageTransition
     internal Animation BuildOutgoing(bool forward) => new()
     {
         Duration = Duration,
-        Easing = StandardEasing,
         FillMode = FillMode.Forward,
         Children =
         {
@@ -159,7 +173,6 @@ internal sealed class SharedAxisPageTransition : IPageTransition
     internal Animation BuildIncoming(bool forward) => new()
     {
         Duration = Duration,
-        Easing = StandardEasing,
         FillMode = FillMode.Forward,
         Children =
         {
@@ -172,7 +185,14 @@ internal sealed class SharedAxisPageTransition : IPageTransition
     /// <summary>Builds one key frame, setting only the properties that were given a value.</summary>
     private KeyFrame KeyFrameAt(double cue, double? translate = null, double? opacity = null)
     {
+        // The spline eases the segment that ENDS at this frame, so the frame at cue 0 does not need
+        // one - nothing runs into it.
         var frame = new KeyFrame { Cue = new Cue(cue) };
+
+        if (cue > 0d)
+        {
+            frame.KeySpline = StandardEasing;
+        }
 
         if (translate.HasValue)
         {
