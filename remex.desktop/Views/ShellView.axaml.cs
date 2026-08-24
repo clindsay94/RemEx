@@ -3,6 +3,7 @@ using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Remex.Desktop.Services;
 using Remex.Desktop.ViewModels;
 
@@ -10,7 +11,33 @@ namespace Remex.Desktop.Views;
 
 public partial class ShellView : UserControl
 {
+    /// <summary>
+    /// How long a page transition runs. Deliberately short: the window in which a second navigation
+    /// can interrupt the first is exactly this duration, and interruption is what used to leave the
+    /// content area blank (RemEx-yj3x2). <see cref="InterruptSafePageTransition"/> makes an interrupt
+    /// survivable; keeping the durations down makes it rare. The slide and the fade match so that the
+    /// composite transition below cannot finish one half and be cancelled part-way through the other.
+    /// </summary>
+    private static readonly TimeSpan TransitionDuration = TimeSpan.FromMilliseconds(140);
+
+    /// <summary>
+    /// How long to wait for a transition to report itself finished before assuming it never will.
+    /// </summary>
+    /// <remarks>
+    /// <c>TransitionCompleted</c> is raised from the transition's continuation, which only exists if
+    /// <c>ArrangeOverride</c> ran — and a collapsed host is never arranged. That is not hypothetical:
+    /// the whole nav rail and its content host collapse whenever the shell switches to the fullscreen
+    /// remote desktop. Without this the sequencer would stay busy forever and every later navigation
+    /// would be swallowed. Four times the transition's own duration leaves plenty of headroom on a
+    /// loaded machine while still recovering well inside a human pause between clicks.
+    /// </remarks>
+    private static readonly TimeSpan TransitionWatchdog = TransitionDuration * 4;
+
+    private readonly PageHostSequencer _pageSequencer = new();
+
     private TransitioningContentControl? _pageHost;
+    private TransitioningContentControl? _immersiveHost;
+    private DispatcherTimer? _pageHostWatchdog;
     private Border? _settingsPanel;
 
     public ShellView()
@@ -23,10 +50,50 @@ public partial class ShellView : UserControl
     {
         base.OnLoaded(e);
         _pageHost = this.FindControl<TransitioningContentControl>("PageHost");
+        _immersiveHost = this.FindControl<TransitioningContentControl>("ImmersiveHost");
         _settingsPanel = this.FindControl<Border>("SettingsPanel");
 
+        // The XAML sets a plain CrossFade to keep the designer honest; the guarded equivalent is
+        // installed here before the first navigation can reach either host. Sequencing keeps the main
+        // host from being interrupted at all, so this is now a backstop for the paths that can still
+        // cancel - the watchdog flush, and the immersive host, which is still bound straight to
+        // CurrentView and animates on every navigation whether or not it is on screen.
+        if (_pageHost != null)
+            _pageHost.PageTransition = new InterruptSafePageTransition(new CrossFade(TransitionDuration));
+
+        if (_immersiveHost != null)
+            _immersiveHost.PageTransition = new InterruptSafePageTransition(new CrossFade(TransitionDuration));
+
+        // Guarded because OnLoaded runs again on every reattach to the visual tree, the same reason
+        // the toast host and boot splash below are guarded.
+        if (!_pageHostSequenced && _pageHost != null)
+        {
+            _pageHostSequenced = true;
+
+            // Normal priority, not the DispatcherTimer default of Background: recovery from a
+            // transition that never reports itself finished must not be starved behind whatever
+            // else the UI thread is doing, or the interval stops being a bound on how long a
+            // navigation can be swallowed.
+            _pageHostWatchdog = new DispatcherTimer(DispatcherPriority.Normal) { Interval = TransitionWatchdog };
+            _pageHostWatchdog.Tick += (_, _) => FlushPageHost();
+            _pageHost.TransitionCompleted += (_, _) => FlushPageHost();
+
+            // A running DispatcherTimer is rooted by the dispatcher and its Tick handler holds this
+            // control alive, so it has to be stopped on final teardown - the same hook and the same
+            // reason as the boot splash below (RemEx-wcte). Without it a tick can land after the
+            // window has closed and materialise a view during shutdown.
+            if (TopLevel.GetTopLevel(this) is Window pageHostOwner)
+                pageHostOwner.Closed += (_, _) => _pageHostWatchdog?.Stop();
+        }
+
         if (DataContext is ShellViewModel vm)
+        {
+            ApplyPageTransition(vm);
+
+            // PageHost.Content is deliberately unbound in XAML - see PageHostSequencer.
+            RequestPageView(vm.CurrentView);
             vm.BeginWelcomeSplash();
+        }
 
         // The in-app toast host. Guarded for the same reason the boot splash below is: OnLoaded runs
         // again on every reattach to the visual tree, and a second manager over the same TopLevel
@@ -71,6 +138,51 @@ public partial class ShellView : UserControl
 
     private bool _bootSplashHooked;
     private bool _toastHostInstalled;
+    private bool _pageHostSequenced;
+
+    /// <summary>
+    /// Routes a navigation through <see cref="PageHostSequencer"/> instead of straight at the host.
+    /// </summary>
+    private void RequestPageView(object? view)
+    {
+        if (_pageHost != null && _pageSequencer.RequestShow(view))
+        {
+            AssignPageView(view);
+        }
+    }
+
+    /// <summary>Hands the host the page the sequencer has released, and arms the watchdog.</summary>
+    private void AssignPageView(object? view)
+    {
+        if (_pageHost == null)
+        {
+            return;
+        }
+
+        if (ReferenceEquals(_pageHost.Content, view))
+        {
+            // Assigning the same instance raises no change notification, so no transition starts and
+            // no completion is ever reported. Settle it here rather than making the watchdog untangle
+            // a navigation that had nothing to do.
+            FlushPageHost();
+            return;
+        }
+
+        _pageHostWatchdog?.Stop();
+        _pageHostWatchdog?.Start();
+        _pageHost.Content = view;
+    }
+
+    /// <summary>Releases whatever navigation was held back while the last transition ran.</summary>
+    private void FlushPageHost()
+    {
+        _pageHostWatchdog?.Stop();
+
+        if (_pageSequencer.RequestFlush(out var queued))
+        {
+            AssignPageView(queued);
+        }
+    }
 
     /// <summary>
     /// Adapts Avalonia's toast host to the notification service's sink, mapping how much the user
@@ -100,6 +212,13 @@ public partial class ShellView : UserControl
         {
             vm.PropertyChanged += OnViewModelPropertyChanged;
             _previousVm = vm;
+
+            // Seeded here as well as in OnLoaded because PageHost.Content is no longer bound. The
+            // binding used to make the order of "attach" and "assign the DataContext" irrelevant;
+            // without it, a view model that arrives after OnLoaded would leave the content area
+            // blank until the user happened to navigate. AssignPageView's ReferenceEquals guard
+            // makes the redundant call a no-op when the order is the usual one.
+            RequestPageView(vm.CurrentView);
         }
         else
         {
@@ -117,26 +236,55 @@ public partial class ShellView : UserControl
                 _settingsPanel.Classes.Remove("open");
         }
 
-        if (e.PropertyName == nameof(ShellViewModel.TransitionType) && _pageHost != null && sender is ShellViewModel vm)
+        if (e.PropertyName == nameof(ShellViewModel.CurrentView) && sender is ShellViewModel navVm)
         {
-
-            // The former IsAndroid early-return was unreachable here (RemEx-f167).
-            _pageHost.PageTransition = vm.TransitionType switch
-            {
-                0 => new PageSlide(TimeSpan.FromMilliseconds(250), vm.TransitionDirection >= 0 ? PageSlide.SlideAxis.Horizontal : PageSlide.SlideAxis.Horizontal),
-                1 => new PageSlide(TimeSpan.FromMilliseconds(250), PageSlide.SlideAxis.Vertical),
-                2 => new CrossFade(TimeSpan.FromMilliseconds(300)),
-                3 => new CompositePageTransition
-                {
-                    PageTransitions =
-                    {
-                        new CrossFade(TimeSpan.FromMilliseconds(200)),
-                        new PageSlide(TimeSpan.FromMilliseconds(300), PageSlide.SlideAxis.Horizontal),
-                    }
-                },
-                _ => new CrossFade(TimeSpan.FromMilliseconds(300)),
-            };
+            RequestPageView(navVm.CurrentView);
         }
+
+        // TransitionDirection is watched alongside TransitionType because the shell picks its type at
+        // random and ~1 navigation in 4 draws the same number twice, which raises no change
+        // notification. Without this the slide direction would silently keep the previous
+        // navigation's value on exactly those navigations.
+        if ((e.PropertyName == nameof(ShellViewModel.TransitionType) ||
+             e.PropertyName == nameof(ShellViewModel.TransitionDirection)) &&
+            sender is ShellViewModel vm)
+        {
+            ApplyPageTransition(vm);
+        }
+    }
+
+    /// <summary>
+    /// Installs the transition the view model has chosen for the navigation about to happen.
+    /// </summary>
+    /// <remarks>
+    /// Every transition is wrapped in <see cref="InterruptSafePageTransition"/>. Unwrapped, a
+    /// navigation that lands while the previous one is still animating freezes a content presenter
+    /// part-way through its animation and the incoming page never becomes visible (RemEx-yj3x2).
+    /// </remarks>
+    private void ApplyPageTransition(ShellViewModel vm)
+    {
+        if (_pageHost == null)
+        {
+            return;
+        }
+
+        // The former IsAndroid early-return was unreachable here (RemEx-f167).
+        _pageHost.IsTransitionReversed = vm.TransitionDirection < 0;
+        _pageHost.PageTransition = new InterruptSafePageTransition(vm.TransitionType switch
+        {
+            0 => new PageSlide(TransitionDuration, PageSlide.SlideAxis.Horizontal),
+            1 => new PageSlide(TransitionDuration, PageSlide.SlideAxis.Vertical),
+            2 => new CrossFade(TransitionDuration),
+            3 => new CompositePageTransition
+            {
+                PageTransitions =
+                {
+                    new CrossFade(TransitionDuration),
+                    new PageSlide(TransitionDuration, PageSlide.SlideAxis.Horizontal),
+                }
+            },
+            _ => new CrossFade(TransitionDuration),
+        });
     }
 
     private void OnSettingsBackdropPressed(object? sender, PointerPressedEventArgs e)

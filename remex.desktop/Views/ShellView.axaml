@@ -295,7 +295,9 @@
                             </Grid>
                         </Border>
 
-                        <TransitioningContentControl Grid.Row="2" Content="{Binding CurrentView}" Name="PageHost">
+                        <!-- Content is NOT bound here. ShellView.axaml.cs feeds this host one page at a time so a
+                             second navigation cannot interrupt the first (RemEx-lma2o). -->
+                        <TransitioningContentControl Grid.Row="2" Name="PageHost">
                             <TransitioningContentControl.DataTemplates>
                                 <DataTemplate DataType="vm:HomeViewModel">
                                     <views:HomeView />
@@ -329,7 +331,7 @@
                                 </DataTemplate>
                             </TransitioningContentControl.DataTemplates>
                             <TransitioningContentControl.PageTransition>
-                                <CrossFade Duration="0:0:0.3"/>
+                                <CrossFade Duration="0:0:0.14"/>
                             </TransitioningContentControl.PageTransition>
                         </TransitioningContentControl>
                     </Grid>
@@ -337,14 +339,14 @@
             </SplitView>
 
             <!-- ═══ FULLSCREEN REMOTE DESKTOP (bypasses sidebar) ═══ -->
-            <TransitioningContentControl Content="{Binding CurrentView}" IsVisible="{Binding IsShellChromeHidden}">
+            <TransitioningContentControl Content="{Binding CurrentView}" IsVisible="{Binding IsShellChromeHidden}" Name="ImmersiveHost">
                 <TransitioningContentControl.DataTemplates>
                     <DataTemplate DataType="vm:RemoteDesktopViewModel">
                         <views:RemoteDesktopView />
                     </DataTemplate>
                 </TransitioningContentControl.DataTemplates>
                 <TransitioningContentControl.PageTransition>
-                    <CrossFade Duration="0:0:0.2"/>
+                    <CrossFade Duration="0:0:0.14"/>
                 </TransitioningContentControl.PageTransition>
             </TransitioningContentControl>
 

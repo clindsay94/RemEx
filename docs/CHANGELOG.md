@@ -170,6 +170,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Clicking quickly through the sidebar could leave the PC app showing nothing at all.** Going
+  Home → App Launcher → File Transfer faster than the page animation runs left the content area
+  blank until you navigated somewhere else. It was intermittent, it never logged anything, and the
+  window was otherwise perfectly responsive — the page had simply been left mid-animation, parked
+  off-screen or fully transparent, with nothing to move it back.
+
+  Pages now take their turn. A navigation that arrives while the previous one is still animating is
+  held until that animation ends and then applied, so an animation can never be interrupted
+  part-way. Clicking through five entries in a second lands you on the fifth, animating once,
+  rather than trying to animate five times over the top of each other. The animations themselves
+  were also shortened to 140ms — long enough to read as movement, short enough that a second click
+  rarely lands inside one — and a page left behind by an animation that is cancelled or fails is
+  now put back where it belongs instead of staying where it stopped. (RemEx-yj3x2, RemEx-lma2o)
+
 - **A typo in the custom accent colour box could leave the app unreadable, and it stuck.** The box
   checked that what you typed was the right LENGTH for a colour, not that it was a colour — so
   `#FF0O00`, with a capital O where a zero belongs, was accepted, saved, and added to your swatches
