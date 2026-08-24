@@ -279,7 +279,16 @@
              not an unambiguous focus indicator.
 
              PART_RootBorder template-binds both BorderBrush and BorderThickness, so a value set on
-             the control renders on the item's outer border. -->
+             the control renders on the item's outer border.
+
+             THAT LAST SENTENCE IS THE WHOLE FIX, AND IT IS AN OBLIGATION ON THE TEMPLATE, NOT ON THE
+             SELECTOR. A view that supplies its own ListBoxItem template has to bind the border too or
+             the ring reaches nothing there - HomeView's pinned-sensor list did exactly that and the
+             first draft of this fix broke it. FocusVisibleStyleGuardTests holds both halves.
+
+             All of the above is read from Material.Avalonia's theme SOURCE. The shipped package
+             compiles its XAML to IL, so none of this is checkable from the build inputs: a Material
+             upgrade has to go re-read the theme rather than trust this comment. -->
         <Style Selector="ListBoxItem:focus-visible">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>

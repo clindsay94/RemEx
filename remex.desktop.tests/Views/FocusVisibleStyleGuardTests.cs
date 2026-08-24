@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using FluentAssertions;
 
 namespace Remex.Desktop.Tests.Views;
@@ -24,11 +24,15 @@ namespace Remex.Desktop.Tests.Views;
 /// nine of the thirteen controls checked in the RemEx-3e65x audit, ListBoxItem among them.
 /// </para>
 /// <para>
-/// This is a source-level pin rather than a rendering test for the reason recorded in RemEx-r8c6:
-/// there is no Avalonia headless harness in this assembly, so no test here can focus a control and
-/// look at it. The defect is visible in the markup, and the markup is where it will be reintroduced
-/// — by someone migrating another control onto a Material template and copying the selector shape
-/// from the three above it that legitimately still use it.
+/// <b>The invariant these pin is not "control-level selectors are safe".</b> It is that a ring set on
+/// the control only renders if the item's effective template binds it — so a view that replaces the
+/// template takes on that obligation. <c>HomeView.axaml</c> does replace it, and the first draft of
+/// this fix broke the ring there while every test here passed, which is precisely the failure the
+/// guard exists to prevent.
+/// </para>
+/// <para>
+/// A source-level pin rather than a rendering test for the reason recorded in RemEx-r8c6: there is no
+/// Avalonia headless harness in this assembly, so no test here can focus a control and look at it.
 /// </para>
 /// </remarks>
 public class FocusVisibleStyleGuardTests
@@ -38,12 +42,8 @@ public class FocusVisibleStyleGuardTests
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
 
-    private static string AppMarkup() => File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "App.axaml"));
-
-    /// <summary>Matches one <c>:focus-visible</c> style, capturing the control and the rest of the selector.</summary>
-    private static readonly Regex FocusVisibleStyle =
-        new(@"<Style\s+Selector=""(?<control>\w+):focus-visible(?<rest>[^""]*)"">(?<body>.*?)</Style>",
-            RegexOptions.Compiled | RegexOptions.Singleline);
+    private static string DesktopPath(params string[] parts)
+        => Path.Combine(new[] { RepoRoot(), "remex.desktop" }.Concat(parts).ToArray());
 
     /// <summary>
     /// The only controls whose Material template still contains a <c>ContentPresenter</c> for the
@@ -65,20 +65,15 @@ public class FocusVisibleStyleGuardTests
     [Fact]
     public void EveryInteractiveControlStillHasAFocusRing()
     {
-        var found = Styles().Select(s => s.Control).ToArray();
-
-        found.Should().BeEquivalentTo(RingedControls);
+        FocusStyles().Select(s => s.Control).Should().BeEquivalentTo(RingedControls);
     }
 
     [Fact]
     public void OnlyTheControlsThatActuallyTemplateAContentPresenterReachIntoTheTemplate()
     {
-        // The guard itself. A selector reaching for a template part that the theme does not contain
-        // matches nothing, silently, and the ring is gone.
-        var reachingIntoTheTemplate = Styles()
+        var reachingIntoTheTemplate = FocusStyles()
             .Where(s => s.Suffix.Contains("/template/"))
-            .Select(s => s.Control)
-            .ToArray();
+            .Select(s => s.Control);
 
         reachingIntoTheTemplate.Should().BeEquivalentTo(MayUseTheTemplateForm);
     }
@@ -86,11 +81,7 @@ public class FocusVisibleStyleGuardTests
     [Fact]
     public void TheListBoxItemRingIsOnTheControlBecauseMaterialsTemplateHasNoPresenterToReach()
     {
-        // Named explicitly as well as covered by the rule above, because this is the one that was
-        // actually broken and the one a future Material upgrade could break again.
-        var listBoxItem = Styles().Single(s => s.Control == "ListBoxItem");
-
-        listBoxItem.Suffix.Trim().Should().BeEmpty();
+        FocusStyles().Single(s => s.Control == "ListBoxItem").Suffix.Trim().Should().BeEmpty();
     }
 
     [Fact]
@@ -99,14 +90,97 @@ public class FocusVisibleStyleGuardTests
         // A literal survives the theme it was picked against and dies under the other three, and a
         // focus ring that vanishes on one theme reads as a broken tab order rather than as styling
         // (RemEx-2p19).
-        foreach (var style in Styles())
+        foreach (var style in FocusStyles())
         {
-            style.Body.Should().Contain("{DynamicResource AccentPrimaryBrush}", $"{style.Control} rings on focus");
-            style.Body.Should().MatchRegex(@"BorderThickness""\s+Value=""2""");
+            style.Setters.Should().Contain(
+                s => s.Property == "BorderBrush" && s.Value == "{DynamicResource AccentPrimaryBrush}",
+                $"{style.Control} rings on focus");
+            style.Setters.Should().Contain(s => s.Property == "BorderThickness" && s.Value == "2");
         }
     }
 
-    private static IEnumerable<(string Control, string Suffix, string Body)> Styles() =>
-        FocusVisibleStyle.Matches(AppMarkup())
-            .Select(m => (m.Groups["control"].Value, m.Groups["rest"].Value, m.Groups["body"].Value));
+    [Fact]
+    public void AViewThatReplacesTheListBoxItemTemplateStillBindsTheBorderTheRingIsPaintedOn()
+    {
+        // THE ONE THE FIRST DRAFT GOT WRONG. A ring set on the control renders through whatever
+        // border the template binds; Material's PART_RootBorder binds it, but a view that supplies
+        // its own template inherits the obligation. HomeView's pinned-sensor list is the case in
+        // point - its template was a bare ContentPresenter, so the control-level ring reached
+        // nothing there and only there.
+        var overrides = ListBoxItemTemplateOverrides().ToArray();
+
+        overrides.Should().NotBeEmpty("HomeView replaces this template - if that stops being true, " +
+                                      "delete this test rather than letting it pass vacuously");
+
+        foreach (var (file, root) in overrides)
+        {
+            root.Attributes().Select(a => a.Name.LocalName).Should().Contain(
+                "BorderThickness",
+                $"{file} replaces the ListBoxItem template, so its root must carry the focus ring");
+
+            root.Attribute("BorderThickness")!.Value.Should().Be("{TemplateBinding BorderThickness}");
+            root.Attribute("BorderBrush")?.Value.Should().Be("{TemplateBinding BorderBrush}");
+        }
+    }
+
+    /// <summary>
+    /// Every <c>:focus-visible</c> style in <c>App.axaml</c>.
+    /// </summary>
+    /// <remarks>
+    /// Parsed as XML rather than matched with a regex, so a style that has been commented out stops
+    /// counting. App.axaml runs to twenty lines of comment for every four of markup around here, and
+    /// "commented it out while debugging a layout shift and forgot to put it back" is the likeliest
+    /// way one of these disappears.
+    /// </remarks>
+    private static IEnumerable<FocusStyle> FocusStyles()
+    {
+        foreach (var style in Elements(DesktopPath("App.axaml"), "Style"))
+        {
+            var selector = style.Attribute("Selector")?.Value;
+            var marker = selector?.IndexOf(":focus-visible", StringComparison.Ordinal) ?? -1;
+            if (selector is null || marker < 0)
+            {
+                continue;
+            }
+
+            yield return new FocusStyle(
+                selector[..marker],
+                selector[(marker + ":focus-visible".Length)..],
+                style.Elements().Where(e => e.Name.LocalName == "Setter")
+                    .Select(e => new StyleSetter(e.Attribute("Property")?.Value, e.Attribute("Value")?.Value))
+                    .ToArray());
+        }
+    }
+
+    /// <summary>The root element of every ListBoxItem <c>Template</c> setter across the views.</summary>
+    private static IEnumerable<(string File, XElement Root)> ListBoxItemTemplateOverrides()
+    {
+        foreach (var view in Directory.EnumerateFiles(DesktopPath("Views"), "*.axaml"))
+        {
+            foreach (var style in Elements(view, "Style"))
+            {
+                if (style.Attribute("Selector")?.Value.Contains("ListBoxItem", StringComparison.Ordinal) != true)
+                {
+                    continue;
+                }
+
+                var template = style.Elements()
+                    .Where(e => e.Name.LocalName == "Setter" && e.Attribute("Property")?.Value == "Template")
+                    .SelectMany(e => e.Elements())
+                    .FirstOrDefault(e => e.Name.LocalName == "ControlTemplate");
+
+                if (template?.Elements().FirstOrDefault() is { } root)
+                {
+                    yield return (Path.GetFileName(view), root);
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<XElement> Elements(string path, string localName) =>
+        XDocument.Load(path).Descendants().Where(e => e.Name.LocalName == localName);
+
+    private sealed record FocusStyle(string Control, string Suffix, IReadOnlyList<StyleSetter> Setters);
+
+    private sealed record StyleSetter(string? Property, string? Value);
 }

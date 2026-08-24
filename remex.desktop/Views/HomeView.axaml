@@ -258,9 +258,20 @@
                             <Style Selector="ListBoxItem">
                                 <Setter Property="Padding" Value="0"/>
                                 <Setter Property="Background" Value="Transparent"/>
+                                <!-- The Border is not decoration: it is what makes the keyboard focus ring
+                                     visible on these cards. App.axaml rings a focused ListBoxItem by setting
+                                     BorderBrush and BorderThickness ON THE CONTROL, which only renders if the
+                                     item's template binds them - Material's own template does, through
+                                     PART_RootBorder, and this template replaces it. Without this the pinned
+                                     sensors would be the one list in the app you can tab into and see nothing
+                                     (RemEx-kgs7g). Unfocused thickness is 0, so it costs no layout. -->
                                 <Setter Property="Template">
                                     <ControlTemplate>
-                                        <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                                        <Border BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="{TemplateBinding CornerRadius}">
+                                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                                        </Border>
                                     </ControlTemplate>
                                 </Setter>
                             </Style>
