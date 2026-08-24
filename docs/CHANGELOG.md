@@ -204,6 +204,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Sending a file to a folder it was already in failed after transferring the whole thing, and
+  blamed your permissions.** RemEx reads the file you are sending and keeps it open until the
+  transfer finishes. If the destination folder was the folder that file already lived in, the last
+  step — putting the received copy in place — could not replace a file RemEx itself still had open.
+  The message was "Verified but could not be saved: Access to the path is denied", which reads as a
+  problem with the shared folder's permissions. It was not; nothing was wrong with the folder.
+
+  It still cannot replace a file that something has open, but it now says so, and names the file. It
+  also no longer clears the destination before writing the new copy: the incoming file is written
+  alongside and only swapped in once it is complete, so a transfer that fails part-way leaves what
+  you already had untouched. On Linux the old order could have destroyed the original outright.
+  (RemEx-cojhy)
+
 - **The keyboard focus ring on Home's pinned sensor cards was drawn around the wrong rectangle.**
   RemEx rings whatever you have tabbed to, so you can see where you are without a mouse. On the
   pinned sensors the ring was drawn around the card's whole slot rather than the card, which left it

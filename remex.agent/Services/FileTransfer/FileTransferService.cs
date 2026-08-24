@@ -153,6 +153,16 @@ public sealed class FileTransferService : IFileTransferService
         var entries = new List<FileEntry>();
         foreach (var fsi in dir.EnumerateFileSystemInfos())
         {
+            // A cross-volume promotion lands its bytes in a temp file beside the destination before
+            // renaming it into place, so one can legitimately be here for the length of a transfer,
+            // and can be left behind for good by a process killed mid-copy. Neither is anything the
+            // person browsing this folder from their phone can act on (RemEx-cojhy).
+            if (!fsi.Attributes.HasFlag(FileAttributes.Directory)
+                && fsi.Name.Contains(".remexnew-", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             try
             {
                 entries.Add(new FileEntry
@@ -256,7 +266,7 @@ public sealed class FileTransferService : IFileTransferService
         // itself. (Atomicity is claimed only here: see the fallback below.)
         if (AreSameVolume(stagingPath, destination))
         {
-            File.Move(stagingPath, destination, overwrite: true);
+            MoveIntoPlace(stagingPath, destination);
             RestoreInheritedAcl(destination);
             return;
         }
@@ -264,16 +274,164 @@ public sealed class FileTransferService : IFileTransferService
         // Different volume: bytes genuinely have to cross, so stream them. File.Move would fall back to
         // an internal copy here anyway (MOVEFILE_COPY_ALLOWED on Windows, an EXDEV fallback on Unix),
         // but that copy is synchronous, uncancellable and NOT atomic — this keeps the await points and
-        // honours ct on a transfer that can legitimately run for minutes. A file created here inherits
-        // the destination's ACL normally, so no fixup is needed on this path.
-        await using var src = new FileStream(
-            stagingPath, FileMode.Open, FileAccess.Read, FileShare.None, 65536,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
-        await using var dst = new FileStream(
-            destination, FileMode.Create, FileAccess.Write, FileShare.None, 65536,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
-        await src.CopyToAsync(dst, 65536, ct);
-        await dst.FlushAsync(ct);
+        // honours ct on a transfer that can legitimately run for minutes.
+        //
+        // THE BYTES LAND BESIDE THE DESTINATION AND ARE RENAMED ONTO IT — this path must never open
+        // the destination itself for write (RemEx-cojhy). It used to, with FileMode.Create, which
+        // truncates before the first byte arrives. Uploading a file that already lives in this root
+        // makes the destination the very file the client still has open and is reading from, and on
+        // any platform where that open succeeds — Linux does — the user's file is destroyed mid-read
+        // and replaced with a copy of itself streamed through a socket. Landing via a rename gives
+        // this path the same all-or-nothing replace the same-volume branch above already had.
+        //
+        // The sibling is created in the destination's own directory, so it inherits that directory's
+        // ACL and needs no fixup — unlike the rename above, whose file arrives from staging. NOTE
+        // that this also means an overwrite RESETS a destination file's own explicit ACL to the
+        // directory's inherited one. That is a deliberate change and it makes this branch agree with
+        // the same-volume branch, which has always reset it through RestoreInheritedAcl.
+        //
+        // Any sibling left by a process killed mid-copy is swept the next time this directory is
+        // promoted into, and hidden from browse listings meanwhile (see SiblingPattern).
+        SweepAbandonedSiblings(Path.GetDirectoryName(destination));
+
+        var sibling = SiblingPathFor(destination);
+        var created = false;
+        try
+        {
+            await using (var src = new FileStream(
+                stagingPath, FileMode.Open, FileAccess.Read, FileShare.None, 65536,
+                FileOptions.Asynchronous | FileOptions.SequentialScan))
+            await using (var dst = new FileStream(
+                sibling, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536,
+                FileOptions.Asynchronous | FileOptions.SequentialScan))
+            {
+                created = true;
+                await src.CopyToAsync(dst, 65536, ct);
+                await dst.FlushAsync(ct);
+            }
+
+            MoveIntoPlace(sibling, destination);
+        }
+        catch
+        {
+            // A half-written sibling is litter in the user's own folder, so it goes whatever went
+            // wrong — including a cancellation part-way through the copy. Guarded on `created`
+            // because the one way CreateNew fails is that the path already exists, and that file
+            // then belongs to somebody else's in-flight transfer.
+            if (created) TryDelete(sibling);
+            throw;
+        }
+    }
+
+    /// <summary>Names the temp file a cross-volume promotion lands in before renaming it into place.</summary>
+    /// <remarks>
+    /// THE STEM IS TRUNCATED TO KEEP THE COMPONENT LEGAL. The suffix adds 43 characters, and nothing
+    /// upstream caps a filename's length — <c>FilePathValidation</c> has no length rule — so a legal
+    /// 245-character name would produce an illegal 288-character sibling and fail a transfer that
+    /// works fine when the root happens to sit on the staging volume. NAME_MAX is 255 on both NTFS
+    /// and ext4 regardless of long-path settings.
+    /// </remarks>
+    internal static string SiblingPathFor(string destination)
+    {
+        const int nameMax = 255;
+
+        var directory = Path.GetDirectoryName(destination) ?? string.Empty;
+        var suffix = ".remexnew-" + Guid.NewGuid().ToString("N");
+        var stem = Path.GetFileName(destination);
+
+        if (stem.Length + suffix.Length > nameMax)
+        {
+            stem = stem[..(nameMax - suffix.Length)];
+        }
+
+        return Path.Combine(directory, stem + suffix);
+    }
+
+    /// <summary>Matches the temp files <see cref="SiblingPathFor"/> creates.</summary>
+    /// <remarks>
+    /// Every other staged-then-renamed write in this project sweeps its own orphans, and each says
+    /// why: a process killed between staging and rename leaves one behind forever. This one stages
+    /// inside a directory the USER browses, which is what makes it worth both sweeping and hiding —
+    /// an abandoned 600 MB <c>report.pdf.remexnew-…</c> showing up on the phone is not something
+    /// anyone can be expected to interpret.
+    /// </remarks>
+    internal const string SiblingPattern = "*.remexnew-*";
+
+    /// <summary>How long an abandoned sibling is left alone before it is assumed dead.</summary>
+    /// <remarks>
+    /// Long enough that a concurrent transfer's in-flight temp is never swept out from under it. A
+    /// cross-volume copy is bounded by the transfer cap, so this is generous rather than tuned.
+    /// </remarks>
+    private static readonly TimeSpan AbandonedSiblingAge = TimeSpan.FromHours(12);
+
+    private void SweepAbandonedSiblings(string? directory)
+    {
+        if (directory is null || !Directory.Exists(directory)) return;
+
+        try
+        {
+            var cutoff = DateTime.UtcNow - AbandonedSiblingAge;
+            foreach (var orphan in Directory.EnumerateFiles(directory, SiblingPattern))
+            {
+                if (File.GetLastWriteTimeUtc(orphan) < cutoff) TryDelete(orphan);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogDebug(ex, "Could not sweep abandoned promotion temp files in {Directory}.", directory);
+        }
+    }
+
+    /// <summary>
+    /// Replaces <paramref name="destination"/> with <paramref name="from"/>, atomically.
+    /// </summary>
+    /// <remarks>
+    /// The rethrow exists for the message. Replacing a file that another process holds open without
+    /// <c>FileShare.Delete</c> surfaces from <c>MoveFileEx</c> as
+    /// <see cref="UnauthorizedAccessException"/> — "Access to the path is denied" — which the client
+    /// then shows as <c>Verified but could not be saved: Access to the path is denied</c>. That reads
+    /// as a permissions problem with the shared folder, and the commonest cause is not that at all:
+    /// it is uploading a file that already lives in the folder being uploaded to, where the client's
+    /// own read handle is what blocks the replace (RemEx-cojhy).
+    /// </remarks>
+    private static void MoveIntoPlace(string from, string destination)
+    {
+        try
+        {
+            File.Move(from, destination, overwrite: true);
+        }
+        // The two not-found subtypes are deliberately let through unwrapped. Both derive from
+        // IOException and File.Move throws them when the SOURCE is gone — an antivirus quarantining
+        // the staging file, say. Flattening those into "the destination may be open in another
+        // program" would be a confident diagnosis of the wrong file, which is the exact failure this
+        // message exists to stop.
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                   && ex is not (FileNotFoundException or DirectoryNotFoundException))
+        {
+            throw new IOException(
+                $"'{Path.GetFileName(destination)}' could not be replaced. It may be open in another "
+                + "program — including this transfer, if the file being sent is the one already in "
+                + "this folder — or its permissions may not allow it to be changed.",
+                ex);
+        }
+    }
+
+    /// <summary>Best-effort delete of a temp file this service owns.</summary>
+    /// <remarks>
+    /// Swallows on purpose: this runs from a catch that is about to rethrow the real failure, and
+    /// masking that with a cleanup error would be worse. It logs because it is the only thing between
+    /// a failed transfer and permanent litter in a folder the user can see.
+    /// </remarks>
+    private void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.LogWarning(ex, "Could not remove the promotion temp file {Path}; it will be swept later.", path);
+        }
     }
 
     public Task DeleteAsync(string rootId, string relativePath, CancellationToken ct)
