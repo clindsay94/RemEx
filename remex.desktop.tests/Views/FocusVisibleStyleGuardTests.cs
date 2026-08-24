@@ -114,12 +114,18 @@ public class FocusVisibleStyleGuardTests
 
         foreach (var (file, root) in overrides)
         {
-            root.Attributes().Select(a => a.Name.LocalName).Should().Contain(
-                "BorderThickness",
+            // BOTH, and neither optional. A thickness with no brush is a ring that reserves its
+            // 2px, shifts the item, and paints nothing — the same invisible failure, one attribute
+            // narrower. An earlier draft asserted the brush through `?.`, which asserted nothing at
+            // all when the attribute was missing.
+            var attributes = root.Attributes().Select(a => a.Name.LocalName).ToArray();
+
+            attributes.Should().Contain(
+                ["BorderBrush", "BorderThickness"],
                 $"{file} replaces the ListBoxItem template, so its root must carry the focus ring");
 
             root.Attribute("BorderThickness")!.Value.Should().Be("{TemplateBinding BorderThickness}");
-            root.Attribute("BorderBrush")?.Value.Should().Be("{TemplateBinding BorderBrush}");
+            root.Attribute("BorderBrush")!.Value.Should().Be("{TemplateBinding BorderBrush}");
         }
     }
 
@@ -152,30 +158,52 @@ public class FocusVisibleStyleGuardTests
         }
     }
 
-    /// <summary>The root element of every ListBoxItem <c>Template</c> setter across the views.</summary>
+    /// <summary>
+    /// The root element of every ListBoxItem <c>Template</c> setter anywhere in the desktop project.
+    /// </summary>
+    /// <remarks>
+    /// Scanned across the whole project rather than just <c>Views/</c>, and across
+    /// <c>ControlTheme</c> and <c>ItemContainerTheme</c> as well as <c>Style</c>. A ListBoxItem
+    /// template can arrive from <c>Themes/</c> or <c>Controls/</c> just as easily, and a
+    /// <c>ControlTheme TargetType="ListBoxItem"</c> carries one the same way a selector does. A
+    /// guard that only looked where the current instance happens to live would pass by never opening
+    /// the file that broke.
+    /// </remarks>
     private static IEnumerable<(string File, XElement Root)> ListBoxItemTemplateOverrides()
     {
-        foreach (var view in Directory.EnumerateFiles(DesktopPath("Views"), "*.axaml"))
-        {
-            foreach (var style in Elements(view, "Style"))
-            {
-                if (style.Attribute("Selector")?.Value.Contains("ListBoxItem", StringComparison.Ordinal) != true)
-                {
-                    continue;
-                }
+        var project = DesktopPath();
 
-                var template = style.Elements()
+        foreach (var markup in Directory.EnumerateFiles(project, "*.axaml", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(project, markup).Replace('\\', '/');
+            if (relative.Contains("/obj/", StringComparison.Ordinal)
+                || relative.Contains("/bin/", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            foreach (var owner in XDocument.Load(markup).Descendants()
+                         .Where(e => e.Name.LocalName is "Style" or "ControlTheme" or "ItemContainerTheme")
+                         .Where(TargetsListBoxItem))
+            {
+                var template = owner.Elements()
                     .Where(e => e.Name.LocalName == "Setter" && e.Attribute("Property")?.Value == "Template")
                     .SelectMany(e => e.Elements())
                     .FirstOrDefault(e => e.Name.LocalName == "ControlTemplate");
 
                 if (template?.Elements().FirstOrDefault() is { } root)
                 {
-                    yield return (Path.GetFileName(view), root);
+                    yield return (relative, root);
                 }
             }
         }
     }
+
+    /// <summary>Whether a style or theme element applies to ListBoxItem.</summary>
+    private static bool TargetsListBoxItem(XElement owner) =>
+        (owner.Attribute("Selector")?.Value ?? owner.Attribute("TargetType")?.Value ?? string.Empty)
+            .Contains("ListBoxItem", StringComparison.Ordinal)
+        || owner.Name.LocalName == "ItemContainerTheme";
 
     private static IEnumerable<XElement> Elements(string path, string localName) =>
         XDocument.Load(path).Descendants().Where(e => e.Name.LocalName == localName);

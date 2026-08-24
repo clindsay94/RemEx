@@ -258,13 +258,26 @@
                             <Style Selector="ListBoxItem">
                                 <Setter Property="Padding" Value="0"/>
                                 <Setter Property="Background" Value="Transparent"/>
+                                <!-- The gap between cards is set HERE rather than on the card itself, and the
+                                     corner radius is repeated here, so that the focus ring below lands on the
+                                     card's own outline. Left on the card, the 20px margin sat inside the ring
+                                     and the ring drew square-cornered, flush with the card on two sides and
+                                     20px clear of it on the other two - visible, but reading as a stray box
+                                     rather than as focus. -->
+                                <Setter Property="Margin" Value="0,0,20,20"/>
+                                <Setter Property="CornerRadius" Value="4,24,4,24"/>
                                 <!-- The Border is not decoration: it is what makes the keyboard focus ring
                                      visible on these cards. App.axaml rings a focused ListBoxItem by setting
                                      BorderBrush and BorderThickness ON THE CONTROL, which only renders if the
                                      item's template binds them - Material's own template does, through
                                      PART_RootBorder, and this template replaces it. Without this the pinned
                                      sensors would be the one list in the app you can tab into and see nothing
-                                     (RemEx-kgs7g). Unfocused thickness is 0, so it costs no layout. -->
+                                     (RemEx-kgs7g).
+
+                                     While UNFOCUSED the thickness is 0 and this costs no layout. While focused
+                                     it costs 2px a side, and the WrapPanel slot is a fixed 280 wide, so the
+                                     card narrows by 4px as focus arrives. Whether that twitch is noticeable is
+                                     a visual question, recorded on the bead. -->
                                 <Setter Property="Template">
                                     <ControlTemplate>
                                         <Border BorderBrush="{TemplateBinding BorderBrush}"
@@ -283,7 +296,8 @@
                         </ListBox.ItemsPanel>
                         <ListBox.ItemTemplate>
                             <DataTemplate x:DataType="vm:SensorViewModel">
-                                <Border Classes="glass-card interactive" Padding="24" Margin="0,0,20,20" Background="Transparent" CornerRadius="4,24,4,24" BorderThickness="1,0,0,0">
+                                <!-- Margin moved onto the ListBoxItem so the focus ring hugs this card. -->
+                                <Border Classes="glass-card interactive" Padding="24" Background="Transparent" CornerRadius="4,24,4,24" BorderThickness="1,0,0,0">
                                     <Panel>
                                         <ctrl:SparklineControl History="{Binding History}" GraphType="{Binding ResolvedGraphType}" AccentColor="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Opacity="0.2" VerticalAlignment="Bottom" Height="80" Margin="-24,0,-24,-24"/>
 
