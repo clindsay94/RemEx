@@ -162,12 +162,21 @@ public class FocusVisibleStyleGuardTests
     /// The root element of every ListBoxItem <c>Template</c> setter anywhere in the desktop project.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Scanned across the whole project rather than just <c>Views/</c>, and across
-    /// <c>ControlTheme</c> and <c>ItemContainerTheme</c> as well as <c>Style</c>. A ListBoxItem
-    /// template can arrive from <c>Themes/</c> or <c>Controls/</c> just as easily, and a
-    /// <c>ControlTheme TargetType="ListBoxItem"</c> carries one the same way a selector does. A
-    /// guard that only looked where the current instance happens to live would pass by never opening
-    /// the file that broke.
+    /// <c>ControlTheme</c> as well as <c>Style</c>. A ListBoxItem template can arrive from
+    /// <c>Themes/</c> or <c>Controls/</c> just as easily, and a
+    /// <c>ControlTheme TargetType="ListBoxItem"</c> carries one the same way a selector does — that
+    /// second form is also what an <c>ItemContainerTheme</c> resolves to, because the property
+    /// element is named <c>ListBox.ItemContainerTheme</c> and the theme inside it is a
+    /// <c>ControlTheme</c>. A guard that only looked where the current instance happens to live
+    /// would pass by never opening the file that broke.
+    /// </para>
+    /// <para>
+    /// One shape this still cannot see: a <c>Template</c> setter whose value is a
+    /// <c>{StaticResource}</c> pointing at a ControlTemplate in a resource dictionary. There is none
+    /// today, and following the indirection is more machinery than the risk warrants.
+    /// </para>
     /// </remarks>
     private static IEnumerable<(string File, XElement Root)> ListBoxItemTemplateOverrides()
     {
@@ -175,15 +184,17 @@ public class FocusVisibleStyleGuardTests
 
         foreach (var markup in Directory.EnumerateFiles(project, "*.axaml", SearchOption.AllDirectories))
         {
+            // Leading "/" so the two checks also catch obj/ and bin/ at the project root, which is
+            // exactly where they sit and exactly what a bare "/obj/" substring test misses.
             var relative = Path.GetRelativePath(project, markup).Replace('\\', '/');
-            if (relative.Contains("/obj/", StringComparison.Ordinal)
-                || relative.Contains("/bin/", StringComparison.Ordinal))
+            if (("/" + relative).Contains("/obj/", StringComparison.Ordinal)
+                || ("/" + relative).Contains("/bin/", StringComparison.Ordinal))
             {
                 continue;
             }
 
             foreach (var owner in XDocument.Load(markup).Descendants()
-                         .Where(e => e.Name.LocalName is "Style" or "ControlTheme" or "ItemContainerTheme")
+                         .Where(e => e.Name.LocalName is "Style" or "ControlTheme")
                          .Where(TargetsListBoxItem))
             {
                 var template = owner.Elements()
@@ -202,8 +213,7 @@ public class FocusVisibleStyleGuardTests
     /// <summary>Whether a style or theme element applies to ListBoxItem.</summary>
     private static bool TargetsListBoxItem(XElement owner) =>
         (owner.Attribute("Selector")?.Value ?? owner.Attribute("TargetType")?.Value ?? string.Empty)
-            .Contains("ListBoxItem", StringComparison.Ordinal)
-        || owner.Name.LocalName == "ItemContainerTheme";
+            .Contains("ListBoxItem", StringComparison.Ordinal);
 
     private static IEnumerable<XElement> Elements(string path, string localName) =>
         XDocument.Load(path).Descendants().Where(e => e.Name.LocalName == localName);
