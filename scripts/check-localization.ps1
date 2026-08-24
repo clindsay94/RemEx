@@ -150,6 +150,9 @@ param(
     [string]$Axis = 'all',
 
     [Parameter(Mandatory = $false)]
+    [switch]$SelfTest,
+
+    [Parameter(Mandatory = $false)]
     [ValidateRange(0.0, 1.0)]
     [double]$SimilarityThreshold = 0.40,
 
@@ -594,7 +597,12 @@ function Test-IdenticalToEnglish {
             if (-not $LocaleEntries.ContainsKey($locale)) { continue }
             if (-not $LocaleEntries[$locale].ContainsKey($key)) { continue }
 
-            if ($LocaleEntries[$locale][$key].Value -ceq $english) {
+            # ORDINAL, NOT -ceq. PowerShell's -ceq is case-sensitive but CULTURE-sensitive: it calls
+            # 'Pair' and "Pai<soft hyphen>r" equal, and NFC "é" equal to NFD "e" + combining acute.
+            # Nothing in the repo currently differs between the two comparisons, but this axis says
+            # "byte-identical" in its own findings, and a script whose purpose is to stop overstating
+            # what it measures should not overstate this one.
+            if ([string]::Equals($LocaleEntries[$locale][$key].Value, $english, [System.StringComparison]::Ordinal)) {
                 Add-Finding -Severity Warning -Category 'Untranslated: identical to English' -Platform $Config.Name `
                     -Id "$($Config.Kind)/identical-to-english/$locale/$key" `
                     -Message ("{0} '{1}' is byte-identical to the English: `"{2}`"" -f `
@@ -602,6 +610,77 @@ function Test-IdenticalToEnglish {
             }
         }
     }
+}
+
+function Invoke-SelfTest {
+    <#
+    .SYNOPSIS
+        Checks the parts of this script that fail silently in the direction of the bug it fixes.
+    .DESCRIPTION
+        THE FIX FOR RemEx-0bygp RESTS ON A STRING CONTRACT BETWEEN TWO FILES. This script emits one
+        LOCALIZATION-SUMMARY line and verify.ps1 parses it; if the marker is renamed, or moved above
+        where $known is computed, this script still exits 0, verify.ps1's match finds nothing, and it
+        prints "No NEW translation problems" underneath a screen of warnings. That is RemEx-0bygp
+        reproduced exactly - correct findings with a wrong summary over the top - and nothing would
+        have failed.
+
+        Test-HasTranslatableWord is the other silent one: loosen its regex and axis 5 quietly stops
+        measuring a whole class of value, which is the failure being fixed.
+
+        Same shape as verify.ps1's Invoke-ResultParserSelfTest and ralph-cluster.ps1's -SelfTest:
+        pure, milliseconds, and run by the gate rather than left for someone to remember.
+    #>
+    $failures = 0
+    function Assert-Check {
+        param([bool]$Condition, [string]$What)
+        if (-not $Condition) {
+            Write-Host "    FAIL  $What" -ForegroundColor Red
+            $script:selfTestFailures++
+        }
+    }
+    $script:selfTestFailures = 0
+
+    # (a) What counts as a value worth judging.
+    # The last two leave exactly ONE letter after stripping, which is what separates "a run of at
+    # least two letters" from "any letter at all". Without them the rule can be loosened to \p{L}
+    # and every self-test still passes - checked, by making that exact edit.
+    foreach ($wordless in @('{0} - {1}', '%1$s * %2$s', '%1$d%%', '%1$d°', '✅ {0}', '{0}', '%.1f',
+                            '%1$.1fx', '{0}x')) {
+        Assert-Check (-not (Test-HasTranslatableWord -Text $wordless)) `
+            "'$wordless' has no translatable word and must be skipped, not baselined"
+    }
+    foreach ($word in @('Pair', '#RRGGBB', 'Cursor Speed: %.1fx', '{0} files copied', 'Unnamed App')) {
+        Assert-Check (Test-HasTranslatableWord -Text $word) `
+            "'$word' is translatable and must be judged"
+    }
+
+    # (b) The axis itself: fails before the fix, passes after. An in-memory fixture rather than the
+    #     real files, so this asserts the rule and not the current state of the translations.
+    $config = @{ Name = 'SelfTest'; Kind = 'resx'; Locales = @('xx') }
+    $base = @{ Btn = @{ Value = 'Pair'; Translatable = $true } }
+
+    $script:Findings = [System.Collections.Generic.List[object]]::new()
+    Test-IdenticalToEnglish -Config $config -BaseEntries $base `
+        -LocaleEntries @{ xx = @{ Btn = @{ Value = 'Pair'; Translatable = $true } } }
+    Assert-Check ($script:Findings.Count -eq 1) 'an untranslated value must produce exactly one finding'
+    Assert-Check ($script:Findings.Count -eq 1 -and $script:Findings[0].Id -eq 'resx/identical-to-english/xx/Btn') `
+        'the finding id must be <kind>/identical-to-english/<locale>/<key>, which is what the baseline matches on'
+
+    $script:Findings = [System.Collections.Generic.List[object]]::new()
+    Test-IdenticalToEnglish -Config $config -BaseEntries $base `
+        -LocaleEntries @{ xx = @{ Btn = @{ Value = 'Eşleştir'; Translatable = $true } } }
+    Assert-Check ($script:Findings.Count -eq 0) 'a translated value must produce no finding'
+
+    # (c) The contract with verify.ps1, expressed the way verify.ps1 reads it. This is the assertion
+    #     that catches a renamed marker - and the one that would have caught the wrong premise this
+    #     fix was first built on.
+    $sample = 'LOCALIZATION-SUMMARY errors=0 warnings=3 known=849'
+    Assert-Check ($sample -match '^LOCALIZATION-SUMMARY ') 'verify.ps1 selects the summary line by this prefix'
+    Assert-Check (($sample -match 'warnings=(\d+)') -and ([int]$Matches[1] -eq 3)) `
+        'verify.ps1 reads the warning count out of the summary line'
+
+    $failures = $script:selfTestFailures
+    return $failures
 }
 
 function Test-HasTranslatableWord {
@@ -616,8 +695,17 @@ function Test-HasTranslatableWord {
     #>
     param([string]$Text)
 
-    $withoutPlaceholders = [regex]::Replace($Text, '\{[^}]*\}', ' ')
-    $withoutPlaceholders = [regex]::Replace($withoutPlaceholders, '%[0-9$]*[a-zA-Z]', ' ')
+    # Doubled braces are a LITERAL brace in .NET composite formatting, so they go first - stripping
+    # {...} against "{{0}}" would eat "{{0}" and leave a stray "}".
+    $withoutPlaceholders = [regex]::Replace($Text, '\{\{|\}\}', ' ')
+    $withoutPlaceholders = [regex]::Replace($withoutPlaceholders, '\{[^}]*\}', ' ')
+
+    # The Android form with its flags and precision. A narrower '%[0-9$]*[a-zA-Z]' leaves the 'f' of
+    # "%.1f" behind, which is inert only because \p{L}{2,} wants two letters - "%.1f%.1f" would
+    # survive as "ff" and be baselined as an untranslated string forever. Shaped after
+    # Get-PlaceholderSet's Android pattern so the two agree on what the syntax is.
+    $withoutPlaceholders = [regex]::Replace($withoutPlaceholders, '%%', ' ')
+    $withoutPlaceholders = [regex]::Replace($withoutPlaceholders, '%(?:\d+\$)?[-#+0,( ]*\d*(?:\.\d+)?[a-zA-Z]', ' ')
 
     return $withoutPlaceholders -match '\p{L}{2,}'
 }
@@ -945,6 +1033,17 @@ function Format-Placeholder {
 # ---------------------------------------------------------------------------------------------
 Write-Host 'RemEx localization check' -ForegroundColor White
 Write-Host "Repository: $RepoRoot" -ForegroundColor DarkGray
+
+if ($SelfTest) {
+    $selfTestFailures = Invoke-SelfTest
+    if ($selfTestFailures -eq 0) {
+        Write-Host '  Self-test passed: the untranslated axis fires when it should and the summary line parses.' -ForegroundColor Green
+        exit 0
+    }
+
+    Write-Host "  $selfTestFailures self-test check(s) failed - this script is not measuring what it claims." -ForegroundColor Red
+    exit 1
+}
 
 $selected = if ($Platform -eq 'all') { @('pc', 'android') } else { @($Platform) }
 

@@ -1067,6 +1067,17 @@ if (-not $SkipLocalization) {
     Write-Stage "Checking translations"
     $checker = Join-Path $PSScriptRoot 'check-localization.ps1'
     if (Test-Path -LiteralPath $checker) {
+        # Self-test first, for the reason the result-parser one runs unconditionally above: the
+        # contract between this file and that one is a string, and if it breaks, the checker still
+        # exits 0 and this block prints "no NEW problems" over a screen of warnings - RemEx-0bygp
+        # reproduced with a green gate. No capture; it reports through Write-Host like its siblings.
+        & $checker -SelfTest
+        if ($LASTEXITCODE -ne 0) {
+            $problems.Add('localization self-test failed')
+            Write-Problem "The translation checker is not measuring what it claims." `
+                "Run: ./scripts/check-localization.ps1 -SelfTest"
+        }
+
         # The checker reports through Write-Host, which goes straight to the console and cannot be
         # captured, so its findings have always been visible here. What was NOT true was the line
         # this branch used to print underneath them. It emits one machine-readable summary on the
