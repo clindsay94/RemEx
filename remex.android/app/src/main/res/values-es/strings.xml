@@ -231,7 +231,7 @@
     <string name="connection_paired">Emparejado</string>
     <string name="connection_unpair">Desemparejar</string>
     <string name="connection_known_pcs_title">PC conocidos</string>
-    <string name="connection_known_pcs_hint">Toca un PC para conectarte a él.</string>
+    <string name="connection_known_pcs_hint">Toca una dirección para conectarte.</string>
     <string name="connection_known_pc_last_connected">Última conexión: %1$s</string>
     <string name="connection_known_pc_never_connected">Sin conexiones todavía</string>
     <string name="connection_known_pc_actions">Opciones de %1$s</string>
@@ -240,6 +240,11 @@
     <string name="connection_known_pc_nickname_label">Nombre</string>
     <string name="connection_known_pc_unpair_title">¿Desemparejar %1$s?</string>
     <string name="connection_known_pc_unpair_message">Este teléfono olvidará este PC en todas las direcciones en las que responde. Necesitarás el PIN que aparece en el PC para volver a emparejarlo.</string>
+    <string name="connection_known_pc_needs_pairing">Requiere emparejamiento</string>
+    <string name="connection_known_pc_forget">Quitar de la lista</string>
+    <string name="connection_known_pc_pair_title">¿Emparejar con %1$s?</string>
+    <string name="connection_known_pc_pair_message">Este teléfono no está emparejado en esta dirección. Introduce el PIN de 6 dígitos que aparece en el PC.</string>
+    <string name="connection_known_pc_pair_confirm">Emparejar</string>
     <string name="pairing_title">Emparejamiento seguro</string>
     <string name="pairing_prompt">Introduce el PIN de 6 dígitos que se muestra en tu PC</string>
     <string name="pairing_auto_pin_failed">No se pudo obtener el PIN automáticamente — escribe el PIN que aparece en tu PC.</string>

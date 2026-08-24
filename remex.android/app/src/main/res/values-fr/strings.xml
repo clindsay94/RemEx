@@ -231,7 +231,7 @@
     <string name="connection_paired">Couplé</string>
     <string name="connection_unpair">Découpler</string>
     <string name="connection_known_pcs_title">PC connus</string>
-    <string name="connection_known_pcs_hint">Touchez un PC pour vous y connecter.</string>
+    <string name="connection_known_pcs_hint">Touchez une adresse pour vous connecter.</string>
     <string name="connection_known_pc_last_connected">Dernière connexion : %1$s</string>
     <string name="connection_known_pc_never_connected">Jamais connecté</string>
     <string name="connection_known_pc_actions">Options pour %1$s</string>
@@ -240,6 +240,11 @@
     <string name="connection_known_pc_nickname_label">Surnom</string>
     <string name="connection_known_pc_unpair_title">Découpler %1$s ?</string>
     <string name="connection_known_pc_unpair_message">Ce téléphone oubliera ce PC, à toutes les adresses auxquelles il répond. Vous aurez besoin du code PIN affiché sur le PC pour le coupler à nouveau.</string>
+    <string name="connection_known_pc_needs_pairing">Couplage requis</string>
+    <string name="connection_known_pc_forget">Retirer de la liste</string>
+    <string name="connection_known_pc_pair_title">Coupler avec %1$s ?</string>
+    <string name="connection_known_pc_pair_message">Ce téléphone n\'est pas couplé à cette adresse. Saisissez le code PIN à 6 chiffres affiché sur le PC.</string>
+    <string name="connection_known_pc_pair_confirm">Coupler</string>
     <string name="pairing_title">Couplage sécurisé</string>
     <string name="pairing_prompt">Saisissez le code PIN à 6 chiffres affiché sur votre PC</string>
     <string name="pairing_auto_pin_failed">Impossible de récupérer le code PIN automatiquement — saisissez le code PIN affiché sur votre PC.</string>
