@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The translation check said translations were complete while 671 strings sat in English.**
+  It verified that every key exists in all nine languages, that every key used in code is defined,
+  and that translations take the same arguments as their English source — all true, and none of them
+  the question "was this actually translated?". There was a detector meant to catch that, but it only
+  looked at values of 40 characters or more, which is longer than most things in the app: every
+  untranslated Turkish string was shorter than that and therefore invisible. Connor found one by eye
+  — the Pair button still reading "Pair" — while the check printed its all-clear underneath.
+
+  There is now a fifth check for values identical to their English source. It found 671 across both
+  platforms, which are recorded as a known backlog so the build stays green, and the output says so
+  in as many words rather than implying there is nothing left to do. New untranslated strings are
+  reported the day they appear. (RemEx-0bygp)
+
 - **A dead code path that looked alive because its tests were the only thing calling it.**
   `DropZoneResolver` decided whether a file dropped on the transfer screen should be uploaded or sent
   to the phone, for a two-zone drop target that was never built — the drop handler has always
