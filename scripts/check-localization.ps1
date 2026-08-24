@@ -59,9 +59,24 @@
         breaking. Repeating a placeholder is legal in both syntaxes and is not a finding: sets
         are compared, not counts, so "Delete {0}? {0} is gone" is fine against a single "{0}".
 
+    AXIS 5 - IDENTICAL TO ENGLISH ("was this translated at all?")
+        A value that is byte-identical to its English source. Axis 2(a) is supposed to catch this
+        and structurally cannot: it scores word overlap and skips anything under
+        -MinSimilarityLength, which is 40 characters - most of the UI. Every one of Turkish's
+        identical values is under that floor, so the entire class was invisible. Connor found it
+        by eye, the Pair button still reading "Pair" in Turkish and Portuguese, while the output
+        of this very script said "Translations are complete and current" (RemEx-0bygp).
+
+        Identity does not suffer the cognate ambiguity that forced the length floor, because it is
+        not a similarity judgement - but plenty of values are identical for good reasons: "RAM",
+        "FPS:", "Windows", "macOS", preset names like "Neon". So this reports rather than fails,
+        and the baseline below absorbs the existing set. What it buys is that a NEWLY untranslated
+        string is loud the day it appears. Values with no translatable word at all - "{0} - {1}",
+        an emoji and a number - are skipped rather than baselined.
+
     Parity, undefined-key and placeholder-index problems are ERRORS - they are objective and
-    always wrong. Staleness findings are WARNINGS by default, because they are heuristic; pass
-    -StrictStaleness to make them fail the build too.
+    always wrong. Staleness and untranslated findings are WARNINGS by default, because they are
+    heuristic; pass -StrictStaleness to make them fail the build too.
 
     KNOWN LIMITATION of the freshness detector: it can only see drift that git can see. When all
     nine files are edited in one commit - which the .resx sync workflow often does - every
@@ -81,7 +96,7 @@
     'all'. Defaults to 'all'.
 
 .PARAMETER Axis
-    Which check to run: 'parity', 'staleness', 'undefined', or 'all'. Defaults to 'all'.
+    Which check to run: 'parity', 'staleness', 'undefined', 'placeholder', 'untranslated', or 'all'. Defaults to 'all'.
     Use -Axis parity for a fast check that needs no git history.
 
 .PARAMETER SimilarityThreshold
@@ -131,7 +146,7 @@ param(
     [string]$Platform = 'all',
 
     [Parameter(Mandatory = $false)]
-    [ValidateSet('all', 'parity', 'staleness', 'undefined', 'placeholder')]
+    [ValidateSet('all', 'parity', 'staleness', 'undefined', 'placeholder', 'untranslated')]
     [string]$Axis = 'all',
 
     [Parameter(Mandatory = $false)]
@@ -541,6 +556,72 @@ function Test-EnglishSimilarity {
     }
 }
 
+function Test-IdenticalToEnglish {
+    <#
+    .SYNOPSIS
+        Reports translations whose value is byte-identical to the English source.
+
+    .DESCRIPTION
+        THIS IS THE AXIS THAT CATCHES WHAT Test-EnglishSimilarity CANNOT (RemEx-0bygp). That one
+        scores word overlap, and deliberately skips anything shorter than -MinSimilarityLength,
+        because below that cognates and loanwords drown the signal. Forty characters is most of the
+        UI: every one of Turkish's identical values is under it, so the whole class was invisible.
+        Connor found it by eye - the Pair button still reading 'Pair' in Turkish and Portuguese -
+        and the gate said "Translations are complete and current" underneath.
+
+        Byte-identity does not have the cognate problem that forced the length floor, because it is
+        not a similarity judgement. It has a different one: plenty of values are identical for good
+        reasons - 'RAM', 'FPS:', 'Windows', 'macOS', preset names like 'Neon' and 'Ember'. So this
+        reports rather than fails, and the existing baseline absorbs the current set. What it buys
+        is that a NEW untranslated string is loud on the day it appears.
+
+        Values with no translatable word at all - '{0} - {1}', a hex mask, an emoji plus a number -
+        are skipped outright rather than baselined, since 'untranslated' is not a thing they can be.
+    #>
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$Config,
+        [Parameter(Mandatory = $true)][hashtable]$BaseEntries,
+        [Parameter(Mandatory = $true)][hashtable]$LocaleEntries
+    )
+
+    foreach ($key in ($BaseEntries.Keys | Sort-Object)) {
+        $english = $BaseEntries[$key].Value
+        if (-not $BaseEntries[$key].Translatable) { continue }
+        if ([string]::IsNullOrWhiteSpace($english)) { continue }
+        if (-not (Test-HasTranslatableWord -Text $english)) { continue }
+
+        foreach ($locale in $Config.Locales) {
+            if (-not $LocaleEntries.ContainsKey($locale)) { continue }
+            if (-not $LocaleEntries[$locale].ContainsKey($key)) { continue }
+
+            if ($LocaleEntries[$locale][$key].Value -ceq $english) {
+                Add-Finding -Severity Warning -Category 'Untranslated: identical to English' -Platform $Config.Name `
+                    -Id "$($Config.Kind)/identical-to-english/$locale/$key" `
+                    -Message ("{0} '{1}' is byte-identical to the English: `"{2}`"" -f `
+                        $locale, $key, (Get-Excerpt $english))
+            }
+        }
+    }
+}
+
+function Test-HasTranslatableWord {
+    <#
+    .SYNOPSIS
+        Whether a value contains a word that could meaningfully be translated at all.
+    .DESCRIPTION
+        Placeholders and format specifiers are removed first, so '{0} - {1}' and '%1$s' are correctly
+        seen as wordless. What is left has to contain a run of at least two letters in any script.
+        '#RRGGBB' survives this and is baselined rather than skipped, because RGGBB is letters and
+        the rule stays mechanical instead of accruing special cases.
+    #>
+    param([string]$Text)
+
+    $withoutPlaceholders = [regex]::Replace($Text, '\{[^}]*\}', ' ')
+    $withoutPlaceholders = [regex]::Replace($withoutPlaceholders, '%[0-9$]*[a-zA-Z]', ' ')
+
+    return $withoutPlaceholders -match '\p{L}{2,}'
+}
+
 function Get-Excerpt {
     param([string]$Text)
     $flat = ($Text -replace '\s+', ' ').Trim()
@@ -917,6 +998,11 @@ foreach ($platformKey in $selected) {
         Write-Step 'Axis 4: placeholders match English...'
         Test-PlaceholderParity -Config $config -BaseEntries $baseEntries -LocaleEntries $localeEntries
     }
+
+    if ($Axis -in @('all', 'untranslated')) {
+        Write-Step 'Axis 5: values identical to English...'
+        Test-IdenticalToEnglish -Config $config -BaseEntries $baseEntries -LocaleEntries $localeEntries
+    }
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -972,6 +1058,20 @@ if ($active.Count -eq 0) {
     Write-Host '  No new localization problems. Every key exists in all 9 files on both platforms,' -ForegroundColor Green
     Write-Host '  every key used in code is declared somewhere, and every translation takes the' -ForegroundColor Green
     Write-Host '  same arguments as its English source.' -ForegroundColor Green
+
+    # THIS IS NOT THE SAME AS "the translations are done", and the difference is what RemEx-0bygp
+    # was about. Everything above is a statement about structure. Whether a value was translated at
+    # all is axis 5, and its existing findings are in the baseline - so a green run here is
+    # compatible with hundreds of strings still sitting in English. Say the number rather than
+    # letting the green imply otherwise.
+    $untranslated = @($known | Where-Object { $_.Category -like 'Untranslated:*' }).Count
+    if ($untranslated -gt 0) {
+        Write-Host ''
+        Write-Host "  $untranslated string(s) are still byte-identical to English and known to the baseline." -ForegroundColor DarkYellow
+        Write-Host '  That is a backlog, not a pass: -Axis untranslated -NoBaseline lists them.' -ForegroundColor DarkYellow
+    }
+
+    Write-Output "LOCALIZATION-SUMMARY errors=0 warnings=0 known=$($known.Count)"
     exit 0
 }
 
@@ -1044,6 +1144,12 @@ if ($categories -like '*Staleness*') {
 }
 Write-Host '   - If a finding is wrong, tune -SimilarityThreshold / -MinSimilarityLength rather' -ForegroundColor Gray
 Write-Host '     than deleting the check. If it is right but not yours to fix today, file a bead.' -ForegroundColor Gray
+
+# THE ONLY LINE OF THIS SCRIPT A CALLER CAN READ. Everything above goes through Write-Host, which
+# writes to the console and cannot be captured or piped - so verify.ps1 could see the exit code and
+# nothing else, and printed "Translations are complete and current" over the top of warnings it had
+# no way to know about (RemEx-0bygp). This goes to the success stream on purpose.
+Write-Output "LOCALIZATION-SUMMARY errors=$errorCount warnings=$warningCount known=$($known.Count)"
 
 $failed = ($errorCount -gt 0) -or ($StrictStaleness -and $warningCount -gt 0)
 if ($failed) { exit 1 }

@@ -1356,7 +1356,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>PC पर दिखाया गया 6 अंकों का PIN दर्ज करें:</value>
   </data>
   <data name="Btn_Pair" xml:space="preserve">
-    <value>Pair</value>
+    <value>पेयर करें</value>
   </data>
 
   

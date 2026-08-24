@@ -1067,14 +1067,32 @@ if (-not $SkipLocalization) {
     Write-Stage "Checking translations"
     $checker = Join-Path $PSScriptRoot 'check-localization.ps1'
     if (Test-Path -LiteralPath $checker) {
-        & $checker 2>&1 | Out-Null
+        # The checker reports through Write-Host, which goes straight to the console and cannot be
+        # captured, so its findings have always been visible here. What was NOT true was the line
+        # this branch used to print underneath them. It emits one machine-readable summary on the
+        # success stream for that reason - it is the only part of its output a caller can read.
+        $checkerSummary = & $checker 2>&1 | Where-Object { $_ -is [string] -and $_ -match '^LOCALIZATION-SUMMARY ' }
+
         if ($LASTEXITCODE -ne 0) {
             $problems.Add('translation check failed')
             Write-Problem "The translation check found problems." `
                 "Run ./scripts/check-localization.ps1 on its own to see them in full."
         }
+        elseif ("$checkerSummary" -match 'warnings=(\d+)' -and [int]$Matches[1] -gt 0) {
+            # Green, but not clean, and the difference has to be said out loud. These do not fail
+            # the gate - they are heuristic, and a new preset name that legitimately matches English
+            # should not block a build - but printing "no new problems" over the top of them is how
+            # a wrong claim gets made in this file's own output (RemEx-0bygp).
+            Write-Say "  $($Matches[1]) NEW translation warning(s) above - not failing the gate, but new since the baseline."
+        }
         else {
-            Write-Say "  Translations are complete and current."
+            # DELIBERATELY NARROWER THAN IT USED TO BE. This said "Translations are complete and
+            # current", which was a claim about the translations. It is not: it is a claim about
+            # the axes the checker measures, minus everything already in its baseline. Connor found
+            # the Pair button reading "Pair" in Turkish while this line was printing underneath
+            # (RemEx-0bygp), and the wording is what made that surprising rather than expected.
+            Write-Say "  No NEW translation problems on the axes the checker measures."
+            Write-Say "  Run ./scripts/check-localization.ps1 -NoBaseline for the standing backlog."
         }
     }
     else {
