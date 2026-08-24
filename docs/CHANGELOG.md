@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Internal
+
+- **Two build-gate checks scanned agent worktrees and failed on another branch's code.**
+  `NameScopeWiringGuardTests` and `NoStrayControlCharactersTests` enumerate source from the repo root
+  so a project added later cannot go silently unscanned. Both skipped `.git`, but a git worktree's
+  `.git` is a file rather than a directory, so a worktree checked out under `.claude/` was walked
+  into and its contents reported as defects in this tree — unfixable from here, and possibly still
+  being worked on by whoever created it. `verify.ps1` went red twice on `v2.5-board-drain` for
+  four files that had been fixed months earlier. Both now skip `.claude/`. (RemEx-cwfrq)
+
 ### Security
 
 - **Anything that could reach the automation port could make RemEx set aside 10 MB of memory before

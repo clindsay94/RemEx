@@ -65,10 +65,18 @@ public class NameScopeWiringGuardTests
         {
             // Skip build output — generated copies are not the source of truth. Also skip artifacts/,
             // which is where UseArtifactsOutput puts binaries for this repo.
+            //
+            // And skip .claude/, which is gitignored and is where agent worktrees are checked out.
+            // A worktree there is a WHOLE OTHER BRANCH sitting inside this working copy, so scanning
+            // it makes this guard report defects that are not in the tree being verified, cannot be
+            // fixed from it, and may belong to a session still working on them. It happened: a
+            // worktree holding a pre-RemEx-wdqx checkout turned the gate red for four files that had
+            // been fixed here months earlier (RemEx-cwfrq).
             var relative = Path.GetRelativePath(root, codeBehind).Replace('\\', '/');
             if (relative.Contains("/obj/", StringComparison.Ordinal)
                 || relative.Contains("/bin/", StringComparison.Ordinal)
-                || relative.StartsWith("artifacts/", StringComparison.Ordinal))
+                || relative.StartsWith("artifacts/", StringComparison.Ordinal)
+                || relative.StartsWith(".claude/", StringComparison.Ordinal))
             {
                 continue;
             }

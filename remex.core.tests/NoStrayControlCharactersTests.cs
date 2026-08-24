@@ -32,7 +32,11 @@ public class NoStrayControlCharactersTests
     public void NoTrackedSourceFileCarriesOne()
     {
         string[] extensions = [".cs", ".kt", ".kts", ".ps1", ".axaml", ".resx", ".xml", ".json", ".md"];
-        string[] skipDirectories = ["obj", "bin", ".git", "node_modules", ".gradle", "artifacts", ".ralph"];
+        // `.claude` holds agent worktrees — whole other branches checked out inside this working
+        // copy. Scanning one reports defects that are not in the tree being verified and cannot be
+        // fixed from it, and it is not covered by the `.git` entry above: a worktree's `.git` is a
+        // FILE, not a directory, so there is nothing there to skip (RemEx-cwfrq).
+        string[] skipDirectories = ["obj", "bin", ".git", ".claude", "node_modules", ".gradle", "artifacts", ".ralph"];
 
         var offenders = Directory
             .EnumerateFiles(RepoRoot(), "*", SearchOption.AllDirectories)
