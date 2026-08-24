@@ -2246,12 +2246,6 @@ Linux: ip addr  ou  hostname -I</value>
   <data name="FileTransfer_SearchWatermark" xml:space="preserve">
     <value>Buscar nesta pasta…</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Enviar para o Celular</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Escolha arquivos neste PC e envie-os para a pasta atual no dispositivo conectado.</value>
-  </data>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Data</value>
   </data>

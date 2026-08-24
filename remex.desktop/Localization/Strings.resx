@@ -2332,12 +2332,6 @@ Linux: ip addr  or  hostname -I</value>
   <data name="FileTransfer_IconSizeTooltip" xml:space="preserve">
     <value>Icon size</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Send to Phone</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Pick files on this PC and send them to the current folder on the connected device.</value>
-  </data>
   <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
     <value>New Folder</value>
   </data>

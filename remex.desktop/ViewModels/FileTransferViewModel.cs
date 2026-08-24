@@ -27,7 +27,7 @@ public sealed record BreadcrumbSegment(string Label, string Path);
 /// <summary>
 /// Rich remote file-manager view-model (plan §WP10). Browses the connected host's shared roots with
 /// breadcrumbs, sort, search, multi-select copy/move/mkdir/delete, a properties + thumbnail pane, a
-/// full-device volumes list, a local transfer queue, and send-to-device / drag-drop upload. New v3
+/// full-device volumes list, a local transfer queue, and drag-drop upload. New v3
 /// features are gated on the host's advertised <see cref="FileTransferClient.Capabilities"/> so nothing v3
 /// is ever sent to a v2 peer.
 /// </summary>
@@ -48,7 +48,7 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     private string _clipboardFolder = string.Empty;
     private bool _clipboardIsMove;
 
-    /// <summary>Wired by the view to a native file-open picker (for upload / send-to-device).</summary>
+    /// <summary>Wired by the view to a native file-open picker (for upload).</summary>
     public Func<FilePickerOpenOptions, Task<IReadOnlyList<IStorageFile>>>? PickUploadFileAsync { get; set; }
 
     /// <summary>Wired by the view to a native file-save picker (for download).</summary>
@@ -604,10 +604,16 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     // shared root the host opened that same path for write while the client held it for read, failing
     // the transfer with a sharing violation that named a local file.
     //
-    // FileTransferQueueKind.SendToPhone STAYS — it is not dead. DropZoneResolver still resolves the
-    // upper drop zone to it, so drag-and-drop reaches this behaviour even with the button gone. That
-    // is deliberately left alone here rather than quietly collapsed: the two-zone drop is a separate
-    // surface and a separate decision.
+    // THAT COMMENT USED TO SAY DRAG-AND-DROP STILL REACHED THIS, VIA DropZoneResolver's UPPER ZONE.
+    // It did not (RemEx-bkmn9). DropZoneResolver was written for a two-zone drop surface that was
+    // never built: FileTransferView.OnDrop enqueues Upload unconditionally and never called it, so
+    // the class had no caller outside its own tests. It is deleted, and with it the last thing that
+    // could produce a SendToPhone queue item.
+    //
+    // FileTransferQueueKind.SendToPhone is therefore UNREACHABLE at runtime today. It is kept rather
+    // than deleted because RemEx-uov9y (the PC-to-phone command channel) is open and is what would
+    // give it a real meaning; removing it now would churn the enum, its label and nine locale files
+    // to put them all back. Nothing should resolve to it until something can actually send.
 
     private async Task PickAndEnqueueUploadsAsync(FileTransferQueueKind kind)
     {
@@ -644,7 +650,8 @@ public sealed partial class FileTransferViewModel : ObservableObject, IDisposabl
     private bool CanUpload() => SelectedRemoteRoot is { IsWritable: true } && _connection.IsConnected;
 
     /// <summary>Enqueues an upload of each local file into the current remote folder. Shared by the
-    /// upload button, the send-to-device button, and drag-drop from the desktop.</summary>
+    /// upload button and drag-drop from the desktop. The send-to-device button was removed with
+    /// RemEx-74kfg and nothing has replaced it, so <c>kind</c> is always Upload today (RemEx-bkmn9).</summary>
     public void EnqueueUploads(IEnumerable<string> localPaths, FileTransferQueueKind kind = FileTransferQueueKind.Upload)
     {
         var root = SelectedRemoteRoot;

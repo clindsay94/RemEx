@@ -2039,12 +2039,6 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="FileTransfer_SearchWatermark" xml:space="preserve">
     <value>Przeszukaj ten folder…</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Wyślij na telefon</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Wybierz pliki na tym komputerze i wyślij je do bieżącego folderu na połączonym urządzeniu.</value>
-  </data>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Data</value>
   </data>

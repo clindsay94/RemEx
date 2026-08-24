@@ -2176,12 +2176,6 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Tarih</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Telefona Gönder</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Bu PC'den dosya seçin ve bağlı cihazdaki geçerli klasöre gönderin.</value>
-  </data>
   <data name="FileTransfer_PropertiesBtn" xml:space="preserve">
     <value>Özellikler</value>
   </data>

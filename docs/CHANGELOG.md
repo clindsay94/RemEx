@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **A dead code path that looked alive because its tests were the only thing calling it.**
+  `DropZoneResolver` decided whether a file dropped on the transfer screen should be uploaded or sent
+  to the phone, for a two-zone drop target that was never built — the drop handler has always
+  enqueued an upload and never consulted it. It had full test coverage and no caller, which is what
+  made a follow-up bead record it as a live route to the removed "Send to phone" behaviour and frame
+  the fix as a design decision. It was neither. The class and its tests are gone, and a check now
+  fails if anything resolves to that queue kind again before there is something behind it.
+
+  The removed button's own labels went too — "Send to phone" and its tooltip had been sitting in all
+  nine translation files since the button was deleted, with nothing rendering them. Translators had
+  no way to tell. (RemEx-bkmn9)
+
 - **Two build-gate checks scanned agent worktrees and failed on another branch's code.**
   `NameScopeWiringGuardTests` and `NoStrayControlCharactersTests` enumerate source from the repo root
   so a project added later cannot go silently unscanned. Both skipped `.git`, but a git worktree's

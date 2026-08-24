@@ -2092,12 +2092,6 @@ Linux: ip addr  o  hostname -I</value>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Fecha</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Enviar al teléfono</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Elige archivos en este PC y envíalos a la carpeta actual del dispositivo conectado.</value>
-  </data>
   <data name="FileTransfer_NewFolderBtn" xml:space="preserve">
     <value>Nueva carpeta</value>
   </data>

@@ -2247,12 +2247,6 @@ Linux: ip addr  або  hostname -I</value>
   <data name="FileTransfer_SearchWatermark" xml:space="preserve">
     <value>Пошук у цій папці…</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Надіслати на телефон</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Виберіть файли на цьому ПК і надішліть їх до поточної папки на підключеному пристрої.</value>
-  </data>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Дата</value>
   </data>

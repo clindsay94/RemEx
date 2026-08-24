@@ -2246,12 +2246,6 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="FileTransfer_SearchWatermark" xml:space="preserve">
     <value>Cari di folder ini…</value>
   </data>
-  <data name="FileTransfer_SendToPhoneBtn" xml:space="preserve">
-    <value>Kirim ke Ponsel</value>
-  </data>
-  <data name="FileTransfer_SendToPhoneTooltip" xml:space="preserve">
-    <value>Pilih file di PC ini dan kirim ke folder saat ini di perangkat yang terhubung.</value>
-  </data>
   <data name="FileTransfer_SortDate" xml:space="preserve">
     <value>Tanggal</value>
   </data>
