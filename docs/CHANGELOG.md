@@ -57,6 +57,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Moving between screens in the PC app now goes one way, on purpose.** RemEx used to pick one of
+  four animations at random every time you clicked a sidebar entry, so the same journey looked
+  different each time you made it and none of it told you anything. Screens now slide a short
+  distance in the direction you moved — forward down the sidebar, backward coming back — while the
+  old one fades out and the new one fades in behind it. It is one movement, it always means the same
+  thing, and it takes 200ms.
+
+  There is also now a **Reduced motion** switch in Personalization, next to hardware sync. Turned on,
+  screens cross-fade with no sliding at all, and the decorative background movement stops. That
+  preference already existed and was already saved alongside the rest of your settings — there had
+  simply never been a way to turn it on. (RemEx-yzu5m)
+
 - **Upgrading no longer changes the colour of your app.** RemEx used to store your theme as a name —
   "Cyber-NOC" — and look up a list of colours under it. It now stores the one colour everything is
   generated from. Read literally, an older settings file would have handed a Cyber-NOC user the

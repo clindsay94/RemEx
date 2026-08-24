@@ -1544,6 +1544,12 @@ Linux: ip addr  atau  hostname -I</value>
   <data name="Custom_HardwareSyncDesc" xml:space="preserve">
     <value>Sinkronkan warna aksen dengan RGB fisik</value>
   </data>
+  <data name="Custom_ReducedMotionTitle" xml:space="preserve">
+    <value>Kurangi gerak</value>
+  </data>
+  <data name="Custom_ReducedMotionDesc" xml:space="preserve">
+    <value>Batasi animasi seminimal mungkin. Halaman berganti tanpa menggeser dan gerakan dekoratif berhenti.</value>
+  </data>
   <data name="Common_On" xml:space="preserve">
     <value>Aktif</value>
   </data>

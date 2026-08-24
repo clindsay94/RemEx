@@ -12,13 +12,18 @@ namespace Remex.Desktop.Views;
 public partial class ShellView : UserControl
 {
     /// <summary>
-    /// How long a page transition runs. Deliberately short: the window in which a second navigation
-    /// can interrupt the first is exactly this duration, and interruption is what used to leave the
-    /// content area blank (RemEx-yj3x2). <see cref="InterruptSafePageTransition"/> makes an interrupt
-    /// survivable; keeping the durations down makes it rare. The slide and the fade match so that the
-    /// composite transition below cannot finish one half and be cancelled part-way through the other.
+    /// How long a page transition runs. Material's figure for a shared-axis transition, and the
+    /// upper end of what the shell can afford: this fires on every navigation, so a slow one makes
+    /// the whole app feel slow.
     /// </summary>
-    private static readonly TimeSpan TransitionDuration = TimeSpan.FromMilliseconds(140);
+    /// <remarks>
+    /// It used to be shorter for a defensive reason — the window in which a second navigation could
+    /// interrupt the first was exactly this duration, and an interrupted transition left the content
+    /// area blank (RemEx-yj3x2). <see cref="PageHostSequencer"/> removed interruption rather than
+    /// shortening the window it happens in, so the duration is free to be chosen for how it looks
+    /// again (RemEx-yzu5m).
+    /// </remarks>
+    private static readonly TimeSpan TransitionDuration = TimeSpan.FromMilliseconds(200);
 
     /// <summary>
     /// How long to wait for a transition to report itself finished before assuming it never will.
@@ -59,7 +64,7 @@ public partial class ShellView : UserControl
         // cancel - the watchdog flush, and the immersive host, which is still bound straight to
         // CurrentView and animates on every navigation whether or not it is on screen.
         if (_pageHost != null)
-            _pageHost.PageTransition = new InterruptSafePageTransition(new CrossFade(TransitionDuration));
+            _pageHost.PageTransition = NewPageTransition(reducedMotion: false);
 
         if (_immersiveHost != null)
             _immersiveHost.PageTransition = new InterruptSafePageTransition(new CrossFade(TransitionDuration));
@@ -241,12 +246,11 @@ public partial class ShellView : UserControl
             RequestPageView(navVm.CurrentView);
         }
 
-        // TransitionDirection is watched alongside TransitionType because the shell picks its type at
-        // random and ~1 navigation in 4 draws the same number twice, which raises no change
-        // notification. Without this the slide direction would silently keep the previous
-        // navigation's value on exactly those navigations.
-        if ((e.PropertyName == nameof(ShellViewModel.TransitionType) ||
-             e.PropertyName == nameof(ShellViewModel.TransitionDirection)) &&
+        // The direction only raises a notification when it actually changes, which is correct here:
+        // two navigations the same way down the sidebar want the same transition, and the one
+        // already installed is it.
+        if ((e.PropertyName == nameof(ShellViewModel.TransitionDirection) ||
+             e.PropertyName == nameof(ShellViewModel.IsReducedMotion)) &&
             sender is ShellViewModel vm)
         {
             ApplyPageTransition(vm);
@@ -254,7 +258,7 @@ public partial class ShellView : UserControl
     }
 
     /// <summary>
-    /// Installs the transition the view model has chosen for the navigation about to happen.
+    /// Installs the transition for the navigation about to happen, and points it the right way.
     /// </summary>
     /// <remarks>
     /// Every transition is wrapped in <see cref="InterruptSafePageTransition"/>. Unwrapped, a
@@ -270,22 +274,23 @@ public partial class ShellView : UserControl
 
         // The former IsAndroid early-return was unreachable here (RemEx-f167).
         _pageHost.IsTransitionReversed = vm.TransitionDirection < 0;
-        _pageHost.PageTransition = new InterruptSafePageTransition(vm.TransitionType switch
-        {
-            0 => new PageSlide(TransitionDuration, PageSlide.SlideAxis.Horizontal),
-            1 => new PageSlide(TransitionDuration, PageSlide.SlideAxis.Vertical),
-            2 => new CrossFade(TransitionDuration),
-            3 => new CompositePageTransition
-            {
-                PageTransitions =
-                {
-                    new CrossFade(TransitionDuration),
-                    new PageSlide(TransitionDuration, PageSlide.SlideAxis.Horizontal),
-                }
-            },
-            _ => new CrossFade(TransitionDuration),
-        });
+        _pageHost.PageTransition = NewPageTransition(vm.IsReducedMotion);
     }
+
+    /// <summary>
+    /// Builds the shell's page transition: Material's shared axis, or a plain cross-fade for anyone
+    /// who has asked for reduced motion.
+    /// </summary>
+    /// <remarks>
+    /// Avalonia exposes no system reduced-motion setting, so this follows the app's own preference,
+    /// which now has a switch alongside the other personalisation toggles. Reduced motion means no
+    /// travel at all rather than less of it — a shortened slide is still a slide — so the fade is
+    /// what is left, at half the duration since there is nothing to follow across the screen.
+    /// </remarks>
+    internal static IPageTransition NewPageTransition(bool reducedMotion) =>
+        new InterruptSafePageTransition(reducedMotion
+            ? new CrossFade(TransitionDuration / 2)
+            : new SharedAxisPageTransition(TransitionDuration));
 
     private void OnSettingsBackdropPressed(object? sender, PointerPressedEventArgs e)
     {

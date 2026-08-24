@@ -1336,6 +1336,12 @@ Linux: ip addr  lub  hostname -I</value>
   <data name="Custom_HardwareSyncDesc" xml:space="preserve">
     <value>Synchronizuj kolor akcentu z fizycznym RGB</value>
   </data>
+  <data name="Custom_ReducedMotionTitle" xml:space="preserve">
+    <value>Ograniczony ruch</value>
+  </data>
+  <data name="Custom_ReducedMotionDesc" xml:space="preserve">
+    <value>Ogranicza animacje do minimum. Strony zmieniają się bez przesuwania, a ruch dekoracyjny zostaje zatrzymany.</value>
+  </data>
   <data name="Common_On" xml:space="preserve">
     <value>Włączone</value>
   </data>

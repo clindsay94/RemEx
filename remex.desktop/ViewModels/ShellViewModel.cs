@@ -27,7 +27,6 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     private readonly IServiceProvider _services;
     private readonly Action<Remex.Core.Models.CustomizationSettings> _onCustomizationApplied;
     private readonly PropertyChangedEventHandler _onConnectionChanged;
-    private static readonly Random _rng = new();
     private bool _welcomeSplashStarted;
 
     /// <summary>All tutorial pages in order; each declares which platforms display it.</summary>
@@ -193,13 +192,12 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _activeNavIndex;
 
-    /// <summary>Direction of the page slide transition. 1 = forward, -1 = backward.</summary>
+    /// <summary>
+    /// Which way the shared-axis page transition travels. 1 = forward (further down the sidebar),
+    /// -1 = backward.
+    /// </summary>
     [ObservableProperty]
     private int _transitionDirection = 1;
-
-    /// <summary>Random transition type index (0-3) for variety.</summary>
-    [ObservableProperty]
-    private int _transitionType;
 
     /// <summary>Controls the startup welcome splash overlay visibility.</summary>
     [ObservableProperty]
@@ -496,12 +494,11 @@ public partial class ShellViewModel : ObservableObject, IDisposable
         if (CurrentView is AppLauncherViewModel alvm && viewModel != alvm)
             alvm.SearchText = string.Empty;
 
+        // The only thing the view needs to know: which way along the sidebar the user moved. The
+        // shell used to pick one of four transitions at random per navigation, which meant the same
+        // journey animated differently each time and told the user nothing. Material's shared axis
+        // is one transition whose direction carries the meaning instead (RemEx-yzu5m).
         TransitionDirection = targetIndex >= ActiveNavIndex ? 1 : -1;
-
-        // Desktop keeps the variety. The former Android branch (always CrossFade) was
-        // unreachable in this assembly and was removed with the rest of the dead Android
-        // chrome (RemEx-f167).
-        TransitionType = _rng.Next(4);
 
         ActiveNavIndex = targetIndex;
         CurrentView = viewModel;

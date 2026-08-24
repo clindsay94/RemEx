@@ -338,6 +338,15 @@
                     </StackPanel>
                     <ToggleSwitch AutomationProperties.Name="{local:Localize Custom_HardwareSyncTitle}" Grid.Column="1" IsChecked="{Binding SyncWithHardware}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left"/>
                 </Grid>
+
+                <!-- Reduced Motion -->
+                <Grid ColumnDefinitions="*,2*">
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{local:Localize Custom_ReducedMotionTitle}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{local:Localize Custom_ReducedMotionDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <ToggleSwitch AutomationProperties.Name="{local:Localize Custom_ReducedMotionTitle}" Grid.Column="1" IsChecked="{Binding IsReducedMotion}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left"/>
+                </Grid>
             </StackPanel>
         </Border>
 

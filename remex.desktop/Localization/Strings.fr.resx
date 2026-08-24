@@ -1544,6 +1544,12 @@ Linux : ip addr  ou  hostname -I</value>
   <data name="Custom_HardwareSyncDesc" xml:space="preserve">
     <value>Synchroniser la couleur d'accentuation avec le RGB physique</value>
   </data>
+  <data name="Custom_ReducedMotionTitle" xml:space="preserve">
+    <value>Mouvement réduit</value>
+  </data>
+  <data name="Custom_ReducedMotionDesc" xml:space="preserve">
+    <value>Limite les animations au minimum. Les pages changent sans glisser et les mouvements décoratifs s&apos;arrêtent.</value>
+  </data>
   <data name="Common_On" xml:space="preserve">
     <value>Activé</value>
   </data>

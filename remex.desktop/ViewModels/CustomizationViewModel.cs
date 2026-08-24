@@ -590,6 +590,32 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     partial void OnSyncWithHardwareChanged(bool value) => ApplyAndSave();
 
+    /// <summary>
+    /// The reduced-motion preference, so it can sit with the other personalisation toggles.
+    /// </summary>
+    /// <remarks>
+    /// A view of <see cref="ShellViewModel.IsReducedMotion"/> rather than a second copy of it. The
+    /// preference lives on the profile itself, not in <c>Customization</c>, and the shell already
+    /// persists it when it changes — so this deliberately does not go through
+    /// <see cref="ApplyAndSave"/>, which would write the customization record for a value that is
+    /// not part of it. Until this bead it had no control at all: the value was read from the profile
+    /// at startup and there was no way for anyone to set it (RemEx-yzu5m).
+    /// </remarks>
+    public bool IsReducedMotion
+    {
+        get => _shell.IsReducedMotion;
+        set
+        {
+            if (_shell.IsReducedMotion == value)
+            {
+                return;
+            }
+
+            _shell.IsReducedMotion = value;
+            OnPropertyChanged();
+        }
+    }
+
     public bool IsGlassModeSelected => CanvasBackgroundType == "Glass";
 
     private void ApplyAndSave()

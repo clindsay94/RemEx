@@ -1544,6 +1544,12 @@ Linux: ip addr  या  hostname -I</value>
   <data name="Custom_HardwareSyncDesc" xml:space="preserve">
     <value>भौतिक RGB के साथ एक्सेंट रंग सिंक करें</value>
   </data>
+  <data name="Custom_ReducedMotionTitle" xml:space="preserve">
+    <value>कम गति</value>
+  </data>
+  <data name="Custom_ReducedMotionDesc" xml:space="preserve">
+    <value>एनिमेशन को कम से कम रखें। पेज बिना स्लाइड किए बदलते हैं और सजावटी गति रुक जाती है।</value>
+  </data>
   <data name="Common_On" xml:space="preserve">
     <value>चालू</value>
   </data>

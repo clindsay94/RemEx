@@ -1544,6 +1544,12 @@ Linux: ip addr  veya  hostname -I</value>
   <data name="Custom_HardwareSyncDesc" xml:space="preserve">
     <value>Vurgu rengini fiziksel RGB ile senkronize et</value>
   </data>
+  <data name="Custom_ReducedMotionTitle" xml:space="preserve">
+    <value>Azaltılmış hareket</value>
+  </data>
+  <data name="Custom_ReducedMotionDesc" xml:space="preserve">
+    <value>Animasyonları en aza indirir. Sayfalar kaymadan değişir ve dekoratif hareket durur.</value>
+  </data>
   <data name="Common_On" xml:space="preserve">
     <value>Açık</value>
   </data>
