@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Remex.Core.Models;
@@ -157,8 +158,12 @@ public sealed class FileTransferService : IFileTransferService
             // renaming it into place, so one can legitimately be here for the length of a transfer,
             // and can be left behind for good by a process killed mid-copy. Neither is anything the
             // person browsing this folder from their phone can act on (RemEx-cojhy).
-            if (!fsi.Attributes.HasFlag(FileAttributes.Directory)
-                && fsi.Name.Contains(".remexnew-", StringComparison.Ordinal))
+            //
+            // Tested with `is not DirectoryInfo` rather than by reading .Attributes: this sits ahead
+            // of the try below, whose whole job is to keep one unreadable entry from failing the
+            // listing, so it must not be able to throw. It is also the same question the loop body
+            // already answers that way.
+            if (fsi is not DirectoryInfo && IsSibling(fsi.Name))
             {
                 continue;
             }
@@ -315,9 +320,10 @@ public sealed class FileTransferService : IFileTransferService
         catch
         {
             // A half-written sibling is litter in the user's own folder, so it goes whatever went
-            // wrong — including a cancellation part-way through the copy. Guarded on `created`
-            // because the one way CreateNew fails is that the path already exists, and that file
-            // then belongs to somebody else's in-flight transfer.
+            // wrong — including a cancellation part-way through the copy. Guarded on `created` so
+            // this only deletes a file this call actually made: CreateNew can also fail with
+            // directory-not-found, access-denied, name-too-long or disk-full, and in none of those
+            // is there anything of ours on disk to remove.
             if (created) TryDelete(sibling);
             throw;
         }
@@ -333,21 +339,51 @@ public sealed class FileTransferService : IFileTransferService
     /// </remarks>
     internal static string SiblingPathFor(string destination)
     {
-        const int nameMax = 255;
+        // BYTES, NOT CHARACTERS. ext4 measures a name component in UTF-8 bytes; NTFS measures it in
+        // UTF-16 code units. Budgeting on string.Length is therefore right on Windows and wrong on
+        // Linux for any non-ASCII name — a 150-character CJK name is ~250 bytes, passes a character
+        // budget untouched, and produces a sibling that fails ENAMETOOLONG. Counting bytes is
+        // correct on both, because it is never larger than the UTF-16 count for the ASCII case that
+        // NTFS is strict about.
+        const int nameMaxBytes = 255;
 
         var directory = Path.GetDirectoryName(destination) ?? string.Empty;
         var suffix = ".remexnew-" + Guid.NewGuid().ToString("N");
         var stem = Path.GetFileName(destination);
 
-        if (stem.Length + suffix.Length > nameMax)
+        var budget = nameMaxBytes - suffix.Length; // The suffix is ASCII, so bytes == chars for it.
+        if (Encoding.UTF8.GetByteCount(stem) > budget)
         {
-            stem = stem[..(nameMax - suffix.Length)];
+            stem = TrimToBytes(stem, budget);
         }
 
         return Path.Combine(directory, stem + suffix);
     }
 
-    /// <summary>Matches the temp files <see cref="SiblingPathFor"/> creates.</summary>
+    /// <summary>Trims <paramref name="text"/> to at most <paramref name="maxBytes"/> of UTF-8.</summary>
+    /// <remarks>
+    /// Cuts on rune boundaries. Slicing by index instead can split a surrogate pair, and .NET's UTF-8
+    /// encoder turns the lone surrogate that leaves behind into U+FFFD — so the name would not merely
+    /// be shortened, it would contain a replacement character.
+    /// </remarks>
+    private static string TrimToBytes(string text, int maxBytes)
+    {
+        var kept = 0;
+        var bytes = 0;
+
+        foreach (var rune in text.EnumerateRunes())
+        {
+            var runeBytes = rune.Utf8SequenceLength;
+            if (bytes + runeBytes > maxBytes) break;
+
+            bytes += runeBytes;
+            kept += rune.Utf16SequenceLength;
+        }
+
+        return text[..kept];
+    }
+
+    /// <summary>The glob that finds candidate temp files. Always confirm a hit with <see cref="IsSibling"/>.</summary>
     /// <remarks>
     /// Every other staged-then-renamed write in this project sweeps its own orphans, and each says
     /// why: a process killed between staging and rename leaves one behind forever. This one stages
@@ -355,7 +391,39 @@ public sealed class FileTransferService : IFileTransferService
     /// an abandoned 600 MB <c>report.pdf.remexnew-…</c> showing up on the phone is not something
     /// anyone can be expected to interpret.
     /// </remarks>
-    internal const string SiblingPattern = "*.remexnew-*";
+    private const string SiblingGlob = "*.remexnew-*";
+
+    /// <summary>
+    /// Whether a name is one this service produced — the marker plus exactly 32 hex, at the end.
+    /// </summary>
+    /// <remarks>
+    /// ANCHORED, BECAUSE BOTH CONSUMERS ACT ON A MATCH AND ONE OF THEM DELETES. A loose
+    /// "contains .remexnew-" also matches a file the user named themselves — <c>design.remexnew-v2.psd</c>
+    /// is a perfectly ordinary name — and that file would then be hidden from every browse listing
+    /// with no indication, and unlinked by the next sweep of its directory. Hiding a user's file is
+    /// worse than showing a temp one: a visible temp file is confusing and self-resolving, a hidden
+    /// one is unreachable, and here it was also unrecoverable.
+    /// </remarks>
+    internal static bool IsSibling(string name)
+    {
+        const int tokenLength = 32;
+        const string marker = ".remexnew-";
+
+        if (name.Length < marker.Length + tokenLength) return false;
+
+        var token = name.AsSpan(name.Length - tokenLength);
+        if (!name.AsSpan(name.Length - tokenLength - marker.Length, marker.Length).SequenceEqual(marker))
+        {
+            return false;
+        }
+
+        foreach (var c in token)
+        {
+            if (!Uri.IsHexDigit(c)) return false;
+        }
+
+        return true;
+    }
 
     /// <summary>How long an abandoned sibling is left alone before it is assumed dead.</summary>
     /// <remarks>
@@ -371,8 +439,12 @@ public sealed class FileTransferService : IFileTransferService
         try
         {
             var cutoff = DateTime.UtcNow - AbandonedSiblingAge;
-            foreach (var orphan in Directory.EnumerateFiles(directory, SiblingPattern))
+            foreach (var orphan in Directory.EnumerateFiles(directory, SiblingGlob))
             {
+                // The glob is the cheap filter; IsSibling is the one that decides. Deleting on the
+                // glob alone would take a user's own design.remexnew-v2.psd with it.
+                if (!IsSibling(Path.GetFileName(orphan))) continue;
+
                 if (File.GetLastWriteTimeUtc(orphan) < cutoff) TryDelete(orphan);
             }
         }

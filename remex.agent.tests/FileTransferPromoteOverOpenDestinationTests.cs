@@ -1,4 +1,5 @@
 
+using System.Text;
 using Xunit.Abstractions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Remex.Agent.Services.FileTransfer;
@@ -198,23 +199,61 @@ public sealed class FileTransferPromoteOverOpenDestinationTests : IDisposable
         Assert.Contains(".remexnew-", sibling, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void ALegalFilenameNeverProducesAnIllegalTempFilename()
+    [Theory]
+    // ASCII: 245 characters is a legal name nothing upstream rejects - FilePathValidation has no
+    // length rule at all - and appending the suffix without a budget makes an illegal one.
+    [InlineData(241, 'x')]
+    // Non-ASCII, which is where a CHARACTER budget silently fails. ext4 measures a component in
+    // UTF-8 BYTES: 150 CJK characters is ~450 bytes, comfortably under a 255-character budget and
+    // well over the real limit. The upload then fails ENAMETOOLONG on Linux, but only when the
+    // shared root happens to sit on a different volume from staging - the same "fails depending on
+    // which drive the folder is on" shape the budget exists to prevent.
+    [InlineData(150, '漢')]
+    public void ALegalFilenameNeverProducesAnIllegalTempFilename(int stemLength, char fill)
     {
-        // 245 characters is a legal name that nothing upstream rejects - FilePathValidation has no
-        // length rule at all - and NAME_MAX is 255 on both NTFS and ext4 regardless of long-path
-        // settings. Appending the suffix without a budget would produce a 288-character component
-        // and fail a transfer that works fine when the shared root happens to sit on the staging
-        // volume, so the failure would look random depending on which drive the folder is on.
-        var longButLegal = new string('x', 241) + ".pdf";
-        Assert.Equal(245, longButLegal.Length);
+        var longButLegal = new string(fill, stemLength) + ".pdf";
 
         var sibling = FileTransferService.SiblingPathFor(Path.Combine(Path.GetTempPath(), longButLegal));
+        var name = Path.GetFileName(sibling);
 
         Assert.True(
-            Path.GetFileName(sibling).Length <= 255,
-            $"the temp filename is {Path.GetFileName(sibling).Length} characters, past NAME_MAX");
-        Assert.Contains(".remexnew-", sibling, StringComparison.Ordinal);
+            Encoding.UTF8.GetByteCount(name) <= 255,
+            $"the temp filename is {Encoding.UTF8.GetByteCount(name)} UTF-8 bytes, past NAME_MAX on ext4");
+        Assert.True(
+            name.Length <= 255,
+            $"the temp filename is {name.Length} UTF-16 units, past NAME_MAX on NTFS");
+        Assert.Contains(".remexnew-", name, StringComparison.Ordinal);
+
+        // Trimmed on a rune boundary. Slicing by index can split a surrogate pair, and the encoder
+        // turns the leftover half into U+FFFD - so the name would be corrupted, not just shortened.
+        Assert.DoesNotContain('�', name);
+    }
+
+    [Theory]
+    // What this service actually produces: the marker plus exactly 32 hex, at the end.
+    [InlineData("report.pdf.remexnew-0123456789abcdef0123456789abcdef", true)]
+    [InlineData("a.remexnew-ffffffffffffffffffffffffffffffff", true)]
+    // A file the user named themselves. Matching this would hide it from every browse listing with
+    // no indication, and the sweep would then unlink it.
+    [InlineData("design.remexnew-v2.psd", false)]
+    [InlineData("notes.remexnew-.txt", false)]
+    // Right shape, wrong length or alphabet.
+    [InlineData("x.remexnew-0123456789abcdef", false)]
+    [InlineData("x.remexnew-0123456789abcdef0123456789abcdeZ", false)]
+    [InlineData("report.pdf", false)]
+    public void OnlyThisServicesOwnTempFilesAreHiddenAndSwept(string name, bool expected)
+    {
+        Assert.Equal(expected, FileTransferService.IsSibling(name));
+    }
+
+    [Fact]
+    public void WhatSiblingPathForProducesIsWhatIsSiblingRecognises()
+    {
+        // The two are a pair, and a suffix change that updated only one would leave temp files
+        // visible in the user's folder and never swept - or, worse, the reverse.
+        var sibling = FileTransferService.SiblingPathFor(Path.Combine(Path.GetTempPath(), "report.pdf"));
+
+        Assert.True(FileTransferService.IsSibling(Path.GetFileName(sibling)));
     }
 
     /// <summary>
@@ -238,17 +277,26 @@ public sealed class FileTransferPromoteOverOpenDestinationTests : IDisposable
     /// </remarks>
     private static string? SecondVolumeDirectory(string notThisOne)
     {
-        var exclude = Path.GetPathRoot(Path.GetFullPath(notThisOne));
+        // MOUNT POINT, NOT PATH ROOT. Path.GetPathRoot returns "/" for every absolute Unix path, so
+        // an exclusion built on it can only ever rule out the drive whose root is "/". On a layout
+        // where the temp directory is not on / - TMPDIR=/var/tmp with /var its own partition - the
+        // loop would happily return a directory on the SAME volume as staging, AreSameVolume would
+        // be true, and the test would run the same-volume branch while reporting green. Whoever
+        // executes RemEx-rpy54 would get a pass from a test that never entered the branch it exists
+        // to guard.
+        var stagingMount = MountPointOf(notThisOne);
 
         foreach (var drive in DriveInfo.GetDrives())
         {
             if (!drive.IsReady || drive.DriveType is not DriveType.Fixed) continue;
-            if (string.Equals(drive.RootDirectory.FullName, exclude, StringComparison.OrdinalIgnoreCase)) continue;
 
             foreach (var scratch in new[] { "Temp", "tmp", "var/tmp" })
             {
                 var existing = Path.Combine(drive.RootDirectory.FullName, scratch);
                 if (!Directory.Exists(existing)) continue;
+
+                // The check that actually matters: a different mount from staging's.
+                if (string.Equals(MountPointOf(existing), stagingMount, StringComparison.OrdinalIgnoreCase)) continue;
 
                 var candidate = Path.Combine(existing, "remex-cojhy-" + Guid.NewGuid().ToString("N"));
                 try
@@ -265,6 +313,42 @@ public sealed class FileTransferPromoteOverOpenDestinationTests : IDisposable
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// The mount point a path sits on: the longest drive root that prefixes it.
+    /// </summary>
+    /// <remarks>
+    /// Longest-prefix rather than <c>Path.GetPathRoot</c>, which cannot tell two Unix mounts apart.
+    /// Mirrors what <c>FileTransferService.AreSameVolume</c> does, so this test's idea of "a
+    /// different volume" is the same as the production code's idea of it — the point of the test is
+    /// to reach the branch that check selects.
+    /// </remarks>
+    private static string MountPointOf(string path)
+    {
+        var full = Path.GetFullPath(path);
+        var best = string.Empty;
+
+        foreach (var drive in DriveInfo.GetDrives())
+        {
+            string root;
+            try
+            {
+                if (!drive.IsReady) continue;
+                root = drive.RootDirectory.FullName;
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            if (full.StartsWith(root, StringComparison.OrdinalIgnoreCase) && root.Length > best.Length)
+            {
+                best = root;
+            }
+        }
+
+        return best;
     }
 
     /// <summary>Reads a file without taking a lock that would perturb what is being measured.</summary>
