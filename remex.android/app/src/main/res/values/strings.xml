@@ -370,7 +370,7 @@
     <string name="connection_paired">Paired</string>
     <string name="connection_unpair">Unpair</string>
     <string name="connection_known_pcs_title">Known PCs</string>
-    <string name="connection_known_pcs_hint">Tap a PC to connect to it.</string>
+    <string name="connection_known_pcs_hint">Tap an address to connect.</string>
     <string name="connection_known_pc_last_connected">Last connected %1$s</string>
     <string name="connection_known_pc_never_connected">Not connected yet</string>
     <string name="connection_known_pc_actions">Options for %1$s</string>
@@ -379,6 +379,11 @@
     <string name="connection_known_pc_nickname_label">Nickname</string>
     <string name="connection_known_pc_unpair_title">Unpair %1$s?</string>
     <string name="connection_known_pc_unpair_message">This phone will forget this PC, at every address it answers on. You\'ll need the PIN shown on the PC to pair again.</string>
+    <string name="connection_known_pc_needs_pairing">Needs pairing</string>
+    <string name="connection_known_pc_forget">Remove from list</string>
+    <string name="connection_known_pc_pair_title">Pair with %1$s?</string>
+    <string name="connection_known_pc_pair_message">This phone isn\'t paired at this address. Enter the 6-digit PIN shown on the PC.</string>
+    <string name="connection_known_pc_pair_confirm">Pair</string>
 
     
     <string name="pairing_title">Security Pairing</string>

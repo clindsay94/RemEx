@@ -872,4 +872,77 @@ class SettingsManager(val context: Context) {
                         prefs.remove(knownHostLastConnectedKey(identity))
                 }
         }
+
+        // ── Recent connections: the last few ADDRESSES, whichever PC (RemEx-obxlo) ───
+        // The mirror image of the known-host record above, and both are needed. That one is
+        // identity-keyed so a machine reached three ways keeps one nickname; this one is
+        // address-keyed because "where did I connect" is a question the identity grouping
+        // deliberately throws away. Not derived from the pinned-host store either, so an entry
+        // outlives its pairing and a reinstalled PC stays one tap from being paired again.
+        //
+        // The whole list lives under one key so it is rewritten atomically; the ordering, the caps
+        // and the parsing live in RecentConnections, where they can be tested without DataStore.
+
+        private val recentConnectionsKey = stringPreferencesKey(RecentConnections.KeyName)
+
+        val recentConnectionsFlow: Flow<List<RecentConnection>> =
+                context.dataStore.data.map { prefs ->
+                        RecentConnections.parse(prefs[recentConnectionsKey])
+                }
+
+        /**
+         * Records a connection that actually succeeded.
+         *
+         * The read-modify-write happens INSIDE the transaction rather than against a value read
+         * beforehand. Two connections landing close together — a host switch is exactly that — would
+         * otherwise both start from the same list and the second would drop the first.
+         */
+        suspend fun recordRecentConnection(
+                address: String,
+                port: Int,
+                identity: String,
+                atMillis: Long
+        ) {
+                if (address.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        val updated =
+                                RecentConnections.record(
+                                        existing =
+                                                RecentConnections.parse(prefs[recentConnectionsKey]),
+                                        address = address,
+                                        port = port,
+                                        identity = identity,
+                                        atMillis = atMillis
+                                )
+                        prefs[recentConnectionsKey] = RecentConnections.encode(updated)
+                }
+        }
+
+        /** Drops every remembered address of a PC the user just unpaired. */
+        suspend fun forgetRecentConnectionsOf(identity: String, addresses: Collection<String>) {
+                context.dataStore.edit { prefs ->
+                        val updated =
+                                RecentConnections.forgetMachine(
+                                        existing =
+                                                RecentConnections.parse(prefs[recentConnectionsKey]),
+                                        identity = identity,
+                                        addresses = addresses
+                                )
+                        prefs[recentConnectionsKey] = RecentConnections.encode(updated)
+                }
+        }
+
+        /** Drops one address, for a row no unpair can reach because nothing is paired at it. */
+        suspend fun forgetRecentConnection(address: String) {
+                if (address.isBlank()) return
+                context.dataStore.edit { prefs ->
+                        val updated =
+                                RecentConnections.forgetAddress(
+                                        existing =
+                                                RecentConnections.parse(prefs[recentConnectionsKey]),
+                                        address = address
+                                )
+                        prefs[recentConnectionsKey] = RecentConnections.encode(updated)
+                }
+        }
 }

@@ -231,7 +231,7 @@
     <string name="connection_paired">Сполучено</string>
     <string name="connection_unpair">Скасувати сполучення</string>
     <string name="connection_known_pcs_title">Відомі ПК</string>
-    <string name="connection_known_pcs_hint">Торкніться ПК, щоб підключитися до нього.</string>
+    <string name="connection_known_pcs_hint">Торкніться адреси, щоб підключитися.</string>
     <string name="connection_known_pc_last_connected">Останнє підключення: %1$s</string>
     <string name="connection_known_pc_never_connected">Ще не підключалися</string>
     <string name="connection_known_pc_actions">Параметри для %1$s</string>
@@ -240,6 +240,11 @@
     <string name="connection_known_pc_nickname_label">Псевдонім</string>
     <string name="connection_known_pc_unpair_title">Скасувати сполучення з %1$s?</string>
     <string name="connection_known_pc_unpair_message">Цей телефон забуде цей ПК за всіма адресами, на які він відповідає. Щоб знову створити сполучення, знадобиться PIN-код, показаний на ПК.</string>
+    <string name="connection_known_pc_needs_pairing">Потрібне сполучення</string>
+    <string name="connection_known_pc_forget">Вилучити зі списку</string>
+    <string name="connection_known_pc_pair_title">Створити сполучення з %1$s?</string>
+    <string name="connection_known_pc_pair_message">Цей телефон не має сполучення за цією адресою. Введіть 6-значний PIN-код, показаний на ПК.</string>
+    <string name="connection_known_pc_pair_confirm">Створити сполучення</string>
     <string name="pairing_title">Сполучення</string>
     <string name="pairing_prompt">Введіть 6-значний PIN-код, показаний на вашому ПК</string>
     <string name="pairing_auto_pin_failed">Не вдалося отримати PIN автоматично — введіть PIN, показаний на вашому ПК.</string>

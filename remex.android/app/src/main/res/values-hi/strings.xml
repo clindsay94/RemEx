@@ -231,7 +231,7 @@
     <string name="connection_paired">पेयर किया गया</string>
     <string name="connection_unpair">अनपेयर करें</string>
     <string name="connection_known_pcs_title">ज्ञात पीसी</string>
-    <string name="connection_known_pcs_hint">कनेक्ट करने के लिए किसी पीसी पर टैप करें।</string>
+    <string name="connection_known_pcs_hint">कनेक्ट करने के लिए किसी पते पर टैप करें।</string>
     <string name="connection_known_pc_last_connected">पिछला कनेक्शन: %1$s</string>
     <string name="connection_known_pc_never_connected">अभी तक कनेक्ट नहीं हुआ</string>
     <string name="connection_known_pc_actions">%1$s के विकल्प</string>
@@ -240,6 +240,11 @@
     <string name="connection_known_pc_nickname_label">उपनाम</string>
     <string name="connection_known_pc_unpair_title">%1$s को अनपेयर करें?</string>
     <string name="connection_known_pc_unpair_message">यह फ़ोन इस पीसी को उन सभी पतों पर भूल जाएगा जिन पर वह जवाब देता है। दोबारा पेयर करने के लिए आपको पीसी पर दिख रहा पिन चाहिए होगा।</string>
+    <string name="connection_known_pc_needs_pairing">पेयरिंग ज़रूरी है</string>
+    <string name="connection_known_pc_forget">सूची से हटाएँ</string>
+    <string name="connection_known_pc_pair_title">%1$s के साथ पेयर करें?</string>
+    <string name="connection_known_pc_pair_message">यह फ़ोन इस पते पर पेयर नहीं है। पीसी पर दिख रहा 6-अंकों का पिन डालें।</string>
+    <string name="connection_known_pc_pair_confirm">पेयर करें</string>
     <string name="pairing_title">सुरक्षित पेयरिंग</string>
     <string name="pairing_prompt">अपने पीसी पर दिखाया गया 6 अंकों का पिन दर्ज करें</string>
     <string name="pairing_auto_pin_failed">PIN अपने आप प्राप्त नहीं हो सका — अपने PC पर दिखाई गई PIN दर्ज करें.</string>

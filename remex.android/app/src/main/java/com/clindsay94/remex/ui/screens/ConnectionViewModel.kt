@@ -10,7 +10,9 @@ import com.clindsay94.remex.data.CertRepairMigration
 import com.clindsay94.remex.data.DiscoveredHost
 import com.clindsay94.remex.data.KnownHost
 import com.clindsay94.remex.data.KnownHosts
+import com.clindsay94.remex.data.KnownPcEntry
 import com.clindsay94.remex.data.NsdDiscoveryManager
+import com.clindsay94.remex.data.RecentConnections
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.service.RemexConnectionService
 import kotlinx.coroutines.Job
@@ -144,10 +146,24 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
     // here and refreshed on the events that can change it: a connection, an unpair, a screen resume.
     private val _pairedByAddress = MutableStateFlow<Map<String, String>>(emptyMap())
 
-    /** The Known PCs list: one row per physical PC, most recently connected first (RemEx-k62t). */
+    /** The paired PCs, one entry per physical machine, most recently connected first (RemEx-k62t). */
     val knownHosts: StateFlow<List<KnownHost>> =
             combine(_pairedByAddress, settingsManager.knownHostRecordsFlow) { paired, records ->
                         KnownHosts.build(paired, records)
+                    }
+                    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * What the Known PCs card renders: the last few ADDRESSES connected to (RemEx-obxlo).
+     *
+     * [knownHosts] is still the model of "which machines am I paired with" and still what rename and
+     * unpair act on — this is a view over it joined with the address history, not a replacement.
+     * Derived rather than stored, so a row's trust flag is recomputed from the live pinned-host map
+     * every time either side changes and can never claim a pairing that has since lapsed.
+     */
+    val knownPcRows: StateFlow<List<KnownPcEntry>> =
+            combine(settingsManager.recentConnectionsFlow, knownHosts) { recent, hosts ->
+                        RecentConnections.rows(recent, hosts)
                     }
                     .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -372,22 +388,34 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
      * tiles, the keepalive service, the widgets, file transfer — at the PC the user last chose,
      * instead of leaving them aimed at whatever was typed into the form once.
      */
-    fun connectToKnownHost(knownHost: KnownHost) {
+    fun connectToKnownPc(entry: KnownPcEntry, pairingPin: String = "") {
         val cp = connectionPreferences.value
         val dp = remoteDesktopPreferences.value
         connect(
-                newHost = knownHost.preferredAddress,
-                newPort = knownHost.port,
+                newHost = entry.address,
+                newPort = entry.port,
                 macAddress = cp?.macAddress ?: "",
                 broadcastIp = cp?.broadcastIp ?: "255.255.255.255",
                 subnetMask = cp?.subnetMask ?: "255.255.255.0",
-                // Already paired by definition — a PIN is for a PC this phone has never met, and
-                // sending a stale one would fail the pairing exchange instead of reconnecting.
-                pairingPin = "",
+                // BLANK FOR A TRUSTED ROW, and that is not merely an optimisation: a 6-digit PIN
+                // makes RemexClientManager drop the pinned hash and force a re-pair, so carrying one
+                // into a reconnect would break the thing it was trying to do. The caller supplies a
+                // PIN only for a row whose address is NOT pinned, where pairing is the actual intent.
+                pairingPin = if (entry.isTrusted) "" else pairingPin,
                 desktopQuality = dp?.quality ?: 50,
                 desktopTargetFps = dp?.targetFps ?: 120,
                 desktopScale = dp?.scale ?: 1.0f
         )
+    }
+
+    /**
+     * Drops one remembered address without touching any pairing.
+     *
+     * The only way to clear a row whose PC is not paired anywhere: unpair has nothing to act on, so
+     * a dead address would otherwise sit in the list forever.
+     */
+    fun forgetRecentConnection(address: String) {
+        viewModelScope.launch { settingsManager.forgetRecentConnection(address) }
     }
 
     fun renameKnownHost(identity: String, nickname: String) {
@@ -409,6 +437,11 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
                 PinnedHostStore.forgetHost(context, address)
             }
             settingsManager.forgetKnownHost(knownHost.identity)
+            // And its address history. Unpairing is the user asking to forget the MACHINE, so
+            // leaving its addresses in the recent list would keep offering it by name and invite
+            // them to pair it again. A certificate that merely CHANGED does not come through here —
+            // that PC keeps its rows, which is why the history is stored separately at all.
+            settingsManager.forgetRecentConnectionsOf(knownHost.identity, knownHost.addresses)
             _pairedByAddress.value = PinnedHostStore.listPaired(getApplication())
         }
     }
@@ -452,9 +485,22 @@ class ConnectionViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             val host = connection.host
             if (host.isBlank()) return@launch
-            val identity =
-                    HostIdentity.keyFor(PinnedHostStore.getPin(getApplication(), host))
-                            ?: return@launch
+            val identity = HostIdentity.keyFor(PinnedHostStore.getPin(getApplication(), host))
+
+            // THE ADDRESS HISTORY IS WRITTEN BEFORE THE IDENTITY GUARD BELOW, and with a blank
+            // identity when there is no pin to derive one from (RemEx-obxlo). The two lists answer
+            // different questions and must not share a precondition: "which PCs am I paired with"
+            // legitimately has nothing to say about an unpinned host, but "where did I connect" does
+            // — and that is the row the user needs, because an address they reached without a
+            // pinning is exactly one they will have to pair again.
+            settingsManager.recordRecentConnection(
+                    address = host,
+                    port = connection.port,
+                    identity = identity.orEmpty(),
+                    atMillis = connectedAtMillis
+            )
+
+            if (identity == null) return@launch
 
             // THE CERTIFICATE-CHANGE INHERITANCE, and it happens BEFORE the record is written
             // (RemEx-bye7). The migration ends by forgetting the source row, so running it after
