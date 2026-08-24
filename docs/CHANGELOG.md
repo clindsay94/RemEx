@@ -192,17 +192,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **List items stopped showing where the keyboard was.** RemEx draws a ring around whatever you have
-  tabbed to, so you can see where you are without a mouse. When the PC app moved onto Material's
-  controls, the rule that drew that ring on a list item started pointing at a piece of the old
-  control that the new one does not have — so it matched nothing, drew nothing, and reported no
-  error. There was nothing underneath it either: Material turns off its own focus outline, and what
-  it puts in its place is a shade of highlight so close to the one it uses for hover that the two are
-  hard to tell apart.
+- **The keyboard focus ring on Home's pinned sensor cards was drawn around the wrong rectangle.**
+  RemEx rings whatever you have tabbed to, so you can see where you are without a mouse. On the
+  pinned sensors the ring was drawn around the card's whole slot rather than the card, which left it
+  flush with the card on two sides and 20px out in space on the other two — visible, but reading as a
+  stray box rather than as focus. It now follows the card's outline, corners included.
 
-  The ring is back on list items. The nine other places RemEx draws one were re-checked against the
-  new controls and all still work. There is now also a check in the build that fails if any of the
-  ten stops pointing at something real — this class of fault is invisible unless somebody is
+  The ten places RemEx draws a focus ring were re-checked at the same time and the other nine are
+  correct. There is now a check in the build that fails if any of them stops pointing at something
+  real, because this class of fault renders nothing, logs nothing, and is only noticed by somebody
   navigating by keyboard at the time. (RemEx-kgs7g)
 
 - **Clicking quickly through the sidebar could leave the PC app showing nothing at all.** Going

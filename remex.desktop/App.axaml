@@ -264,31 +264,28 @@
         <!-- These draw their own border, so the ring goes on the control rather than on an inner
              presenter. TextBox is the one a user is most likely to be typing into blind without it.
 
-             LISTBOXITEM IS HERE, NOT WITH THE BUTTONS, AND THAT IS THE POINT (RemEx-kgs7g).
-             It used to target `/template/ ContentPresenter` like the three above it. Material's
-             ListBoxItem template contains no ContentPresenter at all — it hosts its content in a
-             ripple:RippleEffect, and its parts are PART_RootBorder, PART_RootPanel,
-             PART_BehaviourEffect, PART_Ripple and PART_HoverEffect (verified against
-             Material.Avalonia 3.19.0, the version this project builds against, not the 3.14.2 the
-             original audit read). The selector compiled, matched nothing, and the keyboard focus
-             ring on every list item vanished with no error and no failing test.
+             LISTBOXITEM IS HERE, NOT WITH THE BUTTONS, BECAUSE IT DOES NOT DEPEND ON THE TEMPLATE'S
+             SHAPE (RemEx-kgs7g). It used to target `/template/ ContentPresenter` like the three
+             above it. That works under Fluent — Avalonia 12.1.1's ListBoxItem template is a single
+             ContentPresenter#PART_ContentPresenter which template-binds BorderBrush, BorderThickness
+             and CornerRadius, so both forms render — but it only works for as long as the template
+             root happens to be a ContentPresenter, and it silently renders nothing when it is not.
 
-             Nothing was left underneath it either: Material sets FocusAdorner="{x:Null}" on
-             ListBoxItem, and its own :focus-visible styling is a 0.07 opacity wash on
-             PART_HoverEffect against 0.05 for pointerover — indistinguishable from hover, which is
-             not an unambiguous focus indicator.
+             That is not hypothetical: HomeView's pinned-sensor list supplies its own ListBoxItem
+             template. Its root WAS a bare ContentPresenter, so the old selector matched it and drew
+             the ring at the item's bounds — 20px clear of the card on two sides, because the card's
+             own margin sat inside the item. The ring was there; it was around the wrong rectangle.
 
-             PART_RootBorder template-binds both BorderBrush and BorderThickness, so a value set on
-             the control renders on the item's outer border.
+             Set on the CONTROL, the ring renders through whatever border the template binds, and the
+             obligation moves to the template: a view supplying its own has to bind BorderBrush and
+             BorderThickness or the ring reaches nothing. HomeView's now does, and
+             FocusVisibleStyleGuardTests holds both halves.
 
-             THAT LAST SENTENCE IS THE WHOLE FIX, AND IT IS AN OBLIGATION ON THE TEMPLATE, NOT ON THE
-             SELECTOR. A view that supplies its own ListBoxItem template has to bind the border too or
-             the ring reaches nothing there - HomeView's pinned-sensor list did exactly that and the
-             first draft of this fix broke it. FocusVisibleStyleGuardTests holds both halves.
-
-             All of the above is read from Material.Avalonia's theme SOURCE. The shipped package
-             compiles its XAML to IL, so none of this is checkable from the build inputs: a Material
-             upgrade has to go re-read the theme rather than trust this comment. -->
+             A note on provenance, because it nearly went in wrong: this project applies FluentTheme
+             (below), not Material.Avalonia's control themes. docs/AUDIT-fluent-removal.md analyses
+             what breaks if that changes — Material's ListBoxItem has no ContentPresenter to reach at
+             all — but RemEx-prkot, which would have made the swap, was cancelled. Treat that audit
+             as contingent, not as a description of what ships. -->
         <Style Selector="ListBoxItem:focus-visible">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>

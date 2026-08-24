@@ -269,10 +269,9 @@
                                 <!-- The Border is not decoration: it is what makes the keyboard focus ring
                                      visible on these cards. App.axaml rings a focused ListBoxItem by setting
                                      BorderBrush and BorderThickness ON THE CONTROL, which only renders if the
-                                     item's template binds them - Material's own template does, through
-                                     PART_RootBorder, and this template replaces it. Without this the pinned
-                                     sensors would be the one list in the app you can tab into and see nothing
-                                     (RemEx-kgs7g).
+                                     item's template binds them. Fluent's stock template does; this one
+                                     replaces it, so without this Border the pinned sensors would be the one
+                                     list in the app you can tab into and see nothing (RemEx-kgs7g).
 
                                      While UNFOCUSED the thickness is 0 and this costs no layout. While focused
                                      it costs 2px a side, and the WrapPanel slot is a fixed 280 wide, so the

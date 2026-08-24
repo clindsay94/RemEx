@@ -14,14 +14,15 @@ namespace Remex.Desktop.Tests.Views;
 /// <para>
 /// A style selector that matches nothing is not an error in Avalonia. It compiles, it is applied to
 /// every control, it never fires, and there is no warning and no failing test — the only symptom is
-/// that somebody navigating by keyboard cannot see where they are. That is what happened when the
-/// Fluent themes were replaced with Material: our
-/// <c>ListBoxItem:focus-visible /template/ ContentPresenter</c> selector kept compiling, but
-/// Material's ListBoxItem template has no ContentPresenter in it at all.
+/// that somebody navigating by keyboard cannot see where they are. A ring is the one piece of this
+/// app's chrome whose absence nothing reports.
 /// </para>
 /// <para>
-/// There is nothing underneath to catch it either. Material sets <c>FocusAdorner="{x:Null}"</c> on
-/// nine of the thirteen controls checked in the RemEx-3e65x audit, ListBoxItem among them.
+/// The specific shape guarded against is a selector that reaches into a template for a part the
+/// template does not have. <c>ListBoxItem:focus-visible /template/ ContentPresenter</c> renders
+/// under Fluent, whose ListBoxItem template root IS a ContentPresenter — and renders nothing at all
+/// against a template whose root is anything else. HomeView supplies such a template, and the same
+/// selector drew its ring around the item's slot rather than the card inside it.
 /// </para>
 /// <para>
 /// <b>The invariant these pin is not "control-level selectors are safe".</b> It is that a ring set on
@@ -46,10 +47,14 @@ public class FocusVisibleStyleGuardTests
         => Path.Combine(new[] { RepoRoot(), "remex.desktop" }.Concat(parts).ToArray());
 
     /// <summary>
-    /// The only controls whose Material template still contains a <c>ContentPresenter</c> for the
-    /// selector to reach, verified against Material.Avalonia 3.19.0 — each templates one named
-    /// <c>PART_ContentPresenter</c>, and the selector matches on type rather than name.
+    /// The controls whose ring is allowed to reach into the template for a <c>ContentPresenter</c>.
     /// </summary>
+    /// <remarks>
+    /// Fluent — the theme this app applies — templates one for all four content controls, including
+    /// ListBoxItem, so the list is a policy rather than a fact about the templates: ListBoxItem is
+    /// excluded because views replace its template and the presenter is then not what should be
+    /// ringed. The three that remain are not templated anywhere in this repo.
+    /// </remarks>
     private static readonly string[] MayUseTheTemplateForm = ["Button", "ToggleButton", "RepeatButton"];
 
     /// <summary>
@@ -79,7 +84,7 @@ public class FocusVisibleStyleGuardTests
     }
 
     [Fact]
-    public void TheListBoxItemRingIsOnTheControlBecauseMaterialsTemplateHasNoPresenterToReach()
+    public void TheListBoxItemRingIsOnTheControlBecauseViewsReplaceItsTemplate()
     {
         FocusStyles().Single(s => s.Control == "ListBoxItem").Suffix.Trim().Should().BeEmpty();
     }
@@ -103,8 +108,8 @@ public class FocusVisibleStyleGuardTests
     public void AViewThatReplacesTheListBoxItemTemplateStillBindsTheBorderTheRingIsPaintedOn()
     {
         // THE ONE THE FIRST DRAFT GOT WRONG. A ring set on the control renders through whatever
-        // border the template binds; Material's PART_RootBorder binds it, but a view that supplies
-        // its own template inherits the obligation. HomeView's pinned-sensor list is the case in
+        // border the template binds; Fluent's ListBoxItem template binds all three, but a view that
+        // supplies its own inherits the obligation. HomeView's pinned-sensor list is the case in
         // point - its template was a bare ContentPresenter, so the control-level ring reached
         // nothing there and only there.
         var overrides = ListBoxItemTemplateOverrides().ToArray();
