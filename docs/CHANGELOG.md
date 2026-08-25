@@ -9,7 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Every icon in the PC app is a real Material icon now.** The 28 glyphs that used to be
+  hand-copied path data in `App.axaml` are gone, and the 38 places that drew them across the shell,
+  Home, Canvas, About, Remote Desktop and the tray flyout use `MaterialIcon` instead. Icons now take
+  their colour from the palette like everything else. Two glyphs deliberately changed: the Commands
+  nav icon had no counterpart in the icon set at all and is now a redrawn remote control, and the
+  sync icon — one arrow, previously standing in for "sync a layout", "reset the view" and "check for
+  updates" alike — is now the two-arrow glyph that reads correctly for all three. (RemEx-wyx2c)
+
 ### Fixed
+
+- **Five icons had never drawn anything.** The magnifier in the shell's search box and on Home, and
+  the dismiss X on both warning banners and the settings overlay, referenced icon names that were
+  not defined anywhere in the app. No error, no log line — just five blank spots nobody had placed.
+  They draw now. (RemEx-wyx2c)
 
 - **Resolved untranslated string backlog across PC and Android for all 8 target languages.**
   Translated 161 English-identical strings across Spanish, French, Hindi, Indonesian, Polish,

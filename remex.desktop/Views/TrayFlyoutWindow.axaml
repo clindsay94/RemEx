@@ -79,10 +79,12 @@
             <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
 
-        <!-- The chip glyphs are Paths, not font characters. The obvious alternative is a Segoe
-             MDL2 Assets codepoint, but that font ships with Windows only and nothing here sets
-             the family, so the glyph would be a fallback box on Linux and probably on Windows
-             too. Fill follows the button's own Foreground so the pointerover style still lands. -->
+        <!-- The chip glyphs are drawn icons, not font characters. The obvious alternative is a
+             Segoe MDL2 Assets codepoint, but that font ships with Windows only and nothing here
+             sets the family, so the glyph would be a fallback box on Linux and probably on Windows
+             too. The icon's Foreground follows the button's own so the pointerover style still
+             lands. MaterialIcon has no Fill at all — a Fill setter here would compile and do
+             nothing (RemEx-wyx2c). -->
         <Style Selector="Button.tray-chip mi|MaterialIcon, ToggleButton.tray-chip mi|MaterialIcon">
             <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}"/>
         </Style>
@@ -93,15 +95,16 @@
              whether the window can be resized and whether its geometry persists. Connor reported the
              resize behaviour backwards because of it.
 
-             It is a priority collision, not a missing Fill. Avalonia's frame order (lower wins) puts
+             It is a priority collision, not a missing colour. Avalonia's frame order (lower wins) puts
              an app style WITH an activator at StyleTrigger, a ControlTheme style with an activator at
              StyleTriggerTheme, and a plain app style at Style. So on :checked —
                Foreground: ours (StyleTrigger) beat Fluent's ToggleButtonForegroundChecked. Accent.
                Background: Fluent's ToggleButtonBackgroundChecked (StyleTriggerTheme) beat the plain
                            Background="Transparent" in the base .tray-chip style above (Style).
              Fluent's checked background is itself accent-derived, so the result was an accent glyph
-             on an accent fill. The Path's Fill was never the problem: it comes from the selector
-             above, ToggleButton derives from Button, and $parent[Button] resolves correctly.
+             on an accent fill. The glyph's own colour was never the problem: it comes from the
+             selector above, ToggleButton derives from Button, and $parent[Button] resolves
+             correctly.
 
              Pinning the background at the same activator priority as the foreground is what stops
              Fluent supplying it. CardBackgroundHoverBrush reads as "this chip is active" and exists

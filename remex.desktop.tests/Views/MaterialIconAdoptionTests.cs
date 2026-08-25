@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
 using Material.Icons;
@@ -38,7 +39,7 @@ namespace Remex.Desktop.Tests.Views;
 public class MaterialIconAdoptionTests
 {
     private const string Avalonia = "https://github.com/avaloniaui";
-    private const string MaterialIcons = "using:Material.Icons.Avalonia";
+    private const string MaterialIconsNs = "using:Material.Icons.Avalonia";
 
     /// <summary>
     /// The <c>Path</c> elements that are genuinely drawings rather than icons, and the reason each
@@ -63,10 +64,9 @@ public class MaterialIconAdoptionTests
     {
         var offenders =
             from view in ViewFiles()
-            from line in File.ReadLines(view).Select((text, index) => (text, number: index + 1))
-            where line.text.Contains("<Path", StringComparison.Ordinal)
-                  && line.text.Contains("{StaticResource Icon", StringComparison.Ordinal)
-            select $"{Path.GetFileName(view)}:{line.number}";
+            from path in XDocument.Load(view).Descendants(XName.Get("Path", Avalonia))
+            where path.Attribute("Data")?.Value.StartsWith("{StaticResource Icon", StringComparison.Ordinal) == true
+            select Path.GetFileName(view);
 
         offenders.Should().BeEmpty(
             "icons are MaterialIcon now; a StaticResource geometry reference resolves to nothing "
@@ -92,18 +92,37 @@ public class MaterialIconAdoptionTests
     [Fact]
     public void EveryIconKind_ExistsInTheShippedIconSet()
     {
-        var kinds =
-            from view in ViewFiles()
-            from icon in XDocument.Load(view).Descendants(XName.Get("MaterialIcon", MaterialIcons))
-            let kind = icon.Attribute("Kind")?.Value
-            where kind is not null && !kind.StartsWith('{')   // skip bindings; TrayTile.Icon is typed
-            select (View: Path.GetFileName(view), Kind: kind);
+        var icons = MaterialIcons().ToList();
 
-        foreach (var (view, kind) in kinds)
+        icons.Should().NotBeEmpty("a query that matches nothing asserts nothing");
+
+        foreach (var (view, icon) in icons)
         {
+            var kind = icon.Attribute("Kind")?.Value;
+            if (kind is null || kind.StartsWith('{'))
+                continue;   // a binding, not a literal; TrayTile.Icon is typed and checked by the compiler
+
             Enum.TryParse<MaterialIconKind>(kind, ignoreCase: false, out _)
                 .Should().BeTrue($"{view} names MaterialIconKind.{kind}");
         }
+    }
+
+    /// <summary>
+    /// Everything else here that reads the XML finds icons by their namespace URI, and
+    /// <c>using:Material.Icons.Avalonia</c> is only one of the legal spellings — the
+    /// assembly-qualified form is another. A view written with the other spelling would drop out of
+    /// every one of those tests silently, so cross-check the count against the raw text.
+    /// </summary>
+    [Fact]
+    public void TheXmlQueries_SeeEveryMaterialIconInTheSource()
+    {
+        var found = MaterialIcons().Count();
+
+        var written = ViewFiles()
+            .Sum(view => Regex.Matches(File.ReadAllText(view), @"<\w+:MaterialIcon\b").Count);
+
+        found.Should().Be(written,
+            "an icon the namespace lookup misses is an icon no assertion in this file covers");
     }
 
     /// <summary>
@@ -115,11 +134,9 @@ public class MaterialIconAdoptionTests
     public void NoMaterialIcon_IsColouredThroughFill()
     {
         var offenders =
-            from view in ViewFiles()
-            from line in File.ReadLines(view).Select((text, index) => (text, number: index + 1))
-            where line.text.Contains("MaterialIcon", StringComparison.Ordinal)
-                  && line.text.Contains("Fill=", StringComparison.Ordinal)
-            select $"{Path.GetFileName(view)}:{line.number}";
+            from icon in MaterialIcons()
+            where icon.Element.Attribute("Fill") is not null
+            select $"{icon.View}: {icon.Element.Attribute("Kind")?.Value ?? "(bound)"}";
 
         offenders.Should().BeEmpty("MaterialIcon paints with Foreground; Fill silently does nothing");
     }
@@ -165,8 +182,21 @@ public class MaterialIconAdoptionTests
         }
     }
 
+    /// <summary>Every MaterialIcon element in the app, with the file it came from.</summary>
+    private static IEnumerable<(string View, XElement Element)> MaterialIcons()
+        => from view in ViewFiles()
+           from icon in XDocument.Load(view).Descendants(XName.Get("MaterialIcon", MaterialIconsNs))
+           select (Path.GetFileName(view), icon);
+
+    /// <summary>
+    /// Every markup file in the app, not just <c>Views/</c>. MainWindow and <c>Controls/</c> carry no
+    /// icons today, and that is the sort of thing that stays true only while something checks.
+    /// </summary>
     private static IEnumerable<string> ViewFiles()
-        => Directory.EnumerateFiles(Path.Combine(RepoRoot(), "remex.desktop", "Views"), "*.axaml");
+        => Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "remex.desktop"), "*.axaml", SearchOption.AllDirectories)
+            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                           && !file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"));
 
     private static string RepoRoot([CallerFilePath] string thisSourceFile = "")
         => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(thisSourceFile)!, "..", ".."));
