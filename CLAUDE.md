@@ -40,8 +40,9 @@ instruction, fix it here rather than obeying it or silently ignoring it.
 
 ## 🛑 MCP server routing — read structurally, edit literally
 
-The three MCP servers below exist to keep bulk bytes out of context. They are for **understanding**
-code. They are not a substitute for reading a file you are about to change.
+Three MCP servers — `token-savior`, `gitnexus`, `context-mode` — exist to keep bulk bytes out of
+context. They are for **understanding** code. They are not a substitute for reading a file you are
+about to change.
 
 **The rule, stated so it can actually be followed:**
 
@@ -56,40 +57,34 @@ code. They are not a substitute for reading a file you are about to change.
 - **Mutating** state (`git`, `mv`, `rm`, installs, `scripts/verify.ps1`) → plain `Bash`/`PowerShell`.
   `ctx_execute` discards its sandbox filesystem, so writes and builds performed there do not exist.
 
-### 1. `token-savior` (Structural Codebase Indexing)
-**Do not read raw files to understand codebase logic.** `token-savior` indexes the codebase structurally, cutting token usage by ~97%.
-* **Symbol-Level Navigation:** Use `find_symbol`, `get_edit_context`, and `get_function_source` instead of `read_file` or global `grep`. Request isolated logic rather than dumping massive files into the context window.
-* **Smart Dependencies:** Use `get_dependencies` and `get_change_impact` to trace relationships. Do not attempt to reverse-engineer imports through sequential, manual file reads.
+### The per-tool matrix lives in a skill, not here
 
-### 2. `gitnexus` (Graph RAG & Architectural Awareness)
-**Do not manually traverse call chains.** `gitnexus` precomputes the repository's knowledge graph, avoiding the multi-step graph exploration that burns excessive tokens.
-* **One-Shot Blast Radius:** Use the `impact` tool to instantly analyze upstream and downstream dependencies before modifying code.
-* **Process-Grouped Search:** Use `query` to retrieve complete execution flows and functional clusters rather than running brute-force keyword searches across the repository.
-* **360° Context:** Use the `context` tool to retrieve a complete map of a single symbol's incoming calls, outgoing dependencies, and process participation in one single turn.
+Which server for which job — `token-savior` symbol retrieval, `gitnexus` graph and
+`impact`, `context-mode` sandboxed execution, the retrieval ladder, and when `impact` is
+genuinely required — is **[`.claude/skills/mcp-routing/SKILL.md`](.claude/skills/mcp-routing/SKILL.md)**.
+Invoke it before the first file lookup of a task.
 
-### 3. `context-mode` (Tool Sandboxing & Virtualization)
-**Do not run standard shell commands that yield massive outputs.** `context-mode` sandboxes executions and indexes the data externally, yielding up to 98% context savings.
-* **Virtualized Execution:** Route potentially noisy scripts or terminal commands through `ctx_execute` or `ctx_execute_file`. Only the stdout summary hits your context, keeping raw logs out. 
-* **Write Code, Don't Process Data:** Treat yourself as a code generator, not a data parser. If you need to count, filter, or analyze large numbers of files, write a short script via `ctx_execute` to do it locally instead of loading all the files into context.
-* **Indexed Storage for Heavy Data:** For massive test failures, access logs, or browser snapshots, use `ctx_index` or `fetch_and_index`. Store the data in the local SQLite FTS5 database and use `ctx_search` (BM25) to retrieve only the relevant lines you need.
+It moved there deliberately (RemEx-56fu.6). A table in this file is a table the model is
+trusted to remember; a skill is one that gets loaded. More importantly, this repo keeps
+getting bitten by the same thing — two copies of a claim drift until one is lying — and
+the MCP matrix had already drifted into mandating eight tools that could not be called.
+**Do not copy the matrix back here.** One authoritative copy is the point.
 
-### MCP Tool Decision Matrix
+### The servers are version-controlled now
 
-Use this table before reaching for `grep`, `Read`, or raw `Bash`:
+Definitions live in **[`.mcp.json`](.mcp.json)** at the repo root, not only in user-scope
+config that no other machine or worktree reproduces. Linux overrides are documented in
+that file.
 
-| Task | Required Tool | Never Instead |
-|------|--------------|---------------|
-| Find a symbol / class / method | `token-savior: find_symbol` | `grep` or Read full files |
-| Read a function's body only | `token-savior: get_function_source` | Read the whole file |
-| What calls this function? | `token-savior: get_dependents` | Manual import tracing |
-| What does this function call? | `token-savior: get_dependencies` | Sequential file reads |
-| Before a **cross-cutting** symbol edit | `gitnexus: impact` (upstream) | Edit without checking |
-| Explore a concept / execution flow | `gitnexus: query` | Keyword grep across repo |
-| Full 360° context on one symbol | `gitnexus: context` | Multiple sequential Reads |
-| **About to `Edit` a specific file** | **`Read` it — required** | Editing bytes you have not seen |
-| Command with potentially large output | `context-mode: ctx_execute` | Raw Bash into context |
-| Count / filter / aggregate data | `context-mode: ctx_execute` | Load all data into context |
-| **Builds, `verify.ps1`, git, installs** | **plain `Bash`/`PowerShell`** | `ctx_execute` (sandbox FS is discarded) |
+Verify with **`pwsh scripts/check-mcp-health.ps1 -Full`**. It compares what the
+instructions MANDATE against what is actually CALLABLE, and a `-Hook -Quick` pass runs at
+every SessionStart. This exists because between 2026-08-15 and 2026-08-20 `gitnexus` and
+`token-savior` were wiped out of `~/.claude.json` and nobody noticed for nine days: their
+hooks kept firing, so the capability looked present while the tool surface was gone.
+
+**When auditing MCP config, do not open `~/.claude/settings.json`.** It carries an
+`mcpServers` block that Claude Code does not read and never has. It is inert, it is the
+file a human reaches for first, and it is why that outage was invisible.
 
 ## Memory ownership
 
@@ -146,7 +141,7 @@ Global instructions: `~/.claude/AGENTS.md` (symlink to `~/.agents/AGENTS.md`) �
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **RemEx** (24340 symbols, 56143 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **RemEx** (25800 symbols, 59482 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

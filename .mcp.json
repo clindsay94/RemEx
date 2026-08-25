@@ -1,0 +1,43 @@
+{
+  "$comment": [
+    "Repo-owned MCP server definitions (RemEx-56fu.6).",
+    "",
+    "WHY THIS FILE EXISTS. Between 2026-08-15 and 2026-08-20 the gitnexus and",
+    "token-savior entries were wiped out of ~/.claude.json and nobody noticed for",
+    "nine days, because ~/.claude/settings.json carries its own 'mcpServers' block",
+    "that Claude Code DOES NOT READ. Anyone auditing by opening settings.json - the",
+    "obvious thing to do - concluded the servers were configured. Meanwhile CLAUDE.md",
+    "still mandated eight tools that could not be called. Version-controlling the",
+    "definitions here means the set is reproducible on any machine and any worktree,",
+    "and a wipe is a visible diff instead of silence.",
+    "",
+    "THE DEFAULTS ARE CONNOR'S WINDOWS PATHS ON PURPOSE. They are byte-identical to",
+    "the user/local-scope entries that are known to work, so if this file's project",
+    "scope shadows those, nothing changes. On CachyOS/Linux set the two overrides:",
+    "  export REMEX_GITNEXUS_BIN=gitnexus",
+    "  export REMEX_TOKEN_SAVIOR_BIN=$HOME/.venv/bin/token-savior",
+    "A bare command name is not used as the Windows default because Node's spawn",
+    "does not reliably resolve .cmd shims off PATH - that is why the working config",
+    "names gitnexus.cmd in full.",
+    "",
+    "context-mode is deliberately absent: it is a plugin (plugin:context-mode:",
+    "context-mode), installed at user scope, not a repo-owned server.",
+    "",
+    "Run scripts/check-mcp-health.ps1 (or .sh) to verify this is actually live.",
+    "Claude Code prompts once to approve project-scoped servers; approve both."
+  ],
+  "mcpServers": {
+    "gitnexus": {
+      "type": "stdio",
+      "command": "${REMEX_GITNEXUS_BIN:-C:\\nvm4w\\nodejs\\gitnexus.cmd}",
+      "args": ["mcp"],
+      "env": {}
+    },
+    "token-savior": {
+      "type": "stdio",
+      "command": "${REMEX_TOKEN_SAVIOR_BIN:-C:\\Users\\Connor\\.venv\\Scripts\\token-savior.exe}",
+      "args": [],
+      "env": {}
+    }
+  }
+}

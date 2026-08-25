@@ -6,6 +6,11 @@
           {
             "command": "bd prime --hook-json",
             "type": "command"
+          },
+          {
+            "command": "pwsh -NoProfile -File \"$CLAUDE_PROJECT_DIR/scripts/check-mcp-health.ps1\" -Hook -Quick",
+            "timeout": 20,
+            "type": "command"
           }
         ],
         "matcher": ""

@@ -65,19 +65,17 @@ intuition.
 ## TOKEN DISCIPLINE — mandatory MCP routing
 
 You are one iteration of a long loop; context burned here is context stolen from the diff. Route
-work through the three MCP servers instead of raw reads:
+work through the three MCP servers instead of raw reads.
 
-| Need | Use | Never |
-|---|---|---|
-| Find a symbol / class / method | `token-savior: find_symbol` | grep / read whole files |
-| Read one function's body | `token-savior: get_function_source` | Read the whole file |
-| Get surrounding context to edit | `token-savior: get_edit_context` | Read the whole file |
-| Who calls this? / what does it call? | `token-savior: get_dependents` / `get_dependencies` | manual import tracing |
-| Blast radius before editing a symbol | `gitnexus: impact` (upstream) | editing blind |
-| Understand an execution flow / concept | `gitnexus: query` | repo-wide keyword grep |
-| Full 360° on one symbol | `gitnexus: context` | sequential Reads |
-| Builds, tests, any noisy command | `context-mode: ctx_execute` | raw Bash output into context |
-| Count / filter / aggregate anything | `context-mode: ctx_execute` (write code) | loading data into context |
+**The routing matrix is [`.claude/skills/mcp-routing/SKILL.md`](../.claude/skills/mcp-routing/SKILL.md).
+Invoke that skill at the top of your iteration.** The table used to be duplicated here and in
+`CLAUDE.md`; both copies drifted, and by 2026-08 they were mandating tools that had stopped being
+callable at all. One copy now (RemEx-56fu.6) — do not paste it back.
+
+If an MCP tool the skill mandates returns "No matching deferred tools found", the harness is
+broken, not you. Run `pwsh scripts/check-mcp-health.ps1 -Full`, fall back to `Read`/`Grep` for the
+immediate task, **say in the journal that you degraded**, and file a bead. Silent fallback is how
+the last outage went unnoticed for nine days.
 
 Use `Read` only when you are about to `Edit` and need exact bytes. Run `dotnet build`,
 `dotnet test`, and `gradlew` through `ctx_execute` so thousands of lines of MSBuild/Gradle output
