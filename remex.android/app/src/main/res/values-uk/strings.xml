@@ -143,8 +143,8 @@
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift</string>
     <string name="cd_key_altgr">AltGr</string>
-    <string name="cd_key_home">Home</string>
-    <string name="cd_key_end">End</string>
+    <string name="cd_key_home">Home (Початок)</string>
+    <string name="cd_key_end">End (Кінець)</string>
     <string name="cd_key_pageup">PgUp (Сторінка вгору)</string>
     <string name="cd_key_pagedown">PgDn (Сторінка вниз)</string>
     <string name="cd_key_insert">Ins (Вставити)</string>
@@ -513,7 +513,7 @@
     <string name="sensor_gpu_temp">Температура відеокарти</string>
     <string name="sensor_fallback_label">Сенсор %1$d</string>
     <string name="about_android_client_label">Клієнт Android</string>
-    <string name="about_build_id">Build %1$s</string>
+    <string name="about_build_id">Збірка %1$s</string>
     <string name="about_pc_host_label">Ваш ПК</string>
     <string name="about_status_unknown">Невідомо</string>
     <string name="about_view_github">Переглянути вихідний код на GitHub</string>

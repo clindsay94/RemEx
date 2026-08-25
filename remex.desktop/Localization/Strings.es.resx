@@ -460,7 +460,7 @@
     <value>Sorbet</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
+    <value>Dinámico</value>
   </data>
 
   
@@ -838,7 +838,7 @@ Linux: ip addr  o  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>Acerca de</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Abrir Configuración</value>
@@ -863,7 +863,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>Escanear con la app RemEx Android</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PAIRING PIN</value>
+    <value>PIN DE EMPAREJAMIENTO</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>Introduce este código en tu teléfono para completar el emparejamiento</value>
@@ -872,7 +872,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>Caduca en {0} s</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>Cerrar</value>
   </data>
 
   
@@ -1147,7 +1147,7 @@ Linux: ip addr  o  hostname -I</value>
     <value>ws://PC:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
-    <value>Pad</value>
+    <value>Panel</value>
   </data>
   <data name="RemoteDesktop_PenModeHint" xml:space="preserve">
     <value>Modo Lápiz: toque = clic instantáneo, arrastre = clic y arrastre</value>
@@ -1265,19 +1265,19 @@ Linux: ip addr  o  hostname -I</value>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>Aplicación sin nombre</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>Seleccionar aplicación</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
+    <value>Aplicaciones</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>Todos los archivos</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>Desconocido</value>
   </data>
 
   
@@ -3030,7 +3030,7 @@ Puedes cambiar:
     <value>RemEx no pudo comprobar si está aceptando conexiones. Si tu teléfono no consigue conectarse, conviene revisarlo primero.</value>
   </data>
   <data name="SystemStatus_Firewall_Title" xml:space="preserve">
-    <value>Firewall</value>
+    <value>Cortafuegos</value>
   </data>
   <data name="SystemStatus_Firewall_Ok" xml:space="preserve">
     <value>El firewall está configurado para dejar pasar a RemEx.</value>

@@ -99,7 +99,7 @@
     <value>Sensores</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Launcher</value>
+    <value>Iniciador</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Configurações</value>
@@ -201,7 +201,7 @@
     <value>Salvar &amp; Reconectar</value>
   </data>
   <data name="Settings_Layout" xml:space="preserve">
-    <value>LAYOUT</value>
+    <value>DISPOSIÇÃO</value>
   </data>
   <data name="Settings_SnapToGrid" xml:space="preserve">
     <value>Encaixar na Grade</value>
@@ -460,7 +460,7 @@
     <value>Sorbet</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
+    <value>Dinâmico</value>
   </data>
 
   
@@ -531,7 +531,7 @@
     <value>Não foi possível iniciar a transmissão. Tente reconectar.</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>Parado</value>
   </data>
   <data name="Status_FrameDecodeError" xml:space="preserve">
     <value>Não é possível exibir a tela remota — tente reduzir a Qualidade ou desconecte e conecte novamente.</value>
@@ -832,7 +832,7 @@ Linux: ip addr  ou  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>Sobre</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Abrir Configurações</value>
@@ -857,7 +857,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Escanear com o app RemEx Android</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PAIRING PIN</value>
+    <value>PIN DE EMPARELHAMENTO</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>Digite este código no seu celular para concluir o pareamento</value>
@@ -866,7 +866,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Expira em {0}s</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>Fechar</value>
   </data>
 
   
@@ -1141,7 +1141,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>ws://PC:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
-    <value>Pad</value>
+    <value>Painel</value>
   </data>
   <data name="RemoteDesktop_PenModeHint" xml:space="preserve">
     <value>Modo Caneta: toque = clique instantâneo, arrastar = clicar e arrastar</value>
@@ -1259,19 +1259,19 @@ Linux: ip addr  ou  hostname -I</value>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>Aplicativo sem nome</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>Selecionar aplicativo</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
+    <value>Aplicativos</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>Todos os arquivos</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>Desconhecido</value>
   </data>
 
   
@@ -2193,13 +2193,13 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Limpar concluídos</value>
   </data>
   <data name="FileTransfer_QueueKindDownload" xml:space="preserve">
-    <value>DOWNLOAD</value>
+    <value>BAIXAR</value>
   </data>
   <data name="FileTransfer_QueueKindSend" xml:space="preserve">
     <value>ENVIO</value>
   </data>
   <data name="FileTransfer_QueueKindUpload" xml:space="preserve">
-    <value>UPLOAD</value>
+    <value>ENVIAR</value>
   </data>
   <data name="FileTransfer_QueueStateActive" xml:space="preserve">
     <value>Transferindo…</value>
@@ -2505,7 +2505,7 @@ Linux: ip addr  ou  hostname -I</value>
     <value>Arquivos</value>
   </data>
   <data name="Home_QsLogs" xml:space="preserve">
-    <value>Logs</value>
+    <value>Registros</value>
   </data>
   <data name="Home_QsPersonalize" xml:space="preserve">
     <value>Personalizar</value>
@@ -2867,7 +2867,7 @@ Por trás dessa chave, o Windows usa uma tarefa do Agendador de Tarefas chamada 
     <value>um backend desconhecido</value>
   </data>
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
-    <value>Wake on LAN</value>
+    <value>Despertar por LAN</value>
   </data>
   <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
     <value>O RemEx não tem permissão para encerrar esse programa. Pode ser necessário iniciá-lo como administrador no PC.</value>

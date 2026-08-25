@@ -330,7 +330,7 @@
     <value>ORT</value>
   </data>
   <data name="Canvas_Max" xml:space="preserve">
-    <value>MAX</value>
+    <value>MAKS</value>
   </data>
   <data name="Canvas_ActiveSensors" xml:space="preserve">
     <value>AKTİF SENSÖRLER</value>
@@ -460,7 +460,7 @@
     <value>Sorbet</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
+    <value>Dinamik</value>
   </data>
 
   
@@ -531,7 +531,7 @@
     <value>Yayın başlatılamadı. Yeniden bağlanmayı deneyin.</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>Durduruldu</value>
   </data>
   <data name="Status_FrameDecodeError" xml:space="preserve">
     <value>Uzak ekran görüntülenemiyor — Kaliteyi düşürmeyi deneyin ya da bağlantıyı kesip yeniden bağlanın.</value>
@@ -832,7 +832,7 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>Hakkında</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Ayarları Aç</value>
@@ -857,7 +857,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>RemEx Android uygulamasıyla tarayın</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PAIRING PIN</value>
+    <value>EŞLEŞTİRME PINİ</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>Eşleştirmeyi tamamlamak için bu kodu telefonunuza girin</value>
@@ -866,7 +866,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>{0} sn içinde sona erer</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>Kapat</value>
   </data>
 
   
@@ -1141,7 +1141,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>ws://PC:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
-    <value>Pad</value>
+    <value>Ped</value>
   </data>
   <data name="RemoteDesktop_PenModeHint" xml:space="preserve">
     <value>Kalem Modu: dokun = anında tıkla, sürükle = tıkla-ve-sürükle</value>
@@ -1259,19 +1259,19 @@ Linux: ip addr  veya  hostname -I</value>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>Adsız Uygulama</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>Uygulama Seç</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
+    <value>Uygulamalar</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>Tüm Dosyalar</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>Bilinmeyen</value>
   </data>
 
   
@@ -2344,7 +2344,7 @@ Linux: ip addr  veya  hostname -I</value>
     <value>Ağımdaki hostları bul</value>
   </data>
   <data name="Conn_HostInfo" xml:space="preserve">
-    <value>Host</value>
+    <value>Ana Bilgisayar</value>
   </data>
   <data name="Conn_Latency" xml:space="preserve">
     <value>Gecikme</value>
@@ -2871,7 +2871,7 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
     <value>bilinmeyen bir arka uç</value>
   </data>
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
-    <value>Wake on LAN</value>
+    <value>LAN üzerinden Uyandır</value>
   </data>
   <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
     <value>RemEx'in bu programı kapatma izni yok. Programın bilgisayarda yönetici olarak başlatılması gerekebilir.</value>

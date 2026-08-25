@@ -1282,7 +1282,7 @@ Linux : ip addr  ou  hostname -I</value>
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
-    <value>Build</value>
+    <value>Compilation</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>RemEx sur ce PC</value>

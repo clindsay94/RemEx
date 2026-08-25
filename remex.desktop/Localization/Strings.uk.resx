@@ -460,7 +460,7 @@
     <value>Sorbet</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
+    <value>Динамічний</value>
   </data>
 
   
@@ -531,7 +531,7 @@
     <value>Не вдалося розпочати трансляцію. Спробуйте підключитися знову.</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>Зупинено</value>
   </data>
   <data name="Status_FrameDecodeError" xml:space="preserve">
     <value>Не вдається показати віддалений екран — спробуйте знизити Якість або від'єднайтеся та підключіться знову.</value>
@@ -832,7 +832,7 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>Про програму</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Відкрити налаштування</value>
@@ -866,7 +866,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>Діє ще {0} с</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>Закрити</value>
   </data>
 
   
@@ -1259,19 +1259,19 @@ Linux: ip addr  або  hostname -I</value>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>Програма без назви</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>Виберіть програму</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
+    <value>Програми</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>Усі файли</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>Невідомо</value>
   </data>
 
   
@@ -1282,7 +1282,7 @@ Linux: ip addr  або  hostname -I</value>
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
-    <value>Build</value>
+    <value>Збірка</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>RemEx на цьому ПК</value>

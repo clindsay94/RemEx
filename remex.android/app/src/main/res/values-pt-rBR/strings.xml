@@ -4,8 +4,8 @@
     <string name="widget_hardware_description">Leituras em tempo real dos sensores de hardware do seu PC conectado.</string>
     <string name="widget_launcher_description">Abra seus aplicativos favoritos do PC diretamente da tela inicial.</string>
     <string name="widget_remote_label">RemEx Remoto</string>
-    <string name="widget_hardware_label">RemEx Hardware</string>
-    <string name="widget_launcher_label">RemEx Launcher</string>
+    <string name="widget_hardware_label">Hardware RemEx</string>
+    <string name="widget_launcher_label">Iniciador RemEx</string>
     <string name="splash_tagline">Execução Remota</string>
     <string name="snackbar_no_pc_connected">Nenhum PC conectado</string>
     <string name="nav_more_label">Mais</string>
@@ -88,9 +88,9 @@
     <string name="settings_tab_input">Entrada</string>
     <string name="settings_tab_file_transfer">Transferência de Arquivos</string>
     <string name="settings_tab_help">Ajuda</string>
-    <string name="settings_help_title">Ajuda e Sobre</string>
+    <string name="settings_help_title">Ajuda</string>
     <string name="settings_replay_tutorial">📖  Repetir Tutorial</string>
-    <string name="settings_replay_tutorial_body">Assista novamente ao guia de introdução que cobre a configuração, descoberta automática, como encontrar seu IP e conectar ao PC.</string>
+    <string name="settings_replay_tutorial_body">Reveja o guia de introdução para configuração, emparelhamento por QR, conexão manual e dicas de uso diário.</string>
     <string name="settings_faq_hint">Tem uma dúvida? Verifique as Perguntas Frequentes (FAQ) disponíveis no menu (⋮ → FAQ).</string>
     <string name="screen_app_launcher_title">Lançador de Apps</string>
     <string name="app_launcher_no_apps">Nenhum app encontrado</string>
@@ -131,7 +131,7 @@
     <string name="cd_show_keyboard">Mostrar Teclado</string>
     <string name="cd_key_escape">Esc</string>
     <string name="cd_key_tab">Tab</string>
-    <string name="cd_key_backspace">Backspace</string>
+    <string name="cd_key_backspace">Retrocesso</string>
     <string name="cd_key_enter">Enter</string>
     <string name="cd_key_arrow_left">Seta esquerda</string>
     <string name="cd_key_arrow_up">Seta para cima</string>
@@ -143,8 +143,8 @@
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift</string>
     <string name="cd_key_altgr">AltGr</string>
-    <string name="cd_key_home">Home</string>
-    <string name="cd_key_end">End</string>
+    <string name="cd_key_home">Home (Início)</string>
+    <string name="cd_key_end">End (Fim)</string>
     <string name="cd_key_pageup">PgUp (Página acima)</string>
     <string name="cd_key_pagedown">PgDn (Página abaixo)</string>
     <string name="cd_key_insert">Ins (Inserir)</string>
@@ -177,12 +177,12 @@
     <string name="dashboard_pc_status">Status do PC</string>
     <string name="dashboard_pc_status_subtitle">Orbe de status da conexão</string>
     <string name="dashboard_wake_pc">Ligar PC (Wake PC)</string>
-    <string name="dashboard_wake_pc_subtitle">Enviar pacote mágico WOL</string>
+    <string name="dashboard_wake_pc_subtitle">Enviar sinal de ativação WOL</string>
     <string name="dashboard_telemetry_fallback">Telemetria</string>
     <string name="dashboard_card_drawer_title">Gaveta de Cards</string>
     <string name="dashboard_card_drawer_hint">Marque para colocar o card, desmarque para remover, ou arraste um card para a tela.</string>
     <string name="dashboard_drop_to_place">Solte para colocar %1$s</string>
-    <string name="dashboard_host_online">PC ONLINE</string>
+    <string name="dashboard_host_online">PC ON-LINE</string>
     <string name="dashboard_connecting">CONECTANDO…</string>
     <string name="dashboard_tap_to_connect">TOQUE PARA CONECTAR</string>
     <string name="dashboard_connection_card_action">conectar ao seu PC</string>
@@ -205,7 +205,7 @@
     <string name="connection_help_step4_title">Insira o IP abaixo e toque em Salvar e Conectar</string>
     <string name="connection_help_step4_body">A porta padrão é 5005. Se este dispositivo ainda não foi pareado, insira o PIN de 6 dígitos exibido no PC para concluir o pareamento seguro.</string>
     <string name="connection_platform_windows">Windows</string>
-    <string name="connection_ip_windows">Abra o Prompt de Comando e digite: ipconfig\nProcure por \"Endereço IPv4\" sob o seu adaptador Wi-Fi.</string>
+    <string name="connection_ip_windows">Abra o Prompt de Comando e digite: ipconfig\nProcure por "Endereço IPv4" sob seu adaptador Wi-Fi.</string>
     <string name="connection_platform_linux">Linux</string>
     <string name="connection_ip_linux">Abra um terminal e digite: ip addr\nProcure pelo endereço inet na sua interface de rede (ex: wlan0 ou eth0).</string>
     <string name="connection_or_enter_manually">Ou insira manualmente</string>
@@ -441,7 +441,7 @@
     <string name="shape_puffy">Fofo</string>
     <string name="shape_puffy_diamond">Diamante fofo</string>
     <string name="shape_ghostish">Fantasminha</string>
-    <string name="shape_oval">Oval</string>
+    <string name="shape_oval">Óvalo</string>
     <string name="shape_clover_4_leaf">Trevo de 4 folhas</string>
     <string name="shape_clover_8_leaf">Trevo de 8 folhas</string>
     <string name="shape_sunny">Ensolarado</string>
@@ -466,7 +466,7 @@
     <string name="remote_desktop_preset_unlimited_overflow_warning">O modo Ilimitado pode consumir muita largura de banda e bateria, e pode causar travamentos se a sua rede ou o seu PC não acompanharem. Tente usar Fluido e nítido se isso acontecer.</string>
     <string name="remote_desktop_scale_label">Escala de resolução: %1$d%%</string>
     <string name="remote_desktop_window_controls_header">Controles de janela</string>
-    <string name="remote_desktop_backend">Backend: %1$s</string>
+    <string name="remote_desktop_backend">Motor: %1$s</string>
     <string name="remote_desktop_search_windows_label">Buscar janelas</string>
     <string name="remote_desktop_refresh_windows">Atualizar janelas</string>
     <string name="remote_desktop_no_results">Nenhum resultado de janela ainda. Atualize para carregar as janelas atuais.</string>

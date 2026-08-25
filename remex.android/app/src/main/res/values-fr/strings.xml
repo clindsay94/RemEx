@@ -88,9 +88,9 @@
     <string name="settings_tab_input">Entrée</string>
     <string name="settings_tab_file_transfer">Transfert de fichiers</string>
     <string name="settings_tab_help">Aide</string>
-    <string name="settings_help_title">Aide et À propos</string>
+    <string name="settings_help_title">Aide</string>
     <string name="settings_replay_tutorial">📖  Revoir le Tutoriel</string>
-    <string name="settings_replay_tutorial_body">Revoir le guide de démarrage couvrant la configuration, l\'autodécouverte et la connexion à votre PC.</string>
+    <string name="settings_replay_tutorial_body">Revoir le guide de prise en main pour la configuration, l\'appairage QR, la connexion manuelle et les conseils d\'utilisation quotidienne.</string>
     <string name="settings_faq_hint">Une question ? Consultez la FAQ disponible via le menu (⋮ → FAQ).</string>
     <string name="screen_app_launcher_title">Lanceur d\'Apps</string>
     <string name="app_launcher_no_apps">Aucune application trouvée</string>
@@ -177,7 +177,7 @@
     <string name="dashboard_pc_status">État du PC</string>
     <string name="dashboard_pc_status_subtitle">Indicateur de connexion</string>
     <string name="dashboard_wake_pc">Réveiller le PC</string>
-    <string name="dashboard_wake_pc_subtitle">Envoyer un paquet magique WOL</string>
+    <string name="dashboard_wake_pc_subtitle">Envoyer le signal de réveil WOL</string>
     <string name="dashboard_telemetry_fallback">Télémétrie</string>
     <string name="dashboard_card_drawer_title">Tiroir de Cartes</string>
     <string name="dashboard_card_drawer_hint">Cochez pour placer, décochez pour retirer, ou faites glisser une carte sur l\'écran.</string>
@@ -499,7 +499,7 @@
     <string name="sensor_gpu_temp">Température GPU</string>
     <string name="sensor_fallback_label">Capteur %1$d</string>
     <string name="about_android_client_label">Client Android</string>
-    <string name="about_build_id">Build %1$s</string>
+    <string name="about_build_id">Compilation %1$s</string>
     <string name="about_pc_host_label">Votre PC</string>
     <string name="about_status_unknown">Inconnu</string>
     <string name="about_view_github">Voir le code source sur GitHub</string>

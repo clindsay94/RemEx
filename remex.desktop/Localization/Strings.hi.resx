@@ -293,7 +293,7 @@
     <value>आइकन पूर्वावलोकन</value>
   </data>
   <data name="AddProgram_WatermarkPath" xml:space="preserve">
-    <value>C:\Path\To\App.exe</value>
+    <value>C:\पथ\तक\App.exe</value>
   </data>
   <data name="AddProgram_WatermarkName" xml:space="preserve">
     <value>मेरा ऐप</value>
@@ -460,7 +460,7 @@
     <value>Sorbet</value>
   </data>
   <data name="Custom_PresetDynamic" xml:space="preserve">
-    <value>Dynamic</value>
+    <value>गतिशील</value>
   </data>
 
   
@@ -531,7 +531,7 @@
     <value>स्ट्रीम शुरू नहीं हो सकी। फिर से कनेक्ट करके देखें।</value>
   </data>
   <data name="Status_Stopped" xml:space="preserve">
-    <value>Stopped</value>
+    <value>रोका गया</value>
   </data>
   <data name="Status_FrameDecodeError" xml:space="preserve">
     <value>रिमोट स्क्रीन नहीं दिखाई जा सकती — गुणवत्ता कम करके देखें, या डिस्कनेक्ट करके फिर से कनेक्ट करें।</value>
@@ -832,7 +832,7 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>के बारे में</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>सेटिंग्स खोलें</value>
@@ -857,7 +857,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>RemEx Android ऐप से स्कैन करें</value>
   </data>
   <data name="Settings_PairingPinTitle" xml:space="preserve">
-    <value>PAIRING PIN</value>
+    <value>पेयरिंग पिन</value>
   </data>
   <data name="Settings_PairingPinHint" xml:space="preserve">
     <value>पेयरिंग पूरी करने के लिए यह कोड अपने फ़ोन पर दर्ज करें</value>
@@ -866,7 +866,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>{0} सेकंड में समाप्त</value>
   </data>
   <data name="Close" xml:space="preserve">
-    <value>Close</value>
+    <value>बंद करें</value>
   </data>
 
   
@@ -1259,19 +1259,19 @@ Linux: ip addr  या  hostname -I</value>
 
   
   <data name="AppLauncher_UnnamedApp" xml:space="preserve">
-    <value>Unnamed App</value>
+    <value>अनाम ऐप</value>
   </data>
   <data name="FilePicker_SelectApplication" xml:space="preserve">
-    <value>Select Application</value>
+    <value>एप्लिकेशन चुनें</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
+    <value>एप्लिकेशन</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
-    <value>All Files</value>
+    <value>सभी फ़ाइलें</value>
   </data>
   <data name="Sensor_Unknown" xml:space="preserve">
-    <value>Unknown</value>
+    <value>अज्ञात</value>
   </data>
 
   
@@ -1282,7 +1282,7 @@ Linux: ip addr  या  hostname -I</value>
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
-    <value>Build</value>
+    <value>बिल्ड</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>इस PC पर RemEx</value>

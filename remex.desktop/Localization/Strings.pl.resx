@@ -99,7 +99,7 @@
     <value>Czujniki</value>
   </data>
   <data name="Nav_Launcher" xml:space="preserve">
-    <value>Launcher</value>
+    <value>Program uruchamiający</value>
   </data>
   <data name="Nav_Settings" xml:space="preserve">
     <value>Ustawienia</value>
@@ -131,10 +131,10 @@
     <value>Odkryj</value>
   </data>
   <data name="Btn_Start" xml:space="preserve">
-    <value>▶ Start</value>
+    <value>▶ Uruchom</value>
   </data>
   <data name="Btn_Stop" xml:space="preserve">
-    <value>⏹ Stop</value>
+    <value>⏹ Zatrzymaj</value>
   </data>
 
   
@@ -330,7 +330,7 @@
     <value>ŚR</value>
   </data>
   <data name="Canvas_Max" xml:space="preserve">
-    <value>MAX</value>
+    <value>MAKS</value>
   </data>
   <data name="Canvas_ActiveSensors" xml:space="preserve">
     <value>AKTYWNE CZUJNIKI</value>
@@ -792,7 +792,7 @@ Linux: ip addr  lub  hostname -I</value>
 
   
   <data name="Shell_About" xml:space="preserve">
-    <value>About</value>
+    <value>O programie</value>
   </data>
   <data name="Shell_OpenSettings" xml:space="preserve">
     <value>Otwórz Ustawienia</value>
@@ -1101,7 +1101,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>ws://PC:port/ws</value>
   </data>
   <data name="RemoteDesktop_Pad" xml:space="preserve">
-    <value>Pad</value>
+    <value>Panel</value>
   </data>
   <data name="RemoteDesktop_PenModeHint" xml:space="preserve">
     <value>Tryb pióra: dotknięcie = kliknięcie, przeciągnięcie = kliknij i przeciągnij</value>
@@ -2563,7 +2563,7 @@ Linux: ip addr  lub  hostname -I</value>
     <value>Eksportuj logi</value>
   </data>
   <data name="Logs_Preset" xml:space="preserve">
-    <value>Preset:</value>
+    <value>Ustawienie wstępne:</value>
   </data>
   <data name="Logs_PresetAll" xml:space="preserve">
     <value>Wszystko</value>

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Resolved untranslated string backlog across PC and Android for all 8 target languages.**
+  Translated 161 English-identical strings across Spanish, French, Hindi, Indonesian, Polish,
+  Brazilian Portuguese, Turkish, and Ukrainian across both PC (`remex.desktop` `.resx`) and Android
+  (`strings.xml`) resource files. Updated `scripts/localization-baseline.json` to prune resolved
+  backlog entries and keep the 5-axis localization gate strictly enforced. (RemEx-lc25l)
+
 ### Internal
 
 - **The translation check said translations were complete while 671 strings sat in English.**

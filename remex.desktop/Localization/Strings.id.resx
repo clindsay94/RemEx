@@ -293,7 +293,7 @@
     <value>Pratinjau Ikon</value>
   </data>
   <data name="AddProgram_WatermarkPath" xml:space="preserve">
-    <value>C:\Path\To\App.exe</value>
+    <value>C:\Jalur\Ke\App.exe</value>
   </data>
   <data name="AddProgram_WatermarkName" xml:space="preserve">
     <value>Aplikasi Saya</value>
@@ -498,7 +498,7 @@
     <value>Tidak streaming</value>
   </data>
   <data name="Status_Streaming" xml:space="preserve">
-    <value>Streaming</value>
+    <value>Menyiarkan</value>
   </data>
   <data name="Status_SelfConnection" xml:space="preserve">
     <value>Koneksi diri terdeteksi — tidak dapat mencerminkan layar sendiri</value>
@@ -1265,7 +1265,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Pilih Aplikasi</value>
   </data>
   <data name="FilePicker_Applications" xml:space="preserve">
-    <value>Applications</value>
+    <value>Aplikasi</value>
   </data>
   <data name="FilePicker_AllFiles" xml:space="preserve">
     <value>Semua File</value>
@@ -1282,7 +1282,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>RE(mote) EX(ecution) - Control Your PC</value>
   </data>
   <data name="About_BuildId" xml:space="preserve">
-    <value>Build</value>
+    <value>Kompilasi</value>
   </data>
   <data name="About_DesktopClient" xml:space="preserve">
     <value>RemEx di PC ini</value>
@@ -1320,7 +1320,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>PC jarak jauh akan di-restart. Semua pekerjaan yang belum disimpan akan hilang. RemEx tidak dapat menjangkaunya lagi sampai Anda masuk lagi di PC itu sendiri.</value>
   </data>
   <data name="Confirm_Restart_Btn" xml:space="preserve">
-    <value>Restart</value>
+    <value>Mulai Ulang</value>
   </data>
   <data name="Confirm_ForceShutdown_Title" xml:space="preserve">
     <value>Paksa Matikan — Apakah Anda yakin?</value>
@@ -2046,13 +2046,13 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Nama (Z → A)</value>
   </data>
   <data name="AppLauncher_Edit" xml:space="preserve">
-    <value>Edit</value>
+    <value>Sunting</value>
   </data>
   <data name="AppLauncher_DragDisabledWhileFiltered" xml:space="preserve">
     <value>Seret untuk mengurutkan ulang dinonaktifkan saat pencarian aktif. Gunakan tombol panah sebagai gantinya.</value>
   </data>
   <data name="AddProgram_EditTitle" xml:space="preserve">
-    <value>Edit Program</value>
+    <value>Sunting Program</value>
   </data>
   <data name="AddProgram_RefreshIcon" xml:space="preserve">
     <value>Segarkan Ikon</value>
@@ -2442,7 +2442,7 @@ Linux: ip addr  atau  hostname -I</value>
     <value>Font ini tidak dapat dimuat di PC ini dan mungkin belum terinstal: {0}. Font default digunakan sebagai gantinya.</value>
   </data>
   <data name="Logs_Preset" xml:space="preserve">
-    <value>Preset:</value>
+    <value>Prasetel:</value>
   </data>
   <data name="Logs_SearchWatermark" xml:space="preserve">
     <value>Cari log…</value>
@@ -2729,7 +2729,7 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
     <value>Penerbit: {0}</value>
   </data>
   <data name="Canvas_Preset_Default" xml:space="preserve">
-    <value>Default</value>
+    <value>Bawaan</value>
   </data>
   <data name="Canvas_Preset_MagentaCyan" xml:space="preserve">
     <value>Magenta dan Sian</value>
@@ -2765,7 +2765,7 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
     <value>Gradien</value>
   </data>
   <data name="Custom_BgType_Wallpaper" xml:space="preserve">
-    <value>Wallpaper</value>
+    <value>Gambar latar</value>
   </data>
   <data name="Custom_BgType_Solid" xml:space="preserve">
     <value>Warna Solid</value>
@@ -2870,7 +2870,7 @@ Di balik sakelar itu, Windows memakai tugas Task Scheduler bernama "RemEx" — b
     <value>backend tidak dikenal</value>
   </data>
   <data name="Palette_RemoteControl_SearchAliases" xml:space="preserve">
-    <value>Wake on LAN</value>
+    <value>Bangunkan lewat LAN</value>
   </data>
   <data name="TaskManager_KillErrAccessDenied" xml:space="preserve">
     <value>RemEx tidak memiliki izin untuk menutup program tersebut. Program mungkin perlu dijalankan sebagai administrator di PC.</value>

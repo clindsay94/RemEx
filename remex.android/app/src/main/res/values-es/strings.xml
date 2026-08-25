@@ -4,7 +4,7 @@
     <string name="widget_hardware_description">Lecturas en tiempo real de los sensores de hardware de tu PC conectado.</string>
     <string name="widget_launcher_description">Lanza tus aplicaciones favoritas del PC directamente desde tu pantalla de inicio.</string>
     <string name="widget_remote_label">RemEx Remoto</string>
-    <string name="widget_hardware_label">RemEx Hardware</string>
+    <string name="widget_hardware_label">Hardware RemEx</string>
     <string name="widget_launcher_label">RemEx Lanzador</string>
     <string name="splash_tagline">Ejecución Remota</string>
     <string name="snackbar_no_pc_connected">Ningún PC conectado</string>
@@ -88,9 +88,9 @@
     <string name="settings_tab_input">Entrada</string>
     <string name="settings_tab_file_transfer">Transferencia de Archivos</string>
     <string name="settings_tab_help">Ayuda</string>
-    <string name="settings_help_title">Ayuda e Información</string>
+    <string name="settings_help_title">Ayuda</string>
     <string name="settings_replay_tutorial">📖  Repetir Tutorial</string>
-    <string name="settings_replay_tutorial_body">Vuelve a ver la guía de inicio que cubre la configuración, el descubrimiento automático y cómo conectar con tu PC.</string>
+    <string name="settings_replay_tutorial_body">Vuelve a ver la guía de introducción sobre la configuración, el emparejamiento por QR, la conexión manual y consejos de uso diario.</string>
     <string name="settings_faq_hint">¿Tienes alguna duda? Consulta las FAQ disponibles en el menú (⋮ → FAQ).</string>
     <string name="screen_app_launcher_title">Lanzador de Apps</string>
     <string name="app_launcher_no_apps">No se encontraron apps</string>
@@ -139,7 +139,7 @@
     <string name="cd_key_arrow_right">Flecha derecha</string>
     <string name="cd_key_delete">Del (Suprimir)</string>
     <string name="cd_key_windows">Tecla Windows</string>
-    <string name="cd_key_ctrl">Ctrl (Control)</string>
+    <string name="cd_key_ctrl">Ctrl</string>
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift (Mayús)</string>
     <string name="cd_key_altgr">AltGr</string>
@@ -177,7 +177,7 @@
     <string name="dashboard_pc_status">Estado del PC</string>
     <string name="dashboard_pc_status_subtitle">Orbe de estado de conexión</string>
     <string name="dashboard_wake_pc">Encender PC</string>
-    <string name="dashboard_wake_pc_subtitle">Enviar paquete mágico WOL</string>
+    <string name="dashboard_wake_pc_subtitle">Enviar señal de reactivación WOL</string>
     <string name="dashboard_telemetry_fallback">Telemetría</string>
     <string name="dashboard_card_drawer_title">Cajón de Tarjetas</string>
     <string name="dashboard_card_drawer_hint">Marca para añadir, desmarca para quitar, o arrastra una tarjeta al lienzo.</string>

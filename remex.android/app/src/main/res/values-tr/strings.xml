@@ -143,8 +143,8 @@
     <string name="cd_key_alt">Alt</string>
     <string name="cd_key_shift">Shift</string>
     <string name="cd_key_altgr">AltGr</string>
-    <string name="cd_key_home">Home</string>
-    <string name="cd_key_end">End</string>
+    <string name="cd_key_home">Home (Başlangıç)</string>
+    <string name="cd_key_end">End (Son)</string>
     <string name="cd_key_pageup">PgUp (Sayfa yukarı)</string>
     <string name="cd_key_pagedown">PgDn (Sayfa aşağı)</string>
     <string name="cd_key_insert">Ins (Ekle)</string>
@@ -211,7 +211,7 @@
     <string name="connection_or_enter_manually">Ya da elle girin</string>
     <string name="connection_label_host">PC IP Adresi</string>
     <string name="connection_hint_host">Bilgisayarınızın yerel IP adresi — ipconfig (Windows) veya ip addr (Linux) ile bulabilirsiniz</string>
-    <string name="connection_label_port">Port</string>
+    <string name="connection_label_port">Bağlantı Noktası</string>
     <string name="connection_hint_port">Varsayılan: 5005</string>
     <string name="connection_label_mac">MAC Adresi (Wake-on-LAN)</string>
     <string name="connection_placeholder_mac">AA:BB:CC:DD:EE:FF</string>
@@ -441,7 +441,7 @@
     <string name="shape_puffy">Kabarık</string>
     <string name="shape_puffy_diamond">Kabarık Elmas</string>
     <string name="shape_ghostish">Hayalet Gibi</string>
-    <string name="shape_oval">Oval</string>
+    <string name="shape_oval">Elips</string>
     <string name="shape_clover_4_leaf">4 Yapraklı Yonca</string>
     <string name="shape_clover_8_leaf">8 Yapraklı Yonca</string>
     <string name="shape_sunny">Güneşli</string>
