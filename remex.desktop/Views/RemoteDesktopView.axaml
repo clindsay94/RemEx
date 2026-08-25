@@ -1,5 +1,6 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:controls="using:Remex.Desktop.Controls"
     xmlns:models="using:Remex.Core.Models"
@@ -227,7 +228,7 @@
                          rendered as the bare letter D once the app stopped using that font. Now the
                          real desktop-PC geometry, which also means it inherits the theme accent
                          rather than depending on a glyph existing (RemEx-po2x). -->
-                    <Path Data="{StaticResource IconDesktopPC}" Fill="{DynamicResource AccentPrimaryBrush}" Width="64" Height="64" Stretch="Uniform" HorizontalAlignment="Center"/>
+                    <mi:MaterialIcon Kind="Monitor" Foreground="{DynamicResource AccentPrimaryBrush}" Width="64" Height="64" HorizontalAlignment="Center"/>
                     <TextBlock Text="{local:Localize RemoteDesktop_PlaceholderTitle}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="{local:Localize RemoteDesktop_PlaceholderHint}" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"/>
                     <TextBlock Text="{Binding RemoteDesktopCapabilityText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="560" TextAlignment="Center"/>
@@ -262,7 +263,10 @@
                                Opacity="{Binding IsRemoteCursorOverlayVisible, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='1.0|0.0'}"
                                Canvas.Left="{Binding RemoteCursorBitmapLeft}"
                                Canvas.Top="{Binding RemoteCursorBitmapTop}"/>
+                        <!-- Classed, not styled: the class is how MaterialIconAdoptionTests tells a
+                             deliberate drawing from an icon that was missed (RemEx-wyx2c). -->
                         <Path Data="M 0 0 L 0 18 L 4 14 L 8 24 L 11 22 L 7 12 L 14 12 Z"
+                              Classes="cursor-arrow"
                               Fill="{DynamicResource AccentPrimaryBrush}"
                               IsVisible="{Binding !HasRemoteCursorBitmap}"
                               Opacity="{Binding IsRemoteCursorOverlayVisible, Converter={StaticResource BoolToDoubleConverter}, ConverterParameter='0.95|0.0'}"

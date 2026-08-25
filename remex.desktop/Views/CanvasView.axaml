@@ -1,5 +1,6 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
@@ -184,19 +185,19 @@
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_Save}" Grid.Column="5" Classes="back-btn" Command="{Binding SaveLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Path Data="{StaticResource IconSave}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <mi:MaterialIcon Kind="ContentSave" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Save}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_Sync}" Grid.Column="6" Classes="back-btn" Command="{Binding SyncLayoutCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Path Data="{StaticResource IconSync}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Sync" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Sync}" FontSize="12"/>
                     </StackPanel>
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize A11y_SensorLibrary}" x:Name="SensorsButton" Grid.Column="7" Classes="back-btn" Command="{Binding ToggleStagingDrawerCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Path Data="{StaticResource IconImport}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Download" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock FontSize="12">
                             <TextBlock.Text>
                                 <MultiBinding Converter="{x:Static local:LocalizedFormatConverter.Instance}">
@@ -209,7 +210,7 @@
                 </Button>
                 <Button AutomationProperties.Name="{local:Localize Canvas_ResetView}" Grid.Column="8" Classes="back-btn" Command="{Binding ResetViewCommand}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Path Data="{StaticResource IconSync}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <mi:MaterialIcon Kind="Sync" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_ResetView}" FontSize="12"/>
                     </StackPanel>
                 </Button>
@@ -222,7 +223,7 @@
                 <!-- P8-I: Snapshot export -->
                 <Button AutomationProperties.Name="{local:Localize Canvas_ExportPngTooltip}" Grid.Column="10" Classes="back-btn" Click="OnExportSnapshot" ToolTip.Tip="{local:Localize Canvas_ExportPngTooltip}" Margin="0,0,4,0">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                        <Path Data="{StaticResource IconSave}" Fill="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <mi:MaterialIcon Kind="ContentSave" Foreground="{DynamicResource TextSecondaryBrush}" Width="14" Height="14" VerticalAlignment="Center"/>
                         <TextBlock Text="{local:Localize Canvas_Export}" FontSize="12"/>
                     </StackPanel>
                 </Button>

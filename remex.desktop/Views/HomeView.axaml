@@ -1,5 +1,6 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:ctrl="using:Remex.Desktop.Controls"
@@ -88,7 +89,7 @@
                     <!-- Command palette launcher -->
                     <Button AutomationProperties.Name="{local:Localize Shell_OpenCommandPaletteTooltip}" Command="{Binding Shell.OpenCommandPaletteCommand}" Classes="action-pill" HorizontalAlignment="Center" MinWidth="380" Padding="18,12" Margin="0,8,0,0" ToolTip.Tip="{local:Localize Shell_OpenCommandPaletteTooltip}">
                         <Grid ColumnDefinitions="Auto,*,Auto">
-                            <Path Grid.Column="0" Data="{StaticResource IconSearch}" Fill="{DynamicResource TextMutedBrush}" Width="15" Height="15" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <mi:MaterialIcon Grid.Column="0" Kind="Magnify" Foreground="{DynamicResource TextMutedBrush}" Width="15" Height="15" VerticalAlignment="Center" Margin="0,0,12,0"/>
                             <TextBlock Grid.Column="1" Text="{local:Localize Home_SearchPrompt}" FontSize="13" FontWeight="Normal" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                             <Border Grid.Column="2" Background="{DynamicResource GlassBaseDarkBrush}" CornerRadius="6" Padding="8,3" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Center">
                                 <TextBlock Text="Ctrl + K" FontSize="11" FontFamily="{StaticResource JetBrainsMono}" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
@@ -303,7 +304,7 @@
                                         <StackPanel Spacing="16">
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                                <Path Grid.Column="1" Data="{StaticResource IconFlash}" Fill="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Width="14" Height="14" Stretch="Uniform" Opacity="0.8"/>
+                                                <mi:MaterialIcon Grid.Column="1" Kind="Flash" Foreground="{Binding Theme.AccentColor, Converter={x:Static conv:HexToColorConverter.Instance}}" Width="14" Height="14" Opacity="0.8"/>
                                             </Grid>
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom" Margin="0,8,0,0">
                                                 <TextBlock Text="{Binding Value, StringFormat={}{0:F1}}" FontSize="48" FontWeight="Black" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -332,49 +333,49 @@
                     <UniformGrid Columns="2">
                         <Button AutomationProperties.Name="{local:Localize Home_QsSensors}" Classes="glass-card interactive" Command="{Binding NavigateToCanvasCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconSensors}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="ChartLineVariant" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsSensors}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsCommands}" Classes="glass-card interactive" Command="{Binding NavigateToRemoteCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconRemote}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="Monitor" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsCommands}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsApps}" Classes="glass-card interactive" Command="{Binding NavigateToAppLauncherCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconLauncher}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="Apps" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsApps}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsProcesses}" Classes="glass-card interactive" Command="{Binding NavigateToTaskManagerCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconTasks}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="FormatListBulleted" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsProcesses}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsFiles}" Classes="glass-card interactive" Command="{Binding NavigateToFileTransferCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconFiles}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="FolderOutline" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsFiles}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsLogs}" Classes="glass-card interactive" Command="{Binding NavigateToDiagnosticLogsCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconLogs}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="FileDocument" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsLogs}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsPersonalize}" Classes="glass-card interactive" Command="{Binding NavigateToCustomizationCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconPersonalize}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="Palette" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsPersonalize}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button AutomationProperties.Name="{local:Localize Home_QsAbout}" Classes="glass-card interactive" Command="{Binding NavigateToAboutCommand}" Padding="0" Margin="4" HorizontalAlignment="Stretch" CornerRadius="16">
                             <StackPanel Spacing="8" Margin="12,18" HorizontalAlignment="Center">
-                                <Path Data="{StaticResource IconAbout}" Fill="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center"/>
+                                <mi:MaterialIcon Kind="InformationOutline" Foreground="{DynamicResource AccentPrimaryBrush}" Width="24" Height="24" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{local:Localize Home_QsAbout}" FontSize="11" FontWeight="Bold" FontFamily="{StaticResource JetBrainsMono}" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Button>

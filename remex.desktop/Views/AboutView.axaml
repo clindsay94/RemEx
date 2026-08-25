@@ -1,5 +1,6 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:local="clr-namespace:Remex.Desktop.Converters"
     xmlns:controls="clr-namespace:Remex.Desktop.Controls" xmlns:views="using:Remex.Desktop.Views" x:Class="Remex.Desktop.Views.AboutView" x:DataType="vm:AboutViewModel">
@@ -97,7 +98,7 @@
                             <!-- This RemEx app's own version (remex.agent is one process — there is no separate desktop client) -->
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                    <Path Data="{StaticResource IconLaptop}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+                                    <mi:MaterialIcon Kind="Laptop" Foreground="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
                                     <TextBlock Text="{local:Localize About_DesktopClient}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding ClientVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
@@ -123,7 +124,7 @@
                             <!-- Embedded host connection status / version ("Your PC") -->
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                    <Path Data="{StaticResource IconDesktopPC}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+                                    <mi:MaterialIcon Kind="Monitor" Foreground="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
                                     <TextBlock Text="{local:Localize About_PCHost}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding HostVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
@@ -139,7 +140,7 @@
                                  (so it can be pasted into a support thread). -->
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                    <Path Data="{StaticResource IconConnection}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+                                    <mi:MaterialIcon Kind="LinkVariant" Foreground="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
                                     <TextBlock Text="{local:Localize About_HostFingerprint}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
                                 <SelectableTextBlock Text="{Binding HostFingerprint}" FontFamily="{StaticResource JetBrainsMono}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
@@ -152,7 +153,7 @@
                             <!-- Software Update -->
                             <StackPanel Spacing="8">
                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                    <Path Data="{StaticResource IconSync}" Fill="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center"/>
+                                    <mi:MaterialIcon Kind="Sync" Foreground="{DynamicResource AccentPrimaryBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
                                     <TextBlock Text="{local:Localize About_Update_Title}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding UpdateStatusText}" IsVisible="{Binding HasUpdateStatus}"

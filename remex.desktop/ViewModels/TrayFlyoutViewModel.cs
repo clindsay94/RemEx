@@ -1,10 +1,9 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
-using Avalonia;
-using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Material.Icons;
 using Remex.Desktop.Services;
 
 namespace Remex.Desktop.ViewModels;
@@ -14,8 +13,12 @@ public sealed record TrayTile
 {
     public required string Label { get; init; }
 
-    /// <summary>Resolved once at build time, not looked up per render.</summary>
-    public Geometry? Icon { get; init; }
+    /// <summary>
+    /// The glyph, named rather than drawn. A <see cref="MaterialIconKind"/> is a value the tile
+    /// carries directly, so unlike the geometry this replaced it needs no resource lookup and
+    /// cannot silently come back null when a key is missing (RemEx-wyx2c).
+    /// </summary>
+    public required MaterialIconKind Icon { get; init; }
 
     public required ICommand Command { get; init; }
     public bool IsEnabled { get; init; } = true;
@@ -137,19 +140,19 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
             new TrayTile
             {
                 Label = LocalizationService.Instance["Tray_Tile_Lock"],
-                Icon = FindIcon("IconLock"),
+                Icon = MaterialIconKind.Lock,
                 Command = _shell.Connection.LockCommand,
             },
             new TrayTile
             {
                 Label = LocalizationService.Instance["Tray_Tile_Sleep"],
-                Icon = FindIcon("IconMoon"),
+                Icon = MaterialIconKind.WeatherNight,
                 Command = _shell.Connection.SleepCommand,
             },
             new TrayTile
             {
                 Label = LocalizationService.Instance["Tray_Tile_RemoteDesktop"],
-                Icon = FindIcon("IconRemote"),
+                Icon = MaterialIconKind.Monitor,
                 Command = OpenRemoteDesktopCommand,
                 OpensMainWindow = true,
                 IsEnabled = remoteEnabled,
@@ -160,14 +163,14 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
             new TrayTile
             {
                 Label = LocalizationService.Instance["Tray_Tile_SendFile"],
-                Icon = FindIcon("IconUpload"),
+                Icon = MaterialIconKind.Upload,
                 Command = OpenTransfersCommand,
                 OpensMainWindow = true,
             },
             new TrayTile
             {
                 Label = LocalizationService.Instance["Btn_Pair"],
-                Icon = FindIcon("IconConnection"),
+                Icon = MaterialIconKind.LinkVariant,
                 // Always enabled: RemEx supports several paired devices, so gating this on
                 // "already paired" would block adding a second phone.
                 Command = OpenPairingCommand,
@@ -176,32 +179,11 @@ public sealed partial class TrayFlyoutViewModel : ObservableObject
             new TrayTile
             {
                 Label = LocalizationService.Instance["PaletteCategory_Power"],
-                Icon = FindIcon("IconPower"),
+                Icon = MaterialIconKind.Power,
                 Command = NoOpCommand,
                 HasSubmenu = true,
             },
         ];
-    }
-
-    /// <summary>
-    /// Resolves an icon geometry from the application's resources, tolerating a missing key.
-    /// </summary>
-    /// <remarks>
-    /// Returns null rather than throwing. A typo'd or removed icon key should cost a tile its
-    /// glyph, not take down the tray flyout — the label alone still says what the tile does.
-    /// <para>
-    /// Same shape as <c>ThemeResources.TryGet</c>, and for the reason recorded there:
-    /// <c>TryFindResource</c> does not exist on <see cref="Application"/> in this Avalonia version,
-    /// so the lookup goes through <c>TryGetResource</c> with the active theme variant.
-    /// </para>
-    /// </remarks>
-    private static Geometry? FindIcon(string key)
-    {
-        var app = Application.Current;
-        if (app is null)
-            return null;
-
-        return app.TryGetResource(key, app.ActualThemeVariant, out var value) ? value as Geometry : null;
     }
 
     [RelayCommand]

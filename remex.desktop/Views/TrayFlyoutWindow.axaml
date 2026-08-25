@@ -1,5 +1,6 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mi="using:Material.Icons.Avalonia"
     xmlns:vm="using:Remex.Desktop.ViewModels"
     xmlns:conv="using:Remex.Desktop.Converters"
     xmlns:ctrl="using:Remex.Desktop.Controls"
@@ -21,10 +22,10 @@
              drift apart visually. -->
         <DataTemplate x:Key="TrayTileFace" x:DataType="vm:TrayTile">
             <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Path Data="{Binding Icon}"
-                      Fill="{DynamicResource AccentPrimaryBrush}"
-                      Width="18" Height="18" Stretch="Uniform"
-                      HorizontalAlignment="Center"/>
+                <mi:MaterialIcon Kind="{Binding Icon}"
+                                 Foreground="{DynamicResource AccentPrimaryBrush}"
+                                 Width="18" Height="18"
+                                 HorizontalAlignment="Center"/>
                 <TextBlock Text="{Binding Label}"
                            FontSize="10" FontWeight="Bold"
                            HorizontalAlignment="Center"
@@ -82,8 +83,8 @@
              MDL2 Assets codepoint, but that font ships with Windows only and nothing here sets
              the family, so the glyph would be a fallback box on Linux and probably on Windows
              too. Fill follows the button's own Foreground so the pointerover style still lands. -->
-        <Style Selector="Button.tray-chip Path, ToggleButton.tray-chip Path">
-            <Setter Property="Fill" Value="{Binding $parent[Button].Foreground}"/>
+        <Style Selector="Button.tray-chip mi|MaterialIcon, ToggleButton.tray-chip mi|MaterialIcon">
+            <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}"/>
         </Style>
 
         <!-- BACKGROUND IS SET HERE, NOT JUST FOREGROUND, AND IT IS THE WHOLE FIX (RemEx-xpfls).
@@ -148,7 +149,7 @@
 
                 <Button Grid.Column="2" Classes="tray-chip" Click="OnOpenMainApp"
                         AutomationProperties.Name="{local:Localize Palette_Settings}">
-                    <Path Data="{StaticResource IconGear}" Width="14" Height="14" Stretch="Uniform"/>
+                    <mi:MaterialIcon Kind="Cog" Width="14" Height="14"/>
                 </Button>
 
                 <!-- ONE-WAY ON PURPOSE. A two-way IsChecked binding writes IsPinned before the Click
@@ -159,7 +160,7 @@
                               IsChecked="{Binding IsPinned, Mode=OneWay}"
                               Click="OnTogglePin"
                               AutomationProperties.Name="{local:Localize A11y_TrayFlyout_Pin}">
-                    <Path Data="{StaticResource IconPin}" Width="14" Height="14" Stretch="Uniform"/>
+                    <mi:MaterialIcon Kind="Pin" Width="14" Height="14"/>
                 </ToggleButton>
 
                 <Button Grid.Column="4" Classes="tray-chip" Click="OnCloseFlyout"
