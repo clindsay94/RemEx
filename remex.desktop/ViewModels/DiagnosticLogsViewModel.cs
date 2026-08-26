@@ -312,10 +312,10 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         return JsonSerializer.Serialize(payload, LogExportJsonContext.Default.ListLogEntryExport);
     }
 
-    // ─── System event logs tab: entries RemEx wrote to the OS log, NOT a service. There is no
+    // ─── System event logs tab: entries the OS recorded about RemEx, NOT a service. There is no
     // RemEx service; remex.agent runs in the signed-in user's session. Windows reads the
-    // Application event log by source; the Linux branch still targets the retired remex-host
-    // unit and is tracked as RemEx-2vfx. ────────────────────────────────────────────────────────
+    // Application event log by source; Linux reads the user journal by process name
+    // (RemEx-2vfx — the previous query named a systemd unit the installer deletes). ─────────────
 
     [RelayCommand]
     public async Task FetchServiceLogsAsync()
@@ -336,8 +336,22 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
             }
             else if (OperatingSystem.IsLinux())
             {
-                var (ok, output) = await RunCommandAsync("journalctl", "-u remex-host -n 100 --no-pager");
-                ServiceLogsText = ok ? output.Trim() : $"Failed to query journalctl: {output}";
+                // BY PROCESS NAME, NOT BY UNIT (RemEx-2vfx). The old query was
+                // `-u remex-host`, a systemd unit the installer actively REMOVES
+                // (agent-install.sh names it LEGACY_SERVICE_UNIT) — so this tab was permanently
+                // empty on every current Linux install. RemEx starts from an XDG autostart
+                // .desktop as an ordinary user process, so the closest thing to an OS record of
+                // it is the USER journal, attributed by _COMM (the kernel's 15-char process
+                // name; the binary is Remex.Agent, 11). Whether anything lands there depends on
+                // the desktop: environments that run XDG autostart through systemd (GNOME) put
+                // the process's stdout/stderr in the user journal, ones that spawn it directly
+                // may capture nothing — which is why the empty case explains itself below
+                // instead of reading as "no problems".
+                var (ok, output) = await RunCommandAsync(
+                    "journalctl", LinuxJournalArguments);
+                ServiceLogsText = ok
+                    ? DescribeLinuxJournal(output)
+                    : $"Failed to query journalctl: {output}";
             }
             else
             {
@@ -348,6 +362,36 @@ public partial class DiagnosticLogsViewModel : ObservableObject, IDisposable
         {
             ServiceLogsText = $"Could not read the system event log: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// The user-journal query for entries the OS recorded about this process (RemEx-2vfx).
+    /// Internal so a test can pin it: the previous query named a systemd unit the installer
+    /// deletes, and nothing could tell that permanently-empty answer from a healthy one.
+    /// </summary>
+    internal const string LinuxJournalArguments = "--user _COMM=Remex.Agent -n 100 --no-pager";
+
+    /// <summary>
+    /// Turns the journal output into what the tab shows. An empty journal is the expected state
+    /// on desktops that do not route XDG autostart through systemd, so it explains itself rather
+    /// than reading as "nothing has gone wrong" — the in-app Logs tab is the authoritative record
+    /// either way, and this text says so.
+    /// </summary>
+    internal static string DescribeLinuxJournal(string output)
+    {
+        var trimmed = output.Trim();
+        // journalctl prints "-- No entries --" rather than nothing when the query matches nothing.
+        // StartsWith on the WHOLE trimmed output, not Contains: a real entry whose message embeds
+        // that literal must not suppress a hundred genuine lines (review finding).
+        if (trimmed.Length == 0 || trimmed.StartsWith("-- No entries --", StringComparison.Ordinal))
+        {
+            return "No user-journal entries recorded for Remex.Agent.\n"
+                + "That is expected on desktops that start RemEx directly from XDG autostart "
+                + "rather than through systemd — the OS never captures its output there. "
+                + "The Logs tab above is RemEx's own record and works everywhere.";
+        }
+
+        return trimmed;
     }
 
     private static async Task<(bool Success, string Output)> RunCommandAsync(string fileName, string arguments)

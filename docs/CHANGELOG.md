@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The Diagnostics "system event logs" tab was permanently empty on Linux, and looked healthy
+  doing it.** It queried a systemd unit (`remex-host`) that the Linux installer actively deletes —
+  RemEx starts from XDG autostart as an ordinary user process now — so the query could never
+  match, and an empty diagnostics panel reads as "nothing has gone wrong". The tab now asks the
+  user journal about the RemEx process itself, and when that comes back empty it says why it can
+  be empty (desktops that don't route autostart through systemd never capture the output) and
+  points at the in-app Logs tab, which is the authoritative record on every platform. Verified on
+  Windows; the on-Linux check is a follow-up bead. (RemEx-2vfx)
+
 - **The tray flyout's pin icon stayed visible when pinned instead of dissolving into a filled
   square.** The pin is the only indicator of which mode the flyout is in — pinned windows resize
   and remember their geometry, transient ones dismiss on focus loss — and on pinning it vanished
