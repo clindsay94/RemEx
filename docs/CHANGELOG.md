@@ -42,6 +42,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The Command Palette's hover/selection fills were investigated and confirmed correct, not
+  fragile.** RemEx-f51fa prescribed moving the fills off `/template/ ContentPresenter` onto the
+  ListBoxItem itself for robustness; the Fluent 12.1.1 source refutes that — Fluent sets its own
+  state backgrounds on the presenter at a priority that beats a template binding, so the "tidier"
+  form silently loses both fills. The file now documents why the presenter-level selectors are
+  required and what to re-verify if the applied theme ever changes. (RemEx-f51fa)
+
 - **The translation check said translations were complete while 671 strings sat in English.**
   It verified that every key exists in all nine languages, that every key used in code is defined,
   and that translations take the same arguments as their English source — all true, and none of them
