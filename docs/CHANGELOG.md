@@ -42,6 +42,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **The screenshot-push deadlock now has the regression test that would have caught it.** The
+  original RemEx-y7my bug awaited the push inline in the control-socket reader loop while the
+  phone's answer arrives on that same socket — a 70-second stall on every screenshot, with every
+  other message queued behind it. The detached dispatch that fixed it had nothing pinning it; a new
+  test drives the SCREENSHOT command against a socket that never answers the offer and proves the
+  response arrives in milliseconds while the offer is still pending (re-inlining the await was
+  injected and failed the test; a mutation that deletes the push fails its offer-on-the-wire
+  assertion). `ExecuteCommandAsync` became internal as the test seam, following the
+  OfferTimeout/ReadyTimeout precedent. This closes the last item on RemEx-hn23. (RemEx-hn23)
+
 - **The Command Palette's hover/selection fills were investigated and confirmed correct, not
   fragile.** RemEx-f51fa prescribed moving the fills off `/template/ ContentPresenter` onto the
   ListBoxItem itself for robustness; the Fluent 12.1.1 source refutes that — Fluent sets its own

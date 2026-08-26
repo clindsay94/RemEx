@@ -883,7 +883,12 @@ public sealed class PingPongHandler(
     /// reading. The power verbs ignore it, which is correct: a shutdown that has been asked for
     /// should not be abandoned because the phone dropped off mid-request.
     /// </remarks>
-    private async Task<RemexMessage> ExecuteCommandAsync(
+    // INTERNAL AS A TEST SEAM (RemEx-hn23), following the OfferTimeout/ReadyTimeout precedent: the
+    // property "the SCREENSHOT response does not wait for the push" cannot be observed through
+    // HandleAsync without a full pairing exchange (command is pairing-gated for remote peers, and
+    // loopback is identity-frozen so its push arm is dead). clientId being a parameter here is what
+    // lets the regression test arm the push without one.
+    internal async Task<RemexMessage> ExecuteCommandAsync(
         RemexMessage message, WebSocket webSocket, string? clientId, CancellationToken ct)
     {
         try
