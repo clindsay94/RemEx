@@ -8,6 +8,19 @@ public sealed record HostCapabilities
     /// <summary>Version of the host application.</summary>
     public string Version { get; init; } = "unknown";
 
+    /// <summary>
+    /// The host build's identity from <c>build/BuildId.targets</c>: git's short sha, with
+    /// "+xxxx" appended when built from a dirty tree (RemEx-d9guj). Empty when the host predates
+    /// the field or carries no stamp — receivers show nothing then, never "unknown".
+    /// </summary>
+    /// <remarks>
+    /// ONLY THE SHA HALF COMPARES ACROSS PLATFORMS. MSBuild and Gradle hash the dirty suffix
+    /// independently, so two dirty builds of the SAME tree carry different suffixes — a display
+    /// that invites comparing them reports a difference that is not there. Renderers show the
+    /// suffix as a bare '+'.
+    /// </remarks>
+    public string BuildId { get; init; } = "";
+
     /// <summary>Runtime mode for the active host process, such as interactive or service.</summary>
     public string RuntimeMode { get; init; } = "unknown";
 

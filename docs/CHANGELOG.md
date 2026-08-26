@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Both About screens now put the PC's and the phone's build ids on one screen.** Each device
+  already stamped its own build id; answering "are these two builds from the same commit?" still
+  meant walking between devices and comparing from memory. The host now sends its build id over
+  the link, the phone's About shows it under the PC row exactly the way it shows its own, and the
+  PC's About does the same for its embedded host — identical shas one above the other mean
+  identical source. Only the comparable half travels into view: a dirty build's suffix is hashed
+  differently by each platform's toolchain, so the remote row shows the sha plus a bare "+"
+  rather than inviting a comparison that would report a difference that is not there. An older
+  host that predates the field shows nothing — never "unknown". (RemEx-d9guj)
+
 - **The PC app's base mode can follow your operating system now.** Personalization's light/dark
   switch became a three-way picker: Light, Dark, or System. With System selected, flipping the OS
   between light and dark repaints RemEx immediately — no restart — and Light and Dark keep pinning

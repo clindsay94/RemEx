@@ -129,4 +129,31 @@ public static class AppVersion
 
         return parsed.Build >= 0 ? parsed.ToString(3) : parsed.ToString(2);
     }
+
+    /// <summary>
+    /// Reduces a REMOTE build id to its comparable form: the sha, plus a bare '+' when the remote
+    /// build was dirty — "39b0b09+a3f1" becomes "39b0b09+" (RemEx-d9guj).
+    /// </summary>
+    /// <remarks>
+    /// The characters after '+' are hashed independently by MSBuild and Gradle, so two dirty
+    /// builds of the SAME tree carry different suffixes. Showing a remote suffix beside the local
+    /// one invites comparing them, and the mismatch that comparison reports is not there — worse
+    /// than no row. The bare '+' keeps what the marker actually promises ("built from uncommitted
+    /// work") and drops the half that only pretends to distinguish. The LOCAL row keeps its full
+    /// suffix: on its own screen there is nothing to falsely compare against, and the extra four
+    /// characters do distinguish two local dirty builds from each other.
+    /// Empty and the wire sentinel "unknown" both map to empty — an old host that predates the
+    /// field shows nothing, the same rule both About screens already follow locally.
+    /// </remarks>
+    public static string NormalizeRemoteBuildId(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+        var trimmed = raw.Trim();
+        if (string.Equals(trimmed, "unknown", StringComparison.OrdinalIgnoreCase)) return string.Empty;
+
+        var plus = trimmed.IndexOf('+');
+        if (plus < 0) return trimmed;
+        var sha = trimmed[..plus].Trim();
+        return sha.Length == 0 ? string.Empty : sha + "+";
+    }
 }

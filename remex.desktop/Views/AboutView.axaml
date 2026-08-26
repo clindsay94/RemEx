@@ -128,6 +128,20 @@
                                     <TextBlock Text="{local:Localize About_PCHost}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 </StackPanel>
                                 <TextBlock Text="{Binding HostVersion}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="30,0,0,0"/>
+                                <!-- The host's build id in its COMPARABLE form: sha, and a bare '+'
+                                     for a dirty build — never the remote dirty suffix, which a
+                                     different tool hashed and which would invite a false mismatch
+                                     against the row above (RemEx-d9guj). Same monospace/selectable
+                                     treatment and the same hidden-when-absent rule as the local row,
+                                     so an older host shows nothing here rather than "unknown". -->
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="30,0,0,0"
+                                            IsVisible="{Binding HasHostBuildId}">
+                                    <TextBlock Text="{local:Localize About_BuildId}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}"/>
+                                    <SelectableTextBlock Text="{Binding HostBuildId}"
+                                                         FontSize="12"
+                                                         FontFamily="Consolas, Menlo, monospace"
+                                                         Foreground="{DynamicResource TextMutedBrush}"/>
+                                </StackPanel>
                             </StackPanel>
 
                             <!-- Divider -->

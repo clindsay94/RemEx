@@ -95,6 +95,21 @@ fun AboutScreenContent(
                 unknownLabel
             }
 
+    // The PC's build id in its comparable form (RemEx-d9guj). Separate from pcInfo because it
+    // renders as the row's supporting line, mirroring how this phone's own row shows its id one
+    // divider up — which is the entire point: identical shas one above the other mean identical
+    // source, and a mismatch is visible without walking to the other device.
+    val hostBuildId =
+            try {
+                if (isConnected && hostCapabilities.isNotEmpty()) {
+                    remoteBuildIdLabel(JSONObject(hostCapabilities).optString("buildId", ""))
+                } else {
+                    ""
+                }
+            } catch (e: Exception) {
+                ""
+            }
+
     val scrollBehavior = rememberRemexTopBarScrollBehavior()
     Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -207,6 +222,26 @@ fun AboutScreenContent(
                                         style = MaterialTheme.typography.bodyMediumEmphasized
                                 )
                             },
+                            supportingContent =
+                                    // Same treatment as this phone's own id one divider up, so the
+                                    // two shas sit adjacent and comparable. Only the sha half is
+                                    // shown for the PC — its dirty suffix is hashed by a different
+                                    // tool, so rendering it would invite a comparison that reports
+                                    // a difference that is not there; the bare '+' keeps the one
+                                    // thing the marker promises. Absent (old host) shows nothing,
+                                    // never "unknown" (RemEx-d9guj).
+                                    if (hostBuildId.isNotEmpty()) {
+                                        {
+                                            Text(
+                                                    stringResource(
+                                                            R.string.about_build_id,
+                                                            hostBuildId
+                                                    ),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontFamily = FontFamily.Monospace
+                                            )
+                                        }
+                                    } else null,
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     ) {
                         Text(stringResource(R.string.about_pc_host_label))
@@ -346,4 +381,23 @@ private fun AboutScreenPreview() {
             hostCapabilities = "{\"version\":\"1.2.3\",\"platform\":\"Windows\",\"runtimeMode\":\"Native\"}"
         )
     }
+}
+
+/**
+ * Reduces a remote build id to its comparable form: the sha, plus a bare '+' when the remote build
+ * was dirty — "39b0b09+a3f1" becomes "39b0b09+" (RemEx-d9guj).
+ *
+ * The characters after '+' are hashed independently by Gradle and MSBuild, so two dirty builds of
+ * the SAME tree carry different suffixes; showing the remote suffix beside the local one invites a
+ * comparison that reports a difference that is not there. Empty and the wire sentinel "unknown"
+ * both map to empty, so an old host shows nothing rather than "unknown" — the rule both About
+ * screens already follow for their own ids. Mirrors AppVersion.NormalizeRemoteBuildId on the PC.
+ */
+internal fun remoteBuildIdLabel(raw: String): String {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty() || trimmed.equals("unknown", ignoreCase = true)) return ""
+    val plus = trimmed.indexOf('+')
+    if (plus < 0) return trimmed
+    val sha = trimmed.substring(0, plus).trim()
+    return if (sha.isEmpty()) "" else "$sha+"
 }

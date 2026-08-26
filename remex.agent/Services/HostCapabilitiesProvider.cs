@@ -142,6 +142,10 @@ public sealed class HostCapabilitiesProvider : IHostCapabilitiesProvider
         return new HostCapabilities
         {
             Version = version,
+            // The stamp Directory.Build.props writes into every assembly; ResolveBuildId maps
+            // both "no stamp" and the literal "unknown" to empty, which is what receivers want -
+            // an About row reading "unknown" beside a real version is worse than no row (RemEx-d9guj).
+            BuildId = Remex.Desktop.Services.AppVersion.ResolveBuildId(typeof(HostCapabilitiesProvider).Assembly),
             Platform = platform,
             RuntimeMode = runtimeMode,
             IsInteractiveSession = isInteractiveSession,

@@ -53,6 +53,26 @@ public partial class AboutViewModel : ObservableObject, IDisposable
 
     partial void OnClientBuildIdChanged(string value) => OnPropertyChanged(nameof(HasClientBuildId));
 
+    /// <summary>
+    /// The connected host's build id in its comparable form — sha, plus a bare '+' when that build
+    /// was dirty (RemEx-d9guj). Empty when disconnected or when the host predates the field, and
+    /// the row hides on empty by the same no-"unknown" rule as <see cref="ClientBuildId"/>.
+    /// </summary>
+    /// <remarks>
+    /// On this app the "host" is this same PC over loopback, so the row usually mirrors
+    /// <see cref="ClientBuildId"/> — and a SHA mismatch between the two rows is what makes a
+    /// partial update (UI and agent from different commits) visible instead of invisible. Only
+    /// the sha half carries that signal: the reduction below drops the dirty suffix even here,
+    /// where it happens to be comparable, because this view model cannot know it is loopback.
+    /// </remarks>
+    [ObservableProperty]
+    private string _hostBuildId = string.Empty;
+
+    /// <summary>Whether there is a host build id worth showing a row for.</summary>
+    public bool HasHostBuildId => !string.IsNullOrEmpty(HostBuildId);
+
+    partial void OnHostBuildIdChanged(string value) => OnPropertyChanged(nameof(HasHostBuildId));
+
     [ObservableProperty]
     private string _hostVersion = "Disconnected";
 
@@ -345,16 +365,22 @@ public partial class AboutViewModel : ObservableObject, IDisposable
         if (!_connection.IsConnected)
         {
             HostVersion = LocalizationService.Instance["Status_Disconnected"];
+            HostBuildId = string.Empty;
             return;
         }
 
         if (_connection.HostCapabilities == null)
         {
             HostVersion = LocalizationService.Instance["Status_Connected"];
+            HostBuildId = string.Empty;
             return;
         }
 
         var caps = _connection.HostCapabilities;
+        // Comparable form only: the sha, and a bare '+' for a dirty build. The remote dirty
+        // suffix is hashed by a different tool than the local one, so rendering it would invite
+        // a comparison that reports differences that are not there (RemEx-d9guj).
+        HostBuildId = AppVersion.NormalizeRemoteBuildId(caps.BuildId);
         // Normalised for DISPLAY ONLY — the wire value is untouched, so nothing the Android client
         // parses changes. The host still reports four components ("2.4.0.0") while this app shows
         // its own as three, and the two sit one divider apart on this page (RemEx-8jzu).

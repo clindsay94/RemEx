@@ -34,6 +34,26 @@ public sealed class BuildIdTests
     /// <summary>Seven hex for the short sha, optionally "+" and four hex for a dirty tree.</summary>
     private const string Shape = @"^[0-9a-f]{7}(\+[0-9a-f]{4})?$";
 
+    // ─── The remote form (RemEx-d9guj): what another machine's id may show here ────────────────
+
+    [Theory]
+    [InlineData("39b0b09", "39b0b09")]          // clean build: the sha compares as-is
+    [InlineData("39b0b09+a3f1", "39b0b09+")]    // dirty: the suffix is another tool's hash — bare marker only
+    [InlineData("  39b0b09+a3f1 ", "39b0b09+")] // wire whitespace tolerated
+    [InlineData("", "")]                        // old host without the field: no row
+    [InlineData("   ", "")]
+    [InlineData("unknown", "")]                 // the wire sentinel is a fact about the build machine
+    [InlineData("Unknown", "")]
+    [InlineData("+a3f1", "")]                   // a suffix with no sha compares as nothing
+    public void ARemoteBuildIdReducesToItsComparableForm(string raw, string expected)
+    {
+        // The dirty suffix is hashed independently by MSBuild and Gradle, so two dirty builds of
+        // the SAME tree differ after '+'. Rendering the remote suffix invites comparing it against
+        // the local one, and that comparison reports a difference that is not there — the exact
+        // failure the bead calls worse than not having the feature.
+        Assert.Equal(expected, AppVersion.NormalizeRemoteBuildId(raw));
+    }
+
     [Fact]
     public void TheDesktopAssemblyCarriesAWellFormedBuildId()
     {
@@ -100,6 +120,14 @@ public sealed class BuildIdTests
         var csproj = File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "remex.desktop.csproj"));
         csproj.Should().Contain("<RemexStampBuildId>true</RemexStampBuildId>",
             "remex.desktop owns the About page and is the assembly that must carry the stamp");
+
+        // The agent's opt-in was exactly this kind of invisible gap (RemEx-d9guj): the wire field
+        // shipped, the provider read the agent assembly, the assembly carried no stamp — and the
+        // live probe read buildId: '' with every test green. The host row hides on empty, so
+        // nothing would ever have failed.
+        var agentCsproj = File.ReadAllText(Path.Combine(RepoRoot(), "remex.agent", "remex.agent.csproj"));
+        agentCsproj.Should().Contain("<RemexStampBuildId>true</RemexStampBuildId>",
+            "the agent assembly's own stamp is what the host reports over the link");
 
         // COMMENTS STRIPPED FIRST, and the first version of this did not do that. BuildId.targets
         // explains in prose why it uses StableStringHash rather than String.GetHashCode — so

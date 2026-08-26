@@ -13,6 +13,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Remex.Agent</RootNamespace>
     <AssemblyName>Remex.Agent</AssemblyName>
+    <!-- This assembly's stamp is what the host reports over the link (RemEx-d9guj). Stamped
+         SEPARATELY from remex.desktop's on purpose: the two DLLs ship together but are stamped
+         per-assembly, so the About page's local row (desktop) and host row (agent, over loopback)
+         genuinely disagree after a partial update instead of one masking the other. -->
+    <RemexStampBuildId>true</RemexStampBuildId>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\remex.desktop\Assets\icon.ico</ApplicationIcon>
     <UserSecretsId>dotnet-Remex.Host-250abb58-e6f9-4331-93e2-4801f7e26382</UserSecretsId>
