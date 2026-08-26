@@ -20,22 +20,24 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private readonly ThemeService _themeService;
     private bool _isApplyingPreset;
 
-    /// <summary>
-    /// The light/dark choice carried into the next save. Null means "never chosen explicitly", which
-    /// <see cref="ThemeService.ApplyCustomization"/> still answers by looking at the preset name.
-    /// </summary>
-    /// <remarks>
-    /// SELECTING A PRESET IS CHOOSING ITS LIGHT/DARK, so SelectTheme writes this rather than leaving
-    /// the name-matching fallback to infer it. The fallback exists for settings saved before the
-    /// field did; once a user has picked anything, changing the seed must not drag the mode back to
-    /// whatever the preset happens to be called. There is no UI for the switch yet - RemEx-5u0vy
-    /// owns that surface - so this is the only writer.
-    /// </remarks>
-    private bool? _useLightPalette;
+    /// <summary>Held so <see cref="Dispose"/> can detach it — the theme service outlives this VM.</summary>
+    private Action<CustomizationSettings>? _onCustomizationApplied;
+
+    // The old _useLightPalette mirror is gone with the switch it fed (RemEx-zk5bc): the null-mode
+    // fallback reads settings.UseLightPalette inline at load, and the save path carries the stored
+    // value verbatim - a private copy of a superseded field is exactly the two-values-that-can-
+    // disagree shape the mode exists to end.
 
     /// <summary>
-    /// Whether <see cref="SelectTheme"/> has written <see cref="_useLightPalette"/> since this view
-    /// model was constructed.
+    /// The mode carried into the next save: <see cref="ThemeModes.Light"/>, <c>Dark</c>, or
+    /// <c>System</c>. Written by the mode picker and by <see cref="SelectTheme"/> — selecting a
+    /// preset is choosing its light/dark, so a preset pick pins the mode rather than leaving it
+    /// on System (RemEx-zk5bc).
+    /// </summary>
+    private string? _themeMode;
+
+    /// <summary>
+    /// Whether the mode has been chosen (picker or preset) since this view model was constructed.
     /// </summary>
     /// <remarks>
     /// THE FIELD IS A SNAPSHOT AND THE VALUE IT REPLACED WAS LIVE. ApplyAndSave used to read the mode
@@ -50,27 +52,42 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     /// and the other sliders and is older than this field (RemEx-07jij filed a follow-up).
     /// </para>
     /// </remarks>
-    private bool _lightPaletteChosenThisSession;
+    private bool _themeModeChosenThisSession;
 
     /// <summary>
-    /// Set while <see cref="SetLightPalette"/> pushes its value out to <see cref="UseLightPaletteSwitch"/>,
-    /// so the switch's own handler does not read that echo back as a fresh user choice.
+    /// Set while <see cref="SetThemeMode"/> pushes its value out to <see cref="ThemeModeIndex"/>,
+    /// so the picker's own handler does not read that echo back as a fresh user choice.
     /// </summary>
-    private bool _isSyncingLightPalette;
+    private bool _isSyncingThemeMode;
 
-    private void SetLightPalette(bool useLight)
+    /// <summary>Picker order: 0 Light, 1 Dark, 2 System — matching the ComboBox in the view.</summary>
+    private static int ThemeModeToIndex(string? mode) => mode switch
     {
-        _useLightPalette = useLight;
-        _lightPaletteChosenThisSession = true;
+        ThemeModes.Light => 0,
+        ThemeModes.System => 2,
+        _ => 1,
+    };
 
-        _isSyncingLightPalette = true;
+    private static string ThemeModeFromIndex(int index) => index switch
+    {
+        0 => ThemeModes.Light,
+        2 => ThemeModes.System,
+        _ => ThemeModes.Dark,
+    };
+
+    private void SetThemeMode(string mode)
+    {
+        _themeMode = mode;
+        _themeModeChosenThisSession = true;
+
+        _isSyncingThemeMode = true;
         try
         {
-            UseLightPaletteSwitch = useLight;
+            ThemeModeIndex = ThemeModeToIndex(mode);
         }
         finally
         {
-            _isSyncingLightPalette = false;
+            _isSyncingThemeMode = false;
         }
     }
 
@@ -169,12 +186,13 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     private double _themeContrast;
 
     /// <summary>
-    /// Whether the generated palette is a light one. Bound to the studio's switch; writing it is
-    /// what turns <see cref="CustomizationSettings.UseLightPalette"/> from "derive it from the preset
-    /// name" into an explicit choice that survives changing the seed.
+    /// The base-mode picker's selection: 0 Light, 1 Dark, 2 System (follow the OS). Writing it is
+    /// what turns <see cref="CustomizationSettings.ThemeMode"/> into an explicit choice that
+    /// survives changing the seed; System makes the palette track the OS setting live
+    /// (RemEx-zk5bc).
     /// </summary>
     [ObservableProperty]
-    private bool _useLightPaletteSwitch;
+    private int _themeModeIndex = 1;
 
     partial void OnSeedHueChanged(double value) => PushSeedToAccent();
 
@@ -184,10 +202,10 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
     partial void OnThemeContrastChanged(double value) => ApplyAndSave();
 
-    partial void OnUseLightPaletteSwitchChanged(bool value)
+    partial void OnThemeModeIndexChanged(int value)
     {
-        if (_isSyncingLightPalette) return;
-        SetLightPalette(value);
+        if (_isSyncingThemeMode) return;
+        SetThemeMode(ThemeModeFromIndex(value));
         ApplyAndSave();
     }
 
@@ -335,15 +353,19 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         _schemeVariant = settings.SchemeVariant;
         _canvasBackgroundType = settings.BackgroundMaterial;
         _syncWithHardware = settings.SyncWithHardware;
-        _useLightPalette = settings.UseLightPalette;
+        _themeMode = settings.ThemeMode;
         _themeContrast = Math.Clamp(settings.ThemeContrast, -1.0, 1.0);
 
-        // THE SWITCH HAS TO SHOW WHAT IS ACTUALLY PAINTED, and for a profile written before
-        // UseLightPalette existed that is the preset-name answer, not "dark". This mirrors
-        // ThemeService.ApplyCustomization's null case deliberately — a switch that reads the
-        // opposite of the window behind it is worse than no switch.
-        _useLightPaletteSwitch = settings.UseLightPalette
-            ?? string.Equals(settings.ThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase);
+        // THE PICKER HAS TO SHOW WHAT IS ACTUALLY PAINTED. Migration stamps ThemeMode on load, so
+        // it is normally present; the fallback chain below is the hand-edited-null shape and
+        // mirrors ThemeService.ResolveIsLight's legacy case deliberately — a picker that reads the
+        // opposite of the window behind it is worse than no picker.
+        _themeModeIndex = settings.ThemeMode is { } mode
+            ? ThemeModeToIndex(mode)
+            : (settings.UseLightPalette
+                ?? string.Equals(settings.ThemeId, "SolarFlare", StringComparison.OrdinalIgnoreCase))
+                ? 0
+                : 1;
 
         _splashStyle = settings.SplashStyle;
         _selectedPageTitleFont = AvailableFonts.FirstOrDefault(f => f.Value == settings.PageTitleFontFamily)
@@ -385,6 +407,15 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
 
         RefreshPresetPreviews(onlyVarying: false);
         UpdatePresetSelection();
+
+        // AN OS THEME FLIP REPAINTS THE TILES TOO (RemEx-zk5bc review). In System mode the window
+        // can change light/dark with no slider touched — ApplyCustomization re-runs from the
+        // ColorValuesChanged listener — and the Dynamic tile is painted from the live settings, so
+        // without this it keeps the old mode's swatches until the next user action. A NAMED
+        // delegate in a field, not a lambda, so Dispose can detach it — the same convention
+        // ShellViewModel uses on this event, and for the same reason: the service outlives us.
+        _onCustomizationApplied = _ => RefreshPresetPreviews(onlyVarying: true);
+        _themeService.CustomizationApplied += _onCustomizationApplied;
 
         // Load available background types
         RefreshBackgroundTypes();
@@ -648,7 +679,11 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             // means Hct.From(hue, ThemeSeedChroma, tone) reproduces this exact seed, which is the
             // property the Android side needs for the two platforms to agree (RemEx-ndhlv).
             ThemeSeedChroma = SeedHct.ChromaOf(AccentColor, carried.ThemeSeedChroma),
-            UseLightPalette = _lightPaletteChosenThisSession ? _useLightPalette : carried.UseLightPalette,
+            // SUPERSEDED FIELD CARRIED VERBATIM, MODE WRITTEN INSTEAD (RemEx-zk5bc). UseLightPalette
+            // is a migration input now; writing new values to it would recreate the two-fields-that-
+            // can-disagree trap the mode exists to end.
+            UseLightPalette = carried.UseLightPalette,
+            ThemeMode = _themeModeChosenThisSession ? _themeMode : carried.ThemeMode,
             CornerRadius = CornerRadius,
             RemoteCardCornerRadius = RemoteCardCornerRadius,
             GlassOpacity = GlassOpacity,
@@ -700,7 +735,7 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
             // - a preset that means "my own colour" cannot be the one that overwrites it.
             if (preset.Seed is { } seed) AccentColor = seed;
             if (preset.SchemeVariant is { } variant) SchemeVariant = variant;
-            if (preset.IsLight is { } light) SetLightPalette(light);
+            if (preset.IsLight is { } light) SetThemeMode(light ? ThemeModes.Light : ThemeModes.Dark);
             if (preset.Contrast is { } contrast) ThemeContrast = contrast;
             if (preset.SplashStyle is { } splash) SplashStyle = splash;
 
@@ -738,14 +773,26 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         || preset.IsLight is null || preset.Contrast is null;
 
     /// <summary>
-    /// What light/dark the profile is actually painting right now - the explicit choice if there is
-    /// one, and otherwise the same preset-name answer <see cref="ThemeService.ApplyCustomization"/>
-    /// falls back to. The tiles have to agree with the window behind them.
+    /// What light/dark the profile is actually painting right now — the session's mode choice if
+    /// there is one, otherwise the stored mode, resolving System against the OS the same way
+    /// <see cref="ThemeService.ResolveIsLight"/> does. The tiles have to agree with the window
+    /// behind them.
     /// </summary>
-    private bool CurrentIsLightPalette() =>
-        _lightPaletteChosenThisSession
-            ? _useLightPalette ?? UseLightPaletteSwitch
-            : UseLightPaletteSwitch;
+    private bool CurrentIsLightPalette()
+    {
+        var mode = _themeModeChosenThisSession
+            ? _themeMode
+            : _layoutService.CurrentProfile.Customization.ThemeMode;
+        return mode switch
+        {
+            ThemeModes.Light => true,
+            ThemeModes.Dark => false,
+            ThemeModes.System => ThemeService.TryGetOsIsLight() ?? false,
+            // Hand-edited null mode: the picker index was initialised from the legacy chain, so it
+            // is the same answer ResolveIsLight's fallback would give.
+            _ => ThemeModeIndex == 0,
+        };
+    }
 
     private void UpdatePresetSelection()
     {
@@ -772,5 +819,6 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
         // singleton outlives this view model - an undisposed tile is pinned for the process lifetime.
         foreach (var tile in ThemePresets) tile.Dispose();
         ThemePresets.Clear();
+        _themeService.CustomizationApplied -= _onCustomizationApplied;
     }
 }

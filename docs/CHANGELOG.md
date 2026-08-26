@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The PC app's base mode can follow your operating system now.** Personalization's light/dark
+  switch became a three-way picker: Light, Dark, or System. With System selected, flipping the OS
+  between light and dark repaints RemEx immediately — no restart — and Light and Dark keep pinning
+  exactly as before, whatever the OS says. Existing installs keep the mode they had: the explicit
+  choice already on disk carries straight into the new setting, and nothing is switched to System
+  on anyone's behalf. Verified live on Windows across a full light→dark→light OS cycle; the Linux
+  (portal) half of the signal rides the same Avalonia API and is noted for verification there.
+  (RemEx-zk5bc)
+
 ### Changed
 
 - **Every icon in the PC app is a real Material icon now.** The 28 glyphs that used to be

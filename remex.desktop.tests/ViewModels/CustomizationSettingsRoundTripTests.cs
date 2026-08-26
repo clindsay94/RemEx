@@ -115,10 +115,18 @@ public class CustomizationSettingsRoundTripTests
         // SelectTheme has actually chosen, which is what the flag records.
         var initializer = ApplyAndSaveInitializer();
 
+        // RemEx-zk5bc moved the choice from the UseLightPalette bool to the tri-state ThemeMode;
+        // the guarded property moved with it, unchanged in shape.
         initializer.Should().MatchRegex(
-            @"UseLightPalette\s*=\s*_lightPaletteChosenThisSession\s*\?\s*_useLightPalette\s*:\s*carried\.UseLightPalette",
+            @"ThemeMode\s*=\s*_themeModeChosenThisSession\s*\?\s*_themeMode\s*:\s*carried\.ThemeMode",
             "the mode the user just chose has to reach the record, and the one they did not choose "
             + "has to keep coming off the live profile");
+
+        // The superseded bool is a migration input now. Writing anything but the carried value
+        // would recreate the two-fields-that-can-disagree trap the mode exists to end.
+        initializer.Should().MatchRegex(
+            @"UseLightPalette\s*=\s*carried\.UseLightPalette",
+            "UseLightPalette is superseded by ThemeMode and must only ever be carried forward");
     }
 
     /// <summary>Every settable property that actually round-trips to disk.</summary>

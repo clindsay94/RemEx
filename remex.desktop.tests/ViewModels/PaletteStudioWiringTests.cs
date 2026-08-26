@@ -23,7 +23,7 @@ public class PaletteStudioWiringTests
 {
     [Theory]
     [InlineData("ThemeContrast")]
-    [InlineData("UseLightPaletteSwitch")]
+    [InlineData("ThemeModeIndex")]
     [InlineData("SeedHue")]
     [InlineData("SeedChroma")]
     [InlineData("SeedTone")]
@@ -34,9 +34,10 @@ public class PaletteStudioWiringTests
         // A WRITER, NOT MERELY A MENTION. This asked only that the name appear in some binding, and
         // an injection proved that vacuous: deleting the contrast SLIDER's binding left the readout
         // TextBlock next to it still matching, so the test stayed green over a setting that had gone
-        // back to being unreachable — the exact condition it is named for. Value= and IsChecked= are
-        // the two properties on this panel through which a user changes anything.
-        markup.Should().MatchRegex($@"(Value|IsChecked)=""\{{Binding {Regex.Escape(property)}[,}}]",
+        // back to being unreachable — the exact condition it is named for. Value=, IsChecked= and
+        // SelectedIndex= are the properties on this panel through which a user changes anything
+        // (SelectedIndex joined for the base-mode picker, RemEx-zk5bc).
+        markup.Should().MatchRegex($@"(Value|IsChecked|SelectedIndex)=""\{{Binding {Regex.Escape(property)}[,}}]",
             "{0} is persisted and honoured, so a build with no INPUT control bound to it is a setting "
             + "the user cannot reach — which is the state this bead was filed to end", property);
     }

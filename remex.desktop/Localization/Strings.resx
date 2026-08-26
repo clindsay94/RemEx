@@ -26,12 +26,6 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>How hard the generated palette pushes text away from the surface behind it.</value>
   </data>
-  <data name="Custom_LightPalette" xml:space="preserve">
-    <value>Light palette</value>
-  </data>
-  <data name="Custom_LightPaletteDesc" xml:space="preserve">
-    <value>Generate the palette for a light background instead of a dark one.</value>
-  </data>
   <data name="Custom_PaletteStudio" xml:space="preserve">
     <value>PALETTE STUDIO</value>
   </data>
@@ -3164,5 +3158,20 @@ You can change:
   </data>
   <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
     <value>Couldn't finish unpairing: {0}. This device may come back the next time RemEx starts — unpair it again then.</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>Base mode</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>Light, dark, or follow the operating system's setting.</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>System</value>
   </data>
 </root>

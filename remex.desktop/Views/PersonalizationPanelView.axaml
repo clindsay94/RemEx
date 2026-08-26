@@ -158,10 +158,17 @@
                      reach them except by hand-editing the profile JSON (RemEx-5u0vy). -->
                 <Grid ColumnDefinitions="*,2*">
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="{local:Localize Custom_LightPalette}" FontSize="14" FontWeight="SemiBold"/>
-                        <TextBlock Text="{local:Localize Custom_LightPaletteDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{local:Localize Custom_BaseMode}" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="{local:Localize Custom_BaseModeDesc}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"/>
                     </StackPanel>
-                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding UseLightPaletteSwitch}" OnContent="{local:Localize Common_On}" OffContent="{local:Localize Common_Off}" HorizontalAlignment="Left" AutomationProperties.Name="{local:Localize Custom_LightPalette}"/>
+                    <!-- ITEM ORDER IS THE CONTRACT with CustomizationViewModel.ThemeModeToIndex:
+                         0 Light, 1 Dark, 2 System. Reordering here silently remaps every saved
+                         choice (RemEx-zk5bc). -->
+                    <ComboBox Grid.Column="1" SelectedIndex="{Binding ThemeModeIndex}" HorizontalAlignment="Left" MinWidth="160" AutomationProperties.Name="{local:Localize Custom_BaseMode}">
+                        <ComboBoxItem Content="{local:Localize Custom_ModeLight}"/>
+                        <ComboBoxItem Content="{local:Localize Custom_ModeDark}"/>
+                        <ComboBoxItem Content="{local:Localize Custom_ModeSystem}"/>
+                    </ComboBox>
                 </Grid>
 
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_ContrastTooltip}">

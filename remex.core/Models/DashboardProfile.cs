@@ -170,6 +170,21 @@ public record ConnectionProfile
 }
 
 /// <summary>
+/// The values <see cref="CustomizationSettings.ThemeMode"/> can carry (RemEx-zk5bc).
+/// </summary>
+/// <remarks>
+/// String constants rather than an enum because the field rides source-generated JSON in a record
+/// that tolerates unknown values by design — an enum would turn a profile written by a newer build
+/// into a deserialization failure instead of a value the reader falls back from.
+/// </remarks>
+public static class ThemeModes
+{
+    public const string Light = "Light";
+    public const string Dark = "Dark";
+    public const string System = "System";
+}
+
+/// <summary>
 /// Persisted visual customization parameters.
 /// </summary>
 public record CustomizationSettings
@@ -242,6 +257,21 @@ public record CustomizationSettings
     /// </remarks>
     [JsonPropertyName("useLightPalette")]
     public bool? UseLightPalette { get; init; }
+
+    /// <summary>
+    /// Base palette mode: <c>"Light"</c>, <c>"Dark"</c>, or <c>"System"</c> (follow the OS
+    /// setting, live). <c>null</c> means the profile predates the mode (RemEx-zk5bc).
+    /// </summary>
+    /// <remarks>
+    /// SUPERSEDES <see cref="UseLightPalette"/>, which stays as a migration input only and is
+    /// never written with a new value again — RemEx-dbkzy stamped it explicit on every migrated
+    /// profile, so its null channel was consumed and a third state ("follow the OS") could not
+    /// ride on it. Migration arm 2 stamps this field from it; when this is <c>null</c> the reader
+    /// falls back to the <see cref="UseLightPalette"/>-then-preset chain exactly as before, so an
+    /// unmigrated profile paints what it always painted.
+    /// </remarks>
+    [JsonPropertyName("themeMode")]
+    public string? ThemeMode { get; init; }
 
     /// <summary>Requested window or surface material treatment.</summary>
     [JsonPropertyName("canvasBackgroundType")]

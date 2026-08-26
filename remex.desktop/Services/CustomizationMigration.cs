@@ -31,8 +31,9 @@ public static class CustomizationMigration
     /// <remarks>
     /// Bump this ONLY together with a new migration arm, and never renumber an existing one — the
     /// value on disk is the only record of what a profile has already been through.
+    /// History: 1 = the seed engine (RemEx-dbkzy), 2 = tri-state ThemeMode (RemEx-zk5bc).
     /// </remarks>
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     /// <summary>The seed a profile falls back to when neither its own nor its preset's can be used.</summary>
     /// <remarks>
@@ -70,8 +71,32 @@ public static class CustomizationMigration
         // newer one's record of what it had already done.
         if (settings.SchemaVersion >= CurrentSchemaVersion) return settings;
 
-        return FromPreSeedEngine(settings, ref warning) with { SchemaVersion = CurrentSchemaVersion };
+        // Arms run in order against the version the profile ARRIVED with — an arm does not stamp,
+        // so the checks below all read the original number and the stamp happens once at the end.
+        var migrated = settings;
+        if (migrated.SchemaVersion < 1) migrated = FromPreSeedEngine(migrated, ref warning);
+        if (migrated.SchemaVersion < 2) migrated = StampThemeMode(migrated);
+        return migrated with { SchemaVersion = CurrentSchemaVersion };
     }
+
+    /// <summary>
+    /// Schema 1 → 2: the explicit light/dark bool becomes the tri-state mode (RemEx-zk5bc).
+    /// </summary>
+    /// <remarks>
+    /// Stamps <see cref="CustomizationSettings.ThemeMode"/> from the answer the profile already
+    /// carries, so nobody's app repaints on upgrade: an explicit <c>UseLightPalette</c> — which
+    /// arm 1 stamps on every schema-0 profile — becomes <c>Light</c>/<c>Dark</c>. A null
+    /// <c>UseLightPalette</c> (reachable only by hand-editing a v1 profile) stays a null mode,
+    /// which every reader resolves through the same legacy chain it always has. <c>System</c> is
+    /// only ever chosen by a person; no migration invents it.
+    /// </remarks>
+    private static CustomizationSettings StampThemeMode(CustomizationSettings settings) =>
+        settings.ThemeMode is not null || settings.UseLightPalette is null
+            ? settings
+            : settings with
+            {
+                ThemeMode = settings.UseLightPalette == true ? ThemeModes.Light : ThemeModes.Dark,
+            };
 
     /// <summary>
     /// Schema 0 → 1. A profile whose theme was a NAME becomes a profile whose theme is a seed.

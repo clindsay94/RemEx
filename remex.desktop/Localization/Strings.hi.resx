@@ -26,12 +26,6 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>जनरेट किया गया पैलेट टेक्स्ट को उसके पीछे की सतह से कितना अलग करता है।</value>
   </data>
-  <data name="Custom_LightPalette" xml:space="preserve">
-    <value>हल्का पैलेट</value>
-  </data>
-  <data name="Custom_LightPaletteDesc" xml:space="preserve">
-    <value>गहरे के बजाय हल्के बैकग्राउंड के लिए पैलेट बनाएँ।</value>
-  </data>
   <data name="Custom_PaletteStudio" xml:space="preserve">
     <value>पैलेट स्टूडियो</value>
   </data>
@@ -3158,5 +3152,20 @@ Windows: RemEx को व्यवस्थापक (administrator) अधि�
   </data>
   <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
     <value>अनपेयर पूरा नहीं हो सका: {0}। RemEx के अगली बार शुरू होने पर यह डिवाइस वापस आ सकता है — तब इसे फिर से अनपेयर करें।</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>आधार मोड</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>हल्का, गहरा, या ऑपरेटिंग सिस्टम की सेटिंग का पालन करें।</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>हल्का</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>गहरा</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>सिस्टम</value>
   </data>
 </root>

@@ -74,6 +74,60 @@ public class CustomizationMigrationTests
         return settings;
     }
 
+    // ─── Arm 2: the tri-state mode (RemEx-zk5bc) ────────────────────────────────────────────────
+
+    [Fact]
+    public void AV1ProfileWithAnExplicitLightChoiceGetsTheMatchingMode()
+    {
+        // The whole point of the arm: nobody's app repaints on upgrade. A v1 profile carries the
+        // explicit bool dbkzy stamped; the mode has to say the same thing.
+        var v1Light = new CustomizationSettings { SchemaVersion = 1, UseLightPalette = true };
+        var v1Dark = new CustomizationSettings { SchemaVersion = 1, UseLightPalette = false };
+
+        CustomizationMigration.Migrate(v1Light, out _).ThemeMode.Should().Be(ThemeModes.Light);
+        CustomizationMigration.Migrate(v1Dark, out _).ThemeMode.Should().Be(ThemeModes.Dark);
+    }
+
+    [Fact]
+    public void AV1ProfileWithAHandEditedNullBoolKeepsANullMode()
+    {
+        // dbkzy stamps the bool on every migrated profile, so a null here means someone edited the
+        // JSON. Guessing a mode for them would be inventing a choice; null keeps every reader on
+        // the same legacy chain it always used.
+        var edited = new CustomizationSettings { SchemaVersion = 1, UseLightPalette = null };
+
+        var migrated = CustomizationMigration.Migrate(edited, out _);
+
+        migrated.ThemeMode.Should().BeNull();
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion,
+            "a null mode is a resolved answer, not an unfinished migration");
+    }
+
+    [Fact]
+    public void ALegacyProfileRunsBothArmsAndLandsOnAMode()
+    {
+        // Schema 0 → arm 1 stamps the explicit bool → arm 2 turns it into the mode. The chain is
+        // what this pins: a reordering that runs arm 2 first reads a null bool and strands every
+        // pre-seed profile on a null mode.
+        var migrated = CustomizationMigration.Migrate(LegacyProfile("CyberNOC", "#00E5FF"), out _);
+
+        migrated.ThemeMode.Should().Be(ThemeModes.Dark, "Cyber-NOC is a dark preset");
+        migrated.SchemaVersion.Should().Be(CustomizationMigration.CurrentSchemaVersion);
+    }
+
+    [Fact]
+    public void MigrationNeverInventsSystemMode()
+    {
+        // "Follow the OS" is only ever a person's choice. Every migration input maps to Light,
+        // Dark, or null - asserting over the full input space of the arm.
+        foreach (var useLight in new bool?[] { true, false, null })
+        {
+            var migrated = CustomizationMigration.Migrate(
+                new CustomizationSettings { SchemaVersion = 1, UseLightPalette = useLight }, out _);
+            migrated.ThemeMode.Should().NotBe(ThemeModes.System);
+        }
+    }
+
     [Fact]
     public void TheVersionStampBindsFromRealCamelCaseJson()
     {

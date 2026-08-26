@@ -50,6 +50,76 @@ public class ThemeService : IDisposable
     public void Dispose()
     {
         CustomizationApplied = null;
+        DetachOsThemeListener();
+    }
+
+    // ─── System mode: follow the OS light/dark setting, live (RemEx-zk5bc) ──────────────────────
+
+    /// <summary>The last settings applied, so an OS theme flip can re-run the same apply.</summary>
+    private CustomizationSettings? _lastApplied;
+
+    /// <summary>The platform-settings instance the listener is attached to, null when detached.</summary>
+    /// <remarks>
+    /// The INSTANCE is kept, not a bool: unsubscribing requires the same object that was
+    /// subscribed to, and asking Avalonia again at detach time could hand back a different one.
+    /// Attached only while the applied mode is <see cref="ThemeModes.System"/> — Light and Dark
+    /// pin regardless of the OS, so holding a handler for them would be a leak with no effect.
+    /// </remarks>
+    private Avalonia.Platform.IPlatformSettings? _osListenerTarget;
+
+    /// <summary>
+    /// Resolves whether the palette is light. Pure and internal so the precedence — explicit mode
+    /// first, then the legacy <c>UseLightPalette</c>-then-preset chain for profiles that predate
+    /// the mode — is pinned by tests rather than re-derived by readers.
+    /// </summary>
+    /// <param name="osIsLight">
+    /// The OS answer, or <c>null</c> when the platform cannot say — System mode then falls back to
+    /// dark, matching what every profile painted before the mode existed.
+    /// </param>
+    internal static bool ResolveIsLight(CustomizationSettings settings, SeedPreset preset, bool? osIsLight) =>
+        settings.ThemeMode switch
+        {
+            ThemeModes.Light => true,
+            ThemeModes.Dark => false,
+            ThemeModes.System => osIsLight ?? false,
+            // null, or a value written by a newer build this one does not know: the legacy chain.
+            _ => settings.UseLightPalette ?? preset.IsLight ?? false,
+        };
+
+    /// <summary>What the OS says right now, or <c>null</c> where it cannot be asked.</summary>
+    internal static bool? TryGetOsIsLight()
+    {
+        var platform = Application.Current?.PlatformSettings;
+        if (platform is null) return null;
+        return platform.GetColorValues().ThemeVariant == Avalonia.Platform.PlatformThemeVariant.Light;
+    }
+
+    private void AttachOsThemeListener()
+    {
+        if (_osListenerTarget is not null) return;
+        var platform = Application.Current?.PlatformSettings;
+        if (platform is null) return;
+        platform.ColorValuesChanged += OnOsColorValuesChanged;
+        _osListenerTarget = platform;
+    }
+
+    private void DetachOsThemeListener()
+    {
+        if (_osListenerTarget is null) return;
+        _osListenerTarget.ColorValuesChanged -= OnOsColorValuesChanged;
+        _osListenerTarget = null;
+    }
+
+    private void OnOsColorValuesChanged(object? sender, Avalonia.Platform.PlatformColorValues e)
+    {
+        // Re-run the whole apply rather than flipping the variant in place: the palette solve, the
+        // Fluent variant, and every override key have to move together or the window paints a light
+        // chrome under dark text. The settings guard means a listener that outlives a mode change
+        // (the detach races the event) re-applies the pinned mode, which is a no-op repaint, not a
+        // wrong one.
+        var settings = _lastApplied;
+        if (settings?.ThemeMode is not ThemeModes.System) return;
+        ApplyCustomization(settings);
     }
 
     public void SetBaseTheme(AppTheme theme)
@@ -110,7 +180,13 @@ public class ThemeService : IDisposable
             // written before UseLightPalette existed is one of the four homages, and only SolarFlare
             // carries IsLight = true. Reading it off the catalog rather than string-comparing one
             // name means a new light preset does not need this line edited to be light.
-            var isLightTheme = settings.UseLightPalette ?? preset.IsLight ?? false;
+            // ThemeMode outranks the legacy chain; System asks the OS and re-applies on the
+            // OS flipping, which is what the listener below arms (RemEx-zk5bc).
+            var isLightTheme = ResolveIsLight(settings, preset, TryGetOsIsLight());
+
+            _lastApplied = settings;
+            if (settings.ThemeMode is ThemeModes.System) AttachOsThemeListener();
+            else DetachOsThemeListener();
 
             // The base theme file resolved a variant from the preset NAME. Now that light/dark is
             // its own setting, the variant has to follow the setting, or Fluent's own control

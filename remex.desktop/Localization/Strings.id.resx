@@ -26,12 +26,6 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>Seberapa jauh palet yang dihasilkan memisahkan teks dari permukaan di belakangnya.</value>
   </data>
-  <data name="Custom_LightPalette" xml:space="preserve">
-    <value>Palet terang</value>
-  </data>
-  <data name="Custom_LightPaletteDesc" xml:space="preserve">
-    <value>Buat palet untuk latar terang alih-alih latar gelap.</value>
-  </data>
   <data name="Custom_PaletteStudio" xml:space="preserve">
     <value>STUDIO PALET</value>
   </data>
@@ -3161,5 +3155,20 @@ Anda dapat mengubah:
   </data>
   <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
     <value>Tidak dapat menyelesaikan pemutusan: {0}. Perangkat ini mungkin muncul lagi saat RemEx berikutnya dijalankan — putuskan lagi saat itu.</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>Mode dasar</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>Terang, gelap, atau ikuti pengaturan sistem operasi.</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>Terang</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>Gelap</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>Sistem</value>
   </data>
 </root>

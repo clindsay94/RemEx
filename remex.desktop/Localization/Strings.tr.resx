@@ -26,12 +26,6 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>Üretilen paletin metni arkasındaki yüzeyden ne kadar ayırdığı.</value>
   </data>
-  <data name="Custom_LightPalette" xml:space="preserve">
-    <value>Açık palet</value>
-  </data>
-  <data name="Custom_LightPaletteDesc" xml:space="preserve">
-    <value>Paleti koyu yerine açık bir arka plan için üretir.</value>
-  </data>
   <data name="Custom_PaletteStudio" xml:space="preserve">
     <value>PALET STÜDYOSU</value>
   </data>
@@ -3162,5 +3156,20 @@ Bu düğmenin arkasında Windows, "RemEx" adlı bir Görev Zamanlayıcı görevi
   </data>
   <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
     <value>Eşleştirme kaldırma tamamlanamadı: {0}. Bu cihaz RemEx bir sonraki başlatıldığında geri gelebilir; o zaman eşleştirmeyi yeniden kaldırın.</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>Temel mod</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>Açık, koyu veya işletim sistemi ayarını izle.</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>Açık</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>Koyu</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>Sistem</value>
   </data>
 </root>

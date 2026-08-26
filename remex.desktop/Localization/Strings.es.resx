@@ -26,12 +26,6 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>Cuánto separa la paleta generada el texto de la superficie que hay detrás.</value>
   </data>
-  <data name="Custom_LightPalette" xml:space="preserve">
-    <value>Paleta clara</value>
-  </data>
-  <data name="Custom_LightPaletteDesc" xml:space="preserve">
-    <value>Genera la paleta para un fondo claro en lugar de uno oscuro.</value>
-  </data>
   <data name="Custom_PaletteStudio" xml:space="preserve">
     <value>ESTUDIO DE PALETA</value>
   </data>
@@ -3172,5 +3166,20 @@ Puedes cambiar:
   </data>
   <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
     <value>No se pudo completar la desvinculación: {0}. Este dispositivo puede volver la próxima vez que se inicie RemEx; desvincúlalo de nuevo entonces.</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>Modo base</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>Claro, oscuro o seguir la configuración del sistema operativo.</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>Claro</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>Oscuro</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>Sistema</value>
   </data>
 </root>

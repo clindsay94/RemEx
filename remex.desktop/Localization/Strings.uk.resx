@@ -26,12 +26,6 @@
   <data name="Custom_ContrastTooltip" xml:space="preserve">
     <value>Наскільки згенерована палітра відділяє текст від поверхні позаду нього.</value>
   </data>
-  <data name="Custom_LightPalette" xml:space="preserve">
-    <value>Світла палітра</value>
-  </data>
-  <data name="Custom_LightPaletteDesc" xml:space="preserve">
-    <value>Створює палітру для світлого тла замість темного.</value>
-  </data>
   <data name="Custom_PaletteStudio" xml:space="preserve">
     <value>СТУДІЯ ПАЛІТРИ</value>
   </data>
@@ -3159,5 +3153,20 @@ Windows: RemEx потрібні права адміністратора, бо ц
   </data>
   <data name="Settings_UnpairFailedPairingReturns" xml:space="preserve">
     <value>Не вдалося завершити скасування пов’язання: {0}. Цей пристрій може повернутися під час наступного запуску RemEx — скасуйте пов’язання ще раз тоді.</value>
+  </data>
+  <data name="Custom_BaseMode" xml:space="preserve">
+    <value>Базовий режим</value>
+  </data>
+  <data name="Custom_BaseModeDesc" xml:space="preserve">
+    <value>Світлий, темний або відповідно до налаштувань операційної системи.</value>
+  </data>
+  <data name="Custom_ModeLight" xml:space="preserve">
+    <value>Світлий</value>
+  </data>
+  <data name="Custom_ModeDark" xml:space="preserve">
+    <value>Темний</value>
+  </data>
+  <data name="Custom_ModeSystem" xml:space="preserve">
+    <value>Система</value>
   </data>
 </root>
