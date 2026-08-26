@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The tray flyout's pin icon stayed visible when pinned instead of dissolving into a filled
+  square.** The pin is the only indicator of which mode the flyout is in — pinned windows resize
+  and remember their geometry, transient ones dismiss on focus loss — and on pinning it vanished
+  into an accent-on-accent square: our accent glyph colour won its style-priority race while
+  Fluent's accent checked background won its own, leaving no contrast between the two. The checked
+  chip now pins its own background at the same priority, and a guard asserts every checked chip
+  state sets both colours so the collision cannot come back. (RemEx-xpfls)
+
 - **Five icons had never drawn anything.** The magnifier in the shell's search box and on Home, and
   the dismiss X on both warning banners and the settings overlay, referenced icon names that were
   not defined anywhere in the app. No error, no log line — just five blank spots nobody had placed.
