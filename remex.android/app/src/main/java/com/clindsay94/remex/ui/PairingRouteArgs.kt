@@ -23,9 +23,6 @@ sealed interface PairingRouteResult {
 
 object PairingRouteArgs {
 
-    /** Default the app connects on, used when a caller genuinely has no port to offer. */
-    const val DefaultPort: Int = 5005
-
     /**
      * Parses raw route arguments.
      *
@@ -41,10 +38,11 @@ object PairingRouteArgs {
             return PairingRouteResult.Invalid("pairing route carried no host")
         }
 
-        // A HOST CANNOT CONTAIN A PATH SEPARATOR, because the route is "pairing/{host}/{port}" and
-        // the host occupies ONE path segment. A slash does not merely look wrong - it shifts every
-        // segment after it, so the port is read from the middle of the host and the route stops
-        // matching at all. This is the same reasoning as refusing a separator in a file name.
+        // A HOST CANNOT CONTAIN A PATH SEPARATOR. When this rule was written the route was the
+        // string "pairing/{host}/{port}" and a slash shifted every segment after it; the typed
+        // route (RemEx-mt43) encodes its arguments, so navigation no longer breaks structurally -
+        // but a host with a slash in it is still not a hostname, and a deep link (the string route
+        // this parser exists for) still has exactly the old segment problem. The rule stays.
         if (trimmedHost.contains('/') || trimmedHost.contains('\\')) {
             return PairingRouteResult.Invalid("pairing host contains a path separator")
         }
@@ -68,18 +66,8 @@ object PairingRouteArgs {
         return PairingRouteResult.Valid(trimmedHost, parsedPort)
     }
 
-    /**
-     * Builds the route path for a pairing navigation.
-     *
-     * @return the path, or null when the arguments would not survive the round trip.
-     * @remarks
-     * Returning null rather than a best-effort string means a caller cannot navigate somewhere that
-     * will fail on arrival — the check happens where the caller can still do something about it,
-     * rather than on the screen that receives it.
-     */
-    fun buildPath(routePrefix: String, host: String, port: Int): String? =
-        when (parse(host, port.toString())) {
-            is PairingRouteResult.Valid -> "$routePrefix/${host.trim()}/$port"
-            is PairingRouteResult.Invalid -> null
-        }
+    // buildPath ended with RemEx-mt43: navigation constructs a typed PairingRoute, so there is no
+    // path string left to build. parse stays - the pre-navigation gate in AppNavigation runs
+    // through it (pinned by a source scan in PairingRouteArgsTest), and deep links (RemEx-z58g)
+    // will arrive as strings from outside the type system, which is exactly the input it validates.
 }

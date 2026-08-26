@@ -15,24 +15,34 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.clindsay94.remex.R
+import kotlinx.serialization.Serializable
 
 /**
- * A navigable route.
+ * A navigable destination, typed (RemEx-mt43).
  *
- * A plain [Screen] carries only its route, because that is all most destinations need. Splash,
- * Connection, Tutorial, QrScanner, Pairing and ShareDiagnostics are reached programmatically and
- * never appear in a navigation surface, so they have no label or icon to give TO ONE.
+ * Every destination is a `@Serializable` object handed to navigation-compose's type-safe API —
+ * `composable<Screen.Dashboard>`, `navController.navigate(Screen.Settings)` — so there is no route
+ * string to concatenate, mistype, or read back with a silent fallback. Identity is the object
+ * itself; the navigation surface matches with `NavDestination.hasRoute(screen::class)` rather than
+ * comparing strings. (The former `Screen("dashboard")` strings were load-bearing for exactly those
+ * comparisons; nothing persisted them, so nothing needed a compatibility path.)
  *
- * That is not the same as being untitled: Connection, QrScanner, Pairing and ShareDiagnostics all
- * render their own heading from their own screen. What they do not need is a second copy of it here,
- * feeding a navigation item that does not exist — which is precisely what this split removed.
+ * A plain [Screen] carries no label or icon, because most destinations need neither: Splash,
+ * Connection, Tutorial, QrScanner and ShareDiagnostics are reached programmatically and never
+ * appear in a navigation surface. That is not the same as being untitled — they render their own
+ * headings — they just have no navigation item to feed (RemEx-5reo).
+ *
+ * Pairing is [PairingRoute] below rather than an object here: it is the one destination that
+ * carries arguments.
  */
-sealed class Screen(val route: String) {
-    object Splash : Screen("splash")
-    object Connection : Screen("connection")
-    object Tutorial : Screen("tutorial")
-    object QrScanner : Screen("qr_scanner")
-    object Pairing : Screen("pairing")
+sealed class Screen {
+    @Serializable data object Splash : Screen()
+
+    @Serializable data object Connection : Screen()
+
+    @Serializable data object Tutorial : Screen()
+
+    @Serializable data object QrScanner : Screen()
 
     /**
      * Reached only from Settings → Help, never from a navigation surface (RemEx-0iww).
@@ -41,58 +51,78 @@ sealed class Screen(val route: String) {
      * through a problem; putting it in the More list would offer it to everyone else, permanently,
      * for the sake of one visit.
      */
-    object ShareDiagnostics : Screen("share_diagnostics")
+    @Serializable data object ShareDiagnostics : Screen()
 
     // ── Destinations that appear in a navigation surface ──────────────────────
-    object Dashboard :
-            NavDestination("dashboard", R.string.screen_dashboard_title, Icons.Default.Dashboard)
-    object RemoteControl :
-            NavDestination(
-                    "remote_control",
-                    R.string.screen_remote_control_title,
-                    Icons.Default.TouchApp
-            )
-    object RemoteMouse :
-            NavDestination("remote_mouse", R.string.screen_remote_mouse_title, Icons.Default.Mouse)
-    object AppLauncher :
-            NavDestination(
-                    "app_launcher",
-                    R.string.screen_app_launcher_title,
-                    Icons.AutoMirrored.Filled.Launch
-            )
-    object TaskManager :
-            NavDestination(
-                    "task_manager",
-                    R.string.screen_task_manager_title,
-                    Icons.AutoMirrored.Filled.List
-            )
-    object RemoteDesktop :
-            NavDestination(
-                    "remote_desktop",
-                    R.string.screen_remote_desktop_title,
-                    Icons.Default.Computer
-            )
-    object Personalization :
-            NavDestination(
-                    "personalization",
-                    R.string.screen_personalization_title,
-                    Icons.Default.Palette
-            )
-    object Settings :
-            NavDestination("settings", R.string.screen_settings_title, Icons.Default.Settings)
-    object Faq :
-            NavDestination("faq", R.string.screen_faq_title, Icons.AutoMirrored.Filled.HelpOutline)
-    object About : NavDestination("about", R.string.screen_about_title, Icons.Default.Info)
-    object FileTransfer :
-            NavDestination(
-                    "file_transfer",
-                    R.string.screen_file_transfer_title,
-                    Icons.Default.FolderOpen,
-            )
+    @Serializable
+    data object Dashboard : NavDestination() {
+        override val titleRes = R.string.screen_dashboard_title
+        override val icon = Icons.Default.Dashboard
+    }
+
+    @Serializable
+    data object RemoteControl : NavDestination() {
+        override val titleRes = R.string.screen_remote_control_title
+        override val icon = Icons.Default.TouchApp
+    }
+
+    @Serializable
+    data object RemoteMouse : NavDestination() {
+        override val titleRes = R.string.screen_remote_mouse_title
+        override val icon = Icons.Default.Mouse
+    }
+
+    @Serializable
+    data object AppLauncher : NavDestination() {
+        override val titleRes = R.string.screen_app_launcher_title
+        override val icon = Icons.AutoMirrored.Filled.Launch
+    }
+
+    @Serializable
+    data object TaskManager : NavDestination() {
+        override val titleRes = R.string.screen_task_manager_title
+        override val icon = Icons.AutoMirrored.Filled.List
+    }
+
+    @Serializable
+    data object RemoteDesktop : NavDestination() {
+        override val titleRes = R.string.screen_remote_desktop_title
+        override val icon = Icons.Default.Computer
+    }
+
+    @Serializable
+    data object Personalization : NavDestination() {
+        override val titleRes = R.string.screen_personalization_title
+        override val icon = Icons.Default.Palette
+    }
+
+    @Serializable
+    data object Settings : NavDestination() {
+        override val titleRes = R.string.screen_settings_title
+        override val icon = Icons.Default.Settings
+    }
+
+    @Serializable
+    data object Faq : NavDestination() {
+        override val titleRes = R.string.screen_faq_title
+        override val icon = Icons.AutoMirrored.Filled.HelpOutline
+    }
+
+    @Serializable
+    data object About : NavDestination() {
+        override val titleRes = R.string.screen_about_title
+        override val icon = Icons.Default.Info
+    }
+
+    @Serializable
+    data object FileTransfer : NavDestination() {
+        override val titleRes = R.string.screen_file_transfer_title
+        override val icon = Icons.Default.FolderOpen
+    }
 }
 
 /**
- * A route that is rendered in a navigation surface, and therefore needs a label and an icon.
+ * A destination that is rendered in a navigation surface, and therefore needs a label and an icon.
  *
  * Splitting this out of [Screen] is the point of RemEx-5reo. Every destination used to be REQUIRED to
  * supply `titleRes` and `icon`, but only the ones listed in [navItems] or [moreItems] ever had them
@@ -107,19 +137,25 @@ sealed class Screen(val route: String) {
  * - A QR-scanner title existed only to feed that same unread argument, and was filed as a
  *   screen-reader accessibility bug.
  *
- * Now a plain route cannot carry a title at all, and the lists below are typed so a destination
- * without one cannot be added to them.
+ * Now a plain destination cannot carry a title at all, and the lists below are typed so a
+ * destination without one cannot be added to them.
+ *
+ * ABSTRACT VALS RATHER THAN CONSTRUCTOR PARAMETERS, and it is serialization that decides. The
+ * serialization plugin refuses a `@Serializable` object whose superclass has only parameterized
+ * constructors, and an `ImageVector` constructor property could never be serializable anyway. As
+ * overridden vals they live outside the (empty) object serializers entirely — route identity is
+ * the object, display is the property, and neither leaks into the other.
  */
-sealed class NavDestination(
-        route: String,
-        @param:StringRes val titleRes: Int,
-        val icon: ImageVector,
-) : Screen(route)
+sealed class NavDestination : Screen() {
+    @get:StringRes
+    abstract val titleRes: Int
+    abstract val icon: ImageVector
+}
 
 /**
  * Primary navigation destinations — shown in NavigationBar / NavigationRail / NavigationDrawer.
  *
- * ORDER IS LOAD-BEARING: `AppNavigation` derives pager indices from `navItems.indexOfFirst`, so
+ * ORDER IS LOAD-BEARING: `AppNavigation` derives pager indices from the position in this list, so
  * reordering silently changes which tab a swipe lands on.
  */
 val navItems =
@@ -144,3 +180,26 @@ val moreItems =
                 Screen.Faq,
                 Screen.About,
         )
+
+/**
+ * The pairing destination, a data class because it is the only route that carries arguments
+ * (RemEx-mt43).
+ *
+ * The stringly form this replaces was `"pairing/{host}/{port}"` plus a `navArgument` block and
+ * `arguments?.getString(...) ?: ""` reads — the silent fallbacks RemEx-667p spent eleven tests
+ * refusing. A typed route cannot arrive with a missing argument at all, so the fallback question
+ * disappears on the happy path.
+ *
+ * CONSTRUCTION IS STILL GATED ON VALIDATION. The type system proves the arguments are present, not
+ * that they are usable: an empty host or an out-of-range port still produces a pairing screen that
+ * looks operational and cannot succeed. `AppNavigation` runs
+ * [com.clindsay94.remex.ui.PairingRouteArgs.parse] before constructing one of these, and
+ * `PairingRouteArgsTest` pins that call with a source scan. Deep links (RemEx-z58g), which arrive as
+ * strings from outside the type system, go through the same `parse` — that is why it survives the
+ * migration.
+ *
+ * Not a [Screen]: nothing navigates to it from a surface, and keeping it outside the sealed
+ * hierarchy keeps the exhaustive `when` over pager pages honest.
+ */
+@Serializable
+data class PairingRoute(val host: String, val port: Int)

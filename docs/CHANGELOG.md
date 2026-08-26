@@ -42,6 +42,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Internal
 
+- **Every Android navigation destination is a type now, not a string.** The whole graph ran on
+  route strings — `"pairing/{host}/{port}"` with a `navArgument` block and silent `?: ""` /
+  `?: 5005` fallbacks that RemEx-667p spent eleven tests refusing, and seventeen constant routes
+  the navigation surface matched by string comparison. All of it is `@Serializable` typed routes
+  now (navigation-compose typed routes; the kotlinx-serialization plugin and runtime join the app
+  module): destinations are objects, pairing is `PairingRoute(host, port)` so a missing argument
+  cannot arrive at all, selection matches on route classes via `hasRoute`, and the pager's `when`
+  became exhaustive — a nav tab without a pager page now fails loudly at the first swipe instead
+  of rendering a silent blank. Validation did not move: `PairingRouteArgs.parse` still gates every
+  pairing navigation — the type system proves the arguments are present, not usable — and the
+  source-scan guard that once pinned "navigates through buildPath" now pins "parses before
+  navigating, and builds the typed route from the parse result". `buildPath` is gone with the path
+  string it built. One idiom, as the bead's own scoping note demanded. (RemEx-mt43)
+
 - **The screenshot-push deadlock now has the regression test that would have caught it.** The
   original RemEx-y7my bug awaited the push inline in the control-socket reader loop while the
   phone's answer arrives on that same socket — a 70-second stall on every screenshot, with every

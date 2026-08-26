@@ -77,15 +77,18 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.clindsay94.remex.R
 import com.clindsay94.remex.RemexClientManager
 import com.clindsay94.remex.data.SettingsManager
 import com.clindsay94.remex.ui.screens.AboutScreen
 import com.clindsay94.remex.ui.PairingRouteArgs
+import com.clindsay94.remex.ui.PairingRouteResult
 import com.clindsay94.remex.ui.screens.AppLauncherScreen
 import com.clindsay94.remex.ui.screens.FileTransferScreen
 import com.clindsay94.remex.ui.screens.ConnectionScreen
@@ -107,15 +110,23 @@ import com.clindsay94.remex.ui.theme.RemExTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-private const val PrimaryNavRoute = "primary_nav"
+/**
+ * The route owner for the four primary pager tabs — typed like every other destination
+ * (RemEx-mt43). Private because it is an implementation detail of this shell: the tabs inside it
+ * are pager pages, not navigation destinations.
+ */
+@kotlinx.serialization.Serializable
+private data object PrimaryNav
 
-// Routes that suppress the navigation chrome (full-screen / flow screens)
-private val noNavRoutes =
+// Destinations that suppress the navigation chrome (full-screen / flow screens). Class references
+// rather than instances because the check runs against the back stack's NavDestination via
+// hasRoute, which matches on the route class.
+private val noNavChrome =
         setOf(
-                Screen.Splash.route,
-                Screen.Tutorial.route,
-                Screen.RemoteDesktop.route,
-                Screen.QrScanner.route,
+                Screen.Splash::class,
+                Screen.Tutorial::class,
+                Screen.RemoteDesktop::class,
+                Screen.QrScanner::class,
         )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -195,12 +206,13 @@ private fun AppNavigationContent(
                 return
         }
 
-        // Always start at splash screen - it will immediately navigate if already shown
-        val startDestination = Screen.Splash.route
-
         val navController = rememberNavController()
         val currentBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = currentBackStackEntry?.destination?.route
+        val currentDestination = currentBackStackEntry?.destination
+        // The two identity questions the whole shell asks, answered once. hasRoute matches the
+        // destination's route class, which is what replaced string comparison (RemEx-mt43).
+        val isAtPrimary = currentDestination?.hasRoute<PrimaryNav>() == true
+        fun isOn(screen: Screen) = currentDestination?.hasRoute(screen::class) == true
 
         // Keep primary destinations under one route owner so connected screens do not
         // re-create route-scoped ViewModels during tab changes.
@@ -212,7 +224,8 @@ private fun AppNavigationContent(
 
         // ─── Adaptive layout ─────────────────────────────────────────────────────
         val adaptiveInfo = currentWindowAdaptiveInfoV2()
-        val showNav = currentRoute != null && !noNavRoutes.contains(currentRoute)
+        val showNav =
+                currentDestination != null && noNavChrome.none { currentDestination.hasRoute(it) }
 
         // M3: NavigationBar on compact, NavigationRail on medium, NavigationDrawer on expanded
         val layoutType =
@@ -232,30 +245,27 @@ private fun AppNavigationContent(
         // Close more sheet on route change
         // Close the More sheet when the route changes underneath it (deep links, pairing
         // navigation) — but let the hide animation finish before unmounting (RemEx-rzzo).
-        LaunchedEffect(currentRoute) {
+        LaunchedEffect(currentDestination) {
                 if (showMoreSheet) {
                         moreSheetState.hide()
                         showMoreSheet = false
                 }
         }
 
-        LaunchedEffect(currentRoute, selectedPrimaryIndex) {
-                if (
-                        currentRoute == PrimaryNavRoute &&
-                                pagerState.currentPage != selectedPrimaryIndex
-                ) {
+        LaunchedEffect(isAtPrimary, selectedPrimaryIndex) {
+                if (isAtPrimary && pagerState.currentPage != selectedPrimaryIndex) {
                         pagerState.animateScrollToPage(selectedPrimaryIndex)
                 }
         }
 
-        LaunchedEffect(currentRoute, pagerState.settledPage) {
-                if (currentRoute == PrimaryNavRoute) {
+        LaunchedEffect(isAtPrimary, pagerState.settledPage) {
+                if (isAtPrimary) {
                         selectedPrimaryIndex = pagerState.settledPage
                 }
         }
 
         // Back handler: show exit confirmation when at the primary root destination
-        val isAtRoot = currentRoute == PrimaryNavRoute
+        val isAtRoot = isAtPrimary
         // Animatable rather than a raw Float: mid-gesture the value snaps to the finger, but a
         // cancelled (or completed) gesture springs the shell home instead of jumping to identity
         // in one frame (RemEx-gblj). The graphicsLayer gates read value > 0f so the return spring
@@ -302,20 +312,17 @@ private fun AppNavigationContent(
                                 // consume only where we actually acted.
                                 if (RemexClientManager.isConnected.value) return@collect
 
-                                // THROUGH THE VALIDATION, NOT AROUND IT (RemEx-ph4nw). This line
-                                // used to interpolate the path by hand, which left
-                                // PairingRouteArgs - eleven tests, mutation-verified twice - with no
-                                // production caller at all. Its whole purpose is that "a caller
-                                // cannot navigate somewhere that will fail on arrival", and the two
-                                // failures it names were both still reachable from here: a blank
-                                // host sends the user to a pairing screen that looks operational and
-                                // cannot succeed, and a host containing a slash shifts every segment
-                                // after it, so the port is read out of the middle of the host and
-                                // the route stops matching at all. These values come off
+                                // THROUGH THE VALIDATION, NOT AROUND IT (RemEx-ph4nw, kept by
+                                // RemEx-mt43). The typed PairingRoute proves the arguments are
+                                // PRESENT - it cannot prove they are USABLE. A blank host still
+                                // sends the user to a pairing screen that looks operational and
+                                // cannot succeed, and an out-of-range port still offers a PIN to
+                                // a machine nobody asked for. These values come off
                                 // pairingRequired, which the native layer emits, so they are not
-                                // ours to assume well-formed.
-                                val path = PairingRouteArgs.buildPath(Screen.Pairing.route, host, port)
-                                if (path == null) {
+                                // ours to assume well-formed - parse refuses them where the caller
+                                // can still do something about it.
+                                val parsed = PairingRouteArgs.parse(host, port.toString())
+                                if (parsed !is PairingRouteResult.Valid) {
                                         // DELIBERATELY NOT CONSUMED. Consuming a request we then
                                         // refuse to act on would strand the user with nothing on
                                         // screen and nothing to retry; leaving it in the replay cache
@@ -331,15 +338,17 @@ private fun AppNavigationContent(
                                 }
 
                                 RemexClientManager.consumePairingRequest()
-                                navController.navigate(path) { launchSingleTop = true }
+                                navController.navigate(PairingRoute(parsed.host, parsed.port)) {
+                                        launchSingleTop = true
+                                }
                         }
                 }
         }
 
         // ─── Navigation helpers ───────────────────────────────────────────────────
-        fun navigateTo(route: String) {
-                navController.navigate(route) {
-                        popUpTo(PrimaryNavRoute) { saveState = true }
+        fun navigateTo(screen: Screen) {
+                navController.navigate(screen) {
+                        popUpTo(PrimaryNav) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                 }
@@ -347,9 +356,9 @@ private fun AppNavigationContent(
 
         fun navigateToPrimary(index: Int) {
                 selectedPrimaryIndex = index.coerceIn(0, navItems.lastIndex)
-                if (currentRoute != PrimaryNavRoute) {
-                        navController.navigate(PrimaryNavRoute) {
-                                popUpTo(PrimaryNavRoute) { saveState = true }
+                if (!isAtPrimary) {
+                        navController.navigate(PrimaryNav) {
+                                popUpTo(PrimaryNav) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
                         }
@@ -357,20 +366,22 @@ private fun AppNavigationContent(
         }
 
         fun navigateToConnection() {
-                navController.navigate(Screen.Connection.route) {
-                        popUpTo(PrimaryNavRoute) { saveState = true }
+                navController.navigate(Screen.Connection) {
+                        popUpTo(PrimaryNav) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                 }
         }
 
-        fun onNavItemClick(route: String) {
+        fun onNavItemClick(screen: NavDestination) {
                 view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                val primaryIndex = navItems.indexOfFirst { it.route == route }
+                // Object identity replaces the old route-string lookup; the pager index is the
+                // position in navItems, whose order is load-bearing (see NavRoutes.kt).
+                val primaryIndex = navItems.indexOf(screen)
                 if (primaryIndex >= 0) {
                         navigateToPrimary(primaryIndex)
                 } else {
-                        navigateTo(route)
+                        navigateTo(screen)
                 }
         }
 
@@ -393,7 +404,6 @@ private fun AppNavigationContent(
                         Box(modifier = Modifier.weight(1f)) {
                                 RemexNavHost(
                                         navController = navController,
-                                        startDestination = startDestination,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
                                         splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
@@ -430,11 +440,10 @@ private fun AppNavigationContent(
                                         // Primary 4 nav items
                                         navItems.forEachIndexed { index, screen ->
                                                 val isSelected =
-                                                        currentRoute == PrimaryNavRoute &&
-                                                                selectedPrimaryIndex == index
+                                                        isAtPrimary && selectedPrimaryIndex == index
                                                 NavigationBarItem(
                                                         selected = isSelected,
-                                                        onClick = { onNavItemClick(screen.route) },
+                                                        onClick = { onNavItemClick(screen) },
                                                         icon = {
                                                                 // A single BadgedBox keeps the icon identity
                                                                 // stable; the badge scales+fades in and out
@@ -500,8 +509,7 @@ private fun AppNavigationContent(
                                         }
 
                                         // "More" item — opens the overflow bottom sheet
-                                        val moreSelected =
-                                                moreItems.any { it.route == currentRoute }
+                                        val moreSelected = moreItems.any { isOn(it) }
                                         NavigationBarItem(
                                                 selected = moreSelected,
                                                 onClick = {
@@ -573,10 +581,10 @@ private fun AppNavigationContent(
                                         navItems.forEachIndexed { index, screen ->
                                                 NavigationRailItem(
                                                         selected =
-                                                                currentRoute == PrimaryNavRoute &&
+                                                                isAtPrimary &&
                                                                         selectedPrimaryIndex ==
                                                                                 index,
-                                                        onClick = { onNavItemClick(screen.route) },
+                                                        onClick = { onNavItemClick(screen) },
                                                         icon = {
                                                                 // A single BadgedBox keeps the icon identity
                                                                 // stable; the badge scales+fades in and out
@@ -652,8 +660,8 @@ private fun AppNavigationContent(
                                         // Overflow items — bottom of rail
                                         moreItems.forEach { screen ->
                                                 NavigationRailItem(
-                                                        selected = currentRoute == screen.route,
-                                                        onClick = { onNavItemClick(screen.route) },
+                                                        selected = isOn(screen),
+                                                        onClick = { onNavItemClick(screen) },
                                                         icon = {
                                                                 Icon(
                                                                         imageVector = screen.icon,
@@ -681,7 +689,6 @@ private fun AppNavigationContent(
                         Box(modifier = Modifier.weight(1f)) {
                                 RemexNavHost(
                                         navController = navController,
-                                        startDestination = startDestination,
                                         hasCompletedOnboarding = hasCompletedOnboarding,
                                         splashStyle = splashStyle,
                                         onQrScanned = onQrScanned,
@@ -727,7 +734,7 @@ private fun AppNavigationContent(
                                 NavigationDrawerItem(
                                         label = { Text(stringResource(screen.titleRes)) },
                                         icon = { Icon(screen.icon, contentDescription = null) },
-                                        selected = currentRoute == screen.route,
+                                        selected = isOn(screen),
                                         onClick = {
                                                 view.performHapticFeedback(
                                                         HapticFeedbackConstants.KEYBOARD_TAP
@@ -745,7 +752,7 @@ private fun AppNavigationContent(
                                                                 // (double-tap race) must not fire
                                                                 // a stale navigation.
                                                                 if (cause == null)
-                                                                        navigateTo(screen.route)
+                                                                        navigateTo(screen)
                                                         }
                                         },
                                         modifier =
@@ -789,7 +796,6 @@ private fun AppNavigationContent(
 @Composable
 private fun RemexNavHost(
         navController: androidx.navigation.NavHostController,
-        startDestination: String,
         hasCompletedOnboarding: Boolean,
         splashStyle: String,
         onQrScanned: (String, Int, String) -> Unit,
@@ -815,7 +821,8 @@ private fun RemexNavHost(
         val exitFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
         NavHost(
                 navController = navController,
-                startDestination = startDestination,
+                // Always start at splash — it immediately navigates onward if already shown.
+                startDestination = Screen.Splash,
                 modifier = modifier,
                 // M3 Expressive: container-transform-style enter (grow + fade in)
                 enterTransition = {
@@ -843,8 +850,7 @@ private fun RemexNavHost(
                         ) + fadeOut(exitFadeSpec)
                 },
         ) {
-                composable(
-                        Screen.Splash.route,
+                composable<Screen.Splash>(
                         enterTransition = { fadeIn(enterFadeSpec) },
                         exitTransition = { fadeOut(exitFadeSpec) },
                 ) {
@@ -853,33 +859,32 @@ private fun RemexNavHost(
                                 onFinished = {
                                         onSelectPrimaryPage(0)
                                         navController.navigate(
-                                                if (hasCompletedOnboarding) PrimaryNavRoute
-                                                else Screen.Tutorial.route
+                                                if (hasCompletedOnboarding) PrimaryNav
+                                                else Screen.Tutorial as Any
                                         ) {
-                                                popUpTo(Screen.Splash.route) { inclusive = true }
+                                                popUpTo(Screen.Splash) { inclusive = true }
                                                 launchSingleTop = true
                                         }
                                 },
                         )
                 }
 
-                composable(
-                        Screen.Tutorial.route,
+                composable<Screen.Tutorial>(
                         enterTransition = { fadeIn(enterFadeSpec) },
                         exitTransition = { fadeOut(exitFadeSpec) },
                 ) {
                         TutorialScreen(
                                 onFinished = {
                                         onSelectPrimaryPage(0)
-                                        navController.navigate(PrimaryNavRoute) {
-                                                popUpTo(Screen.Tutorial.route) { inclusive = true }
+                                        navController.navigate(PrimaryNav) {
+                                                popUpTo(Screen.Tutorial) { inclusive = true }
                                                 launchSingleTop = true
                                         }
                                 },
                         )
                 }
 
-                composable(PrimaryNavRoute) {
+                composable<PrimaryNav> {
                         if (pagerState != null) {
                                 PrimaryDestinationsPager(
                                         pagerState = pagerState,
@@ -895,12 +900,11 @@ private fun RemexNavHost(
                         }
                 }
 
-                composable(Screen.Connection.route) {
-                        connectionScreenContent { navController.navigate(Screen.QrScanner.route) }
+                composable<Screen.Connection> {
+                        connectionScreenContent { navController.navigate(Screen.QrScanner) }
                 }
 
-                composable(
-                        Screen.QrScanner.route,
+                composable<Screen.QrScanner>(
                         // QR scanner enters from bottom — modal feel
                         enterTransition = {
                                 slideInVertically(enterSlideSpec) {
@@ -917,8 +921,8 @@ private fun RemexNavHost(
                                 onScanned = { host, port, pin ->
                                         onQrScanned(host, port, pin)
                                         onSelectPrimaryPage(0)
-                                        navController.navigate(PrimaryNavRoute) {
-                                                popUpTo(PrimaryNavRoute) { inclusive = true }
+                                        navController.navigate(PrimaryNav) {
+                                                popUpTo(PrimaryNav) { inclusive = true }
                                                 launchSingleTop = true
                                         }
                                 },
@@ -926,12 +930,10 @@ private fun RemexNavHost(
                         )
                 }
 
-                composable(
-                        route = "${Screen.Pairing.route}/{host}/{port}",
-                        arguments = listOf(
-                                androidx.navigation.navArgument("host") { type = androidx.navigation.NavType.StringType },
-                                androidx.navigation.navArgument("port") { type = androidx.navigation.NavType.IntType }
-                        ),
+                composable<PairingRoute>(
+                        // No navArgument block and no `?: ""` / `?: 5005` reads: the typed route
+                        // carries its arguments, so the silent fallbacks RemEx-667p refused cannot
+                        // be reintroduced by a missing one (RemEx-mt43).
                         enterTransition = {
                                 slideInVertically(enterSlideSpec) { it } + fadeIn(enterFadeSpec)
                         },
@@ -939,11 +941,10 @@ private fun RemexNavHost(
                                 slideOutVertically(exitSlideSpec) { it } + fadeOut(exitFadeSpec)
                         }
                 ) { backStackEntry ->
-                        val host = backStackEntry.arguments?.getString("host") ?: ""
-                        val port = backStackEntry.arguments?.getInt("port") ?: 5005
+                        val pairing = backStackEntry.toRoute<PairingRoute>()
                         com.clindsay94.remex.ui.screens.PairingScreen(
-                                host = host,
-                                port = port,
+                                host = pairing.host,
+                                port = pairing.port,
                                 onPairSuccess = {
                                         navController.popBackStack()
                                         // Attempt auto connect again after successful pairing
@@ -955,12 +956,11 @@ private fun RemexNavHost(
                         )
                 }
 
-                composable(Screen.RemoteMouse.route) {
+                composable<Screen.RemoteMouse> {
                         remoteMouseScreenContent { onNavigateToConnection() }
                 }
 
-                composable(
-                        Screen.RemoteDesktop.route,
+                composable<Screen.RemoteDesktop>(
                         // Full-screen immersive — pure crossfade, no spatial motion
                         enterTransition = { fadeIn(enterFadeSpec) },
                         exitTransition = { fadeOut(exitFadeSpec) },
@@ -968,40 +968,40 @@ private fun RemexNavHost(
                         popExitTransition = { fadeOut(exitFadeSpec) },
                 ) { RemoteDesktopScreen() }
 
-                composable(Screen.Personalization.route) { PersonalizationScreen() }
+                composable<Screen.Personalization> { PersonalizationScreen() }
 
-                composable(Screen.Settings.route) {
+                composable<Screen.Settings> {
                         SettingsScreen(
                                 onReplayTutorial = {
-                                        navController.navigate(Screen.Tutorial.route) {
+                                        navController.navigate(Screen.Tutorial) {
                                                 launchSingleTop = true
                                         }
                                 },
                                 onNavigateToAbout = {
-                                        navController.navigate(Screen.About.route) {
+                                        navController.navigate(Screen.About) {
                                                 launchSingleTop = true
                                         }
                                 },
                                 onNavigateToQrScanner = {
-                                        navController.navigate(Screen.QrScanner.route) {
+                                        navController.navigate(Screen.QrScanner) {
                                                 launchSingleTop = true
                                         }
                                 },
                                 onNavigateToShareDiagnostics = {
-                                        navController.navigate(Screen.ShareDiagnostics.route) {
+                                        navController.navigate(Screen.ShareDiagnostics) {
                                                 launchSingleTop = true
                                         }
                                 },
                         )
                 }
 
-                composable(Screen.Faq.route) { FaqScreen() }
+                composable<Screen.Faq> { FaqScreen() }
 
-                composable(Screen.ShareDiagnostics.route) { ShareDiagnosticsScreen() }
+                composable<Screen.ShareDiagnostics> { ShareDiagnosticsScreen() }
 
-                composable(Screen.About.route) { AboutScreen() }
+                composable<Screen.About> { AboutScreen() }
 
-                composable(Screen.FileTransfer.route) {
+                composable<Screen.FileTransfer> {
                     FileTransferScreen(onNavigateToConnection = { onNavigateToConnection() })
                 }
         }
@@ -1024,18 +1024,24 @@ private fun PrimaryDestinationsPager(
                 beyondViewportPageCount = 0,
                 userScrollEnabled = true,
         ) { page ->
-                when (navItems[page].route) {
-                        Screen.Dashboard.route -> dashboardScreenContent { onNavigateToConnection() }
-                        Screen.RemoteControl.route ->
+                when (navItems[page]) {
+                        Screen.Dashboard -> dashboardScreenContent { onNavigateToConnection() }
+                        Screen.RemoteControl ->
                                 remoteControlScreenContent { onNavigateToConnection() }
-                        Screen.AppLauncher.route ->
+                        Screen.AppLauncher ->
                                 appLauncherScreenContent { onNavigateToConnection() }
-                        Screen.TaskManager.route ->
+                        Screen.TaskManager ->
                                 taskManagerScreenContent(
                                         { onNavigateToConnection() },
                                         page == pagerState.currentPage &&
                                                 !pagerState.isScrollInProgress,
                                 )
+                        // Unreachable while navItems holds the four tabs above. The typed 'when'
+                        // makes the compiler demand this branch — and that is the upgrade: the old
+                        // string 'when' rendered a silent blank page for an unmapped tab, this
+                        // fails at the first swipe naming the destination that has no page.
+                        else ->
+                                error("navItems contains ${navItems[page]} but the pager has no page for it")
                 }
         }
 }

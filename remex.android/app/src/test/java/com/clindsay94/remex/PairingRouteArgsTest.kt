@@ -4,7 +4,6 @@ import com.clindsay94.remex.ui.PairingRouteArgs
 import com.clindsay94.remex.ui.PairingRouteResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -88,30 +87,6 @@ class PairingRouteArgsTest {
     }
 
     @Test
-    fun `a route that would not parse cannot be built`() {
-        // The check happens where the CALLER can still do something about it, rather than on the
-        // screen that receives it.
-        assertNull(PairingRouteArgs.buildPath("pairing", "", 5005))
-        assertNull(PairingRouteArgs.buildPath("pairing", "host/evil", 5005))
-        assertNull(PairingRouteArgs.buildPath("pairing", "host", 0))
-    }
-
-    @Test
-    fun `a built route round-trips back to the same values`() {
-        // The property that makes the two halves one rule: anything buildPath emits must parse back
-        // to what went in, or a navigation succeeds and the destination disagrees about where it is.
-        val path = PairingRouteArgs.buildPath("pairing", "desktop-pc.local", 8338)
-
-        assertEquals("pairing/desktop-pc.local/8338", path)
-
-        val segments = path!!.split("/")
-        assertEquals(
-            PairingRouteResult.Valid("desktop-pc.local", 8338),
-            PairingRouteArgs.parse(segments[1], segments[2])
-        )
-    }
-
-    @Test
     fun `an invalid result carries a reason a developer can act on`() {
         // The point of failing loudly is the message. "Invalid" with no reason reproduces the
         // silence this replaces, one layer up.
@@ -128,18 +103,20 @@ class PairingRouteArgsTest {
     }
 
     @Test
-    fun `the app navigates to pairing through buildPath rather than around it`() {
-        // THE ASSERTION THAT WOULD HAVE CAUGHT THIS WHOLE CLASS BEING INERT (RemEx-ph4nw).
-        // Everything else in this file tests the RULE; nothing tested that anything USES it.
-        // buildPath shipped with eleven tests, mutation-verified twice, and had zero production
-        // callers - AppNavigation built the path by hand, so both failures this class exists to
-        // prevent were still reachable from the one place the app pairs. A rule with no caller is
-        // indistinguishable from a rule that works.
+    fun `the app navigates to pairing through parse rather than around it`() {
+        // THE ASSERTION THAT WOULD HAVE CAUGHT THIS WHOLE CLASS BEING INERT (RemEx-ph4nw, re-aimed
+        // by RemEx-mt43). Everything else in this file tests the RULE; nothing tested that anything
+        // USES it. Before ph4nw the app built the pairing path by hand and this class had zero
+        // production callers - a rule with no caller is indistinguishable from a rule that works.
+        // The typed PairingRoute (mt43) removed the path string entirely, which closes the
+        // hand-building hole but opens a subtler one: PairingRoute("", 0) COMPILES. The type system
+        // proves the arguments are present, not usable, so the pre-navigation gate through parse is
+        // still the only thing standing between a malformed pairingRequired emission and a pairing
+        // screen that looks operational and cannot succeed.
         //
         // A SOURCE SCAN, BECAUSE THE ALTERNATIVE IS A COMPOSE UI TEST over a thousand-line
         // navigation graph - much heavier to own than the thing it would protect. This is a
-        // tripwire, not a proof: it says the call site still goes through the validated builder and
-        // does not rebuild the route itself.
+        // tripwire, not a proof: it says the call site still parses before it navigates.
         // TWO CANDIDATES BECAUSE THE WORKING DIRECTORY DIFFERS BY RUNNER. Gradle runs unit tests
         // from the MODULE directory; an IDE or a repo-root invocation can start a level up. Trying
         // both, and failing with the paths when neither resolves, keeps this a test about the call
@@ -157,16 +134,24 @@ class PairingRouteArgsTest {
         val nav = source!!.readText()
 
         assertTrue(
-            "AppNavigation should build the pairing route with PairingRouteArgs.buildPath",
-            nav.contains("PairingRouteArgs.buildPath(Screen.Pairing.route")
+            "AppNavigation should validate pairing arguments with PairingRouteArgs.parse before navigating",
+            nav.contains("PairingRouteArgs.parse(")
         )
 
-        // The tell of hand-building: the route constant followed by a path separator. The composable
-        // declaration uses a template with braces around the parameter NAMES, so it does not match.
+        // The typed route must be constructed FROM the parse result, not from the raw emission -
+        // building it from the raw values while also calling parse would keep the scan above green
+        // with the gate wide open.
+        assertTrue(
+            "AppNavigation should construct PairingRoute from the parse result (parsed.host/parsed.port), "
+                + "not from the raw pairingRequired values",
+            nav.contains("PairingRoute(parsed.host, parsed.port)")
+        )
+
+        // The tell of the old world coming back: a hand-composed pairing path string.
         assertFalse(
-            "AppNavigation is composing the pairing route by hand again, which bypasses every check "
-                + "in this file",
-            nav.contains("Screen.Pairing.route}/\$")
+            "AppNavigation is composing a pairing path string by hand again, which bypasses every "
+                + "check in this file",
+            nav.contains("\"pairing/") || nav.contains("pairing/\$")
         )
     }
 }
