@@ -805,6 +805,50 @@ public partial class CustomizationViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void SetAccent(string hex) => AccentColor = hex;
 
+    // ─── Seeds from the desktop itself (RemEx-rdzet) ─────────────────────────────────────────────
+
+    /// <summary>Whether the "from this PC" seed sources exist on this platform.</summary>
+    /// <remarks>
+    /// The view hides the whole section on Linux — the acceptance is "absent or disabled rather
+    /// than failing", and absent is the honest one: there is no Linux accent registry to read, so
+    /// a disabled button would promise something no click could ever deliver.
+    /// </remarks>
+    public bool IsSystemSeedAvailable => OperatingSystem.IsWindows();
+
+    /// <summary>
+    /// The wallpaper's top seed candidates, best first, as hex strings for the same swatch
+    /// template the recent-seeds row uses. Plural on purpose: dominant-colour extraction is a
+    /// guess, so the studio offers the top few and the user picks.
+    /// </summary>
+    public ObservableCollection<string> WallpaperSeedCandidates { get; } = new();
+
+    public bool HasWallpaperSeedCandidates => WallpaperSeedCandidates.Count > 0;
+
+    [RelayCommand]
+    private void MatchWindowsAccent()
+    {
+        // A missing accent (off-Windows callers are already hidden; a stripped-down Windows can
+        // still lack the key) leaves the current seed alone — a click that resets the palette to
+        // a fallback would be worse than one that does nothing.
+        if (SystemSeedSources.TryGetWindowsAccent() is { } hex) AccentColor = hex;
+    }
+
+    [RelayCommand]
+    private async Task SeedFromWallpaperAsync()
+    {
+        // Decode + quantize + score is CPU-bound and a 4K wallpaper is a real file — off the UI
+        // thread, the same rule the palette solve follows.
+        var seeds = await Task.Run(SystemSeedSources.ExtractWallpaperSeeds);
+
+        WallpaperSeedCandidates.Clear();
+        foreach (var seed in seeds) WallpaperSeedCandidates.Add(seed);
+        OnPropertyChanged(nameof(HasWallpaperSeedCandidates));
+
+        // The best guess applies immediately — the candidates row exists to recover from it being
+        // the WRONG guess, not to make the user click twice for the right one.
+        if (seeds.Count > 0) AccentColor = seeds[0];
+    }
+
     [RelayCommand]
     private void ResetToDefault() => SelectTheme("BaseDarkGlass");
 

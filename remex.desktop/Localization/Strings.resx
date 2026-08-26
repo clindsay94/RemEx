@@ -3174,4 +3174,13 @@ You can change:
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>System</value>
   </data>
+  <data name="Custom_SystemSeedHeader" xml:space="preserve">
+    <value>From this PC</value>
+  </data>
+  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
+    <value>Match Windows accent</value>
+  </data>
+  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
+    <value>From wallpaper</value>
+  </data>
 </root>

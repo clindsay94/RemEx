@@ -152,6 +152,33 @@
                     </ItemsControl>
                 </StackPanel>
 
+                <!-- Seeds from this PC (RemEx-rdzet): the Windows accent, and the wallpaper's top
+                     colours — Android's Material You trick pointed at the desktop. The whole
+                     section is ABSENT off Windows rather than disabled: there is no Linux accent
+                     registry, so a disabled button would promise what no click could deliver. -->
+                <StackPanel Spacing="6" IsVisible="{Binding IsSystemSeedAvailable}">
+                    <TextBlock Text="{local:Localize Custom_SystemSeedHeader}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="{local:Localize Custom_MatchWindowsAccent}" Command="{Binding MatchWindowsAccentCommand}" FontSize="12" Padding="10,5" CornerRadius="6"/>
+                        <Button Content="{local:Localize Custom_SeedFromWallpaper}" Command="{Binding SeedFromWallpaperCommand}" FontSize="12" Padding="10,5" CornerRadius="6"/>
+                    </StackPanel>
+                    <!-- The runners-up. Extraction is a guess; the row is how a wrong first guess
+                         costs one click instead of an undo hunt. Same swatch template as the
+                         recent-seeds row above. -->
+                    <ItemsControl ItemsSource="{Binding WallpaperSeedCandidates}" IsVisible="{Binding HasWallpaperSeedCandidates}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Classes="accent-picker" Background="{Binding}" AutomationProperties.Name="{Binding}" ToolTip.Tip="{Binding}" Command="{Binding $parent[UserControl].DataContext.SetAccentCommand}" CommandParameter="{Binding}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
                 <Separator Background="{DynamicResource CardBorderBrush}" Opacity="0.3"/>
 
                 <!-- Both settings below have been persisted and honoured for a while with no way to

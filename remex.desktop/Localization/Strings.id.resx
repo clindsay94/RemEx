@@ -3171,4 +3171,13 @@ Anda dapat mengubah:
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>Sistem</value>
   </data>
+  <data name="Custom_SystemSeedHeader" xml:space="preserve">
+    <value>Dari PC ini</value>
+  </data>
+  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
+    <value>Samakan dengan aksen Windows</value>
+  </data>
+  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
+    <value>Dari wallpaper</value>
+  </data>
 </root>

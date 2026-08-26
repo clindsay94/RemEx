@@ -3169,4 +3169,13 @@ Windows: RemEx потрібні права адміністратора, бо ц
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>Система</value>
   </data>
+  <data name="Custom_SystemSeedHeader" xml:space="preserve">
+    <value>З цього ПК</value>
+  </data>
+  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
+    <value>Узгодити з акцентом Windows</value>
+  </data>
+  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
+    <value>З шпалер</value>
+  </data>
 </root>

@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **The palette can seed itself from your PC now.** Personalization's Palette Studio gained a
+  "From this PC" row: one button adopts your Windows accent colour, the other reads your current
+  wallpaper and extracts its strongest colours — Android's Material You trick, pointed at the
+  desktop. Extraction is a guess, so the top candidates appear as swatches and a wrong first guess
+  costs one click. The extraction scores colours for suitability as a seed rather than by sheer
+  area — measured on a real dark wallpaper, area alone hands back five shades of black; scoring
+  hands back the actual accent colour in the image. On Linux the section simply isn't there:
+  there's no Windows accent to read, and a button that can never work is worse than no button.
+  (RemEx-rdzet)
+
 - **Both About screens now put the PC's and the phone's build ids on one screen.** Each device
   already stamped its own build id; answering "are these two builds from the same commit?" still
   meant walking between devices and comparing from memory. The host now sends its build id over

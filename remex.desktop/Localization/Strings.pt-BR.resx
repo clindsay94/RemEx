@@ -3168,4 +3168,13 @@ Você pode mudar:
   <data name="Custom_ModeSystem" xml:space="preserve">
     <value>Sistema</value>
   </data>
+  <data name="Custom_SystemSeedHeader" xml:space="preserve">
+    <value>Deste PC</value>
+  </data>
+  <data name="Custom_MatchWindowsAccent" xml:space="preserve">
+    <value>Usar a cor de destaque do Windows</value>
+  </data>
+  <data name="Custom_SeedFromWallpaper" xml:space="preserve">
+    <value>Do papel de parede</value>
+  </data>
 </root>
