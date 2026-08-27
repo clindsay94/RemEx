@@ -87,12 +87,36 @@ public class FocusRingCoverageTests
         // :focus-visible fires for keyboard traversal and not for a mouse click. Using :focus would
         // leave a ring behind every click, so the UI would look permanently focused - which is the
         // distinction the pseudo-class exists for.
+        //
+        // SCOPED TO THE RING SECTION (RemEx-5w9ws). This read the whole file until a text field
+        // legitimately needed `TextBox:focus` — a focused input must show WHICH field you are
+        // typing in however you got there, which is Material's own behaviour and is not a
+        // keyboard-traversal ring. Whole-file matching conflated the two and would have forced
+        // either a broken guard or a text field with no focus treatment. The invariant it exists
+        // for is unchanged and is now stated where it applies.
         var appAxaml = File.ReadAllText(Path.Combine(RepoRoot, "remex.desktop", "App.axaml"));
+        var ringSection = RingSection(appAxaml);
 
         foreach (var type in FocusableControlTypes)
         {
-            Assert.DoesNotContain($"Selector=\"{type}:focus\"", appAxaml);
+            Assert.DoesNotContain($"Selector=\"{type}:focus\"", ringSection);
         }
+    }
+
+    /// <summary>
+    /// The block of App.axaml that declares the keyboard-focus ring, from its banner comment to
+    /// the last control type in it.
+    /// </summary>
+    private static string RingSection(string appAxaml)
+    {
+        var start = appAxaml.IndexOf("KEYBOARD-FOCUS VISIBLE RING", StringComparison.Ordinal);
+        Assert.True(start >= 0, "the focus-ring section's banner comment moved or was renamed");
+
+        var section = appAxaml[start..];
+        var end = section.IndexOf("Slider:focus-visible", StringComparison.Ordinal);
+        Assert.True(end >= 0, "the focus-ring section no longer ends at Slider — check the scan");
+
+        return section[..end];
     }
 
     private static string RepoRoot => Path.GetFullPath(Path.Combine(Path.GetDirectoryName(ThisFile)!, "..", ".."));

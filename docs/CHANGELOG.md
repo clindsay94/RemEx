@@ -42,6 +42,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Every text box and dropdown in the PC app looks the same now.** They had drifted into two
+  populations: thirty-six that painted themselves a bordered, rounded box and sixteen that were
+  left as transparent underline fields, so the same control looked like a different control
+  depending on which screen you opened. All of them are outlined fields now, taking their border,
+  corner radius and selection colours from the palette. The seventy-seven per-screen copies of that
+  styling are gone, along with a focus highlight in Settings that had quietly stopped rendering.
+  The pairing dialog's "PIN must be 6 digits" message now lives inside the field it is about, and
+  the field's border changes with it, instead of appearing as a red line floating underneath.
+  (RemEx-5w9ws)
+
 - **Three screens that were quietly working now say so.** Loading a folder over a slow link,
   connecting from a dashboard card, and enumerating monitors for Remote Desktop all used to look
   identical to being stuck: a word, a greyed-out control, or a button that had changed its label.

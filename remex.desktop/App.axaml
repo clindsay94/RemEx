@@ -640,6 +640,86 @@
             <Setter Property="CornerRadius" Value="0"/>
         </Style>
 
+        <!-- ═══════════════════════════════════════════════════════════════════════════════
+             TEXT INPUTS (RemEx-5w9ws). One rule, and the reason it was needed is worth writing
+             down because it is not the obvious one.
+
+             MaterialTextBox - the default TextBox theme - is Material's UNDERLINE field: no
+             border, no fill, an accent line under the text. Its template does bind Background,
+             BorderBrush, BorderThickness and CornerRadius through PART_RootBorder, so a call site
+             CAN paint a box by hand. Thirty-six of the app's fifty-two inputs did exactly that,
+             each with its own copy of the same six attributes, and the other sixteen did not. The
+             same control was therefore a bordered rounded box on one screen and a transparent
+             underline field on the next, and neither was wrong on its own terms.
+
+             Connor chose OUTLINE (2026-08-27): it is what the hand-painted majority were already
+             asking for - a border, a corner radius, a real field edge - and it matches an app
+             whose surfaces are all bordered cards. The per-call-site paint is deleted rather than
+             overridden, so there is exactly one answer.
+
+             PADDING IS NOT SET HERE AND WAS DELETED FROM THE CALL SITES: MaterialTextBox's
+             template has no Padding TemplateBinding at all, so every Padding on a TextBox in this
+             app was decoration with no effect. Spacing inside the field belongs to the theme.
+
+             FLOATING LABELS ARE NOT WIRED YET. TextFieldAssist.Label would put the label inside
+             the field's border, which means deleting the separate label TextBlock next to it and
+             rechecking each form's vertical rhythm - fifteen views, and the bead itself says not
+             to assume a drop-in. Split to RemEx-5w9ws.1, which the Phase 4 view beads carry. -->
+        <Style Selector="TextBox">
+            <Setter Property="Theme" Value="{DynamicResource OutlineTextBox}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="SelectionBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="SelectionForegroundBrush" Value="{DynamicResource AccentForegroundBrush}"/>
+        </Style>
+        <!-- Material's own focus rule lives in the ControlTheme, which Avalonia ranks BELOW an
+             application style carrying the same activator - so this wins and the focused field
+             takes the seed accent rather than Material's primary. -->
+        <Style Selector="TextBox:focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
+        <!-- INVALID, as a class rather than as TextFieldAssist.HasError: HasError and ErrorColor
+             exist on Material.Avalonia's master branch but NOT in 3.19.0, which ships
+             TextFieldAssist with exactly Hints and Label. Avalonia's own DataValidationErrors path
+             is the other option and needs INotifyDataErrorInfo on the view model; the one field in
+             this app with inline validation (the pairing PIN) reports through a plain ErrorText
+             string, so a class binding is the honest fit rather than a rewrite of the view model
+             to satisfy a template.
+
+             Two channels change, deliberately: the border colour AND the helper text. Colour alone
+             was the state this replaces - a red TextBlock floating below the field, which said the
+             right thing while being visually unattached to the input it described. -->
+        <Style Selector="TextBox.invalid, TextBox.invalid:focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+        <Style Selector="TextBox.invalid /template/ TextBlock#PART_HintsText">
+            <Setter Property="Foreground" Value="{DynamicResource SystemErrorBrush}"/>
+        </Style>
+
+        <Style Selector="ComboBox">
+            <Setter Property="Theme" Value="{DynamicResource MaterialOutlineComboBox}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+            <Setter Property="PlaceholderForeground" Value="{DynamicResource TextMutedBrush}"/>
+        </Style>
+        <Style Selector="ComboBox:focus">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
+        <Style Selector="NumericUpDown">
+            <Setter Property="Theme" Value="{DynamicResource OutlineNumericUpDown}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusSmall}"/>
+        </Style>
+        <Style Selector="NumericUpDown:focus-within">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
         <!-- Typography classes -->
         <Style Selector="TextBlock.h1">
             <Setter Property="FontSize" Value="22"/>

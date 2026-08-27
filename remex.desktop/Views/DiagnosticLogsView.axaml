@@ -29,24 +29,24 @@
                         <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,8">
                                 <TextBlock Text="{local:Localize Logs_VerbosityFilter}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                <ComboBox ItemsSource="{Binding LevelOptions}" SelectedItem="{Binding SelectedDisplayLevel}" Width="140" CornerRadius="8" VerticalAlignment="Center"/>
+                                <ComboBox ItemsSource="{Binding LevelOptions}" SelectedItem="{Binding SelectedDisplayLevel}" Width="140" VerticalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,16,8">
                                 <TextBlock Text="{local:Localize Logs_Preset}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" Width="185" CornerRadius="8" VerticalAlignment="Center"/>
+                                <ComboBox ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset}" Width="185" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <TextBox Text="{Binding SearchText}" PlaceholderText="{local:Localize Logs_SearchWatermark}" Width="220" CornerRadius="8" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                            <TextBox Text="{Binding SearchText}" PlaceholderText="{local:Localize Logs_SearchWatermark}" Width="220" VerticalAlignment="Center" Margin="0,0,16,8"/>
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,0,8">
                                 <TextBlock Text="{local:Localize Logs_CaptureLevel}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
-                                <ComboBox ItemsSource="{Binding CaptureLevelOptions}" SelectedItem="{Binding SelectedCaptureLevel}" Width="120" CornerRadius="8" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Logs_CaptureLevelTip}"/>
+                                <ComboBox ItemsSource="{Binding CaptureLevelOptions}" SelectedItem="{Binding SelectedCaptureLevel}" Width="120" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Logs_CaptureLevelTip}"/>
                             </StackPanel>
                         </WrapPanel>
 
                         <!-- Export + actions bar -->
                         <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto" Margin="0,0,0,12">
                             <TextBlock Grid.Column="0" Text="{local:Localize Logs_ExportAs}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedExportFormat}" Width="90" CornerRadius="8" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ComboBox Grid.Column="2" ItemsSource="{Binding ExportScopes}" SelectedItem="{Binding SelectedExportScope}" Width="195" CornerRadius="8" VerticalAlignment="Center"/>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedExportFormat}" Width="90" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox Grid.Column="2" ItemsSource="{Binding ExportScopes}" SelectedItem="{Binding SelectedExportScope}" Width="195" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="3" Text="{Binding EntryCountText}" FontSize="12" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                             <Button Grid.Column="3" Classes="secondary" Content="{local:Localize Logs_CopySelected}" Command="{Binding CopySelectedCommand}" Margin="0,0,10,0"/>
                             <Button Grid.Column="4" Classes="secondary" Content="{local:Localize Logs_Export}" Command="{Binding ExportLogsCommand}" Margin="0,0,10,0"/>
@@ -98,9 +98,7 @@
                                          TextWrapping="NoWrap"
                                          FontFamily="Consolas"
                                          FontSize="12"
-                                         Background="Transparent"
                                          Foreground="{DynamicResource SystemSuccessBrush}"
-                                         BorderThickness="0"
                                          Margin="0"/>
                             </ScrollViewer>
                         </Border>

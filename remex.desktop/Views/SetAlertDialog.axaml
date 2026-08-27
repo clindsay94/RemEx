@@ -32,10 +32,7 @@
             <NumericUpDown Value="{Binding Threshold}" Increment="1"
                            Minimum="-99999" Maximum="99999"
                            FormatString="F1"
-                           Background="{DynamicResource GlassBaseMediumBrush}"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           BorderBrush="{DynamicResource CardBorderBrush}"
-                           CornerRadius="8" Padding="8,6" FontSize="14"/>
+                           Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14"/>
         </StackPanel>
 
         <!-- Direction -->
@@ -43,10 +40,7 @@
             <TextBlock Text="{local:Localize SetAlert_TriggerDirection}" FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
             <ComboBox ItemsSource="{Binding Directions}" SelectedItem="{Binding Direction}"
-                      Background="{DynamicResource GlassBaseMediumBrush}"
-                      Foreground="{DynamicResource TextPrimaryBrush}"
-                      BorderBrush="{DynamicResource CardBorderBrush}"
-                      CornerRadius="8" HorizontalAlignment="Stretch">
+                      Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={x:Static conv:EnumLocalizerConverter.Instance}}"/>
@@ -60,10 +54,7 @@
             <TextBlock Text="{local:Localize SetAlert_Severity}" FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
             <ComboBox ItemsSource="{Binding Severities}" SelectedItem="{Binding Severity}"
-                      Background="{DynamicResource GlassBaseMediumBrush}"
-                      Foreground="{DynamicResource TextPrimaryBrush}"
-                      BorderBrush="{DynamicResource CardBorderBrush}"
-                      CornerRadius="8" HorizontalAlignment="Stretch">
+                      Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Converter={x:Static conv:EnumLocalizerConverter.Instance}}"/>

@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:assists="clr-namespace:Material.Styles.Assists;assembly=Material.Styles"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:Remex.Desktop.ViewModels"
@@ -29,18 +30,24 @@
                 <TextBlock Text="{local:Localize PairingDialogInstruction}"
                            TextWrapping="Wrap" />
                 
-                <TextBox Text="{Binding PinInput}" 
+                <!-- THE ERROR IS PART OF THE FIELD NOW, not a red line floating under it
+                     (RemEx-5w9ws). TextFieldAssist.Hints renders inside the text field's own
+                     template, so the message sits where the field's helper text goes and moves
+                     with it; HasError turns the border and the helper text to the error colour at
+                     the same time. That is the acceptance criterion's "visible without colour
+                     alone": the field gains TEXT and a changed border, and the message is now
+                     associated with the input rather than merely adjacent to it — which is the
+                     difference a screen reader can hear. -->
+                <TextBox Text="{Binding PinInput}"
                          PlaceholderText="000000"
                          MaxLength="6"
                          FontSize="24"
                          FontWeight="Bold"
                          HorizontalContentAlignment="Center"
-                         IsEnabled="{Binding !IsBusy}"/>
+                         IsEnabled="{Binding !IsBusy}"
+                         assists:TextFieldAssist.Hints="{Binding ErrorText}"
+                         Classes.invalid="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 
-                <TextBlock Text="{Binding ErrorText}" 
-                           Foreground="{DynamicResource SystemErrorBrush}"
-                           IsVisible="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           TextWrapping="Wrap"/>
                 
                 <!-- Indeterminate is honest: a pairing handshake reports no percentage, so a
                      determinate bar here would be inventing one. The accessible name is what makes

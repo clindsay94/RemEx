@@ -20,16 +20,16 @@
 
             <TextBlock Text="{local:Localize AddProgram_ExePath}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
             <Grid ColumnDefinitions="*, Auto">
-                <TextBox Grid.Column="0" Text="{Binding TargetPath}" PlaceholderText="{local:Localize AddProgram_WatermarkPath}" Margin="0,0,8,0" />
+                <TextBox Grid.Column="0" Text="{Binding TargetPath}" PlaceholderText="{local:Localize AddProgram_WatermarkPath}" Margin="0,0,8,0"/>
                 <Button Grid.Column="1" Content="{local:Localize Btn_Browse}" Command="{Binding BrowseCommand}" Classes="tertiary" />
             </Grid>
 
             <TextBlock Text="{local:Localize AddProgram_DisplayName}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
-            <TextBox Text="{Binding DisplayName}" PlaceholderText="{local:Localize AddProgram_WatermarkName}" />
+            <TextBox Text="{Binding DisplayName}" PlaceholderText="{local:Localize AddProgram_WatermarkName}"/>
 
             <TextBlock Text="{local:Localize AddProgram_AccentColor}" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="SemiBold" FontSize="12" />
             <Grid ColumnDefinitions="*, Auto">
-                <TextBox Grid.Column="0" Text="{Binding HexColor}" PlaceholderText="{local:Localize AddProgram_WatermarkColor}" Margin="0,0,8,0" />
+                <TextBox Grid.Column="0" Text="{Binding HexColor}" PlaceholderText="{local:Localize AddProgram_WatermarkColor}" Margin="0,0,8,0"/>
                 <Border Grid.Column="1" Width="32" Height="32" CornerRadius="4">
                     <Border.Background>
                         <SolidColorBrush Color="{Binding ValidatedColor}" />

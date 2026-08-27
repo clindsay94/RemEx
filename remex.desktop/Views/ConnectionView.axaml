@@ -26,7 +26,7 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="{conv:Localize Conn_HostAddress}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}"/>
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas" Background="{DynamicResource GlassBaseDarkBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="8" Padding="10,8" VerticalContentAlignment="Center"/>
+                            <TextBox Text="{Binding HostAddress}" PlaceholderText="wss://host:port/ws" FontFamily="Consolas" Foreground="{DynamicResource TextPrimaryBrush}" VerticalContentAlignment="Center"/>
                             <Button Grid.Column="1" Content="{conv:Localize Conn_DiscoverHosts}" Command="{Binding DiscoverHostsCommand}" Background="{DynamicResource CardBackgroundBrush}" Padding="14,10" CornerRadius="8" Margin="8,0,0,0" Cursor="Hand"/>
                         </Grid>
                     </StackPanel>

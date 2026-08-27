@@ -138,7 +138,7 @@
         <Border Grid.Row="1" Background="{DynamicResource GlassBaseDarkBrush}" Padding="16,10" IsVisible="{Binding ShowConnectionPanel}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1">
             <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto">
                 <TextBlock Text="{local:Localize RemoteDesktop_Host}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <TextBox Grid.Column="1" Text="{Binding Connection.HostAddress}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5" FontSize="11" FontFamily="Consolas, monospace" PlaceholderText="{local:Localize RemoteDesktop_HostWatermark}" IsEnabled="{Binding !IsStreaming}"/>
+                <TextBox Grid.Column="1" Text="{Binding Connection.HostAddress}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" FontFamily="Consolas, monospace" PlaceholderText="{local:Localize RemoteDesktop_HostWatermark}" IsEnabled="{Binding !IsStreaming}"/>
                 <Button Grid.Column="2" Content="{local:Localize Btn_Save}" Classes="secondary" FontSize="11" Padding="10 5" Margin="8,0,0,0" Command="{Binding SaveConnectionCommand}"/>
             </Grid>
         </Border>
@@ -151,7 +151,7 @@
                         <TextBlock Text="{Binding WindowControlStatusText}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                        <TextBox Width="220" Text="{Binding WindowSearchText}" PlaceholderText="{local:Localize RemoteDesktop_SearchWatermark}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5"/>
+                        <TextBox Width="220" Text="{Binding WindowSearchText}" PlaceholderText="{local:Localize RemoteDesktop_SearchWatermark}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <Button Content="{local:Localize RemoteDesktop_Refresh}" Command="{Binding RefreshWindowsCommand}" Classes="secondary" Padding="10 5"/>
                     </StackPanel>
                 </Grid>
@@ -177,13 +177,13 @@
                         </WrapPanel>
 
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                            <TextBox Text="{Binding WindowResizeWidth}" PlaceholderText="{local:Localize RemoteDesktop_WidthWatermark}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5"/>
-                            <TextBox Grid.Column="1" Text="{Binding WindowResizeHeight}" PlaceholderText="{local:Localize RemoteDesktop_HeightWatermark}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5"/>
+                            <TextBox Text="{Binding WindowResizeWidth}" PlaceholderText="{local:Localize RemoteDesktop_WidthWatermark}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                            <TextBox Grid.Column="1" Text="{Binding WindowResizeHeight}" PlaceholderText="{local:Localize RemoteDesktop_HeightWatermark}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </Grid>
                         <Button Content="{local:Localize RemoteDesktop_Resize}" Command="{Binding ResizeSelectedWindowCommand}" Classes="secondary" Padding="10 5"/>
 
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                            <TextBox Text="{Binding TargetDesktopNumber}" PlaceholderText="{local:Localize RemoteDesktop_DesktopNumberWatermark}" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" CornerRadius="6" Padding="8,5"/>
+                            <TextBox Text="{Binding TargetDesktopNumber}" PlaceholderText="{local:Localize RemoteDesktop_DesktopNumberWatermark}" Foreground="{DynamicResource TextPrimaryBrush}"/>
                             <Button Grid.Column="1" Content="{local:Localize RemoteDesktop_Move}" Command="{Binding MoveSelectedWindowToDesktopCommand}" Classes="secondary" Padding="10 5"/>
                         </Grid>
                     </StackPanel>
