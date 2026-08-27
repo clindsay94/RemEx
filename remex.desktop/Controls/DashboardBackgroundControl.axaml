@@ -144,9 +144,21 @@
                         </Rectangle>
                     </Panel>
 
+                    <!-- ═══ TINTS OVER OS BACKDROPS COMPENSATE FOR AN OPAQUE BRUSH (RemEx-c437b).
+                         These three panels sit over a TRANSPARENT window whose real surface is the
+                         OS backdrop (Mica / Acrylic / bare desktop). They were authored when
+                         GlassBaseDark was #A00A0A10 — alpha 0xA0, 63% — so a bare Fill already let
+                         the backdrop through. ThemeService now overrides GlassBaseDark with the
+                         HCT-solved Surface at full alpha (26 files consume it; its opacity is not
+                         this control's to change), which silently turned these tints into opaque
+                         sheets: Mica went 63%→100% and the backdrop vanished. Each Rectangle
+                         therefore carries the old EFFECTIVE opacity explicitly. Solid mode below is
+                         the one mode whose sheet is opaque on purpose. -->
+
                     <!-- ═══ Glass / Acrylic Mode (Material 3 Style) ═══ -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsAcrylic}}">
-                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.8" />
+                        <!-- 0.8 × the old 0.63 brush alpha ≈ 0.5 -->
+                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.5" />
                         <Rectangle Opacity="{Binding Customization.GlassOpacity}">
                             <Rectangle.Fill>
                                 <SolidColorBrush Color="{DynamicResource AccentPrimary}" Opacity="0.15" />
@@ -156,7 +168,8 @@
 
                     <!-- ═══ Mica Mode (Material 3 Surface fallback) ═══ -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsMica}}">
-                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" />
+                        <!-- the old bare Fill at brush alpha 0xA0 = 0.63 -->
+                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.63" />
                         <Rectangle Opacity="0.05" Fill="{DynamicResource AccentPrimaryBrush}" />
                     </Panel>
 
@@ -164,7 +177,8 @@
                     <!-- The window itself is transparent; this panel adds only a subtle frosted tint
                  so UI elements remain readable when the desktop shows behind the window. -->
                     <Panel IsVisible="{Binding Customization.CanvasBackgroundType, Converter={x:Static converters:StringMatchConverter.IsGlass}}">
-                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.25" />
+                        <!-- 0.25 × the old 0.63 brush alpha ≈ 0.16 -->
+                        <Rectangle Fill="{DynamicResource GlassBaseDarkBrush}" Opacity="0.16" />
                         <!-- Very light accent tint to tint the frost toward the theme color -->
                         <Rectangle Fill="{DynamicResource AccentPrimaryBrush}" Opacity="0.08" />
                     </Panel>
