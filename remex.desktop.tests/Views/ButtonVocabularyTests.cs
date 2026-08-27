@@ -52,7 +52,6 @@ public class ButtonVocabularyTests
         ["nav-item"] = "RemEx-zi3ua — nav items become a Material list",
         ["nav-item-active"] = "RemEx-zi3ua — nav items become a Material list",
         ["gear-fab"] = "RemEx-bado6 — the gear becomes a Material FloatingButton",
-        ["tray-chip"] = "RemEx-x3vom — shared with a ToggleButton; :checked is selection-control styling",
     };
 
     [Fact]

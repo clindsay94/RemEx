@@ -35,70 +35,6 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Window.Styles>
-
-
-
-        <Style Selector="Button.tray-chip, ToggleButton.tray-chip">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Width" Value="28"/>
-            <Setter Property="Height" Value="28"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-
-        <Style Selector="Button.tray-chip:pointerover, ToggleButton.tray-chip:pointerover">
-            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
-        </Style>
-
-        <!-- The chip glyphs are drawn icons, not font characters. The obvious alternative is a
-             Segoe MDL2 Assets codepoint, but that font ships with Windows only and nothing here
-             sets the family, so the glyph would be a fallback box on Linux and probably on Windows
-             too. The icon's Foreground follows the button's own so the pointerover style still
-             lands. MaterialIcon has no Fill at all — a Fill setter here would compile and do
-             nothing (RemEx-wyx2c). -->
-        <Style Selector="Button.tray-chip mi|MaterialIcon, ToggleButton.tray-chip mi|MaterialIcon">
-            <Setter Property="Foreground" Value="{Binding $parent[Button].Foreground}"/>
-        </Style>
-
-        <!-- BACKGROUND IS SET HERE, NOT JUST FOREGROUND, AND IT IS THE WHOLE FIX (RemEx-xpfls).
-             The pin glyph vanished the moment the flyout was pinned, leaving a plain filled square,
-             so there was no way to tell which mode the window was in — and the two modes differ in
-             whether the window can be resized and whether its geometry persists. Connor reported the
-             resize behaviour backwards because of it.
-
-             It is a priority collision, not a missing colour. Avalonia's frame order (lower wins) puts
-             an app style WITH an activator at StyleTrigger, a ControlTheme style with an activator at
-             StyleTriggerTheme, and a plain app style at Style. So on :checked, under Fluent (the
-             theme applied when this was diagnosed) —
-               Foreground: ours (StyleTrigger) beat Fluent's ToggleButtonForegroundChecked. Accent.
-               Background: Fluent's ToggleButtonBackgroundChecked (StyleTriggerTheme) beat the plain
-                           Background="Transparent" in the base .tray-chip style above (Style).
-             Fluent's checked background was itself accent-derived, so the result was an accent glyph
-             on an accent fill. The glyph's own colour was never the problem: it comes from the
-             selector above, ToggleButton derives from Button, and $parent[Button] resolves
-             correctly.
-
-             Pinning the background at the same activator priority as the theme's own ControlTheme
-             style is what stops the theme (Fluent then, Material 3.19.0 now) supplying it.
-             CardBackgroundHoverBrush reads as "this chip is active" and exists in all four PC themes,
-             so the accent glyph keeps its contrast on SolarFlare too. -->
-        <Style Selector="ToggleButton.tray-chip:checked">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
-        </Style>
-
-        <!-- Hover while already pinned must not fall back to the theme's own accent fill either. -->
-        <Style Selector="ToggleButton.tray-chip:checked:pointerover">
-            <Setter Property="Background" Value="{DynamicResource CardBackgroundHoverBrush}"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
-        </Style>
-    </Window.Styles>
 
     <Panel>
 
@@ -129,7 +65,7 @@
                                Foreground="{DynamicResource TextMutedBrush}"/>
                 </StackPanel>
 
-                <Button Grid.Column="2" Classes="tray-chip" Click="OnOpenMainApp"
+                <Button Grid.Column="2" Classes="tertiary icon-button compact" Click="OnOpenMainApp"
                         AutomationProperties.Name="{local:Localize Palette_Settings}">
                     <mi:MaterialIcon Kind="Cog" Width="14" Height="14"/>
                 </Button>
@@ -138,14 +74,14 @@
                      handler runs, so OnTogglePin would read the already-flipped value and flip it
                      straight back - the pin button would appear dead. The handler is the only writer;
                      this binding just reflects the result. -->
-                <ToggleButton Grid.Column="3" Classes="tray-chip"
+                <ToggleButton Grid.Column="3" Classes="tertiary icon-button compact"
                               IsChecked="{Binding IsPinned, Mode=OneWay}"
                               Click="OnTogglePin"
                               AutomationProperties.Name="{local:Localize A11y_TrayFlyout_Pin}">
                     <mi:MaterialIcon Kind="Pin" Width="14" Height="14"/>
                 </ToggleButton>
 
-                <Button Grid.Column="4" Classes="tray-chip" Click="OnCloseFlyout"
+                <Button Grid.Column="4" Classes="tertiary icon-button compact" Click="OnCloseFlyout"
                         Content="&#x2715;"
                         AutomationProperties.Name="{local:Localize A11y_Close}"/>
             </Grid>

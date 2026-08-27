@@ -107,6 +107,50 @@ Flat/Outline/Raised/Rounded/Light **classes** that the 2.x-era docs describe. Re
 description assumed the older API; it also assumed `ButtonAssist` carries a corner radius, which in
 3.19 it does not — `ButtonAssist` has exactly `HoverColor` and `ClickFeedbackColor`.
 
+## `:is(Button)`, never bare `Button`
+
+Every selector here is written `:is(Button).tertiary`, not `Button.tertiary`. A bare type selector
+in Avalonia matches the **exact** type, so `Button.tertiary` reaches a `Button` and silently skips
+`DropDownButton`, `SplitButton`, `RepeatButton` and `ToggleButton`. RemEx-z7pnx shipped exactly
+that miss for one release of the epic: AppLauncherView's sort control is a `DropDownButton`, it
+was given `Classes="tertiary"`, the build was green, the class was spelled correctly — and the
+control rendered completely unstyled. There is no warning for a class that matches nothing.
+
+`SelectionControlTests.TheVocabularySelectorsUseIsButtonSoTheyReachButtonsSubclasses` fails the
+build if a bare `Button.x` comes back.
+
+### Toggles
+
+A `ToggleButton` wearing a vocabulary class is a button that remembers: `:checked` paints the
+"this one is on" state rather than being a fourth emphasis.
+
+**Keep the `:checked` on the selector.** Avalonia's frame order puts an app style *with* an
+activator above one without, and a control theme's own activated style in between — so a plain
+`Background` setter in the `.tertiary` block loses to the theme's accent-derived checked fill,
+while one carrying `:checked` wins. Moving those setters "up" into the base block is the tidy that
+reintroduces RemEx-xpfls: the tray's pin button rendering as a blank accent square in its pinned
+state, with no way to tell which mode the window was in.
+
+## Selection controls
+
+`ToggleSwitch`, `CheckBox` and `RadioButton` keep Material's templates — ripple, knob transition,
+check glyph — and take RemEx's palette through the assist properties those templates read
+(RemEx-x3vom). Set them in `App.axaml`, not per view.
+
+One of those defaults was a real defect rather than a mismatch: `MaterialToggleSwitch` sets
+`SwitchTrackOffBackground` to the **literal** `Black`, drawn at 0.26 opacity. Over RemEx's dark
+glass that is very nearly the surface itself, so an OFF switch read as an empty gap where a control
+should be — on three of the four themes, with nothing thrown and nothing logged.
+
+`ToggleButtonAssist`, which the bead's description named, is not read by any shipped theme in
+Material.Avalonia 3.19.0; `MaterialFlatToggleButton` does not reference it. The `:checked` rule
+above does that job instead.
+
+The keyboard focus ring for all three is `App.axaml`'s `:focus-visible` styles setting
+`BorderBrush`/`BorderThickness` on the control. That works because each Material template roots on
+a Border that template-binds both — and it is **load-bearing**, because Material nulls
+`FocusAdorner`. Delete those styles and keyboard traversal has no visible indication at all.
+
 ## Documented exceptions
 
 Three groups of buttons keep bespoke styles, each because another bead owns them:
@@ -115,8 +159,10 @@ Three groups of buttons keep bespoke styles, each because another bead owns them
 |---|---|---|
 | `nav-item`, `nav-item-active` | `ShellView.axaml` | **RemEx-zi3ua** — nav items become a Material list with ripple and icons |
 | `gear-fab` | `ShellView.axaml` | **RemEx-bado6** — the gear becomes a Material `FloatingButton` |
-| `tray-chip` | `TrayFlyoutWindow.axaml` | **RemEx-x3vom** — it is shared with a `ToggleButton` and its `:checked` states are selection-control styling |
 | Window chrome buttons | `Themes/Chrome/WindowChrome.axaml` | Template parts of the window chrome, not app buttons |
+
+The tray flyout's chips were on this list until RemEx-x3vom; they are
+`tertiary icon-button compact` now, with their `:checked` state part of the toggle rule below.
 
 Adding to this table without a bead that owns the exception is how the old sprawl came back last
 time. The guard test asserts the list, so widening it is a deliberate edit rather than a drift.

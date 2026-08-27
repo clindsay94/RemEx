@@ -42,6 +42,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Off switches are visible again on three of the four PC themes.** Material draws a toggle
+  switch's unchecked track in a hardcoded black at a quarter opacity, which over RemEx's dark
+  glass is almost exactly the surface behind it — the eight switches in Settings and the two in
+  Personalization looked like rows that had simply lost their control. Every switch, checkbox and
+  radio now takes its track, thumb, check glyph and label from the palette like everything else,
+  so they follow the seed colour and stay legible on all four themes. The keyboard focus ring on
+  them was checked rather than assumed: Material removes the default focus adorner, so those
+  outlines are the only thing marking where the keyboard is, and there is now a test that fails if
+  they are deleted. (RemEx-x3vom)
+
+- **A sort control in App Launcher was rendering with no styling at all.** Avalonia's plain type
+  selectors match one exact type, so the button roles introduced a moment earlier reached ordinary
+  buttons and silently skipped drop-down buttons, split buttons and toggle buttons. The roles now
+  cover every kind of button, which also let the tray flyout's chips drop their own copy of the
+  styling and join the shared set. (RemEx-x3vom)
+
 - **Buttons across the PC app follow one rule now instead of thirty-seven.** Every button used to
   be styled by the screen it happened to sit on — `rd-btn`, `log-btn`, `about-back`, `crumb-btn`
   — so a name told you where a button was and never what it meant. There were nine corner radii

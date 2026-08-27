@@ -867,7 +867,7 @@ public class AccentForegroundContrastTests
 
         var style = Regex.Match(
             app,
-            "<Style Selector=\"Button\\.danger\">.*?</Style>",
+            "<Style Selector=\":is\\(Button\\)\\.danger\">.*?</Style>",
             RegexOptions.Singleline);
         Assert.True(style.Success, "the Button.danger tint style moved or was renamed");
 

@@ -31,6 +31,13 @@ namespace Remex.Desktop.Tests.Views;
 /// A SOURCE-TEXT TEST, the idiom this project already uses for bindings that fail silently: there is
 /// no headless render here, and an invisible icon throws nothing.
 /// </para>
+/// <para>
+/// THE STYLES MOVED IN RemEx-x3vom and this guard followed them. The tray chips are
+/// <c>tertiary icon-button compact</c> from the shared vocabulary now, so the checked rule lives in
+/// <c>App.axaml</c> and applies to every toggling button rather than to three chips in one window.
+/// The invariant is unchanged and the reason it is load-bearing is unchanged; only its blast radius
+/// grew, which is an argument for the guard rather than against it.
+/// </para>
 /// </remarks>
 public class TrayChipIconVisibilityTests
 {
@@ -85,18 +92,19 @@ public class TrayChipIconVisibilityTests
     }
 
     /// <summary>
-    /// The tray flyout's `ToggleButton.tray-chip` styles that carry a state pseudo-class.
+    /// The application's <c>ToggleButton</c> styles that carry a state pseudo-class — where the
+    /// tray chips' checked rule lives since RemEx-x3vom folded them into the button vocabulary.
     /// </summary>
     private static (string Selector, string Body)[] ToggleChipStateStyles()
     {
         var flattened = Regex.Replace(
-            File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "Views", "TrayFlyoutWindow.axaml")),
+            File.ReadAllText(Path.Combine(RepoRoot(), "remex.desktop", "App.axaml")),
             @"<!--.*?-->", string.Empty, RegexOptions.Singleline);
 
         var styles = Regex.Matches(flattened, @"<Style Selector=""([^""]+)"">(.*?)</Style>", RegexOptions.Singleline)
             .Select(m => (Selector: m.Groups[1].Value, Body: m.Groups[2].Value))
-            .Where(s => s.Selector.Contains("ToggleButton.tray-chip", StringComparison.Ordinal)
-                     && s.Selector.Contains(':'))
+            .Where(s => s.Selector.Contains("ToggleButton", StringComparison.Ordinal)
+                     && s.Selector.Contains(":checked", StringComparison.Ordinal))
             .ToArray();
 
         styles.Should().NotBeEmpty(
