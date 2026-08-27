@@ -795,6 +795,21 @@
             <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
 
+        <!-- ═══ BADGES (RemEx-rjnbo). Placement and paint are declared ONCE. The bead asked
+             for consistent BadgePlacement across the app, and the cheapest way to guarantee that
+             is for no call site to be able to choose: a badge is top-right, accent-filled, and
+             reads its own foreground from the accent's contrast token.
+
+             A ZERO COUNT HIDES. That is IsBadgeVisible's job at each call site, bound to the
+             source's own "has any" property - Material will happily render a badge containing "0",
+             which is a notification that there is nothing to notify. -->
+        <Style Selector="material|Badged">
+            <Setter Property="BadgePlacement" Value="TopRight"/>
+            <Setter Property="BadgeBackground" Value="{DynamicResource AccentPrimaryBrush}"/>
+            <Setter Property="BadgeForeground" Value="{DynamicResource AccentForegroundBrush}"/>
+            <Setter Property="BadgeFontSize" Value="10"/>
+        </Style>
+
         <!-- Typography classes -->
         <Style Selector="TextBlock.h1">
             <Setter Property="FontSize" Value="22"/>

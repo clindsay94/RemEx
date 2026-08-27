@@ -520,6 +520,16 @@ public partial class ShellViewModel : ObservableObject, IDisposable
     public void NavigateToCanvas()
     {
         NotifyIfDisconnected("Sensor Workspace");
+
+        // OPENING SENSORS ACKNOWLEDGES THE ALERTS (RemEx-rjnbo). A badge that never clears is a
+        // badge people stop reading. The alerts are sensor alerts and this is the sensor page, so
+        // arriving here IS having seen them.
+        //
+        // The COUNT is reset and AlertNotifications is deliberately left alone: the count means
+        // "unacknowledged", the list is the history, and nothing displays the history yet. Clearing
+        // both here would throw away the only record the moment a future flyout wants to show it.
+        AlertBadgeCount = 0;
+
         SetTransitionAndNavigate(1, _canvasViewModel!);
     }
 

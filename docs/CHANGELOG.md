@@ -130,6 +130,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Sensor alerts that fire while you are on another screen are visible now.** The app has been
+  counting them all along and had nowhere to show the number, so an alert raised while you were in
+  Files or Settings simply never reached you. The Sensors item in the sidebar carries the count,
+  and opening Sensors clears it. Nothing appears when nothing has fired. (RemEx-rjnbo)
+
 - **The Diagnostics "system event logs" tab was permanently empty on Linux, and looked healthy
   doing it.** It queried a systemd unit (`remex-host`) that the Linux installer actively deletes —
   RemEx starts from XDG autostart as an ordinary user process now — so the query could never

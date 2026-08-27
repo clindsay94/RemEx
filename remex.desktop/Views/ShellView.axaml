@@ -171,7 +171,23 @@
                                         <!-- Live Sensors -->
                                         <Button AutomationProperties.Name="{conv:Localize Nav_Sensors}" Classes="nav-item" Classes.nav-item-active="{Binding ActiveNavIndex, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=1}" Command="{Binding NavigateToCanvasCommand}" ToolTip.Tip="{conv:Localize Nav_Sensors}">
                                             <Grid ColumnDefinitions="64,*">
-                                                <mi:MaterialIcon Grid.Column="0" Kind="ChartLineVariant" Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                <!-- THE ALERT COUNT REACHES A SCREEN (RemEx-rjnbo). ShellViewModel has
+                                                     incremented AlertBadgeCount on every sensor alert, exposed HasAlerts,
+                                                     kept twenty AlertNotifications and offered a DismissAlerts command
+                                                     since it was written - and NO view bound any of it. The pipeline ran
+                                                     correctly into a number nobody could see. Sensors is where the alerts
+                                                     come from, so it is where the count belongs.
+
+                                                     IsBadgeVisible is bound rather than left to Material, which renders a
+                                                     badge reading "0" quite happily - a notification that there is nothing
+                                                     to notify. Placement and colour come from App.axaml so no call site
+                                                     can put one somewhere else. -->
+                                                <material:Badged Grid.Column="0"
+                                                                 BadgeContent="{Binding AlertBadgeCount}"
+                                                                 IsBadgeVisible="{Binding HasAlerts}"
+                                                                 HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <mi:MaterialIcon Kind="ChartLineVariant" Width="22" Height="22"/>
+                                                </material:Badged>
                                                 <TextBlock Grid.Column="1" Text="{conv:Localize Nav_Sensors}" VerticalAlignment="Center" Margin="8,0,0,0" IsVisible="{Binding IsDrawerOpen}"/>
                                             </Grid>
                                         </Button>
