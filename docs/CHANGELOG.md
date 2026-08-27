@@ -42,6 +42,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Sliders show their value while you drag them, and the arrow keys work.** Dragging a slider
+  used to move a number that lived somewhere else on the screen; the value now appears above the
+  handle as you move it. Four sliders could barely be used from the keyboard at all — the contrast
+  slider spans -1 to 1 and one arrow press moved it a whole unit, so there were three reachable
+  positions; glass opacity, window opacity and UI size were the same. Each now steps by an amount
+  that fits its range, and the ones that snap to steps move exactly one step. Ticks appear on the
+  three sliders that were already configured for them and had been drawing none. Nine sliders that
+  announced only a bare number to a screen reader now say what they adjust. (RemEx-vryje)
+
 - **Every text box and dropdown in the PC app looks the same now.** They had drifted into two
   populations: thirty-six that painted themselves a bordered, rounded box and sixteen that were
   left as transparent underline fields, so the same control looked like a different control

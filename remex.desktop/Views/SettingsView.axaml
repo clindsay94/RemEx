@@ -191,7 +191,7 @@
                                     <TextBlock Text="{local:Localize Settings_GridSize}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Grid.Column="1" FontSize="14" FontWeight="Black" Foreground="{DynamicResource AccentPrimaryBrush}" Text="{Binding GridSize, StringFormat={}{0} px}"/>
                                 </Grid>
-                                <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding GridSize}" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+                                <Slider Minimum="10" Maximum="100" TickFrequency="10" TickPlacement="BottomRight" IsSnapToTickEnabled="True" SmallChange="10" LargeChange="20" Value="{Binding GridSize}" AutomationProperties.Name="{local:Localize Settings_GridSize}"/>
                             </StackPanel>
                         </StackPanel>
                     </material:Card>

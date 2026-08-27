@@ -92,7 +92,7 @@
 
                         <TextBlock Text="{local:Localize RemoteDesktop_Quality}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
                         <StackPanel Spacing="1" VerticalAlignment="Center">
-                            <Slider Minimum="10" Maximum="100" Value="{Binding Quality}" Width="80" VerticalAlignment="Center"/>
+                            <Slider Minimum="10" Maximum="100" SmallChange="5" LargeChange="10" Value="{Binding Quality}" Width="80" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize RemoteDesktop_Quality}"/>
                             <Grid ColumnDefinitions="*,*" Width="80">
                                 <TextBlock Text="{local:Localize RemoteDesktop_Low}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                 <TextBlock Grid.Column="1" Text="{local:Localize RemoteDesktop_High}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -113,7 +113,7 @@
                         <Border Width="1" Height="20" Background="{DynamicResource CardBorderBrush}"/>
 
                         <TextBlock Text="{local:Localize RemoteDesktop_Fps}" Foreground="{DynamicResource TextMutedBrush}" FontSize="11" VerticalAlignment="Center"/>
-                        <Slider Minimum="1" Maximum="360" Value="{Binding TargetFps}" Width="80" VerticalAlignment="Center"/>
+                        <Slider Minimum="1" Maximum="360" SmallChange="1" LargeChange="15" Value="{Binding TargetFps}" Width="80" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize RemoteDesktop_Fps}"/>
                         <TextBlock Text="{Binding TargetFps, Converter={x:Static local:FpsDisplayConverter.Instance}}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center"/>
 
                         <Button Padding="16,10" Content="{local:Localize Btn_Apply}" Command="{Binding ApplySettingsCommand}" Classes="secondary" Margin="4,0,0,0"/>

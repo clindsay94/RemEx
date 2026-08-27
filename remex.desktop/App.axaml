@@ -720,6 +720,22 @@
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/>
         </Style>
 
+        <!-- ═══ SLIDERS (RemEx-vryje). MaterialDiscreteSliderV2 is MaterialSlider with a thumb
+             that draws a value bubble above itself while dragging - a THUMB swap, not a ticks
+             change, so it is safe on the continuous sliders too. That is the bead's "value visible
+             while dragging", and it matters most on the Palette Studio's hue/chroma/tone, where the
+             number IS the thing being chosen and the only readout was a separate label.
+
+             SliderAssist in 3.19.0 carries exactly ThicknessTick - the value popup the bead's
+             description attributes to it is the discrete THEME's, not an assist property. Ticks
+             themselves need TickPlacement at the call site: Avalonia defaults it to None, so the
+             three sliders in this app that already declared a TickFrequency were computing tick
+             positions and drawing nothing. -->
+        <Style Selector="Slider">
+            <Setter Property="Theme" Value="{DynamicResource MaterialDiscreteSliderV2}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}"/>
+        </Style>
+
         <!-- Typography classes -->
         <Style Selector="TextBlock.h1">
             <Setter Property="FontSize" Value="22"/>

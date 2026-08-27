@@ -89,19 +89,19 @@
                 <StackPanel Spacing="10">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                         <TextBlock Text="{local:Localize Custom_SeedHue}" VerticalAlignment="Center" MinWidth="52"/>
-                        <Slider Grid.Column="1" Minimum="0" Maximum="360" Value="{Binding SeedHue}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedHue}"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="360" SmallChange="1" LargeChange="15" Value="{Binding SeedHue}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedHue}"/>
                         <TextBlock Grid.Column="2" Text="{Binding SeedHue, StringFormat={}{0:F0}°}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                         <TextBlock Text="{local:Localize Custom_SeedChroma}" VerticalAlignment="Center" MinWidth="52"/>
-                        <Slider Grid.Column="1" Minimum="0" Maximum="120" Value="{Binding SeedChroma}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedChroma}"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="120" SmallChange="1" LargeChange="10" Value="{Binding SeedChroma}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedChroma}"/>
                         <TextBlock Grid.Column="2" Text="{Binding SeedChroma, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </Grid>
 
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                         <TextBlock Text="{local:Localize Custom_SeedTone}" VerticalAlignment="Center" MinWidth="52"/>
-                        <Slider Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding SeedTone}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedTone}"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Value="{Binding SeedTone}" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_SeedTone}"/>
                         <TextBlock Grid.Column="2" Text="{Binding SeedTone, StringFormat={}{0:F0}}" VerticalAlignment="Center" MinWidth="36" TextAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </Grid>
                 </StackPanel>
@@ -192,7 +192,7 @@
                     <TextBlock Text="{local:Localize Custom_ContrastLevel}" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                         <StackPanel Spacing="2" VerticalAlignment="Center">
-                            <Slider Minimum="-1" Maximum="1" Value="{Binding ThemeContrast}" Width="160" TickFrequency="0.1" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_ContrastLevel}"/>
+                            <Slider Minimum="-1" Maximum="1" SmallChange="0.1" LargeChange="0.25" Value="{Binding ThemeContrast}" Width="160" TickFrequency="0.1" TickPlacement="BottomRight" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_ContrastLevel}"/>
                             <Grid ColumnDefinitions="*,*" Width="160">
                                 <TextBlock Text="{local:Localize Custom_ContrastSofter}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                 <TextBlock Grid.Column="1" Text="{local:Localize Custom_ContrastSharper}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -213,7 +213,7 @@
                     <TextBlock Text="{local:Localize Custom_CornerRadius}" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                         <StackPanel Spacing="2" VerticalAlignment="Center">
-                            <Slider Minimum="0" Maximum="32" Value="{Binding CornerRadius}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusPixelsTooltip}"/>
+                            <Slider Minimum="0" Maximum="32" SmallChange="1" LargeChange="4" Value="{Binding CornerRadius}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_BorderCornerRadiusPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_CornerRadius}"/>
                             <Grid ColumnDefinitions="*,*" Width="160">
                                 <TextBlock Text="{local:Localize Custom_Square}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                 <TextBlock Grid.Column="1" Text="{local:Localize Custom_Round}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -227,7 +227,7 @@
                     <TextBlock Text="{local:Localize Custom_GlassOpacity}" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                         <StackPanel Spacing="2" VerticalAlignment="Center">
-                            <Slider Minimum="0.01" Maximum="1.0" Value="{Binding GlassOpacity}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_GlassFrostingOpacityPercentTooltip}"/>
+                            <Slider Minimum="0.01" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding GlassOpacity}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_GlassFrostingOpacityPercentTooltip}" AutomationProperties.Name="{local:Localize Custom_GlassOpacity}"/>
                             <Grid ColumnDefinitions="*,*" Width="160">
                                 <TextBlock Text="{local:Localize Custom_Clear}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                 <TextBlock Grid.Column="1" Text="{local:Localize Custom_Frosted}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -241,7 +241,7 @@
                     <TextBlock Text="{local:Localize Custom_GlowStrength}" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
                         <StackPanel Spacing="2" VerticalAlignment="Center">
-                            <Slider Minimum="0" Maximum="30" Value="{Binding GlowStrength}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_NeonGlowThicknessPixelsTooltip}"/>
+                            <Slider Minimum="0" Maximum="30" SmallChange="1" LargeChange="5" Value="{Binding GlowStrength}" Width="160" VerticalAlignment="Center" ToolTip.Tip="{local:Localize Custom_NeonGlowThicknessPixelsTooltip}" AutomationProperties.Name="{local:Localize Custom_GlowStrength}"/>
                             <Grid ColumnDefinitions="*,*" Width="160">
                                 <TextBlock Text="{local:Localize Custom_GlowNone}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Left"/>
                                 <TextBlock Grid.Column="1" Text="{local:Localize Custom_GlowIntense}" FontSize="9" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right"/>
@@ -319,7 +319,7 @@
                 <Grid ColumnDefinitions="*,2*" IsVisible="{Binding IsGlassModeSelected}">
                     <TextBlock Text="{local:Localize Custom_AppWindowOpacity}" VerticalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
-                        <Slider Minimum="0.1" Maximum="1.0" Value="{Binding AppWindowOpacity}" Width="160" VerticalAlignment="Center"/>
+                        <Slider Minimum="0.1" Maximum="1.0" SmallChange="0.05" LargeChange="0.1" Value="{Binding AppWindowOpacity}" Width="160" VerticalAlignment="Center" AutomationProperties.Name="{local:Localize Custom_AppWindowOpacity}"/>
                         <TextBlock Text="{Binding AppWindowOpacity, StringFormat={}{0:P0}}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </StackPanel>
                 </Grid>
@@ -389,7 +389,7 @@
                 <Grid ColumnDefinitions="*,2*" ToolTip.Tip="{local:Localize Custom_UiScaleTip}">
                     <TextBlock Text="{local:Localize Custom_UiScale}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Left">
-                        <Slider Minimum="0.85" Maximum="1.3" Value="{Binding UiScale}" Width="168" VerticalAlignment="Center" TickFrequency="0.05" IsSnapToTickEnabled="True"/>
+                        <Slider Minimum="0.85" Maximum="1.3" SmallChange="0.05" LargeChange="0.1" Value="{Binding UiScale}" Width="168" VerticalAlignment="Center" TickFrequency="0.05" TickPlacement="BottomRight" IsSnapToTickEnabled="True" AutomationProperties.Name="{local:Localize Custom_UiScale}"/>
                         <TextBlock Text="{Binding UiScale, StringFormat={}{0:P0}}" VerticalAlignment="Center" MinWidth="42" Foreground="{DynamicResource TextSecondaryBrush}"/>
                     </StackPanel>
                 </Grid>

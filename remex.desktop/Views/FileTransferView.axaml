@@ -95,7 +95,7 @@
                         <Button Classes="tertiary compact" Content="{local:Localize FileTransfer_SortDate}" Command="{Binding SortByCommand}" CommandParameter="date"/>
                         <TextBlock Text="{Binding SortDescending, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=↓|↑}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                         <Button Classes="tertiary compact" Command="{Binding ToggleViewModeCommand}" ToolTip.Tip="{local:Localize FileTransfer_ToggleViewTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_ToggleViewTooltip}" Margin="16,0,0,0" Content="{Binding IsIconView, Converter={x:Static local:BoolToStringConverter.Instance}, ConverterParameter=☰|▦}"/>
-                        <Slider Minimum="64" Maximum="176" Value="{Binding IconSize}" Width="96" VerticalAlignment="Center" IsVisible="{Binding IsIconView}" ToolTip.Tip="{local:Localize FileTransfer_IconSizeTooltip}"/>
+                        <Slider Minimum="64" Maximum="176" SmallChange="8" LargeChange="32" Value="{Binding IconSize}" Width="96" VerticalAlignment="Center" IsVisible="{Binding IsIconView}" ToolTip.Tip="{local:Localize FileTransfer_IconSizeTooltip}" AutomationProperties.Name="{local:Localize FileTransfer_IconSizeTooltip}"/>
                     </StackPanel>
                 </Border>
 
